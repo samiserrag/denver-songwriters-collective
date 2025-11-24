@@ -1,0 +1,10 @@
+{
+  "apiKeys": {
+    "anthropic": "${ANTHROPIC_API_KEY}"
+  },
+  "model": "claude-3-7-sonnet",
+  "contextFiles": [
+    "OPEN_MIC_DROP_AI_CONTEXT.md",
+    "scaffold.md"
+  ]
+}
