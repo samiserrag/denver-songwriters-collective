@@ -39,36 +39,42 @@ FOR EACH ROW
 EXECUTE FUNCTION prevent_role_change();
 
 -- ==========================================================
--- 2. PREVENT PRICE MANIPULATION IN STUDIO APPOINTMENTS
+-- 2. PREVENT SERVICE CHANGES IN STUDIO APPOINTMENTS
 -- ==========================================================
+-- Prevents changing service_id after creation (which would change price)
+-- Only allows status and note updates for non-admins
 
-CREATE OR REPLACE FUNCTION lock_appointment_price()
+CREATE OR REPLACE FUNCTION prevent_appointment_service_change()
 RETURNS TRIGGER AS $$
-DECLARE
-  original_price INTEGER;
-  original_duration INTEGER;
 BEGIN
-  SELECT price_cents, duration_min
-  INTO original_price, original_duration
-  FROM studio_services
-  WHERE id = NEW.service_id;
-
-  IF NEW.price_cents IS DISTINCT FROM original_price THEN
-    RAISE EXCEPTION 'Prices cannot be altered directly.';
+  -- Allow admins to change anything
+  IF is_admin() THEN
+    RETURN NEW;
   END IF;
 
-  IF NEW.duration_min IS DISTINCT FROM original_duration THEN
-    RAISE EXCEPTION 'Duration cannot be altered directly.';
+  -- For non-admins, prevent changing service_id
+  IF OLD.service_id IS DISTINCT FROM NEW.service_id THEN
+    RAISE EXCEPTION 'Cannot change the service after booking';
   END IF;
 
+  -- For non-admins, prevent changing performer_id or appointment_time
+  IF OLD.performer_id IS DISTINCT FROM NEW.performer_id THEN
+    RAISE EXCEPTION 'Cannot change the performer after booking';
+  END IF;
+
+  IF OLD.appointment_time IS DISTINCT FROM NEW.appointment_time THEN
+    RAISE EXCEPTION 'Cannot change the appointment time after booking';
+  END IF;
+
+  -- Allow status and note changes
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_lock_appointment_price
-BEFORE INSERT OR UPDATE ON studio_appointments
+CREATE TRIGGER trg_prevent_appointment_service_change
+BEFORE UPDATE ON studio_appointments
 FOR EACH ROW
-EXECUTE FUNCTION lock_appointment_price();
+EXECUTE FUNCTION prevent_appointment_service_change();
 
 -- ==========================================================
 -- 3. PREVENT STUDIO SERVICES FROM HAVING PRICE/DURATION CHANGED BY NON-OWNERS

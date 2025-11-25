@@ -7,7 +7,8 @@
 import { useState, useEffect } from 'react';
 import { useBookStudio, validateFutureTime, getNextAvailableTime } from '@/hooks/useStudioBooking';
 import { supabase } from '@/lib/supabase/client';
-import { formatAppointmentTime, formatPrice, toDateTimeLocalValue } from '@/lib/utils/datetime';
+import { formatAppointmentTime, toDateTimeLocalValue } from '@/lib/utils/datetime';
+import { formatPrice } from '@/lib/supabase/rpc';
 import type { StudioService } from '@/lib/supabase/types';
 
 interface StudioBookingFormProps {
