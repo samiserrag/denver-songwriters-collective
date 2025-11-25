@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useClaimSlot, useUnclaimSlot, useAvailableSlots } from '@/hooks/useOpenMicSlots';
+import { useClaimSlot, useUnclaimSlot, useAllSlots } from '@/hooks/useOpenMicSlots';
 import { supabase } from '@/lib/supabase/client';
 import { formatTimeString } from '@/lib/utils/datetime';
 import type { EventSlot } from '@/lib/supabase/types';
@@ -25,7 +25,7 @@ interface EventSlotListProps {
  */
 export function EventSlotList({ eventId, autoRefresh = false }: EventSlotListProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const { slots, isLoading, error, refetch } = useAvailableSlots(eventId, autoRefresh);
+  const { slots, isLoading, error, refetch } = useAllSlots(eventId, autoRefresh);
   const { claimSlot, isLoading: isClaiming, error: claimError } = useClaimSlot();
   const { unclaimSlot, isLoading: isUnclaiming, error: unclaimError } = useUnclaimSlot();
 

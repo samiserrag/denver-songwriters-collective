@@ -117,6 +117,32 @@ export async function getAvailableSlotsForEvent(
   }
 }
 
+/**
+ * Get ALL slots for an event (including claimed)
+ * @param client - Supabase client instance
+ * @param eventId - UUID of the event
+ * @returns Array of all slots
+ */
+export async function getAllSlotsForEvent(
+  client: SupabaseClient,
+  eventId: string
+): Promise<EventSlot[]> {
+  try {
+    const { data, error } = await client.rpc('rpc_get_all_slots_for_event', {
+      event_id: eventId,
+    });
+
+    if (error) {
+      throw parseSupabaseError(error);
+    }
+
+    // RPC returns array, can be empty
+    return (data as EventSlot[]) || [];
+  } catch (error) {
+    throw parseSupabaseError(error);
+  }
+}
+
 // ============================================
 // STUDIO BOOKING
 // ============================================

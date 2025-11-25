@@ -108,6 +108,22 @@ BEGIN
 END;
 $$;
 
+-- Function: Get ALL slots for an event (including claimed)
+CREATE OR REPLACE FUNCTION rpc_get_all_slots_for_event(event_id UUID)
+RETURNS SETOF event_slots
+LANGUAGE plpgsql
+SECURITY INVOKER
+STABLE
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT *
+  FROM event_slots
+  WHERE event_slots.event_id = rpc_get_all_slots_for_event.event_id
+  ORDER BY slot_index;
+END;
+$$;
+
 -- ==========================================================
 -- SECTION B: STUDIO BOOKING
 -- ==========================================================
