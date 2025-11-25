@@ -85,6 +85,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 
   'Network request failed':
     'Network error. Please check your connection and try again.',
+
+  'Failed to fetch':
+    'Network error. Please check your connection and try again.',
 };
 
 // ============================================
