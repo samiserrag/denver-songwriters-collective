@@ -88,11 +88,8 @@ export function formatDuration(minutes: number): string {
  */
 export function formatTimeString(timeString: string): string {
   try {
-    // Parse HH:MM:SS format
     const [hours, minutes] = timeString.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-
+    const date = new Date(Date.UTC(2000, 0, 1, hours, minutes, 0));
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
