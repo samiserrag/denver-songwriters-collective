@@ -60,6 +60,16 @@ const ERROR_MESSAGES: Record<string, string> = {
   'does not exist for this event. Create slots first':
     'Not enough slots exist for this event. Please create more slots first.',
 
+  // Studio appointment trigger errors
+  'Cannot change the service after booking':
+    'Service cannot be changed after booking. Please create a new appointment.',
+
+  'Cannot change the performer after booking':
+    'Performer cannot be changed after booking.',
+
+  'Cannot change the appointment time after booking':
+    'Appointment time cannot be changed. Please cancel and create a new appointment.',
+
   // Generic Supabase/Postgres errors
   'JWT expired':
     'Your session has expired. Please sign in again.',

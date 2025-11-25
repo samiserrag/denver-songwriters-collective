@@ -3,9 +3,8 @@
 -- ==========================================================
 -- These triggers enforce column-level safety not possible in RLS:
 -- 1. Prevent users from promoting themselves to admin
--- 2. Prevent performers from modifying studio prices
--- 3. Prevent performers from altering service duration
--- 4. Prevent unauthorized role changes except by admins
+-- 2. Prevent changes to studio appointments after booking
+-- 3. Prevent studio services from having price/duration changed by non-owners
 
 -- ==========================================================
 -- 0. HELPER — REUSE is_admin()
@@ -88,6 +87,11 @@ BEGIN
   SELECT studio_id INTO service_owner
   FROM studio_services
   WHERE id = OLD.id;
+
+  -- Check if service exists (service_owner will be NULL if not found)
+  IF service_owner IS NULL THEN
+    RAISE EXCEPTION 'Service not found';
+  END IF;
 
   IF is_admin() THEN
     RETURN NEW;
