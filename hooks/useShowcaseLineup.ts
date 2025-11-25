@@ -94,7 +94,7 @@ export function useSetLineup(options?: UseSetLineupOptions): UseSetLineupResult 
         return null;
       }
     },
-    [options]
+    [options?.onSuccess, options?.onError]
   );
 
   const reset = useCallback(() => {

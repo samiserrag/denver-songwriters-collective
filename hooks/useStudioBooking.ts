@@ -93,7 +93,7 @@ export function useBookStudio(options?: UseBookStudioOptions): UseBookStudioResu
         return null;
       }
     },
-    [options]
+    [options?.onSuccess, options?.onError]
   );
 
   const reset = useCallback(() => {
