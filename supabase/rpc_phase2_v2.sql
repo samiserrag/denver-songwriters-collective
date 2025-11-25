@@ -242,6 +242,9 @@ BEGIN
     RAISE EXCEPTION 'This function only works for showcase events';
   END IF;
 
+  -- Lock event row to prevent concurrent lineup updates
+  PERFORM 1 FROM events WHERE id = event_id FOR UPDATE;
+
   -- 3. Input Validation (New in v2)
   -- Check for duplicates in the input array
   IF (SELECT COUNT(*) FROM unnest(performer_ids)) > (SELECT COUNT(DISTINCT x) FROM unnest(performer_ids) x) THEN
