@@ -3,6 +3,9 @@
  * Configures Supabase clients and test utilities
  */
 
+import { assertTestEnvironment } from './utils/validateTestEnvironment';
+assertTestEnvironment();
+
 import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 

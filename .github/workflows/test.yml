@@ -1,0 +1,142 @@
+# .github/workflows/test.yml
+# Open Mic Drop - Full Test Suite CI/CD Pipeline
+# Runs 180+ tests across SQL, RPC, Hooks, Components, and E2E workflows
+
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch: # Manual trigger
+
+env:
+  NODE_VERSION: '20'
+  SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+  SUPABASE_TEST_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+  SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Utils, Mocked Hooks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:utils -- --reporter=verbose
+      - run: npm run test:hooks -- --reporter=verbose
+
+  component-tests:
+    name: Component Tests (React/JSDDOM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:components -- --reporter=verbose
+
+  sql-tests:
+    name: SQL Tests (RLS, Triggers, is_admin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:validate-env
+      - run: npm run test:sql -- --reporter=verbose
+
+  rpc-tests:
+    name: RPC Function Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: sql-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:rpc -- --reporter=verbose
+
+  concurrency-tests:
+    name: Concurrency Tests (Race Conditions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: rpc-tests
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:concurrency -- --reporter=verbose
+
+  e2e-tests:
+    name: E2E Workflow Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: rpc-tests
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:e2e -- --reporter=verbose
+
+  full-suite-coverage:
+    name: Full Suite + Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [concurrency-tests, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:coverage
+      - uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests, sql-tests, rpc-tests]
+    if: always()
+    steps:
+      - name: Report results
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Components | ${{ needs.component-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL | ${{ needs.sql-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| RPC | ${{ needs.rpc-tests.result }} |" >> $GITHUB_STEP_SUMMARY
