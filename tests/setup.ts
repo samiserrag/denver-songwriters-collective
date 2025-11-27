@@ -3,10 +3,15 @@
  * Configures Supabase clients and test utilities
  */
 
+// Load test environment variables BEFORE validation
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.test' });
+
 import { assertTestEnvironment } from './utils/validateTestEnvironment';
 assertTestEnvironment();
 
 import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // ============================================
@@ -56,16 +61,28 @@ export async function createAuthenticatedClient(
   email: string,
   password: string
 ): Promise<SupabaseClient> {
+  // Disable session persistence to avoid cross-fork JWT contamination
   const client = createClient(SUPABASE_TEST_URL, SUPABASE_TEST_ANON_KEY, {
     auth: {
-      autoRefreshToken: false,
       persistSession: false,
+      autoRefreshToken: false,
     },
+    global: {
+      headers: { 'X-Client-Testing': 'true' }
+    }
   });
 
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) {
-    throw new Error(`Failed to authenticate as ${email}: ${error.message}`);
+  // Step 1: Sign in
+  const { error: signInError } = await client.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (signInError) throw signInError;
+
+  // Step 2: Force session synchronization
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
+  if (sessionError || !sessionData?.session?.access_token) {
+    throw new Error("Failed to initialize session for " + email);
   }
 
   return client;
@@ -169,9 +186,19 @@ export async function setupTestUsers(): Promise<Record<string, string>> {
 
 let testUserIds: Record<string, string> = {};
 
+/**
+ * Ensure test users are set up (idempotent)
+ * Call this in test-specific beforeAll hooks to guarantee users exist
+ */
+export async function ensureTestSetup(): Promise<void> {
+  if (Object.keys(testUserIds).length === 0) {
+    testUserIds = await setupTestUsers();
+  }
+}
+
 beforeAll(async () => {
   // Setup test users once before all tests
-  testUserIds = await setupTestUsers();
+  await ensureTestSetup();
 });
 
 afterAll(async () => {

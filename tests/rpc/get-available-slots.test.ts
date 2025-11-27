@@ -11,6 +11,7 @@ import {
   createAuthenticatedClient,
   TEST_USERS,
   testUserIds,
+  ensureTestSetup,
 } from '../setup';
 import {
   createEventWithSlots,
@@ -27,6 +28,12 @@ describe('RPC: rpc_get_available_slots_for_event', () => {
   let testSlots: Array<{ id: string; slot_index: number }>;
 
   beforeAll(async () => {
+    await ensureTestSetup();
+
+    if (!testUserIds.performer || !testUserIds.host) {
+      throw new Error('Test user IDs not properly initialized');
+    }
+
     performerClient = await createAuthenticatedClient(
       TEST_USERS.performer.email,
       TEST_USERS.performer.password
@@ -36,6 +43,17 @@ describe('RPC: rpc_get_available_slots_for_event', () => {
     const { event, slots } = await createEventWithSlots(testUserIds.host, 5);
     testEventId = event.id;
     testSlots = slots;
+
+    // Verify event exists
+    const { data: verifyEvent, error: verifyError } = await adminClient
+      .from('events')
+      .select('id')
+      .eq('id', testEventId)
+      .single();
+
+    if (verifyError || !verifyEvent) {
+      throw new Error(`Test setup failed: event ${testEventId} not visible in DB. Error: ${verifyError?.message}`);
+    }
   });
 
   afterAll(async () => {

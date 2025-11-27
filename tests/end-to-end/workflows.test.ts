@@ -10,6 +10,7 @@ import {
   createAuthenticatedClient,
   TEST_USERS,
   testUserIds,
+  ensureTestSetup,
 } from '../setup';
 import {
   createEventWithSlots,
@@ -32,6 +33,12 @@ describe('E2E: User Workflows', () => {
     let testSlots: Array<{ id: string; slot_index: number }>;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.performer || !testUserIds.performer2 || !testUserIds.host) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       performerClient = await createAuthenticatedClient(
         TEST_USERS.performer.email,
         TEST_USERS.performer.password
@@ -46,6 +53,17 @@ describe('E2E: User Workflows', () => {
       });
       testEventId = event.id;
       testSlots = slots;
+
+      // Verify event exists
+      const { data: verifyEvent, error: verifyError } = await adminClient
+        .from('events')
+        .select('id')
+        .eq('id', testEventId)
+        .single();
+
+      if (verifyError || !verifyEvent) {
+        throw new Error(`Test setup failed: event ${testEventId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {
@@ -176,6 +194,12 @@ describe('E2E: User Workflows', () => {
     let testServiceId: string;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.performer || !testUserIds.performer2 || !testUserIds.studio) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       performerClient = await createAuthenticatedClient(
         TEST_USERS.performer.email,
         TEST_USERS.performer.password
@@ -191,6 +215,17 @@ describe('E2E: User Workflows', () => {
         price_cents: 5000,
       });
       testServiceId = service.id;
+
+      // Verify service exists
+      const { data: verifyService, error: verifyError } = await adminClient
+        .from('studio_services')
+        .select('id')
+        .eq('id', testServiceId)
+        .single();
+
+      if (verifyError || !verifyService) {
+        throw new Error(`Test setup failed: service ${testServiceId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {
@@ -302,6 +337,12 @@ describe('E2E: User Workflows', () => {
     let testSlots: Array<{ id: string }>;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.host || !testUserIds.admin || !testUserIds.performer) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       hostClient = await createAuthenticatedClient(
         TEST_USERS.host.email,
         TEST_USERS.host.password
@@ -321,6 +362,17 @@ describe('E2E: User Workflows', () => {
       });
       testShowcaseId = event.id;
       testSlots = slots;
+
+      // Verify event exists
+      const { data: verifyEvent, error: verifyError } = await adminClient
+        .from('events')
+        .select('id')
+        .eq('id', testShowcaseId)
+        .single();
+
+      if (verifyError || !verifyEvent) {
+        throw new Error(`Test setup failed: event ${testShowcaseId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {
@@ -437,6 +489,12 @@ describe('E2E: User Workflows', () => {
     let testSlots: Array<{ id: string; slot_index: number }>;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.performer || !testUserIds.performer2 || !testUserIds.host) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       performer1 = await createAuthenticatedClient(
         TEST_USERS.performer.email,
         TEST_USERS.performer.password
@@ -455,6 +513,17 @@ describe('E2E: User Workflows', () => {
       });
       testEventId = event.id;
       testSlots = slots;
+
+      // Verify event exists
+      const { data: verifyEvent, error: verifyError } = await adminClient
+        .from('events')
+        .select('id')
+        .eq('id', testEventId)
+        .single();
+
+      if (verifyError || !verifyEvent) {
+        throw new Error(`Test setup failed: event ${testEventId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {

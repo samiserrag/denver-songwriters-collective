@@ -10,6 +10,7 @@ import {
   createAuthenticatedClient,
   TEST_USERS,
   testUserIds,
+  ensureTestSetup,
 } from '../setup';
 import {
   createEventWithSlots,
@@ -32,6 +33,12 @@ describe('Concurrency: Race Condition Tests', () => {
     let testSlots: Array<{ id: string; slot_index: number }>;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.performer || !testUserIds.performer2 || !testUserIds.host) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       performerClient = await createAuthenticatedClient(
         TEST_USERS.performer.email,
         TEST_USERS.performer.password
@@ -44,6 +51,17 @@ describe('Concurrency: Race Condition Tests', () => {
       const { event, slots } = await createEventWithSlots(testUserIds.host, 5);
       testEventId = event.id;
       testSlots = slots;
+
+      // Verify event exists
+      const { data: verifyEvent, error: verifyError } = await adminClient
+        .from('events')
+        .select('id')
+        .eq('id', testEventId)
+        .single();
+
+      if (verifyError || !verifyEvent) {
+        throw new Error(`Test setup failed: event ${testEventId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {
@@ -195,6 +213,12 @@ describe('Concurrency: Race Condition Tests', () => {
     let testServiceId: string;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.performer || !testUserIds.performer2 || !testUserIds.studio) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       performerClient = await createAuthenticatedClient(
         TEST_USERS.performer.email,
         TEST_USERS.performer.password
@@ -208,6 +232,17 @@ describe('Concurrency: Race Condition Tests', () => {
         duration_min: 60,
       });
       testServiceId = service.id;
+
+      // Verify service exists
+      const { data: verifyService, error: verifyError } = await adminClient
+        .from('studio_services')
+        .select('id')
+        .eq('id', testServiceId)
+        .single();
+
+      if (verifyError || !verifyService) {
+        throw new Error(`Test setup failed: service ${testServiceId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {
@@ -334,6 +369,12 @@ describe('Concurrency: Race Condition Tests', () => {
     let testSlots: Array<{ id: string }>;
 
     beforeAll(async () => {
+      await ensureTestSetup();
+
+      if (!testUserIds.admin || !testUserIds.host) {
+        throw new Error('Test user IDs not properly initialized');
+      }
+
       adminUserClient = await createAuthenticatedClient(
         TEST_USERS.admin.email,
         TEST_USERS.admin.password
@@ -348,6 +389,17 @@ describe('Concurrency: Race Condition Tests', () => {
       });
       testEventId = event.id;
       testSlots = slots;
+
+      // Verify event exists
+      const { data: verifyEvent, error: verifyError } = await adminClient
+        .from('events')
+        .select('id')
+        .eq('id', testEventId)
+        .single();
+
+      if (verifyError || !verifyEvent) {
+        throw new Error(`Test setup failed: event ${testEventId} not visible in DB. Error: ${verifyError?.message}`);
+      }
     });
 
     afterAll(async () => {

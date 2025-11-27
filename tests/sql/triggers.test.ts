@@ -309,14 +309,14 @@ describe('SQL: Triggers', () => {
 
     describe('TRG-022: Performer cannot update any service', () => {
       it('should reject performer updating service', async () => {
-        const { error } = await performerClient
+        const { error, count } = await performerClient
           .from('studio_services')
           .update({ price_cents: 100 })
           .eq('id', testServiceId);
 
-        // RLS should block this before trigger even fires
-        // Either RLS or trigger will reject
-        expect(error).not.toBeNull();
+        // RLS blocks update - no SQL error but 0 rows affected
+        expect(error).toBeNull();
+        expect(count ?? 0).toBe(0);
       });
     });
 

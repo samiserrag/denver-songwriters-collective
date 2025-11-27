@@ -10,6 +10,7 @@ import {
   createAuthenticatedClient,
   TEST_USERS,
   testUserIds,
+  ensureTestSetup,
 } from '../setup';
 import {
   createTestService,
@@ -25,6 +26,12 @@ describe('RPC: rpc_book_studio_service', () => {
   let testServiceDuration: number;
 
   beforeAll(async () => {
+    await ensureTestSetup();
+
+    if (!testUserIds.performer || !testUserIds.performer2 || !testUserIds.studio) {
+      throw new Error('Test user IDs not properly initialized');
+    }
+
     performerClient = await createAuthenticatedClient(
       TEST_USERS.performer.email,
       TEST_USERS.performer.password
@@ -40,6 +47,17 @@ describe('RPC: rpc_book_studio_service', () => {
     });
     testServiceId = service.id;
     testServiceDuration = service.duration_min;
+
+    // Verify service exists
+    const { data: verifyService, error: verifyError } = await adminClient
+      .from('studio_services')
+      .select('id')
+      .eq('id', testServiceId)
+      .single();
+
+    if (verifyError || !verifyService) {
+      throw new Error(`Test setup failed: service ${testServiceId} not visible in DB. Error: ${verifyError?.message}`);
+    }
   });
 
   afterAll(async () => {
