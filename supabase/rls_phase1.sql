@@ -22,11 +22,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Users can read their own profile or, if admin, any profile
-CREATE POLICY select_profiles ON profiles
-  FOR SELECT USING (
-    auth.uid() = id OR is_admin()
-  );
+-- All authenticated users can read all profiles
+CREATE POLICY public_read_profiles ON profiles
+FOR SELECT
+TO authenticated
+USING (true);
 
 -- Users can update their own profile (role protection will be handled by trigger later)
 CREATE POLICY update_own_profile ON profiles
@@ -46,14 +46,56 @@ CREATE POLICY delete_admin_only ON profiles
 -- ============================================
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read events
-CREATE POLICY public_read_events ON events
-  FOR SELECT USING (true);
+-- 1. Public read policy (anyone can view events)
+CREATE POLICY "public_read_events"
+ON public.events
+FOR SELECT
+USING (true);
 
--- Hosts can manage their own events; admins can manage all
-CREATE POLICY host_manage_own_events ON events
-  FOR ALL USING (auth.uid() = host_id OR is_admin())
-  WITH CHECK (auth.uid() = host_id OR is_admin());
+-- 2. Host insert policy (only hosts/admins can create)
+CREATE POLICY "host_insert_events"
+ON public.events
+FOR INSERT
+WITH CHECK (
+  auth.uid() = host_id
+  AND EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid()
+    AND role IN ('host', 'admin')
+  )
+);
+
+-- 3. Host update policy (hosts can update own events)
+CREATE POLICY "host_update_own_events"
+ON public.events
+FOR UPDATE
+USING (auth.uid() = host_id)
+WITH CHECK (auth.uid() = host_id);
+
+-- 4. Host delete policy (hosts can delete own events)
+CREATE POLICY "host_delete_own_events"
+ON public.events
+FOR DELETE
+USING (auth.uid() = host_id);
+
+-- 5. Admin full access (admins can do anything)
+CREATE POLICY "admin_full_access_events"
+ON public.events
+FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid()
+    AND role = 'admin'
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid()
+    AND role = 'admin'
+  )
+);
 
 -- ============================================
 -- 3. EVENT_SLOTS TABLE
@@ -96,10 +138,29 @@ ALTER TABLE studio_services ENABLE ROW LEVEL SECURITY;
 CREATE POLICY public_read_services ON studio_services
   FOR SELECT USING (true);
 
--- Studios can manage their own services; admins override
-CREATE POLICY studio_manage_own_services ON studio_services
-  FOR ALL USING (studio_id = auth.uid() OR is_admin())
-  WITH CHECK (studio_id = auth.uid() OR is_admin());
+-- Studios can view their own services
+CREATE POLICY studio_select_own_services ON studio_services
+  FOR SELECT USING (studio_id = auth.uid());
+
+-- Only studios and admins can create services (role check)
+CREATE POLICY studio_insert_services ON studio_services
+  FOR INSERT WITH CHECK (
+    studio_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid()
+      AND role IN ('studio', 'admin')
+    )
+  );
+
+-- Studios can update their own services
+CREATE POLICY studio_update_own_services ON studio_services
+  FOR UPDATE USING (studio_id = auth.uid())
+  WITH CHECK (studio_id = auth.uid());
+
+-- Studios can delete their own services
+CREATE POLICY studio_delete_own_services ON studio_services
+  FOR DELETE USING (studio_id = auth.uid());
 
 -- ============================================
 -- 5. STUDIO_APPOINTMENTS TABLE
