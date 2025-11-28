@@ -52,10 +52,18 @@ export default async function HomePage() {
   const userName = user?.email ?? null;
 
   // --- HOMEPAGE DATA ---
-  const [eventsRes, performersRes, studiosRes] = await Promise.all([
+  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredStudiosRes] = await Promise.all([
     supabase
       .from("events")
       .select("*")
+      .order("is_featured", { ascending: false })
+      .order("featured_rank", { ascending: true })
+      .order("event_date", { ascending: true })
+      .limit(6),
+    supabase
+      .from("events")
+      .select("*")
+      .gte("event_date", new Date().toISOString().slice(0, 10))
       .order("event_date", { ascending: true })
       .limit(6),
     supabase
@@ -70,19 +78,23 @@ export default async function HomePage() {
       .from("profiles")
       .select("*")
       .eq("role", "studio")
-      .order("created_at", { ascending: false })
+      .order("is_featured", { ascending: false })
+      .order("featured_rank", { ascending: true })
+      .order("created_at", { ascending: false})
       .limit(6),
   ]);
 
-  const events: Event[] = (eventsRes.data ?? []).map(mapDBEventToEvent);
-  const performers: Performer[] = (performersRes.data ?? []).map(
+  const featuredEvents: Event[] = (featuredEventsRes.data ?? []).map(mapDBEventToEvent);
+  const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
+  const featuredPerformers: Performer[] = (featuredPerformersRes.data ?? []).map(
     mapDBProfileToPerformer,
   );
-  const studios: Studio[] = (studiosRes.data ?? []).map(mapDBProfileToStudio);
+  const featuredStudios: Studio[] = (featuredStudiosRes.data ?? []).map(mapDBProfileToStudio);
 
-  const hasEvents = events.length > 0;
-  const hasPerformers = performers.length > 0;
-  const hasStudios = studios.length > 0;
+  const hasFeaturedEvents = featuredEvents.length > 0;
+  const hasUpcomingEvents = upcomingEvents.length > 0;
+  const hasFeaturedPerformers = featuredPerformers.length > 0;
+  const hasFeaturedStudios = featuredStudios.length > 0;
 
   return (
     <>
@@ -157,16 +169,16 @@ export default async function HomePage() {
       </HeroSection>
 
       <PageContainer>
-        <div className="py-12 space-y-12">
-          {/* Upcoming Events */}
+        <div className="py-12 space-y-16">
+          {/* Featured Events */}
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">
-                  Upcoming events
+                <h2 className="text-2xl font-semibold text-white">
+                  Featured Events
                 </h2>
                 <p className="text-sm text-neutral-400">
-                  Showcases, open mics, and special nights in Denver.
+                  Don&apos;t miss these curated showcases and special nights.
                 </p>
               </div>
               <a
@@ -176,24 +188,24 @@ export default async function HomePage() {
                 View all events
               </a>
             </div>
-            {hasEvents ? (
-              <EventGrid events={events} />
+            {hasFeaturedEvents ? (
+              <EventGrid events={featuredEvents} />
             ) : (
               <p className="text-sm text-neutral-400">
-                No events are scheduled yet. Check back soon.
+                No featured events at this time.
               </p>
             )}
           </section>
 
-          {/* Spotlight / Newest Performers */}
+          {/* Spotlight Performers */}
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">
-                  New &amp; spotlight performers
+                <h2 className="text-2xl font-semibold text-white">
+                  Spotlight Performers
                 </h2>
                 <p className="text-sm text-neutral-400">
-                  The newest artists joining the Open Mic Drop community.
+                  Featured artists from the Denver songwriting community.
                 </p>
               </div>
               <a
@@ -203,25 +215,24 @@ export default async function HomePage() {
                 View all performers
               </a>
             </div>
-            {hasPerformers ? (
-              <PerformerGrid performers={performers} />
+            {hasFeaturedPerformers ? (
+              <PerformerGrid performers={featuredPerformers} />
             ) : (
               <p className="text-sm text-neutral-400">
-                No performers are listed yet. Once artists create profiles,
-                they&apos;ll appear here.
+                No spotlight performers at this time.
               </p>
             )}
           </section>
 
-          {/* Partner Studios */}
+          {/* Featured Studios */}
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">
-                  Partner studios
+                <h2 className="text-2xl font-semibold text-white">
+                  Featured Studios
                 </h2>
                 <p className="text-sm text-neutral-400">
-                  Book discounted studio time with our partner locations.
+                  Top-rated partner studios for your recording sessions.
                 </p>
               </div>
               <a
@@ -231,12 +242,38 @@ export default async function HomePage() {
                 View all studios
               </a>
             </div>
-            {hasStudios ? (
-              <StudioGrid studios={studios} />
+            {hasFeaturedStudios ? (
+              <StudioGrid studios={featuredStudios} />
             ) : (
               <p className="text-sm text-neutral-400">
-                No partner studios are listed yet. As studios come on board,
-                they&apos;ll appear here.
+                No featured studios at this time.
+              </p>
+            )}
+          </section>
+
+          {/* Upcoming Events */}
+          <section>
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-white">
+                  Upcoming Events
+                </h2>
+                <p className="text-sm text-neutral-400">
+                  All upcoming showcases, open mics, and special nights.
+                </p>
+              </div>
+              <a
+                href="/events"
+                className="text-sm font-medium text-[var(--color-gold)] hover:underline"
+              >
+                View all events
+              </a>
+            </div>
+            {hasUpcomingEvents ? (
+              <EventGrid events={upcomingEvents} />
+            ) : (
+              <p className="text-sm text-neutral-400">
+                No upcoming events scheduled. Check back soon.
               </p>
             )}
           </section>
