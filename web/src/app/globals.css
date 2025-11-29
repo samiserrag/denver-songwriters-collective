@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Open Mic Drop — Tailwind v4 Theme Configuration
+  Nashville Noir aesthetic: dark indigo + soft gold
+*/
+
+@theme {
+  /* ═══════════════════════════════════════════════════════════════
+     COLORS
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Background */
+  --color-background: #060F2C;
+  --color-background-light: #091747;
+  --color-background-dark: #040A1F;
+
+  /* Gold Accent */
+  --color-gold-50: #FFFBEB;
+  --color-gold-100: #FFF3C4;
+  --color-gold-200: #FFE68A;
+  --color-gold: #FFD86A;
+  --color-gold-400: #FFCA3A;
+  --color-gold-500: #F5B800;
+  --color-gold-600: #CC9900;
+
+  /* Indigo Surfaces */
+  --color-indigo-950: #0E1629;
+  --color-indigo-900: #1E1B4B;
+  --color-indigo-800: #2E2A5E;
+
+  /* Text Colors */
+  --color-warm-white: #FAF9F7;
+  --color-warm-gray: #A8A29E;
+  --color-warm-gray-light: #D6D3D1;
+  --color-warm-gray-dark: #78716C;
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-success-light: #34D399;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FBBF24;
+  --color-error: #EF4444;
+  --color-error-light: #F87171;
+
+  /* ═══════════════════════════════════════════════════════════════
+     FONTS
+     ═══════════════════════════════════════════════════════════════ */
+  --font-family-serif: var(--font-serif), "Playfair Display", Georgia, serif;
+  --font-family-sans: var(--font-sans), Inter, system-ui, sans-serif;
+
+  /* ═══════════════════════════════════════════════════════════════
+     FONT SIZES
+     ═══════════════════════════════════════════════════════════════ */
+  --font-size-display-xl: 4.5rem;
+  --font-size-display-lg: 3.75rem;
+  --font-size-display: 3rem;
+  --font-size-heading-xl: 2.25rem;
+  --font-size-heading-lg: 1.875rem;
+  --font-size-heading: 1.5rem;
+  --font-size-heading-sm: 1.25rem;
+  --font-size-body-lg: 1.125rem;
+  --font-size-body: 1rem;
+  --font-size-body-sm: 0.875rem;
+  --font-size-caption: 0.75rem;
+
+  /* ═══════════════════════════════════════════════════════════════
+     BORDER RADIUS
+     ═══════════════════════════════════════════════════════════════ */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ═══════════════════════════════════════════════════════════════
+     SHADOWS
+     ═══════════════════════════════════════════════════════════════ */
+  --shadow-glow-gold-sm: 0 0 10px rgba(255, 216, 106, 0.15);
+  --shadow-glow-gold: 0 0 20px rgba(255, 216, 106, 0.25);
+  --shadow-glow-gold-lg: 0 0 40px rgba(255, 216, 106, 0.35);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(255, 216, 106, 0.1);
+
+  /* ═══════════════════════════════════════════════════════════════
+     SPACING (only custom additions)
+     ═══════════════════════════════════════════════════════════════ */
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+  --spacing-26: 6.5rem;
+  --spacing-30: 7.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ═══════════════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════════════ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-family-sans);
+  background: linear-gradient(180deg, var(--color-background-light) 0%, var(--color-background) 100%);
+  background-attachment: fixed;
+  color: var(--color-warm-white);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(255, 216, 106, 0.3);
+  color: var(--color-warm-white);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px rgba(255, 216, 106, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════ */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.glass {
+  background-color: rgba(14, 22, 41, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-base {
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(14, 22, 41, 0.95) 0%, rgba(6, 15, 44, 0.98) 100%);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+}
+.card-base:hover {
+  border-color: rgba(255, 216, 106, 0.2);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(90deg, var(--color-gold-200), var(--color-gold), var(--color-gold-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY (Phase 10A)
+   ═══════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* Font Families */
+  --font-family-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-family-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+
+  /* Heading Scale */
+  --font-size-heading-2xl: 3.5rem;
+  --font-size-heading-xl: 2.75rem;
+  --font-size-heading-lg: 2.25rem;
+  --font-size-heading-md: 1.75rem;
+  --font-size-heading-sm: 1.35rem;
+
+  /* Body Scale */
+  --font-size-body-lg: 1.125rem;
+  --font-size-body: 1rem;
+  --font-size-body-sm: 0.875rem;
+
+  /* Line Heights */
+  --line-height-tight: 1.1;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
 }
