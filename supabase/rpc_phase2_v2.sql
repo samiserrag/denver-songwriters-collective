@@ -220,25 +220,12 @@ AS $$
 DECLARE
   is_showcase_event BOOLEAN;
   i INTEGER;
-  v_authorization_passed BOOLEAN;
-  v_slots_count INTEGER;
 BEGIN
-  -- DIAGNOSTIC LOGGING: START
-  RAISE LOG '[RPC] START event_id: %', event_id;
-  RAISE LOG '[RPC] event_id (qualified): %', rpc_admin_set_showcase_lineup.event_id;
-  RAISE LOG '[RPC] auth.uid(): %', auth.uid();
-  RAISE LOG '[RPC] is_admin(): %', is_admin();
-
   -- 1. Authorization Check
-  v_authorization_passed := (
+  IF NOT (
     is_admin() OR
     EXISTS (SELECT 1 FROM events WHERE id = event_id AND host_id = auth.uid())
-  );
-
-  -- DIAGNOSTIC LOGGING: Authorization result
-  RAISE LOG '[RPC] authorization_check: %', v_authorization_passed;
-
-  IF NOT v_authorization_passed THEN
+  ) THEN
     RAISE EXCEPTION 'Only admins or event host can set showcase lineup';
   END IF;
 
@@ -246,9 +233,6 @@ BEGIN
   SELECT is_showcase INTO is_showcase_event
   FROM events
   WHERE id = event_id;
-
-  -- DIAGNOSTIC LOGGING: Validation SELECT result
-  RAISE LOG '[RPC] validation_select result: %', is_showcase_event;
 
   IF is_showcase_event IS NULL THEN
     RAISE EXCEPTION 'Event not found';
@@ -261,13 +245,13 @@ BEGIN
   -- Lock event row to prevent concurrent lineup updates
   PERFORM 1 FROM events WHERE id = event_id FOR UPDATE;
 
-  -- 3. Input Validation
-  IF (SELECT COUNT(*) FROM unnest(performer_ids)) >
-     (SELECT COUNT(DISTINCT x) FROM unnest(performer_ids) x)
-  THEN
+  -- 3. Input Validation (New in v2)
+  -- Check for duplicates in the input array
+  IF (SELECT COUNT(*) FROM unnest(performer_ids)) > (SELECT COUNT(DISTINCT x) FROM unnest(performer_ids) x) THEN
      RAISE EXCEPTION 'Duplicate performer IDs found in lineup input';
   END IF;
 
+  -- Check that all provided IDs actually exist in profiles
   IF EXISTS (
      SELECT 1 FROM unnest(performer_ids) AS pid
      WHERE NOT EXISTS (SELECT 1 FROM profiles WHERE id = pid)
@@ -289,13 +273,6 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- DIAGNOSTIC LOGGING: Count slots before return
-  SELECT COUNT(*) INTO v_slots_count
-  FROM event_slots
-  WHERE event_slots.event_id = rpc_admin_set_showcase_lineup.event_id;
-
-  RAISE LOG '[RPC] slots_count: %', v_slots_count;
-
   -- Return all updated slots
   RETURN QUERY
   SELECT *
@@ -305,29 +282,17 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.rpc_admin_set_showcase_lineup(uuid, uuid[]) TO authenticated;
-
--- Add comment explaining the security model
-COMMENT ON FUNCTION public.rpc_admin_set_showcase_lineup IS
-'SECURITY DEFINER function to set showcase lineup. Authorization is enforced via explicit checks for admin role or event host_id match. Bypasses RLS to avoid transaction isolation issues with policy subqueries.';
-
 -- ==========================================================
 -- END OF PHASE 2 RPC FUNCTIONS (v2 - PATCHED)
 -- ==========================================================
 -- Total functions: 5
--- Security model: Mixed (SECURITY INVOKER for most, DEFINER for showcase lineup)
+-- Security model: SECURITY INVOKER (RLS-aware)
 -- Helper dependencies: is_admin() from rls_phase1.sql
 --
--- CRITICAL FIXES APPLIED (PATCH 23):
+-- CRITICAL FIXES APPLIED:
 -- 1. rpc_claim_open_mic_slot: Event-level FOR UPDATE lock prevents slot hoarding
 -- 2. rpc_book_studio_service: Service-level FOR UPDATE lock prevents double-booking
--- 3. rpc_admin_set_showcase_lineup:
---    - Input validation (duplicates, existence checks)
---    - Changed to SECURITY DEFINER to avoid RLS transaction isolation issues
---    - When SECURITY INVOKER was used, the validation SELECT would return NULL
---      due to RLS policy subqueries on profiles table interfering with transaction
---    - Authorization is still enforced via explicit is_admin() and host_id checks
+-- 3. rpc_admin_set_showcase_lineup: Input validation (duplicates, existence checks)
 --
 -- NEXT STEPS:
 -- 1. Execute this file in Supabase SQL Editor

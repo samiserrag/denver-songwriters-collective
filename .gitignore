@@ -32,7 +32,3 @@ Thumbs.db
 # Logs
 logs/
 *.log
-
-# Test environment secrets
-.env.test
-.env.test.local
