@@ -1,55 +1,48 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import Link from "next/link";
+import { PageContainer, HeroSection } from "@/components/layout";
 
-export default async function AdminDashboardPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return (
-      <div className="p-8 text-red-500">
-        You must be logged in.
-      </div>
-    );
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "admin") {
-    return (
-      <div className="p-8 text-red-500">
-        Access denied — admin only.
-      </div>
-    );
-  }
-
+export default function AdminHome() {
   return (
-    <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-8">
-        Admin Dashboard
-      </h1>
+    <>
+      <HeroSection minHeight="md">
+        <PageContainer>
+          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-6">
+            Admin Panel
+          </h1>
+          <p className="text-neutral-300 text-lg">
+            Manage platform users, performers, events, and studios.
+          </p>
+        </PageContainer>
+      </HeroSection>
 
-      <div className="flex flex-col gap-4 text-lg">
-        <Link href="/dashboard/admin/performers" className="underline text-gold-400 hover:text-gold-300">
-          Manage Featured Performers
-        </Link>
+      <PageContainer>
+        <div className="py-16 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
-        <Link href="/dashboard/admin/studios" className="underline text-gold-400 hover:text-gold-300">
-          Manage Featured Studios
-        </Link>
+          <a href="/dashboard/admin/users"
+             className="block p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+            <h2 className="text-xl font-semibold text-gold-400 mb-2">Users</h2>
+            <p className="text-neutral-300">View, promote to admin, delete, or reset roles.</p>
+          </a>
 
-        <Link href="/dashboard/admin/events" className="underline text-gold-400 hover:text-gold-300">
-          Manage Featured Events
-        </Link>
+          <a href="/dashboard/admin/performers"
+             className="block p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+            <h2 className="text-xl font-semibold text-gold-400 mb-2">Performers</h2>
+            <p className="text-neutral-300">View & edit performer profiles.</p>
+          </a>
 
-        <Link href="/dashboard/admin/users" className="underline text-gold-400 hover:text-gold-300">
-          User Directory
-        </Link>
-      </div>
-    </div>
+          <a href="/dashboard/admin/events"
+             className="block p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+            <h2 className="text-xl font-semibold text-gold-400 mb-2">Events</h2>
+            <p className="text-neutral-300">Create, update, delete events.</p>
+          </a>
+
+          <a href="/dashboard/admin/studios"
+             className="block p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
+            <h2 className="text-xl font-semibold text-gold-400 mb-2">Studios</h2>
+            <p className="text-neutral-300">Manage studio partners and services.</p>
+          </a>
+
+        </div>
+      </PageContainer>
+    </>
   );
 }
