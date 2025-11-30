@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
+import { EventSlotsPanel } from "@/components/events";
 import type { Database } from "@/lib/supabase/database.types";
 
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
+type DBEventSlot = Database["public"]["Tables"]["event_slots"]["Row"];
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
@@ -24,6 +26,13 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   }
 
   const dbEvent = event as DBEvent;
+
+  // Fetch slots for this event
+  const { data: slotsData } = await supabase.rpc("rpc_get_all_slots_for_event", {
+    event_id: id,
+  });
+
+  const slots = (slotsData as DBEventSlot[]) ?? [];
 
   return (
     <>
@@ -83,6 +92,8 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               </div>
             </div>
           </section>
+
+          <EventSlotsPanel eventId={dbEvent.id} slots={slots} />
         </div>
       </PageContainer>
     </>

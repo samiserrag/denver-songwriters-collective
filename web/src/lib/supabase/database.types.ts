@@ -88,8 +88,10 @@ export type Database = {
           description: string | null
           end_time: string
           event_date: string
+          featured_rank: number | null
           host_id: string
           id: string
+          is_featured: boolean | null
           is_showcase: boolean | null
           start_time: string
           title: string
@@ -102,8 +104,10 @@ export type Database = {
           description?: string | null
           end_time: string
           event_date: string
+          featured_rank?: number | null
           host_id: string
           id?: string
+          is_featured?: boolean | null
           is_showcase?: boolean | null
           start_time: string
           title: string
@@ -116,8 +120,10 @@ export type Database = {
           description?: string | null
           end_time?: string
           event_date?: string
+          featured_rank?: number | null
           host_id?: string
           id?: string
+          is_featured?: boolean | null
           is_showcase?: boolean | null
           start_time?: string
           title?: string
@@ -140,8 +146,10 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          featured_rank: number | null
           full_name: string | null
           id: string
+          is_featured: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
@@ -149,8 +157,10 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          featured_rank?: number | null
           full_name?: string | null
           id?: string
+          is_featured?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
@@ -158,8 +168,10 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          featured_rank?: number | null
           full_name?: string | null
           id?: string
+          is_featured?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
