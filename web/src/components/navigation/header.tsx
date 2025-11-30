@@ -11,11 +11,6 @@ import { useAuth } from "@/lib/auth/useAuth";
 
 interface HeaderProps {
   className?: string;
-  /**
-   * Optional override for logged-in state.
-   * If omitted, Header derives state from Supabase auth.
-   */
-  isLoggedIn?: boolean;
 }
 
 const navLinks = [
@@ -24,14 +19,16 @@ const navLinks = [
   { href: "/studios", label: "Studios" },
 ];
 
-export function Header({ className, isLoggedIn: isLoggedInProp }: HeaderProps) {
+export function Header({ className }: HeaderProps) {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
-
-  const isLoggedIn =
-    typeof isLoggedInProp === "boolean" ? isLoggedInProp : !!user;
-
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  // Prevent hydration mismatch by waiting for client mount
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = React.useCallback(async () => {
     await signOut();
@@ -45,93 +42,92 @@ export function Header({ className, isLoggedIn: isLoggedInProp }: HeaderProps) {
         "sticky top-0 z-50 w-full",
         "border-b border-white/5",
         "bg-[var(--color-background)]/80 backdrop-blur-md",
-        className
+        className,
       )}
       role="banner"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50 rounded"
-          >
-            <span className="font-[var(--font-family-serif)] text-xl">
-              <span className="text-[var(--color-gold)] italic">OPEN MIC</span>{" "}
-              <span className="text-[var(--color-warm-white)]">DROP</span>
-            </span>
-          </Link>
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="text-xl font-semibold text-[var(--color-gold)] hover:opacity-80 transition-opacity"
+        >
+          Open Mic Drop
+        </Link>
 
-          <nav
-            className="hidden md:flex items-center gap-8"
-            role="navigation"
-            aria-label="Main navigation"
-          >
-            {navLinks.map((link) => (
-              <NavLink key={link.href} href={link.href}>
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <NavLink key={link.href} href={link.href}>
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
 
-          <div className="hidden md:flex items-center gap-3">
-            {!loading && isLoggedIn && user && (
-              <span className="text-xs text-[var(--color-warm-gray)]">
-                Logged in as{" "}
-                <span className="text-[var(--color-warm-white)]">
-                  {user.email}
-                </span>
-              </span>
-            )}
-
-            {isLoggedIn ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                type="button"
-                onClick={handleLogout}
-              >
+        {/* Auth Buttons - Only render after mount to avoid hydration mismatch */}
+        <div className="hidden md:flex items-center gap-3">
+          {!mounted || loading ? (
+            // Placeholder during loading - matches server render
+            <div className="w-20 h-9" />
+          ) : user ? (
+            <>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleLogout}>
                 Log out
               </Button>
-            ) : (
-              <Button variant="secondary" size="sm" asChild>
+            </>
+          ) : (
+            <>
+              <Button asChild variant="ghost" size="sm">
                 <Link href="/login">Log in</Link>
               </Button>
-            )}
-          </div>
+              <Button asChild variant="primary" size="sm">
+                <Link href="/signup">Sign up</Link>
+              </Button>
+            </>
+          )}
+        </div>
 
-          <button
-            type="button"
-            className={cn(
-              "md:hidden p-2 rounded-lg",
-              "text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] hover:bg-white/5",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50"
-            )}
-            onClick={() => setMobileMenuOpen(true)}
-            aria-expanded={mobileMenuOpen}
-            aria-label="Open navigation menu"
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden p-2 text-[var(--color-warm-white)]"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            {mobileMenuOpen ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            ) : (
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M4 6h16M4 12h16M4 18h16"
               />
-            </svg>
-          </button>
-        </div>
+            )}
+          </svg>
+        </button>
       </div>
 
+      {/* Mobile Menu */}
       <MobileMenu
-        open={mobileMenuOpen}
+        isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        links={navLinks}
-        isLoggedIn={isLoggedIn}
+        navLinks={navLinks}
+        isLoggedIn={mounted && !loading && !!user}
+        onLogout={handleLogout}
       />
     </header>
   );
