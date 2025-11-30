@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { signUpWithEmail } from "@/lib/auth/signUp";
 import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
 import Link from "next/link";
@@ -17,6 +17,7 @@ function SignupForm() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,17 +30,16 @@ function SignupForm() {
 
     setLoading(true);
 
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signUp({ email, password });
+    const result = await signUpWithEmail(email, password);
 
-    setLoading(false);
-
-    if (error) {
-      setError(error.message || "Unable to sign up.");
+    if (!result.ok) {
+      setError(result.error || "Signup failed.");
+      setLoading(false);
       return;
     }
 
-    router.push(redirectTo);
+    // Redirect to confirmation sent page
+    router.push(`/auth/confirm-sent?email=${encodeURIComponent(email)}`);
   }
 
   return (
@@ -48,7 +48,8 @@ function SignupForm() {
         Sign up
       </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {!submitted ? (
+        <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <label className="block text-sm text-[var(--color-warm-gray-light)]">Email</label>
           <input
@@ -99,13 +100,24 @@ function SignupForm() {
           {loading ? "Creating account..." : "Create account"}
         </Button>
       </form>
+      ) : (
+        <div className="text-center py-8 text-[var(--color-gold-300)]">
+          <h2 className="text-xl font-semibold mb-2">Check your email</h2>
+          <p className="text-[var(--color-warm-gray-light)]">
+            We've sent a confirmation link to <strong className="text-[var(--color-warm-white)]">{email}</strong>.
+            Click the link to activate your account.
+          </p>
+        </div>
+      )}
 
-      <p className="mt-6 text-center text-sm text-[var(--color-warm-gray)]">
-        Already have an account?{" "}
-        <Link href="/login" className="text-[var(--color-gold)] hover:underline">
-          Log in
-        </Link>
-      </p>
+      {!submitted && (
+        <p className="mt-6 text-center text-sm text-[var(--color-warm-gray)]">
+          Already have an account?{" "}
+          <Link href="/login" className="text-[var(--color-gold)] hover:underline">
+            Log in
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -113,9 +125,11 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <PageContainer as="main" className="min-h-screen flex items-center justify-center">
-      <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
-        <SignupForm />
-      </Suspense>
+      <div className="mx-auto max-w-md px-4 py-12">
+        <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
+          <SignupForm />
+        </Suspense>
+      </div>
     </PageContainer>
   );
 }

@@ -4,13 +4,17 @@ import * as React from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth/useAuth";
 import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
+import { toast } from "sonner";
 import Link from "next/link";
+import { signInWithGoogle } from "@/lib/auth/google";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { resendConfirmationEmail } = useAuth();
   const redirectTo = searchParams.get("redirectTo") ?? "/";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -28,6 +32,15 @@ function LoginForm() {
     setLoading(false);
 
     if (error) {
+      if (error.message?.includes("Email not confirmed")) {
+        setError("You must confirm your email before logging in. Check your inbox.");
+        toast.error(
+          error.message.includes("email") && error.message.includes("confirm")
+            ? "Please confirm your email before logging in."
+            : error.message
+        );
+        return;
+      }
       setError(error.message || "Unable to sign in.");
       return;
     }
@@ -67,7 +80,25 @@ function LoginForm() {
         </div>
 
         {error && (
-          <p className="text-sm text-[var(--color-error)]">{error}</p>
+          <div className="space-y-2">
+            <p className="text-sm text-[var(--color-error)]">{error}</p>
+            {error === "You must confirm your email before logging in. Check your inbox." && (
+              <button
+                type="button"
+                className="text-sm text-[var(--color-gold)] underline hover:text-[var(--color-gold-200)]"
+                onClick={async () => {
+                  const res = await resendConfirmationEmail(email);
+                  if (res.success) {
+                    toast.success("Confirmation email sent!");
+                  } else {
+                    toast.error(res.error || "Failed to send email");
+                  }
+                }}
+              >
+                Resend confirmation email
+              </button>
+            )}
+          </div>
         )}
 
         <Button
@@ -80,6 +111,31 @@ function LoginForm() {
           {loading ? "Logging in..." : "Log in"}
         </Button>
       </form>
+
+      <div className="mt-4 space-y-2 text-center">
+        <Link
+          href="/auth/reset-request"
+          className="text-sm text-blue-400 hover:underline"
+        >
+          Forgot your password?
+        </Link>
+        <br />
+        <Link
+          href="/login/magic"
+          className="text-sm text-blue-400 hover:underline"
+        >
+          Log in with a magic link
+        </Link>
+      </div>
+
+      <button
+        type="button"
+        onClick={signInWithGoogle}
+        className="w-full mt-4 bg-white text-black py-2 rounded border border-gray-300 hover:bg-gray-100"
+      >
+        Continue with Google
+      </button>
+
 
       <p className="mt-6 text-center text-sm text-[var(--color-warm-gray)]">
         Need an account?{" "}
@@ -94,9 +150,11 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <PageContainer as="main" className="min-h-screen flex items-center justify-center">
-      <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
-        <LoginForm />
-      </Suspense>
+      <div className="mx-auto max-w-md px-4 py-12">
+        <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
+          <LoginForm />
+        </Suspense>
+      </div>
     </PageContainer>
   );
 }

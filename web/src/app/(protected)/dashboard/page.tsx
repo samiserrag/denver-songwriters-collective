@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { PerformerAvatar } from "@/components/performers";
+import { WelcomeToast } from "./WelcomeToast";
+import { Suspense } from "react";
 import type { Database } from "@/lib/supabase/database.types";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -8,13 +10,11 @@ type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
 
-  // Fetch the logged-in user
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    // Middleware should prevent this, but add safety
     return (
       <PageContainer className="py-24 text-center text-red-400">
         <p>Not authenticated.</p>
@@ -22,7 +22,6 @@ export default async function DashboardPage() {
     );
   }
 
-  // Fetch the user's profile
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
@@ -33,6 +32,9 @@ export default async function DashboardPage() {
 
   return (
     <>
+      <Suspense fallback={null}>
+        <WelcomeToast />
+      </Suspense>
       <HeroSection minHeight="md">
         <PageContainer>
           <div className="flex flex-col md:flex-row items-center gap-8">
@@ -55,8 +57,6 @@ export default async function DashboardPage() {
 
       <PageContainer>
         <div className="py-12 space-y-10">
-
-          {/* Quick Actions */}
           <section>
             <h2 className="text-2xl font-semibold text-white mb-4">
               Quick Actions
@@ -79,7 +79,6 @@ export default async function DashboardPage() {
                 </a>
               </li>
 
-              {/* Role-based items */}
               {p?.role === "performer" && (
                 <li>
                   <a href="/events" className="text-gold-400 hover:underline">
@@ -113,7 +112,6 @@ export default async function DashboardPage() {
               )}
             </ul>
           </section>
-
         </div>
       </PageContainer>
     </>

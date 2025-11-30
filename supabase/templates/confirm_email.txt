@@ -1,0 +1,5 @@
+Welcome to Open Mic Drop!
+Click to confirm your email:
+{{ .ConfirmationURL }}
+Thanks,
+Open Mic Drop Team

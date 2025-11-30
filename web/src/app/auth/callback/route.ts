@@ -6,7 +6,9 @@ import type { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const isSignup = searchParams.get("type") === "signup";
+  const isMagic = searchParams.get("type") === "magic";
+  const isGoogle = searchParams.get("type") === "google";
 
   if (code) {
     const cookieStore = await cookies();
@@ -30,9 +32,29 @@ export async function GET(request: NextRequest) {
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const nextParam = searchParams.get("next");
+      const type = searchParams.get("type");
+
+      let next = "/dashboard";
+
+      if (nextParam) next = nextParam;
+      if (type === "signup") next = "/dashboard?welcome=true";
+
+      const redirectUrl = new URL(next, origin);
+
+      if (isMagic) {
+        redirectUrl.searchParams.set("magic", "1");
+      }
+
+      const isGoogle = searchParams.get("type") === "google";
+
+      if (isGoogle) {
+        redirectUrl.searchParams.set("google", "1");
+      }
+
+      return NextResponse.redirect(redirectUrl);
     }
   }
 

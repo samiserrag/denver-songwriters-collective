@@ -10,6 +10,7 @@ export interface UseAuthResult {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  resendConfirmationEmail: (email: string) => Promise<{ error?: string; success?: boolean }>;
 }
 
 export function useAuth(): UseAuthResult {
@@ -52,5 +53,18 @@ export function useAuth(): UseAuthResult {
     await supabase.auth.signOut();
   }, []);
 
-  return { user, loading, signOut };
+  const resendConfirmationEmail = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { success: true };
+  }, []);
+
+  return { user, loading, signOut, resendConfirmationEmail };
 }
