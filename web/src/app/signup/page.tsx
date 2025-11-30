@@ -7,6 +7,9 @@ import { signUpWithEmail } from "@/lib/auth/signUp";
 import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
 import Link from "next/link";
+import { toast } from "sonner";
+import { signInWithGoogle } from "@/lib/auth/google";
+import { sendMagicLink } from "@/lib/auth/magic";
 
 function SignupForm() {
   const router = useRouter();
@@ -111,12 +114,32 @@ function SignupForm() {
       )}
 
       {!submitted && (
-        <p className="mt-6 text-center text-sm text-[var(--color-warm-gray)]">
-          Already have an account?{" "}
-          <Link href="/login" className="text-[var(--color-gold)] hover:underline">
-            Log in
-          </Link>
-        </p>
+        <div className="mt-6 space-y-3 text-center">
+          <button
+            onClick={async () => {
+              const result = await sendMagicLink(email);
+              if (!result.ok) toast.error(result.error || "Unable to send magic link.");
+              else toast.success("Magic link sent! Check your email.");
+            }}
+            className="text-sm text-blue-300 hover:underline w-full"
+          >
+            Sign up with a magic link
+          </button>
+
+          <button
+            onClick={() => signInWithGoogle()}
+            className="w-full rounded bg-white/90 text-black py-2 font-semibold"
+          >
+            Continue with Google
+          </button>
+
+          <p className="text-sm text-gray-400">
+            Already have an account?{" "}
+            <Link href="/login" className="text-[var(--color-gold)] hover:underline">
+              Log in
+            </Link>
+          </p>
+        </div>
       )}
     </div>
   );
