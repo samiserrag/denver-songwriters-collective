@@ -106,7 +106,7 @@ export default async function DashboardPage() {
 
               {p?.role === "admin" && (
                 <li>
-                  <<a href="/dashboard/admin" className="text-gold-400 hover:underline">
+                  <a href="/dashboard/admin" className="text-gold-400 hover:underline">
                     Admin Panel
                   </a>
                 </li>

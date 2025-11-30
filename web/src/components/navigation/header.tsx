@@ -9,15 +9,16 @@ import { NavLink } from "./nav-link";
 import { MobileMenu } from "./mobile-menu";
 import { useAuth } from "@/lib/auth/useAuth";
 
-interface HeaderProps {
-  className?: string;
-}
-
 const navLinks = [
   { href: "/events", label: "Events" },
   { href: "/performers", label: "Performers" },
   { href: "/studios", label: "Studios" },
+  { href: "/about", label: "About" },
 ];
+
+interface HeaderProps {
+  className?: string;
+}
 
 export function Header({ className }: HeaderProps) {
   const router = useRouter();
@@ -25,7 +26,6 @@ export function Header({ className }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
 
-  // Prevent hydration mismatch by waiting for client mount
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -47,15 +47,10 @@ export function Header({ className }: HeaderProps) {
       role="banner"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="text-xl font-semibold text-[var(--color-gold)] hover:opacity-80 transition-opacity"
-        >
+        <Link href="/" className="text-xl font-semibold text-[var(--color-gold)] hover:opacity-80 transition-opacity">
           Open Mic Drop
         </Link>
 
-        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <NavLink key={link.href} href={link.href}>
@@ -64,10 +59,8 @@ export function Header({ className }: HeaderProps) {
           ))}
         </nav>
 
-        {/* Auth Buttons - Only render after mount to avoid hydration mismatch */}
         <div className="hidden md:flex items-center gap-3">
           {!mounted || loading ? (
-            // Placeholder during loading - matches server render
             <div className="w-20 h-9" />
           ) : user ? (
             <>
@@ -90,45 +83,22 @@ export function Header({ className }: HeaderProps) {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden p-2 text-[var(--color-warm-white)]"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {mobileMenuOpen ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             )}
           </svg>
         </button>
       </div>
 
-      {/* Mobile Menu */}
-      <MobileMenu
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        navLinks={navLinks}
-        isLoggedIn={mounted && !loading && !!user}
-        onLogout={handleLogout}
-      />
+      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} links={navLinks} />
     </header>
   );
 }
