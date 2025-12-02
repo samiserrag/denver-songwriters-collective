@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-
-const supabase = createSupabaseBrowserClient();
 
 export interface UseAuthResult {
   user: User | null;
@@ -14,6 +12,7 @@ export interface UseAuthResult {
 }
 
 export function useAuth(): UseAuthResult {
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,11 +46,11 @@ export function useAuth(): UseAuthResult {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  }, []);
+  }, [supabase]);
 
   const resendConfirmationEmail = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resend({
@@ -64,7 +63,7 @@ export function useAuth(): UseAuthResult {
     }
 
     return { success: true };
-  }, []);
+  }, [supabase]);
 
   return { user, loading, signOut, resendConfirmationEmail };
 }
