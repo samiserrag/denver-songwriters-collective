@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UserDirectoryTable } from "@/components/admin";
 import type { Database } from "@/lib/supabase/database.types";
 
+export const dynamic = "force-dynamic";
+
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export default async function AdminUsersPage() {

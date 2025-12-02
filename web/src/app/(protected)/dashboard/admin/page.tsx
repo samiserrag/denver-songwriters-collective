@@ -1,5 +1,8 @@
 import { PageContainer, HeroSection } from "@/components/layout";
 
+// Prevent static prerendering - this page requires runtime env vars
+export const dynamic = "force-dynamic";
+
 export default function AdminHome() {
   return (
     <>

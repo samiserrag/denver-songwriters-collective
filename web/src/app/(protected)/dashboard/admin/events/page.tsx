@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventSpotlightTable } from "@/components/admin";
 import type { Database } from "@/lib/supabase/database.types";
 
+export const dynamic = "force-dynamic";
+
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 
 export default async function AdminEventsPage() {
