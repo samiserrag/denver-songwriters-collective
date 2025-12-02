@@ -6,6 +6,7 @@ import type { EventWithVenue } from "@/types/db";
 import EventCard from "@/components/EventCard";
 import OpenMicFilters from "@/components/OpenMicFilters";
 import MapViewButton from "@/components/MapViewButton";
+export const dynamic = "force-dynamic";
 
 type DBEvent = {
   id: string;

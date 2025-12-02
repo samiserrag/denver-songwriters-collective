@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { PerformerAvatar } from "@/components/performers";
 import type { Database } from "@/lib/supabase/database.types";
+export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 

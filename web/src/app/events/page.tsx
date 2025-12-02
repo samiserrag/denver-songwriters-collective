@@ -4,6 +4,8 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 
 function mapDBEventToEvent(dbEvent: DBEvent): Event {

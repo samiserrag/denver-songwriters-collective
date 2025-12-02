@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { EventSlotsPanel } from "@/components/events";
 import type { Database } from "@/lib/supabase/database.types";
+export const dynamic = "force-dynamic";
 
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 type DBEventSlot = Database["public"]["Tables"]["event_slots"]["Row"];

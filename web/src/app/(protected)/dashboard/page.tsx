@@ -5,6 +5,8 @@ import { WelcomeToast } from "./WelcomeToast";
 import { Suspense } from "react";
 import type { Database } from "@/lib/supabase/database.types";
 
+export const dynamic = "force-dynamic";
+
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export default async function DashboardPage() {

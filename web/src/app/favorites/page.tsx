@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
 
 export default async function FavoritesPage() {
   const supabase = await createSupabaseServerClient();

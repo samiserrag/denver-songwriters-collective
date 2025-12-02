@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import EventCard from "@/components/EventCard";
 import type { Event as EventType } from "@/types";
+export const dynamic = "force-dynamic";
 
 type DBEvent = {
   id: string;

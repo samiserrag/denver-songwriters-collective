@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import BookStudioForm from "@/components/booking/BookStudioForm";
+export const dynamic = "force-dynamic";
 
 interface BookingPageProps {
   params: Promise<{ id: string; serviceId: string }>;

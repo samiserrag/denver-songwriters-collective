@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { EventWithVenue } from "@/types/db";
 import Link from "next/link";
 import { highlight, escapeHtml } from "@/lib/highlight";
+export const dynamic = "force-dynamic";
 
 interface EventPageProps {
   params: Promise<{ slug: string }>;

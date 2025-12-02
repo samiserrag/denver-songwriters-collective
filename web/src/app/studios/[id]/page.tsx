@@ -4,6 +4,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import { ServiceCard } from "@/components/studios";
 import type { Database } from "@/lib/supabase/database.types";
 import type { StudioService } from "@/types";
+export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 type DBService = Database["public"]["Tables"]["studio_services"]["Row"];
