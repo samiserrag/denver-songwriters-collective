@@ -62,6 +62,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Fetch user profile to determine onboarding status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const needsOnboarding = !profile?.role;
+
+  const onboardingPaths = ["/onboarding/role"];
+
+  if (needsOnboarding && !onboardingPaths.includes(pathname)) {
+    const redirectUrl = new URL("/onboarding/role", req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   return res;
 }
 

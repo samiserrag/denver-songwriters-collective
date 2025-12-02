@@ -12,7 +12,7 @@ interface EventCardProps {
   className?: string;
 }
 
-function getDateInitials(date: string | undefined): string {
+function getDateInitials(date: string | null | undefined): string {
   if (!date) return "LIVE";
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return "LIVE";
@@ -36,6 +36,11 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
   const wrapperProps = onClick
     ? { onClick: handleClick, role: "button", tabIndex: 0 }
     : { href: `/events/${event.id}` };
+
+  // Ensure venue renders as a simple string (name) for UI components
+  const venueDisplay: string = typeof event.venue === "object" && event.venue && "name" in event.venue
+    ? (event.venue as any).name ?? ""
+    : (typeof event.venue === "string" ? event.venue : "") ?? "";
 
   return (
     <CardWrapper
@@ -90,7 +95,7 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
           </div>
 
           <div className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
-            {event.venue}
+            {venueDisplay}
             {event.location && ` — ${event.location}`}
           </div>
 

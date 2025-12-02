@@ -1,15 +1,49 @@
 export type EventType = "showcase" | "open_mic" | "song_circle" | "critique_circle";
 
+export interface Venue {
+  id: string;
+  name?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  map_link?: string | null;
+  website?: string | null;
+  phone?: string | null;
+}
+
 export interface Event {
   id: string;
+  slug?: string | null;
   title: string;
-  date: string;
-  time: string;
-  venue: string;
+  description?: string | null;
+  host_id?: string | null;
+  venue_id?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
+  event_date?: string | null;
+  day_of_week?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  // Support both snake_case and camelCase event type fields depending on source
+  event_type?: "open_mic" | "showcase" | "song_circle" | "workshop" | "other" | string;
+  eventType?: "open_mic" | "showcase" | "song_circle" | "workshop" | "other" | string;
+  // Normalized UI fields
+  date?: string | null;
+  time?: string | null;
+  imageUrl?: string | null;
+  venue?: string | Venue | null; // can be a legacy string or joined Venue object
   location?: string;
-  description?: string;
-  imageUrl?: string;
-  eventType?: EventType;
+  recurrence_rule?: string | null;
+  status?: string | null;
+  notes?: string | null;
+  region_id?: number | null;
+  is_showcase?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface EventWithVenue extends Event {
+  venue?: Venue | null;
 }
 
 export interface SocialLinks {
