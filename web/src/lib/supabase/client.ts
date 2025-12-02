@@ -37,7 +37,7 @@ export function createSupabaseBrowserClient(): SupabaseClient {
         );
       },
     };
-    return new Proxy({} as SupabaseClient, handler);
+    return new Proxy({}, handler) as unknown as SupabaseClient;
   }
 
   return createClient(url, key, {
