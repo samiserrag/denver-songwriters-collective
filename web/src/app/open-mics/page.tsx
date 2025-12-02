@@ -21,9 +21,10 @@ type DBEvent = {
     address?: string | null;
     city?: string | null;
     state?: string | null;
-    website?: string | null;
+    website_url?: string | null;
     phone?: string | null;
     map_link?: string | null;
+    google_maps_url?: string | null;
   } | null;
   // fallback denormalized fields (if present)
   venue_name?: string | null;
@@ -85,7 +86,7 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     time: formatTime(e),
     venue: venueName ?? "TBA",
     location: location || undefined,
-    mapUrl: (e.venues as any)?.map_link ?? e.venues?.website ?? undefined,
+    mapUrl: e.venues?.map_link ?? e.venues?.google_maps_url ?? e.venues?.website_url ?? undefined,
     slug: e.slug ?? undefined,
     eventType: "open_mic",
   };
@@ -147,7 +148,7 @@ export default async function OpenMicsPage({
   let query = supabase
     .from("events")
     .select(
-      `id,slug,title,description,event_date,start_time,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website,phone,map_link),status,notes`,
+      `id,slug,title,description,event_date,start_time,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`,
       { count: "exact" }
     )
     .eq("event_type", "open_mic");
@@ -157,7 +158,9 @@ export default async function OpenMicsPage({
   }
 
   if (activeOnly) {
-    query = query.not("status", "in", ["cancelled", "inactive", "needs_verification"]);
+    // Exclude cancelled/inactive statuses. Also include rows where status IS NULL (legacy data)
+    // Using .or() to match: status NOT IN list OR status IS NULL
+    query = query.or("status.not.in.(cancelled,inactive,needs_verification),status.is.null");
   }
 
   // City filtering: resolve venue IDs for the selected city, then filter by venue_id
@@ -189,16 +192,10 @@ export default async function OpenMicsPage({
 
   if (safeSearch) {
     const like = `%${safeSearch}%`;
-    // Fallback to ilike across several fields
+    // Fallback to ilike across several fields (excluding joined relation fields which aren't supported in .or())
     query = query.or(
-      `title.ilike.${like},venue_name.ilike.${like},notes.ilike.${like},day_of_week.ilike.${like},recurrence_rule.ilike.${like},venues.city.ilike.${like}`
+      `title.ilike.${like},venue_name.ilike.${like},notes.ilike.${like},day_of_week.ilike.${like},recurrence_rule.ilike.${like}`
     );
-    // Use simple ordering instead of similarity expression
-    try {
-      query = query.order("title", { ascending: true });
-    } catch {
-      /* ignore ordering errors at build time */
-    }
   }
 
   // pagination
