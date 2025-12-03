@@ -17,6 +17,10 @@ env:
   SUPABASE_TEST_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
   SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
 
+defaults:
+  run:
+    working-directory: web
+
 jobs:
   unit-tests:
     name: Unit Tests (Utils, Mocked Hooks)
@@ -28,6 +32,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:utils -- --reporter=verbose
       - run: npm run test:hooks -- --reporter=verbose
@@ -43,6 +48,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:components -- --reporter=verbose
 
@@ -57,6 +63,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:validate-env
       - run: npm run test:sql -- --reporter=verbose
@@ -72,6 +79,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:rpc -- --reporter=verbose
 
@@ -87,6 +95,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:concurrency -- --reporter=verbose
 
@@ -102,6 +111,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:e2e -- --reporter=verbose
 
@@ -117,11 +127,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run test:coverage
       - uses: codecov/codecov-action@v4
         with:
-          files: ./coverage/lcov.info
+          files: ./web/coverage/lcov.info
           fail_ci_if_error: false
         continue-on-error: true
 
