@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { EventWithVenue } from "@/types/db";
 import Link from "next/link";
 import { highlight, escapeHtml } from "@/lib/highlight";
+import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 export const dynamic = "force-dynamic";
 
 interface EventPageProps {
@@ -40,6 +41,16 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
   }
 
   const venue = event.venue;
+  const mapUrl =
+    venue?.google_maps_url ??
+    venue?.map_link ??
+    (venue?.address
+      ? `https://maps.google.com/?q=${encodeURIComponent([venue.address, venue.city, venue.state].filter(Boolean).join(", "))}`
+      : undefined);
+
+  const humanRecurrence = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
+  const startFormatted = formatTimeToAMPM(event.start_time ?? null);
+  const endFormatted = formatTimeToAMPM((event as any).end_time ?? null);
 
   const searchQuery = (searchParamsObj?.search ?? "").trim();
   // Prepare highlighted HTML (safe — highlight/escapeHtml escape input)
@@ -71,9 +82,9 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             <p className="text-[var(--color-warm-gray-light)]">
               {venue.city}, {venue.state}
             </p>
-            {venue.map_link ? (
+            {mapUrl ? (
               <a
-                href={venue.map_link}
+                href={mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block mt-1 px-3 py-1 rounded-full bg-white/5 text-[#00FFCC] hover:bg-[#00FFCC]/10 transition"
@@ -88,11 +99,11 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           <h2 className="text-lg font-medium text-white">Details</h2>
           <div className="text-[var(--color-warm-gray-light)] space-y-1">
             {event.day_of_week && <p><strong className="text-white">Day:</strong> {event.day_of_week}</p>}
-            {event.start_time && <p><strong className="text-white">Starts:</strong> {event.start_time}</p>}
-            {event.end_time && <p><strong className="text-white">Ends:</strong> {event.end_time}</p>}
-            {event.recurrence_rule && (
-              <p><strong className="text-white">Recurrence:</strong> {event.recurrence_rule}</p>
-            )}
+            {startFormatted && <p><strong className="text-white">Starts:</strong> {startFormatted}</p>}
+            {endFormatted && endFormatted !== "TBD" && <p><strong className="text-white">Ends:</strong> {endFormatted}</p>}
+            {humanRecurrence ? (
+              <p><strong className="text-white">Recurrence:</strong> {humanRecurrence}</p>
+            ) : null}
             {event.status && <p><strong className="text-white">Status:</strong> {event.status}</p>}
           </div>
         </div>

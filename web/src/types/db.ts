@@ -579,6 +579,8 @@ export type EventWithVenue = {
     state?: string | null
     map_link?: string | null
     website?: string | null
+    website_url?: string | null
+    google_maps_url?: string | null
     phone?: string | null
   } | null
 

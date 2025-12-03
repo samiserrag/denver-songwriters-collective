@@ -129,6 +129,9 @@ export default async function HomePage() {
                   <Button asChild variant="secondary" size="lg">
                     <Link href="/dashboard/appointments">Your Appointments</Link>
                   </Button>
+                  <Button asChild variant="outline" size="lg">
+                    <Link href="/open-mics">Find Open Mics</Link>
+                  </Button>
                 </>
               ) : (
                 <>
@@ -137,6 +140,9 @@ export default async function HomePage() {
                   </Button>
                   <Button asChild variant="secondary" size="lg">
                     <Link href="/performers">Meet the Artists</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg">
+                    <Link href="/open-mics">Find Open Mics</Link>
                   </Button>
                 </>
               )}

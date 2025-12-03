@@ -6,6 +6,8 @@ import type { EventWithVenue } from "@/types/db";
 import EventCard from "@/components/EventCard";
 import OpenMicFilters from "@/components/OpenMicFilters";
 import MapViewButton from "@/components/MapViewButton";
+import CompactListItem from "@/components/CompactListItem";
+import { humanizeRecurrence, formatTimeToAMPM, dayOrder } from "@/lib/recurrenceHumanizer";
 export const dynamic = "force-dynamic";
 
 type DBEvent = {
@@ -14,7 +16,9 @@ type DBEvent = {
   description?: string | null;
   event_date?: string | null;
   start_time?: string | null;
+  end_time?: string | null;
   recurrence_rule?: string | null;
+  day_of_week?: string | null;
   venue_id?: string | null;
   // joined venue fields (may be null if not present)
   venues?: {
@@ -70,24 +74,38 @@ function formatTime(dbEvent: DBEvent) {
 }
 
 function mapDBEventToEvent(e: DBEvent): EventType {
-  const venueName =
-    e.venues?.name ?? e.venue_name ?? (e.venue_id ? "Venue" : "TBA");
+  const venueName = e.venues?.name ?? e.venue_name ?? (e.venue_id ? "Venue" : "TBA");
+  const venueCity = e.venues?.city ?? null;
+  const venueState = e.venues?.state ?? null;
   const addressParts = [
     e.venues?.address ?? e.venue_address,
-    e.venues?.city,
-    e.venues?.state,
+    venueCity,
+    venueState,
   ].filter(Boolean);
   const location = addressParts.join(", ");
+
+  const mapUrl =
+    e.venues?.google_maps_url ??
+    e.venues?.map_link ??
+    e.venues?.website_url ??
+    (addressParts.length ? `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}` : undefined);
 
   const _evt: any = {
     id: e.id,
     title: e.title,
     description: e.description ?? undefined,
     date: e.event_date ?? "",
-    time: formatTime(e),
+    start_time: e.start_time ?? null,
+    end_time: e.end_time ?? null,
+    recurrence_rule: e.recurrence_rule ?? null,
+    day_of_week: e.day_of_week ?? null,
     venue: venueName ?? "TBA",
+    venue_name: venueName ?? null,
+    venue_city: venueCity,
+    venue_state: venueState,
+    venue_address: e.venue_address ?? null,
     location: location || undefined,
-    mapUrl: e.venues?.map_link ?? e.venues?.google_maps_url ?? e.venues?.website_url ?? undefined,
+    mapUrl,
     slug: e.slug ?? undefined,
     eventType: "open_mic",
   };
@@ -97,9 +115,11 @@ function mapDBEventToEvent(e: DBEvent): EventType {
 export default async function OpenMicsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string; active?: string; search?: string; city?: string; page?: string }>;
+  searchParams: Promise<{ day?: string; active?: string; search?: string; city?: string; page?: string; view?: string }>;
 }) {
   const params = await searchParams;
+
+  const view = params?.view ?? "list";
 
   const allowedDays = [
     "Sunday",
@@ -202,11 +222,42 @@ export default async function OpenMicsPage({
   // pagination
   query = query.range(from, to);
 
-  const { data: dbEvents, error, count } = await query.order("day_of_week", {
-    ascending: true,
-  });
+  const { data: dbEvents, error, count } = await query;
 
-  const events = ((dbEvents ?? []) as DBEvent[]).map(mapDBEventToEvent);
+  // Map and sort results client-side: day_of_week (Sun->Sat), start_time, then city
+  const mapped = ((dbEvents ?? []) as DBEvent[]).map(mapDBEventToEvent) as any[];
+
+  function parseTimeToMinutes(t?: string | null) {
+    if (!t) return 24 * 60;
+    try {
+      const timeOnly = t.includes("T") ? t.split("T")[1] : t;
+      const [hhStr, mmStr] = timeOnly.split(":");
+      const hh = parseInt(hhStr ?? "24", 10);
+      const mm = parseInt(mmStr ?? "0", 10);
+      if (Number.isNaN(hh)) return 24 * 60;
+      return hh * 60 + (Number.isNaN(mm) ? 0 : mm);
+    } catch {
+      return 24 * 60;
+    }
+  }
+
+  const events = mapped.sort((a, b) => {
+    const dayA = dayOrder.indexOf(a.day_of_week ?? "");
+    const dayB = dayOrder.indexOf(b.day_of_week ?? "");
+    const dayIdxA = dayA === -1 ? 7 : dayA;
+    const dayIdxB = dayB === -1 ? 7 : dayB;
+    if (dayIdxA !== dayIdxB) return dayIdxA - dayIdxB;
+
+    const tA = parseTimeToMinutes(a.start_time ?? null);
+    const tB = parseTimeToMinutes(b.start_time ?? null);
+    if (tA !== tB) return tA - tB;
+
+    const cityA = (a.venue_city ?? "").toLowerCase();
+    const cityB = (b.venue_city ?? "").toLowerCase();
+    if (cityA < cityB) return -1;
+    if (cityA > cityB) return 1;
+    return 0;
+  });
 
   const total = typeof count === "number" ? count : undefined;
   const totalPages = total ? Math.ceil(total / pageSize) : undefined;
@@ -232,14 +283,14 @@ export default async function OpenMicsPage({
             A living list of weekly open mics submitted by the community.
           </p>
 
-          <div className="mt-6">
-            <Link
-              href="/open-mics/submit"
-              className="inline-block rounded-xl bg-gradient-to-r from-[#00202b] to-[#000] px-5 py-2 text-sm font-semibold text-[#00FFCC] ring-1 ring-[#00FFCC]/10 hover:shadow-[0_0_14px_rgba(0,255,204,0.15)] transition"
-            >
-              Submit an Open Mic
-            </Link>
-          </div>
+            <div className="mt-6">
+              <Link
+                href="/submit-open-mic"
+                className="inline-block rounded-xl bg-gradient-to-r from-[#00202b] to-[#000] px-5 py-2 text-sm font-semibold text-[#00FFCC] ring-1 ring-[#00FFCC]/10 hover:shadow-[0_0_14px_rgba(0,255,204,0.15)] transition"
+              >
+                Submit an Open Mic
+              </Link>
+            </div>
         </PageContainer>
       </HeroSection>
 
@@ -267,11 +318,33 @@ export default async function OpenMicsPage({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {events.map((ev) => (
-                  <EventCard key={ev.id} event={ev} searchQuery={search ?? undefined} />
-                ))}
-              </div>
+              {view === "grid" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {events.map((ev) => (
+                    <EventCard key={ev.id} event={ev} searchQuery={search ?? undefined} />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {events.map((ev) => (
+                    <CompactListItem
+                      key={ev.id}
+                      id={ev.id}
+                      title={ev.title}
+                      slug={(ev as any).slug}
+                      day_of_week={(ev as any).day_of_week}
+                      recurrence_rule={(ev as any).recurrence_rule}
+                      venue_name={(ev as any).venue_name}
+                      venue_address={(ev as any).venue_address}
+                      venue_city={(ev as any).venue_city}
+                      venue_state={(ev as any).venue_state}
+                      start_time={(ev as any).start_time}
+                      end_time={(ev as any).end_time}
+                      map_url={(ev as any).mapUrl}
+                    />
+                  ))}
+                </div>
+              )}
 
               <div className="mt-6 flex items-center justify-center gap-4">
                 {page > 1 ? (

@@ -43,7 +43,7 @@ export function MobileMenu({
       <div
         className={cn(
           "fixed top-0 right-0 z-50 h-full w-[280px]",
-          "bg-[var(--color-background)] border-l border-white/10",
+          "bg-[#060F2C] border-l border-white/10",
           "p-6",
           "transform transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full"

@@ -6,10 +6,17 @@ import { useRouter } from "next/navigation";
 import type { Event as EventType } from "@/types";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { highlight } from "@/lib/highlight";
+import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 
 export default function EventCard({ event, searchQuery }: { event: EventType; searchQuery?: string | null }) {
-  const mapQuery = encodeURIComponent([typeof event.venue === "string" ? event.venue : (event.venue as any)?.name, event.location].filter(Boolean).join(", "));
-  const mapsUrl = `https://maps.google.com?q=${mapQuery}`;
+  const venueObj = typeof event.venue === "string" ? { name: event.venue } : ((event.venue as any) ?? {});
+  const mapQuery = encodeURIComponent([venueObj.name, event.location].filter(Boolean).join(", "));
+  const mapsUrl = `https://maps.google.com/?q=${mapQuery}`;
+  const eventMapUrl = (event as any).mapUrl ?? (venueObj.google_maps_url ?? mapsUrl);
+  const dayOfWeek = (event as any).day_of_week ?? (event as any).dayOfWeek ?? null;
+  const humanRecurrence = humanizeRecurrence((event as any).recurrence_rule ?? (event as any).recurrenceRule ?? null, dayOfWeek ?? null);
+  const startTime = formatTimeToAMPM((event as any).start_time ?? (event.time ?? null));
+  const endTime = formatTimeToAMPM((event as any).end_time ?? null);
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 
@@ -123,9 +130,15 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           </div>
         </div>
 
+        <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
+          {humanRecurrence ? <span>{humanRecurrence}</span> : null}
+        </div>
+
         <div className="text-sm text-[#80D9FF] break-words">
           {event.date ? <span className="block">{event.date}</span> : null}
-          <span className="block font-medium text-[#80D9FF]">{event.time ?? ""}</span>
+          <span className="block font-medium text-[#80D9FF]">
+            {dayOfWeek ? `${dayOfWeek} • ${startTime}${endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}` : `${startTime}${endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}`}
+          </span>
         </div>
 
           <div className="text-sm">
@@ -147,25 +160,16 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           View Details
         </Link>
 
-        {((event as any)?.mapUrl) ? (
+        {eventMapUrl ? (
           <a
-            href={(event as any).mapUrl}
+            href={eventMapUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-3 py-2 text-sm font-semibold text-[#00FFCC] border border-[#00FFCC]/20 hover:shadow-[0_0_12px_rgba(0,255,204,0.12)] transition text-center"
           >
             View Map
           </a>
-        ) : (
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-3 py-2 text-sm font-semibold text-[#00FFCC] border border-[#00FFCC]/10 hover:shadow-[0_0_12px_rgba(0,255,204,0.08)] transition text-center"
-          >
-            Map
-          </a>
-        )}
+        ) : null}
       </div>
     </article>
   );

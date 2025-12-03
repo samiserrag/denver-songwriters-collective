@@ -81,7 +81,11 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     time: formatTime(e),
     venue: venueName ?? "TBA",
     location: location || undefined,
-    mapUrl: (e.venues as any)?.map_link ?? e.venues?.website ?? undefined,
+    mapUrl:
+      (e.venues as any)?.google_maps_url ??
+      (e.venues as any)?.map_link ??
+      e.venues?.website ??
+      (addressParts.length ? `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}` : undefined),
     slug: e.slug ?? undefined,
     eventType: "open_mic",
   };
@@ -116,7 +120,7 @@ export default async function OpenMicsMapPage() {
 
       <PageContainer>
         <div className="mt-6">
-          <Link href="/open-mics" className="text-[#00FFCC] hover:underline">
+          <Link href="/open-mics?view=list" className="text-[#00FFCC] hover:underline">
             ← Back to List View
           </Link>
         </div>
