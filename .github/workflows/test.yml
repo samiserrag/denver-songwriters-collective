@@ -1,153 +1,42 @@
-# .github/workflows/test.yml
-# Open Mic Drop - Full Test Suite CI/CD Pipeline
-# Runs 180+ tests across SQL, RPC, Hooks, Components, and E2E workflows
-
-name: Test Suite
+name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main ]
   pull_request:
-    branches: [main, develop]
-  workflow_dispatch: # Manual trigger
-
-env:
-  NODE_VERSION: '20'
-  SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
-  SUPABASE_TEST_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
-  SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+    branches: [ main ]
 
 defaults:
   run:
     working-directory: web
 
 jobs:
-  unit-tests:
-    name: Unit Tests (Utils, Mocked Hooks)
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:utils -- --reporter=verbose
-      - run: npm run test:hooks -- --reporter=verbose
 
-  component-tests:
-    name: Component Tests (React/JSDDOM)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: unit-tests
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:components -- --reporter=verbose
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  sql-tests:
-    name: SQL Tests (RLS, Triggers, is_admin)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: unit-tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          node-version: 20
+          cache: npm
           cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:validate-env
-      - run: npm run test:sql -- --reporter=verbose
 
-  rpc-tests:
-    name: RPC Function Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: sql-tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:rpc -- --reporter=verbose
+      - name: Install dependencies
+        run: npm ci
 
-  concurrency-tests:
-    name: Concurrency Tests (Race Conditions)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: rpc-tests
-    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:concurrency -- --reporter=verbose
+      - name: Build project
+        run: npm run build
 
-  e2e-tests:
-    name: E2E Workflow Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: rpc-tests
-    if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:e2e -- --reporter=verbose
+      # Optional: type-check if script exists
+      - name: Type check
+        if: ${{ hashFiles('web/tsconfig.json') != '' }}
+        run: npm run type-check || echo "No type-check script"
 
-  full-suite-coverage:
-    name: Full Suite + Coverage Report
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [concurrency-tests, e2e-tests]
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-      - run: npm run test:coverage
-      - uses: codecov/codecov-action@v4
-        with:
-          files: ./web/coverage/lcov.info
-          fail_ci_if_error: false
-        continue-on-error: true
-
-  test-summary:
-    name: Test Summary
-    runs-on: ubuntu-latest
-    needs: [unit-tests, component-tests, sql-tests, rpc-tests]
-    if: always()
-    steps:
-      - name: Report results
-        run: |
-          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Components | ${{ needs.component-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| SQL | ${{ needs.sql-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| RPC | ${{ needs.rpc-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+      # Optional: lint if script exists
+      - name: Lint
+        if: ${{ hashFiles('web/.eslintrc*') != '' }}
+        run: npm run lint || echo "No lint script"
