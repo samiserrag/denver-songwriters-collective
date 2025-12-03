@@ -7,8 +7,10 @@ import EventCard from "@/components/EventCard";
 import OpenMicFilters from "@/components/OpenMicFilters";
 import MapViewButton from "@/components/MapViewButton";
 import CompactListItem from "@/components/CompactListItem";
-import { humanizeRecurrence, formatTimeToAMPM, dayOrder } from "@/lib/recurrenceHumanizer";
+import AccordionList from "@/components/AccordionList";
+import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 export const dynamic = "force-dynamic";
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 type DBEvent = {
   id: string;
@@ -242,8 +244,8 @@ export default async function OpenMicsPage({
   }
 
   const events = mapped.sort((a, b) => {
-    const dayA = dayOrder.indexOf(a.day_of_week ?? "");
-    const dayB = dayOrder.indexOf(b.day_of_week ?? "");
+    const dayA = DAYS.indexOf(a.day_of_week ?? "");
+    const dayB = DAYS.indexOf(b.day_of_week ?? "");
     const dayIdxA = dayA === -1 ? 7 : dayA;
     const dayIdxB = dayB === -1 ? 7 : dayB;
     if (dayIdxA !== dayIdxB) return dayIdxA - dayIdxB;
@@ -305,7 +307,40 @@ export default async function OpenMicsPage({
               activeOnly={activeOnly}
               page={page}
             />
-            <div className="w-full sm:w-auto mt-3 sm:mt-0">
+            <div className="w-full sm:w-auto mt-3 sm:mt-0 flex items-center gap-2">
+              {/* A2: List / Grid toggle. Preserve existing query params. */}
+              <div className="flex items-center gap-2 mr-2">
+                <Link
+                  href={(() => {
+                    const p = new URLSearchParams();
+                    if (search) p.set("search", search);
+                    if (selectedDay) p.set("day", selectedDay);
+                    if (selectedCity && selectedCity !== "all") p.set("city", selectedCity);
+                    if (activeOnly) p.set("active", "1");
+                    p.set("view", "list");
+                    return `/open-mics?${p.toString()}`;
+                  })()}
+                  className={view === "list" ? "px-3 py-2 rounded bg-teal-600 text-white text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                >
+                  List View
+                </Link>
+
+                <Link
+                  href={(() => {
+                    const p = new URLSearchParams();
+                    if (search) p.set("search", search);
+                    if (selectedDay) p.set("day", selectedDay);
+                    if (selectedCity && selectedCity !== "all") p.set("city", selectedCity);
+                    if (activeOnly) p.set("active", "1");
+                    p.set("view", "grid");
+                    return `/open-mics?${p.toString()}`;
+                  })()}
+                  className={view === "grid" ? "px-3 py-2 rounded bg-teal-600 text-white text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                >
+                  Grid View
+                </Link>
+              </div>
+
               <MapViewButton />
             </div>
           </div>
@@ -325,24 +360,8 @@ export default async function OpenMicsPage({
                   ))}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {events.map((ev) => (
-                    <CompactListItem
-                      key={ev.id}
-                      id={ev.id}
-                      title={ev.title}
-                      slug={(ev as any).slug}
-                      day_of_week={(ev as any).day_of_week}
-                      recurrence_rule={(ev as any).recurrence_rule}
-                      venue_name={(ev as any).venue_name}
-                      venue_address={(ev as any).venue_address}
-                      venue_city={(ev as any).venue_city}
-                      venue_state={(ev as any).venue_state}
-                      start_time={(ev as any).start_time}
-                      end_time={(ev as any).end_time}
-                      map_url={(ev as any).mapUrl}
-                    />
-                  ))}
+                <div className="mt-6">
+                  <AccordionList events={events as any} searchQuery={search ?? undefined} />
                 </div>
               )}
 

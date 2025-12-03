@@ -146,6 +146,14 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
               className="text-base font-medium text-white break-words"
               dangerouslySetInnerHTML={{ __html: highlight(venueText ?? "", searchQuery ?? "") }}
             />
+            {/* City / State display */}
+            <div className="text-sm text-[var(--color-warm-gray-light)]">
+              {(event as any)?.venue?.city ? (
+                <span>{(event as any).venue.city}{(event as any).venue?.state ? `, ${(event as any).venue.state}` : ""}</span>
+              ) : (
+                (event as any).venue_city ? <span>{(event as any).venue_city}{(event as any).venue_state ? `, ${(event as any).venue_state}` : ""}</span> : null
+              )}
+            </div>
             {event.location && (
               <div className="text-[var(--color-warm-gray-light)] break-words">{event.location}</div>
             )}

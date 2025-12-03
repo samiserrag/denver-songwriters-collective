@@ -15,6 +15,8 @@ type Props = {
   start_time?: string | null;
   end_time?: string | null;
   map_url?: string | null;
+  // optional searchQuery for future highlighting (not required)
+  searchQuery?: string | null;
 };
 
 export default function CompactListItem({
@@ -47,10 +49,12 @@ export default function CompactListItem({
       <div className="min-w-0">
         <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
         <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
-          {humanRecurrence ? <span className="mr-2">{humanRecurrence}</span> : null}
-          {day_of_week ? <span className="mr-2">{day_of_week}</span> : null}
-          {venue_name ? <span className="mr-2">• {venue_name}</span> : null}
-          {venue_city ? <span className="ml-1">{venue_city}</span> : null}
+          {/* A1: show only the humanized recurrence string (prevents duplicate day display)
+              and append city/state when available */}
+          <span>
+            {humanRecurrence ?? "Schedule TBD"}
+            {venue_city ? ` • ${venue_city}${venue_state ? `, ${venue_state}` : ""}` : ""}
+          </span>
         </div>
       </div>
 
