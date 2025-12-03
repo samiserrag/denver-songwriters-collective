@@ -49,111 +49,45 @@ export function formatTimeToAMPM(time?: string | null): string {
  * - FREQ=MONTHLY;BYDAY=-1MO -> "Last Monday of each month"
  * - null/undefined -> dayOfWeek ? dayOfWeek : ""
  */
-export function humanizeRecurrence(recurrenceRule?: string | null, dayOfWeek?: string | null): string {
-  // A1.6: If null -> Schedule TBD
-  if (!recurrenceRule) {
-    return "Schedule TBD";
+export function humanizeRecurrence(recurrence: string | null, day: string | null) {
+  // simple capitalize helper (inline)
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  const ORDINAL_MAP: Record<string, string> = {
+    "1st": "1st",
+    "2nd": "2nd",
+    "3rd": "3rd",
+    "4th": "4th",
+  };
+
+  if (!day) return "Schedule TBD";
+  if (!recurrence) return "Schedule TBD";
+
+  const d = capitalize(String(day).toLowerCase());
+
+  const r = String(recurrence).trim().toLowerCase();
+
+  if (r === "weekly") return `Every ${d}`;
+  if (r === "biweekly" || r === "every other week") return `Every Other ${d}`;
+  if (r === "monthly") return `Every ${d} (Monthly)`;
+  if (r === "seasonal") return `Seasonal — check venue`;
+  if (r === "last") return `Last ${d} of the Month`;
+
+  // ordinals like "1st", "2nd", "3rd", "4th"
+  if (ORDINAL_MAP[r]) {
+    return `${ORDINAL_MAP[r]} ${d} of the Month`;
   }
 
-  const raw = recurrenceRule.trim();
-  const rule = raw.toUpperCase();
-
-  // simple textual shortcuts
-  if (rule === "WEEKLY" || rule === "WEEK") {
-    return dayOfWeek ? `Every ${dayOfWeek}` : "Weekly";
-  }
-  if (rule === "BIWEEKLY" || rule === "EVERY OTHER WEEK" || rule === "EVERY-OTHER-WEEK") {
-    return dayOfWeek ? `Every other ${dayOfWeek}` : "Every other week";
-  }
-  if (rule === "MONTHLY") {
-    return dayOfWeek ? `Monthly on ${dayOfWeek}` : "Monthly";
-  }
-  if (rule === "LAST") {
-    return dayOfWeek ? `Last ${dayOfWeek} of the month` : "Last of the month";
-  }
-
-  // Parse RFC-like rule parts (FREQ=..., INTERVAL=..., BYDAY=...)
-  const parts = rule.split(";");
-  const map: Record<string, string> = {};
-  for (const p of parts) {
-    const [k, v] = p.split("=");
-    if (k && v) map[k] = v;
-  }
-
-  const freq = map["FREQ"] ?? "";
-  const interval = parseInt(map["INTERVAL"] ?? "1", 10) || 1;
-  const bydayRaw = (map["BYDAY"] ?? "").trim();
-
-  // A1.3 & A1.1: WEEKLY / BIWEEKLY
-  if (freq === "WEEKLY") {
-    if (interval === 2) return dayOfWeek ? `Every other ${dayOfWeek}` : "Every other week";
-    return dayOfWeek ? `Every ${dayOfWeek}` : "Weekly";
-  }
-
-  // A1.4 & A1.5: MONTHLY and LAST
-  if (freq === "MONTHLY") {
-    if (!bydayRaw) return dayOfWeek ? `Monthly on ${dayOfWeek}` : "Monthly";
-
-    // BYDAY may be "1MO,3MO" or "-1MO" or "1MO/3MO"
-    const entries = bydayRaw.split(/[,/]/).map((s) => s.trim()).filter(Boolean);
-    const ordinals: string[] = [];
-    let weekday = dayOfWeek ?? "";
-
-    for (const entry of entries) {
-      const m = entry.match(/^(-?\d+)?(SU|MO|TU|WE|TH|FR|SA)$/i);
-      if (!m) continue;
-      const ord = m[1] ?? "";
-      const wdCode = m[2] ?? "";
-      const wdMap: Record<string, string> = {
-        SU: "Sunday",
-        MO: "Monday",
-        TU: "Tuesday",
-        WE: "Wednesday",
-        TH: "Thursday",
-        FR: "Friday",
-        SA: "Saturday",
-      };
-      weekday = wdMap[wdCode] ?? weekday;
-      if (ord) {
-        // A1.5: last -> "-1"
-        if (String(ord) === "-1") {
-          return `Last ${weekday} of the month`;
-        }
-        const word = ordinalWords[String(ord)] ?? `${ord}th`;
-        ordinals.push(word);
-      } else {
-        // no ordinal (just weekday)
-        ordinals.push(weekday);
-      }
+  // pairs like "1st/3rd" or "2nd/4th"
+  if (r.includes("/")) {
+    const parts = r.split("/").map((p) => p.trim().toLowerCase());
+    const valid = parts.map((p) => ORDINAL_MAP[p]).filter(Boolean);
+    if (valid.length >= 2) {
+      return `${valid.join(" & ")} ${d}s`;
     }
-
-    const unique = Array.from(new Set(ordinals)).filter(Boolean);
-    if (unique.length === 0) return `Monthly on ${weekday || "the specified day"}`;
-    if (unique.length === 1) {
-      const single = unique[0];
-      // If single is a weekday name, use "Monthly on X", otherwise "Third Monday"
-      if (["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].includes(single)) {
-        return `Monthly on ${single}`;
-      }
-      return `${single} ${weekday}`.trim();
-    }
-    // Multiple ordinals -> join with " & "
-    return `${unique.join(" & ")} ${weekday}`.trim();
   }
 
-  // DAILY fallback
-  if (freq === "DAILY") {
-    if (interval === 2) return "Every other day";
-    return "Daily";
-  }
-
-  // General fallbacks: if rule mentions week/month, prefer showing Every {day} or Monthly on {day}
-  if (rule.includes("WEEK")) return dayOfWeek ? `Every ${dayOfWeek}` : "Weekly";
-  if (rule.includes("MONTH")) return dayOfWeek ? `Monthly on ${dayOfWeek}` : "Monthly";
-
-  // final fallback: short raw
-  const fallback = raw.length > 80 ? `${raw.slice(0, 77)}...` : raw;
-  return fallback;
+  return "Schedule TBD";
 }
 
 export default {

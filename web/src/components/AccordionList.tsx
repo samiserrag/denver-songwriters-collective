@@ -5,13 +5,13 @@ import CompactListItem from "./CompactListItem";
 import type { EventWithVenue } from "@/types/db";
 
 const daysOrdered = [
-  "Sunday",
   "Monday",
   "Tuesday",
   "Wednesday",
   "Thursday",
   "Friday",
   "Saturday",
+  "Sunday",
 ];
 
 function parseTimeToMinutes(t?: string | null) {

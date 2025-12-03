@@ -14,7 +14,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
   const mapsUrl = `https://maps.google.com/?q=${mapQuery}`;
   const eventMapUrl = (event as any).mapUrl ?? (venueObj.google_maps_url ?? mapsUrl);
   const dayOfWeek = (event as any).day_of_week ?? (event as any).dayOfWeek ?? null;
-  const humanRecurrence = humanizeRecurrence((event as any).recurrence_rule ?? (event as any).recurrenceRule ?? null, dayOfWeek ?? null);
+  const recurrenceText = humanizeRecurrence((event as any).recurrence_rule ?? (event as any).recurrenceRule ?? null, dayOfWeek ?? null);
   const startTime = formatTimeToAMPM((event as any).start_time ?? (event.time ?? null));
   const endTime = formatTimeToAMPM((event as any).end_time ?? null);
   const router = useRouter();
@@ -130,8 +130,8 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           </div>
         </div>
 
-        <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
-          {humanRecurrence ? <span>{humanRecurrence}</span> : null}
+        <div className="mt-1">
+          <p className="text-sm text-gray-400">{recurrenceText}</p>
         </div>
 
         <div className="text-sm text-[#80D9FF] break-words">

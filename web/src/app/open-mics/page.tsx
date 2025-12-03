@@ -8,6 +8,7 @@ import OpenMicFilters from "@/components/OpenMicFilters";
 import MapViewButton from "@/components/MapViewButton";
 import CompactListItem from "@/components/CompactListItem";
 import AccordionList from "@/components/AccordionList";
+import DayJumpBar from "@/components/DayJumpBar";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 export const dynamic = "force-dynamic";
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -150,10 +151,6 @@ export default async function OpenMicsPage({
       ? String(params.city).trim()
       : "all";
 
-  const page = Number(params?.page ?? 1);
-  const pageSize = 30;
-  const from = (page - 1) * pageSize;
-  const to = page * pageSize - 1;
 
   const supabase = await createSupabaseServerClient();
 
@@ -221,8 +218,6 @@ export default async function OpenMicsPage({
     );
   }
 
-  // pagination
-  query = query.range(from, to);
 
   const { data: dbEvents, error, count } = await query;
 
@@ -261,18 +256,7 @@ export default async function OpenMicsPage({
     return 0;
   });
 
-  const total = typeof count === "number" ? count : undefined;
-  const totalPages = total ? Math.ceil(total / pageSize) : undefined;
 
-  const buildPageLink = (targetPage: number) => {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (selectedDay) params.set("day", selectedDay);
-    if (selectedCity && selectedCity !== "all") params.set("city", selectedCity);
-    if (activeOnly) params.set("active", "1");
-    params.set("page", String(targetPage));
-    return `/open-mics?${params.toString()}`;
-  };
 
   return (
     <>
@@ -285,14 +269,6 @@ export default async function OpenMicsPage({
             A living list of weekly open mics submitted by the community.
           </p>
 
-            <div className="mt-6">
-              <Link
-                href="/submit-open-mic"
-                className="inline-block rounded-xl bg-gradient-to-r from-[#00202b] to-[#000] px-5 py-2 text-sm font-semibold text-[#00FFCC] ring-1 ring-[#00FFCC]/10 hover:shadow-[0_0_14px_rgba(0,255,204,0.15)] transition"
-              >
-                Submit an Open Mic
-              </Link>
-            </div>
         </PageContainer>
       </HeroSection>
 
@@ -302,10 +278,8 @@ export default async function OpenMicsPage({
             <OpenMicFilters
               cities={cities}
               selectedCity={selectedCity === "all" ? undefined : selectedCity}
-              selectedDay={selectedDay ?? undefined}
               search={search ?? undefined}
               activeOnly={activeOnly}
-              page={page}
             />
             <div className="w-full sm:w-auto mt-3 sm:mt-0 flex items-center gap-2">
               {/* A2: List / Grid toggle. Preserve existing query params. */}
@@ -343,6 +317,15 @@ export default async function OpenMicsPage({
 
               <MapViewButton />
             </div>
+            
+            <div className="mb-6 flex justify-end">
+              <Link
+                href="/submit-open-mic"
+                className="inline-block rounded-xl bg-gradient-to-r from-[#00202b] to-[#000] px-5 py-2 text-sm font-semibold text-[#00FFCC] ring-1 ring-[#00FFCC]/10 hover:shadow-[0_0_14px_rgba(0,255,204,0.15)] transition"
+              >
+                Submit, claim, or update an Open Mic
+              </Link>
+            </div>
           </div>
 
           {events.length === 0 ? (
@@ -354,30 +337,43 @@ export default async function OpenMicsPage({
           ) : (
             <>
               {view === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {events.map((ev) => (
-                    <EventCard key={ev.id} event={ev} searchQuery={search ?? undefined} />
-                  ))}
-                </div>
+                <>
+                  <DayJumpBar />
+                  {[
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday",
+                  ].map((day) => {
+                    const dayEvents = events.filter((e: any) => (e.day_of_week ?? "").toLowerCase() === day.toLowerCase());
+                    return (
+                      <section key={day} aria-labelledby={`day-${day}`} className="mt-6">
+                        <h2 id={`day-${day}`} className="text-xl font-semibold text-teal-300 mt-8 mb-3">
+                          {day}
+                        </h2>
+
+                        {dayEvents.length === 0 ? (
+                          <p className="text-gray-400 text-sm">No open mics listed for this day.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {dayEvents.map((ev: any) => (
+                              <EventCard key={ev.id} event={ev} searchQuery={search ?? undefined} />
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                    );
+                  })}
+                </>
               ) : (
                 <div className="mt-6">
                   <AccordionList events={events as any} searchQuery={search ?? undefined} />
                 </div>
               )}
 
-              <div className="mt-6 flex items-center justify-center gap-4">
-                {page > 1 ? (
-                  <Link href={buildPageLink(page - 1)} className="px-4 py-2 rounded bg-white/5 text-white">
-                    ← Previous
-                  </Link>
-                ) : null}
-
-                {totalPages && page < totalPages ? (
-                  <Link href={buildPageLink(page + 1)} className="px-4 py-2 rounded bg-white/5 text-white">
-                    Next →
-                  </Link>
-                ) : null}
-              </div>
             </>
           )}
         </div>

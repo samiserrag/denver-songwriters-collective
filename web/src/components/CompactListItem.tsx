@@ -48,13 +48,15 @@ export default function CompactListItem({
     <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-white/6 bg-white/2">
       <div className="min-w-0">
         <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
-        <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
-          {/* A1: show only the humanized recurrence string (prevents duplicate day display)
-              and append city/state when available */}
-          <span>
-            {humanRecurrence ?? "Schedule TBD"}
-            {venue_city ? ` • ${venue_city}${venue_state ? `, ${venue_state}` : ""}` : ""}
-          </span>
+        <div className="mt-1">
+          {/* Block 2: replace recurrence display with clean numeric/ordinal text */}
+          <p className="text-sm text-gray-400">{humanRecurrence ?? "Schedule TBD"}</p>
+          {/* City / State */}
+          {venue_city ? (
+            <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
+              📍 {venue_city}{venue_state ? `, ${venue_state}` : ""}
+            </div>
+          ) : null}
         </div>
       </div>
 

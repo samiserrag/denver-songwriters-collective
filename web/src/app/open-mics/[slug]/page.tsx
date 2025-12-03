@@ -48,7 +48,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
       ? `https://maps.google.com/?q=${encodeURIComponent([venue.address, venue.city, venue.state].filter(Boolean).join(", "))}`
       : undefined);
 
-  const humanRecurrence = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
+  const recurrenceText = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
   const startFormatted = formatTimeToAMPM(event.start_time ?? null);
   const endFormatted = formatTimeToAMPM((event as any).end_time ?? null);
 
@@ -101,8 +101,8 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             {event.day_of_week && <p><strong className="text-white">Day:</strong> {event.day_of_week}</p>}
             {startFormatted && <p><strong className="text-white">Starts:</strong> {startFormatted}</p>}
             {endFormatted && endFormatted !== "TBD" && <p><strong className="text-white">Ends:</strong> {endFormatted}</p>}
-            {humanRecurrence ? (
-              <p><strong className="text-white">Recurrence:</strong> {humanRecurrence}</p>
+            {recurrenceText ? (
+              <p><strong className="text-white">Recurrence:</strong> {recurrenceText}</p>
             ) : null}
             {event.status && <p><strong className="text-white">Status:</strong> {event.status}</p>}
           </div>
