@@ -270,6 +270,23 @@ export default async function OpenMicsPage({
       </HeroSection>
 
       <PageContainer>
+        <div className="mt-6 rounded-2xl border border-white/5 bg-gradient-to-r from-[#050814] to-[#02040a] px-4 py-3 text-sm text-slate-200">
+          <p className="font-semibold text-teal-300">Community-curated open mics</p>
+          <p className="mt-1 text-slate-300">
+            These listings are gathered from public sources and may be incomplete or out of date.
+            Please contact the venue to confirm details, and{" "}
+            <a
+              href="/submit-open-mic"
+              className="underline decoration-teal-400/70 underline-offset-2 hover:text-teal-300"
+            >
+              help us keep this list updated
+            </a>
+            .
+          </p>
+        </div>
+      </PageContainer>
+
+      <PageContainer>
         <div className="mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <OpenMicFilters

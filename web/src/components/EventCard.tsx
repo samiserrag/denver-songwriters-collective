@@ -101,6 +101,12 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
       ? event.venue.name ?? undefined
       : (typeof event.venue === "string" ? event.venue : undefined);
 
+  // friendly city/state display (prefer joined venue relation when available)
+  const _city = (event as any)?.venue?.city?.trim() ?? (event as any).venue_city?.trim() ?? null;
+  const _state = (event as any)?.venue?.state?.trim() ?? (event as any).venue_state?.trim() ?? null;
+  const displayLocation =
+    _city && String(_city).toUpperCase() !== "UNKNOWN" ? (_state ? `${_city}, ${_state}` : _city) : null;
+
   return (
     <article
       className="rounded-2xl bg-white/5 p-4 shadow-xl border border-white/10 hover:border-[#00FFCC]/40 hover:shadow-[0_8px_30px_rgba(0,255,204,0.08)] transition-all duration-200 flex flex-col justify-between space-y-3 break-words"
@@ -148,11 +154,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
             />
             {/* City / State display */}
             <div className="text-sm text-[var(--color-warm-gray-light)]">
-              {(event as any)?.venue?.city ? (
-                <span>{(event as any).venue.city}{(event as any).venue?.state ? `, ${(event as any).venue.state}` : ""}</span>
-              ) : (
-                (event as any).venue_city ? <span>{(event as any).venue_city}{(event as any).venue_state ? `, ${(event as any).venue_state}` : ""}</span> : null
-              )}
+              {displayLocation ? <span>{displayLocation}</span> : null}
             </div>
             {event.location && (
               <div className="text-[var(--color-warm-gray-light)] break-words">{event.location}</div>

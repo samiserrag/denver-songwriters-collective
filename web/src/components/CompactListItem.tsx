@@ -44,6 +44,12 @@ export default function CompactListItem({
 
   const detailsHref = slug ? `/open-mics/${slug}` : `/open-mics/${id}`;
 
+  // friendly location for display (omit UNKNOWN)
+  const _city = venue_city?.trim() ?? null;
+  const _state = venue_state?.trim() ?? null;
+  const displayLocation =
+    _city && String(_city).toUpperCase() !== "UNKNOWN" ? (_state ? `${_city}, ${_state}` : _city) : null;
+
   return (
     <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-white/6 bg-white/2">
       <div className="min-w-0">
@@ -51,10 +57,10 @@ export default function CompactListItem({
         <div className="mt-1">
           {/* Block 2: replace recurrence display with clean numeric/ordinal text */}
           <p className="text-sm text-gray-400">{humanRecurrence ?? "Schedule TBD"}</p>
-          {/* City / State */}
-          {venue_city ? (
+          {/* City / State (clean, hide UNKNOWN) */}
+          {displayLocation ? (
             <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
-              📍 {venue_city}{venue_state ? `, ${venue_state}` : ""}
+              📍 {displayLocation}
             </div>
           ) : null}
         </div>
