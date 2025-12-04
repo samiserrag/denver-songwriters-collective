@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -43,7 +44,7 @@ export function MobileMenu({
 
   if (!open) return null;
 
-  return (
+  const portal = (
     <div
       className="fixed inset-0 z-50 bg-red-500"
       onClick={onClose}
@@ -105,4 +106,6 @@ export function MobileMenu({
       </div>
     </div>
   );
+
+  return createPortal(portal, document.body);
 }
