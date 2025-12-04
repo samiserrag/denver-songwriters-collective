@@ -44,16 +44,14 @@ export function MobileMenu({
   if (!open) return null;
 
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-[#05060b]/95 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
+    <div
+      className="fixed inset-0 z-50 bg-[#05060b]/95 backdrop-blur-sm"
+      onClick={onClose}
+      aria-hidden="true"
+    >
       <div
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-full max-w-xs",
+          "absolute top-0 right-0 h-full w-full max-w-xs",
           "bg-[#05060b] border-l border-white/10",
           "p-6",
           "transform transition-transform duration-300",
@@ -62,6 +60,7 @@ export function MobileMenu({
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-8">
           <span className="font-[var(--font-family-serif)] text-xl">
@@ -104,6 +103,6 @@ export function MobileMenu({
           </div>
         </nav>
       </div>
-    </>
+    </div>
   );
 }
