@@ -94,8 +94,8 @@ export default function AccordionList({
                       recurrence_rule={ev.recurrence_rule ?? undefined}
                       venue_name={ev.venue?.name ?? ev.venue_name ?? undefined}
                       venue_address={ev.venue?.address ?? ev.venue_address ?? undefined}
-                      venue_city={ev.venue?.city ?? undefined}
-                      venue_state={ev.venue?.state ?? undefined}
+                      venue_city={ev.venue?.city ?? (ev as any).venue_city ?? undefined}
+                      venue_state={ev.venue?.state ?? (ev as any).venue_state ?? undefined}
                       start_time={ev.start_time ?? undefined}
                       end_time={ev.end_time ?? undefined}
                       map_url={(ev as any).mapUrl ?? undefined}
