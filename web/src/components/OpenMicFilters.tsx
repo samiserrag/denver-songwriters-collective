@@ -7,21 +7,18 @@ interface Props {
   cities: string[];
   selectedCity?: string | null;
   search?: string | null;
-  activeOnly?: boolean;
 }
 
 export default function OpenMicFilters({
   cities,
   selectedCity,
   search,
-  activeOnly,
 }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
 
   const [q, setQ] = useState<string>(search ?? "");
   const [city, setCity] = useState<string>(selectedCity ?? "all");
-  const [active, setActive] = useState<boolean>(!!activeOnly);
 
   function buildQuery(overrides: Record<string, string | undefined | null>) {
     const params = new URLSearchParams();
@@ -29,8 +26,6 @@ export default function OpenMicFilters({
     if (s) params.set("search", s);
     const c = overrides.city ?? city;
     if (c && c !== "all") params.set("city", c);
-    const a = overrides.active ?? (active ? "1" : "0");
-    if (a !== undefined) params.set("active", String(a));
     return `/open-mics?${params.toString()}`;
   }
 
@@ -78,19 +73,6 @@ export default function OpenMicFilters({
             </option>
           ))}
         </select>
-
-        <button
-          onClick={() => {
-            const next = !active;
-            setActive(next);
-            navigateTo({ active: next ? "1" : "0" });
-          }}
-          className={`px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition ${
-            active ? "bg-[#22FF88]/30 text-[#22FF88]" : "text-white"
-          }`}
-        >
-          {active ? "Active Only" : "Show All"}
-        </button>
       </div>
     </div>
   );

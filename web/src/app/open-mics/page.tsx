@@ -38,6 +38,7 @@ type DBEvent = {
   venue_name?: string | null;
   venue_address?: string | null;
   slug?: string | null;
+  status?: string | null;
 };
 
 function formatTime(dbEvent: DBEvent) {
@@ -110,6 +111,8 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     location: location || undefined,
     mapUrl,
     slug: e.slug ?? undefined,
+    // preserve original status from DB for visual labeling (do not filter)
+    status: e.status ?? null,
     eventType: "open_mic",
   };
   return _evt as EventType;
@@ -137,7 +140,6 @@ export default async function OpenMicsPage({
   const selectedDay =
     params?.day && allowedDays.includes(params.day) ? params.day : null;
 
-  const activeOnly = params?.active !== "0";
 
   const search =
     typeof params?.search === "string" && params.search.trim()
@@ -177,11 +179,6 @@ export default async function OpenMicsPage({
     query = query.eq("day_of_week", selectedDay);
   }
 
-  if (activeOnly) {
-    // Exclude cancelled/inactive statuses. Also include rows where status IS NULL (legacy data)
-    // Using .or() to match: status NOT IN list OR status IS NULL
-    query = query.or("status.not.in.(cancelled,inactive,needs_verification),status.is.null");
-  }
 
   // City filtering: resolve venue IDs for the selected city, then filter by venue_id
   if (selectedCity && selectedCity !== "all") {
@@ -279,7 +276,6 @@ export default async function OpenMicsPage({
               cities={cities}
               selectedCity={selectedCity === "all" ? undefined : selectedCity}
               search={search ?? undefined}
-              activeOnly={activeOnly}
             />
             <div className="w-full sm:w-auto mt-3 sm:mt-0 flex items-center gap-2">
               {/* A2: List / Grid toggle. Preserve existing query params. */}
@@ -290,7 +286,6 @@ export default async function OpenMicsPage({
                     if (search) p.set("search", search);
                     if (selectedDay) p.set("day", selectedDay);
                     if (selectedCity && selectedCity !== "all") p.set("city", selectedCity);
-                    if (activeOnly) p.set("active", "1");
                     p.set("view", "list");
                     return `/open-mics?${p.toString()}`;
                   })()}
@@ -305,7 +300,6 @@ export default async function OpenMicsPage({
                     if (search) p.set("search", search);
                     if (selectedDay) p.set("day", selectedDay);
                     if (selectedCity && selectedCity !== "all") p.set("city", selectedCity);
-                    if (activeOnly) p.set("active", "1");
                     p.set("view", "grid");
                     return `/open-mics?${p.toString()}`;
                   })()}
