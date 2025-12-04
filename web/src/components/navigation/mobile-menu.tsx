@@ -46,7 +46,7 @@ export function MobileMenu({
 
   const portal = (
     <div
-      className="fixed inset-0 z-50 bg-red-500"
+      className="fixed inset-0 z-50 bg-[#0a0f1a]/95 backdrop-blur-sm"
       onClick={onClose}
       aria-hidden="true"
     >
