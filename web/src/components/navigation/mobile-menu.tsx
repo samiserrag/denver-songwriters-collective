@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "./nav-link";
@@ -19,6 +20,8 @@ export function MobileMenu({
   links,
   isLoggedIn = false,
 }: MobileMenuProps) {
+  const pathname = usePathname();
+
   React.useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -30,20 +33,28 @@ export function MobileMenu({
     };
   }, [open]);
 
+  // Close menu when the pathname changes (route navigation)
+  React.useEffect(() => {
+    if (open) {
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   if (!open) return null;
 
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-[#05060b]/95 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
       <div
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-[280px]",
-          "bg-[#060F2C] border-l border-white/10",
+          "fixed top-0 right-0 z-50 h-full w-full max-w-xs",
+          "bg-[#05060b] border-l border-white/10",
           "p-6",
           "transform transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full"
@@ -70,13 +81,14 @@ export function MobileMenu({
 
         <nav className="flex flex-col gap-2" role="navigation">
           {links.map((link) => (
-            <NavLink
+            <Link
               key={link.href}
               href={link.href}
+              onClick={() => onClose()}
               className="text-lg py-3 px-2 rounded-lg hover:bg-white/5"
             >
               {link.label}
-            </NavLink>
+            </Link>
           ))}
 
           <div className="pt-6 mt-4 border-t border-white/10">
