@@ -46,14 +46,15 @@ export function MobileMenu({
 
   const portal = (
     <div
-      className="fixed inset-0 z-50 bg-[#0a0f1a]/95 backdrop-blur-sm"
+      className="fixed inset-0 z-50"
+      style={{ background: "linear-gradient(180deg, var(--color-background-light) 0%, var(--color-background) 100%)" }}
       onClick={onClose}
       aria-hidden="true"
     >
       <div
         className={cn(
           "absolute top-0 right-0 h-full w-full max-w-xs",
-          "bg-[#05060b] border-l border-white/10",
+          "bg-[var(--color-background)] border-l border-white/5",
           "p-6",
           "transform transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full"
