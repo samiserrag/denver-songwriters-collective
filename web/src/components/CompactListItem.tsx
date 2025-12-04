@@ -44,11 +44,16 @@ export default function CompactListItem({
 
   const detailsHref = slug ? `/open-mics/${slug}` : `/open-mics/${id}`;
 
-  // friendly location for display (omit UNKNOWN)
+  // friendly location for display (require both city and state and omit UNKNOWN)
   const _city = venue_city?.trim() ?? null;
   const _state = venue_state?.trim() ?? null;
   const displayLocation =
-    _city && String(_city).toUpperCase() !== "UNKNOWN" ? (_state ? `${_city}, ${_state}` : _city) : null;
+    _city &&
+    _state &&
+    String(_city).toUpperCase() !== "UNKNOWN" &&
+    String(_state).toUpperCase() !== "UNKNOWN"
+      ? `${_city}, ${_state}`
+      : null;
 
   return (
     <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-white/6 bg-white/2">
