@@ -153,6 +153,23 @@ export default async function HomePage() {
 
       <PageContainer>
         <div className="py-16 space-y-20">
+          {/* Open Mic Directory */}
+          <section>
+            <div className="mb-8 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                  Open Mic Directory
+                </h2>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                  Explore Denver’s full open mic scene. Find weekly events, discover hidden gems, claim performance slots, and help keep the community-maintained directory accurate and up to date.
+                </p>
+              </div>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/open-mics">View All Open Mics</Link>
+              </Button>
+            </div>
+          </section>
+
           {/* Featured Events */}
           <section>
             <div className="mb-8 flex items-baseline justify-between gap-4">
