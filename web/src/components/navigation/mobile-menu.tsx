@@ -45,7 +45,7 @@ export function MobileMenu({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#05060b]/95 backdrop-blur-sm"
+      className="fixed inset-0 z-50 bg-red-500"
       onClick={onClose}
       aria-hidden="true"
     >
