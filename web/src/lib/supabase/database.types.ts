@@ -152,6 +152,16 @@ export type Database = {
           is_featured: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
+          onboarding_complete: boolean | null
+          instagram_url: string | null
+          facebook_url: string | null
+          twitter_url: string | null
+          youtube_url: string | null
+          spotify_url: string | null
+          website_url: string | null
+          venmo_handle: string | null
+          cashapp_handle: string | null
+          paypal_url: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -163,6 +173,16 @@ export type Database = {
           is_featured?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          onboarding_complete?: boolean | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          twitter_url?: string | null
+          youtube_url?: string | null
+          spotify_url?: string | null
+          website_url?: string | null
+          venmo_handle?: string | null
+          cashapp_handle?: string | null
+          paypal_url?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -174,6 +194,16 @@ export type Database = {
           is_featured?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
+          onboarding_complete?: boolean | null
+          instagram_url?: string | null
+          facebook_url?: string | null
+          twitter_url?: string | null
+          youtube_url?: string | null
+          spotify_url?: string | null
+          website_url?: string | null
+          venmo_handle?: string | null
+          cashapp_handle?: string | null
+          paypal_url?: string | null
         }
         Relationships: []
       }
@@ -484,7 +514,7 @@ export type Database = {
     }
     Enums: {
       appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
-      user_role: "performer" | "host" | "studio" | "admin"
+      user_role: "performer" | "host" | "studio" | "admin" | "fan"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -616,7 +646,7 @@ export const Constants = {
   public: {
     Enums: {
       appointment_status: ["pending", "confirmed", "completed", "cancelled"],
-      user_role: ["performer", "host", "studio", "admin"],
+      user_role: ["performer", "host", "studio", "admin", "fan"],
     },
   },
 } as const
