@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export function NewsletterSignup() {
   const [email, setEmail] = useState("");
@@ -20,31 +19,29 @@ export function NewsletterSignup() {
     setStatus("loading");
 
     try {
-      const supabase = createClient();
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-      const { error } = await supabase
-        .from("newsletter_subscribers")
-        .upsert(
-          { email: email.toLowerCase().trim(), source: "footer" },
-          { onConflict: "email", ignoreDuplicates: true }
-        );
+      const data = await response.json();
 
-      if (error) {
-        console.error("Newsletter signup error:", error);
+      if (!response.ok) {
         setStatus("error");
-        setMessage("Something went wrong. Try again.");
+        setMessage(data.error || "Something went wrong. Try again.");
         return;
       }
 
       setStatus("success");
-      setMessage("You're in!");
+      setMessage(data.alreadySubscribed ? "You're already subscribed!" : "You're in! Check your inbox.");
       setEmail("");
 
-      // Reset after 3 seconds
+      // Reset after 4 seconds
       setTimeout(() => {
         setStatus("idle");
         setMessage("");
-      }, 3000);
+      }, 4000);
     } catch (err) {
       console.error("Newsletter signup error:", err);
       setStatus("error");
