@@ -4,8 +4,16 @@ import { Button } from "@/components/ui";
 
 const partnershipOpportunities = [
   {
-    title: "Host an Event",
-    description: "Host an open mic, showcase, or listening-room event at your venue.",
+    title: "Host Open Mics",
+    description: "We are actively seeking a new home for our open mics, ideally on Friday nights, Saturday nights, or weekend afternoons.",
+  },
+  {
+    title: "Showcase Events",
+    description: "Host showcases, listening-room events, and curated performances featuring DSC artists.",
+  },
+  {
+    title: "Live Production",
+    description: "Partner on livestreamed or recorded events. We are developing a new web show filmed in front of a live audience.",
   },
   {
     title: "Recording Specials",
@@ -13,19 +21,11 @@ const partnershipOpportunities = [
   },
   {
     title: "Feature Performers",
-    description: "Feature performers at your venue's weekly or monthly events.",
-  },
-  {
-    title: "Collaborate on Content",
-    description: "Collaborate on livestreams, podcasts, interviews, or behind-the-scenes sessions.",
+    description: "Book DSC artists for your venue's events. Our community includes excellent talent ready for the stage.",
   },
   {
     title: "Provide Space",
-    description: "Provide space for song clubs, meetups, or co-writing gatherings.",
-  },
-  {
-    title: "Community Programs",
-    description: "Partner on community fundraisers or nonprofit songwriting programs.",
+    description: "Provide space for song clubs, meetups, co-writing gatherings, or community workshops.",
   },
 ];
 
@@ -40,6 +40,8 @@ const partnerTypes = [
   "Community Centers",
   "Cultural Organizations",
   "Festivals & Events",
+  "Promoters & Booking Managers",
+  "Livestream & Video Production",
 ];
 
 export default function PartnersPage() {
@@ -55,7 +57,7 @@ export default function PartnersPage() {
               Partner With The Denver Songwriters Collective
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              DSC welcomes partnerships with venues, studios, nonprofits, education programs, rehearsal spaces, breweries, community centers, cultural organizations, and anyone who wants to help support the songwriter community.
+              We invite venues, promoters, booking coordinators, festivals, studios, and independent organizations to connect with us. Together, we can create more pathways for local musicians to shine.
             </p>
           </div>
         </PageContainer>
@@ -158,13 +160,29 @@ export default function PartnersPage() {
             </div>
           </section>
 
-          {/* Vision */}
+          {/* Proven Track Record */}
           <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Proven Community Impact
+            </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
-              Our partnerships will grow over time — with studios, venues, audio engineers, photographers, videographers, educators, nonprofits, festivals, rehearsal spaces, and cultural organizations. We want to celebrate and lift up the entire creative ecosystem of the Front Range.
+              Our community is full of diverse and genuine talent. Several of our performers have already been invited to play at external events, including the Denver Chalk Festival, where eight DSC artists performed on a major stage for crowds of thousands. We are excited to continue helping artists find opportunities like this, and we welcome partnerships that create more pathways for local musicians to shine.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              Our partnerships will grow over time with studios, venues, audio engineers, photographers, videographers, educators, nonprofits, festivals, rehearsal spaces, and cultural organizations. We want to celebrate and lift up the entire creative ecosystem of the Front Range.
+            </p>
+          </section>
+
+          {/* Vision */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Our Vision for Partnership
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
               DSC is committed to building a network where everyone benefits: venues receive engaged performers, performers discover supportive rooms, studios meet new artists, communities experience more local music, and fans build real connections with the people behind the songs.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              To make all of this possible, DSC relies on the dedication of volunteers, the generosity of our community, and the support of partners who believe in our mission. For many years, the collective has operated as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm.
             </p>
           </section>
 
@@ -174,14 +192,17 @@ export default function PartnersPage() {
               Let&apos;s Build Something Together
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              If you are a venue or studio interested in becoming part of the DSC movement, we would love to connect. Together, we can build something meaningful for Colorado&apos;s creative community.
+              If you would like to host an event, collaborate on a showcase, support our livestream or web show production, help us find sponsors, provide space, offer resources, or become part of this creative movement in any way, we would love to speak with you.
+            </p>
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-gold)]/90 italic leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+              Your partnership directly strengthens the songwriting culture of Denver and helps us continue building a community where musicians feel seen, supported, and inspired.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
                 <Link href="/submit-open-mic">Submit Your Venue</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/studios">View Partner Studios</Link>
+                <Link href="/get-involved">Get Involved</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link href="/about">Learn More About DSC</Link>

@@ -42,6 +42,39 @@ export default function AboutPage() {
             </p>
           </section>
 
+          {/* Our History */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Our History
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              The Denver Songwriters Collective began its journey as the Denver Songwriters and Lyricists Meetup Group, a grassroots gathering for musicians who wanted a welcoming place to share original songs, receive feedback, and build friendships through creativity. Over the years, the group hosted well-attended open mics at several beloved local venues, including Banded Oak Brewery and FlyteCo Brewing Tennyson, both of which became cherished homes for our community for a time. These events helped shape the friendly, supportive culture that defines the collective today.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              From the start, DSC has embraced the broader Denver music scene rather than trying to exist apart from it. Many long-time members are regulars at other open mics across the city, and the group has always encouraged cross-pollination between communities. We believe that the rising tide lifts everyone: more songs, more venues, more collaboration, more art, and more people discovering each other in a creative city that&apos;s full of talent. Our members actively support other songwriting groups, new open mic nights, and the many established events that have inspired us along the way.
+            </p>
+          </section>
+
+          {/* The People Behind DSC */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              The People Behind DSC
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              The collective has been shaped by the people who stepped forward to host, volunteer, and nurture the community. Sami Serrag, the group&apos;s founder, has organized and facilitated the majority of our songwriting critique circles and community-building gatherings. Robert Fulton Jr. has played a key role in leading many of our open mic events, helping new performers feel confident on stage and keeping the energy warm and welcoming. Countless other volunteers from within the group have contributed over the years, offering time, ideas, equipment, encouragement, and heartfelt presence.
+            </p>
+          </section>
+
+          {/* Inclusion Statement */}
+          <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-4">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Everyone Is Welcome Here
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              The Denver Songwriters Collective is and always has been a place where all people are welcomed and supported. We celebrate people of every gender identity, orientation, background, and experience level. We are proudly LGBTQ-friendly, inclusive, and committed to fostering an uplifting environment where everyone can create without fear, collaborate freely, and build lasting friendships.
+            </p>
+          </section>
+
           {/* What We Offer */}
           <section className="space-y-8">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">

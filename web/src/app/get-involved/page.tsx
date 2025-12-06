@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { Button } from "@/components/ui";
+import { VolunteerSignupForm } from "@/components/forms";
 
 const waysToHelp = [
   {
@@ -15,7 +16,7 @@ const waysToHelp = [
   },
   {
     title: "Volunteer at Events",
-    description: "Help run showcases, meetups, or livestream nights. No experience needed — just enthusiasm and a willingness to show up.",
+    description: "Help run showcases, meetups, or livestream nights. No experience needed, just enthusiasm and a willingness to show up.",
     cta: null,
   },
   {
@@ -93,11 +94,67 @@ export default function GetInvolvedPage() {
               Why Your Contribution Matters
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
-              The more participation we receive, the stronger and more accurate the directory becomes — and the more meaningful all of our gatherings will be. This project only succeeds because people care enough to be part of it.
+              The more participation we receive, the stronger and more accurate the directory becomes and the more meaningful all of our gatherings will be. This project only succeeds because people care enough to be part of it.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
               Every submission, every suggestion, every share helps build something real for Denver&apos;s creative community. Your contribution will have a lasting impact on songwriters across the Front Range.
             </p>
+          </section>
+
+          {/* Volunteer Sign-Up */}
+          <section className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+                Volunteer Sign-Up
+              </h2>
+              <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
+                Interested in helping out at events, running open mics, or supporting DSC in other ways? Fill out the form below and we will be in touch.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8">
+              <VolunteerSignupForm />
+            </div>
+          </section>
+
+          {/* Donation & Sponsorship */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Support DSC Financially
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              The Denver Songwriters Collective has operated for years as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm. We are deeply grateful for everyone who has helped us get this far.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              Financial contributions or sponsorships would make a meaningful difference in our ability to grow, host more events, and serve more musicians across Denver.
+            </p>
+            <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8 space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                    Individual Donations
+                  </h3>
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                    Every donation, no matter the size, helps us continue hosting events, maintaining the directory, and building community resources.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                    Corporate Sponsorships
+                  </h3>
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                    Partner with DSC as a sponsor and support Denver&apos;s songwriting community while gaining visibility among a creative, engaged audience.
+                  </p>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-white/10">
+                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] mb-4">
+                  We are currently setting up our donation system. In the meantime, if you would like to contribute or discuss sponsorship opportunities, please reach out to us directly.
+                </p>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-gold)]/80 italic">
+                  Online donations coming soon.
+                </p>
+              </div>
+            </div>
           </section>
 
           {/* Call to Action */}
