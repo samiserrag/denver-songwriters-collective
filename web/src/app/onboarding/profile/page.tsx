@@ -202,12 +202,12 @@ export default function ProfileOnboarding() {
           {/* Basic Info */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>👤</span> Basic Info
+              <span>👤</span> Basic Info <span className="text-sm font-normal text-teal-400">(all optional)</span>
             </h2>
             <div className="space-y-4">
               <div>
                 <label htmlFor="full_name" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Display Name
+                  Display Name <span className="text-teal-400/70">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -221,7 +221,7 @@ export default function ProfileOnboarding() {
               </div>
               <div>
                 <label htmlFor="bio" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Bio
+                  Bio <span className="text-teal-400/70">(optional)</span>
                 </label>
                 <textarea
                   id="bio"
@@ -239,7 +239,7 @@ export default function ProfileOnboarding() {
           {/* Social Links */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>🔗</span> Social Links
+              <span>🔗</span> Social Links <span className="text-sm font-normal text-teal-400">(all optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Share your social profiles so fans can follow you.
@@ -335,7 +335,7 @@ export default function ProfileOnboarding() {
           {/* Tip Links */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>💸</span> Accept Tips
+              <span>💸</span> Accept Tips <span className="text-sm font-normal text-teal-400">(all optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Let fans support you directly. These will appear on your profile and when you perform.

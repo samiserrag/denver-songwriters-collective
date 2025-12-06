@@ -5,7 +5,7 @@
 -- users from changing their role once it's been set.
 
 CREATE OR REPLACE FUNCTION prevent_role_change()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
   -- Allow admins to edit anything
   IF is_admin() THEN
@@ -25,7 +25,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Note: The trigger trg_prevent_role_change already exists and references this function,
 -- so we don't need to recreate the trigger - just updating the function is sufficient.
