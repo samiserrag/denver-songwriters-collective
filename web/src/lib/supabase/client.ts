@@ -3,14 +3,20 @@ import { createBrowserClient } from "@supabase/ssr";
 /**
  * Singleton Supabase client for browser-side usage.
  *
- * This ensures only ONE GoTrueClient instance is created to avoid
- * "Multiple GoTrueClient instances" warnings and auth state conflicts.
+ * Uses globalThis to persist across module reloads (HMR, code splitting).
+ * This ensures only ONE GoTrueClient instance exists in the browser.
  */
 
-let client: ReturnType<typeof createBrowserClient> | null = null;
+// Extend globalThis type for our singleton
+const globalForSupabase = globalThis as typeof globalThis & {
+  __supabaseClient?: ReturnType<typeof createBrowserClient>;
+};
 
 export function createClient() {
-  if (client) return client;
+  // Return existing client if available (persists across module reloads)
+  if (globalForSupabase.__supabaseClient) {
+    return globalForSupabase.__supabaseClient;
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -38,8 +44,9 @@ export function createClient() {
     return new Proxy({}, handler) as ReturnType<typeof createBrowserClient>;
   }
 
-  client = createBrowserClient(url, key);
-  return client;
+  // Create and store in globalThis for persistence
+  globalForSupabase.__supabaseClient = createBrowserClient(url, key);
+  return globalForSupabase.__supabaseClient;
 }
 
 // Alias for backwards compatibility
