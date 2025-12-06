@@ -91,7 +91,7 @@ export function Footer({ className }: FooterProps) {
             © {currentYear} The Denver Songwriters Collective. Made with 🎵 in Denver.
           </p>
           <div className="flex gap-6 text-sm">
-            <a href="#" className="text-[var(--color-warm-gray-dark)] hover:text-[var(--color-warm-gray)] transition-colors">Privacy</a>
+            <Link href="/privacy" className="text-[var(--color-warm-gray-dark)] hover:text-[var(--color-warm-gray)] transition-colors">Privacy</Link>
             <a href="#" className="text-[var(--color-warm-gray-dark)] hover:text-[var(--color-warm-gray)] transition-colors">Terms</a>
           </div>
         </div>

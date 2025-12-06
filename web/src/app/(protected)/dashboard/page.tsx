@@ -101,6 +101,10 @@ export default async function DashboardPage() {
                   <Link href="/dashboard/admin" className="text-gold-400 hover:underline">Admin Panel</Link>
                 </li>
               )}
+
+              <li className="pt-4 mt-4 border-t border-neutral-800">
+                <Link href="/dashboard/settings" className="text-gold-400 hover:underline">Account Settings</Link>
+              </li>
             </ul>
           </section>
         </div>
