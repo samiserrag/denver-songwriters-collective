@@ -170,7 +170,7 @@ export default function ProfileOnboarding() {
             Complete Your Profile
           </h1>
           <p className="text-[var(--color-warm-gray-light)]">
-            Help others discover you! All fields are optional.
+            Help others discover you! All fields below are <span className="text-teal-400">optional</span>.
           </p>
         </div>
 
