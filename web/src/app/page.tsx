@@ -96,9 +96,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroSection minHeight="lg" showVignette>
+      <HeroSection minHeight="xl" showVignette showBottomFade>
         <PageContainer>
-          <div className="max-w-3xl space-y-6">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Login-aware greeting */}
             {user ? (
               <p className="text-[var(--color-gold-400)] font-medium text-lg">
@@ -106,33 +106,34 @@ export default async function HomePage() {
               </p>
             ) : (
               <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-gold)]/80 uppercase">
-                Denver • Songwriters • Community
+                Denver&apos;s Creative Heart
               </p>
             )}
 
-            <h1 className="text-[length:var(--font-size-heading-2xl)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
+            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-gold)] leading-[var(--line-height-tight)]">
               The Denver Songwriters Collective
             </h1>
 
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-gold)]/90 italic max-w-xl leading-[var(--line-height-relaxed)]">
-              Find your people. Find your stage. Find your songs.
+            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
+              A warm, open, community-driven space where strangers become friends,
+              friends become collaborators, and collaborators become genuine fans of one another.
             </p>
 
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-xl leading-[var(--line-height-relaxed)]">
-              Denver&apos;s community hub for songwriters. Discover open mics,
-              showcases, song circles, and collaboration opportunities across
-              the Front Range.
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
+              We believe that music does more than entertain — it builds relationships and creates real belonging.
+              Denver&apos;s creative energy is alive, growing, and filled with songwriters looking not just for a stage,
+              but for connection, encouragement, and a sense of shared purpose.
             </p>
 
             {/* Login-aware CTAs */}
-            <div className="flex flex-wrap gap-4 pt-2">
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
               {user ? (
                 <>
                   <Button asChild variant="primary" size="lg">
                     <Link href="/dashboard">Go to Dashboard</Link>
                   </Button>
                   <Button asChild variant="secondary" size="lg">
-                    <Link href="/dashboard/appointments">Your Appointments</Link>
+                    <Link href="/events">Explore Events</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg">
                     <Link href="/open-mics">Find Open Mics</Link>
@@ -141,7 +142,7 @@ export default async function HomePage() {
               ) : (
                 <>
                   <Button asChild variant="primary" size="lg">
-                    <Link href="/events">Browse Events</Link>
+                    <Link href="/events">Explore Events & Get Involved</Link>
                   </Button>
                   <Button asChild variant="secondary" size="lg">
                     <Link href="/performers">Meet the Artists</Link>

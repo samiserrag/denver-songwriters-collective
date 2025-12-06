@@ -7,13 +7,15 @@ interface HeroSectionProps {
   className?: string;
   showSpotlight?: boolean;
   showVignette?: boolean;
-  minHeight?: "sm" | "md" | "lg" | "full";
+  showBottomFade?: boolean;
+  minHeight?: "sm" | "md" | "lg" | "xl" | "full";
 }
 
 const heightClasses = {
   sm: "min-h-[300px] md:min-h-[350px]",
   md: "min-h-[400px] md:min-h-[500px]",
   lg: "min-h-[500px] md:min-h-[600px]",
+  xl: "min-h-[600px] md:min-h-[750px]",
   full: "min-h-screen",
 };
 
@@ -23,6 +25,7 @@ export function HeroSection({
   className,
   showSpotlight = true,
   showVignette = true,
+  showBottomFade = false,
   minHeight = "md",
 }: HeroSectionProps) {
   return (
@@ -79,6 +82,14 @@ export function HeroSection({
           style={{
             background: "radial-gradient(ellipse at center top, rgba(255, 216, 106, 0.18) 0%, rgba(255, 216, 106, 0.05) 40%, transparent 70%)",
           }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Bottom fade for smooth transition to content */}
+      {showBottomFade && (
+        <div
+          className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--color-background)] to-transparent pointer-events-none"
           aria-hidden="true"
         />
       )}
