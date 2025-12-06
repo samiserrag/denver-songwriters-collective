@@ -6,14 +6,20 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 
-interface Props {
-  events: DBEvent[];
-}
+ interface Props {
+   events: DBEvent[] | null;
+ }
+ 
+ export default function EventSpotlightTable({ events }: Props) {
+   if (!events || !Array.isArray(events)) {
+     return (
+       <div className="text-neutral-400 py-4">No events found or failed to load.</div>
+     );
+   }
 
-export default function EventSpotlightTable({ events }: Props) {
-  const supabase = createSupabaseBrowserClient();
-  const [rows, setRows] = useState(events);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+   const supabase = createSupabaseBrowserClient();
+   const [rows, setRows] = useState(events as DBEvent[]);
+   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function updateEvent(id: string, is_featured: boolean, featured_rank: number) {
     setLoadingId(id);
