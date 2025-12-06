@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Denver Songwriters Collective <hello@denversongwriters.co>",
+        from: "Denver Songwriters Collective <onboarding@resend.dev>",
         to: "sami.serrag@gmail.com",
         reply_to: email,
         subject: `[DSC Contact] Message from ${name}`,
