@@ -14,11 +14,30 @@ const CATEGORY_COLORS: Record<string, string> = {
   "mixed": "bg-sky-900/40 text-sky-300",
 };
 
-function getMapUrl(venueName: string, address?: string) {
+function isValidMapUrl(url?: string | null): boolean {
+  if (!url) return false;
+  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
+  if (url.includes("goo.gl")) return false;
+  return true;
+}
+
+function getMapUrlFromAddress(venueName: string, address?: string) {
   const query = address
     ? `${venueName}, ${address}`
     : venueName;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function resolveMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, venueName?: string | null, venueAddress?: string): string | undefined {
+  // Prefer explicit google_maps_url if valid
+  if (isValidMapUrl(googleMapsUrl)) return googleMapsUrl!;
+  // Fall back to map_link if it's not a broken goo.gl URL
+  if (isValidMapUrl(mapLink)) return mapLink!;
+  // Otherwise construct from address
+  if (venueName) {
+    return getMapUrlFromAddress(venueName, venueAddress);
+  }
+  return undefined;
 }
 
 export const dynamic = "force-dynamic";
@@ -59,10 +78,12 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
   const venue = event.venue;
   const venueAddress = [venue?.address, venue?.city, venue?.state].filter(Boolean).join(", ");
-  const mapUrl =
-    venue?.google_maps_url ??
-    venue?.map_link ??
-    (venue?.name ? getMapUrl(venue.name, venueAddress || undefined) : undefined);
+  const mapUrl = resolveMapUrl(
+    venue?.google_maps_url,
+    venue?.map_link,
+    venue?.name,
+    venueAddress || undefined
+  );
 
   const recurrenceText = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
   const startFormatted = formatTimeToAMPM(event.start_time ?? null);

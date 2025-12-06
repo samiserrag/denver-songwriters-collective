@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventSpotlightTable } from "@/components/admin";
 import type { Database } from "@/lib/supabase/database.types";
@@ -31,7 +32,7 @@ export default async function AdminEventsPage() {
    const { data, error } = await supabase
      .from("events")
      .select("*")
-     .order("created_at", { ascending: false });
+     .order("title", { ascending: true });
 
    // CRITICAL: Always pass an array, never null
    const events = Array.isArray(data) ? data : [];
@@ -42,7 +43,15 @@ export default async function AdminEventsPage() {
 
    return (
      <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-       <h1 className="text-4xl font-bold text-gold-400 mb-8">Manage Featured Events</h1>
+       <div className="flex items-center justify-between mb-8">
+         <h1 className="text-4xl font-bold text-gold-400">Manage Events</h1>
+         <Link
+           href="/dashboard/admin/events/new"
+           className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white font-medium transition-colors"
+         >
+           + Add New Event
+         </Link>
+       </div>
        <EventSpotlightTable events={events} />
      </div>
    );

@@ -24,10 +24,21 @@ function getVenueName(v: MaybeVenue) {
   return v.name ?? undefined;
 }
 
+function isValidMapUrl(url?: string | null): boolean {
+  if (!url) return false;
+  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
+  if (url.includes("goo.gl")) return false;
+  return true;
+}
+
 function getVenueMapsUrl(v: MaybeVenue) {
   if (!v) return undefined;
   if (typeof v === "string") return undefined;
-  return (v.google_maps_url ?? v.map_link ?? v.website) ?? undefined;
+  // Prefer google_maps_url, then map_link, but only if they're valid (not goo.gl)
+  if (isValidMapUrl(v.google_maps_url)) return v.google_maps_url;
+  if (isValidMapUrl(v.map_link)) return v.map_link;
+  if (isValidMapUrl(v.website)) return v.website;
+  return undefined;
 }
 
 function getMapUrl(venueName: string, address?: string) {
@@ -42,9 +53,9 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
   const venueName = getVenueName(venueObj) ?? "";
 
   const eventMapUrl = ((): string | undefined => {
-    // prefer explicit mapUrl field if present on event
+    // prefer explicit mapUrl field if present on event (but only if valid)
     const maybeMapUrl = (event as unknown as { mapUrl?: string | undefined }).mapUrl;
-    if (maybeMapUrl) return maybeMapUrl;
+    if (isValidMapUrl(maybeMapUrl)) return maybeMapUrl;
     const fromVenue = getVenueMapsUrl(venueObj);
     if (fromVenue) return fromVenue;
     // fallback to generated map URL

@@ -51,6 +51,25 @@ type DBEvent = {
   status?: string | null;
 };
 
+function isValidMapUrl(url?: string | null): boolean {
+  if (!url) return false;
+  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
+  if (url.includes("goo.gl")) return false;
+  return true;
+}
+
+function getMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, addressParts?: string[]): string | undefined {
+  // Prefer explicit google_maps_url if valid
+  if (isValidMapUrl(googleMapsUrl)) return googleMapsUrl!;
+  // Fall back to map_link if it's not a broken goo.gl URL
+  if (isValidMapUrl(mapLink)) return mapLink!;
+  // Otherwise construct from address
+  if (addressParts && addressParts.length > 0) {
+    return `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}`;
+  }
+  return undefined;
+}
+
 function formatTime(dbEvent: DBEvent) {
   if (dbEvent.recurrence_rule) {
     const rule = dbEvent.recurrence_rule;
@@ -95,14 +114,14 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     e.venues?.address ?? e.venue_address,
     venueCity,
     venueState,
-  ].filter(Boolean);
+  ].filter((v): v is string => Boolean(v));
   const location = addressParts.join(", ");
 
-  const mapUrl =
-    e.venues?.google_maps_url ??
-    e.venues?.map_link ??
-    e.venues?.website_url ??
-    (addressParts.length ? `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}` : undefined);
+  const mapUrl = getMapUrl(
+    e.venues?.google_maps_url,
+    e.venues?.map_link,
+    addressParts.length > 0 ? addressParts : undefined
+  );
 
   const _evt: any = {
     id: e.id,
@@ -253,7 +272,7 @@ export default async function OpenMicsPage({
     console.log("RAW_EVENTS_LOG_ERROR:", err);
   }
 
-  function parseTimeToMinutes(t?: string | null) {
+function parseTimeToMinutes(t?: string | null) {
     if (!t) return 24 * 60;
     try {
       const timeOnly = t.includes("T") ? t.split("T")[1] : t;

@@ -8,6 +8,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   "all-acts": "bg-yellow-900/40 text-yellow-300",
 };
 
+function isValidMapUrl(url?: string | null): boolean {
+  if (!url) return false;
+  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
+  if (url.includes("goo.gl")) return false;
+  return true;
+}
+
 type Props = {
   id: string;
   title: string;
@@ -51,7 +58,7 @@ export default function CompactListItem({
 
   const addressParts = [venue_address, venue_city, venue_state].filter(Boolean).join(", ");
   const mapUrl =
-    map_url ??
+    (isValidMapUrl(map_url) ? map_url : null) ??
     (venue_name
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressParts ? `${venue_name}, ${addressParts}` : venue_name)}`
       : undefined);

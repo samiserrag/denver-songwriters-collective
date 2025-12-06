@@ -29,6 +29,25 @@ type DBEvent = {
   slug?: string | null;
 };
 
+function isValidMapUrl(url?: string | null): boolean {
+  if (!url) return false;
+  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
+  if (url.includes("goo.gl")) return false;
+  return true;
+}
+
+function getMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, addressParts?: string[]): string | undefined {
+  // Prefer explicit google_maps_url if valid
+  if (isValidMapUrl(googleMapsUrl)) return googleMapsUrl!;
+  // Fall back to map_link if it's not a broken goo.gl URL
+  if (isValidMapUrl(mapLink)) return mapLink!;
+  // Otherwise construct from address
+  if (addressParts && addressParts.length > 0) {
+    return `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}`;
+  }
+  return undefined;
+}
+
 function formatTime(dbEvent: DBEvent) {
   if (dbEvent.recurrence_rule) {
     const rule = dbEvent.recurrence_rule;
@@ -72,7 +91,7 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     e.venues?.address ?? e.venue_address,
     e.venues?.city,
     e.venues?.state,
-  ].filter(Boolean);
+  ].filter((v): v is string => Boolean(v));
   const location = addressParts.join(", ");
 
   const _evt: any = {
@@ -83,11 +102,11 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     time: formatTime(e),
     venue: venueName ?? "TBA",
     location: location || undefined,
-    mapUrl:
-      (e.venues as any)?.google_maps_url ??
-      (e.venues as any)?.map_link ??
-      e.venues?.website ??
-      (addressParts.length ? `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}` : undefined),
+    mapUrl: getMapUrl(
+      (e.venues as any)?.google_maps_url,
+      (e.venues as any)?.map_link,
+      addressParts.length > 0 ? addressParts : undefined
+    ),
     slug: e.slug ?? undefined,
     signup_time: e.signup_time ?? null,
     category: e.category ?? null,
@@ -117,7 +136,7 @@ export default async function OpenMicsMapPage() {
             Open Mic Map
           </h1>
           <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
-            Interactive map coming soon. Use the list below to navigate to events.
+            Find open mics across the Denver metro area. Click any venue to get directions.
           </p>
         </PageContainer>
       </HeroSection>
@@ -129,8 +148,23 @@ export default async function OpenMicsMapPage() {
           </Link>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-8 text-center">
-          <p className="text-white font-semibold">Interactive map coming soon. Use the list below.</p>
+        {/* Embedded Google Map centered on Denver */}
+        <div className="mt-6 rounded-2xl border border-white/10 overflow-hidden">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d196281.12937236825!2d-104.99519357812503!3d39.764519!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x876b80aa231f17cf%3A0x118ef4f8278a36d6!2sDenver%2C%20CO!5e0!3m2!1sen!2sus!4v1733500000000!5m2!1sen!2sus"
+            width="100%"
+            height="400"
+            style={{ border: 0 }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Denver Area Map"
+            className="w-full"
+          />
+        </div>
+
+        <div className="mt-4 text-center text-sm text-[var(--color-warm-gray)]">
+          <p>Click any venue below to get directions on Google Maps</p>
         </div>
 
         <div className="mt-8">

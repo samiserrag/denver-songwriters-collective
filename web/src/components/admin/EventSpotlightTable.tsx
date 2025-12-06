@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -10,8 +11,16 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
  interface Props {
    events: DBEvent[];
  }
- 
+
  export default function EventSpotlightTable({ events }: Props) {
+   const router = useRouter();
+   const supabase = createSupabaseBrowserClient();
+   const [rows, setRows] = useState(events ?? []);
+   const [loadingId, setLoadingId] = useState<string | null>(null);
+   const [deleteModal, setDeleteModal] = useState<{ id: string; title: string } | null>(null);
+   const [deleteConfirm, setDeleteConfirm] = useState("");
+   const [deleting, setDeleting] = useState(false);
+
    // CRITICAL: Guard MUST be first line
    if (!events || !Array.isArray(events)) {
      return (
@@ -19,15 +28,11 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
      );
    }
 
-   if (events.length === 0) {
+   if (rows.length === 0) {
      return (
        <div className="text-neutral-400 py-4">No events found.</div>
      );
    }
-
-   const supabase = createSupabaseBrowserClient();
-   const [rows, setRows] = useState(events);
-   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function updateEvent(id: string, is_featured: boolean, featured_rank: number) {
     setLoadingId(id);
@@ -50,6 +55,28 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
     );
 
     setLoadingId(null);
+  }
+
+  async function handleDelete() {
+    if (!deleteModal || deleteConfirm !== "DELETE") return;
+    setDeleting(true);
+
+    const { error } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", deleteModal.id);
+
+    if (error) {
+      alert("Failed to delete event: " + error.message);
+      setDeleting(false);
+      return;
+    }
+
+    setRows(prev => prev.filter(ev => ev.id !== deleteModal.id));
+    setDeleteModal(null);
+    setDeleteConfirm("");
+    setDeleting(false);
+    router.refresh();
   }
 
   return (
@@ -108,21 +135,70 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
                 {loadingId === ev.id ? (
                   <span className="text-gold-400">Saving…</span>
                 ) : (
-                  <>
-                    <Link 
+                  <div className="flex items-center gap-2">
+                    <Link
                       href={`/dashboard/admin/events/${ev.id}/edit`}
-                      className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs mr-2"
+                      className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs"
                     >
                       Edit
                     </Link>
-                    <span className="text-neutral-400 text-sm">Ready</span>
-                  </>
+                    <button
+                      onClick={() => setDeleteModal({ id: ev.id, title: ev.title })}
+                      className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-neutral-900 border border-white/10 rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">Delete Event</h3>
+            <p className="text-neutral-300 mb-2">
+              Are you sure you want to delete <strong className="text-white">{deleteModal.title}</strong>?
+            </p>
+            <p className="text-red-400 text-sm mb-4">
+              This action cannot be reversed.
+            </p>
+            <p className="text-neutral-400 text-sm mb-2">
+              Type <strong className="text-white">DELETE</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="DELETE"
+              className="w-full px-3 py-2 bg-black border border-white/20 rounded text-white mb-4 focus:border-red-500 focus:outline-none"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setDeleteModal(null);
+                  setDeleteConfirm("");
+                }}
+                className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteConfirm !== "DELETE" || deleting}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white"
+              >
+                {deleting ? "Deleting..." : "Delete Event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
