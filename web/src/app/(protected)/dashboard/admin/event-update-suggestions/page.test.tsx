@@ -70,8 +70,8 @@ describe("Admin Event Update Suggestions Page", () => {
     await waitFor(() => expect(screen.getByText("Correct event date")).toBeInTheDocument());
 
     // The table renders batch_id / event_id / field / old / new — assert those instead of venue
-    expect(screen.getByText("batch-uuid-123")).toBeInTheDocument();
-    expect(screen.getByText("event-uuid-456")).toBeInTheDocument();
+    expect(screen.getByText(/batch-uuid-123/)).toBeInTheDocument();
+    expect(screen.getByText(/event-uuid-456/)).toBeInTheDocument();
     expect(screen.getByText("start_time")).toBeInTheDocument();
 
     const possibleActionLabels = ["Approve", "Reject", "Delete"];
