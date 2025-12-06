@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/events";
 import { PageContainer, HeroSection } from "@/components/layout";
@@ -5,6 +6,11 @@ import { Button } from "@/components/ui";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event } from "@/types";
+
+export const metadata: Metadata = {
+  title: "Events | Denver Songwriters Collective",
+  description: "Discover songwriter showcases, song circles, workshops, and special events in Denver's music community.",
+};
 
 export const dynamic = "force-dynamic";
 

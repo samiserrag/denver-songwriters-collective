@@ -52,7 +52,9 @@ export default function CompactListItem({
   const addressParts = [venue_address, venue_city, venue_state].filter(Boolean).join(", ");
   const mapUrl =
     map_url ??
-    (addressParts ? `https://maps.google.com/?q=${encodeURIComponent(addressParts)}` : undefined);
+    (venue_name
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressParts ? `${venue_name}, ${addressParts}` : venue_name)}`
+      : undefined);
 
   const detailsHref = slug ? `/open-mics/${slug}` : `/open-mics/${id}`;
 

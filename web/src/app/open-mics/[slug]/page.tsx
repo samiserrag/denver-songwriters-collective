@@ -4,11 +4,22 @@ import type { EventWithVenue } from "@/types/db";
 import Link from "next/link";
 import { highlight, escapeHtml } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+import PlaceholderImage from "@/components/ui/PlaceholderImage";
+
 const CATEGORY_COLORS: Record<string, string> = {
   "comedy": "bg-pink-900/40 text-pink-300",
   "poetry": "bg-purple-900/40 text-purple-300",
   "all-acts": "bg-yellow-900/40 text-yellow-300",
+  "music": "bg-emerald-900/40 text-emerald-300",
+  "mixed": "bg-sky-900/40 text-sky-300",
 };
+
+function getMapUrl(venueName: string, address?: string) {
+  const query = address
+    ? `${venueName}, ${address}`
+    : venueName;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -47,12 +58,11 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
   }
 
   const venue = event.venue;
+  const venueAddress = [venue?.address, venue?.city, venue?.state].filter(Boolean).join(", ");
   const mapUrl =
     venue?.google_maps_url ??
     venue?.map_link ??
-    (venue?.address
-      ? `https://maps.google.com/?q=${encodeURIComponent([venue.address, venue.city, venue.state].filter(Boolean).join(", "))}`
-      : undefined);
+    (venue?.name ? getMapUrl(venue.name, venueAddress || undefined) : undefined);
 
   const recurrenceText = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
   const startFormatted = formatTimeToAMPM(event.start_time ?? null);
@@ -68,85 +78,151 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
   const notesHtml = event.notes ? (searchQuery ? highlight(event.notes, searchQuery) : escapeHtml(event.notes)) : "";
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <Link href="/open-mics" className="text-[#00FFCC] hover:underline">
-        ← Back to Directory
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <Link href="/open-mics" className="inline-flex items-center gap-2 text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors mb-6">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Directory
       </Link>
 
-      <div className="mt-6 rounded-2xl bg-white/5 p-6 shadow-xl border border-white/10">
-        <h1
-          className="text-3xl font-semibold text-white tracking-wide"
-          dangerouslySetInnerHTML={{ __html: titleHtml }}
-        />
+      {/* Hero section with placeholder image */}
+      <div className="rounded-2xl overflow-hidden border border-white/10 bg-[var(--color-indigo-950)]/50">
+        <div className="h-48 md:h-64 relative">
+          <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title ?? "Open Mic"} />
+          {/* Day badge */}
+          {event.day_of_week && (
+            <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
+              <span className="text-[var(--color-gold)] font-semibold">{event.day_of_week}s</span>
+            </div>
+          )}
+          {/* Category badge */}
+          {event.category && (
+            <div className="absolute top-4 right-4">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[(event.category as string)] || "bg-slate-900/60 text-slate-300"}`}>
+                {event.category}
+              </span>
+            </div>
+          )}
+        </div>
 
-        {event.category && (
-          <div className="mt-3">
-            <span className={`text-xs px-2 py-0.5 rounded ${CATEGORY_COLORS[(event.category as string)] || ""}`}>
-              {event.category}
-            </span>
+        <div className="p-6 md:p-8">
+          <h1
+            className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-4"
+            dangerouslySetInnerHTML={{ __html: titleHtml }}
+          />
+
+          {/* Quick info cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {/* Time Card */}
+            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
+              <div className="flex items-center gap-2 text-[var(--color-warm-gray)] text-sm mb-1">
+                <span>🕐</span> Time
+              </div>
+              <p className="text-[var(--color-warm-white)] font-medium">
+                {startFormatted}{endFormatted && endFormatted !== "TBD" ? ` — ${endFormatted}` : ""}
+              </p>
+              {signupFormatted && signupFormatted !== "TBD" && (
+                <p className="text-teal-400 text-sm mt-1">Signup: {signupFormatted}</p>
+              )}
+            </div>
+
+            {/* Venue Card */}
+            {venue && (
+              <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
+                <div className="flex items-center gap-2 text-[var(--color-warm-gray)] text-sm mb-1">
+                  <span>📍</span> Venue
+                </div>
+                <p className="text-[var(--color-warm-white)] font-medium" dangerouslySetInnerHTML={{ __html: venueNameHtml }} />
+                <p className="text-[var(--color-warm-gray-light)] text-sm mt-1">
+                  {venue.city}{venue.state ? `, ${venue.state}` : ""}
+                </p>
+              </div>
+            )}
+
+            {/* Schedule Card */}
+            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
+              <div className="flex items-center gap-2 text-[var(--color-warm-gray)] text-sm mb-1">
+                <span>📅</span> Schedule
+              </div>
+              <p className="text-[var(--color-warm-white)] font-medium">
+                {recurrenceText || "Weekly"}
+              </p>
+              {event.status && (
+                <p className={`text-sm mt-1 ${event.status === "active" ? "text-green-400" : "text-[var(--color-warm-gray)]"}`}>
+                  {event.status === "active" ? "✓ Active" : event.status}
+                </p>
+              )}
+            </div>
           </div>
-        )}
 
-        {venue && (
-          <div className="mt-4 space-y-2">
-            <h2 className="text-lg font-medium text-[#00FFCC]">Venue</h2>
-            <p className="text-white font-semibold" dangerouslySetInnerHTML={{ __html: venueNameHtml }} />
-            {venueAddressHtml ? (
-              <p className="text-[var(--color-warm-gray-light)]" dangerouslySetInnerHTML={{ __html: venueAddressHtml }} />
-            ) : null}
-            <p className="text-[var(--color-warm-gray-light)]">
-              {venue.city}, {venue.state}
-            </p>
-            {mapUrl ? (
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {mapUrl && (
               <a
                 href={mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block mt-1 px-3 py-1 rounded-full bg-white/5 text-[#00FFCC] hover:bg-[#00FFCC]/10 transition"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
               >
-                View Map
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Get Directions
               </a>
-            ) : null}
+            )}
+            {venue?.website_url && (
+              <a
+                href={venue.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border-2 border-white/20 hover:border-white/40 text-[var(--color-warm-white)] font-semibold transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Venue Website
+              </a>
+            )}
           </div>
-        )}
 
-        <div className="mt-6 space-y-2">
-          <h2 className="text-lg font-medium text-white">Details</h2>
-          <div className="text-[var(--color-warm-gray-light)] space-y-1">
-            {event.day_of_week && <p><strong className="text-white">Day:</strong> {event.day_of_week}</p>}
-            {startFormatted && <p><strong className="text-white">Starts:</strong> {startFormatted}</p>}
-            {endFormatted && endFormatted !== "TBD" && <p><strong className="text-white">Ends:</strong> {endFormatted}</p>}
-            <p className="text-teal-300">
-              <strong className="text-white">Signup:</strong>{" "}
-              {signupFormatted && signupFormatted !== "TBD" ? signupFormatted : "Contact venue for details"}
-            </p>
-            {recurrenceText ? (
-              <p><strong className="text-white">Recurrence:</strong> {recurrenceText}</p>
-            ) : null}
-            {event.status && <p><strong className="text-white">Status:</strong> {event.status}</p>}
-          </div>
+          {/* Description */}
+          {descriptionHtml && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-warm-white)] mb-3">About This Open Mic</h2>
+              <div
+                className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+              />
+            </div>
+          )}
+
+          {/* Address */}
+          {venueAddressHtml && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-warm-white)] mb-3">Location</h2>
+              <p className="text-[var(--color-warm-gray-light)]" dangerouslySetInnerHTML={{ __html: venueAddressHtml }} />
+              {venue && (
+                <p className="text-[var(--color-warm-gray-light)]">
+                  {venue.city}{venue.state ? `, ${venue.state}` : ""}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Notes */}
+          {notesHtml && (
+            <div className="mb-8 p-4 rounded-xl bg-teal-900/20 border border-teal-500/20">
+              <h2 className="font-[var(--font-family-serif)] text-lg text-teal-400 mb-2">Notes</h2>
+              <div className="text-[var(--color-warm-gray-light)] text-sm" dangerouslySetInnerHTML={{ __html: notesHtml }} />
+            </div>
+          )}
         </div>
-
-        {descriptionHtml ? (
-          <div className="mt-6">
-            <h2 className="text-lg font-medium text-white">About This Event</h2>
-            <div
-              className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-            />
-          </div>
-        ) : null}
-
-        {notesHtml ? (
-          <div className="mt-6">
-            <h2 className="text-lg font-medium text-white">Notes</h2>
-            <div className="text-[var(--color-warm-gray-light)]" dangerouslySetInnerHTML={{ __html: notesHtml }} />
-          </div>
-        ) : null}
       </div>
 
+      {/* Suggestion form */}
       <div className="mt-8">
-        {/* Multi-field suggestion form — requires login */}
         <EventSuggestionForm
           event={{
             id: event.id,

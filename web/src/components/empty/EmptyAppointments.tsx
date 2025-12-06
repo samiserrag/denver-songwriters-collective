@@ -4,8 +4,8 @@ export default function EmptyAppointments() {
   return (
     <EmptyState
       icon="📅"
-      title="No Appointments"
-      subtitle="You haven't booked any studio sessions yet."
+      title="No appointments yet"
+      subtitle="Ready to record? Browse our partner studios and book your first session."
       ctaText="Browse Studios"
       ctaHref="/studios"
     />

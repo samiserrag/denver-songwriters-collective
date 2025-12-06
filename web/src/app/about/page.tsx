@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { Button } from "@/components/ui";
+
+export const metadata: Metadata = {
+  title: "About | Denver Songwriters Collective",
+  description: "The Denver Songwriters Collective is your home for finding stages, connecting with artists, and growing as a songwriter in Denver.",
+};
 
 export default function AboutPage() {
   return (

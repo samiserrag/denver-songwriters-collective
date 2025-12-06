@@ -1,11 +1,20 @@
-# OPEN MIC DROP — MASTER CONTEXT FILE (FULL VERSION)
+# THE DENVER SONGWRITERS COLLECTIVE (DSC) — MASTER CONTEXT FILE (FULL VERSION)
 # Batch 1 of N — Architecture Overview
+
+============================================================
+SECTION 0 — BRAND INFORMATION
+============================================================
+
+- **Full Name:** The Denver Songwriters Collective
+- **Short Name:** DSC
+- **Tagline:** "Find your people. Find your stage. Find your songs."
+- **Previous Name:** Open Mic Drop (deprecated)
 
 ============================================================
 SECTION 1 — PROJECT OVERVIEW
 ============================================================
 
-Open Mic Drop is a modern, AI-first musician and community platform designed to support performers, hosts, studios, and audiences across cities. The system replaces legacy WordPress logic with a clean, modern, scalable architecture using Next.js 15, Supabase, Vercel, Expo, and AI-first development practices.
+The Denver Songwriters Collective (DSC) is a modern, AI-first musician and community platform designed to support performers, hosts, studios, and audiences across cities. The system replaces legacy WordPress logic with a clean, modern, scalable architecture using Next.js 15, Supabase, Vercel, Expo, and AI-first development practices.
 
 Core features include:
 • Event listing and discovery  

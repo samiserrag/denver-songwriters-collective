@@ -1,8 +1,14 @@
 
 
-# OPEN MIC DROP — AI CONTEXT FILE (ACTIVE)
+# THE DENVER SONGWRITERS COLLECTIVE (DSC) — AI CONTEXT FILE (ACTIVE)
 
-This file provides unified context for Claude Code, GPT‑5.1 Codex‑Max (external), and any other AI assistants used for Open Mic Drop development.
+This file provides unified context for Claude Code, GPT‑5.1 Codex‑Max (external), and any other AI assistants used for The Denver Songwriters Collective development.
+
+## BRAND INFORMATION
+- **Full Name:** The Denver Songwriters Collective
+- **Short Name:** DSC
+- **Tagline:** "Find your people. Find your stage. Find your songs."
+- **Previous Name:** Open Mic Drop (deprecated)
 
 ## 1. CURRENT DEVELOPMENT ENVIRONMENT
 
@@ -18,7 +24,7 @@ This file provides unified context for Claude Code, GPT‑5.1 Codex‑Max (exter
 Your active repo is:
 
 ```
-/Users/samiserrag/Documents/GitHub/open-mic-drop
+/Users/samiserrag/Documents/GitHub/denver-songwriters-collective
 ```
 
 The `.continue/` folder exists but **is not the active agent** and can be ignored unless a future migration is needed.
@@ -31,11 +37,11 @@ Claude Code should load from:
 
 - `scaffold.md`
 - `global-rule.md`
-- `OPEN_MIC_DROP_AI_CONTEXT.md` (this file)
+- `DSC_AI_CONTEXT.md` (this file)
 
 ## 3.1 MULTI‑AI REVIEW PROTOCOL
 
-Open Mic Drop uses a 3‑AI architecture:
+The Denver Songwriters Collective uses a 3‑AI architecture:
 
 - **Claude Code** → local coding, diffs, Supabase SQL generation.
 - **ChatGPT (GPT‑5.1 Codex‑Max)** → architecture, planning, high‑level decisions.
@@ -144,7 +150,7 @@ END OF RLS SPEC.
 
 ## 4. HIGH‑LEVEL ARCHITECTURE
 
-Open Mic Drop is being rebuilt as:
+The Denver Songwriters Collective is built as:
 
 - **Next.js 15 app router**
 - **Supabase (DB + Auth + Edge Functions)**

@@ -7,6 +7,7 @@ import type { Event as EventType, Venue } from "@/types";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { highlight } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
 const CATEGORY_COLORS: Record<string, string> = {
   music: "bg-emerald-900/60 text-emerald-200 border-emerald-500/40",
@@ -29,18 +30,28 @@ function getVenueMapsUrl(v: MaybeVenue) {
   return (v.google_maps_url ?? v.map_link ?? v.website) ?? undefined;
 }
 
+function getMapUrl(venueName: string, address?: string) {
+  const query = address
+    ? `${venueName}, ${address}`
+    : venueName;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
 export default function EventCard({ event, searchQuery }: { event: EventType; searchQuery?: string | null }) {
   const venueObj: MaybeVenue = event.venue ?? undefined;
   const venueName = getVenueName(venueObj) ?? "";
-  const mapQuery = encodeURIComponent([venueName, event.location].filter(Boolean).join(", "));
-  const mapsUrl = `https://maps.google.com/?q=${mapQuery}`;
 
   const eventMapUrl = ((): string | undefined => {
     // prefer explicit mapUrl field if present on event
     const maybeMapUrl = (event as unknown as { mapUrl?: string | undefined }).mapUrl;
     if (maybeMapUrl) return maybeMapUrl;
     const fromVenue = getVenueMapsUrl(venueObj);
-    return fromVenue ?? mapsUrl;
+    if (fromVenue) return fromVenue;
+    // fallback to generated map URL
+    if (venueName) {
+      return getMapUrl(venueName, event.location);
+    }
+    return undefined;
   })();
 
   const dayOfWeek = ((): string | null => {
@@ -149,87 +160,83 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
 
   return (
     <article
-      className="rounded-2xl bg-white/5 p-4 shadow-xl border border-white/10 hover:border-[#00FFCC]/40 hover:shadow-[0_8px_30px_rgba(0,255,204,0.08)] transition-all duration-200 flex flex-col justify-between space-y-3 break-words"
+      className="group rounded-xl bg-[var(--color-indigo-950)]/50 border border-white/10 overflow-hidden hover:border-[var(--color-gold)]/50 transition-all duration-200 card-hover"
       role="article"
     >
-      <div className="flex flex-col space-y-2 break-words">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-lg sm:text-xl font-semibold text-white tracking-tight leading-tight break-words"
-              dangerouslySetInnerHTML={{ __html: highlight(event.title, searchQuery ?? "") }}
-            />
-
-            {event.category && (
-              <span
-                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide mt-1 ${CATEGORY_COLORS[(event.category as string)] ?? "bg-slate-900/60 text-slate-200 border-slate-500/40"}`}
-              >
-                {event.category}
-              </span>
-            )}
+      {/* Image/Placeholder */}
+      <div className="h-32 relative">
+        <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title} />
+        {/* Day badge */}
+        {dayOfWeek && (
+          <div className="absolute top-3 left-3 px-3 py-1 bg-black/70 backdrop-blur rounded-full">
+            <span className="text-[var(--color-gold)] text-sm font-medium">{dayOfWeek}</span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {(event.eventType ?? event.event_type) && (
-              <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-[#00FFCC] whitespace-nowrap">
-                {event.eventType ?? event.event_type}
-              </span>
-            )}
-
-            <button
-              onClick={toggleFavorite}
-              aria-label={favorited ? "Remove favorite" : "Add favorite"}
-              className="text-xl leading-none px-2 py-1 rounded hover:bg-white/5 transition"
-              disabled={loadingFav}
-            >
-              {favorited ? "★" : "☆"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-1">
-          <p className="text-sm text-gray-400">{recurrenceText}</p>
-        </div>
-
-        <div className="text-sm text-[#80D9FF] break-words">
-          {event.date ? <span className="block">{event.date}</span> : null}
-          <span className="block font-medium text-[#80D9FF]">
-            {dayOfWeek ? `${dayOfWeek} • ${startTime}${endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}` : `${startTime}${endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}`}
-          </span>
-        </div>
-
-          <div className="text-sm">
-            <div
-              className="text-base font-medium text-white break-words"
-              dangerouslySetInnerHTML={{ __html: highlight(venueText ?? "", searchQuery ?? "") }}
-            />
-            {/* City / State display */}
-            <div className="text-sm text-[var(--color-warm-gray-light)]">
-              {displayLocation ? <span>{displayLocation}</span> : null}
-            </div>
-            {event.location && (
-              <div className="text-[var(--color-warm-gray-light)] break-words">{event.location}</div>
-            )}
-          </div>
+        )}
+        {/* Favorite button */}
+        <button
+          onClick={toggleFavorite}
+          aria-label={favorited ? "Remove favorite" : "Add favorite"}
+          className="absolute top-3 right-3 text-xl leading-none px-2 py-1 rounded-full bg-black/50 backdrop-blur hover:bg-black/70 transition text-[var(--color-gold)]"
+          disabled={loadingFav}
+        >
+          {favorited ? "★" : "☆"}
+        </button>
       </div>
 
-      <div className="mt-2 flex gap-3">
-        <Link
-          href={event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`}
-          className="w-full inline-flex items-center justify-center rounded-lg bg-[#001e20] px-3 py-2 text-sm font-semibold text-[#00FFCC] hover:brightness-105 transition ring-1 ring-[#00FFCC]/20 text-center"
-        >
-          View Details
-        </Link>
+      {/* Content */}
+      <div className="p-5 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-[var(--font-family-serif)] text-lg text-[var(--color-warm-white)] group-hover:text-[var(--color-gold)] transition-colors leading-tight break-words"
+            dangerouslySetInnerHTML={{ __html: highlight(event.title, searchQuery ?? "") }}
+          />
+          {event.category && (
+            <span
+              className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${CATEGORY_COLORS[(event.category as string)] ?? "bg-slate-900/60 text-slate-200 border-slate-500/40"}`}
+            >
+              {event.category}
+            </span>
+          )}
+        </div>
 
-        {eventMapUrl ? (
-          <a
-            href={eventMapUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full inline-flex items-center justify-center rounded-lg bg-transparent px-3 py-2 text-sm font-semibold text-[#00FFCC] border border-[#00FFCC]/20 hover:shadow-[0_0_12px_rgba(0,255,204,0.12)] transition text-center"
+        <div className="text-sm text-[var(--color-warm-gray-light)] flex items-center gap-2">
+          <span>📍</span>
+          <span
+            className="break-words"
+            dangerouslySetInnerHTML={{ __html: highlight(venueText ?? "TBA", searchQuery ?? "") }}
+          />
+        </div>
+
+        {displayLocation && (
+          <div className="text-sm text-[var(--color-warm-gray)]">
+            {displayLocation}
+          </div>
+        )}
+
+        <div className="text-sm text-teal-400">
+          {startTime}{endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}
+          {recurrenceText && recurrenceText !== "Every week" && (
+            <span className="text-[var(--color-warm-gray)] ml-2">• {recurrenceText}</span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+          <Link
+            href={event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`}
+            className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
           >
-            View Map
-          </a>
-        ) : null}
+            View Details →
+          </Link>
+          {eventMapUrl && (
+            <a
+              href={eventMapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-400 hover:text-teal-300 text-sm font-medium transition-colors"
+            >
+              Map
+            </a>
+          )}
+        </div>
       </div>
     </article>
   );

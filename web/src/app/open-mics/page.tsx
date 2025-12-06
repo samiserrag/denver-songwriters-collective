@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import type { Event as EventType } from "@/types";
@@ -11,6 +12,12 @@ import AccordionList from "@/components/AccordionList";
 import DayJumpBar from "@/components/DayJumpBar";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import WorkInProgressBanner from "@/components/WorkInProgressBanner";
+
+export const metadata: Metadata = {
+  title: "Open Mics | Denver Songwriters Collective",
+  description: "Find open mics in Denver every night of the week. Community-curated directory of songwriter-friendly stages across the Front Range.",
+};
+
 export const dynamic = "force-dynamic";
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 

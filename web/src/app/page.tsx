@@ -97,6 +97,11 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection minHeight="xl" showVignette showBottomFade>
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} aria-hidden="true" />
+
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Login-aware greeting */}
@@ -105,57 +110,124 @@ export default async function HomePage() {
                 Welcome back, {userName}
               </p>
             ) : (
-              <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-gold)]/80 uppercase">
-                Denver&apos;s Creative Heart
+              <p className="text-[var(--color-gold)]/80 uppercase tracking-[0.3em] text-sm mb-4 font-medium">
+                Denver • Songwriters • Community
               </p>
             )}
 
-            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-gold)] leading-[var(--line-height-tight)]">
-              The Denver Songwriters Collective
+            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[4rem] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
+              Find Your People.<br />
+              <span className="text-[var(--color-gold)]">Find Your Stage.</span>
             </h1>
 
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              A warm, open, community-driven space where strangers become friends,
-              friends become collaborators, and collaborators become genuine fans of one another.
-            </p>
-
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              We believe that music does more than entertain — it builds relationships and creates real belonging.
-              Denver&apos;s creative energy is alive, growing, and filled with songwriters looking not just for a stage,
-              but for connection, encouragement, and a sense of shared purpose.
+            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-gray-light)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
+              Denver&apos;s home for songwriters. Discover open mics, showcases,
+              song circles, and connect with your creative community.
             </p>
 
             {/* Login-aware CTAs */}
-            <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4">
               {user ? (
                 <>
-                  <Button asChild variant="primary" size="lg">
-                    <Link href="/dashboard">Go to Dashboard</Link>
-                  </Button>
-                  <Button asChild variant="secondary" size="lg">
-                    <Link href="/events">Explore Events</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg">
-                    <Link href="/open-mics">Find Open Mics</Link>
-                  </Button>
+                  <Link
+                    href="/dashboard"
+                    className="px-8 py-4 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
+                  >
+                    Go to Dashboard
+                  </Link>
+                  <Link
+                    href="/open-mics"
+                    className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5"
+                  >
+                    Find Open Mics
+                  </Link>
+                  <Link
+                    href="/events"
+                    className="px-8 py-4 border-2 border-teal-500/50 hover:border-teal-400 text-teal-400 font-semibold rounded-lg transition-all hover:bg-teal-500/10"
+                  >
+                    Browse Events
+                  </Link>
                 </>
               ) : (
                 <>
-                  <Button asChild variant="primary" size="lg">
-                    <Link href="/events">Explore Events & Get Involved</Link>
-                  </Button>
-                  <Button asChild variant="secondary" size="lg">
-                    <Link href="/performers">Meet the Artists</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg">
-                    <Link href="/open-mics">Find Open Mics</Link>
-                  </Button>
+                  <Link
+                    href="/open-mics"
+                    className="px-8 py-4 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
+                  >
+                    Find Open Mics
+                  </Link>
+                  <Link
+                    href="/events"
+                    className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5"
+                  >
+                    Browse Events
+                  </Link>
+                  <Link
+                    href="/performers"
+                    className="px-8 py-4 border-2 border-teal-500/50 hover:border-teal-400 text-teal-400 font-semibold rounded-lg transition-all hover:bg-teal-500/10"
+                  >
+                    Meet Artists
+                  </Link>
                 </>
               )}
             </div>
           </div>
         </PageContainer>
       </HeroSection>
+
+      {/* What We Offer Section */}
+      <section className="py-20 px-6 bg-[var(--color-background-dark)]/50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-warm-white)] mb-4">
+            Everything Songwriters Need
+          </h2>
+          <p className="text-[var(--color-warm-gray)] text-center mb-12 max-w-2xl mx-auto">
+            Whether you&apos;re looking for your first open mic or your hundredth,
+            we&apos;ve got you covered.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: "🎤",
+                title: "Open Mics",
+                desc: "Find weekly open mics across Denver, sorted by day and venue.",
+                href: "/open-mics"
+              },
+              {
+                icon: "🎵",
+                title: "Showcases",
+                desc: "Discover songwriter showcases and listening room events.",
+                href: "/events"
+              },
+              {
+                icon: "🎸",
+                title: "Artists",
+                desc: "Connect with Denver's talented songwriter community.",
+                href: "/performers"
+              },
+              {
+                icon: "🎧",
+                title: "Studios",
+                desc: "Book recording time at local studios and creative spaces.",
+                href: "/studios"
+              },
+            ].map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-xl hover:border-[var(--color-gold)]/50 transition-all group card-hover"
+              >
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2 group-hover:text-[var(--color-gold)] transition-colors">
+                  {item.title}
+                </h3>
+                <p className="text-[var(--color-warm-gray)] text-sm">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <PageContainer>
         <div className="py-16 space-y-20">

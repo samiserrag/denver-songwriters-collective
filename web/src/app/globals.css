@@ -193,3 +193,27 @@ body {
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+h1, h2, h3 {
+  font-family: var(--font-family-serif);
+  letter-spacing: -0.02em;
+  line-height: var(--line-height-tight);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Display font class */
+.font-display {
+  font-family: var(--font-family-serif);
+}

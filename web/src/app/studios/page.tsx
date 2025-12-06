@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { StudioGrid } from "@/components/studios";
 import { PageContainer, HeroSection } from "@/components/layout";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Studio } from "@/types";
+
+export const metadata: Metadata = {
+  title: "Studios | Denver Songwriters Collective",
+  description: "Find recording studios, rehearsal spaces, and creative venues for Denver songwriters.",
+};
+
 export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
