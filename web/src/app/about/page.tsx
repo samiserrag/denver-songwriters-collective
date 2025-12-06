@@ -1,27 +1,182 @@
+import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
+import { Button } from "@/components/ui";
 
 export default function AboutPage() {
   return (
     <>
-      <HeroSection minHeight="md">
+      {/* Hero Section */}
+      <HeroSection minHeight="lg" showVignette showBottomFade>
         <PageContainer>
-          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">About The Denver Songwriters Collective</h1>
-          <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-gold)]/90 italic mb-4">
-            Find your people. Find your stage. Find your songs.
-          </p>
-          <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
-            The Denver Songwriters Collective is a community-driven platform for Denver&apos;s songwriters. We help performers and venues connect through accurate, up-to-date listings of open mics, showcases, song circles, and collaboration opportunities across the Front Range.
-          </p>
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-gold)] leading-[var(--line-height-tight)]">
+              About The Denver Songwriters Collective
+            </h1>
+            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
+              A grassroots community built around a simple idea: when people share their music, they share themselves — and something powerful happens.
+            </p>
+          </div>
         </PageContainer>
       </HeroSection>
 
+      {/* Main Content */}
       <PageContainer>
-        <div className="mt-8 rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-8">
-          <h2 className="text-lg font-semibold text-[var(--color-warm-white)]">How it works</h2>
-          <p className="mt-2 text-[var(--color-warm-gray-light)]">Listings are submitted by the community and reviewed for accuracy. If you see something that's out of date, use the submit form to suggest an update.</p>
+        <div className="py-16 space-y-16 max-w-4xl mx-auto">
 
-          <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mt-4">Join the community</h2>
-          <p className="mt-2 text-[var(--color-warm-gray-light)]">Contribute by submitting open mics, suggesting edits, or sharing events with performers who might be interested.</p>
+          {/* Our Story */}
+          <section className="space-y-6">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              In an era where everyone feels spread thin and disconnected, the act of gathering in a creative space helps restore meaning, friendship, and belonging. DSC is not an industry platform. It is a people platform. It is a space where neighbors, co-workers, strangers, out-of-towners, hobbyists, professionals, students, parents, and long-time musicians can all come together, get to know each other, and build genuine relationships through the art of original songwriting.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              Many communities focus on perfect performances or competition. DSC focuses on connection. At our gatherings, you&apos;ll meet people who root for you even if they just met you five minutes ago. You&apos;ll hear songs that surprise you, encourage you, make you laugh, or make you feel less alone. You&apos;ll see performers cheer for each other, swap ideas, collaborate, lend gear, share writing prompts, trade tips, and form friendships that carry far beyond a single event.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-gold)]/90 italic leading-[var(--line-height-relaxed)]">
+              The music is important — but the people are everything.
+            </p>
+          </section>
+
+          {/* What We Offer */}
+          <section className="space-y-8">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              What We Offer
+            </h2>
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              DSC offers multiple kinds of events to meet the needs of every songwriter and supporter:
+            </p>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Open Mics</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  For sharing songs and meeting fellow artists in a supportive environment.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Curated Showcases</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  Highlighting a small group of performers in longer sets for deeper artistic expression.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Song Clubs</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  Where participants share works-in-progress and exchange encouraging feedback.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Meetups & Socials</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  For casual socializing, collaboration, and community building.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Co-Writing Sessions</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  Connecting writers who want to create something new as a team.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Studio Partnerships</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  Recording opportunities, discounted sessions, workshops, and demo-creation days.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Open Mic Directory</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  Helping everyone in Denver find places to play, discover new spaces, and support local venues.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">Special Events</h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  Collaborative events with breweries, nonprofits, listening rooms, galleries, and neighborhood festivals.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Our Vision */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Our Vision
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              Our dream is to build not only a community, but a fully interconnected creative network that supports Denver songwriters at every stage of their journey. We aim to help venues host songwriter nights, help studios connect with emerging talent, help performers find places to play, help audiences discover local music, and help people feel at home in the creative world around them.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              As Denver continues to grow as one of the most creative cities in the country, DSC hopes to become the heart of its songwriter community. We are actively shaping a network where events flourish, partnerships thrive, and performers lift each other up.
+            </p>
+          </section>
+
+          {/* Get Involved */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Help Us Build Something Meaningful
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              Our website and platform are being built with the community&apos;s input. We welcome help from anyone who wants to support: testing features, submitting event listings, suggesting venues, reporting updates to the open mic directory, offering feedback on design and usability, contributing information, volunteering at events, or simply spreading the word.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              The more participation we receive, the stronger and more accurate the directory becomes — and the more meaningful all of our gatherings will be. This project only succeeds because people care enough to be part of it.
+            </p>
+          </section>
+
+          {/* Partnerships */}
+          <section className="space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Growing Together
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              Our partnerships will grow over time — with studios, venues, audio engineers, photographers, videographers, educators, nonprofits, festivals, rehearsal spaces, and cultural organizations. We want to celebrate and lift up the entire creative ecosystem of the Front Range.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              DSC is committed to building a network where everyone benefits: venues receive engaged performers, performers discover supportive rooms, studios meet new artists, communities experience more local music, and fans build real connections with the people behind the songs.
+            </p>
+          </section>
+
+          {/* Expansion */}
+          <section className="space-y-6">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+              All of this grows from one simple truth: people make music, but music makes community. As DSC expands into surrounding areas — Boulder, Golden, Lakewood, Aurora, Fort Collins, Colorado Springs, and eventually chapters beyond Colorado — our purpose remains unchanged.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-gold)]/90 italic leading-[var(--line-height-relaxed)]">
+              We exist to help people find each other.
+            </p>
+          </section>
+
+          {/* Final Call to Action */}
+          <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              Join the Collective
+            </h2>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+              If you love songwriting, love local music, love community, or simply want to support a creative movement that brings people together in meaningful ways, The Denver Songwriters Collective welcomes you.
+            </p>
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+              Come help us shape the story, one song, one friendship, and one event at a time.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Button asChild variant="primary" size="lg">
+                <Link href="/events">Explore Events</Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/open-mics">Find Open Mics</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/submit-open-mic">Submit a Venue</Link>
+              </Button>
+            </div>
+          </section>
+
         </div>
       </PageContainer>
     </>
