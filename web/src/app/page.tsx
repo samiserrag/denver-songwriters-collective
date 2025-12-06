@@ -52,7 +52,7 @@ export default async function HomePage() {
   const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
-  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredStudiosRes] = await Promise.all([
+  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredStudiosRes, latestBlogRes] = await Promise.all([
     supabase
       .from("events")
       .select("*")
@@ -82,17 +82,40 @@ export default async function HomePage() {
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(6),
+    supabase
+      .from("blog_posts")
+      .select(`
+        id,
+        slug,
+        title,
+        excerpt,
+        cover_image_url,
+        published_at,
+        tags,
+        author:profiles!blog_posts_author_id_fkey(full_name, avatar_url)
+      `)
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const featuredEvents: Event[] = (featuredEventsRes.data ?? []).map(mapDBEventToEvent);
   const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
   const featuredPerformers: Performer[] = (featuredPerformersRes.data ?? []).map(mapDBProfileToPerformer);
   const featuredStudios: Studio[] = (featuredStudiosRes.data ?? []).map(mapDBProfileToStudio);
+  const latestBlog = latestBlogRes.data;
+  const latestBlogAuthor = latestBlog?.author
+    ? Array.isArray(latestBlog.author)
+      ? latestBlog.author[0]
+      : latestBlog.author
+    : null;
 
   const hasFeaturedEvents = featuredEvents.length > 0;
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasFeaturedPerformers = featuredPerformers.length > 0;
   const hasFeaturedStudios = featuredStudios.length > 0;
+  const hasLatestBlog = !!latestBlog;
 
   return (
     <>
@@ -228,6 +251,108 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Latest from the Blog */}
+      {hasLatestBlog && (
+        <section className="py-16 px-6 border-t border-white/5">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-baseline justify-between gap-4 mb-8">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                  Latest from the Blog
+                </h2>
+                <p className="text-[var(--color-warm-gray)]">
+                  Tips, stories, and insights from the Denver songwriting community.
+                </p>
+              </div>
+              <Link
+                href="/blog"
+                className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                View all posts
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            <Link
+              href={`/blog/${latestBlog.slug}`}
+              className="block group"
+            >
+              <div className="grid md:grid-cols-2 gap-8 items-center bg-[var(--color-indigo-950)]/30 border border-white/10 rounded-2xl overflow-hidden hover:border-[var(--color-gold)]/30 transition-all">
+                {latestBlog.cover_image_url ? (
+                  <div className="relative h-64 md:h-80 overflow-hidden">
+                    <img
+                      src={latestBlog.cover_image_url}
+                      alt={latestBlog.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--color-background)]/50 md:hidden" />
+                  </div>
+                ) : (
+                  <div className="h-64 md:h-80 bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-teal)]/20 flex items-center justify-center">
+                    <svg className="w-16 h-16 text-[var(--color-gold)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="p-6 md:p-8">
+                  {latestBlog.tags && latestBlog.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {latestBlog.tags.slice(0, 3).map((tag: string) => (
+                        <span
+                          key={tag}
+                          className="text-xs px-2 py-1 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)] border border-[var(--color-gold)]/20"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <h3 className="text-2xl md:text-3xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-3 group-hover:text-[var(--color-gold)] transition-colors">
+                    {latestBlog.title}
+                  </h3>
+                  {latestBlog.excerpt && (
+                    <p className="text-[var(--color-warm-gray)] mb-4 line-clamp-3">
+                      {latestBlog.excerpt}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3">
+                    {latestBlogAuthor?.avatar_url ? (
+                      <img
+                        src={latestBlogAuthor.avatar_url}
+                        alt={latestBlogAuthor.full_name ?? "Author"}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
+                        <span className="text-[var(--color-gold)]">
+                          {latestBlogAuthor?.full_name?.[0] ?? "?"}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[var(--color-warm-white)] text-sm font-medium">
+                        {latestBlogAuthor?.full_name ?? "Anonymous"}
+                      </p>
+                      {latestBlog.published_at && (
+                        <p className="text-neutral-500 text-xs">
+                          {new Date(latestBlog.published_at).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </section>
+      )}
 
       <PageContainer>
         <div className="py-16 space-y-20">

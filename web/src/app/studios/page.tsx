@@ -35,16 +35,25 @@ export default async function StudiosPage() {
 
   return (
     <>
-      <HeroSection minHeight="md">
-        <PageContainer>
-          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
-            Recording Studios
-          </h1>
-          <p className="text-neutral-300 text-lg max-w-2xl">
-            Professional recording services from our partner studios.
-          </p>
-        </PageContainer>
-      </HeroSection>
+      {/* Hero Header with Background Image */}
+      <div className="relative h-48 md:h-64 overflow-hidden">
+        <img
+          src="/images/open-mic-placeholder.jpg"
+          alt="Denver Recording Studios"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center px-4">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
+              Recording Studios
+            </h1>
+            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+              Professional recording services from our partner studios
+            </p>
+          </div>
+        </div>
+      </div>
       <PageContainer>
         <div className="py-12">
           <StudioGrid studios={studios} />

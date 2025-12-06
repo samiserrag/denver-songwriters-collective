@@ -88,21 +88,25 @@ export default async function EventsPage() {
 
   return (
     <>
-      <HeroSection minHeight="lg" showVignette showBottomFade>
-        <PageContainer>
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-gold)]/80 uppercase">
-              Discover & Connect
-            </p>
-            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-gold)] leading-[var(--line-height-tight)]">
-              Events We Host & Hope to Expand
+      {/* Hero Header with Background Image */}
+      <div className="relative h-48 md:h-64 overflow-hidden">
+        <img
+          src="/images/open-mic-placeholder.jpg"
+          alt="Denver Songwriters Events"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center px-4">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
+              Events
             </h1>
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              DSC hosts and is actively developing an expanded ecosystem of events designed to bring songwriters together in meaningful ways.
+            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+              Showcases, song circles, workshops, and community gatherings
             </p>
           </div>
-        </PageContainer>
-      </HeroSection>
+        </div>
+      </div>
 
       <PageContainer>
         <div className="py-12 space-y-16">

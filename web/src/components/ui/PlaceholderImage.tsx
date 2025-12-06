@@ -9,6 +9,20 @@ export default function PlaceholderImage({
   className = "",
   alt = "Placeholder"
 }: PlaceholderImageProps) {
+  // Use actual image for open-mic type
+  if (type === "open-mic") {
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        <img
+          src="/images/open-mic-placeholder.jpg"
+          alt={alt}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      </div>
+    );
+  }
+
   const gradients = {
     "open-mic": "from-purple-900 via-indigo-900 to-blue-900",
     "event": "from-amber-900 via-orange-900 to-red-900",

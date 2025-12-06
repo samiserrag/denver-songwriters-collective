@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
+import BlogInteractions from "@/components/blog/BlogInteractions";
+import BlogComments from "@/components/blog/BlogComments";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,46 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) {
     notFound();
   }
+
+  // Get current user for like status
+  const { data: { session } } = await supabase.auth.getSession();
+  const currentUserId = session?.user?.id;
+
+  // Fetch like count and user's like status
+  const [likesRes, userLikeRes, commentsRes] = await Promise.all([
+    supabase
+      .from("blog_likes")
+      .select("*", { count: "exact", head: true })
+      .eq("post_id", post.id),
+    currentUserId
+      ? supabase
+          .from("blog_likes")
+          .select("id")
+          .eq("post_id", post.id)
+          .eq("user_id", currentUserId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("blog_comments")
+      .select(`
+        id,
+        content,
+        created_at,
+        author:profiles!blog_comments_author_id_fkey(id, full_name, avatar_url)
+      `)
+      .eq("post_id", post.id)
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const likeCount = (likesRes as any).count ?? 0;
+  const hasLiked = !!userLikeRes.data;
+  const comments = (commentsRes.data ?? []).map((c: any) => ({
+    id: c.id,
+    content: c.content,
+    created_at: c.created_at,
+    author: Array.isArray(c.author) ? c.author[0] : c.author,
+  }));
 
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString("en-US", {
@@ -214,6 +256,13 @@ export default async function BlogPostPage({ params }: Props) {
             {renderContent(post.content)}
           </div>
 
+          {/* Like button */}
+          <BlogInteractions
+            postId={post.id}
+            initialLikeCount={likeCount}
+            initialHasLiked={hasLiked}
+          />
+
           {/* Author bio */}
           {author?.bio && (
             <div className="mt-12 pt-8 border-t border-white/10">
@@ -243,6 +292,9 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
             </div>
           )}
+
+          {/* Comments section */}
+          <BlogComments postId={post.id} initialComments={comments} />
         </div>
       </PageContainer>
     </article>

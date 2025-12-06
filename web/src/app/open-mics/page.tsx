@@ -309,24 +309,36 @@ function parseTimeToMinutes(t?: string | null) {
 
   return (
     <>
-      <PageContainer>
-        {/* Compact header */}
-        <div className="pt-6 pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-            <div>
-              <h1 className="text-gradient-gold text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] italic">
-                Denver Open Mic Directory
-              </h1>
-              <p className="text-sm text-neutral-400 mt-1">
-                {totalActiveEvents || 0} active open mics
-                {(approvedSuggestions || 0) > 0 && ` • ${approvedSuggestions} community updates`}
-              </p>
-            </div>
-            <p className="text-xs text-slate-400 max-w-md">
-              Community-curated listings. Contact venues to confirm details.{" "}
-              <a href="/submit-open-mic" className="text-teal-400 hover:underline">Help keep this list updated</a>.
+      {/* Hero Header with Background Image */}
+      <div className="relative h-48 md:h-64 overflow-hidden">
+        <img
+          src="/images/open-mic-placeholder.jpg"
+          alt="Open Mic Night"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center px-4">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
+              Denver Open Mic Directory
+            </h1>
+            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+              {totalActiveEvents || 0} active open mics across the Front Range
             </p>
           </div>
+        </div>
+      </div>
+
+      <PageContainer>
+        {/* Subheader info */}
+        <div className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 mb-4">
+          <p className="text-sm text-neutral-400">
+            {(approvedSuggestions || 0) > 0 ? `${approvedSuggestions} community updates applied` : "Community-curated directory"}
+          </p>
+          <p className="text-xs text-slate-400 max-w-md">
+            Contact venues to confirm details.{" "}
+            <a href="/submit-open-mic" className="text-teal-400 hover:underline">Help keep this list updated</a>.
+          </p>
         </div>
 
         <WorkInProgressBanner />
