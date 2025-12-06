@@ -426,6 +426,69 @@ export default async function OpenMicsPage({
           )}
         </div>
       </PageContainer>
+
+      {/* Contribution Section */}
+      <PageContainer>
+        <div className="py-16 space-y-12">
+          <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 space-y-8">
+            <div className="text-center space-y-4">
+              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+                Help Keep This Directory Accurate
+              </h2>
+              <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-3xl mx-auto">
+                We are building the most accurate, up-to-date, and easy-to-use open mic directory in the region — but we cannot do it alone. Denver&apos;s music scene moves quickly, and venues update their schedules often.
+              </p>
+              <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+                Your input makes the directory stronger, more reliable, and more helpful for everyone in the community.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto">
+              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                  Submit New Open Mics
+                </h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                  Tell us about new open mics we haven&apos;t listed yet.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                  Report Changes
+                </h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                  Report changes to day, time, venue, or signup rules.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                  Confirm Active Events
+                </h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                  Confirm events that are active or discontinued.
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                  Add Venue Details
+                </h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                  Provide venue details that help performers plan.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center pt-4">
+              <Link
+                href="/submit-open-mic"
+                className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-gold)] to-[var(--color-gold-400)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] hover:shadow-[0_0_20px_rgba(255,216,106,0.35)] transition"
+              >
+                Submit, Claim, or Update an Open Mic
+              </Link>
+            </div>
+          </section>
+        </div>
+      </PageContainer>
     </>
   );
 }
