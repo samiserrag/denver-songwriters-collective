@@ -15,6 +15,8 @@ const navLinks = [
   { href: "/open-mics", label: "Open Mics" },
   { href: "/performers", label: "Performers" },
   { href: "/studios", label: "Studios" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/tip-jar", label: "Tip Jar" },
