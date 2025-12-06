@@ -14,12 +14,37 @@ import { signInWithGoogle } from "@/lib/auth/google";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { resendConfirmationEmail } = useAuth();
-  const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const { user, loading: authLoading, resendConfirmationEmail } = useAuth();
+  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      router.replace(redirectTo);
+    }
+  }, [user, authLoading, router, redirectTo]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="w-full max-w-md card-base px-8 py-10 text-center">
+        <p className="text-neutral-400">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // If user is logged in, show redirecting message
+  if (user) {
+    return (
+      <div className="w-full max-w-md card-base px-8 py-10 text-center">
+        <p className="text-neutral-400">Redirecting...</p>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +70,8 @@ function LoginForm() {
       return;
     }
 
+    // Refresh to sync auth state with server before redirecting
+    router.refresh();
     router.push(redirectTo);
   }
 

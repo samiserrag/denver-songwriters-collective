@@ -52,11 +52,11 @@ export async function middleware(req: NextRequest) {
     }
   );
 
+  // Use getUser() instead of getSession() to properly validate the JWT
+  // getSession() only reads from cookies and can be stale
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const user = session?.user ?? null;
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     const redirectUrl = new URL("/login", req.url);
