@@ -191,27 +191,23 @@ export default async function OpenMicsPage({
 
   const supabase = await createSupabaseServerClient();
 
-  // Fetch distinct cities for the city dropdown
-  const { data: cityRows } = await supabase
-    .from("venues")
-    .select("city")
-    .not("city", "is", null);
+  // Run independent queries in parallel for better performance
+  const [cityResult, activeCountResult, suggestionsCountResult] = await Promise.all([
+    // Fetch distinct cities for the city dropdown
+    supabase.from("venues").select("city").not("city", "is", null),
+    // Fetch total active events count
+    supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").eq("status", "active"),
+    // Fetch approved suggestions count
+    supabase.from("event_update_suggestions").select("*", { count: "exact", head: true }).eq("status", "approved"),
+  ]);
+
+  const cityRows = cityResult.data;
+  const totalActiveEvents = activeCountResult.count;
+  const approvedSuggestions = suggestionsCountResult.count;
 
   const cities = Array.from(
     new Set((cityRows ?? []).map((r: any) => (r.city ?? "").trim()).filter(Boolean))
   ).sort((a: string, b: string) => a.localeCompare(b));
-
-  // Fetch community stats
-  const { count: totalActiveEvents } = await supabase
-    .from("events")
-    .select("*", { count: "exact", head: true })
-    .eq("event_type", "open_mic")
-    .eq("status", "active");
-
-  const { count: approvedSuggestions } = await supabase
-    .from("event_update_suggestions")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "approved");
 
   // Build events query
   let query = supabase
