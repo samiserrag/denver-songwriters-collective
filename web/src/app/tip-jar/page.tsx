@@ -47,7 +47,7 @@ export default function TipJarPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               {/* Venmo */}
               <a
-                href="https://venmo.com/u/PLACEHOLDER"
+                href="https://venmo.com/u/Sami-Serrag-Music"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-4 text-center hover:border-[var(--color-gold)]/50 transition-colors"
@@ -61,7 +61,7 @@ export default function TipJarPage() {
                   Venmo
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  @PLACEHOLDER
+                  @Sami-Serrag-Music
                 </p>
                 <span className="inline-block text-sm text-[var(--color-gold)] group-hover:underline">
                   Send a tip →
@@ -70,7 +70,7 @@ export default function TipJarPage() {
 
               {/* PayPal */}
               <a
-                href="https://paypal.me/PLACEHOLDER"
+                href="https://paypal.me/SamiSerrag"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-4 text-center hover:border-[var(--color-gold)]/50 transition-colors"
@@ -84,7 +84,7 @@ export default function TipJarPage() {
                   PayPal
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  @PLACEHOLDER
+                  @SamiSerrag
                 </p>
                 <span className="inline-block text-sm text-[var(--color-gold)] group-hover:underline">
                   Send a tip →

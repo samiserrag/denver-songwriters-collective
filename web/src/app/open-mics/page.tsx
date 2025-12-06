@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import type { Event as EventType } from "@/types";
 import type { EventWithVenue } from "@/types/db";
 import EventCard from "@/components/EventCard";
@@ -290,48 +290,29 @@ export default async function OpenMicsPage({
 
   return (
     <>
-      <HeroSection minHeight="md">
-        <PageContainer>
-          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
-            Denver Open Mic Directory
-          </h1>
-          <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
-            A living list of weekly open mics submitted by the community.
-          </p>
-
-          <div className="flex gap-6 mt-4 text-sm text-neutral-400">
-            <span>{totalActiveEvents || 0} active open mics</span>
-            {(approvedSuggestions || 0) > 0 && (
-              <span>{approvedSuggestions} community updates</span>
-            )}
+      <PageContainer>
+        {/* Compact header */}
+        <div className="pt-6 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+            <div>
+              <h1 className="text-gradient-gold text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] italic">
+                Denver Open Mic Directory
+              </h1>
+              <p className="text-sm text-neutral-400 mt-1">
+                {totalActiveEvents || 0} active open mics
+                {(approvedSuggestions || 0) > 0 && ` • ${approvedSuggestions} community updates`}
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 max-w-md">
+              Community-curated listings. Contact venues to confirm details.{" "}
+              <a href="/submit-open-mic" className="text-teal-400 hover:underline">Help keep this list updated</a>.
+            </p>
           </div>
-
-        </PageContainer>
-      </HeroSection>
-
-      <PageContainer>
-        <div className="mt-6 rounded-2xl border border-white/5 bg-gradient-to-r from-[#050814] to-[#02040a] px-4 py-3 text-sm text-slate-200">
-          <p className="font-semibold text-teal-300">Community-curated open mics</p>
-          <p className="mt-1 text-slate-300">
-            These listings are gathered from public sources and may be incomplete or out of date.
-            Please contact the venue to confirm details, and{" "}
-            <a
-              href="/submit-open-mic"
-              className="underline decoration-teal-400/70 underline-offset-2 hover:text-teal-300"
-            >
-              help us keep this list updated
-            </a>
-            .
-          </p>
         </div>
-      </PageContainer>
 
-      <PageContainer>
         <WorkInProgressBanner />
-      </PageContainer>
 
-      <PageContainer>
-        <div className="mt-8">
+        <div className="mt-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <OpenMicFilters
               cities={cities}
@@ -424,19 +405,16 @@ export default async function OpenMicsPage({
                   })}
                 </>
               ) : (
-                <div className="mt-6">
+                <div className="mt-4">
                   <AccordionList events={events as any} searchQuery={search ?? undefined} />
                 </div>
               )}
 
             </>
           )}
-        </div>
-      </PageContainer>
 
-      {/* Contribution Section */}
-      <PageContainer>
-        <div className="py-16 space-y-12">
+        {/* Contribution Section */}
+        <div className="py-10">
           <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 space-y-8">
             <div className="text-center space-y-4">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
@@ -494,6 +472,7 @@ export default async function OpenMicsPage({
               </Link>
             </div>
           </section>
+        </div>
         </div>
       </PageContainer>
     </>
