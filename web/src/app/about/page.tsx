@@ -211,7 +211,7 @@ export default function AboutPage() {
                 <Link href="/open-mics">Find Open Mics</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/submit-open-mic">Submit a Venue</Link>
+                <Link href="/tip-jar">Support Us</Link>
               </Button>
             </div>
           </section>
