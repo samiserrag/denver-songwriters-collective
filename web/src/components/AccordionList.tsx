@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import CompactListItem from "./CompactListItem";
 import type { EventWithVenue } from "@/types/db";
 
@@ -35,9 +35,9 @@ export default function AccordionList({
   events: EventWithVenue[];
   searchQuery?: string;
 }) {
-  const [openDay, setOpenDay] = useState<string | null>(null);
+  const hasSearch = !!(searchQuery && searchQuery.trim());
 
-  // initialize groups
+  // Initialize groups
   const groupedByDay: Record<string, EventWithVenue[]> = {};
   for (const day of daysOrdered) groupedByDay[day] = [];
 
@@ -47,7 +47,7 @@ export default function AccordionList({
     groupedByDay[day].push(ev);
   }
 
-  // sort each day's list by start_time then title
+  // Sort each day's list by start_time then title
   for (const day of Object.keys(groupedByDay)) {
     groupedByDay[day].sort((a, b) => {
       const tA = parseTimeToMinutes(a.start_time ?? null);
@@ -59,21 +59,70 @@ export default function AccordionList({
     });
   }
 
+  // Find which days have events (for auto-expand on search)
+  const daysWithEvents = useMemo(() => {
+    const days = new Set<string>();
+    for (const ev of events ?? []) {
+      const day = ev.day_of_week ?? "UNKNOWN";
+      if (daysOrdered.includes(day)) {
+        days.add(day);
+      }
+    }
+    return days;
+  }, [events]);
+
+  const [openDays, setOpenDays] = useState<Set<string>>(new Set());
+
+  // Auto-expand matching days when search is active
+  useEffect(() => {
+    if (hasSearch && daysWithEvents.size > 0) {
+      setOpenDays(new Set(daysWithEvents));
+    } else if (!hasSearch) {
+      setOpenDays(new Set());
+    }
+  }, [hasSearch, daysWithEvents]);
+
+  const toggleDay = (day: string) => {
+    setOpenDays(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) {
+        next.delete(day);
+      } else {
+        next.add(day);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-4">
+      {/* Search results summary */}
+      {hasSearch && (
+        <div className="text-sm text-teal-300 mb-2">
+          Found {events.length} result{events.length !== 1 ? "s" : ""} for "{searchQuery}"
+        </div>
+      )}
+
       {daysOrdered.map((day) => {
         const list = groupedByDay[day] || [];
-        // Always render the day header; show message when no events
+        const isOpen = openDays.has(day);
+        const hasEvents = list.length > 0;
 
-        const isOpen = openDay === day;
+        // When searching, hide days with no results
+        if (hasSearch && !hasEvents) {
+          return null;
+        }
 
         return (
           <div key={day} className="border border-white/10 rounded-xl bg-white/3 overflow-hidden">
             <button
-              onClick={() => setOpenDay(isOpen ? null : day)}
+              onClick={() => toggleDay(day)}
               className="w-full flex justify-between items-center px-4 py-3 text-left text-lg font-semibold text-teal-300 hover:bg-white/5"
             >
-              <span>{day}</span>
+              <span>
+                {day}
+                {hasEvents && <span className="ml-2 text-sm text-gray-400">({list.length})</span>}
+              </span>
               <span className="text-gray-400">{isOpen ? "−" : "+"}</span>
             </button>
 

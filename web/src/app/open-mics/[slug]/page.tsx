@@ -116,9 +116,10 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             {event.day_of_week && <p><strong className="text-white">Day:</strong> {event.day_of_week}</p>}
             {startFormatted && <p><strong className="text-white">Starts:</strong> {startFormatted}</p>}
             {endFormatted && endFormatted !== "TBD" && <p><strong className="text-white">Ends:</strong> {endFormatted}</p>}
-            {signupFormatted && signupFormatted !== "TBD" && (
-              <p className="text-gray-300"><strong>Signup Time:</strong> {signupFormatted}</p>
-            )}
+            <p className="text-teal-300">
+              <strong className="text-white">Signup:</strong>{" "}
+              {signupFormatted && signupFormatted !== "TBD" ? signupFormatted : "Contact venue for details"}
+            </p>
             {recurrenceText ? (
               <p><strong className="text-white">Recurrence:</strong> {recurrenceText}</p>
             ) : null}

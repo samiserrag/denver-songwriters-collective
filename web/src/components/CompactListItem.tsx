@@ -46,6 +46,8 @@ export default function CompactListItem({
   const humanRecurrence = humanizeRecurrence(recurrence_rule ?? null, day_of_week ?? null);
   const start = formatTimeToAMPM(start_time ?? null);
   const end = formatTimeToAMPM(end_time ?? null);
+  const signup = formatTimeToAMPM(signup_time ?? null);
+  const signupDisplay = signup && signup !== "TBD" ? signup : "Contact venue";
 
   const addressParts = [venue_address, venue_city, venue_state].filter(Boolean).join(", ");
   const mapUrl =
@@ -91,7 +93,8 @@ export default function CompactListItem({
       <div className="flex items-center gap-3">
         <div className="text-right">
           <div className="text-sm text-white font-medium">{start}{end && end !== "TBD" ? ` — ${end}` : ""}</div>
-          <div className="text-xs text-[var(--color-warm-gray-light)]">{addressParts}</div>
+          <div className="text-xs text-teal-400">Signup: {signupDisplay}</div>
+          <div className="text-xs text-[var(--color-warm-gray-light)]">{venue_name}</div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
