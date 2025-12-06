@@ -7,12 +7,13 @@ import type { EventUpdateSuggestion } from "@/types/eventUpdateSuggestion";
 interface Event {
   id: string;
   title: string;
+  slug?: string | null;
   venue_name?: string | null;
   day_of_week?: string | null;
   start_time?: string | null;
 }
 
-type Suggestion = EventUpdateSuggestion & { event?: Event | null };
+type Suggestion = EventUpdateSuggestion & { events?: Event | null };
 
 interface Props {
   suggestions: Suggestion[] | null;
@@ -118,15 +119,15 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
               <tr key={s.id} className="border-t border-white/5 hover:bg-white/5">
                 <td className="px-3 py-3">
                   <div>
-                    <Link 
-                      href={`/open-mics/${s.event_id}`}
+                    <Link
+                      href={`/open-mics/${s.events?.slug || s.event_id}`}
                       target="_blank"
                       className="text-teal-400 hover:text-teal-300 font-medium"
                     >
-                      {s.event?.title || "Unknown Event"}
+                      {s.events?.title || "Unknown Event"}
                     </Link>
                     <p className="text-xs text-neutral-500">
-                      {s.event?.venue_name} • {s.event?.day_of_week}
+                      {s.events?.venue_name} • {s.events?.day_of_week}
                     </p>
                     <p className="text-xs text-neutral-500 mt-1">
                       {s.batch_id && <span>batch: {s.batch_id} </span>}
@@ -210,7 +211,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
             </h3>
             
             <div className="mb-4 p-3 bg-neutral-800 rounded text-sm">
-              <p className="text-neutral-400">Event: <span className="text-white">{actionModal.suggestion.event?.title}</span></p>
+              <p className="text-neutral-400">Event: <span className="text-white">{actionModal.suggestion.events?.title}</span></p>
               <p className="text-neutral-400">Field: <span className="text-white">{actionModal.suggestion.field}</span></p>
               <p className="text-neutral-400">Change: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span> → <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
               {actionModal.suggestion.notes && (

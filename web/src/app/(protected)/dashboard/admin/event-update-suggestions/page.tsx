@@ -33,7 +33,7 @@ export default async function AdminEventUpdateSuggestionsPage() {
 
   const { data: suggestions } = await supabase
     .from("event_update_suggestions")
-    .select("*")
+    .select("*, events(id, title, slug, venue_name, day_of_week, start_time)")
     .order("created_at", { ascending: false });
 
   return (
