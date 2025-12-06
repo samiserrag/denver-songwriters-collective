@@ -1,0 +1,201 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+
+interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string;
+  tags: string[];
+  author: { full_name: string | null }[] | { full_name: string | null } | null;
+}
+
+interface Props {
+  posts: BlogPost[];
+}
+
+export default function BlogPostsTable({ posts }: Props) {
+  const router = useRouter();
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; post: BlogPost | null }>({
+    open: false,
+    post: null,
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isToggling, setIsToggling] = useState<string | null>(null);
+
+  const getAuthorName = (author: BlogPost["author"]) => {
+    if (!author) return "Unknown";
+    const authorObj = Array.isArray(author) ? author[0] : author;
+    return authorObj?.full_name ?? "Unknown";
+  };
+
+  const handleTogglePublish = async (post: BlogPost) => {
+    setIsToggling(post.id);
+    const supabase = createClient();
+
+    const updates: { is_published: boolean; published_at?: string | null } = {
+      is_published: !post.is_published,
+    };
+
+    // Set published_at when publishing for the first time
+    if (!post.is_published && !post.published_at) {
+      updates.published_at = new Date().toISOString();
+    }
+
+    await supabase
+      .from("blog_posts")
+      .update(updates)
+      .eq("id", post.id);
+
+    setIsToggling(null);
+    router.refresh();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteModal.post) return;
+    setIsDeleting(true);
+
+    const supabase = createClient();
+    await supabase.from("blog_posts").delete().eq("id", deleteModal.post.id);
+
+    setIsDeleting(false);
+    setDeleteModal({ open: false, post: null });
+    router.refresh();
+  };
+
+  return (
+    <>
+      <div className="w-full overflow-x-auto rounded-lg border border-white/10 bg-black/20">
+        <table className="min-w-full text-left text-sm text-white">
+          <thead className="border-b border-white/10 text-gold-400">
+            <tr>
+              <th className="py-3 px-4">Title</th>
+              <th className="py-3 px-4">Author</th>
+              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4">Tags</th>
+              <th className="py-3 px-4">Created</th>
+              <th className="py-3 px-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {posts.map((post) => (
+              <tr key={post.id} className="border-b border-white/5 hover:bg-white/5">
+                <td className="py-3 px-4">
+                  <div>
+                    <p className="font-medium text-white">{post.title}</p>
+                    <p className="text-neutral-500 text-xs">/{post.slug}</p>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-neutral-300">
+                  {getAuthorName(post.author)}
+                </td>
+                <td className="py-3 px-4">
+                  <button
+                    onClick={() => handleTogglePublish(post)}
+                    disabled={isToggling === post.id}
+                    className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                      post.is_published
+                        ? "bg-green-900/50 text-green-400 hover:bg-green-900"
+                        : "bg-yellow-900/50 text-yellow-400 hover:bg-yellow-900"
+                    }`}
+                  >
+                    {isToggling === post.id
+                      ? "..."
+                      : post.is_published
+                      ? "Published"
+                      : "Draft"}
+                  </button>
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex flex-wrap gap-1">
+                    {post.tags?.slice(0, 2).map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {post.tags?.length > 2 && (
+                      <span className="text-neutral-500 text-xs">
+                        +{post.tags.length - 2}
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-neutral-400 text-xs">
+                  {new Date(post.created_at).toLocaleDateString()}
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      target="_blank"
+                      className="text-neutral-400 hover:text-white text-xs"
+                    >
+                      View
+                    </Link>
+                    <Link
+                      href={`/dashboard/admin/blog/${post.id}/edit`}
+                      className="text-teal-400 hover:text-teal-300 text-xs"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => setDeleteModal({ open: true, post })}
+                      className="text-red-400 hover:text-red-300 text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {posts.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 px-4 text-center text-neutral-400">
+                  No blog posts yet. Create your first post!
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Delete Modal */}
+      {deleteModal.open && deleteModal.post && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-neutral-900 border border-red-900/50 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold text-red-400 mb-4">Delete Post</h2>
+            <p className="text-neutral-300 mb-6">
+              Are you sure you want to delete &quot;{deleteModal.post.title}&quot;? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 text-white rounded-lg transition-colors"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+              <button
+                onClick={() => setDeleteModal({ open: false, post: null })}
+                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

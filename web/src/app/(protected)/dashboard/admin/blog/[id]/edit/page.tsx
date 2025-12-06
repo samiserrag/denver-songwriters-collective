@@ -1,0 +1,55 @@
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect, notFound } from "next/navigation";
+import BlogPostForm from "../../BlogPostForm";
+
+export const dynamic = "force-dynamic";
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditBlogPostPage({ params }: Props) {
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "admin") {
+    return (
+      <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
+        <p className="text-neutral-400 mt-2">Admin privileges required.</p>
+      </div>
+    );
+  }
+
+  const { data: post } = await supabase
+    .from("blog_posts")
+    .select("id, slug, title, excerpt, content, cover_image_url, is_published, tags")
+    .eq("id", id)
+    .single();
+
+  if (!post) {
+    notFound();
+  }
+
+  return (
+    <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
+      <h1 className="text-4xl font-bold text-gold-400 mb-2">Edit Blog Post</h1>
+      <p className="text-neutral-300 mb-8">Update &quot;{post.title}&quot;</p>
+
+      <BlogPostForm authorId={user.id} post={post} />
+    </div>
+  );
+}
