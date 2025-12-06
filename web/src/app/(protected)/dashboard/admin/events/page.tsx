@@ -24,17 +24,22 @@ export default async function AdminEventsPage() {
     return <div className="p-8 text-red-500">Access denied — admin only.</div>;
   }
 
-  const { data, error } = await supabase
-    .from("events")
-    .select("*");
+   const { data, error } = await supabase
+     .from("events")
+     .select("*")
+     .order("created_at", { ascending: false });
 
-  // Guarantee a safe array for client components
-  const events = Array.isArray(data) ? data : [];
+   // CRITICAL: Always pass an array, never null
+   const events = Array.isArray(data) ? data : [];
 
-  return (
-    <div className="min-h-screen px-6 py-12 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-8">Event Spotlight</h1>
-      <EventSpotlightTable events={events} />
-    </div>
-  );
-}
+   if (error) {
+     console.error("Failed to fetch events:", error);
+   }
+
+   return (
+     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
+       <h1 className="text-4xl font-bold text-gold-400 mb-8">Manage Featured Events</h1>
+       <EventSpotlightTable events={events} />
+     </div>
+   );
+ }

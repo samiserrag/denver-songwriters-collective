@@ -7,18 +7,25 @@ import type { Database } from "@/lib/supabase/database.types";
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 
  interface Props {
-   events: DBEvent[] | null;
+   events: DBEvent[];
  }
  
  export default function EventSpotlightTable({ events }: Props) {
+   // CRITICAL: Guard MUST be first line
    if (!events || !Array.isArray(events)) {
      return (
-       <div className="text-neutral-400 py-4">No events found or failed to load.</div>
+       <div className="text-neutral-400 py-4">No events available.</div>
+     );
+   }
+
+   if (events.length === 0) {
+     return (
+       <div className="text-neutral-400 py-4">No events found.</div>
      );
    }
 
    const supabase = createSupabaseBrowserClient();
-   const [rows, setRows] = useState(events as DBEvent[]);
+   const [rows, setRows] = useState(events);
    const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function updateEvent(id: string, is_featured: boolean, featured_rank: number) {
