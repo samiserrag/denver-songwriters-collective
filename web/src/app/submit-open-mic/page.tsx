@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
+import WorkInProgressBanner from "@/components/WorkInProgressBanner";
 
 export default async function SubmitOpenMicPlaceholder({
   searchParams,
@@ -32,8 +33,12 @@ export default async function SubmitOpenMicPlaceholder({
       </HeroSection>
 
       <PageContainer>
+        <WorkInProgressBanner />
+      </PageContainer>
+
+      <PageContainer>
         <div className="py-16 text-center">
-          <p className="text-[var(--color-warm-gray-light)]">We&apos;re working on a submission form. In the meantime, reach out via email to have your event added.</p>
+          <p className="text-[var(--color-warm-gray-light)]">We're working on a submission form. In the meantime, reach out via email to have your event added.</p>
         </div>
       </PageContainer>
     </div>

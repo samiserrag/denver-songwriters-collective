@@ -10,6 +10,7 @@ import CompactListItem from "@/components/CompactListItem";
 import AccordionList from "@/components/AccordionList";
 import DayJumpBar from "@/components/DayJumpBar";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+import WorkInProgressBanner from "@/components/WorkInProgressBanner";
 export const dynamic = "force-dynamic";
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -298,6 +299,10 @@ export default async function OpenMicsPage({
         </div>
       </PageContainer>
 
++      <PageContainer>
++        <WorkInProgressBanner />
++      </PageContainer>
++
       <PageContainer>
         <div className="mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
