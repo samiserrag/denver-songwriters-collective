@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
 
 // Prevent static prerendering - this page requires runtime env vars
@@ -37,6 +38,14 @@ export default function AdminHome() {
             <h2 className="text-xl font-semibold text-gold-400 mb-2">Events</h2>
             <p className="text-neutral-300">Create, update, delete events.</p>
           </a>
+
+          <Link 
+            href="/dashboard/admin/event-update-suggestions"
+            className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 transition"
+          >
+            <h3 className="text-lg font-semibold text-teal-400">Review Suggestions</h3>
+            <p className="text-sm text-neutral-400">Moderate user-submitted event corrections</p>
+          </Link>
 
           <a href="/dashboard/admin/studios"
              className="block p-6 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">

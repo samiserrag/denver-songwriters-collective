@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
@@ -107,7 +108,15 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
                 {loadingId === ev.id ? (
                   <span className="text-gold-400">Saving…</span>
                 ) : (
-                  <span className="text-neutral-400 text-sm">Ready</span>
+                  <>
+                    <Link 
+                      href={`/dashboard/admin/events/${ev.id}/edit`}
+                      className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs mr-2"
+                    >
+                      Edit
+                    </Link>
+                    <span className="text-neutral-400 text-sm">Ready</span>
+                  </>
                 )}
               </td>
             </tr>
