@@ -55,6 +55,12 @@ export default function UserDirectoryTable({ users }: Props) {
       return;
     }
 
+    // Prevent deleting admin accounts
+    if (deleteModal.user.role === "admin") {
+      setError("Cannot delete admin accounts");
+      return;
+    }
+
     setIsDeleting(true);
     setError("");
 
@@ -185,12 +191,16 @@ export default function UserDirectoryTable({ users }: Props) {
                     : "—"}
                 </td>
                 <td className="py-2 px-3">
-                  <button
-                    onClick={() => setDeleteModal({ open: true, user: u })}
-                    className="text-red-400 hover:text-red-300 text-xs underline"
-                  >
-                    Delete
-                  </button>
+                  {u.role === "admin" ? (
+                    <span className="text-neutral-500 text-xs">Protected</span>
+                  ) : (
+                    <button
+                      onClick={() => setDeleteModal({ open: true, user: u })}
+                      className="text-red-400 hover:text-red-300 text-xs underline"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
