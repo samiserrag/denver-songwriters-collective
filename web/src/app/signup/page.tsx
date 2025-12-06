@@ -139,6 +139,13 @@ function SignupForm() {
               Log in
             </Link>
           </p>
+
+          <p className="text-xs text-gray-500 mt-4">
+            By signing up, you agree to our{" "}
+            <Link href="/privacy" className="text-gray-400 hover:text-white underline">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       )}
     </div>

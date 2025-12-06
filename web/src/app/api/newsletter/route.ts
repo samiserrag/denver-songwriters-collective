@@ -150,9 +150,14 @@ function getWelcomeEmailHtml(): string {
               <p style="margin: 0 0 8px 0; color: #737373; font-size: 14px;">
                 Find your people. Find your stage. Find your songs.
               </p>
-              <p style="margin: 0; color: #525252; font-size: 12px;">
+              <p style="margin: 0 0 12px 0; color: #525252; font-size: 12px;">
                 Denver Songwriters Collective<br>
                 <a href="https://denversongwriters.co" style="color: #d4a853; text-decoration: none;">denversongwriters.co</a>
+              </p>
+              <p style="margin: 0; color: #525252; font-size: 11px;">
+                <a href="https://denversongwriters.co/privacy" style="color: #737373; text-decoration: underline;">Privacy Policy</a>
+                &nbsp;|&nbsp;
+                <a href="https://denversongwriters.co/contact" style="color: #737373; text-decoration: underline;">Contact Us</a>
               </p>
             </td>
           </tr>
@@ -183,5 +188,8 @@ Find your people. Find your stage. Find your songs.
 
 Denver Songwriters Collective
 https://denversongwriters.co
+
+Privacy Policy: https://denversongwriters.co/privacy
+Contact Us: https://denversongwriters.co/contact
 `;
 }

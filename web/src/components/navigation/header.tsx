@@ -16,6 +16,7 @@ const navLinks = [
   { href: "/performers", label: "Performers" },
   { href: "/studios", label: "Studios" },
   { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 interface HeaderProps {

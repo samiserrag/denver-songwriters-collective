@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -17,8 +19,16 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function UserDirectoryTable({ users }: Props) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "performer" | "studio" | "host" | "admin">("all");
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; user: Profile | null }>({
+    open: false,
+    user: null,
+  });
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState("");
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -37,6 +47,71 @@ export default function UserDirectoryTable({ users }: Props) {
       );
     });
   }, [users, search, roleFilter]);
+
+  const handleDeleteUser = async () => {
+    if (!deleteModal.user) return;
+    if (confirmText !== "DELETE") {
+      setError("Please type DELETE to confirm");
+      return;
+    }
+
+    setIsDeleting(true);
+    setError("");
+
+    try {
+      const supabase = createClient();
+      const userId = deleteModal.user.id;
+
+      // Delete user's profile data
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error("Profile delete error:", profileError);
+        throw new Error("Failed to delete user profile");
+      }
+
+      // Delete user's event suggestions
+      await supabase
+        .from("event_update_suggestions")
+        .delete()
+        .eq("submitted_by", userId)
+        .catch(() => {});
+
+      // Delete user's venue submissions
+      await supabase
+        .from("venue_submissions")
+        .delete()
+        .eq("submitted_by", userId)
+        .catch(() => {});
+
+      // Delete user's favorites if table exists
+      await supabase
+        .from("favorites")
+        .delete()
+        .eq("user_id", userId)
+        .catch(() => {});
+
+      // Delete user's open mic claims if table exists
+      await supabase
+        .from("open_mic_claims")
+        .delete()
+        .eq("profile_id", userId)
+        .catch(() => {});
+
+      // Close modal and refresh
+      setDeleteModal({ open: false, user: null });
+      setConfirmText("");
+      router.refresh();
+    } catch (err) {
+      console.error("Delete user error:", err);
+      setError("Failed to delete user. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -77,6 +152,7 @@ export default function UserDirectoryTable({ users }: Props) {
               <th className="py-2 px-3">Role</th>
               <th className="py-2 px-3">Featured</th>
               <th className="py-2 px-3">Created</th>
+              <th className="py-2 px-3">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -108,13 +184,21 @@ export default function UserDirectoryTable({ users }: Props) {
                     ? new Date(u.created_at).toLocaleDateString()
                     : "—"}
                 </td>
+                <td className="py-2 px-3">
+                  <button
+                    onClick={() => setDeleteModal({ open: true, user: u })}
+                    className="text-red-400 hover:text-red-300 text-xs underline"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
 
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="py-6 px-3 text-center text-neutral-400"
                 >
                   No users found for this filter.
@@ -124,6 +208,68 @@ export default function UserDirectoryTable({ users }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.open && deleteModal.user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-neutral-900 border border-red-900/50 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold text-red-400 mb-4">
+              Delete User
+            </h2>
+            <p className="text-neutral-300 mb-4">
+              Are you sure you want to delete <strong className="text-white">{deleteModal.user.full_name ?? "this user"}</strong>?
+            </p>
+            <div className="p-4 bg-red-900/30 border border-red-800 rounded-lg mb-4">
+              <p className="text-red-300 font-medium mb-2">
+                This action cannot be reversed. It will permanently delete:
+              </p>
+              <ul className="text-red-200 text-sm space-y-1 ml-4">
+                <li>• Their profile information</li>
+                <li>• All suggestions they&apos;ve submitted</li>
+                <li>• All venue submissions</li>
+                <li>• Their favorites and claims</li>
+              </ul>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-neutral-300 text-sm mb-2">
+                Type <strong className="text-white">DELETE</strong> to confirm:
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className="w-full px-4 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder:text-neutral-500 focus:border-red-500 focus:outline-none"
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-sm mb-4">{error}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteUser}
+                disabled={isDeleting || confirmText !== "DELETE"}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 disabled:text-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Deleting..." : "Delete User"}
+              </button>
+              <button
+                onClick={() => {
+                  setDeleteModal({ open: false, user: null });
+                  setConfirmText("");
+                  setError("");
+                }}
+                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
