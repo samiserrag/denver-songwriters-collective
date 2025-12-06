@@ -111,13 +111,17 @@ export default async function HomePage() {
             )}
 
             <h1 className="text-[length:var(--font-size-heading-2xl)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
-              Open Mic Drop
+              The Denver Songwriters Collective
             </h1>
 
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] max-w-xl leading-[var(--line-height-relaxed)]">
-              A curated home for Denver&apos;s songwriters, showcases, and
-              studio sessions. Discover new voices, claim open mic slots, and
-              book time with partner studios—all in one place.
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-gold)]/90 italic max-w-xl leading-[var(--line-height-relaxed)]">
+              Find your people. Find your stage. Find your songs.
+            </p>
+
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-xl leading-[var(--line-height-relaxed)]">
+              Denver&apos;s community hub for songwriters. Discover open mics,
+              showcases, song circles, and collaboration opportunities across
+              the Front Range.
             </p>
 
             {/* Login-aware CTAs */}
