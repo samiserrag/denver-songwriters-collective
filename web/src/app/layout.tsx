@@ -28,8 +28,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Open Mic Drop",
-  description: "Live music. Real artists. Your stage.",
+  title: "The Denver Songwriters Collective",
+  description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
 };
 
 export default function RootLayout({

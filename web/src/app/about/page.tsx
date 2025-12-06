@@ -5,9 +5,12 @@ export default function AboutPage() {
     <>
       <HeroSection minHeight="md">
         <PageContainer>
-          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">About Open Mic Drop</h1>
+          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">About The Denver Songwriters Collective</h1>
+          <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-gold)]/90 italic mb-4">
+            Find your people. Find your stage. Find your songs.
+          </p>
           <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
-            Open Mic Drop is a community-driven directory of local open mics, built to help performers and venues connect. We're focused on accurate, up-to-date listings and making it easy to discover events in your area.
+            The Denver Songwriters Collective is a community-driven platform for Denver&apos;s songwriters. We help performers and venues connect through accurate, up-to-date listings of open mics, showcases, song circles, and collaboration opportunities across the Front Range.
           </p>
         </PageContainer>
       </HeroSection>

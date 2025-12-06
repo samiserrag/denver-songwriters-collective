@@ -31,8 +31,8 @@ export function Footer({ className }: FooterProps) {
             href="/"
             className="font-[var(--font-family-serif)] text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50 rounded"
           >
-            <span className="text-[var(--color-gold)] italic">OPEN MIC</span>{" "}
-            <span className="text-[var(--color-warm-white)]">DROP</span>
+            <span className="text-[var(--color-gold)] italic">The Denver</span>{" "}
+            <span className="text-[var(--color-warm-white)]">Songwriters Collective</span>
           </Link>
 
           <nav
@@ -57,7 +57,7 @@ export function Footer({ className }: FooterProps) {
           </nav>
 
           <p className="text-xs text-[var(--color-warm-gray)]/60">
-            © {currentYear} Open Mic Drop
+            © {currentYear} The Denver Songwriters Collective
           </p>
         </div>
       </div>

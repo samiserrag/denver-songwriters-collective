@@ -5,7 +5,7 @@ export default function EmptyPerformers() {
     <EmptyState
       icon="✨"
       title="No Performers Yet"
-      subtitle="Be the first to join the Open Mic Drop community."
+      subtitle="Be the first to join The Denver Songwriters Collective community."
       ctaText="Sign Up"
       ctaHref="/signup"
     />

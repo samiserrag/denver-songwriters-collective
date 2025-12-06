@@ -49,7 +49,8 @@ export function Header({ className }: HeaderProps) {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="text-xl font-semibold text-[var(--color-gold)] hover:opacity-80 transition-opacity">
-          Open Mic Drop
+          <span className="text-[var(--color-gold)]">DSC</span>{" "}
+          <span className="text-[var(--color-warm-white)]">Denver Songwriters</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">

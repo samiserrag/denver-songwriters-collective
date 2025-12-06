@@ -1,5 +1,5 @@
-Welcome to Open Mic Drop!
+Welcome to The Denver Songwriters Collective!
 Click to confirm your email:
 {{ .ConfirmationURL }}
 Thanks,
-Open Mic Drop Team
+The Denver Songwriters Collective Team
