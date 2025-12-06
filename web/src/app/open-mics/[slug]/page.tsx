@@ -126,6 +126,16 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           </div>
         </div>
 
+        {descriptionHtml ? (
+          <div className="mt-6">
+            <h2 className="text-lg font-medium text-white">About This Event</h2>
+            <div
+              className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+            />
+          </div>
+        ) : null}
+
         {notesHtml ? (
           <div className="mt-6">
             <h2 className="text-lg font-medium text-white">Notes</h2>
@@ -134,21 +144,26 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
         ) : null}
       </div>
 
-      <div className="mt-8 flex justify-center">
-        <Link
-          href={`/submit-open-mic?eventId=${event.id}`}
-          className="text-sm text-sky-300 underline underline-offset-4 hover:text-sky-200 transition"
-        >
-          Submit updated info about this event
-        </Link>
-      </div>
-
       <div className="mt-8">
-        {/* Inline report form — client-side component */}
-        <OpenMicReportForm eventId={event.id} />
+        {/* Multi-field suggestion form — requires login */}
+        <EventSuggestionForm
+          event={{
+            id: event.id,
+            title: event.title ?? "",
+            venue_name: venue?.name ?? (event as any).venue_name ?? null,
+            day_of_week: event.day_of_week ?? null,
+            start_time: event.start_time ?? null,
+            end_time: (event as any).end_time ?? null,
+            signup_time: (event as any).signup_time ?? null,
+            recurrence_rule: event.recurrence_rule ?? null,
+            category: event.category ?? null,
+            description: event.description ?? null,
+            slug: event.slug ?? null,
+          }}
+        />
       </div>
     </div>
   );
 }
 
-import OpenMicReportForm from "@/components/OpenMicReportForm";
+import EventSuggestionForm from "@/components/events/EventSuggestionForm";

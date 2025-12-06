@@ -171,6 +171,18 @@ export default async function OpenMicsPage({
     new Set((cityRows ?? []).map((r: any) => (r.city ?? "").trim()).filter(Boolean))
   ).sort((a: string, b: string) => a.localeCompare(b));
 
+  // Fetch community stats
+  const { count: totalActiveEvents } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("event_type", "open_mic")
+    .eq("status", "active");
+
+  const { count: approvedSuggestions } = await supabase
+    .from("event_update_suggestions")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "approved");
+
   // Build events query
   let query = supabase
     .from("events")
@@ -249,21 +261,22 @@ export default async function OpenMicsPage({
   }
 
   const events = mapped.sort((a, b) => {
+    // Sort by day_of_week (Sunday -> Saturday)
     const dayA = DAYS.indexOf(a.day_of_week ?? "");
     const dayB = DAYS.indexOf(b.day_of_week ?? "");
     const dayIdxA = dayA === -1 ? 7 : dayA;
     const dayIdxB = dayB === -1 ? 7 : dayB;
     if (dayIdxA !== dayIdxB) return dayIdxA - dayIdxB;
 
+    // Then by start_time (earliest first)
     const tA = parseTimeToMinutes(a.start_time ?? null);
     const tB = parseTimeToMinutes(b.start_time ?? null);
     if (tA !== tB) return tA - tB;
 
-    const cityA = (a.venue_city ?? "").toLowerCase();
-    const cityB = (b.venue_city ?? "").toLowerCase();
-    if (cityA < cityB) return -1;
-    if (cityA > cityB) return 1;
-    return 0;
+    // Then by venue name alphabetically
+    const venueA = (a.venue_name ?? a.venue ?? "").toLowerCase();
+    const venueB = (b.venue_name ?? b.venue ?? "").toLowerCase();
+    return venueA.localeCompare(venueB);
   });
 
 
@@ -278,6 +291,13 @@ export default async function OpenMicsPage({
           <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
             A living list of weekly open mics submitted by the community.
           </p>
+
+          <div className="flex gap-6 mt-4 text-sm text-neutral-400">
+            <span>{totalActiveEvents || 0} active open mics</span>
+            {(approvedSuggestions || 0) > 0 && (
+              <span>{approvedSuggestions} community updates</span>
+            )}
+          </div>
 
         </PageContainer>
       </HeroSection>
@@ -299,10 +319,10 @@ export default async function OpenMicsPage({
         </div>
       </PageContainer>
 
-+      <PageContainer>
-+        <WorkInProgressBanner />
-+      </PageContainer>
-+
+      <PageContainer>
+        <WorkInProgressBanner />
+      </PageContainer>
+
       <PageContainer>
         <div className="mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

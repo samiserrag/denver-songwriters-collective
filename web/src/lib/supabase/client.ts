@@ -1,17 +1,17 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 /**
- * createSupabaseBrowserClient (client shim)
+ * Singleton Supabase client for browser-side usage.
  *
- * This file provides the same browser-side helper previously located at
- * web/src/lib/supabase/browser.ts but under the "client" module name so code
- * can import from "@/lib/supabase/client".
- *
- * It intentionally returns a simple client using NEXT_PUBLIC_SUPABASE_* env vars.
- * During static build/prerender when env vars aren't available, returns a
- * dummy client that throws on method calls (build should not execute queries).
+ * This ensures only ONE GoTrueClient instance is created to avoid
+ * "Multiple GoTrueClient instances" warnings and auth state conflicts.
  */
-export function createSupabaseBrowserClient(): SupabaseClient {
+
+let client: ReturnType<typeof createBrowserClient> | null = null;
+
+export function createClient() {
+  if (client) return client;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -20,9 +20,7 @@ export function createSupabaseBrowserClient(): SupabaseClient {
   if (!url || !key) {
     const handler: ProxyHandler<object> = {
       get(_, prop) {
-        // Allow checking if it's a SupabaseClient
         if (prop === "then") return undefined;
-        // Return a nested proxy for chained calls like supabase.auth.getUser()
         return new Proxy(() => {
           throw new Error(
             `Supabase client called during build without env vars. ` +
@@ -37,13 +35,12 @@ export function createSupabaseBrowserClient(): SupabaseClient {
         );
       },
     };
-    return new Proxy({}, handler) as unknown as SupabaseClient;
+    return new Proxy({}, handler) as ReturnType<typeof createBrowserClient>;
   }
 
-  return createClient(url, key, {
-    auth: {
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-  });
+  client = createBrowserClient(url, key);
+  return client;
 }
+
+// Alias for backwards compatibility
+export const createSupabaseBrowserClient = createClient;
