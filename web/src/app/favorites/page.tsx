@@ -8,30 +8,31 @@ export const dynamic = "force-dynamic";
 export default async function FavoritesPage() {
   const supabase = await createSupabaseServerClient();
 
-  // Attempt to get the current user; if none, redirect to login
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      redirect("/login");
-    }
+  // Ensure user is authenticated (server) and redirect if not
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
 
-    // Fetch favorites for the user, including event and joined venue
-    const { data: favorites, error } = await supabase
-      .from("favorites")
-      .select("event_id, events(id, slug, title, description, event_date, start_time, venue_id, venue_name, venue_address, venues(name,address,city,state,website,phone))")
-      .eq("user_id", user.id);
+  // Fetch favorites for the user, including joined event and venue
+  const { data: favorites, error } = await supabase
+    .from("favorites")
+    .select(
+      "event_id, events(id, slug, title, description, event_date, start_time, venue_id, venue_name, venue_address, venues(name,address,city,state,website,phone))"
+    )
+    .eq("user_id", user.id);
 
-    if (error) {
-      // If the query fails, show a simple message (server page)
-      return (
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
-          <p className="text-[var(--color-warm-gray-light)]">Unable to load favorites.</p>
-        </div>
-      );
-    }
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
+        <p className="text-[var(--color-warm-gray-light)]">Unable to load favorites.</p>
+      </div>
+    );
+  }
 
-    const events = (favorites ?? []).map((f: any) => {
+  const events = (favorites ?? [])
+    .map((f: any) => {
       const ev = f.events ?? null;
       if (!ev) return null;
       return {
@@ -55,33 +56,31 @@ export default async function FavoritesPage() {
         is_showcase: ev.is_showcase ?? null,
         created_at: ev.created_at ?? null,
         updated_at: ev.updated_at ?? null,
-        // include joined venue object for EventCard/mapUrl if present
         venue: ev.venue ?? undefined,
       };
-    }).filter(Boolean);
+    })
+    .filter(Boolean);
 
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
-          <Link href="/open-mics" className="text-[#00FFCC] underline">Back to Directory</Link>
-        </div>
-
-        {events.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/2 p-6 text-center">
-            <p className="text-[var(--color-warm-gray-light)]">You have no favorites yet.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {events.map((ev: any) => (
-              <EventCard key={ev.id} event={ev} />
-            ))}
-          </div>
-        )}
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
+        <Link href="/open-mics" className="text-[#00FFCC] underline">
+          Back to Directory
+        </Link>
       </div>
-    );
-  } catch {
-    // If auth call fails, redirect to login as safe default
-    redirect("/login");
-  }
+
+      {events.length === 0 ? (
+        <div className="rounded-2xl border border-white/10 bg-white/2 p-6 text-center">
+          <p className="text-[var(--color-warm-gray-light)]">You have no favorites yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {events.map((ev: any) => (
+            <EventCard key={ev.id} event={ev} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

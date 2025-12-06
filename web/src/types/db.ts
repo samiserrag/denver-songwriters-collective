@@ -98,6 +98,8 @@ export type Database = {
           updated_at: string | null
           venue_address: string | null
           venue_name: string | null
+          signup_time: string | null
+          category: string | null
         }
         Insert: {
           created_at?: string | null
@@ -114,6 +116,8 @@ export type Database = {
           updated_at?: string | null
           venue_address?: string | null
           venue_name?: string | null
+          signup_time?: string | null
+          category?: string | null
         }
         Update: {
           created_at?: string | null
@@ -130,6 +134,8 @@ export type Database = {
           updated_at?: string | null
           venue_address?: string | null
           venue_name?: string | null
+          signup_time?: string | null
+          category?: string | null
         }
         Relationships: [
           {
@@ -570,6 +576,8 @@ export type EventWithVenue = {
   day_of_week?: string | null
   status?: string | null
   notes?: string | null
+  signup_time?: string | null
+  category?: string | null
 
   venue?: {
     id?: string

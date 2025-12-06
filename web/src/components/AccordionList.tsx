@@ -98,6 +98,8 @@ export default function AccordionList({
                       venue_state={ev.venue?.state ?? (ev as any).venue_state ?? undefined}
                       start_time={ev.start_time ?? undefined}
                       end_time={ev.end_time ?? undefined}
+                      signup_time={ev.signup_time ?? undefined}
+                      category={(ev as any).category ?? undefined}
                       map_url={(ev as any).mapUrl ?? undefined}
                       searchQuery={searchQuery ?? undefined}
                     />

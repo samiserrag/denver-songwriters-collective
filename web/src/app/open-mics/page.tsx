@@ -19,6 +19,8 @@ type DBEvent = {
   description?: string | null;
   event_date?: string | null;
   start_time?: string | null;
+  signup_time?: string | null;
+  category?: string | null;
   end_time?: string | null;
   recurrence_rule?: string | null;
   day_of_week?: string | null;
@@ -111,6 +113,8 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     location: location || undefined,
     mapUrl,
     slug: e.slug ?? undefined,
+    signup_time: e.signup_time ?? null,
+    category: e.category ?? null,
     // preserve original status from DB for visual labeling (do not filter)
     status: e.status ?? null,
     eventType: "open_mic",
@@ -170,7 +174,7 @@ export default async function OpenMicsPage({
   let query = supabase
     .from("events")
     .select(
-      `id,slug,title,description,event_date,start_time,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`,
+      `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`,
       { count: "exact" }
     )
     .eq("event_type", "open_mic");
@@ -220,6 +224,14 @@ export default async function OpenMicsPage({
 
   // Map and sort results client-side: day_of_week (Sun->Sat), start_time, then city
   const mapped = ((dbEvents ?? []) as DBEvent[]).map(mapDBEventToEvent) as any[];
+
+  // TEMP DEBUG: log mapped events count and a small sample
+  try {
+    console.log("RAW_EVENTS_COUNT:", (mapped ?? []).length);
+    console.log("RAW_EVENTS_SAMPLE:", (mapped ?? []).slice(0, 3));
+  } catch (err) {
+    console.log("RAW_EVENTS_LOG_ERROR:", err);
+  }
 
   function parseTimeToMinutes(t?: string | null) {
     if (!t) return 24 * 60;

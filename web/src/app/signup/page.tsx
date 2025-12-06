@@ -107,7 +107,7 @@ function SignupForm() {
         <div className="text-center py-8 text-[var(--color-gold-300)]">
           <h2 className="text-xl font-semibold mb-2">Check your email</h2>
           <p className="text-[var(--color-warm-gray-light)]">
-            We've sent a confirmation link to <strong className="text-[var(--color-warm-white)]">{email}</strong>.
+            We&apos;ve sent a confirmation link to <strong className="text-[var(--color-warm-white)]">{email}</strong>.
             Click the link to activate your account.
           </p>
         </div>

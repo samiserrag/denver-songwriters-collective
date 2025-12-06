@@ -6,6 +6,12 @@ import { cn } from "@/lib/utils";
 import type { Event } from "@/types";
 import { ImagePlaceholder } from "@/components/ui";
 
+const CATEGORY_COLORS: Record<string, string> = {
+  "comedy": "bg-pink-900/40 text-pink-300",
+  "poetry": "bg-purple-900/40 text-purple-300",
+  "all-acts": "bg-yellow-900/40 text-yellow-300",
+};
+
 interface EventCardProps {
   event: Event;
   onClick?: () => void;
@@ -89,6 +95,14 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
           >
             {event.title}
           </h3>
+
+          {event.category && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded ${CATEGORY_COLORS[event.category] || ""}`}
+            >
+              {event.category}
+            </span>
+          )}
 
           <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-warm-gray)]">
             {event.date} • {event.time}

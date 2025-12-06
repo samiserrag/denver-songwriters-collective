@@ -1,5 +1,8 @@
 export type EventType = "showcase" | "open_mic" | "song_circle" | "critique_circle";
 
+// Re-export EventUpdateSuggestion type
+export type { EventUpdateSuggestion } from "./eventUpdateSuggestion";
+
 export interface Venue {
   id: string;
   name?: string | null;
@@ -7,7 +10,9 @@ export interface Venue {
   city?: string | null;
   state?: string | null;
   map_link?: string | null;
+  google_maps_url?: string | null;
   website?: string | null;
+  website_url?: string | null;
   phone?: string | null;
 }
 
@@ -40,6 +45,8 @@ export interface Event {
   is_showcase?: boolean | null;
   created_at?: string | null;
   updated_at?: string | null;
+  signup_time?: string | null;
+  category?: string | null;
 }
 
 export interface EventWithVenue extends Event {

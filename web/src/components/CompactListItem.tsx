@@ -2,6 +2,12 @@ import Link from "next/link";
 import React from "react";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 
+const CATEGORY_COLORS: Record<string, string> = {
+  "comedy": "bg-pink-900/40 text-pink-300",
+  "poetry": "bg-purple-900/40 text-purple-300",
+  "all-acts": "bg-yellow-900/40 text-yellow-300",
+};
+
 type Props = {
   id: string;
   title: string;
@@ -17,6 +23,8 @@ type Props = {
   map_url?: string | null;
   // optional searchQuery for future highlighting (not required)
   searchQuery?: string | null;
+  signup_time?: string | null;
+  category?: string | null;
 };
 
 export default function CompactListItem({
@@ -32,6 +40,8 @@ export default function CompactListItem({
   start_time,
   end_time,
   map_url,
+  signup_time,
+  category,
 }: Props) {
   const humanRecurrence = humanizeRecurrence(recurrence_rule ?? null, day_of_week ?? null);
   const start = formatTimeToAMPM(start_time ?? null);
@@ -59,6 +69,13 @@ export default function CompactListItem({
     <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-white/6 bg-white/2">
       <div className="min-w-0">
         <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
+
+        {category && (
+          <span className={`text-xs px-2 py-0.5 rounded inline-block mt-1 ${CATEGORY_COLORS[category] || ""}`}>
+            {category}
+          </span>
+        )}
+
         <div className="mt-1">
           {/* Block 2: replace recurrence display with clean numeric/ordinal text */}
           <p className="text-sm text-gray-400">{humanRecurrence ?? "Schedule TBD"}</p>

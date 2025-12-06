@@ -11,6 +11,8 @@ type DBEvent = {
   description?: string | null;
   event_date?: string | null;
   start_time?: string | null;
+  signup_time?: string | null;
+  category?: string | null;
   recurrence_rule?: string | null;
   venue_id?: string | null;
   venues?: {
@@ -87,6 +89,8 @@ function mapDBEventToEvent(e: DBEvent): EventType {
       e.venues?.website ??
       (addressParts.length ? `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}` : undefined),
     slug: e.slug ?? undefined,
+    signup_time: e.signup_time ?? null,
+    category: e.category ?? null,
     eventType: "open_mic",
   };
   return _evt as EventType;
@@ -98,7 +102,7 @@ export default async function OpenMicsMapPage() {
   const { data: dbEvents } = await supabase
     .from("events")
     .select(
-      `id,slug,title,description,event_date,start_time,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website,phone,map_link),status,notes`
+      `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website,phone,map_link),status,notes`
     )
     .eq("event_type", "open_mic")
     .order("day_of_week", { ascending: true });

@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/events";
 import { PageContainer, HeroSection } from "@/components/layout";
+import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event } from "@/types";
 
@@ -26,6 +27,7 @@ export default async function EventsPage() {
   const { data: dbEvents } = await supabase
     .from("events")
     .select("*")
+    .neq('event_type', 'open_mic')
     .order("event_date", { ascending: true });
 
   const events: Event[] = (dbEvents ?? []).map(mapDBEventToEvent);
@@ -41,6 +43,13 @@ export default async function EventsPage() {
       </HeroSection>
 
       <PageContainer>
+        {/* Open Mic Directory Callout */}
+        <div className="mb-6 p-4 rounded-lg bg-teal-900/20 border border-teal-500/30">
+          <p className="text-sm text-teal-300">
+            🎤 Looking for open mics?{' '}
+            <Link href="/open-mics" className="underline hover:text-teal-100 font-medium">Visit the Open Mic Directory</Link>
+          </p>
+        </div>
         <EventGrid events={events} />
       </PageContainer>
     </>

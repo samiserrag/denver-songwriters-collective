@@ -1,16 +1,23 @@
 import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
 
-export default function SubmitOpenMicPlaceholder() {
+export default async function SubmitOpenMicPlaceholder({
+  searchParams,
+}: {
+  searchParams?: { eventId?: string } | Promise<{ eventId?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const eventId = resolvedSearchParams?.eventId ?? null;
+
   return (
-    <>
+    <div data-event-id={eventId ?? undefined}>
       <HeroSection minHeight="md">
         <PageContainer>
           <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
             Submit an Open Mic
           </h1>
           <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
-            This feature is coming soon. If you'd like to submit an open mic now, email us at <a className="text-[#00FFCC] underline" href="mailto:hello@openmicdrop.com">hello@openmicdrop.com</a>.
+            This feature is coming soon. If you&apos;d like to submit an open mic now, email us at <a className="text-[#00FFCC] underline" href="mailto:hello@openmicdrop.com">hello@openmicdrop.com</a>.
           </p>
 
           <div className="mt-6">
@@ -26,9 +33,9 @@ export default function SubmitOpenMicPlaceholder() {
 
       <PageContainer>
         <div className="py-16 text-center">
-          <p className="text-[var(--color-warm-gray-light)]">We're working on a submission form. In the meantime, reach out via email to have your event added.</p>
+          <p className="text-[var(--color-warm-gray-light)]">We&apos;re working on a submission form. In the meantime, reach out via email to have your event added.</p>
         </div>
       </PageContainer>
-    </>
+    </div>
   );
 }

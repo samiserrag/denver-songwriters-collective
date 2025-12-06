@@ -4,6 +4,12 @@ import type { EventWithVenue } from "@/types/db";
 import Link from "next/link";
 import { highlight, escapeHtml } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+const CATEGORY_COLORS: Record<string, string> = {
+  "comedy": "bg-pink-900/40 text-pink-300",
+  "poetry": "bg-purple-900/40 text-purple-300",
+  "all-acts": "bg-yellow-900/40 text-yellow-300",
+};
+
 export const dynamic = "force-dynamic";
 
 interface EventPageProps {
@@ -51,6 +57,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
   const recurrenceText = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
   const startFormatted = formatTimeToAMPM(event.start_time ?? null);
   const endFormatted = formatTimeToAMPM((event as any).end_time ?? null);
+  const signupFormatted = formatTimeToAMPM((event as any).signup_time ?? null);
 
   const searchQuery = (searchParamsObj?.search ?? "").trim();
   // Prepare highlighted HTML (safe — highlight/escapeHtml escape input)
@@ -71,6 +78,14 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           className="text-3xl font-semibold text-white tracking-wide"
           dangerouslySetInnerHTML={{ __html: titleHtml }}
         />
+
+        {event.category && (
+          <div className="mt-3">
+            <span className={`text-xs px-2 py-0.5 rounded ${CATEGORY_COLORS[(event.category as string)] || ""}`}>
+              {event.category}
+            </span>
+          </div>
+        )}
 
         {venue && (
           <div className="mt-4 space-y-2">
@@ -101,6 +116,9 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             {event.day_of_week && <p><strong className="text-white">Day:</strong> {event.day_of_week}</p>}
             {startFormatted && <p><strong className="text-white">Starts:</strong> {startFormatted}</p>}
             {endFormatted && endFormatted !== "TBD" && <p><strong className="text-white">Ends:</strong> {endFormatted}</p>}
+            {signupFormatted && signupFormatted !== "TBD" && (
+              <p className="text-gray-300"><strong>Signup Time:</strong> {signupFormatted}</p>
+            )}
             {recurrenceText ? (
               <p><strong className="text-white">Recurrence:</strong> {recurrenceText}</p>
             ) : null}
@@ -115,6 +133,22 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           </div>
         ) : null}
       </div>
+
+      <div className="mt-8 flex justify-center">
+        <Link
+          href={`/submit-open-mic?eventId=${event.id}`}
+          className="text-sm text-sky-300 underline underline-offset-4 hover:text-sky-200 transition"
+        >
+          Submit updated info about this event
+        </Link>
+      </div>
+
+      <div className="mt-8">
+        {/* Inline report form — client-side component */}
+        <OpenMicReportForm eventId={event.id} />
+      </div>
     </div>
   );
 }
+
+import OpenMicReportForm from "@/components/OpenMicReportForm";

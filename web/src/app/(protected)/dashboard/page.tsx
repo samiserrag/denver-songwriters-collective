@@ -3,6 +3,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import { PerformerAvatar } from "@/components/performers";
 import { WelcomeToast } from "./WelcomeToast";
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 
 export const dynamic = "force-dynamic";
@@ -66,50 +67,36 @@ export default async function DashboardPage() {
 
             <ul className="space-y-3 text-neutral-300 text-lg">
               <li>
-                <a href="/events" className="text-gold-400 hover:underline">
-                  Browse Events
-                </a>
+                <Link href="/events" className="text-gold-400 hover:underline">Browse Events</Link>
               </li>
               <li>
-                <a href="/performers" className="text-gold-400 hover:underline">
-                  Explore Performers
-                </a>
+                <Link href="/performers" className="text-gold-400 hover:underline">Explore Performers</Link>
               </li>
               <li>
-                <a href="/studios" className="text-gold-400 hover:underline">
-                  Find Studios
-                </a>
+                <Link href="/studios" className="text-gold-400 hover:underline">Find Studios</Link>
               </li>
 
               {p?.role === "performer" && (
                 <li>
-                  <a href="/events" className="text-gold-400 hover:underline">
-                    Claim an Open Mic Slot
-                  </a>
+                  <Link href="/events" className="text-gold-400 hover:underline">Claim an Open Mic Slot</Link>
                 </li>
               )}
 
               {p?.role === "studio" && (
                 <li>
-                  <a href="/studios" className="text-gold-400 hover:underline">
-                    Manage Your Services (coming soon)
-                  </a>
+                  <Link href="/studios" className="text-gold-400 hover:underline">Manage Your Services (coming soon)</Link>
                 </li>
               )}
 
               {p?.role === "host" && (
                 <li>
-                  <a href="/events/manage" className="text-gold-400 hover:underline">
-                    Host Dashboard (coming soon)
-                  </a>
+                  <Link href="/events/manage" className="text-gold-400 hover:underline">Host Dashboard (coming soon)</Link>
                 </li>
               )}
 
               {p?.role === "admin" && (
                 <li>
-                  <a href="/dashboard/admin" className="text-gold-400 hover:underline">
-                    Admin Panel
-                  </a>
+                  <Link href="/dashboard/admin" className="text-gold-400 hover:underline">Admin Panel</Link>
                 </li>
               )}
             </ul>
