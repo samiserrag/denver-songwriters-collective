@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth/useAuth";
 
 const navLinks = [
   { href: "/events", label: "Events" },
+  { href: "/open-mics", label: "Open Mics" },
   { href: "/performers", label: "Performers" },
   { href: "/studios", label: "Studios" },
   { href: "/about", label: "About" },
