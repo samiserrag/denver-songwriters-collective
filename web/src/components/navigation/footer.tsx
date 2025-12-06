@@ -2,6 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/ui/Logo";
+import { NewsletterSignup } from "./newsletter-signup";
 
 interface FooterProps {
   className?: string;
@@ -66,22 +67,13 @@ export function Footer({ className }: FooterProps) {
             </ul>
           </div>
 
-          {/* Newsletter placeholder */}
+          {/* Newsletter */}
           <div>
             <h4 className="text-[var(--color-warm-white)] font-semibold mb-4">Stay Connected</h4>
             <p className="text-[var(--color-warm-gray)] text-sm mb-4">
               Get weekly updates on Denver&apos;s songwriter scene.
             </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="flex-1 px-3 py-2 bg-[var(--color-indigo-950)] border border-white/10 rounded-lg text-[var(--color-warm-white)] text-sm placeholder:text-[var(--color-warm-gray-dark)] focus:border-[var(--color-gold)] focus:outline-none"
-              />
-              <button className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-medium rounded-lg text-sm transition-colors">
-                Join
-              </button>
-            </div>
+            <NewsletterSignup />
           </div>
         </div>
 
