@@ -21,21 +21,17 @@ function isValidMapUrl(url?: string | null): boolean {
   return true;
 }
 
-function getMapUrlFromAddress(venueName: string, address?: string) {
-  const query = address
-    ? `${venueName}, ${address}`
-    : venueName;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
-
 function resolveMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, venueName?: string | null, venueAddress?: string): string | undefined {
   // Prefer explicit google_maps_url if valid
   if (isValidMapUrl(googleMapsUrl)) return googleMapsUrl!;
   // Fall back to map_link if it's not a broken goo.gl URL
   if (isValidMapUrl(mapLink)) return mapLink!;
-  // Otherwise construct from address
-  if (venueName) {
-    return getMapUrlFromAddress(venueName, venueAddress);
+  // Otherwise construct from venue name + address
+  const parts: string[] = [];
+  if (venueName && venueName !== "TBA" && venueName !== "Venue") parts.push(venueName);
+  if (venueAddress) parts.push(venueAddress);
+  if (parts.length > 0) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
   }
   return undefined;
 }

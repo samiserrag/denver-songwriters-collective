@@ -57,11 +57,17 @@ export default function CompactListItem({
   const signupDisplay = signup && signup !== "TBD" ? signup : "Contact venue";
 
   const addressParts = [venue_address, venue_city, venue_state].filter(Boolean).join(", ");
-  const mapUrl =
-    (isValidMapUrl(map_url) ? map_url : null) ??
-    (venue_name
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressParts ? `${venue_name}, ${addressParts}` : venue_name)}`
-      : undefined);
+  const mapUrl = (() => {
+    if (isValidMapUrl(map_url)) return map_url;
+    // Construct from venue name + address
+    const parts: string[] = [];
+    if (venue_name) parts.push(venue_name);
+    if (addressParts) parts.push(addressParts);
+    if (parts.length > 0) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
+    }
+    return undefined;
+  })();
 
   const detailsHref = slug ? `/open-mics/${slug}` : `/open-mics/${id}`;
 

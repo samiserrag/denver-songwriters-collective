@@ -58,14 +58,17 @@ function isValidMapUrl(url?: string | null): boolean {
   return true;
 }
 
-function getMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, addressParts?: string[]): string | undefined {
+function getMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, venueName?: string | null, addressParts?: string[]): string | undefined {
   // Prefer explicit google_maps_url if valid
   if (isValidMapUrl(googleMapsUrl)) return googleMapsUrl!;
   // Fall back to map_link if it's not a broken goo.gl URL
   if (isValidMapUrl(mapLink)) return mapLink!;
-  // Otherwise construct from address
-  if (addressParts && addressParts.length > 0) {
-    return `https://maps.google.com/?q=${encodeURIComponent(addressParts.join(", "))}`;
+  // Otherwise construct from venue name + address
+  const parts: string[] = [];
+  if (venueName && venueName !== "TBA" && venueName !== "Venue") parts.push(venueName);
+  if (addressParts && addressParts.length > 0) parts.push(...addressParts);
+  if (parts.length > 0) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
   }
   return undefined;
 }
@@ -120,6 +123,7 @@ function mapDBEventToEvent(e: DBEvent): EventType {
   const mapUrl = getMapUrl(
     e.venues?.google_maps_url,
     e.venues?.map_link,
+    venueName,
     addressParts.length > 0 ? addressParts : undefined
   );
 
