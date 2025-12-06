@@ -67,15 +67,19 @@ export async function middleware(req: NextRequest) {
   // Fetch user profile to determine onboarding status
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, onboarding_complete")
     .eq("id", user.id)
     .single();
 
-  const needsOnboarding = !profile?.role;
+  // User needs onboarding if they have no role set
+  const needsRoleSelection = !profile?.role;
 
-  const onboardingPaths = ["/onboarding/role"];
+  // All onboarding paths should be accessible during onboarding
+  const onboardingPaths = ["/onboarding/role", "/onboarding/profile", "/onboarding/complete"];
+  const isOnboardingPath = onboardingPaths.some(p => pathname.startsWith(p));
 
-  if (needsOnboarding && !onboardingPaths.includes(pathname)) {
+  // If user needs to select a role and isn't on an onboarding page, redirect to role selection
+  if (needsRoleSelection && !isOnboardingPath) {
     const redirectUrl = new URL("/onboarding/role", req.url);
     return NextResponse.redirect(redirectUrl);
   }

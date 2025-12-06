@@ -79,7 +79,8 @@ export default function RoleOnboarding() {
         return;
       }
 
-      // Success - redirect to onboarding profile step
+      // Success - refresh to clear cache, then redirect to onboarding profile step
+      router.refresh();
       router.push("/onboarding/profile");
     } catch (err) {
       console.error("Unexpected error:", err);

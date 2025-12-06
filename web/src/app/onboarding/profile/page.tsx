@@ -119,6 +119,8 @@ export default function ProfileOnboarding() {
         return;
       }
 
+      // Refresh to clear cache, then redirect to complete page
+      router.refresh();
       router.push("/onboarding/complete");
     } catch (err) {
       console.error("Unexpected error:", err);
