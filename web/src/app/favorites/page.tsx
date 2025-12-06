@@ -10,7 +10,11 @@ export default async function FavoritesPage() {
   const supabase = await createSupabaseServerClient();
 
   // Ensure user is authenticated (server) and redirect if not
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/login");
   }

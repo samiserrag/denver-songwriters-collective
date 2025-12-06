@@ -9,7 +9,12 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export default async function AdminPerformersPage() {
   const supabase = await createSupabaseServerClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user ?? null;
+
   if (!user) {
     return <div className="p-8 text-red-500">You must be logged in.</div>;
   }

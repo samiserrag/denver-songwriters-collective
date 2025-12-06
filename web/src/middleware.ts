@@ -53,8 +53,10 @@ export async function middleware(req: NextRequest) {
   );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user ?? null;
 
   if (!user) {
     const redirectUrl = new URL("/login", req.url);

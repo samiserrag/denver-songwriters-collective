@@ -11,15 +11,23 @@ export default async function EditEventPage({ params }: PageProps) {
   const supabase = await createSupabaseServerClient();
   
   // Check admin role
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  if (typeof supabase.auth.getSession === "function") {
+    const { data: { session } } = await supabase.auth.getSession();
+    user = session?.user ?? null;
+  } else {
+    const { data: { user: _user } } = await supabase.auth.getUser();
+    user = _user ?? null;
+  }
+
   if (!user) redirect("/login");
-  
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
-    
+
   if (profile?.role !== "admin") redirect("/dashboard");
   
   // Fetch event

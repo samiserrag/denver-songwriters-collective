@@ -46,9 +46,10 @@ export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
+  const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
   const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredStudiosRes] = await Promise.all([
