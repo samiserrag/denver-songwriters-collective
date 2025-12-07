@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { PerformerAvatar } from "@/components/performers";
 import type { Database } from "@/lib/supabase/database.types";
+import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -10,6 +11,66 @@ type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 interface PerformerDetailPageProps {
   params: Promise<{ id: string }>;
 }
+
+// Social link icons as inline SVGs
+const SocialIcon = ({ type }: { type: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    instagram: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+      </svg>
+    ),
+    facebook: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    ),
+    twitter: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    ),
+    youtube: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      </svg>
+    ),
+    spotify: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+      </svg>
+    ),
+    website: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    ),
+  };
+  return icons[type] || null;
+};
+
+// Tip platform icons
+const TipIcon = ({ type }: { type: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    venmo: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19.5 2h-15A2.5 2.5 0 002 4.5v15A2.5 2.5 0 004.5 22h15a2.5 2.5 0 002.5-2.5v-15A2.5 2.5 0 0019.5 2zM17.2 8.2c0 2.5-2.1 6.1-3.8 8.5H9.3L7.5 6.3l3.4-.3.9 7.2c.9-1.4 1.9-3.6 1.9-5.1 0-.8-.1-1.3-.3-1.8l3.1-.6c.4.6.7 1.5.7 2.5z"/>
+      </svg>
+    ),
+    cashapp: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M23.59 3.47A5.1 5.1 0 0020.53.41C19.86.14 19.1 0 18.25 0H5.75C4.9 0 4.14.14 3.47.41a5.1 5.1 0 00-3.06 3.06C.14 4.14 0 4.9 0 5.75v12.5c0 .85.14 1.61.41 2.28a5.1 5.1 0 003.06 3.06c.67.27 1.43.41 2.28.41h12.5c.85 0 1.61-.14 2.28-.41a5.1 5.1 0 003.06-3.06c.27-.67.41-1.43.41-2.28V5.75c0-.85-.14-1.61-.41-2.28zM17.46 14.7l-1.37 1.47c-.17.18-.43.28-.72.28h-.02c-.29 0-.56-.1-.73-.28l-1.73-1.81-.65.69c-.15.17-.37.26-.6.26-.46 0-.85-.37-.85-.84v-.02l.02-1.08h-1.2c-.47 0-.85-.38-.85-.85s.38-.85.85-.85h1.2l-.02-1.05c0-.47.38-.85.85-.85.23 0 .44.09.6.25l.65.68 1.73-1.81c.17-.18.44-.28.73-.28h.02c.29 0 .55.1.72.28l1.37 1.47c.19.2.19.52 0 .72l-1.87 2-.87.93.87.93 1.87 2c.19.2.19.52 0 .72z"/>
+      </svg>
+    ),
+    paypal: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797H9.14c-.528 0-.986.396-1.062.93l-.02.144-1.067 6.757-.015.094a.462.462 0 0 1-.456.4l-.443-.02z"/>
+      </svg>
+    ),
+  };
+  return icons[type] || null;
+};
 
 export default async function PerformerDetailPage({ params }: PerformerDetailPageProps) {
   const { id } = await params;
@@ -28,6 +89,41 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
 
   const performer = profile as DBProfile;
 
+  // Build social links array
+  const socialLinks = [
+    { type: "instagram", url: performer.instagram_url, label: "Instagram" },
+    { type: "facebook", url: performer.facebook_url, label: "Facebook" },
+    { type: "twitter", url: performer.twitter_url, label: "X (Twitter)" },
+    { type: "youtube", url: performer.youtube_url, label: "YouTube" },
+    { type: "spotify", url: performer.spotify_url, label: "Spotify" },
+    { type: "website", url: performer.website_url, label: "Website" },
+  ].filter((link) => link.url);
+
+  // Build tip links array
+  const tipLinks = [
+    {
+      type: "venmo",
+      handle: performer.venmo_handle,
+      url: performer.venmo_handle ? `https://venmo.com/${performer.venmo_handle.replace("@", "")}` : null,
+      label: "Venmo",
+      color: "bg-[#3D95CE]",
+    },
+    {
+      type: "cashapp",
+      handle: performer.cashapp_handle,
+      url: performer.cashapp_handle ? `https://cash.app/${performer.cashapp_handle.replace("$", "$")}` : null,
+      label: "Cash App",
+      color: "bg-[#00D632]",
+    },
+    {
+      type: "paypal",
+      handle: null,
+      url: performer.paypal_url,
+      label: "PayPal",
+      color: "bg-[#003087]",
+    },
+  ].filter((link) => link.url || link.handle);
+
   return (
     <>
       <HeroSection minHeight="md">
@@ -42,7 +138,26 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
                 {performer.full_name ?? "Anonymous Performer"}
               </h1>
-              <p className="text-neutral-400">Performer</p>
+              <p className="text-neutral-400 mb-4">Performer</p>
+
+              {/* Social Links */}
+              {socialLinks.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {socialLinks.map((link) => (
+                    <Link
+                      key={link.type}
+                      href={link.url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition-colors"
+                      title={link.label}
+                    >
+                      <SocialIcon type={link.type} />
+                      <span className="text-sm">{link.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </PageContainer>
@@ -56,6 +171,29 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               {performer.bio ?? "This performer hasn't added a bio yet."}
             </p>
           </section>
+
+          {/* Tip/Support Section */}
+          {tipLinks.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-white mb-4">Support This Artist</h2>
+              <p className="text-neutral-400 mb-4">Show your appreciation with a tip!</p>
+              <div className="flex flex-wrap gap-3">
+                {tipLinks.map((tip) => (
+                  <Link
+                    key={tip.type}
+                    href={tip.url!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${tip.color} hover:opacity-90 text-white transition-opacity`}
+                  >
+                    <TipIcon type={tip.type} />
+                    <span className="font-medium">{tip.label}</span>
+                    {tip.handle && <span className="text-white/80">{tip.handle}</span>}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="mb-12">
             <h2 className="text-2xl font-semibold text-white mb-4">Upcoming Performances</h2>
