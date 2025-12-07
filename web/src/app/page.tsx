@@ -212,41 +212,41 @@ export default async function HomePage() {
         <ScrollIndicator />
       </HeroSection>
 
-      {/* What We Offer Section */}
+      {/* What We Offer Each Other Section */}
       <section className="py-20 px-6 bg-[var(--color-background-dark)]/50">
         <div className="max-w-6xl mx-auto">
           <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-warm-white)] mb-4">
-            Everything Songwriters Need
+            What We Offer Each Other
           </h2>
           <p className="text-[var(--color-warm-gray)] text-center mb-12 max-w-2xl mx-auto">
-            Whether you&apos;re looking for your first open mic or your hundredth,
-            we&apos;ve got you covered.
+            Built by songwriters, for songwriters. This is our shared space to
+            connect, collaborate, and lift each other up.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: "🎤",
-                title: "Open Mics",
-                desc: "Find weekly open mics across Denver, sorted by day and venue.",
+                title: "Stages to Share",
+                desc: "Community-maintained open mic listings. Know a spot? Help keep the list updated.",
                 href: "/open-mics"
               },
               {
-                icon: "🎵",
-                title: "Showcases",
-                desc: "Discover songwriter showcases and listening room events.",
-                href: "/events"
-              },
-              {
-                icon: "🎸",
-                title: "Artists",
-                desc: "Connect with Denver's talented songwriter community.",
+                icon: "🤝",
+                title: "Real Connections",
+                desc: "Meet fellow songwriters, find collaborators, and build lasting friendships.",
                 href: "/performers"
               },
               {
+                icon: "📖",
+                title: "Stories & Wisdom",
+                desc: "Share your journey, learn from others, and grow together.",
+                href: "/blog"
+              },
+              {
                 icon: "🎧",
-                title: "Studios",
-                desc: "Book recording time at local studios and creative spaces.",
+                title: "Local Resources",
+                desc: "Studios, gear, and services recommended by your fellow musicians.",
                 href: "/studios"
               },
             ].map((item) => (
