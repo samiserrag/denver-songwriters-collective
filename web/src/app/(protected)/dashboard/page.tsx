@@ -69,6 +69,9 @@ export default async function DashboardPage() {
 
             <ul className="space-y-3 text-neutral-300 text-lg">
               <li>
+                <Link href="/dashboard/profile" className="text-gold-400 hover:underline">Edit My Profile</Link>
+              </li>
+              <li>
                 <Link href="/events" className="text-gold-400 hover:underline">Browse Events</Link>
               </li>
               <li>
@@ -79,9 +82,14 @@ export default async function DashboardPage() {
               </li>
 
               {p?.role === "performer" && (
-                <li>
-                  <Link href="/events" className="text-gold-400 hover:underline">Claim an Open Mic Slot</Link>
-                </li>
+                <>
+                  <li>
+                    <Link href="/events" className="text-gold-400 hover:underline">Find Open Mic Slots</Link>
+                  </li>
+                  <li>
+                    <Link href={`/performers/${user.id}`} className="text-gold-400 hover:underline">View My Public Profile</Link>
+                  </li>
+                </>
               )}
 
               {p?.role === "studio" && (
