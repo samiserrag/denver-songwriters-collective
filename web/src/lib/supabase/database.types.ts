@@ -391,6 +391,47 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notifications: {
+        Row: {
+          id: string
+          type: Database["public"]["Enums"]["notification_type"]
+          title: string
+          message: string
+          metadata: Record<string, unknown>
+          user_id: string | null
+          is_read: boolean
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          type: Database["public"]["Enums"]["notification_type"]
+          title: string
+          message: string
+          metadata?: Record<string, unknown>
+          user_id?: string | null
+          is_read?: boolean
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          title?: string
+          message?: string
+          metadata?: Record<string, unknown>
+          user_id?: string | null
+          is_read?: boolean
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -511,10 +552,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_admin_notification: {
+        Args: {
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_title: string
+          p_message: string
+          p_user_id?: string | null
+          p_metadata?: Record<string, unknown>
+        }
+        Returns: {
+          id: string
+          type: Database["public"]["Enums"]["notification_type"]
+          title: string
+          message: string
+          metadata: Record<string, unknown>
+          user_id: string | null
+          is_read: boolean
+          created_at: string | null
+        }
+      }
     }
     Enums: {
       appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
       user_role: "performer" | "host" | "studio" | "admin" | "fan"
+      notification_type: "new_user" | "event_signup" | "correction_submitted" | "gallery_created" | "blog_post_created" | "volunteer_signup" | "host_claim"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -647,6 +708,7 @@ export const Constants = {
     Enums: {
       appointment_status: ["pending", "confirmed", "completed", "cancelled"],
       user_role: ["performer", "host", "studio", "admin", "fan"],
+      notification_type: ["new_user", "event_signup", "correction_submitted", "gallery_created", "blog_post_created", "volunteer_signup", "host_claim"],
     },
   },
 } as const

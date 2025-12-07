@@ -71,16 +71,25 @@ export async function middleware(req: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  // User needs onboarding if they have no role set
-  const needsRoleSelection = !profile?.role;
-
   // All onboarding paths should be accessible during onboarding
   const onboardingPaths = ["/onboarding/role", "/onboarding/profile", "/onboarding/complete"];
   const isOnboardingPath = onboardingPaths.some(p => pathname.startsWith(p));
 
-  // If user needs to select a role and isn't on an onboarding page, redirect to role selection
+  // User needs role selection if they have no role set
+  const needsRoleSelection = !profile?.role;
+
+  // User needs profile completion if onboarding_complete is false/null
+  const needsProfileCompletion = !profile?.onboarding_complete;
+
+  // Redirect to role selection if no role is set
   if (needsRoleSelection && !isOnboardingPath) {
     const redirectUrl = new URL("/onboarding/role", req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Redirect to profile completion if role is set but onboarding not complete
+  if (!needsRoleSelection && needsProfileCompletion && !isOnboardingPath) {
+    const redirectUrl = new URL("/onboarding/profile", req.url);
     return NextResponse.redirect(redirectUrl);
   }
 

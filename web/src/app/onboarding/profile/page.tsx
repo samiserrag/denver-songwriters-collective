@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { ImageUpload } from "@/components/ui";
 import Link from "next/link";
 
 type FormData = {
   full_name: string;
   bio: string;
+  avatar_url: string;
   instagram_url: string;
   facebook_url: string;
   twitter_url: string;
@@ -22,6 +24,7 @@ type FormData = {
 const initialFormData: FormData = {
   full_name: "",
   bio: "",
+  avatar_url: "",
   instagram_url: "",
   facebook_url: "",
   twitter_url: "",
@@ -40,6 +43,7 @@ export default function ProfileOnboarding() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -49,6 +53,8 @@ export default function ProfileOnboarding() {
         router.push("/login");
         return;
       }
+
+      setUserId(user.id);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -60,6 +66,7 @@ export default function ProfileOnboarding() {
         setFormData({
           full_name: profile.full_name || "",
           bio: profile.bio || "",
+          avatar_url: profile.avatar_url || "",
           instagram_url: (profile as any).instagram_url || "",
           facebook_url: (profile as any).facebook_url || "",
           twitter_url: (profile as any).twitter_url || "",
@@ -75,6 +82,66 @@ export default function ProfileOnboarding() {
     }
     loadProfile();
   }, [supabase, router]);
+
+  const handleAvatarUpload = useCallback(async (file: File): Promise<string | null> => {
+    if (!userId) return null;
+
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${userId}/avatar.${fileExt}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+
+    // Add cache-busting timestamp
+    const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+
+    // Update profile with new avatar URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: urlWithTimestamp })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Profile update error:', updateError);
+      return null;
+    }
+
+    setFormData(prev => ({ ...prev, avatar_url: urlWithTimestamp }));
+    return urlWithTimestamp;
+  }, [supabase, userId]);
+
+  const handleAvatarRemove = useCallback(async () => {
+    if (!userId) return;
+
+    // Remove from storage
+    const { error: deleteError } = await supabase.storage
+      .from('avatars')
+      .remove([`${userId}/avatar.jpg`, `${userId}/avatar.png`, `${userId}/avatar.webp`]);
+
+    if (deleteError) {
+      console.error('Delete error:', deleteError);
+    }
+
+    // Update profile
+    await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', userId);
+
+    setFormData(prev => ({ ...prev, avatar_url: '' }));
+  }, [supabase, userId]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -199,6 +266,38 @@ export default function ProfileOnboarding() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Profile Picture */}
+          <section>
+            <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+              <span>📸</span> Profile Picture <span className="text-sm font-normal text-teal-400">(optional)</span>
+            </h2>
+            <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+              Add a profile picture to help others recognize you. Your photo will be displayed as a circle.
+            </p>
+            <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+              <ImageUpload
+                currentImageUrl={formData.avatar_url || null}
+                onUpload={handleAvatarUpload}
+                onRemove={handleAvatarRemove}
+                aspectRatio={1}
+                maxSizeMB={5}
+                shape="circle"
+                placeholderText="Add Photo"
+                className="w-32 h-32 sm:w-40 sm:h-40"
+              />
+              <div className="text-center sm:text-left">
+                <p className="text-[var(--color-warm-gray-light)] text-sm mb-2">
+                  Recommended: A clear photo of your face
+                </p>
+                <ul className="text-xs text-[var(--color-warm-gray)] space-y-1">
+                  <li>• JPG, PNG, WebP, or GIF</li>
+                  <li>• Max 5MB file size</li>
+                  <li>• Will be cropped to a square</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
           {/* Basic Info */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
