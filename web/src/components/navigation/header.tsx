@@ -103,7 +103,13 @@ export function Header({ className }: HeaderProps) {
         </button>
       </div>
 
-      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} links={navLinks} />
+      <MobileMenu
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        links={navLinks}
+        isLoggedIn={!!user}
+        onLogout={handleLogout}
+      />
     </header>
   );
 }
