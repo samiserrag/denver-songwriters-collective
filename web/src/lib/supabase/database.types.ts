@@ -162,6 +162,9 @@ export type Database = {
           venmo_handle: string | null
           cashapp_handle: string | null
           paypal_url: string | null
+          open_to_collabs: boolean | null
+          specialties: string[] | null
+          favorite_open_mic: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -183,6 +186,9 @@ export type Database = {
           venmo_handle?: string | null
           cashapp_handle?: string | null
           paypal_url?: string | null
+          open_to_collabs?: boolean | null
+          specialties?: string[] | null
+          favorite_open_mic?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -204,6 +210,9 @@ export type Database = {
           venmo_handle?: string | null
           cashapp_handle?: string | null
           paypal_url?: string | null
+          open_to_collabs?: boolean | null
+          specialties?: string[] | null
+          favorite_open_mic?: string | null
         }
         Relationships: []
       }
