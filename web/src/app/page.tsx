@@ -32,6 +32,7 @@ function mapDBProfileToPerformer(profile: DBProfile): Performer {
     name: profile.full_name ?? "Anonymous Performer",
     bio: profile.bio ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
+    isSpotlight: profile.is_featured ?? false,
   };
 }
 

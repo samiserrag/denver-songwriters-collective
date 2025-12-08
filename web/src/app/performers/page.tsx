@@ -20,6 +20,7 @@ function mapDBProfileToPerformer(profile: DBProfile): Performer {
     name: profile.full_name ?? "Anonymous Performer",
     bio: profile.bio ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
+    isSpotlight: profile.is_featured ?? false,
   };
 }
 
@@ -30,6 +31,8 @@ export default async function PerformersPage() {
     .from("profiles")
     .select("*")
     .eq("role", "performer")
+    .order("is_featured", { ascending: false })
+    .order("featured_rank", { ascending: true })
     .order("full_name", { ascending: true });
 
   const performers: Performer[] = (profiles ?? []).map(mapDBProfileToPerformer);
