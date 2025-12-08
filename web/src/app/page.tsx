@@ -3,11 +3,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HeroSection, PageContainer } from "@/components/layout";
 import { EventGrid } from "@/components/events";
 import { PerformerGrid } from "@/components/performers";
+import { HostGrid } from "@/components/hosts";
 import { StudioGrid } from "@/components/studios";
 import { Button } from "@/components/ui";
 import { ScrollIndicator } from "@/components/home";
 import type { Database } from "@/lib/supabase/database.types";
-import type { Event, Performer, Studio } from "@/types";
+import type { Event, Performer, Host, Studio } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,16 @@ function mapDBProfileToPerformer(profile: DBProfile): Performer {
   };
 }
 
+function mapDBProfileToHost(profile: DBProfile): Host {
+  return {
+    id: profile.id,
+    name: profile.full_name ?? "Anonymous Host",
+    bio: profile.bio ?? undefined,
+    avatarUrl: profile.avatar_url ?? undefined,
+    isSpotlight: profile.is_featured ?? false,
+  };
+}
+
 function mapDBProfileToStudio(profile: DBProfile): Studio {
   return {
     id: profile.id,
@@ -54,7 +65,7 @@ export default async function HomePage() {
   const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
-  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredStudiosRes, latestBlogRes] = await Promise.all([
+  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, latestBlogRes] = await Promise.all([
     supabase
       .from("events")
       .select("*")
@@ -76,6 +87,14 @@ export default async function HomePage() {
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("role", "host")
+      .order("is_featured", { ascending: false })
+      .order("featured_rank", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(6),
     supabase
       .from("profiles")
       .select("*")
@@ -105,6 +124,7 @@ export default async function HomePage() {
   const featuredEvents: Event[] = (featuredEventsRes.data ?? []).map(mapDBEventToEvent);
   const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
   const featuredPerformers: Performer[] = (featuredPerformersRes.data ?? []).map(mapDBProfileToPerformer);
+  const featuredHosts: Host[] = (featuredHostsRes.data ?? []).map(mapDBProfileToHost);
   const featuredStudios: Studio[] = (featuredStudiosRes.data ?? []).map(mapDBProfileToStudio);
   const latestBlog = latestBlogRes.data;
   const latestBlogAuthor = latestBlog?.author
@@ -116,6 +136,7 @@ export default async function HomePage() {
   const hasFeaturedEvents = featuredEvents.length > 0;
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasFeaturedPerformers = featuredPerformers.length > 0;
+  const hasFeaturedHosts = featuredHosts.length > 0;
   const hasFeaturedStudios = featuredStudios.length > 0;
   const hasLatestBlog = !!latestBlog;
 
@@ -435,6 +456,23 @@ export default async function HomePage() {
               </p>
             )}
           </section>
+
+          {/* Spotlight Hosts */}
+          {hasFeaturedHosts && (
+            <section>
+              <div className="mb-8 flex items-baseline justify-between gap-4">
+                <div>
+                  <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                    Spotlight Hosts
+                  </h2>
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                    The people who make Denver&apos;s open mic scene happen.
+                  </p>
+                </div>
+              </div>
+              <HostGrid hosts={featuredHosts} />
+            </section>
+          )}
 
           {/* Featured Studios */}
           <section>
