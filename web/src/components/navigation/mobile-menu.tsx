@@ -6,13 +6,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { NavLink } from "./nav-link";
 
 interface MobileMenuProps {
   open: boolean;
   onClose: () => void;
   links: { href: string; label: string }[];
   isLoggedIn?: boolean;
+  onLogout?: () => void;
 }
 
 export function MobileMenu({
@@ -20,6 +20,7 @@ export function MobileMenu({
   onClose,
   links,
   isLoggedIn = false,
+  onLogout,
 }: MobileMenuProps) {
   const pathname = usePathname();
 
@@ -55,7 +56,7 @@ export function MobileMenu({
         className={cn(
           "absolute top-0 right-0 h-full w-full max-w-xs",
           "bg-[var(--color-background)] border-l border-white/5",
-          "p-6",
+          "flex flex-col",
           "transform transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full"
         )}
@@ -64,10 +65,11 @@ export function MobileMenu({
         aria-label="Navigation menu"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-8">
+        {/* Fixed header */}
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
           <span className="font-[var(--font-family-serif)] text-xl">
-            <span className="text-[var(--color-gold)] italic">OPEN MIC</span>{" "}
-            <span className="text-[var(--color-warm-white)]">DROP</span>
+            <span className="text-[var(--color-gold)] italic">Denver</span>{" "}
+            <span className="text-[var(--color-warm-white)]">Songwriters</span>
           </span>
           <button
             onClick={onClose}
@@ -80,30 +82,51 @@ export function MobileMenu({
           </button>
         </div>
 
-        <nav className="flex flex-col gap-2" role="navigation">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => onClose()}
-              className="text-lg py-3 px-2 rounded-lg hover:bg-white/5"
-            >
-              {link.label}
-            </Link>
-          ))}
-
-          <div className="pt-6 mt-4 border-t border-white/10">
-            {isLoggedIn ? (
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
-            ) : (
-              <Button variant="primary" className="w-full">
-                <Link href="/login">Log in</Link>
-              </Button>
-            )}
+        {/* Scrollable nav content */}
+        <nav className="flex-1 overflow-y-auto p-6 pt-4" role="navigation">
+          <div className="flex flex-col gap-2">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => onClose()}
+                className="text-lg py-3 px-2 rounded-lg hover:bg-white/5 text-[var(--color-warm-white)]"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </nav>
+
+        {/* Fixed footer with auth buttons */}
+        <div className="p-6 pt-4 border-t border-white/10">
+          {isLoggedIn ? (
+            <div className="flex flex-col gap-3">
+              <Button variant="primary" className="w-full" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  onLogout?.();
+                  onClose();
+                }}
+              >
+                Log out
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <Button variant="primary" className="w-full" asChild>
+                <Link href="/signup">Sign up</Link>
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/login">Log in</Link>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
