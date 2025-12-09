@@ -137,7 +137,26 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
                 {performer.full_name ?? "Anonymous Performer"}
               </h1>
-              <p className="text-neutral-400 mb-2">Performer</p>
+
+              {/* Role badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {performer.role === "host" ? (
+                  <span className="px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium">
+                    🎤 Open Mic Host
+                  </span>
+                ) : (
+                  <>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-neutral-300 text-sm">
+                      Performer
+                    </span>
+                    {(performer as DBProfile & { is_host?: boolean }).is_host && (
+                      <span className="px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium">
+                        🎤 Also Hosts Open Mics
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
 
               {/* Open to Collaborations Badge */}
               {performer.open_to_collabs && (

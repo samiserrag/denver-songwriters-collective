@@ -18,6 +18,7 @@ interface SpotlightProfile {
   role: string;
   featured_at: string | null;
   is_featured: boolean;
+  is_host: boolean | null;
 }
 
 export default async function SpotlightPage() {
@@ -26,7 +27,7 @@ export default async function SpotlightPage() {
   // Get current spotlighted profiles (is_featured = true)
   const { data: currentSpotlights } = await supabase
     .from("profiles")
-    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured")
+    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_host")
     .eq("is_featured", true)
     .in("role", ["performer", "host", "studio"])
     .order("featured_rank", { ascending: true });
@@ -35,19 +36,22 @@ export default async function SpotlightPage() {
   // We'll show anyone with a featured_at timestamp who isn't currently featured
   const { data: previousSpotlights } = await supabase
     .from("profiles")
-    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured")
+    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_host")
     .eq("is_featured", false)
     .not("featured_at", "is", null)
     .in("role", ["performer", "host", "studio"])
     .order("featured_at", { ascending: false })
     .limit(20);
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
+  const getRoleLabel = (profile: SpotlightProfile) => {
+    if (profile.role === "performer" && profile.is_host) {
+      return "Artist & Host";
+    }
+    switch (profile.role) {
       case "performer": return "Artist";
       case "host": return "Open Mic Host";
       case "studio": return "Studio";
-      default: return role;
+      default: return profile.role;
     }
   };
 
@@ -145,7 +149,7 @@ function SpotlightCard({
 }: {
   profile: SpotlightProfile;
   isCurrent: boolean;
-  getRoleLabel: (role: string) => string;
+  getRoleLabel: (profile: SpotlightProfile) => string;
   getProfileLink: (profile: SpotlightProfile) => string;
 }) {
   const formattedDate = profile.featured_at
@@ -198,7 +202,7 @@ function SpotlightCard({
               ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)]"
               : "bg-neutral-800 text-neutral-400"
           }`}>
-            {getRoleLabel(profile.role)}
+            {getRoleLabel(profile)}
           </span>
           {formattedDate && !isCurrent && (
             <span className="text-xs text-neutral-500">
