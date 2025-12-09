@@ -80,6 +80,9 @@ export default async function DashboardPage() {
               <li>
                 <Link href="/studios" className="text-gold-400 hover:underline">Find Studios</Link>
               </li>
+              <li>
+                <Link href="/dashboard/blog" className="text-gold-400 hover:underline">My Blog Posts</Link>
+              </li>
 
               {p?.role === "performer" && (
                 <>
