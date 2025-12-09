@@ -233,6 +233,7 @@ export function ImageUpload({
               Crop Your Image
             </h3>
             <button
+              type="button"
               onClick={handleCancel}
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
               aria-label="Cancel"
@@ -271,6 +272,7 @@ export function ImageUpload({
 
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={handleCancel}
               disabled={isUploading}
               className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-warm-gray-light)] hover:border-white/40 hover:text-white transition-colors disabled:opacity-50"
@@ -278,6 +280,7 @@ export function ImageUpload({
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleCropComplete}
               disabled={isUploading || !completedCrop}
               className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
@@ -324,6 +327,7 @@ export function ImageUpload({
             />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <button
+                type="button"
                 onClick={() => inputRef.current?.click()}
                 disabled={isUploading}
                 className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
@@ -333,6 +337,7 @@ export function ImageUpload({
               </button>
               {onRemove && (
                 <button
+                  type="button"
                   onClick={handleRemove}
                   disabled={isUploading}
                   className="p-3 bg-red-500/50 hover:bg-red-500/70 rounded-full transition-colors"
@@ -349,6 +354,7 @@ export function ImageUpload({
           </>
         ) : (
           <button
+            type="button"
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
             className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors"
