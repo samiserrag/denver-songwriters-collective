@@ -304,7 +304,7 @@ export default async function HomePage() {
               <iframe
                 width="100%"
                 height="100%"
-                src="https://www.youtube.com/embed/-y6wayD1W7k?si=k3zdTPQzuTJrKYSz"
+                src="https://www.youtube.com/embed/-y6wayD1W7k?si=6L6F_h2a3QuxVMC_"
                 title="YouTube video player"
                 frameBorder={0}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
