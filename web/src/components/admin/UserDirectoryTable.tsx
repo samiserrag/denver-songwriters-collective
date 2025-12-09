@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
+import { deleteUser, updateSpotlightType, toggleHostStatus } from "@/app/(protected)/dashboard/admin/users/actions";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type ExtendedProfile = Profile & { is_host?: boolean; spotlight_type?: string | null };
 
 interface Props {
   users: Profile[];
@@ -18,6 +19,13 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
 };
 
+const SPOTLIGHT_OPTIONS = [
+  { value: "", label: "Off" },
+  { value: "performer", label: "Artist Spotlight" },
+  { value: "host", label: "Host Spotlight" },
+  { value: "studio", label: "Studio Spotlight" },
+];
+
 export default function UserDirectoryTable({ users }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -29,7 +37,7 @@ export default function UserDirectoryTable({ users }: Props) {
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
-  const [togglingSpotlight, setTogglingSpotlight] = useState<string | null>(null);
+  const [updatingSpotlight, setUpdatingSpotlight] = useState<string | null>(null);
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -50,55 +58,30 @@ export default function UserDirectoryTable({ users }: Props) {
     });
   }, [users, search, roleFilter]);
 
-  const handleToggleSpotlight = async (user: Profile) => {
-    setTogglingSpotlight(user.id);
-    const supabase = createClient();
-
+  const handleSpotlightChange = async (user: ExtendedProfile, value: string) => {
+    setUpdatingSpotlight(user.id);
     try {
-      const newFeaturedStatus = !user.is_featured;
-
-      // If turning on spotlight, also set featured_at for tracking
-      const updates: { is_featured: boolean; featured_at?: string | null } = {
-        is_featured: newFeaturedStatus,
-      };
-
-      if (newFeaturedStatus) {
-        updates.featured_at = new Date().toISOString();
+      const spotlightType = value === "" ? null : (value as "performer" | "host" | "studio");
+      const result = await updateSpotlightType(user.id, spotlightType);
+      if (!result.success) {
+        console.error("Update spotlight error:", result.error);
       }
-
-      const { error } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", user.id);
-
-      if (error) {
-        console.error("Toggle spotlight error:", error);
-      }
-
       router.refresh();
     } catch (err) {
-      console.error("Toggle spotlight error:", err);
+      console.error("Update spotlight error:", err);
     } finally {
-      setTogglingSpotlight(null);
+      setUpdatingSpotlight(null);
     }
   };
 
   const handleToggleHost = async (user: Profile) => {
     setTogglingHost(user.id);
-    const supabase = createClient();
-
     try {
-      const newHostStatus = !(user as Profile & { is_host?: boolean }).is_host;
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_host: newHostStatus })
-        .eq("id", user.id);
-
-      if (error) {
-        console.error("Toggle host error:", error);
+      const newHostStatus = !(user as ExtendedProfile).is_host;
+      const result = await toggleHostStatus(user.id, newHostStatus);
+      if (!result.success) {
+        console.error("Toggle host error:", result.error);
       }
-
       router.refresh();
     } catch (err) {
       console.error("Toggle host error:", err);
@@ -114,7 +97,6 @@ export default function UserDirectoryTable({ users }: Props) {
       return;
     }
 
-    // Prevent deleting admin accounts
     if (deleteModal.user.role === "admin") {
       setError("Cannot delete admin accounts");
       return;
@@ -124,49 +106,13 @@ export default function UserDirectoryTable({ users }: Props) {
     setError("");
 
     try {
-      const supabase = createClient();
-      const userId = deleteModal.user.id;
+      const result = await deleteUser(deleteModal.user.id);
 
-      // Delete user's profile data
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", userId);
-
-      if (profileError) {
-        console.error("Profile delete error:", profileError);
-        throw new Error("Failed to delete user profile");
+      if (!result.success) {
+        setError(result.error || "Failed to delete user");
+        return;
       }
 
-      // Delete user's event suggestions
-      await supabase
-        .from("event_update_suggestions")
-        .delete()
-        .eq("submitted_by", userId)
-        .catch(() => {});
-
-      // Delete user's venue submissions
-      await supabase
-        .from("venue_submissions")
-        .delete()
-        .eq("submitted_by", userId)
-        .catch(() => {});
-
-      // Delete user's favorites if table exists
-      await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", userId)
-        .catch(() => {});
-
-      // Delete user's open mic claims if table exists
-      await supabase
-        .from("open_mic_claims")
-        .delete()
-        .eq("profile_id", userId)
-        .catch(() => {});
-
-      // Close modal and refresh
       setDeleteModal({ open: false, user: null });
       setConfirmText("");
       router.refresh();
@@ -178,6 +124,24 @@ export default function UserDirectoryTable({ users }: Props) {
     }
   };
 
+  const getSpotlightValue = (user: ExtendedProfile): string => {
+    if (!user.is_featured) return "";
+    return user.spotlight_type || "";
+  };
+
+  const getSpotlightDisplayClass = (value: string): string => {
+    switch (value) {
+      case "performer":
+        return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
+      case "host":
+        return "bg-teal-500/20 text-teal-400 border-teal-500/30";
+      case "studio":
+        return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+      default:
+        return "bg-neutral-800 text-neutral-400 border-neutral-600";
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -185,7 +149,7 @@ export default function UserDirectoryTable({ users }: Props) {
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search by name or role…"
+            placeholder="Search by name or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
@@ -216,87 +180,90 @@ export default function UserDirectoryTable({ users }: Props) {
               <th className="py-2 px-3">Name</th>
               <th className="py-2 px-3">Role</th>
               <th className="py-2 px-3">Also Host</th>
-              <th className="py-2 px-3">Featured</th>
+              <th className="py-2 px-3">Spotlight</th>
               <th className="py-2 px-3">Created</th>
               <th className="py-2 px-3">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
-              <tr key={u.id} className="border-b border-white/5">
-                <td className="py-2 px-3">
-                  {u.full_name ?? "Unnamed User"}
-                </td>
-                <td className="py-2 px-3">
-                  <span
-                    className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs uppercase tracking-wide text-[var(--color-gold)]"
-                  >
-                    {ROLE_LABELS[u.role as string] ?? u.role ?? "Unknown"}
-                  </span>
-                </td>
-                <td className="py-2 px-3">
-                  {u.role === "performer" ? (
-                    <button
-                      onClick={() => handleToggleHost(u)}
-                      disabled={togglingHost === u.id}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                        (u as Profile & { is_host?: boolean }).is_host
-                          ? "bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 border border-teal-500/30"
-                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
-                      }`}
+            {filtered.map((u) => {
+              const user = u as ExtendedProfile;
+              const spotlightValue = getSpotlightValue(user);
+              return (
+                <tr key={u.id} className="border-b border-white/5">
+                  <td className="py-2 px-3">
+                    {u.full_name ?? "Unnamed User"}
+                  </td>
+                  <td className="py-2 px-3">
+                    <span
+                      className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs uppercase tracking-wide text-[var(--color-gold)]"
                     >
-                      {togglingHost === u.id
-                        ? "..."
-                        : (u as Profile & { is_host?: boolean }).is_host
-                        ? "🎤 Host"
-                        : "○ No"}
-                    </button>
-                  ) : u.role === "host" ? (
-                    <span className="text-teal-400 text-xs">Primary Host</span>
-                  ) : (
-                    <span className="text-neutral-500 text-xs">—</span>
-                  )}
-                </td>
-                <td className="py-2 px-3">
-                  {u.role === "performer" || u.role === "host" || u.role === "studio" ? (
-                    <button
-                      onClick={() => handleToggleSpotlight(u)}
-                      disabled={togglingSpotlight === u.id}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                        u.is_featured
-                          ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/30 border border-[var(--color-gold)]/30"
-                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
-                      }`}
-                    >
-                      {togglingSpotlight === u.id
-                        ? "..."
-                        : u.is_featured
-                        ? "★ Spotlight"
-                        : "○ Off"}
-                    </button>
-                  ) : (
-                    <span className="text-neutral-500 text-xs">—</span>
-                  )}
-                </td>
-                <td className="py-2 px-3 text-neutral-400 text-xs">
-                  {u.created_at
-                    ? new Date(u.created_at).toLocaleDateString()
-                    : "—"}
-                </td>
-                <td className="py-2 px-3">
-                  {u.role === "admin" ? (
-                    <span className="text-neutral-500 text-xs">Protected</span>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteModal({ open: true, user: u })}
-                      className="text-red-400 hover:text-red-300 text-xs underline"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      {ROLE_LABELS[u.role as string] ?? u.role ?? "Unknown"}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3">
+                    {u.role === "performer" ? (
+                      <button
+                        onClick={() => handleToggleHost(u)}
+                        disabled={togglingHost === u.id}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          user.is_host
+                            ? "bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 border border-teal-500/30"
+                            : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
+                        }`}
+                      >
+                        {togglingHost === u.id
+                          ? "..."
+                          : user.is_host
+                          ? "Yes"
+                          : "No"}
+                      </button>
+                    ) : u.role === "host" ? (
+                      <span className="text-teal-400 text-xs">Primary Host</span>
+                    ) : (
+                      <span className="text-neutral-500 text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3">
+                    {u.role === "performer" || u.role === "host" || u.role === "studio" ? (
+                      <select
+                        value={spotlightValue}
+                        onChange={(e) => handleSpotlightChange(user, e.target.value)}
+                        disabled={updatingSpotlight === u.id}
+                        className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors border cursor-pointer ${getSpotlightDisplayClass(spotlightValue)} ${
+                          updatingSpotlight === u.id ? "opacity-50" : ""
+                        }`}
+                      >
+                        {SPOTLIGHT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value} className="bg-neutral-900 text-white">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-neutral-500 text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3 text-neutral-400 text-xs">
+                    {u.created_at
+                      ? new Date(u.created_at).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td className="py-2 px-3">
+                    {u.role === "admin" ? (
+                      <span className="text-neutral-500 text-xs">Protected</span>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteModal({ open: true, user: u })}
+                        className="text-red-400 hover:text-red-300 text-xs underline"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
 
             {filtered.length === 0 && (
               <tr>
@@ -327,10 +294,10 @@ export default function UserDirectoryTable({ users }: Props) {
                 This action cannot be reversed. It will permanently delete:
               </p>
               <ul className="text-red-200 text-sm space-y-1 ml-4">
-                <li>• Their profile information</li>
-                <li>• All suggestions they&apos;ve submitted</li>
-                <li>• All venue submissions</li>
-                <li>• Their favorites and claims</li>
+                <li>* Their profile information</li>
+                <li>* All suggestions they&apos;ve submitted</li>
+                <li>* All venue submissions</li>
+                <li>* Their favorites and claims</li>
               </ul>
             </div>
 
