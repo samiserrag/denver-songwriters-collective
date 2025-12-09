@@ -42,6 +42,7 @@ export default async function BlogPage() {
       author:profiles!blog_posts_author_id_fkey(full_name, avatar_url)
     `)
     .eq("is_published", true)
+    .eq("is_approved", true)
     .order("published_at", { ascending: false });
 
   return (

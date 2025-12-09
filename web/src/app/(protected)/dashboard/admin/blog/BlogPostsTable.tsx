@@ -11,6 +11,7 @@ interface BlogPost {
   title: string;
   excerpt: string | null;
   is_published: boolean;
+  is_approved: boolean;
   published_at: string | null;
   created_at: string;
   tags: string[];
@@ -29,6 +30,8 @@ export default function BlogPostsTable({ posts }: Props) {
   });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState<string | null>(null);
+  const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "published" | "draft">("all");
 
   const getAuthorName = (author: BlogPost["author"]) => {
     if (!author) return "Unknown";
@@ -58,6 +61,19 @@ export default function BlogPostsTable({ posts }: Props) {
     router.refresh();
   };
 
+  const handleToggleApproval = async (post: BlogPost) => {
+    setIsApproving(post.id);
+    const supabase = createClient();
+
+    await supabase
+      .from("blog_posts")
+      .update({ is_approved: !post.is_approved })
+      .eq("id", post.id);
+
+    setIsApproving(null);
+    router.refresh();
+  };
+
   const handleDelete = async () => {
     if (!deleteModal.post) return;
     setIsDeleting(true);
@@ -70,14 +86,80 @@ export default function BlogPostsTable({ posts }: Props) {
     router.refresh();
   };
 
+  // Filter posts based on status
+  const filteredPosts = posts.filter(post => {
+    switch (filterStatus) {
+      case "pending":
+        return !post.is_approved;
+      case "approved":
+        return post.is_approved && !post.is_published;
+      case "published":
+        return post.is_published && post.is_approved;
+      case "draft":
+        return !post.is_published;
+      default:
+        return true;
+    }
+  });
+
+  const pendingCount = posts.filter(p => !p.is_approved).length;
+
   return (
     <>
+      {/* Filter tabs */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <button
+          onClick={() => setFilterStatus("all")}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            filterStatus === "all"
+              ? "bg-teal-600 text-white"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+          }`}
+        >
+          All ({posts.length})
+        </button>
+        <button
+          onClick={() => setFilterStatus("pending")}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            filterStatus === "pending"
+              ? "bg-amber-600 text-white"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+          }`}
+        >
+          Pending Approval ({pendingCount})
+          {pendingCount > 0 && (
+            <span className="ml-1.5 w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse" />
+          )}
+        </button>
+        <button
+          onClick={() => setFilterStatus("published")}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            filterStatus === "published"
+              ? "bg-green-600 text-white"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+          }`}
+        >
+          Published
+        </button>
+        <button
+          onClick={() => setFilterStatus("draft")}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            filterStatus === "draft"
+              ? "bg-yellow-600 text-white"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+          }`}
+        >
+          Drafts
+        </button>
+      </div>
+
       <div className="w-full overflow-x-auto rounded-lg border border-white/10 bg-black/20">
         <table className="min-w-full text-left text-sm text-white">
           <thead className="border-b border-white/10 text-gold-400">
             <tr>
               <th className="py-3 px-4">Title</th>
               <th className="py-3 px-4">Author</th>
+              <th className="py-3 px-4">Approval</th>
               <th className="py-3 px-4">Status</th>
               <th className="py-3 px-4">Tags</th>
               <th className="py-3 px-4">Created</th>
@@ -85,8 +167,8 @@ export default function BlogPostsTable({ posts }: Props) {
             </tr>
           </thead>
           <tbody>
-            {posts.map((post) => (
-              <tr key={post.id} className="border-b border-white/5 hover:bg-white/5">
+            {filteredPosts.map((post) => (
+              <tr key={post.id} className={`border-b border-white/5 hover:bg-white/5 ${!post.is_approved ? "bg-amber-900/10" : ""}`}>
                 <td className="py-3 px-4">
                   <div>
                     <p className="font-medium text-white">{post.title}</p>
@@ -95,6 +177,23 @@ export default function BlogPostsTable({ posts }: Props) {
                 </td>
                 <td className="py-3 px-4 text-neutral-300">
                   {getAuthorName(post.author)}
+                </td>
+                <td className="py-3 px-4">
+                  <button
+                    onClick={() => handleToggleApproval(post)}
+                    disabled={isApproving === post.id}
+                    className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                      post.is_approved
+                        ? "bg-teal-900/50 text-teal-400 hover:bg-teal-900"
+                        : "bg-amber-900/50 text-amber-400 hover:bg-amber-900"
+                    }`}
+                  >
+                    {isApproving === post.id
+                      ? "..."
+                      : post.is_approved
+                      ? "Approved"
+                      : "Pending"}
+                  </button>
                 </td>
                 <td className="py-3 px-4">
                   <button
@@ -159,10 +258,12 @@ export default function BlogPostsTable({ posts }: Props) {
               </tr>
             ))}
 
-            {posts.length === 0 && (
+            {filteredPosts.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 px-4 text-center text-neutral-400">
-                  No blog posts yet. Create your first post!
+                <td colSpan={7} className="py-8 px-4 text-center text-neutral-400">
+                  {filterStatus === "all"
+                    ? "No blog posts yet. Create your first post!"
+                    : `No ${filterStatus} posts found.`}
                 </td>
               </tr>
             )}

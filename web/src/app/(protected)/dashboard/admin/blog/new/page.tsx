@@ -34,7 +34,7 @@ export default async function NewBlogPostPage() {
       <h1 className="text-4xl font-bold text-gold-400 mb-2">New Blog Post</h1>
       <p className="text-neutral-300 mb-8">Create a new blog post for the community.</p>
 
-      <BlogPostForm authorId={user.id} />
+      <BlogPostForm authorId={user.id} isAdmin={true} />
     </div>
   );
 }

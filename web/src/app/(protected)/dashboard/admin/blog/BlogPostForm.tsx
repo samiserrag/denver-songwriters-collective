@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ImageUpload } from "@/components/ui";
+import { toast } from "sonner";
+import { X, Plus, GripVertical } from "lucide-react";
+
+interface GalleryImage {
+  id?: string;
+  image_url: string;
+  caption: string;
+  sort_order: number;
+}
 
 interface BlogPost {
   id: string;
@@ -12,15 +22,18 @@ interface BlogPost {
   content: string;
   cover_image_url: string | null;
   is_published: boolean;
+  is_approved: boolean;
   tags: string[];
 }
 
 interface Props {
   authorId: string;
   post?: BlogPost;
+  initialGallery?: GalleryImage[];
+  isAdmin?: boolean;
 }
 
-export default function BlogPostForm({ authorId, post }: Props) {
+export default function BlogPostForm({ authorId, post, initialGallery = [], isAdmin = false }: Props) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isEditing = !!post;
@@ -33,11 +46,15 @@ export default function BlogPostForm({ authorId, post }: Props) {
     cover_image_url: post?.cover_image_url ?? "",
     tags: post?.tags?.join(", ") ?? "",
     is_published: post?.is_published ?? false,
+    is_approved: post?.is_approved ?? isAdmin, // Auto-approve for admins
   });
 
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialGallery);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   // Auto-generate slug from title
   const generateSlug = (title: string) => {
@@ -79,7 +96,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
 
     setFormData((prev) => ({ ...prev, content: newText }));
 
-    // Restore cursor position
     setTimeout(() => {
       textarea.focus();
       const newPos = start + before.length + selectedText.length + after.length;
@@ -95,6 +111,103 @@ export default function BlogPostForm({ authorId, post }: Props) {
     if (url) {
       insertFormatting(`\n\n![Image description](${url})\n\n`);
     }
+  };
+
+  // Cover image upload handler
+  const handleCoverUpload = useCallback(async (file: File): Promise<string | null> => {
+    setUploadingCover(true);
+    const supabase = createClient();
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `${authorId}/cover-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('blog-images')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error('Failed to upload cover image');
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('blog-images')
+        .getPublicUrl(fileName);
+
+      const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+      setFormData(prev => ({ ...prev, cover_image_url: urlWithTimestamp }));
+      toast.success('Cover image uploaded!');
+      return urlWithTimestamp;
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Failed to upload cover image');
+      return null;
+    } finally {
+      setUploadingCover(false);
+    }
+  }, [authorId]);
+
+  const handleCoverRemove = useCallback(async () => {
+    setFormData(prev => ({ ...prev, cover_image_url: "" }));
+    toast.success('Cover image removed');
+  }, []);
+
+  // Gallery image upload handler
+  const handleGalleryUpload = useCallback(async (file: File): Promise<string | null> => {
+    setUploadingGallery(true);
+    const supabase = createClient();
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `${authorId}/gallery-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('blog-images')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error('Failed to upload gallery image');
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('blog-images')
+        .getPublicUrl(fileName);
+
+      const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+
+      // Add to gallery
+      setGalleryImages(prev => [
+        ...prev,
+        {
+          image_url: urlWithTimestamp,
+          caption: "",
+          sort_order: prev.length,
+        }
+      ]);
+
+      toast.success('Gallery image uploaded!');
+      return urlWithTimestamp;
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Failed to upload gallery image');
+      return null;
+    } finally {
+      setUploadingGallery(false);
+    }
+  }, [authorId]);
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateGalleryCaption = (index: number, caption: string) => {
+    setGalleryImages(prev => prev.map((img, i) =>
+      i === index ? { ...img, caption } : img
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,43 +230,86 @@ export default function BlogPostForm({ authorId, post }: Props) {
       cover_image_url: formData.cover_image_url || null,
       tags: tagsArray,
       is_published: formData.is_published,
+      is_approved: isAdmin ? formData.is_approved : false, // Only admins can approve
       published_at: formData.is_published && !post?.is_published
         ? new Date().toISOString()
         : undefined,
       updated_at: new Date().toISOString(),
     };
 
-    let result;
+    let postId = post?.id;
 
     if (isEditing) {
-      result = await supabase
+      const result = await supabase
         .from("blog_posts")
         .update(postData)
         .eq("id", post.id);
+
+      if (result.error) {
+        console.error("Save error:", result.error);
+        setError(result.error.message);
+        setSaving(false);
+        return;
+      }
     } else {
-      result = await supabase
+      const result = await supabase
         .from("blog_posts")
         .insert({
           ...postData,
           author_id: authorId,
-        });
+        })
+        .select("id")
+        .single();
+
+      if (result.error) {
+        console.error("Save error:", result.error);
+        setError(result.error.message);
+        setSaving(false);
+        return;
+      }
+
+      postId = result.data.id;
     }
 
-    if (result.error) {
-      console.error("Save error:", result.error);
-      setError(result.error.message);
-      setSaving(false);
-      return;
+    // Save gallery images
+    if (postId && galleryImages.length > 0) {
+      // Delete existing gallery images if editing
+      if (isEditing) {
+        await supabase
+          .from("blog_gallery_images")
+          .delete()
+          .eq("post_id", postId);
+      }
+
+      // Insert new gallery images
+      const galleryData = galleryImages.map((img, index) => ({
+        post_id: postId,
+        image_url: img.image_url,
+        caption: img.caption || null,
+        sort_order: index,
+      }));
+
+      const { error: galleryError } = await supabase
+        .from("blog_gallery_images")
+        .insert(galleryData);
+
+      if (galleryError) {
+        console.error("Gallery save error:", galleryError);
+        // Don't fail the whole operation, just log it
+      }
     }
 
-    router.push("/dashboard/admin/blog");
+    if (isAdmin) {
+      router.push("/dashboard/admin/blog");
+    } else {
+      router.push("/dashboard/blog");
+    }
     router.refresh();
   };
 
   // Simple markdown preview renderer
   const renderPreview = (content: string) => {
     return content.split("\n\n").map((block, i) => {
-      // Images
       const imgMatch = block.match(/!\[([^\]]*)\]\(([^)]+)\)/);
       if (imgMatch) {
         return (
@@ -163,7 +319,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
         );
       }
 
-      // Headers
       if (block.startsWith("### ")) {
         return <h3 key={i} className="text-xl font-semibold text-white mt-6 mb-3">{block.replace("### ", "")}</h3>;
       }
@@ -174,7 +329,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
         return <h1 key={i} className="text-3xl font-bold text-white mt-10 mb-5">{block.replace("# ", "")}</h1>;
       }
 
-      // Blockquote
       if (block.startsWith("> ")) {
         return (
           <blockquote key={i} className="border-l-4 border-[var(--color-gold)] pl-4 my-4 text-neutral-400 italic">
@@ -183,7 +337,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
         );
       }
 
-      // Bullet list
       if (block.includes("\n- ") || block.startsWith("- ")) {
         const items = block.split("\n").filter((line) => line.startsWith("- "));
         return (
@@ -193,7 +346,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
         );
       }
 
-      // Regular paragraph with bold/italic
       let text = block;
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
       text = text.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
@@ -209,6 +361,14 @@ export default function BlogPostForm({ authorId, post }: Props) {
       {error && (
         <div className="p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-300">
           {error}
+        </div>
+      )}
+
+      {/* Non-admin notice */}
+      {!isAdmin && (
+        <div className="p-4 bg-amber-900/30 border border-amber-700 rounded-lg text-amber-300">
+          <p className="font-medium">Note: Your blog post will need admin approval before it&apos;s published publicly.</p>
+          <p className="text-sm mt-1 opacity-80">Once approved, it will appear on the blog page for everyone to see.</p>
         </div>
       )}
 
@@ -247,31 +407,29 @@ export default function BlogPostForm({ authorId, post }: Props) {
         </div>
       </div>
 
-      {/* Cover Image */}
+      {/* Cover Image Upload */}
       <div className="p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
-        <label htmlFor="cover_image_url" className="block text-sm font-medium text-neutral-300 mb-2">
+        <label className="block text-sm font-medium text-neutral-300 mb-3">
           Cover Image
         </label>
-        <input
-          type="url"
-          id="cover_image_url"
-          value={formData.cover_image_url}
-          onChange={(e) => setFormData((prev) => ({ ...prev, cover_image_url: e.target.value }))}
-          className="w-full px-4 py-2 rounded-lg bg-neutral-900 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
-          placeholder="https://your-image-url.com/cover.jpg"
-        />
-        {formData.cover_image_url && (
-          <div className="mt-3">
-            <img
-              src={formData.cover_image_url}
-              alt="Cover preview"
-              className="max-h-48 rounded-lg object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
+        <div className="flex items-start gap-6">
+          <div className="w-48">
+            <ImageUpload
+              currentImageUrl={formData.cover_image_url || null}
+              onUpload={handleCoverUpload}
+              onRemove={handleCoverRemove}
+              aspectRatio={16/9}
+              maxSizeMB={10}
+              shape="square"
+              placeholderText="Upload Cover"
             />
           </div>
-        )}
+          <div className="flex-1 text-sm text-neutral-400">
+            <p>Upload a cover image for your blog post.</p>
+            <p className="mt-1">Recommended size: 1200x675 pixels (16:9 ratio)</p>
+            <p className="mt-1">Max file size: 10MB</p>
+          </div>
+        </div>
       </div>
 
       {/* Excerpt */}
@@ -291,7 +449,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
 
       {/* Content Editor */}
       <div className="border border-neutral-700 rounded-lg overflow-hidden">
-        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-1 p-2 bg-neutral-800 border-b border-neutral-700">
           <button
             type="button"
@@ -366,7 +523,6 @@ export default function BlogPostForm({ authorId, post }: Props) {
           </button>
         </div>
 
-        {/* Editor / Preview */}
         {showPreview ? (
           <div className="p-6 bg-neutral-900 min-h-[400px] max-h-[600px] overflow-y-auto prose prose-invert">
             {formData.cover_image_url && (
@@ -398,6 +554,60 @@ Regular paragraph text here. Use **bold** for emphasis.
 > This is a quote block"
           />
         )}
+      </div>
+
+      {/* Gallery Images */}
+      <div className="p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
+        <label className="block text-sm font-medium text-neutral-300 mb-3">
+          Photo Gallery <span className="text-neutral-500 font-normal">(shown at bottom of post)</span>
+        </label>
+
+        {/* Existing gallery images */}
+        {galleryImages.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+            {galleryImages.map((img, index) => (
+              <div key={index} className="relative group">
+                <div className="aspect-square rounded-lg overflow-hidden bg-neutral-900">
+                  <img
+                    src={img.image_url}
+                    alt={img.caption || `Gallery image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeGalleryImage(index)}
+                  className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove image"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+                <input
+                  type="text"
+                  value={img.caption}
+                  onChange={(e) => updateGalleryCaption(index, e.target.value)}
+                  placeholder="Add caption..."
+                  className="mt-2 w-full px-2 py-1 text-xs rounded bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add gallery image */}
+        <div className="w-32">
+          <ImageUpload
+            currentImageUrl={null}
+            onUpload={handleGalleryUpload}
+            aspectRatio={1}
+            maxSizeMB={10}
+            shape="square"
+            placeholderText="Add Photo"
+          />
+        </div>
+        <p className="text-xs text-neutral-500 mt-2">
+          Add photos to create a gallery at the bottom of your post. Max 10MB per image.
+        </p>
       </div>
 
       {/* Tags */}
@@ -440,13 +650,40 @@ Regular paragraph text here. Use **bold** for emphasis.
         />
         <div>
           <label htmlFor="is_published" className="text-white font-medium cursor-pointer">
-            Publish immediately
+            {isAdmin ? "Publish immediately" : "Submit for publication"}
           </label>
           <p className="text-neutral-500 text-sm">
-            {formData.is_published ? "This post will be visible to everyone" : "Save as draft for later"}
+            {isAdmin
+              ? (formData.is_published ? "This post will be visible to everyone" : "Save as draft for later")
+              : (formData.is_published ? "This post will be submitted for admin approval" : "Save as draft for later")
+            }
           </p>
         </div>
       </div>
+
+      {/* Admin: Approval Toggle */}
+      {isAdmin && (
+        <div className="flex items-center gap-3 p-4 bg-amber-900/20 rounded-lg border border-amber-700/50">
+          <input
+            type="checkbox"
+            id="is_approved"
+            checked={formData.is_approved}
+            onChange={(e) => setFormData((prev) => ({ ...prev, is_approved: e.target.checked }))}
+            className="w-5 h-5 rounded bg-neutral-800 border-neutral-600 text-amber-500 focus:ring-amber-500"
+          />
+          <div>
+            <label htmlFor="is_approved" className="text-white font-medium cursor-pointer">
+              Approve for public display
+            </label>
+            <p className="text-neutral-500 text-sm">
+              {formData.is_approved
+                ? "This post is approved and will be visible when published"
+                : "This post is pending approval"
+              }
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-4 border-t border-neutral-700">
@@ -459,7 +696,7 @@ Regular paragraph text here. Use **bold** for emphasis.
         </button>
         <button
           type="button"
-          onClick={() => router.push("/dashboard/admin/blog")}
+          onClick={() => router.push(isAdmin ? "/dashboard/admin/blog" : "/dashboard/blog")}
           className="px-6 py-3 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
         >
           Cancel

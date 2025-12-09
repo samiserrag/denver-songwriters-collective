@@ -483,6 +483,97 @@ export type Database = {
           }
         ]
       }
+      blog_posts: {
+        Row: {
+          id: string
+          author_id: string
+          slug: string
+          title: string
+          excerpt: string | null
+          content: string
+          cover_image_url: string | null
+          is_published: boolean
+          is_approved: boolean
+          published_at: string | null
+          tags: string[]
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          author_id: string
+          slug: string
+          title: string
+          excerpt?: string | null
+          content: string
+          cover_image_url?: string | null
+          is_published?: boolean
+          is_approved?: boolean
+          published_at?: string | null
+          tags?: string[]
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          author_id?: string
+          slug?: string
+          title?: string
+          excerpt?: string | null
+          content?: string
+          cover_image_url?: string | null
+          is_published?: boolean
+          is_approved?: boolean
+          published_at?: string | null
+          tags?: string[]
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      blog_gallery_images: {
+        Row: {
+          id: string
+          post_id: string
+          image_url: string
+          caption: string | null
+          sort_order: number
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          image_url: string
+          caption?: string | null
+          sort_order?: number
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          image_url?: string
+          caption?: string | null
+          sort_order?: number
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_gallery_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

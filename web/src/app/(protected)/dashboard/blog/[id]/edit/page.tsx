@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import BlogPostForm from "../../BlogPostForm";
+import BlogPostForm from "../../../admin/blog/BlogPostForm";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default async function EditBlogPostPage({ params }: Props) {
+export default async function EditUserBlogPostPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
@@ -19,25 +19,10 @@ export default async function EditBlogPostPage({ params }: Props) {
   const user = session?.user ?? null;
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "admin") {
-    return (
-      <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
-        <p className="text-neutral-400 mt-2">Admin privileges required.</p>
-      </div>
-    );
-  }
-
   const [postRes, galleryRes] = await Promise.all([
     supabase
       .from("blog_posts")
-      .select("id, slug, title, excerpt, content, cover_image_url, is_published, is_approved, tags")
+      .select("id, slug, title, excerpt, content, cover_image_url, is_published, is_approved, tags, author_id")
       .eq("id", id)
       .single(),
     supabase
@@ -54,6 +39,16 @@ export default async function EditBlogPostPage({ params }: Props) {
     notFound();
   }
 
+  // Ensure user can only edit their own posts
+  if (post.author_id !== user.id) {
+    return (
+      <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
+        <p className="text-neutral-400 mt-2">You can only edit your own posts.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
       <h1 className="text-4xl font-bold text-gold-400 mb-2">Edit Blog Post</h1>
@@ -63,7 +58,7 @@ export default async function EditBlogPostPage({ params }: Props) {
         authorId={user.id}
         post={post}
         initialGallery={gallery}
-        isAdmin={true}
+        isAdmin={false}
       />
     </div>
   );

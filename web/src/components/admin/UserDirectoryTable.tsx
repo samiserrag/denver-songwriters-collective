@@ -29,6 +29,7 @@ export default function UserDirectoryTable({ users }: Props) {
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [togglingSpotlight, setTogglingSpotlight] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -47,6 +48,39 @@ export default function UserDirectoryTable({ users }: Props) {
       );
     });
   }, [users, search, roleFilter]);
+
+  const handleToggleSpotlight = async (user: Profile) => {
+    setTogglingSpotlight(user.id);
+    const supabase = createClient();
+
+    try {
+      const newFeaturedStatus = !user.is_featured;
+
+      // If turning on spotlight, also set featured_at for tracking
+      const updates: { is_featured: boolean; featured_at?: string | null } = {
+        is_featured: newFeaturedStatus,
+      };
+
+      if (newFeaturedStatus) {
+        updates.featured_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Toggle spotlight error:", error);
+      }
+
+      router.refresh();
+    } catch (err) {
+      console.error("Toggle spotlight error:", err);
+    } finally {
+      setTogglingSpotlight(null);
+    }
+  };
 
   const handleDeleteUser = async () => {
     if (!deleteModal.user) return;
@@ -175,14 +209,24 @@ export default function UserDirectoryTable({ users }: Props) {
                   </span>
                 </td>
                 <td className="py-2 px-3">
-                  {u.is_featured ? (
-                    <span className="inline-flex items-center rounded-full bg-[var(--color-gold)]/15 px-2.5 py-0.5 text-xs text-[var(--color-gold)]">
-                      Spotlight #{u.featured_rank ?? 9999}
-                    </span>
+                  {u.role === "performer" || u.role === "host" || u.role === "studio" ? (
+                    <button
+                      onClick={() => handleToggleSpotlight(u)}
+                      disabled={togglingSpotlight === u.id}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        u.is_featured
+                          ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/30 border border-[var(--color-gold)]/30"
+                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
+                      }`}
+                    >
+                      {togglingSpotlight === u.id
+                        ? "..."
+                        : u.is_featured
+                        ? "★ Spotlight"
+                        : "○ Off"}
+                    </button>
                   ) : (
-                    <span className="text-neutral-500 text-xs">
-                      —
-                    </span>
+                    <span className="text-neutral-500 text-xs">—</span>
                   )}
                 </td>
                 <td className="py-2 px-3 text-neutral-400 text-xs">

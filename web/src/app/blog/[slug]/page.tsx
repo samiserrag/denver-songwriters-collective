@@ -51,6 +51,7 @@ export default async function BlogPostPage({ params }: Props) {
     `)
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("is_approved", true)
     .single();
 
   if (!post) {
@@ -61,8 +62,8 @@ export default async function BlogPostPage({ params }: Props) {
   const { data: { session } } = await supabase.auth.getSession();
   const currentUserId = session?.user?.id;
 
-  // Fetch like count and user's like status
-  const [likesRes, userLikeRes, commentsRes] = await Promise.all([
+  // Fetch like count, user's like status, comments, and gallery images
+  const [likesRes, userLikeRes, commentsRes, galleryRes] = await Promise.all([
     supabase
       .from("blog_likes")
       .select("*", { count: "exact", head: true })
@@ -86,6 +87,11 @@ export default async function BlogPostPage({ params }: Props) {
       .eq("post_id", post.id)
       .eq("is_approved", true)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("blog_gallery_images")
+      .select("id, image_url, caption, sort_order")
+      .eq("post_id", post.id)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const likeCount = (likesRes as any).count ?? 0;
@@ -96,6 +102,7 @@ export default async function BlogPostPage({ params }: Props) {
     created_at: c.created_at,
     author: Array.isArray(c.author) ? c.author[0] : c.author,
   }));
+  const galleryImages = galleryRes.data ?? [];
 
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString("en-US", {
@@ -255,6 +262,33 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="prose prose-invert max-w-none">
             {renderContent(post.content)}
           </div>
+
+          {/* Photo Gallery */}
+          {galleryImages.length > 0 && (
+            <div className="mt-12 pt-8 border-t border-white/10">
+              <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-6">
+                Photo Gallery
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {galleryImages.map((image: { id: string; image_url: string; caption: string | null }) => (
+                  <div key={image.id} className="group relative">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-neutral-900">
+                      <img
+                        src={image.image_url}
+                        alt={image.caption || "Gallery image"}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    {image.caption && (
+                      <p className="mt-2 text-sm text-neutral-400 text-center">
+                        {image.caption}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Like button */}
           <BlogInteractions
