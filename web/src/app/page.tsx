@@ -288,6 +288,49 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Featured Playlists */}
+      <section className="py-10 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6 text-center">
+            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+              Featured Playlists
+            </h2>
+            <p className="text-[var(--color-warm-gray)]">
+              Music from the Denver songwriting community.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Spotify Playlist */}
+            <div className="rounded-xl overflow-hidden">
+              <iframe
+                src="https://open.spotify.com/embed/playlist/6LohBdSSOxypGZeI4hIGqK?utm_source=generator"
+                width="100%"
+                height="352"
+                frameBorder={0}
+                allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                className="rounded-xl"
+              />
+            </div>
+            {/* YouTube Playlist */}
+            <div className="rounded-xl overflow-hidden aspect-video md:aspect-auto md:h-[352px]">
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/-y6wayD1W7k?si=k3zdTPQzuTJrKYSz"
+                title="YouTube video player"
+                frameBorder={0}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Spotlight Performers */}
       <section className="py-10 px-6">
         <div className="max-w-6xl mx-auto">
