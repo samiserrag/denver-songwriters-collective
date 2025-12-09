@@ -21,6 +21,9 @@ type FormData = {
   venmo_handle: string;
   cashapp_handle: string;
   paypal_url: string;
+  open_to_collabs: boolean;
+  specialties: string[];
+  favorite_open_mic: string;
 };
 
 const initialFormData: FormData = {
@@ -36,7 +39,25 @@ const initialFormData: FormData = {
   venmo_handle: "",
   cashapp_handle: "",
   paypal_url: "",
+  open_to_collabs: false,
+  specialties: [],
+  favorite_open_mic: "",
 };
+
+const SPECIALTY_OPTIONS = [
+  "Vocals",
+  "Guitar",
+  "Piano/Keys",
+  "Bass",
+  "Drums",
+  "Songwriting",
+  "Production",
+  "Mixing/Mastering",
+  "Session Work",
+  "Live Performance",
+  "Music Theory",
+  "Arrangement",
+];
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -79,6 +100,9 @@ export default function EditProfilePage() {
           venmo_handle: (profile as any).venmo_handle || "",
           cashapp_handle: (profile as any).cashapp_handle || "",
           paypal_url: (profile as any).paypal_url || "",
+          open_to_collabs: (profile as any).open_to_collabs || false,
+          specialties: (profile as any).specialties || [],
+          favorite_open_mic: (profile as any).favorite_open_mic || "",
         });
       }
       setLoading(false);
@@ -171,6 +195,9 @@ export default function EditProfilePage() {
           venmo_handle: formData.venmo_handle || null,
           cashapp_handle: formData.cashapp_handle || null,
           paypal_url: formData.paypal_url || null,
+          open_to_collabs: formData.open_to_collabs,
+          specialties: formData.specialties.length > 0 ? formData.specialties : null,
+          favorite_open_mic: formData.favorite_open_mic || null,
         })
         .eq("id", user.id);
 
@@ -288,6 +315,90 @@ export default function EditProfilePage() {
                 </div>
               </div>
             </section>
+
+            {/* Collaboration (Performers only) */}
+            {userRole === "performer" && (
+              <section>
+                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                  Collaboration
+                </h2>
+                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                  Let other musicians know you&apos;re open to working together.
+                </p>
+                <div className="space-y-4">
+                  {/* Open to Collaborations Toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.open_to_collabs}
+                      onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
+                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-gold)] focus:ring-[var(--color-gold)]/50"
+                    />
+                    <span className="text-[var(--color-warm-white)]">
+                      I&apos;m open to collaborations
+                    </span>
+                  </label>
+
+                  {/* Specialties */}
+                  <div>
+                    <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                      Specialties / Services
+                    </label>
+                    <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                      Select skills you can offer for collaborations
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {SPECIALTY_OPTIONS.map((specialty) => (
+                        <label
+                          key={specialty}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                            formData.specialties.includes(specialty)
+                              ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold)]"
+                              : "border-white/10 hover:border-white/20 text-[var(--color-warm-gray-light)]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.specialties.includes(specialty)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  specialties: [...prev.specialties, specialty]
+                                }));
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  specialties: prev.specialties.filter(s => s !== specialty)
+                                }));
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm">{specialty}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Favorite Open Mic */}
+                  <div>
+                    <label htmlFor="favorite_open_mic" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                      Favorite Denver Open Mic
+                    </label>
+                    <input
+                      type="text"
+                      id="favorite_open_mic"
+                      name="favorite_open_mic"
+                      value={formData.favorite_open_mic}
+                      onChange={handleChange}
+                      placeholder="e.g., Lion's Lair, Goosetown Tavern..."
+                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Social Links */}
             <section>

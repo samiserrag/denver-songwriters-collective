@@ -138,7 +138,17 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
                 {performer.full_name ?? "Anonymous Performer"}
               </h1>
-              <p className="text-neutral-400 mb-4">Performer</p>
+              <p className="text-neutral-400 mb-2">Performer</p>
+
+              {/* Open to Collaborations Badge */}
+              {performer.open_to_collabs && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium mb-4">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Open to Collaborations
+                </span>
+              )}
 
               {/* Social Links */}
               {socialLinks.length > 0 && (
@@ -171,6 +181,31 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               {performer.bio ?? "This performer hasn't added a bio yet."}
             </p>
           </section>
+
+          {/* Specialties Section */}
+          {performer.specialties && performer.specialties.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-white mb-4">Specialties</h2>
+              <div className="flex flex-wrap gap-2">
+                {performer.specialties.map((specialty) => (
+                  <span
+                    key={specialty}
+                    className="px-3 py-1.5 rounded-full bg-white/10 text-neutral-200 text-sm"
+                  >
+                    {specialty}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Favorite Open Mic */}
+          {performer.favorite_open_mic && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-white mb-4">Favorite Open Mic</h2>
+              <p className="text-neutral-300">{performer.favorite_open_mic}</p>
+            </section>
+          )}
 
           {/* Tip/Support Section */}
           {tipLinks.length > 0 && (

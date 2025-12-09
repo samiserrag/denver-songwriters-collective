@@ -82,6 +82,48 @@ export type Database = {
           },
         ]
       }
+      open_mic_comments: {
+        Row: {
+          id: string
+          event_id: string
+          user_id: string
+          content: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          user_id: string
+          content: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          user_id?: string
+          content?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_mic_comments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_mic_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string | null
@@ -162,6 +204,9 @@ export type Database = {
           venmo_handle: string | null
           cashapp_handle: string | null
           paypal_url: string | null
+          open_to_collabs: boolean | null
+          specialties: string[] | null
+          favorite_open_mic: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -183,6 +228,9 @@ export type Database = {
           venmo_handle?: string | null
           cashapp_handle?: string | null
           paypal_url?: string | null
+          open_to_collabs?: boolean | null
+          specialties?: string[] | null
+          favorite_open_mic?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -204,6 +252,9 @@ export type Database = {
           venmo_handle?: string | null
           cashapp_handle?: string | null
           paypal_url?: string | null
+          open_to_collabs?: boolean | null
+          specialties?: string[] | null
+          favorite_open_mic?: string | null
         }
         Relationships: []
       }

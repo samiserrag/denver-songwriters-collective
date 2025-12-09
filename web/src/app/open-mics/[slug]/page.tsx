@@ -238,6 +238,9 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
         </div>
       </div>
 
+      {/* Community Comments */}
+      <OpenMicComments eventId={event.id} />
+
       {/* Suggestion form */}
       <div className="mt-8">
         <EventSuggestionForm
@@ -261,3 +264,4 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 }
 
 import EventSuggestionForm from "@/components/events/EventSuggestionForm";
+import { OpenMicComments } from "@/components/events";

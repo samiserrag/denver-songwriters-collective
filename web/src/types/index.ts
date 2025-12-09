@@ -87,6 +87,15 @@ export interface HostSlot extends Slot {
   performer?: Performer;
 }
 
+export interface Host {
+  id: string;
+  name: string;
+  bio?: string;
+  avatarUrl?: string;
+  isSpotlight?: boolean;
+  socialLinks?: SocialLinks;
+}
+
 export interface Studio {
   id: string;
   name: string;

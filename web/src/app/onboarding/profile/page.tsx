@@ -19,6 +19,9 @@ type FormData = {
   venmo_handle: string;
   cashapp_handle: string;
   paypal_url: string;
+  open_to_collabs: boolean;
+  specialties: string[];
+  favorite_open_mic: string;
 };
 
 const initialFormData: FormData = {
@@ -34,7 +37,25 @@ const initialFormData: FormData = {
   venmo_handle: "",
   cashapp_handle: "",
   paypal_url: "",
+  open_to_collabs: false,
+  specialties: [],
+  favorite_open_mic: "",
 };
+
+const SPECIALTY_OPTIONS = [
+  "Vocals",
+  "Guitar",
+  "Piano/Keys",
+  "Bass",
+  "Drums",
+  "Songwriting",
+  "Production",
+  "Mixing/Mastering",
+  "Session Work",
+  "Live Performance",
+  "Music Theory",
+  "Arrangement",
+];
 
 export default function ProfileOnboarding() {
   const router = useRouter();
@@ -44,6 +65,7 @@ export default function ProfileOnboarding() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -63,6 +85,7 @@ export default function ProfileOnboarding() {
         .single();
 
       if (profile) {
+        setUserRole(profile.role);
         setFormData({
           full_name: profile.full_name || "",
           bio: profile.bio || "",
@@ -76,6 +99,9 @@ export default function ProfileOnboarding() {
           venmo_handle: (profile as any).venmo_handle || "",
           cashapp_handle: (profile as any).cashapp_handle || "",
           paypal_url: (profile as any).paypal_url || "",
+          open_to_collabs: (profile as any).open_to_collabs || false,
+          specialties: (profile as any).specialties || [],
+          favorite_open_mic: (profile as any).favorite_open_mic || "",
         });
       }
       setLoading(false);
@@ -175,6 +201,9 @@ export default function ProfileOnboarding() {
           venmo_handle: formData.venmo_handle || null,
           cashapp_handle: formData.cashapp_handle || null,
           paypal_url: formData.paypal_url || null,
+          open_to_collabs: formData.open_to_collabs,
+          specialties: formData.specialties.length > 0 ? formData.specialties : null,
+          favorite_open_mic: formData.favorite_open_mic || null,
           onboarding_complete: true,
         })
         .eq("id", user.id);
@@ -484,6 +513,96 @@ export default function ProfileOnboarding() {
               </div>
             </div>
           </section>
+
+          {/* Collaboration (Performers only) */}
+          {userRole === "performer" && (
+            <section>
+              <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+                <span>🤝</span> Collaboration <span className="text-sm font-normal text-teal-400">(all optional)</span>
+              </h2>
+              <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                Let other musicians know if you&apos;re open to collaborations and what you can offer.
+              </p>
+              <div className="space-y-6">
+                {/* Open to Collabs Checkbox */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={formData.open_to_collabs}
+                      onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-teal-500 peer-checked:border-teal-500 transition-colors flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                    I&apos;m open to collaborations
+                  </span>
+                </label>
+
+                {/* Specialties Multi-select */}
+                <div>
+                  <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                    Specialties / Services
+                  </label>
+                  <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                    Select what you can offer in collaborations
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SPECIALTY_OPTIONS.map((specialty) => {
+                      const isSelected = formData.specialties.includes(specialty);
+                      return (
+                        <button
+                          key={specialty}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              specialties: isSelected
+                                ? prev.specialties.filter(s => s !== specialty)
+                                : [...prev.specialties, specialty]
+                            }));
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                            isSelected
+                              ? "bg-teal-500 text-white"
+                              : "bg-white/5 text-[var(--color-warm-gray-light)] hover:bg-white/10 border border-white/10"
+                          }`}
+                        >
+                          {specialty}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Favorite Open Mic */}
+                <div>
+                  <label htmlFor="favorite_open_mic" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                    Favorite Denver Open Mic
+                  </label>
+                  <input
+                    type="text"
+                    id="favorite_open_mic"
+                    name="favorite_open_mic"
+                    value={formData.favorite_open_mic}
+                    onChange={handleChange}
+                    placeholder="e.g., Walnut Room Monday Night Open Mic"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  />
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
