@@ -80,7 +80,7 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
     .from("profiles")
     .select("*")
     .eq("id", id)
-    .eq("role", "performer")
+    .in("role", ["performer", "host"])
     .single();
 
   if (error || !profile) {
