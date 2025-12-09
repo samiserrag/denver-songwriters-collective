@@ -392,47 +392,6 @@ export default async function HomePage() {
 
       <PageContainer>
         <div className="py-16 space-y-20">
-          {/* Open Mic Directory */}
-          <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Open Mic Directory
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  Explore Denver’s full open mic scene. Find weekly events, discover hidden gems, claim performance slots, and help keep the community-maintained directory accurate and up to date.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/open-mics">View All Open Mics</Link>
-              </Button>
-            </div>
-          </section>
-
-          {/* Featured Events */}
-          <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Featured Events
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  Don&apos;t miss these curated showcases and special nights.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/events">View all events</Link>
-              </Button>
-            </div>
-            {hasFeaturedEvents ? (
-              <EventGrid events={featuredEvents} />
-            ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                No featured events at this time.
-              </p>
-            )}
-          </section>
-
           {/* Spotlight Performers */}
           <section>
             <div className="mb-8 flex items-baseline justify-between gap-4">
@@ -473,6 +432,47 @@ export default async function HomePage() {
               <HostGrid hosts={featuredHosts} />
             </section>
           )}
+
+          {/* Open Mic Directory */}
+          <section>
+            <div className="mb-8 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                  Open Mic Directory
+                </h2>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                  Explore Denver's full open mic scene. Find weekly events, discover hidden gems, claim performance slots, and help keep the community-maintained directory accurate and up to date.
+                </p>
+              </div>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/open-mics">View All Open Mics</Link>
+              </Button>
+            </div>
+          </section>
+
+          {/* Featured Events */}
+          <section>
+            <div className="mb-8 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                  Featured Events
+                </h2>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                  Don&apos;t miss these curated showcases and special nights.
+                </p>
+              </div>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/events">View all events</Link>
+              </Button>
+            </div>
+            {hasFeaturedEvents ? (
+              <EventGrid events={featuredEvents} />
+            ) : (
+              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                No featured events at this time.
+              </p>
+            )}
+          </section>
 
           {/* Featured Studios */}
           <section>
