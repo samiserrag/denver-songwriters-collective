@@ -61,7 +61,8 @@ export default async function BlogPage() {
               Blog
             </h1>
             <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
-              Stories, tips, and insights from the Denver songwriting community
+              Stories, tips, and insights from the Denver songwriting community.{" "}
+              <Link href="/dashboard/blog" className="underline hover:text-white transition-colors">Share your own!</Link>
             </p>
           </div>
         </div>

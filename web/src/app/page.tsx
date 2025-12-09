@@ -378,7 +378,7 @@ export default async function HomePage() {
                   Latest from the Blog
                 </h2>
                 <p className="text-[var(--color-warm-gray)]">
-                  Tips, stories, and insights from the Denver songwriting community.
+                  Tips, stories, and insights from the Denver songwriting community. <Link href="/dashboard/blog" className="text-[var(--color-gold)] hover:underline">Share your own story!</Link>
                 </p>
               </div>
               <Link
