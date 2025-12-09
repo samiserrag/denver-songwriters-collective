@@ -402,20 +402,6 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="twitter_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Twitter / X
-                </label>
-                <input
-                  type="url"
-                  id="twitter_url"
-                  name="twitter_url"
-                  value={formData.twitter_url}
-                  onChange={handleChange}
-                  placeholder="https://twitter.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
-                />
-              </div>
-              <div>
                 <label htmlFor="youtube_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
                   YouTube
                 </label>
