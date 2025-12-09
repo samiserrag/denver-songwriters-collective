@@ -235,7 +235,7 @@ export default async function HomePage() {
       </HeroSection>
 
       {/* What We Offer Each Other Section */}
-      <section className="py-20 px-6 bg-[var(--color-background-dark)]/50">
+      <section className="py-12 px-6 bg-[var(--color-background-dark)]/50">
         <div className="max-w-6xl mx-auto">
           <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-warm-white)] mb-4">
             What We Offer Each Other
@@ -288,11 +288,62 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Spotlight Performers */}
+      <section className="py-10 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6 flex items-baseline justify-between gap-4">
+            <div>
+              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                Spotlight Performers
+              </h2>
+              <p className="text-[var(--color-warm-gray)]">
+                Featured artists from the Denver songwriting community.
+              </p>
+            </div>
+            <Link
+              href="/performers"
+              className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              View all performers
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          {hasFeaturedPerformers ? (
+            <PerformerGrid performers={featuredPerformers} />
+          ) : (
+            <p className="text-[var(--color-warm-gray)]">
+              No spotlight performers at this time.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Spotlight Hosts */}
+      {hasFeaturedHosts && (
+        <section className="py-10 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                  Spotlight Hosts
+                </h2>
+                <p className="text-[var(--color-warm-gray)]">
+                  The people who make Denver&apos;s open mic scene happen.
+                </p>
+              </div>
+            </div>
+            <HostGrid hosts={featuredHosts} />
+          </div>
+        </section>
+      )}
+
       {/* Latest from the Blog */}
       {hasLatestBlog && (
-        <section className="py-16 px-6 border-t border-white/5">
+        <section className="py-10 px-6 border-t border-white/5">
           <div className="max-w-6xl mx-auto">
-            <div className="flex items-baseline justify-between gap-4 mb-8">
+            <div className="flex items-baseline justify-between gap-4 mb-6">
               <div>
                 <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
                   Latest from the Blog
@@ -391,51 +442,10 @@ export default async function HomePage() {
       )}
 
       <PageContainer>
-        <div className="py-16 space-y-20">
-          {/* Spotlight Performers */}
-          <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Spotlight Performers
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  Featured artists from the Denver songwriting community.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/performers">View all performers</Link>
-              </Button>
-            </div>
-            {hasFeaturedPerformers ? (
-              <PerformerGrid performers={featuredPerformers} />
-            ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                No spotlight performers at this time.
-              </p>
-            )}
-          </section>
-
-          {/* Spotlight Hosts */}
-          {hasFeaturedHosts && (
-            <section>
-              <div className="mb-8 flex items-baseline justify-between gap-4">
-                <div>
-                  <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                    Spotlight Hosts
-                  </h2>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                    The people who make Denver&apos;s open mic scene happen.
-                  </p>
-                </div>
-              </div>
-              <HostGrid hosts={featuredHosts} />
-            </section>
-          )}
-
+        <div className="py-10 space-y-12">
           {/* Open Mic Directory */}
           <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
                   Open Mic Directory
@@ -452,7 +462,7 @@ export default async function HomePage() {
 
           {/* Featured Events */}
           <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
                   Featured Events
@@ -476,7 +486,7 @@ export default async function HomePage() {
 
           {/* Featured Studios */}
           <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
                   Featured Studios
@@ -500,7 +510,7 @@ export default async function HomePage() {
 
           {/* Upcoming Events */}
           <section>
-            <div className="mb-8 flex items-baseline justify-between gap-4">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
                   Upcoming Events
