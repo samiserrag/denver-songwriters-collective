@@ -30,6 +30,7 @@ export default function UserDirectoryTable({ users }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
   const [togglingSpotlight, setTogglingSpotlight] = useState<string | null>(null);
+  const [togglingHost, setTogglingHost] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -79,6 +80,30 @@ export default function UserDirectoryTable({ users }: Props) {
       console.error("Toggle spotlight error:", err);
     } finally {
       setTogglingSpotlight(null);
+    }
+  };
+
+  const handleToggleHost = async (user: Profile) => {
+    setTogglingHost(user.id);
+    const supabase = createClient();
+
+    try {
+      const newHostStatus = !(user as Profile & { is_host?: boolean }).is_host;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_host: newHostStatus })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Toggle host error:", error);
+      }
+
+      router.refresh();
+    } catch (err) {
+      console.error("Toggle host error:", err);
+    } finally {
+      setTogglingHost(null);
     }
   };
 
@@ -190,6 +215,7 @@ export default function UserDirectoryTable({ users }: Props) {
             <tr>
               <th className="py-2 px-3">Name</th>
               <th className="py-2 px-3">Role</th>
+              <th className="py-2 px-3">Also Host</th>
               <th className="py-2 px-3">Featured</th>
               <th className="py-2 px-3">Created</th>
               <th className="py-2 px-3">Actions</th>
@@ -207,6 +233,29 @@ export default function UserDirectoryTable({ users }: Props) {
                   >
                     {ROLE_LABELS[u.role as string] ?? u.role ?? "Unknown"}
                   </span>
+                </td>
+                <td className="py-2 px-3">
+                  {u.role === "performer" ? (
+                    <button
+                      onClick={() => handleToggleHost(u)}
+                      disabled={togglingHost === u.id}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        (u as Profile & { is_host?: boolean }).is_host
+                          ? "bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 border border-teal-500/30"
+                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
+                      }`}
+                    >
+                      {togglingHost === u.id
+                        ? "..."
+                        : (u as Profile & { is_host?: boolean }).is_host
+                        ? "🎤 Host"
+                        : "○ No"}
+                    </button>
+                  ) : u.role === "host" ? (
+                    <span className="text-teal-400 text-xs">Primary Host</span>
+                  ) : (
+                    <span className="text-neutral-500 text-xs">—</span>
+                  )}
                 </td>
                 <td className="py-2 px-3">
                   {u.role === "performer" || u.role === "host" || u.role === "studio" ? (
@@ -252,7 +301,7 @@ export default function UserDirectoryTable({ users }: Props) {
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="py-6 px-3 text-center text-neutral-400"
                 >
                   No users found for this filter.
