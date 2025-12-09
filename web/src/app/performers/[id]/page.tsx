@@ -93,7 +93,6 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
   const socialLinks = [
     { type: "instagram", url: performer.instagram_url, label: "Instagram" },
     { type: "facebook", url: performer.facebook_url, label: "Facebook" },
-    { type: "twitter", url: performer.twitter_url, label: "X (Twitter)" },
     { type: "youtube", url: performer.youtube_url, label: "YouTube" },
     { type: "spotify", url: performer.spotify_url, label: "Spotify" },
     { type: "website", url: performer.website_url, label: "Website" },
