@@ -171,8 +171,8 @@ export default async function HomePage() {
             )}
 
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[5rem] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
-              Find Your People.<br />
-              <span className="text-gradient-gold">Find Your Stage.</span>
+              Join Our Collective.<br />
+              <span className="text-gradient-gold">Share Your Songs.</span>
             </h1>
 
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-gray-light)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">

@@ -27,12 +27,13 @@ export function NavLink({
     <Link
       href={href}
       className={cn(
-        "text-sm font-medium",
+        "text-[13px] font-medium",
+        "px-2.5 py-1.5 rounded-md",
         "transition-colors duration-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50 rounded",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50",
         isActive
-          ? "text-[var(--color-gold)]"
-          : "text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)]",
+          ? "text-[var(--color-gold)] bg-[var(--color-gold)]/10"
+          : "text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] hover:bg-white/5",
         className
       )}
       aria-current={isActive ? "page" : undefined}
