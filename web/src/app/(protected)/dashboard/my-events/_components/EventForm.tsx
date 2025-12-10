@@ -18,7 +18,7 @@ interface EventFormProps {
     event_type: string;
     capacity: number | null;
     venue_name: string | null;
-    address: string | null;
+    venue_address: string | null;
     city: string | null;
     day_of_week: string | null;
     start_time: string | null;
@@ -40,7 +40,7 @@ export default function EventForm({ mode, event }: EventFormProps) {
     event_type: (event?.event_type || "song_circle") as EventType,
     capacity: event?.capacity?.toString() || "",
     venue_name: event?.venue_name || "",
-    address: event?.address || "",
+    address: event?.venue_address || "",
     city: event?.city || "Denver",
     day_of_week: event?.day_of_week || "",
     start_time: event?.start_time || "",

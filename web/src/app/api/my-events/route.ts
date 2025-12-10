@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       capacity: body.capacity || null,
       host_notes: body.host_notes || null,
       venue_name: body.venue_name,
-      address: body.address || null,
+      venue_address: body.address || null,
       city: body.city,
       day_of_week: body.day_of_week || null,
       start_time: body.start_time,
