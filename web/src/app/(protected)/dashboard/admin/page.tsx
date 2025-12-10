@@ -61,6 +61,7 @@ export default async function AdminDashboardPage() {
   const adminLinks = [
     { href: "/dashboard/admin/events", title: "Manage Events", description: "Edit event details, status, and featured rankings" },
     { href: "/dashboard/admin/event-update-suggestions", title: "Review Suggestions", description: "Approve or reject user-submitted corrections" },
+    { href: "/dashboard/admin/host-requests", title: "Host Requests", description: "Approve users requesting to become event hosts" },
     { href: "/dashboard/admin/venues", title: "Manage Venues", description: "Review submissions and manage canonical venues" },
     { href: "/dashboard/admin/performers", title: "Manage Performers", description: "View and edit performer profiles" },
     { href: "/dashboard/admin/studios", title: "Manage Studios", description: "View and edit studio listings" },
