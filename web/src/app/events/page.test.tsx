@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 
-// Mock Supabase to return a non-open-mic event and support the .neq().order() chain
+// Mock Supabase to return a non-open-mic event and support chained query methods
 vi.mock("@/lib/supabase/server", () => {
   const mockNonOpenEvents = [
     {
@@ -15,27 +15,59 @@ vi.mock("@/lib/supabase/server", () => {
     },
   ];
 
-  const mockAllEvents = [
-    ...mockNonOpenEvents,
+  const mockDSCEvents = [
     {
-      id: "event-2",
-      title: "Neighborhood Open Mic",
-      event_type: "open_mic",
+      id: "dsc-event-1",
+      title: "Song Circle Wednesday",
+      event_type: "song_circle",
+      venue_name: "Community Center",
+      day_of_week: "Wednesday",
+      start_time: "7:00 PM",
+      capacity: 12,
+      event_hosts: [{ user: { full_name: "Test Host" } }],
     },
   ];
 
-  return {
-    createSupabaseServerClient: async () => ({
-      from: () => ({
+  // Create chainable query builder for different table queries
+  const createQueryBuilder = (tableName: string) => {
+    if (tableName === "events") {
+      return {
         select: () => ({
-          // .neq should return only non-open-mic events
+          // .neq chain for non-open-mic events query
           neq: () => ({
             order: () => ({ data: mockNonOpenEvents, error: null }),
           }),
-          // generic order (used in other code paths) returns all events
-          order: () => ({ data: mockAllEvents, error: null }),
+          // .eq chain for DSC events query
+          eq: () => ({
+            eq: () => ({
+              order: () => ({ data: mockDSCEvents, error: null }),
+            }),
+          }),
+          order: () => ({ data: mockNonOpenEvents, error: null }),
         }),
+      };
+    }
+    if (tableName === "event_rsvps") {
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({ count: 3, error: null }),
+          }),
+        }),
+      };
+    }
+    // Default fallback
+    return {
+      select: () => ({
+        eq: () => ({ data: [], error: null }),
+        order: () => ({ data: [], error: null }),
       }),
+    };
+  };
+
+  return {
+    createSupabaseServerClient: async () => ({
+      from: (tableName: string) => createQueryBuilder(tableName),
     }),
   };
 });
