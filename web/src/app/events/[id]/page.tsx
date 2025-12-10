@@ -1,102 +1,200 @@
-import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer, HeroSection } from "@/components/layout";
-import { EventSlotsPanel } from "@/components/events";
-import type { Database } from "@/lib/supabase/database.types";
-export const dynamic = "force-dynamic";
+import { notFound } from "next/navigation";
+import { Metadata } from "next";
+import { RSVPButton, EventComments } from "@/components/events";
+import { EVENT_TYPE_CONFIG } from "@/types/events";
 
-type DBEvent = Database["public"]["Tables"]["events"]["Row"];
-type DBEventSlot = Database["public"]["Tables"]["event_slots"]["Row"];
-
-interface EventDetailPageProps {
-  params: Promise<{ id: string }>;
+interface EventHost {
+  id: string;
+  user_id: string;
+  role: string;
+  invitation_status: string;
+  user?: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
 }
 
-export default async function EventDetailPage({ params }: EventDetailPageProps) {
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: event, error } = await supabase
+  const { data: event } = await supabase
     .from("events")
-    .select("*")
+    .select("title, description, venue_name")
     .eq("id", id)
     .single();
 
-  if (error || !event) {
-    notFound();
+  if (!event) return { title: "Event Not Found" };
+
+  return {
+    title: `${event.title} | DSC`,
+    description: event.description || `${event.title} at ${event.venue_name}`
+  };
+}
+
+export default async function EventPage({
+  params
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id: eventId } = await params;
+  const supabase = await createSupabaseServerClient();
+
+  // Fetch event with hosts
+  const { data: event, error } = await supabase
+    .from("events")
+    .select(`
+      *,
+      event_hosts(
+        id, user_id, role, invitation_status,
+        user:profiles(id, full_name, avatar_url)
+      )
+    `)
+    .eq("id", eventId)
+    .single();
+
+  if (error || !event) notFound();
+
+  // Get RSVP count for DSC events
+  let confirmedCount = 0;
+  if (event.is_dsc_event) {
+    const { count } = await supabase
+      .from("event_rsvps")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .eq("status", "confirmed");
+    confirmedCount = count || 0;
   }
 
-  const dbEvent = event as DBEvent;
+  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+    || EVENT_TYPE_CONFIG.other;
 
-  // Fetch slots for this event
-  const { data: slotsData } = await supabase.rpc("rpc_get_all_slots_for_event", {
-    event_id: id,
-  });
-
-  const slots = (slotsData as DBEventSlot[]) ?? [];
+  const acceptedHosts = ((event.event_hosts as EventHost[]) || []).filter(
+    (h) => h.invitation_status === "accepted"
+  );
 
   return (
-    <>
-      <HeroSection minHeight="lg">
-        <PageContainer>
-          <div className="max-w-3xl">
-            <p className="text-gold-400 font-medium mb-2">
-              {dbEvent.event_date} • {dbEvent.start_time}
-            </p>
-            <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
-              {dbEvent.title}
-            </h1>
-            <p className="text-neutral-300 text-lg mb-6">
-              {dbEvent.venue_name ?? "Venue TBA"}
-              {dbEvent.venue_address && ` • ${dbEvent.venue_address}`}
-            </p>
-            {dbEvent.is_showcase && (
-              <span className="inline-block px-3 py-1 bg-gold-500/20 text-gold-400 rounded-full text-sm font-medium">
-                Showcase Event
+    <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-3xl">{config.icon}</span>
+            <span className="px-2 py-1 bg-[var(--color-indigo-950)]/50 text-[var(--color-warm-gray-light)] text-xs rounded">
+              {config.label}
+            </span>
+            {event.is_dsc_event && (
+              <span className="px-2 py-1 bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-xs rounded">
+                DSC Event
               </span>
             )}
           </div>
-        </PageContainer>
-      </HeroSection>
-
-      <PageContainer>
-        <div className="py-12">
-          <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-4">About This Event</h2>
-            <p className="text-neutral-300 leading-relaxed">
-              {dbEvent.description ?? "More details coming soon."}
-            </p>
-          </section>
-
-          <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-4">Event Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-neutral-900 rounded-lg p-6">
-                <p className="text-neutral-400 text-sm mb-1">Date</p>
-                <p className="text-white text-lg">{dbEvent.event_date}</p>
-              </div>
-              <div className="bg-neutral-900 rounded-lg p-6">
-                <p className="text-neutral-400 text-sm mb-1">Time</p>
-                <p className="text-white text-lg">
-                  {dbEvent.start_time} - {dbEvent.end_time}
-                </p>
-              </div>
-              <div className="bg-neutral-900 rounded-lg p-6">
-                <p className="text-neutral-400 text-sm mb-1">Venue</p>
-                <p className="text-white text-lg">{dbEvent.venue_name ?? "TBA"}</p>
-              </div>
-              <div className="bg-neutral-900 rounded-lg p-6">
-                <p className="text-neutral-400 text-sm mb-1">Type</p>
-                <p className="text-white text-lg">
-                  {dbEvent.is_showcase ? "Showcase" : "Open Mic"}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <EventSlotsPanel eventId={dbEvent.id} slots={slots} />
+          <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-warm-white)]">{event.title}</h1>
         </div>
-      </PageContainer>
-    </>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Description */}
+            {event.description && (
+              <section>
+                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-2">About</h2>
+                <p className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap">{event.description}</p>
+              </section>
+            )}
+
+            {/* Hosts */}
+            {acceptedHosts.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-3">Hosted by</h2>
+                <div className="flex flex-wrap gap-3">
+                  {acceptedHosts.map((host) => (
+                    <div key={host.id} className="flex items-center gap-2 p-2 bg-[var(--color-indigo-950)]/50 rounded-lg">
+                      <div className="w-8 h-8 bg-[var(--color-indigo-950)] rounded-full flex items-center justify-center text-sm text-[var(--color-warm-white)]">
+                        {host.user?.avatar_url ? (
+                          <img src={host.user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          host.user?.full_name?.[0]?.toUpperCase() || "?"
+                        )}
+                      </div>
+                      <span className="text-[var(--color-warm-white)] text-sm">{host.user?.full_name || "Unknown"}</span>
+                      {host.role === "cohost" && (
+                        <span className="text-xs text-[var(--color-warm-gray)]">(co-host)</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Comments (DSC events only) */}
+            {event.is_dsc_event && (
+              <EventComments eventId={eventId} />
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Details Card */}
+            <div className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
+              <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">Details</h2>
+
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-[var(--color-warm-gray)]">Venue</dt>
+                  <dd className="text-[var(--color-warm-white)]">{event.venue_name}</dd>
+                </div>
+                {event.address && (
+                  <div>
+                    <dt className="text-[var(--color-warm-gray)]">Address</dt>
+                    <dd className="text-[var(--color-warm-white)]">{event.address}</dd>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
+                    >
+                      View on map →
+                    </a>
+                  </div>
+                )}
+                <div>
+                  <dt className="text-[var(--color-warm-gray)]">When</dt>
+                  <dd className="text-[var(--color-warm-white)]">
+                    {event.day_of_week && `${event.day_of_week}s`}
+                    {event.start_time && ` at ${event.start_time}`}
+                    {event.end_time && ` - ${event.end_time}`}
+                  </dd>
+                </div>
+                {event.frequency && event.frequency !== "one_time" && (
+                  <div>
+                    <dt className="text-[var(--color-warm-gray)]">Frequency</dt>
+                    <dd className="text-[var(--color-warm-white)] capitalize">{event.frequency}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+
+            {/* RSVP (DSC events only) */}
+            {event.is_dsc_event && (
+              <div className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
+                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">RSVP</h2>
+                <RSVPButton
+                  eventId={eventId}
+                  capacity={event.capacity}
+                  initialConfirmedCount={confirmedCount}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

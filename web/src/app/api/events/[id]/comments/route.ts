@@ -51,6 +51,26 @@ export async function POST(
     return NextResponse.json({ error: "Content required" }, { status: 400 });
   }
 
+  // Limit comment length to prevent abuse
+  if (content.length > 2000) {
+    return NextResponse.json({ error: "Comment too long (max 2000 characters)" }, { status: 400 });
+  }
+
+  // Verify event exists and is a DSC event
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("id, is_dsc_event")
+    .eq("id", eventId)
+    .single();
+
+  if (eventError || !event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  if (!event.is_dsc_event) {
+    return NextResponse.json({ error: "Comments only available for DSC events" }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("event_comments")
     .insert({

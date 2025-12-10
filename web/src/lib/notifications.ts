@@ -28,8 +28,8 @@ export async function createAdminNotification(
     p_type: type,
     p_title: title,
     p_message: message,
-    p_user_id: userId ?? null,
-    p_metadata: metadata,
+    p_user_id: userId,
+    p_metadata: metadata as unknown as undefined,
   });
 
   if (error) {

@@ -35,6 +35,30 @@ export default async function DashboardPage() {
 
   const p = profile as DBProfile | null;
 
+  // Check host status and pending invitations
+  const { data: hostStatus } = await supabase
+    .from("approved_hosts")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  const isApprovedHost = !!hostStatus || p?.role === "admin";
+
+  // Get pending invitation count
+  const { count: pendingInvitations } = await supabase
+    .from("event_hosts")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("invitation_status", "pending");
+
+  // Get unread notification count
+  const { count: unreadNotifications } = await supabase
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false);
+
   return (
     <>
       <Suspense fallback={null}>
@@ -82,6 +106,32 @@ export default async function DashboardPage() {
               </li>
               <li>
                 <Link href="/dashboard/blog" className="text-gold-400 hover:underline">My Blog Posts</Link>
+              </li>
+              <li>
+                <Link href="/dashboard/my-events" className="text-gold-400 hover:underline">
+                  My Events
+                  {isApprovedHost && " (Host Dashboard)"}
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard/invitations" className="text-gold-400 hover:underline">
+                  Co-host Invitations
+                  {(pendingInvitations ?? 0) > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
+                      {pendingInvitations} pending
+                    </span>
+                  )}
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard/notifications" className="text-gold-400 hover:underline">
+                  Notifications
+                  {(unreadNotifications ?? 0) > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs rounded-full">
+                      {unreadNotifications} new
+                    </span>
+                  )}
+                </Link>
               </li>
 
               {p?.role === "performer" && (

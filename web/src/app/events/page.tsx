@@ -6,6 +6,7 @@ import { Button } from "@/components/ui";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event } from "@/types";
+import { EVENT_TYPE_CONFIG } from "@/types/events";
 
 export const metadata: Metadata = {
   title: "Events | Denver Songwriters Collective",
@@ -75,6 +76,20 @@ const eventTypes = [
   },
 ];
 
+interface DSCEvent {
+  id: string;
+  title: string;
+  event_type: string;
+  venue_name: string | null;
+  day_of_week: string | null;
+  start_time: string | null;
+  capacity: number | null;
+  event_hosts: Array<{
+    user: { full_name: string | null } | null;
+  }>;
+  rsvp_count?: number;
+}
+
 export default async function EventsPage() {
   const supabase = await createSupabaseServerClient();
 
@@ -85,6 +100,29 @@ export default async function EventsPage() {
     .order("event_date", { ascending: true });
 
   const events: Event[] = (dbEvents ?? []).map(mapDBEventToEvent);
+
+  // Fetch DSC community events
+  const { data: dscEventsData } = await supabase
+    .from("events")
+    .select(`
+      id, title, event_type, venue_name, day_of_week, start_time, capacity,
+      event_hosts(user:profiles(full_name))
+    `)
+    .eq("is_dsc_event", true)
+    .eq("status", "active")
+    .order("day_of_week", { ascending: true });
+
+  // Get RSVP counts for DSC events
+  const dscEvents: DSCEvent[] = await Promise.all(
+    ((dscEventsData as unknown as DSCEvent[]) || []).map(async (event) => {
+      const { count } = await supabase
+        .from("event_rsvps")
+        .select("*", { count: "exact", head: true })
+        .eq("event_id", event.id)
+        .eq("status", "confirmed");
+      return { ...event, rsvp_count: count || 0 };
+    })
+  );
 
   return (
     <>
@@ -110,6 +148,79 @@ export default async function EventsPage() {
 
       <PageContainer>
         <div className="py-12 space-y-16">
+
+          {/* DSC Community Events */}
+          {dscEvents.length > 0 && (
+            <section>
+              <div className="mb-6">
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                  Community Events
+                </h2>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                  Song circles, workshops, and gatherings hosted by DSC members
+                </p>
+              </div>
+              <div className="grid gap-4">
+                {dscEvents.map((event) => {
+                  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+                    || EVENT_TYPE_CONFIG.other;
+                  const hostNames = event.event_hosts
+                    ?.map((h) => h.user?.full_name)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join(", ");
+                  const remaining = event.capacity
+                    ? Math.max(0, event.capacity - (event.rsvp_count || 0))
+                    : null;
+
+                  return (
+                    <Link
+                      key={event.id}
+                      href={`/events/${event.id}`}
+                      className="block p-6 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 border border-white/10 hover:border-white/20 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-2xl">{config.icon}</span>
+                            <span className="px-2 py-0.5 bg-[var(--color-indigo-950)] text-[var(--color-warm-gray-light)] text-xs rounded">
+                              {config.label}
+                            </span>
+                            <span className="px-2 py-0.5 bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-xs rounded">
+                              DSC Event
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-medium text-[var(--color-warm-white)] mb-1">{event.title}</h3>
+                          <p className="text-[var(--color-warm-gray)] text-sm">
+                            {event.venue_name} {event.day_of_week && `• ${event.day_of_week}s`} {event.start_time && `at ${event.start_time}`}
+                          </p>
+                          {hostNames && (
+                            <p className="text-[var(--color-warm-gray)] text-xs mt-2">
+                              Hosted by {hostNames}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-[var(--color-warm-white)]">{event.rsvp_count || 0}</div>
+                          <div className="text-xs text-[var(--color-warm-gray)]">
+                            {event.capacity ? (
+                              remaining === 0 ? (
+                                <span className="text-amber-400">Full</span>
+                              ) : (
+                                `${remaining} left`
+                              )
+                            ) : (
+                              "going"
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Event Types Grid */}
           <section>

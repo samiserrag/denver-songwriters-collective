@@ -34,12 +34,12 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
      );
    }
 
-  async function updateEvent(id: string, is_featured: boolean, featured_rank: number) {
+  async function updateEvent(id: string, is_spotlight: boolean) {
     setLoadingId(id);
 
     const { error } = await supabase
       .from("events")
-      .update({ is_featured, featured_rank })
+      .update({ is_spotlight })
       .eq("id", id);
 
     if (error) {
@@ -50,7 +50,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 
     setRows(prev =>
       prev.map(ev =>
-        ev.id === id ? { ...ev, is_featured, featured_rank } : ev
+        ev.id === id ? { ...ev, is_spotlight } : ev
       )
     );
 
@@ -87,8 +87,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
             <th className="py-2 px-3">Title</th>
             <th className="py-2 px-3">Date</th>
             <th className="py-2 px-3">Venue</th>
-            <th className="py-2 px-3">Featured</th>
-            <th className="py-2 px-3">Rank</th>
+            <th className="py-2 px-3">Spotlight</th>
             <th className="py-2 px-3">Actions</th>
           </tr>
         </thead>
@@ -103,29 +102,9 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
               <td className="py-2 px-3">
                 <input
                   type="checkbox"
-                  checked={ev.is_featured ?? false}
+                  checked={ev.is_spotlight ?? false}
                   onChange={(e) =>
-                    updateEvent(
-                      ev.id,
-                      e.target.checked,
-                      ev.featured_rank ?? 9999
-                    )
-                  }
-                  disabled={loadingId === ev.id}
-                />
-              </td>
-
-              <td className="py-2 px-3">
-                <input
-                  type="number"
-                  className="bg-black/40 border border-white/10 rounded px-2 py-1 w-20"
-                  value={ev.featured_rank ?? 9999}
-                  onChange={(e) =>
-                    updateEvent(
-                      ev.id,
-                      ev.is_featured ?? false,
-                      Number(e.target.value)
-                    )
+                    updateEvent(ev.id, e.target.checked)
                   }
                   disabled={loadingId === ev.id}
                 />

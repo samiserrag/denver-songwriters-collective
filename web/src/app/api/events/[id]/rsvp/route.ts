@@ -54,15 +54,23 @@ export async function POST(
     return NextResponse.json({ error: "Already RSVP'd to this event" }, { status: 400 });
   }
 
-  // Get event capacity
+  // Get event - must be DSC event and active
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, capacity")
+    .select("id, capacity, is_dsc_event, status")
     .eq("id", eventId)
     .single();
 
   if (eventError || !event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  if (!event.is_dsc_event) {
+    return NextResponse.json({ error: "RSVPs only available for DSC events" }, { status: 400 });
+  }
+
+  if (event.status !== "active") {
+    return NextResponse.json({ error: "This event is no longer accepting RSVPs" }, { status: 400 });
   }
 
   // Count current confirmed RSVPs
