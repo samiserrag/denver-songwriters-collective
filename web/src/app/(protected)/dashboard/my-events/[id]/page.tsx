@@ -52,7 +52,13 @@ export default async function EditEventPage({
     .eq("is_dsc_event", true)
     .single();
 
-  if (error || !event) {
+  if (error) {
+    console.error("Event fetch error:", error);
+    notFound();
+  }
+
+  if (!event) {
+    console.error("Event not found for ID:", eventId);
     notFound();
   }
 
