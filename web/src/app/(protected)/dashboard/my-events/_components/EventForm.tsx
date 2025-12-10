@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import {
   EVENT_TYPE_CONFIG,
   DAYS_OF_WEEK,
+  FREQUENCIES,
   type EventType
 } from "@/types/events";
 
@@ -21,7 +24,9 @@ interface EventFormProps {
     day_of_week: string | null;
     start_time: string | null;
     end_time: string | null;
+    recurrence_rule: string | null;
     host_notes: string | null;
+    cover_image_url: string | null;
   };
 }
 
@@ -30,6 +35,7 @@ export default function EventForm({ mode, event }: EventFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
 
   const [formData, setFormData] = useState({
     title: event?.title || "",
@@ -41,10 +47,40 @@ export default function EventForm({ mode, event }: EventFormProps) {
     day_of_week: event?.day_of_week || "",
     start_time: event?.start_time || "",
     end_time: event?.end_time || "",
+    recurrence_rule: event?.recurrence_rule || "weekly",
     host_notes: event?.host_notes || ""
   });
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
+
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    const supabase = createSupabaseBrowserClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("event-images")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("event-images")
+      .getPublicUrl(fileName);
+
+    setCoverImageUrl(publicUrl);
+    return publicUrl;
+  };
+
+  const handleImageRemove = async () => {
+    setCoverImageUrl(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +97,8 @@ export default function EventForm({ mode, event }: EventFormProps) {
 
       const body = {
         ...formData,
-        capacity: formData.capacity ? parseInt(formData.capacity) : null
+        capacity: formData.capacity ? parseInt(formData.capacity) : null,
+        cover_image_url: coverImageUrl
       };
 
       const res = await fetch(url, {
@@ -106,6 +143,28 @@ export default function EventForm({ mode, event }: EventFormProps) {
           {success}
         </div>
       )}
+
+      {/* Cover Image */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          Cover Image
+          <span className="text-[var(--color-warm-gray)] font-normal ml-1">(optional)</span>
+        </label>
+        <div className="max-w-xs">
+          <ImageUpload
+            currentImageUrl={coverImageUrl}
+            onUpload={handleImageUpload}
+            onRemove={handleImageRemove}
+            aspectRatio={16 / 9}
+            shape="square"
+            placeholderText="Add Cover Photo"
+            maxSizeMB={5}
+          />
+        </div>
+        <p className="mt-2 text-xs text-[var(--color-warm-gray)]">
+          Recommended: 1200x675px or larger, 16:9 aspect ratio
+        </p>
+      </div>
 
       {/* Event Type */}
       <div>
@@ -189,9 +248,12 @@ export default function EventForm({ mode, event }: EventFormProps) {
           type="text"
           value={formData.address}
           onChange={(e) => updateField("address", e.target.value)}
-          placeholder="Full street address (e.g., 2199 California St, Denver, CO)"
+          placeholder="Full street address (e.g., 2199 California St, Denver, CO 80205)"
           className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
         />
+        <p className="mt-1 text-xs text-[var(--color-warm-gray)]">
+          Include city and zip code for Google Maps directions
+        </p>
       </div>
 
       {/* Schedule */}
@@ -244,19 +306,35 @@ export default function EventForm({ mode, event }: EventFormProps) {
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-          Capacity
-          <span className="text-[var(--color-warm-gray)] font-normal ml-1">(leave empty for unlimited)</span>
-        </label>
-        <input
-          type="number"
-          value={formData.capacity}
-          onChange={(e) => updateField("capacity", e.target.value)}
-          placeholder="e.g., 12"
-          min="1"
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+            Frequency
+          </label>
+          <select
+            value={formData.recurrence_rule}
+            onChange={(e) => updateField("recurrence_rule", e.target.value)}
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] focus:border-[var(--color-gold)] focus:outline-none"
+          >
+            {FREQUENCIES.map(freq => (
+              <option key={freq.value} value={freq.value}>{freq.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+            Capacity
+            <span className="text-[var(--color-warm-gray)] font-normal ml-1">(leave empty for unlimited)</span>
+          </label>
+          <input
+            type="number"
+            value={formData.capacity}
+            onChange={(e) => updateField("capacity", e.target.value)}
+            placeholder="e.g., 12"
+            min="1"
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* Host Notes (private) */}

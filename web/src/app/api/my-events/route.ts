@@ -120,6 +120,8 @@ export async function POST(request: Request) {
       day_of_week: body.day_of_week || null,
       start_time: body.start_time,
       end_time: body.end_time || null,
+      recurrence_rule: body.recurrence_rule || null,
+      cover_image_url: body.cover_image_url || null,
       status: "active"
     })
     .select()
