@@ -69,8 +69,7 @@ export default async function HomePage() {
     supabase
       .from("events")
       .select("*")
-      .order("is_featured", { ascending: false })
-      .order("featured_rank", { ascending: true })
+      .gte("event_date", new Date().toISOString().slice(0, 10))
       .order("event_date", { ascending: true })
       .limit(6),
     supabase
