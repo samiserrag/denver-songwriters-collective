@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   EVENT_TYPE_CONFIG,
   DAYS_OF_WEEK,
-  FREQUENCIES,
   type EventType
 } from "@/types/events";
 
@@ -19,11 +18,9 @@ interface EventFormProps {
     capacity: number | null;
     venue_name: string | null;
     venue_address: string | null;
-    city: string | null;
     day_of_week: string | null;
     start_time: string | null;
     end_time: string | null;
-    frequency: string | null;
     host_notes: string | null;
   };
 }
@@ -41,11 +38,9 @@ export default function EventForm({ mode, event }: EventFormProps) {
     capacity: event?.capacity?.toString() || "",
     venue_name: event?.venue_name || "",
     address: event?.venue_address || "",
-    city: event?.city || "Denver",
     day_of_week: event?.day_of_week || "",
     start_time: event?.start_time || "",
     end_time: event?.end_time || "",
-    frequency: event?.frequency || "weekly",
     host_notes: event?.host_notes || ""
   });
 
@@ -172,32 +167,18 @@ export default function EventForm({ mode, event }: EventFormProps) {
       </div>
 
       {/* Venue */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-            Venue Name *
-          </label>
-          <input
-            type="text"
-            value={formData.venue_name}
-            onChange={(e) => updateField("venue_name", e.target.value)}
-            placeholder="e.g., Mercury Cafe"
-            required
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-            City *
-          </label>
-          <input
-            type="text"
-            value={formData.city}
-            onChange={(e) => updateField("city", e.target.value)}
-            required
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          Venue Name *
+        </label>
+        <input
+          type="text"
+          value={formData.venue_name}
+          onChange={(e) => updateField("venue_name", e.target.value)}
+          placeholder="e.g., Mercury Cafe"
+          required
+          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
+        />
       </div>
 
       <div>
@@ -208,7 +189,7 @@ export default function EventForm({ mode, event }: EventFormProps) {
           type="text"
           value={formData.address}
           onChange={(e) => updateField("address", e.target.value)}
-          placeholder="Full street address"
+          placeholder="Full street address (e.g., 2199 California St, Denver, CO)"
           className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
         />
       </div>
@@ -263,35 +244,19 @@ export default function EventForm({ mode, event }: EventFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-            Frequency
-          </label>
-          <select
-            value={formData.frequency}
-            onChange={(e) => updateField("frequency", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] focus:border-[var(--color-gold)] focus:outline-none"
-          >
-            {FREQUENCIES.map(freq => (
-              <option key={freq.value} value={freq.value}>{freq.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-            Capacity
-            <span className="text-[var(--color-warm-gray)] font-normal ml-1">(leave empty for unlimited)</span>
-          </label>
-          <input
-            type="number"
-            value={formData.capacity}
-            onChange={(e) => updateField("capacity", e.target.value)}
-            placeholder="e.g., 12"
-            min="1"
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          Capacity
+          <span className="text-[var(--color-warm-gray)] font-normal ml-1">(leave empty for unlimited)</span>
+        </label>
+        <input
+          type="number"
+          value={formData.capacity}
+          onChange={(e) => updateField("capacity", e.target.value)}
+          placeholder="e.g., 12"
+          min="1"
+          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
+        />
       </div>
 
       {/* Host Notes (private) */}

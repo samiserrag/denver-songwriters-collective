@@ -95,8 +95,8 @@ export async function PATCH(
   // Only allow updating specific fields
   const allowedFields = [
     "title", "description", "event_type", "capacity", "host_notes",
-    "venue_name", "city", "day_of_week", "start_time",
-    "end_time", "frequency", "specific_dates", "status"
+    "venue_name", "day_of_week", "start_time",
+    "end_time", "status"
   ];
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
