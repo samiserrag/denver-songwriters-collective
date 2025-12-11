@@ -49,15 +49,15 @@ export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
           "bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)]",
           "shadow-[0_0_30px_rgba(0,0,0,0.4)]",
           "transition-all duration-300",
-          "hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(0,255,204,0.15)]",
-          "hover:border-teal-500/30",
+          "hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(255,216,106,0.15)]",
+          "hover:border-[var(--color-gold)]/30",
           className
         )}
       >
         {/* Header with day and spotlight badge */}
-        <div className="relative px-5 py-4 border-b border-white/5 bg-gradient-to-r from-teal-900/20 to-transparent">
+        <div className="relative px-5 py-4 border-b border-white/5 bg-gradient-to-r from-[var(--color-gold)]/10 to-transparent">
           <div className="flex items-center justify-between">
-            <span className="text-teal-400 font-semibold text-sm uppercase tracking-wider">
+            <span className="text-[var(--color-gold)] font-semibold text-sm uppercase tracking-wider">
               {openMic.day_of_week || "Weekly"}
             </span>
             {openMic.is_featured && <SpotlightBadge />}
@@ -66,14 +66,14 @@ export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
 
         {/* Content Section */}
         <div className="p-5 space-y-3">
-          <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-teal-400 transition-colors">
+          <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-gold)] transition-colors">
             {openMic.title}
           </h3>
 
           {/* Venue info */}
           {(openMic.venue_name || openMic.venue_city) && (
             <p className="text-sm text-[var(--color-warm-gray-light)] flex items-center gap-2">
-              <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[var(--color-gold)]/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>

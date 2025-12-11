@@ -66,13 +66,8 @@ export default async function HomePage() {
   const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
-  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, spotlightOpenMicsRes, latestBlogRes] = await Promise.all([
-    supabase
-      .from("events")
-      .select("*")
-      .gte("event_date", new Date().toISOString().slice(0, 10))
-      .order("event_date", { ascending: true })
-      .limit(6),
+  const [upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, spotlightOpenMicsRes, latestBlogRes] = await Promise.all([
+    // Single events query - upcoming events (removed duplicate "featured" query)
     supabase
       .from("events")
       .select("*")
@@ -142,7 +137,6 @@ export default async function HomePage() {
       .maybeSingle(),
   ]);
 
-  const featuredEvents: Event[] = (featuredEventsRes.data ?? []).map(mapDBEventToEvent);
   const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
   const featuredPerformers: Performer[] = (featuredPerformersRes.data ?? []).map(mapDBProfileToPerformer);
   const featuredHosts: Host[] = (featuredHostsRes.data ?? []).map(mapDBProfileToHost);
@@ -169,7 +163,6 @@ export default async function HomePage() {
       : latestBlog.author
     : null;
 
-  const hasFeaturedEvents = featuredEvents.length > 0;
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasFeaturedPerformers = featuredPerformers.length > 0;
   const hasFeaturedHosts = featuredHosts.length > 0;
@@ -203,7 +196,7 @@ export default async function HomePage() {
               song circles, and connect with your creative community.
             </p>
 
-            {/* Login-aware CTAs */}
+            {/* Login-aware CTAs - simplified to 2 buttons */}
             <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4">
               {user ? (
                 <>
@@ -214,14 +207,8 @@ export default async function HomePage() {
                     <span className="relative z-10">Go to Dashboard</span>
                   </Link>
                   <Link
-                    href="/open-mics"
-                    className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
-                  >
-                    Find Open Mics
-                  </Link>
-                  <Link
                     href="/events"
-                    className="px-8 py-4 border-2 border-teal-500/50 hover:border-teal-400 text-teal-400 font-semibold rounded-lg transition-all hover:bg-teal-500/10 hover:scale-105"
+                    className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
                   >
                     Browse Events
                   </Link>
@@ -229,22 +216,16 @@ export default async function HomePage() {
               ) : (
                 <>
                   <Link
-                    href="/open-mics"
+                    href="/signup"
                     className="group relative px-8 py-4 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:scale-105"
                   >
-                    <span className="relative z-10">Find Open Mics</span>
+                    <span className="relative z-10">Join the Community</span>
                   </Link>
                   <Link
                     href="/events"
                     className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
                   >
                     Browse Events
-                  </Link>
-                  <Link
-                    href="/performers"
-                    className="px-8 py-4 border-2 border-teal-500/50 hover:border-teal-400 text-teal-400 font-semibold rounded-lg transition-all hover:bg-teal-500/10 hover:scale-105"
-                  >
-                    Meet Artists
                   </Link>
                 </>
               )}
@@ -401,7 +382,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/open-mics"
-                className="text-teal-400 hover:text-teal-300 transition-colors flex items-center gap-2 whitespace-nowrap"
+                className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 View all open mics
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -537,47 +518,6 @@ export default async function HomePage() {
 
       <PageContainer>
         <div className="py-10 space-y-12">
-          {/* Open Mic Directory */}
-          <section>
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Open Mic Directory
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  Explore Denver's full open mic scene. Find weekly events, discover hidden gems, claim performance slots, and help keep the community-maintained directory accurate and up to date.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/open-mics">View All Open Mics</Link>
-              </Button>
-            </div>
-          </section>
-
-          {/* Featured Events */}
-          <section>
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Featured Events
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  Don&apos;t miss these curated showcases and special nights.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/events">View all events</Link>
-              </Button>
-            </div>
-            {hasFeaturedEvents ? (
-              <EventGrid events={featuredEvents} />
-            ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                No featured events at this time.
-              </p>
-            )}
-          </section>
-
           {/* Featured Studios */}
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
