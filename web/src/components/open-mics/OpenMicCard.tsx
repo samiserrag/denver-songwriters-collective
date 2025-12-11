@@ -1,0 +1,114 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { SpotlightBadge } from "@/components/special/spotlight-badge";
+
+export interface SpotlightOpenMic {
+  id: string;
+  slug?: string;
+  title: string;
+  description?: string;
+  day_of_week?: string;
+  start_time?: string;
+  signup_time?: string;
+  venue_name?: string;
+  venue_city?: string;
+  is_featured?: boolean;
+}
+
+interface OpenMicCardProps {
+  openMic: SpotlightOpenMic;
+  className?: string;
+}
+
+function formatTime(time?: string | null): string {
+  if (!time) return "";
+  try {
+    const timeOnly = time.includes("T") ? time.split("T")[1] : time;
+    const [hh, mm] = timeOnly.split(":");
+    const hour = parseInt(hh, 10);
+    const minutes = mm ?? "00";
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = ((hour + 11) % 12) + 1;
+    return `${hour12}:${minutes} ${ampm}`;
+  } catch {
+    return time;
+  }
+}
+
+export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
+  const href = openMic.slug ? `/open-mics/${openMic.slug}` : `/open-mics`;
+
+  return (
+    <Link href={href} className="block h-full group">
+      <article
+        className={cn(
+          "h-full overflow-hidden rounded-2xl border border-white/10",
+          "bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)]",
+          "shadow-[0_0_30px_rgba(0,0,0,0.4)]",
+          "transition-all duration-300",
+          "hover:-translate-y-1 hover:shadow-[0_0_40px_rgba(0,255,204,0.15)]",
+          "hover:border-teal-500/30",
+          className
+        )}
+      >
+        {/* Header with day and spotlight badge */}
+        <div className="relative px-5 py-4 border-b border-white/5 bg-gradient-to-r from-teal-900/20 to-transparent">
+          <div className="flex items-center justify-between">
+            <span className="text-teal-400 font-semibold text-sm uppercase tracking-wider">
+              {openMic.day_of_week || "Weekly"}
+            </span>
+            {openMic.is_featured && <SpotlightBadge />}
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="p-5 space-y-3">
+          <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-teal-400 transition-colors">
+            {openMic.title}
+          </h3>
+
+          {/* Venue info */}
+          {(openMic.venue_name || openMic.venue_city) && (
+            <p className="text-sm text-[var(--color-warm-gray-light)] flex items-center gap-2">
+              <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>
+                {openMic.venue_name}
+                {openMic.venue_city && `, ${openMic.venue_city}`}
+              </span>
+            </p>
+          )}
+
+          {/* Time info */}
+          <div className="flex items-center gap-4 text-sm text-[var(--color-warm-gray)]">
+            {openMic.start_time && (
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-[var(--color-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {formatTime(openMic.start_time)}
+              </span>
+            )}
+            {openMic.signup_time && (
+              <span className="text-xs text-neutral-500">
+                Sign-up: {formatTime(openMic.signup_time)}
+              </span>
+            )}
+          </div>
+
+          {/* Description preview */}
+          {openMic.description && (
+            <p className="text-sm text-[var(--color-warm-gray-light)] line-clamp-2">
+              {openMic.description}
+            </p>
+          )}
+        </div>
+      </article>
+    </Link>
+  );
+}

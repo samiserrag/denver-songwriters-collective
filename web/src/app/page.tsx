@@ -5,6 +5,7 @@ import { EventGrid } from "@/components/events";
 import { PerformerGrid } from "@/components/performers";
 import { HostGrid } from "@/components/hosts";
 import { StudioGrid } from "@/components/studios";
+import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 import { Button } from "@/components/ui";
 import { ScrollIndicator } from "@/components/home";
 import type { Database } from "@/lib/supabase/database.types";
@@ -65,7 +66,7 @@ export default async function HomePage() {
   const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
-  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, latestBlogRes] = await Promise.all([
+  const [featuredEventsRes, upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, spotlightOpenMicsRes, latestBlogRes] = await Promise.all([
     supabase
       .from("events")
       .select("*")
@@ -102,6 +103,27 @@ export default async function HomePage() {
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(6),
+    // Spotlight Open Mics - featured open mics from the directory
+    supabase
+      .from("events")
+      .select(`
+        id,
+        slug,
+        title,
+        description,
+        day_of_week,
+        start_time,
+        signup_time,
+        venue_name,
+        is_featured,
+        venues(name, city)
+      `)
+      .eq("event_type", "open_mic")
+      .eq("status", "active")
+      .eq("is_featured", true)
+      .order("featured_rank", { ascending: true })
+      .order("day_of_week", { ascending: true })
+      .limit(6),
     supabase
       .from("blog_posts")
       .select(`
@@ -125,6 +147,21 @@ export default async function HomePage() {
   const featuredPerformers: Performer[] = (featuredPerformersRes.data ?? []).map(mapDBProfileToPerformer);
   const featuredHosts: Host[] = (featuredHostsRes.data ?? []).map(mapDBProfileToHost);
   const featuredStudios: Studio[] = (featuredStudiosRes.data ?? []).map(mapDBProfileToStudio);
+
+  // Map spotlight open mics
+  const spotlightOpenMics: SpotlightOpenMic[] = (spotlightOpenMicsRes.data ?? []).map((om: any) => ({
+    id: om.id,
+    slug: om.slug,
+    title: om.title,
+    description: om.description,
+    day_of_week: om.day_of_week,
+    start_time: om.start_time,
+    signup_time: om.signup_time,
+    venue_name: om.venues?.name ?? om.venue_name,
+    venue_city: om.venues?.city,
+    is_featured: om.is_featured,
+  }));
+
   const latestBlog = latestBlogRes.data;
   const latestBlogAuthor = latestBlog?.author
     ? Array.isArray(latestBlog.author)
@@ -137,6 +174,7 @@ export default async function HomePage() {
   const hasFeaturedPerformers = featuredPerformers.length > 0;
   const hasFeaturedHosts = featuredHosts.length > 0;
   const hasFeaturedStudios = featuredStudios.length > 0;
+  const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = !!latestBlog;
 
   return (
@@ -347,6 +385,34 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Spotlight Open Mics */}
+      {hasSpotlightOpenMics && (
+        <section className="py-10 px-6 border-t border-white/5">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                  Spotlight Open Mics
+                </h2>
+                <p className="text-[var(--color-warm-gray)]">
+                  Featured stages for Denver songwriters to share their music.
+                </p>
+              </div>
+              <Link
+                href="/open-mics"
+                className="text-teal-400 hover:text-teal-300 transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                View all open mics
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <OpenMicGrid openMics={spotlightOpenMics} />
+          </div>
+        </section>
+      )}
 
       {/* Spotlight Hosts */}
       {hasFeaturedHosts && (
