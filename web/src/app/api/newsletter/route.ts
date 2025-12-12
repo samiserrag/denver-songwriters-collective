@@ -6,8 +6,9 @@ export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 
-    // Validate email format using a proper regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Validate email format using RFC 5322 compliant regex
+    // Requires: valid local part, @ symbol, domain with TLD (min 2 chars)
+    const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     if (!email || !emailRegex.test(email)) {
       return NextResponse.json(
         { error: "Valid email required" },

@@ -151,11 +151,16 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - [ ] Event recurrence handling (RRULE parsing for recurring events)
 - [ ] Mobile app considerations (PWA setup)
 
+### Pre-Launch Optimization (Defer until feature-complete)
+- [ ] Performance optimization (Lighthouse Core Web Vitals audit)
+- [ ] Dynamic SEO metadata for detail pages (`/open-mics/[slug]`, `/events/[id]`, `/blog/[slug]`)
+- [ ] OpenGraph/Twitter card images for social sharing
+- [ ] Image optimization with `next/image` component (replace raw `<img>` tags)
+
 ### Low Priority / Nice to Have
 - [ ] Event check-in system for hosts
 - [ ] Analytics dashboard for hosts (event attendance)
 - [ ] Integration with external calendars (Google Calendar, iCal)
-- [ ] Social sharing cards (Open Graph images)
 
 ---
 
@@ -175,6 +180,8 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - Complete RLS audit and remediation
 - Service role client for admin operations
 - Standardized admin role checking
+- Security headers configured in `next.config.ts` (CSP, X-Frame-Options, etc.)
+- Strengthened email validation regex (RFC 5322 compliant)
 
 ---
 
