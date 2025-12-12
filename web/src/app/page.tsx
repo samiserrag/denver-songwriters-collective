@@ -420,81 +420,81 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Spotlight Performers */}
-      <section className="py-10 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-6 flex items-baseline justify-between gap-4">
-            <div>
-              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
-                Spotlight Performers
-              </h2>
-              <p className="text-[var(--color-warm-gray)]">
-                Featured artists from the Denver songwriting community.
-              </p>
-            </div>
-            <Link
-              href="/performers"
-              className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
-            >
-              View all performers
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-          {hasFeaturedPerformers ? (
-            <PerformerGrid performers={featuredPerformers} />
-          ) : (
-            <p className="text-[var(--color-warm-gray)]">
-              No spotlight performers at this time.
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* Spotlight Open Mics */}
-      {hasSpotlightOpenMics && (
-        <section className="py-10 px-6 border-t border-white/5">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
-                  Spotlight Open Mics
-                </h2>
-                <p className="text-[var(--color-warm-gray)]">
-                  Featured stages for Denver songwriters to share their music.
-                </p>
-              </div>
-              <Link
-                href="/open-mics"
-                className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
-              >
-                View all open mics
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-            <OpenMicGrid openMics={spotlightOpenMics} />
-          </div>
-        </section>
-      )}
-
-      {/* Spotlight Hosts */}
-      {hasFeaturedHosts && (
+      {/* Community Spotlight - Unified section for performers, open mics, and hosts */}
+      {(hasFeaturedPerformers || hasSpotlightOpenMics || hasFeaturedHosts) && (
         <section className="py-10 px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
-                  Spotlight Hosts
-                </h2>
-                <p className="text-[var(--color-warm-gray)]">
-                  The people who make Denver&apos;s open mic scene happen.
-                </p>
-              </div>
+            <div className="mb-8 text-center">
+              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                Community Spotlight
+              </h2>
+              <p className="text-[var(--color-warm-gray)]">
+                Featured performers, stages, and hosts from the Denver songwriting community.
+              </p>
             </div>
-            <HostGrid hosts={featuredHosts} />
+
+            {/* Performers Section */}
+            {hasFeaturedPerformers && (
+              <div className="mb-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] flex items-center gap-2">
+                    <span>🎵</span> Featured Performers
+                  </h3>
+                  <Link
+                    href="/performers"
+                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                  >
+                    View all
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+                <PerformerGrid performers={featuredPerformers} />
+              </div>
+            )}
+
+            {/* Open Mics Section */}
+            {hasSpotlightOpenMics && (
+              <div className="mb-10 pt-8 border-t border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] flex items-center gap-2">
+                    <span>🎤</span> Featured Open Mics
+                  </h3>
+                  <Link
+                    href="/open-mics"
+                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                  >
+                    View all
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+                <OpenMicGrid openMics={spotlightOpenMics} />
+              </div>
+            )}
+
+            {/* Hosts Section */}
+            {hasFeaturedHosts && (
+              <div className="pt-8 border-t border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] flex items-center gap-2">
+                    <span>👑</span> Featured Hosts
+                  </h3>
+                  <Link
+                    href="/members?role=host"
+                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                  >
+                    View all
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+                <HostGrid hosts={featuredHosts} />
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -529,18 +529,18 @@ export default async function HomePage() {
             >
               <div className="grid md:grid-cols-2 gap-8 items-center bg-[var(--color-indigo-950)]/30 border border-white/10 rounded-2xl overflow-hidden hover:border-[var(--color-gold)]/30 transition-all">
                 {latestBlog.cover_image_url ? (
-                  <div className="relative h-64 md:h-80 overflow-hidden">
+                  <div className="relative aspect-square md:aspect-auto md:h-80 overflow-hidden">
                     <Image
                       src={latestBlog.cover_image_url}
                       alt={latestBlog.title}
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--color-background)]/50 md:hidden" />
                   </div>
                 ) : (
-                  <div className="h-64 md:h-80 bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-teal)]/20 flex items-center justify-center">
+                  <div className="aspect-square md:aspect-auto md:h-80 bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
                     <svg className="w-16 h-16 text-[var(--color-gold)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                     </svg>

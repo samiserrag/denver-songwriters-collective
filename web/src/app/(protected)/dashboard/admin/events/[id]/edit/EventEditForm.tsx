@@ -274,7 +274,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-teal-800 rounded text-white font-medium"
+          className="px-6 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-gold)]/50 rounded text-[var(--color-background)] font-medium"
         >
           {saving ? "Saving..." : "Save Changes"}
         </button>

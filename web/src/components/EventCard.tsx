@@ -247,7 +247,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           </div>
         )}
 
-        <div className="text-sm text-teal-400">
+        <div className="text-sm text-[var(--color-gold-400)]">
           {startTime}{endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}
           {recurrenceText && recurrenceText !== "Every week" && (
             <span className="text-[var(--color-warm-gray)] ml-2">• {recurrenceText}</span>
@@ -266,7 +266,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
               href={eventMapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-teal-400 hover:text-teal-300 text-sm font-medium transition-colors"
+              className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
             >
               Map
             </a>

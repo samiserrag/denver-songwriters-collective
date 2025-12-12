@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                 <Link href="/dashboard/notifications" className="text-gold-400 hover:underline">
                   Notifications
                   {(unreadNotifications ?? 0) > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-teal-500/20 text-teal-400 text-xs rounded-full">
+                    <span className="ml-2 px-2 py-0.5 bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-xs rounded-full">
                       {unreadNotifications} new
                     </span>
                   )}

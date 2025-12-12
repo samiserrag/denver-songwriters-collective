@@ -134,7 +134,7 @@ export default function UserDirectoryTable({ users }: Props) {
       case "performer":
         return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
       case "host":
-        return "bg-teal-500/20 text-teal-400 border-teal-500/30";
+        return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
       case "studio":
         return "bg-purple-500/20 text-purple-400 border-purple-500/30";
       default:
@@ -208,7 +208,7 @@ export default function UserDirectoryTable({ users }: Props) {
                         disabled={togglingHost === u.id}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                           user.is_host
-                            ? "bg-teal-500/20 text-teal-400 hover:bg-teal-500/30 border border-teal-500/30"
+                            ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/30 border border-[var(--color-gold)]/30"
                             : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
                         }`}
                       >
@@ -219,7 +219,7 @@ export default function UserDirectoryTable({ users }: Props) {
                           : "No"}
                       </button>
                     ) : u.role === "host" ? (
-                      <span className="text-teal-400 text-xs">Primary Host</span>
+                      <span className="text-[var(--color-gold)] text-xs">Primary Host</span>
                     ) : (
                       <span className="text-neutral-500 text-xs">-</span>
                     )}

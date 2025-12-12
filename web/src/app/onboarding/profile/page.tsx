@@ -21,6 +21,8 @@ type FormData = {
   cashapp_handle: string;
   paypal_url: string;
   open_to_collabs: boolean;
+  interested_in_cowriting: boolean;
+  available_for_hire: boolean;
   specialties: string[];
   favorite_open_mic: string;
 };
@@ -40,23 +42,92 @@ const initialFormData: FormData = {
   cashapp_handle: "",
   paypal_url: "",
   open_to_collabs: false,
+  interested_in_cowriting: false,
+  available_for_hire: false,
   specialties: [],
   favorite_open_mic: "",
 };
 
+// Comprehensive specialties for songwriter matching
 const SPECIALTY_OPTIONS = [
-  "Vocals",
-  "Guitar",
-  "Piano/Keys",
-  "Bass",
+  // Instruments - Strings
+  "Acoustic Guitar",
+  "Electric Guitar",
+  "Classical Guitar",
+  "Bass Guitar",
+  "Upright Bass",
+  "Ukulele",
+  "Baritone Ukulele",
+  "Banjo",
+  "Mandolin",
+  "Violin/Fiddle",
+  "Cello",
+  "Pedal Steel",
+  // Instruments - Keys
+  "Piano",
+  "Keyboard/Synth",
+  "Organ",
+  "Accordion",
+  // Instruments - Other
   "Drums",
-  "Songwriting",
-  "Production",
-  "Mixing/Mastering",
-  "Session Work",
+  "Percussion",
+  "Harmonica",
+  "Saxophone",
+  "Trumpet",
+  "Flute",
+  "Clarinet",
+  // Vocals
+  "Lead Vocals",
+  "Backup Vocals",
+  "Harmony Vocals",
+  "Beatboxing",
+  // Songwriting Skills
+  "Lyricist",
+  "Melody Writing",
+  "Chord Progressions",
+  "Song Structure",
+  "Hook Writing",
+  "Toplining",
+  // Production & Technical
+  "Music Production",
+  "Mixing",
+  "Mastering",
+  "Sound Design",
+  "Beat Making",
+  "Loop Creation",
+  "Home Recording",
+  // Performance
   "Live Performance",
+  "Session Musician",
+  "Accompanist",
+  "Busking",
+  // Music Knowledge
   "Music Theory",
   "Arrangement",
+  "Orchestration",
+  "Transcription",
+  "Sight Reading",
+  "Ear Training",
+  // Genre Expertise
+  "Folk/Americana",
+  "Country",
+  "Rock",
+  "Pop",
+  "Blues",
+  "Jazz",
+  "R&B/Soul",
+  "Hip-Hop/Rap",
+  "Electronic",
+  "Classical",
+  "Singer-Songwriter",
+  // Other Skills
+  "Music Video",
+  "Photography",
+  "Graphic Design",
+  "Social Media",
+  "Music Business",
+  "Booking/Promotion",
+  "Teaching/Coaching",
 ];
 
 export default function ProfileOnboarding() {
@@ -103,6 +174,8 @@ export default function ProfileOnboarding() {
           cashapp_handle: (profile as any).cashapp_handle || "",
           paypal_url: (profile as any).paypal_url || "",
           open_to_collabs: (profile as any).open_to_collabs || false,
+          interested_in_cowriting: (profile as any).interested_in_cowriting || false,
+          available_for_hire: (profile as any).available_for_hire || false,
           specialties: (profile as any).specialties || [],
           favorite_open_mic: (profile as any).favorite_open_mic || "",
         });
@@ -206,6 +279,8 @@ export default function ProfileOnboarding() {
           cashapp_handle: formData.cashapp_handle || null,
           paypal_url: formData.paypal_url || null,
           open_to_collabs: formData.open_to_collabs,
+          interested_in_cowriting: formData.interested_in_cowriting,
+          available_for_hire: formData.available_for_hire,
           specialties: formData.specialties.length > 0 ? formData.specialties : null,
           favorite_open_mic: formData.favorite_open_mic || null,
           onboarding_complete: true,
@@ -270,20 +345,20 @@ export default function ProfileOnboarding() {
             Complete Your Profile
           </h1>
           <p className="text-[var(--color-warm-gray-light)]">
-            Help others discover you! All fields below are <span className="text-teal-400">optional</span>.
+            Help others discover you! All fields below are <span className="text-[var(--color-gold)]">optional</span>.
           </p>
         </div>
 
         {/* Privacy notice */}
-        <div className="mb-8 p-4 rounded-xl bg-teal-900/20 border border-teal-500/30">
+        <div className="mb-8 p-4 rounded-xl bg-[var(--color-gold)]/10 border border-[var(--color-gold)]/30">
           <div className="flex items-start gap-3">
             <span className="text-xl">🔒</span>
             <div>
-              <h3 className="font-semibold text-teal-400 mb-1">Your Privacy Matters</h3>
+              <h3 className="font-semibold text-[var(--color-gold)] mb-1">Your Privacy Matters</h3>
               <p className="text-sm text-[var(--color-warm-gray-light)]">
                 Your email is never shown publicly. We only collect what you choose to share.
                 Read our full{" "}
-                <Link href="/privacy" className="text-teal-400 hover:underline">
+                <Link href="/privacy" className="text-[var(--color-gold)] hover:underline">
                   Privacy Policy
                 </Link>
                 .
@@ -302,7 +377,7 @@ export default function ProfileOnboarding() {
           {/* Profile Picture */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>📸</span> Profile Picture <span className="text-sm font-normal text-teal-400">(optional)</span>
+              <span>📸</span> Profile Picture <span className="text-sm font-normal text-[var(--color-gold)]">(optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Add a profile picture to help others recognize you. Your photo will be displayed as a circle.
@@ -334,12 +409,12 @@ export default function ProfileOnboarding() {
           {/* Basic Info */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>👤</span> Basic Info <span className="text-sm font-normal text-teal-400">(all optional)</span>
+              <span>👤</span> Basic Info <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
             </h2>
             <div className="space-y-4">
               <div>
                 <label htmlFor="full_name" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Display Name <span className="text-teal-400/70">(optional)</span>
+                  Display Name <span className="text-[var(--color-gold)]/70">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -353,7 +428,7 @@ export default function ProfileOnboarding() {
               </div>
               <div>
                 <label htmlFor="bio" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Bio <span className="text-teal-400/70">(optional)</span>
+                  Bio <span className="text-[var(--color-gold)]/70">(optional)</span>
                 </label>
                 <textarea
                   id="bio"
@@ -371,7 +446,7 @@ export default function ProfileOnboarding() {
           {/* Social Links */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>🔗</span> Social Links <span className="text-sm font-normal text-teal-400">(all optional)</span>
+              <span>🔗</span> Social Links <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Share your social profiles so fans can follow you.
@@ -467,7 +542,7 @@ export default function ProfileOnboarding() {
           {/* Tip Links */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>💸</span> Accept Tips <span className="text-sm font-normal text-teal-400">(all optional)</span>
+              <span>💸</span> Accept Tips <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Let fans support you directly. These will appear on your profile and when you perform.
@@ -522,36 +597,86 @@ export default function ProfileOnboarding() {
           {userRole === "performer" && (
             <section>
               <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-                <span>🤝</span> Collaboration <span className="text-sm font-normal text-teal-400">(all optional)</span>
+                <span>🤝</span> Collaboration <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
               </h2>
               <p className="text-sm text-[var(--color-warm-gray)] mb-4">
                 Let other musicians know if you&apos;re open to collaborations and what you can offer.
               </p>
               <div className="space-y-6">
-                {/* Open to Collabs Checkbox */}
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={formData.open_to_collabs}
-                      onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-teal-500 peer-checked:border-teal-500 transition-colors flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
+                {/* Collaboration Checkboxes */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={formData.open_to_collabs}
+                        onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-[var(--color-gold)] peer-checked:border-[var(--color-gold)] transition-colors flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 text-[var(--color-background)] opacity-0 peer-checked:opacity-100 transition-opacity"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                  <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
-                    I&apos;m open to collaborations
-                  </span>
-                </label>
+                    <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                      🤝 Open to collaborations
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={formData.interested_in_cowriting}
+                        onChange={(e) => setFormData(prev => ({ ...prev, interested_in_cowriting: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-purple-500 peer-checked:border-purple-500 transition-colors flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
+                    <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                      ✍️ Interested in cowriting
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={formData.available_for_hire}
+                        onChange={(e) => setFormData(prev => ({ ...prev, available_for_hire: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-colors flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
+                    <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                      💼 Available for hire
+                    </span>
+                  </label>
+                </div>
 
                 {/* Specialties Multi-select */}
                 <div>
@@ -578,7 +703,7 @@ export default function ProfileOnboarding() {
                           }}
                           className={`px-3 py-1.5 rounded-full text-sm transition-all ${
                             isSelected
-                              ? "bg-teal-500 text-white"
+                              ? "bg-[var(--color-gold)] text-[var(--color-background)]"
                               : "bg-white/5 text-[var(--color-warm-gray-light)] hover:bg-white/10 border border-white/10"
                           }`}
                         >

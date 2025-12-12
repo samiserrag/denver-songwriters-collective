@@ -26,7 +26,7 @@ export default function PlaceholderImage({
   const gradients = {
     "open-mic": "from-purple-900 via-indigo-900 to-blue-900",
     "event": "from-amber-900 via-orange-900 to-red-900",
-    "performer": "from-teal-900 via-cyan-900 to-blue-900",
+    "performer": "from-amber-900 via-yellow-900 to-orange-900",
     "studio": "from-neutral-800 via-neutral-900 to-black",
   };
 

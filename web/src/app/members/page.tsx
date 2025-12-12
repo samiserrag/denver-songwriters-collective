@@ -34,6 +34,7 @@ function mapDBProfileToMember(profile: DBProfile): Member {
     socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
     availableForHire: profile.available_for_hire ?? false,
     interestedInCowriting: profile.interested_in_cowriting ?? false,
+    openToCollabs: profile.open_to_collabs ?? false,
     songLinks: profile.song_links ?? undefined,
   };
 }

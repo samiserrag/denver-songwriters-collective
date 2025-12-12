@@ -30,10 +30,12 @@ export function MemberFilters({
   );
   const [availableForHire, setAvailableForHire] = React.useState(false);
   const [interestedInCowriting, setInterestedInCowriting] = React.useState(false);
+  const [openToCollabs, setOpenToCollabs] = React.useState(false);
   const [selectedGenres, setSelectedGenres] = React.useState<Set<string>>(new Set());
   const [selectedInstruments, setSelectedInstruments] = React.useState<Set<string>>(new Set());
+  const [selectedSpecialties, setSelectedSpecialties] = React.useState<Set<string>>(new Set());
 
-  // Extract unique genres and instruments from all members
+  // Extract unique genres, instruments, and specialties from all members
   const allGenres = React.useMemo(() => {
     const genres = new Set<string>();
     members.forEach((m) => m.genres?.forEach((g) => genres.add(g)));
@@ -44,6 +46,12 @@ export function MemberFilters({
     const instruments = new Set<string>();
     members.forEach((m) => m.instruments?.forEach((i) => instruments.add(i)));
     return Array.from(instruments).sort();
+  }, [members]);
+
+  const allSpecialties = React.useMemo(() => {
+    const specialties = new Set<string>();
+    members.forEach((m) => m.specialties?.forEach((s) => specialties.add(s)));
+    return Array.from(specialties).sort();
   }, [members]);
 
   // Filter members based on all criteria
@@ -73,6 +81,9 @@ export function MemberFilters({
     if (interestedInCowriting) {
       filtered = filtered.filter((m) => m.interestedInCowriting);
     }
+    if (openToCollabs) {
+      filtered = filtered.filter((m) => m.openToCollabs);
+    }
 
     // Genre filter
     if (selectedGenres.size > 0) {
@@ -88,6 +99,13 @@ export function MemberFilters({
       );
     }
 
+    // Specialty filter
+    if (selectedSpecialties.size > 0) {
+      filtered = filtered.filter((m) =>
+        m.specialties?.some((s) => selectedSpecialties.has(s))
+      );
+    }
+
     onFilteredMembersChange(filtered);
   }, [
     members,
@@ -95,8 +113,10 @@ export function MemberFilters({
     selectedRoles,
     availableForHire,
     interestedInCowriting,
+    openToCollabs,
     selectedGenres,
     selectedInstruments,
+    selectedSpecialties,
     onFilteredMembersChange,
   ]);
 
@@ -136,13 +156,27 @@ export function MemberFilters({
     });
   };
 
+  const toggleSpecialty = (specialty: string) => {
+    setSelectedSpecialties((prev) => {
+      const next = new Set(prev);
+      if (next.has(specialty)) {
+        next.delete(specialty);
+      } else {
+        next.add(specialty);
+      }
+      return next;
+    });
+  };
+
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedRoles(new Set());
     setAvailableForHire(false);
     setInterestedInCowriting(false);
+    setOpenToCollabs(false);
     setSelectedGenres(new Set());
     setSelectedInstruments(new Set());
+    setSelectedSpecialties(new Set());
   };
 
   const hasActiveFilters =
@@ -150,8 +184,10 @@ export function MemberFilters({
     selectedRoles.size > 0 ||
     availableForHire ||
     interestedInCowriting ||
+    openToCollabs ||
     selectedGenres.size > 0 ||
-    selectedInstruments.size > 0;
+    selectedInstruments.size > 0 ||
+    selectedSpecialties.size > 0;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -204,22 +240,33 @@ export function MemberFilters({
           className={cn(
             "px-3 py-1.5 text-sm rounded-full border transition-colors",
             availableForHire
-              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+              ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
               : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
           )}
         >
-          Available for Hire
+          💼 Available for Hire
         </button>
         <button
           onClick={() => setInterestedInCowriting(!interestedInCowriting)}
           className={cn(
             "px-3 py-1.5 text-sm rounded-full border transition-colors",
             interestedInCowriting
-              ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+              ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
               : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
           )}
         >
-          Open to Cowriting
+          ✍️ Interested in Cowriting
+        </button>
+        <button
+          onClick={() => setOpenToCollabs(!openToCollabs)}
+          className={cn(
+            "px-3 py-1.5 text-sm rounded-full border transition-colors",
+            openToCollabs
+              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+              : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+          )}
+        >
+          🤝 Open to Collaborations
         </button>
       </div>
 
@@ -267,6 +314,31 @@ export function MemberFilters({
                 )}
               >
                 {instrument}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {/* Specialty filters (collapsible) */}
+      {allSpecialties.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer text-sm text-[var(--color-warm-gray-light)] hover:text-[var(--color-warm-white)]">
+            Specialties {selectedSpecialties.size > 0 && `(${selectedSpecialties.size})`}
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {allSpecialties.map((specialty) => (
+              <button
+                key={specialty}
+                onClick={() => toggleSpecialty(specialty)}
+                className={cn(
+                  "px-2 py-1 text-xs rounded-full border transition-colors",
+                  selectedSpecialties.has(specialty)
+                    ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
+                    : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+                )}
+              >
+                {specialty}
               </button>
             ))}
           </div>

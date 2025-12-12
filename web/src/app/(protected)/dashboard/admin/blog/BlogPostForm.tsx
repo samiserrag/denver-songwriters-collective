@@ -383,7 +383,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           value={formData.title}
           onChange={handleTitleChange}
           required
-          className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white text-lg placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+          className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white text-lg placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none"
           placeholder="Your blog post title"
         />
       </div>
@@ -401,7 +401,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
             value={formData.slug}
             onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
             required
-            className="flex-1 px-4 py-2 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+            className="flex-1 px-4 py-2 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none"
             placeholder="your-post-slug"
           />
         </div>
@@ -442,7 +442,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           value={formData.excerpt}
           onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
           rows={2}
-          className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none resize-none"
+          className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none resize-none"
           placeholder="A compelling summary that makes readers want to click..."
         />
       </div>
@@ -515,7 +515,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
             onClick={() => setShowPreview(!showPreview)}
             className={`px-3 py-1.5 text-sm rounded transition-colors ${
               showPreview
-                ? "bg-teal-600 text-white"
+                ? "bg-[var(--color-gold)] text-[var(--color-background)]"
                 : "bg-neutral-700 hover:bg-neutral-600 text-white"
             }`}
           >
@@ -587,7 +587,7 @@ Regular paragraph text here. Use **bold** for emphasis.
                   value={img.caption}
                   onChange={(e) => updateGalleryCaption(index, e.target.value)}
                   placeholder="Add caption..."
-                  className="mt-2 w-full px-2 py-1 text-xs rounded bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+                  className="mt-2 w-full px-2 py-1 text-xs rounded bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none"
                 />
               </div>
             ))}
@@ -620,7 +620,7 @@ Regular paragraph text here. Use **bold** for emphasis.
           id="tags"
           value={formData.tags}
           onChange={(e) => setFormData((prev) => ({ ...prev, tags: e.target.value }))}
-          className="w-full px-4 py-2 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+          className="w-full px-4 py-2 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none"
           placeholder="tips, community, open mic, beginners"
         />
         {formData.tags && (
@@ -629,7 +629,7 @@ Regular paragraph text here. Use **bold** for emphasis.
               tag.trim() && (
                 <span
                   key={i}
-                  className="px-2 py-1 bg-teal-900/30 text-teal-400 text-xs rounded-full border border-teal-800"
+                  className="px-2 py-1 bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-xs rounded-full border border-[var(--color-gold)]/30"
                 >
                   {tag.trim()}
                 </span>
@@ -646,7 +646,7 @@ Regular paragraph text here. Use **bold** for emphasis.
           id="is_published"
           checked={formData.is_published}
           onChange={(e) => setFormData((prev) => ({ ...prev, is_published: e.target.checked }))}
-          className="w-5 h-5 rounded bg-neutral-800 border-neutral-600 text-teal-500 focus:ring-teal-500"
+          className="w-5 h-5 rounded bg-neutral-800 border-neutral-600 text-[var(--color-gold)] focus:ring-[var(--color-gold)]"
         />
         <div>
           <label htmlFor="is_published" className="text-white font-medium cursor-pointer">
@@ -667,7 +667,7 @@ Regular paragraph text here. Use **bold** for emphasis.
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-3 bg-teal-600 hover:bg-teal-500 disabled:bg-teal-900 text-white font-medium rounded-lg transition-colors"
+          className="px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-gold)]/50 text-[var(--color-background)] font-medium rounded-lg transition-colors"
         >
           {saving ? "Saving..." : isEditing ? "Update Post" : "Create Post"}
         </button>

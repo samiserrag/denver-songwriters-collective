@@ -85,7 +85,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
         {acceptedHosts.map((host) => (
           <li key={host.id} className="flex items-center justify-between p-2 bg-[var(--color-indigo-950)]/50 rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-teal-900/50 text-teal-400 rounded-full flex items-center justify-center text-sm">
+              <div className="w-8 h-8 bg-[var(--color-gold)]/20 text-[var(--color-gold)] rounded-full flex items-center justify-center text-sm">
                 {host.user?.avatar_url ? (
                   <img src={host.user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -140,7 +140,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
             <button
               type="submit"
               disabled={loading || !searchQuery.trim()}
-              className="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white text-sm rounded disabled:opacity-50"
+              className="px-3 py-1 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] text-sm rounded disabled:opacity-50"
             >
               {loading ? "Sending..." : "Send Invite"}
             </button>

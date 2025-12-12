@@ -188,7 +188,7 @@ export default function SubmitOpenMicPage() {
               <div className="flex gap-4 justify-center">
                 <Link
                   href="/open-mics"
-                  className="px-6 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-white"
+                  className="px-6 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)]"
                 >
                   Browse Open Mics
                 </Link>
@@ -223,7 +223,7 @@ export default function SubmitOpenMicPage() {
             </p>
             <Link
               href="/login?redirectTo=/submit-open-mic"
-              className="inline-block px-6 py-3 bg-teal-600 hover:bg-teal-500 rounded-lg text-white font-semibold"
+              className="inline-block px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold"
             >
               Sign In to Continue
             </Link>
@@ -236,7 +236,7 @@ export default function SubmitOpenMicPage() {
             <p className="text-neutral-400 mb-4">
               Visit the open mic's detail page and use the "Suggest updates" form. No account needed for suggestions!
             </p>
-            <Link href="/open-mics" className="text-teal-400 hover:underline">
+            <Link href="/open-mics" className="text-[var(--color-gold)] hover:underline">
               Browse Open Mics →
             </Link>
           </div>
@@ -292,7 +292,7 @@ export default function SubmitOpenMicPage() {
             <p className="text-neutral-400 mb-4">
               Visit the open mic's page and use the suggestion form. You can update times, venue info, and more.
             </p>
-            <Link href="/open-mics" className="text-teal-400 hover:underline">
+            <Link href="/open-mics" className="text-[var(--color-gold)] hover:underline">
               Browse Open Mics →
             </Link>
           </div>
@@ -307,7 +307,7 @@ export default function SubmitOpenMicPage() {
       <div>
         <HeroSection minHeight="sm">
           <PageContainer>
-            <button onClick={() => setMode(null)} className="text-teal-400 hover:underline mb-4">
+            <button onClick={() => setMode(null)} className="text-[var(--color-gold)] hover:underline mb-4">
               ← Back
             </button>
             <h1 className="text-gradient-gold text-3xl font-serif italic">Submit New Open Mic</h1>
@@ -464,7 +464,7 @@ export default function SubmitOpenMicPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-6 py-3 bg-teal-600 hover:bg-teal-500 rounded-lg text-white font-semibold disabled:opacity-50"
+                className="px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold disabled:opacity-50"
               >
                 {submitting ? "Submitting..." : "Submit Open Mic"}
               </button>
@@ -481,7 +481,7 @@ export default function SubmitOpenMicPage() {
       <div>
         <HeroSection minHeight="sm">
           <PageContainer>
-            <button onClick={() => setMode(null)} className="text-teal-400 hover:underline mb-4">
+            <button onClick={() => setMode(null)} className="text-[var(--color-gold)] hover:underline mb-4">
               ← Back
             </button>
             <h1 className="text-gradient-gold text-3xl font-serif italic">Claim as Host</h1>
@@ -520,7 +520,7 @@ export default function SubmitOpenMicPage() {
                     type="button"
                     onClick={() => setClaimEventId(event.id)}
                     className={`w-full p-3 text-left border-b border-neutral-700 last:border-0 hover:bg-white/5 ${
-                      claimEventId === event.id ? "bg-teal-900/30 border-l-4 border-l-teal-500" : ""
+                      claimEventId === event.id ? "bg-[var(--color-gold)]/10 border-l-4 border-l-[var(--color-gold)]" : ""
                     }`}
                   >
                     <div className="font-medium text-white">{event.title}</div>
@@ -548,7 +548,7 @@ export default function SubmitOpenMicPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="mt-4 px-6 py-3 bg-teal-600 hover:bg-teal-500 rounded-lg text-white font-semibold disabled:opacity-50"
+                  className="mt-4 px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit Claim Request"}
                 </button>

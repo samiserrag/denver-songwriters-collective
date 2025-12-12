@@ -162,7 +162,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab
-                ? "text-teal-400 border-b-2 border-teal-400"
+                ? "text-[var(--color-gold)] border-b-2 border-[var(--color-gold)]"
                 : "text-neutral-400 hover:text-white"
             }`}
           >
@@ -184,7 +184,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1 text-xs rounded-full transition-colors ${
                   filter === f
-                    ? "bg-teal-600 text-white"
+                    ? "bg-[var(--color-gold)] text-[var(--color-background)]"
                     : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
                 }`}
               >
@@ -337,7 +337,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             <button
               type="submit"
               disabled={isCreatingAlbum || !albumName}
-              className="mt-4 px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-teal-900 text-white rounded-lg transition-colors"
+              className="mt-4 px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-gold)]/50 text-[var(--color-background)] rounded-lg transition-colors"
             >
               {isCreatingAlbum ? "Creating..." : "Create Album"}
             </button>
@@ -421,7 +421,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
               value={uploadUrl}
               onChange={(e) => setUploadUrl(e.target.value)}
               placeholder="https://..."
-              className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+              className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none"
               required
             />
             {uploadUrl && (
@@ -443,7 +443,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
               value={uploadCaption}
               onChange={(e) => setUploadCaption(e.target.value)}
               placeholder="Describe the photo..."
-              className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-teal-500 focus:outline-none"
+              className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none"
             />
           </div>
 
@@ -453,7 +453,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
               <select
                 value={uploadVenue}
                 onChange={(e) => setUploadVenue(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white focus:border-teal-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white focus:border-[var(--color-gold)] focus:outline-none"
               >
                 <option value="">Select venue...</option>
                 {venues.map((v) => (
@@ -469,7 +469,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
               <select
                 value={uploadEvent}
                 onChange={(e) => setUploadEvent(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white focus:border-teal-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white focus:border-[var(--color-gold)] focus:outline-none"
               >
                 <option value="">Select event...</option>
                 {events.map((e) => (
@@ -486,7 +486,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             <select
               value={uploadAlbum}
               onChange={(e) => setUploadAlbum(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white focus:border-teal-500 focus:outline-none"
+              className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white focus:border-[var(--color-gold)] focus:outline-none"
             >
               <option value="">No album</option>
               {albums.map((a) => (
@@ -500,7 +500,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
           <button
             type="submit"
             disabled={isUploading || !uploadUrl}
-            className="px-6 py-3 bg-teal-600 hover:bg-teal-500 disabled:bg-teal-900 text-white rounded-lg transition-colors"
+            className="px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-gold)]/50 text-[var(--color-background)] rounded-lg transition-colors"
           >
             {isUploading ? "Uploading..." : "Upload Photo"}
           </button>

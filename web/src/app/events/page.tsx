@@ -245,7 +245,7 @@ export default async function EventsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -282,10 +282,10 @@ export default async function EventsPage() {
           </section>
 
           {/* Open Mic Directory Callout */}
-          <section className="rounded-2xl border border-teal-500/30 bg-teal-900/20 p-6 md:p-8">
+          <section className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/10 p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-teal-300 mb-2">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)] mb-2">
                   Looking for Open Mics?
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">

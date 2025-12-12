@@ -141,7 +141,7 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               {/* Role badges */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {performer.role === "host" ? (
-                  <span className="px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium">
+                  <span className="px-3 py-1 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-sm font-medium">
                     🎤 Open Mic Host
                   </span>
                 ) : (
@@ -150,7 +150,7 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
                       Performer
                     </span>
                     {(performer as DBProfile & { is_host?: boolean }).is_host && (
-                      <span className="px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium">
+                      <span className="px-3 py-1 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-sm font-medium">
                         🎤 Also Hosts Open Mics
                       </span>
                     )}
@@ -161,7 +161,7 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               {/* Collaboration & Availability Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {performer.open_to_collabs && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-sm font-medium">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>

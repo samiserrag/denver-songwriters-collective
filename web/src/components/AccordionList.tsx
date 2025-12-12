@@ -98,7 +98,7 @@ export default function AccordionList({
     <div className="space-y-4">
       {/* Search results summary */}
       {hasSearch && (
-        <div className="text-sm text-teal-300 mb-2">
+        <div className="text-sm text-[var(--color-gold)] mb-2">
           Found {events.length} result{events.length !== 1 ? "s" : ""} for "{searchQuery}"
         </div>
       )}
@@ -117,7 +117,7 @@ export default function AccordionList({
           <div key={day} className="border border-white/10 rounded-xl bg-white/3 overflow-hidden">
             <button
               onClick={() => toggleDay(day)}
-              className="w-full flex justify-between items-center px-4 py-3 text-left text-lg font-semibold text-teal-300 hover:bg-white/5"
+              className="w-full flex justify-between items-center px-4 py-3 text-left text-lg font-semibold text-[var(--color-gold)] hover:bg-white/5"
             >
               <span>
                 {day}

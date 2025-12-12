@@ -364,7 +364,7 @@ function parseTimeToMinutes(t?: string | null) {
           </p>
           <p className="text-xs text-slate-400 max-w-md">
             Contact venues to confirm details.{" "}
-            <a href="/submit-open-mic" className="text-teal-400 hover:underline">Help keep this list updated</a>.
+            <a href="/submit-open-mic" className="text-[var(--color-gold)] hover:underline">Help keep this list updated</a>.
           </p>
         </div>
 
@@ -391,7 +391,7 @@ function parseTimeToMinutes(t?: string | null) {
                     p.set("view", "list");
                     return `/open-mics?${p.toString()}`;
                   })()}
-                  className={view === "list" ? "px-3 py-2 rounded bg-teal-600 text-white text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                  className={view === "list" ? "px-3 py-2 rounded bg-[var(--color-gold)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
                 >
                   List View
                 </Link>
@@ -406,7 +406,7 @@ function parseTimeToMinutes(t?: string | null) {
                     p.set("view", "grid");
                     return `/open-mics?${p.toString()}`;
                   })()}
-                  className={view === "grid" ? "px-3 py-2 rounded bg-teal-600 text-white text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                  className={view === "grid" ? "px-3 py-2 rounded bg-[var(--color-gold)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
                 >
                   Grid View
                 </Link>
@@ -448,7 +448,7 @@ function parseTimeToMinutes(t?: string | null) {
                     const dayEvents = events.filter((e: any) => (e.day_of_week ?? "").toLowerCase() === day.toLowerCase());
                     return (
                       <section key={day} aria-labelledby={`day-${day}`} className="mt-6">
-                        <h2 id={`day-${day}`} className="text-xl font-semibold text-teal-300 mt-8 mb-3">
+                        <h2 id={`day-${day}`} className="text-xl font-semibold text-[var(--color-gold)] mt-8 mb-3">
                           {day}
                         </h2>
 

@@ -7,7 +7,7 @@ export default function MapViewButton({ className }: { className?: string }) {
   return (
     <Link
       href="/open-mics/map"
-      className={`${className ?? ""} w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 font-semibold border border-teal-500/40 backdrop-blur-sm`}
+      className={`${className ?? ""} w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[var(--color-gold)]/20 hover:bg-[var(--color-gold)]/30 text-[var(--color-gold)] font-semibold border border-[var(--color-gold)]/40 backdrop-blur-sm`}
     >
       Map View
     </Link>

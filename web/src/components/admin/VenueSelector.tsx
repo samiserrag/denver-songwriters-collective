@@ -128,16 +128,16 @@ export default function VenueSelector({
               {v.city && v.city !== "UNKNOWN" ? ` — ${v.city}` : ""}
             </option>
           ))}
-          <option value="__new__" className="text-teal-400 font-medium">
+          <option value="__new__" className="text-[var(--color-gold)] font-medium">
             + Add New Venue
           </option>
         </select>
       </div>
 
       {showNewVenueForm && (
-        <div className="p-4 bg-neutral-800/50 border border-teal-600/30 rounded-lg space-y-4">
+        <div className="p-4 bg-neutral-800/50 border border-[var(--color-gold)]/30 rounded-lg space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-teal-400">New Venue</h4>
+            <h4 className="text-sm font-semibold text-[var(--color-gold)]">New Venue</h4>
             <button
               type="button"
               onClick={() => {
@@ -236,7 +236,7 @@ export default function VenueSelector({
             type="button"
             onClick={handleCreateVenue}
             disabled={creating || !newVenue.name.trim() || !newVenue.address.trim()}
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-teal-800 disabled:cursor-not-allowed rounded text-white text-sm font-medium"
+            className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-gold)]/50 disabled:cursor-not-allowed rounded text-[var(--color-background)] text-sm font-medium"
           >
             {creating ? "Creating..." : "Create Venue"}
           </button>

@@ -160,7 +160,7 @@ export default async function MyEventsPage() {
                           {config.label}
                         </span>
                         {event.user_role === "cohost" && (
-                          <span className="text-xs px-2 py-0.5 bg-teal-900/50 text-teal-400 rounded">
+                          <span className="text-xs px-2 py-0.5 bg-[var(--color-gold)]/20 text-[var(--color-gold)] rounded">
                             Co-host
                           </span>
                         )}

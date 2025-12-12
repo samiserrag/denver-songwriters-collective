@@ -436,7 +436,7 @@ export default function AdminHighlightsClient() {
               <button
                 type="submit"
                 disabled={actionLoading === editingHighlight.id}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded text-white disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-background)] disabled:opacity-50"
               >
                 {actionLoading === editingHighlight.id ? "Saving..." : "Save Changes"}
               </button>
@@ -475,7 +475,7 @@ export default function AdminHighlightsClient() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditingHighlight(highlight)}
-                    className="text-teal-400 hover:text-teal-300 text-xs"
+                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
                   >
                     Edit
                   </button>
@@ -502,7 +502,7 @@ export default function AdminHighlightsClient() {
                 </p>
               )}
               {highlight.link_url && (
-                <p className="text-teal-400 text-xs mt-2 truncate">{highlight.link_url}</p>
+                <p className="text-[var(--color-gold)] text-xs mt-2 truncate">{highlight.link_url}</p>
               )}
             </div>
           ))}
@@ -528,7 +528,7 @@ export default function AdminHighlightsClient() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingHighlight(highlight)}
-                      className="text-teal-400 hover:text-teal-300 text-xs"
+                      className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
                     >
                       Edit
                     </button>

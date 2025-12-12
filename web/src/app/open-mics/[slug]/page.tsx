@@ -201,7 +201,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
                 {startFormatted}{endFormatted && endFormatted !== "TBD" ? ` — ${endFormatted}` : ""}
               </p>
               {signupFormatted && signupFormatted !== "TBD" && (
-                <p className="text-teal-400 text-sm mt-1">Signup: {signupFormatted}</p>
+                <p className="text-[var(--color-gold-400)] text-sm mt-1">Signup: {signupFormatted}</p>
               )}
             </div>
 

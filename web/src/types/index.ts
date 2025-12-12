@@ -167,5 +167,6 @@ export interface Member {
   socialLinks?: SocialLinks;
   availableForHire?: boolean;
   interestedInCowriting?: boolean;
+  openToCollabs?: boolean;
   songLinks?: string[];
 }

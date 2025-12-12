@@ -92,7 +92,7 @@ export function TipQRCode({
           Tip {displayName}
         </p>
       )}
-      <p className="text-xs text-teal-400 text-center">
+      <p className="text-xs text-[var(--color-gold)] text-center">
         Scan to tip via {tipLabel}
       </p>
     </div>

@@ -7,7 +7,7 @@ export default function WorkInProgressBanner() {
       <p className="font-semibold text-[var(--color-gold)]">Help Us Keep This List Accurate</p>
       <p className="mt-1">
         Open mic schedules change frequently. If you notice outdated information or know of an open mic we&apos;re missing,{" "}
-        <Link href="/submit-open-mic" className="text-teal-400 hover:underline">
+        <Link href="/submit-open-mic" className="text-[var(--color-gold)] hover:underline">
           let us know
         </Link>
         . Your input helps keep this directory reliable for everyone.

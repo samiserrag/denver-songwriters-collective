@@ -83,7 +83,7 @@ export default async function AdminDashboardPage() {
           <Link
             key={stat.label}
             href={stat.href}
-            className={`p-4 rounded-lg border text-center hover:border-teal-500 transition-colors ${
+            className={`p-4 rounded-lg border text-center hover:border-[var(--color-gold)] transition-colors ${
               stat.highlight 
                 ? "bg-yellow-900/30 border-yellow-600" 
                 : "bg-neutral-800/50 border-neutral-700"
@@ -103,7 +103,7 @@ export default async function AdminDashboardPage() {
           <Link
             key={link.href}
             href={link.href}
-            className="block p-6 bg-neutral-800/50 border border-neutral-700 rounded-lg hover:border-teal-500 transition-colors"
+            className="block p-6 bg-neutral-800/50 border border-neutral-700 rounded-lg hover:border-[var(--color-gold)] transition-colors"
           >
             <h2 className="text-xl font-semibold text-white mb-2">{link.title}</h2>
             <p className="text-neutral-400 text-sm">{link.description}</p>

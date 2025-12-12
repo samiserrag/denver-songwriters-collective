@@ -25,11 +25,11 @@ export function HostCard({ host, className }: HostCardProps) {
       <article
         className={cn(
           "h-full overflow-hidden rounded-3xl border border-white/10",
-          "bg-[radial-gradient(circle_at_top,_rgba(56,178,172,0.12),_rgba(6,15,44,1))]",
+          "bg-[radial-gradient(circle_at_top,_rgba(255,193,7,0.12),_rgba(6,15,44,1))]",
           "shadow-[0_0_40px_rgba(0,0,0,0.55)]",
           "transition-all duration-300",
-          "hover:-translate-y-1 hover:shadow-[0_0_60px_rgba(56,178,172,0.25)]",
-          "hover:border-teal-500/30",
+          "hover:-translate-y-1 hover:shadow-[0_0_60px_rgba(255,193,7,0.25)]",
+          "hover:border-[var(--color-gold)]/30",
           className
         )}
       >
@@ -60,7 +60,7 @@ export function HostCard({ host, className }: HostCardProps) {
 
           {/* Host badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-teal-500/80 text-white">
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-[var(--color-gold)]/80 text-[var(--color-background)]">
               Open Mic Host
             </span>
           </div>
