@@ -33,7 +33,7 @@ type DBEvent = {
   recurrence_rule?: string | null;
   day_of_week?: string | null;
   venue_id?: string | null;
-  // joined venue fields (may be null if not present)
+  // joined venue fields (required - all open mics must have venue_id)
   venues?: {
     name?: string | null;
     address?: string | null;
@@ -44,9 +44,6 @@ type DBEvent = {
     map_link?: string | null;
     google_maps_url?: string | null;
   } | null;
-  // fallback denormalized fields (if present)
-  venue_name?: string | null;
-  venue_address?: string | null;
   slug?: string | null;
   status?: string | null;
 };
@@ -110,11 +107,13 @@ function formatTime(dbEvent: DBEvent) {
 }
 
 function mapDBEventToEvent(e: DBEvent): EventType {
-  const venueName = e.venues?.name ?? e.venue_name ?? (e.venue_id ? "Venue" : "TBA");
+  // All open mics must have venue_id - no fallback to denormalized fields
+  const venueName = e.venues?.name ?? "Venue TBD";
   const venueCity = e.venues?.city ?? null;
   const venueState = e.venues?.state ?? null;
+  const venueAddress = e.venues?.address ?? null;
   const addressParts = [
-    e.venues?.address ?? e.venue_address,
+    venueAddress,
     venueCity,
     venueState,
   ].filter((v): v is string => Boolean(v));
@@ -136,11 +135,11 @@ function mapDBEventToEvent(e: DBEvent): EventType {
     end_time: e.end_time ?? null,
     recurrence_rule: e.recurrence_rule ?? null,
     day_of_week: e.day_of_week ?? null,
-    venue: venueName ?? "TBA",
-    venue_name: venueName ?? null,
+    venue: venueName,
+    venue_name: venueName,
     venue_city: venueCity,
     venue_state: venueState,
-    venue_address: e.venue_address ?? null,
+    venue_address: venueAddress,
     location: location || undefined,
     mapUrl,
     slug: e.slug ?? undefined,
@@ -209,14 +208,15 @@ export default async function OpenMicsPage({
     new Set((cityRows ?? []).map((r: any) => (r.city ?? "").trim()).filter(Boolean))
   ).sort((a: string, b: string) => a.localeCompare(b));
 
-  // Build events query
+  // Build events query - venue_id required, join with venues table
   let query = supabase
     .from("events")
     .select(
-      `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venue_name,venue_address,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`,
+      `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`,
       { count: "exact" }
     )
-    .eq("event_type", "open_mic");
+    .eq("event_type", "open_mic")
+    .not("venue_id", "is", null); // Only show events with proper venue records
 
   if (selectedDay) {
     query = query.eq("day_of_week", selectedDay);
@@ -252,9 +252,9 @@ export default async function OpenMicsPage({
 
   if (safeSearch) {
     const like = `%${safeSearch}%`;
-    // Fallback to ilike across several fields (excluding joined relation fields which aren't supported in .or())
+    // Search across event fields (note: can't search joined venue fields in .or())
     query = query.or(
-      `title.ilike.${like},venue_name.ilike.${like},notes.ilike.${like},day_of_week.ilike.${like},recurrence_rule.ilike.${like}`
+      `title.ilike.${like},notes.ilike.${like},day_of_week.ilike.${like},recurrence_rule.ilike.${like},description.ilike.${like}`
     );
   }
 
@@ -286,12 +286,18 @@ function parseTimeToMinutes(t?: string | null) {
     }
   }
 
+  // Helper to normalize day_of_week (case-insensitive)
+  function getDayIndex(day: string | null | undefined): number {
+    if (!day) return 7;
+    const normalized = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+    const idx = DAYS.indexOf(normalized);
+    return idx === -1 ? 7 : idx;
+  }
+
   const events = mapped.sort((a, b) => {
-    // Sort by day_of_week (Sunday -> Saturday)
-    const dayA = DAYS.indexOf(a.day_of_week ?? "");
-    const dayB = DAYS.indexOf(b.day_of_week ?? "");
-    const dayIdxA = dayA === -1 ? 7 : dayA;
-    const dayIdxB = dayB === -1 ? 7 : dayB;
+    // Sort by day_of_week (Sunday -> Saturday), case-insensitive
+    const dayIdxA = getDayIndex(a.day_of_week);
+    const dayIdxB = getDayIndex(b.day_of_week);
     if (dayIdxA !== dayIdxB) return dayIdxA - dayIdxB;
 
     // Then by start_time (earliest first)
