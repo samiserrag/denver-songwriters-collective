@@ -12,24 +12,64 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Generate dynamic metadata for SEO and social sharing
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
 
   const { data: post } = await supabase
     .from("blog_posts")
-    .select("title, excerpt")
+    .select("title, excerpt, cover_image_url, author:profiles!blog_posts_author_id_fkey(full_name)")
     .eq("slug", slug)
     .eq("is_published", true)
     .single();
 
   if (!post) {
-    return { title: "Post Not Found | Denver Songwriters Collective" };
+    return {
+      title: "Post Not Found | Denver Songwriters Collective",
+      description: "This blog post could not be found.",
+    };
   }
 
+  const authorName = (post.author as any)?.full_name ?? "Denver Songwriters Collective";
+  const title = post.title;
+  const description = post.excerpt
+    ? post.excerpt.slice(0, 155) + (post.excerpt.length > 155 ? "..." : "")
+    : `Read "${post.title}" by ${authorName} on the Denver Songwriters Collective blog.`;
+
+  const canonicalUrl = `https://denver-songwriters-collective.vercel.app/blog/${slug}`;
+
   return {
-    title: `${post.title} | Denver Songwriters Collective`,
-    description: post.excerpt ?? undefined,
+    title,
+    description,
+    authors: [{ name: authorName }],
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Denver Songwriters Collective",
+      type: "article",
+      locale: "en_US",
+      images: post.cover_image_url
+        ? [
+            {
+              url: post.cover_image_url,
+              width: 1200,
+              height: 630,
+              alt: post.title,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: post.cover_image_url ? [post.cover_image_url] : undefined,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
   };
 }
 

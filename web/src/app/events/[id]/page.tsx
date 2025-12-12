@@ -16,6 +16,7 @@ interface EventHost {
   };
 }
 
+// Generate dynamic metadata for SEO and social sharing
 export async function generateMetadata({
   params
 }: {
@@ -26,15 +27,46 @@ export async function generateMetadata({
 
   const { data: event } = await supabase
     .from("events")
-    .select("title, description, venue_name")
+    .select("title, description, venue_name, day_of_week, start_time, event_type")
     .eq("id", id)
     .single();
 
-  if (!event) return { title: "Event Not Found" };
+  if (!event) {
+    return {
+      title: "Event Not Found | Denver Songwriters Collective",
+      description: "This event could not be found.",
+    };
+  }
+
+  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+    || EVENT_TYPE_CONFIG.other;
+
+  const title = `${event.title} | ${config.label} in Denver`;
+  const description = event.description
+    ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
+    : `Join ${event.title} at ${event.venue_name || "Denver"}${event.day_of_week ? ` on ${event.day_of_week}s` : ""}${event.start_time ? ` at ${event.start_time}` : ""}. Find events with the Denver Songwriters Collective.`;
+
+  const canonicalUrl = `https://denver-songwriters-collective.vercel.app/events/${id}`;
 
   return {
-    title: `${event.title} | DSC`,
-    description: event.description || `${event.title} at ${event.venue_name}`
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Denver Songwriters Collective",
+      type: "website",
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
   };
 }
 
