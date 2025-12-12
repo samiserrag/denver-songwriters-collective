@@ -161,6 +161,14 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - [x] Iframe accessibility - descriptive `title` attributes on Spotify/YouTube embeds
 - [x] Remote image patterns configured in `next.config.ts` for Supabase storage
 
+### Critical LCP Performance Fix (December 2024)
+- [x] **Fixed 16.0s LCP → target <2.5s** - Critical Lighthouse failure resolved
+- [x] Added `font-display: swap` to all 4 Google Fonts (Geist, Geist_Mono, Playfair_Display, Inter) to prevent FOIT
+- [x] Replaced CSS `background-image` in HeroSection with Next.js `<Image priority>` for LCP preloading
+- [x] Created `LazyIframe` component (`web/src/components/home/LazyIframe.tsx`) using IntersectionObserver
+- [x] Deferred Spotify/YouTube iframe loading until near viewport (200px rootMargin)
+- [x] Added `force-dynamic` to notifications page for build compatibility
+
 ### Remaining Pre-Launch Tasks
 - [ ] Create `/public/images/og-image.jpg` (1200x630) for social sharing default
 
@@ -270,3 +278,27 @@ git pull && git merge origin/<worktree-branch> --no-edit && git push
 
 - All protected pages using `supabase.auth.getSession()` require `export const dynamic = "force-dynamic"` to prevent Next.js 16 prerender errors
 - Vercel auto-deploys from `main` branch
+
+---
+
+## Claude Code Rules
+
+### IMPORTANT: Update CLAUDE.md After Every Push
+
+**After every `git push` to production (`main` branch), you MUST update this CLAUDE.md file with:**
+
+1. **What changed** - Brief summary of the changes made
+2. **Files modified** - Key files that were added/changed
+3. **New components/utilities** - Any new reusable components created
+4. **Configuration changes** - Updates to next.config.ts, environment variables, etc.
+5. **Bug fixes** - Any issues resolved
+
+**Add changes to the "Recent Changes" section** with the current date. Keep entries concise but informative for future context.
+
+**Example format:**
+```markdown
+### [Feature/Fix Name] (Month Year)
+- Brief description of what was done
+- Key files: `path/to/file.tsx`
+- New component: `ComponentName` - what it does
+```
