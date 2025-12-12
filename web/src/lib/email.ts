@@ -53,4 +53,5 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 // Admin email for receiving contact form submissions
-export const ADMIN_EMAIL = "admin@denversongwriterscollective.org";
+// Using personal email until Fastmail domain setup is complete
+export const ADMIN_EMAIL = process.env.ADMIN_INBOX_EMAIL || "sami.serrag@gmail.com";
