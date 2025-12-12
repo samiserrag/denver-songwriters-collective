@@ -33,11 +33,11 @@ vi.mock("next/navigation", () => ({
 import Page from "./page";
 
 describe("Open Mics Page", () => {
-  it("renders the Work In Progress banner", async () => {
+  it("renders the Help Us Keep This List Accurate banner", async () => {
     render(await Page({ searchParams: mockSearchParams }));
 
     expect(
-      screen.getByText(/work in progress/i)
+      screen.getByText(/help us keep this list accurate/i)
     ).toBeInTheDocument();
   });
 });
