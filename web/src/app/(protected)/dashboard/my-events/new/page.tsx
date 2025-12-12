@@ -29,13 +29,19 @@ export default async function NewEventPage() {
     }
   }
 
+  // Fetch venues for the selector
+  const { data: venues } = await supabase
+    .from("venues")
+    .select("id, name, address, city, state")
+    .order("name", { ascending: true });
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-2xl mx-auto">
         <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-warm-white)] mb-2">Create Event</h1>
         <p className="text-[var(--color-warm-gray)] mb-8">Set up a new DSC community event</p>
 
-        <EventForm mode="create" />
+        <EventForm mode="create" venues={venues ?? []} />
       </div>
     </main>
   );

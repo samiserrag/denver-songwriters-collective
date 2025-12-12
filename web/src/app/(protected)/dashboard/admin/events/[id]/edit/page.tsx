@@ -42,7 +42,7 @@ export default async function EditEventPage({ params }: PageProps) {
   // Fetch venues for dropdown
   const { data: venues } = await supabase
     .from("venues")
-    .select("id, name")
+    .select("id, name, address, city, state")
     .order("name");
   
   return (

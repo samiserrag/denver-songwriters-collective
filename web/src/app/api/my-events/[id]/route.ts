@@ -95,7 +95,7 @@ export async function PATCH(
   // Only allow updating specific fields
   const allowedFields = [
     "title", "description", "event_type", "capacity", "host_notes",
-    "venue_name", "day_of_week", "start_time",
+    "venue_id", "day_of_week", "start_time",
     "end_time", "status", "recurrence_rule", "cover_image_url"
   ];
 
@@ -104,10 +104,6 @@ export async function PATCH(
     if (body[field] !== undefined) {
       updates[field] = body[field];
     }
-  }
-  // Map 'address' from form to 'venue_address' in database
-  if (body.address !== undefined) {
-    updates.venue_address = body.address;
   }
 
   const { data: event, error } = await supabase

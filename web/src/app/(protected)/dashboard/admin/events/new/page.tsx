@@ -29,7 +29,7 @@ export default async function NewEventPage() {
   // Fetch venues for the dropdown
   const { data: venues } = await supabase
     .from("venues")
-    .select("id, name")
+    .select("id, name, address, city, state")
     .order("name", { ascending: true });
 
   return (

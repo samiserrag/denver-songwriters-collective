@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import VenueSelector from "@/components/admin/VenueSelector";
 
 interface Venue {
   id: string;
   name: string;
+  address?: string;
+  city?: string;
+  state?: string;
 }
 
 interface EventEditFormProps {
@@ -33,12 +37,13 @@ const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
 const STATUSES = ["active", "inactive", "cancelled", "duplicate"];
 const EVENT_TYPES = ["open_mic", "showcase", "song_circle", "workshop", "other"];
 
-export default function EventEditForm({ event, venues }: EventEditFormProps) {
+export default function EventEditForm({ event, venues: initialVenues }: EventEditFormProps) {
   const router = useRouter();
+  const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
+
   const [form, setForm] = useState({
     title: event.title || "",
     venue_id: event.venue_id || "",
@@ -120,22 +125,15 @@ export default function EventEditForm({ event, venues }: EventEditFormProps) {
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-neutral-300 mb-1">Venue *</label>
-        <select
-          name="venue_id"
-          value={form.venue_id}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
-        >
-          <option value="">Select venue...</option>
-          {venues.map(v => (
-            <option key={v.id} value={v.id}>{v.name}</option>
-          ))}
-        </select>
-      </div>
-      
+      <VenueSelector
+        venues={venues}
+        selectedVenueId={form.venue_id}
+        onVenueChange={(venueId) => setForm(prev => ({ ...prev, venue_id: venueId }))}
+        onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
+        required
+        disabled={saving}
+      />
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-neutral-300 mb-1">Day of Week</label>

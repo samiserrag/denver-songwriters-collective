@@ -38,11 +38,12 @@ export default async function EditEventPage({
   const { data: user } = await supabase.auth.getUser();
   const isAdmin = user?.user?.app_metadata?.role === "admin";
 
-  // Fetch event
+  // Fetch event with venue
   const { data: event, error } = await supabase
     .from("events")
     .select(`
       *,
+      venues(id, name, address, city, state),
       event_hosts(
         id, user_id, role, invitation_status,
         user:profiles(id, full_name, avatar_url)
@@ -71,10 +72,19 @@ export default async function EditEventPage({
     redirect("/dashboard");
   }
 
+  // Fetch venues for the selector
+  const { data: venues } = await supabase
+    .from("venues")
+    .select("id, name, address, city, state")
+    .order("name", { ascending: true });
+
   const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
     || EVENT_TYPE_CONFIG.other;
 
   const isPrimaryHost = userHost?.role === "host" || isAdmin;
+
+  // Get venue name from the joined relation
+  const venueName = (event.venues as { name: string } | null)?.name ?? "TBA";
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -92,7 +102,7 @@ export default async function EditEventPage({
               <span className="text-3xl">{config.icon}</span>
               <div>
                 <h1 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-warm-white)]">{event.title}</h1>
-                <p className="text-[var(--color-warm-gray)] text-sm">{config.label} • {event.venue_name}</p>
+                <p className="text-[var(--color-warm-gray)] text-sm">{config.label} • {venueName}</p>
               </div>
             </div>
           </div>
@@ -121,7 +131,7 @@ export default async function EditEventPage({
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">Event Details</h2>
-              <EventForm mode="edit" event={event} />
+              <EventForm mode="edit" venues={venues ?? []} event={event} />
             </section>
 
             {/* Co-hosts (only for primary host) */}

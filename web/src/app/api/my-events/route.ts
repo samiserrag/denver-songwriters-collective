@@ -98,7 +98,7 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   // Validate required fields
-  const required = ["title", "event_type", "venue_name", "start_time"];
+  const required = ["title", "event_type", "venue_id", "start_time"];
   for (const field of required) {
     if (!body[field]) {
       return NextResponse.json({ error: `${field} is required` }, { status: 400 });
@@ -115,8 +115,7 @@ export async function POST(request: Request) {
       is_dsc_event: true,
       capacity: body.capacity || null,
       host_notes: body.host_notes || null,
-      venue_name: body.venue_name,
-      venue_address: body.address || null,
+      venue_id: body.venue_id,
       day_of_week: body.day_of_week || null,
       start_time: body.start_time,
       end_time: body.end_time || null,

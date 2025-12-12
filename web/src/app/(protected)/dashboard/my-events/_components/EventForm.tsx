@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import VenueSelector from "@/components/ui/VenueSelector";
 import {
   EVENT_TYPE_CONFIG,
   DAYS_OF_WEEK,
@@ -11,16 +12,24 @@ import {
   type EventType
 } from "@/types/events";
 
+interface Venue {
+  id: string;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+}
+
 interface EventFormProps {
   mode: "create" | "edit";
+  venues: Venue[];
   event?: {
     id: string;
     title: string;
     description: string | null;
     event_type: string;
     capacity: number | null;
-    venue_name: string | null;
-    venue_address: string | null;
+    venue_id: string | null;
     day_of_week: string | null;
     start_time: string | null;
     end_time: string | null;
@@ -30,8 +39,9 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, event }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event }: EventFormProps) {
   const router = useRouter();
+  const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -42,8 +52,7 @@ export default function EventForm({ mode, event }: EventFormProps) {
     description: event?.description || "",
     event_type: (event?.event_type || "song_circle") as EventType,
     capacity: event?.capacity?.toString() || "",
-    venue_name: event?.venue_name || "",
-    address: event?.venue_address || "",
+    venue_id: event?.venue_id || "",
     day_of_week: event?.day_of_week || "",
     start_time: event?.start_time || "",
     end_time: event?.end_time || "",
@@ -226,35 +235,14 @@ export default function EventForm({ mode, event }: EventFormProps) {
       </div>
 
       {/* Venue */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-          Venue Name *
-        </label>
-        <input
-          type="text"
-          value={formData.venue_name}
-          onChange={(e) => updateField("venue_name", e.target.value)}
-          placeholder="e.g., Mercury Cafe"
-          required
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
-          Address
-        </label>
-        <input
-          type="text"
-          value={formData.address}
-          onChange={(e) => updateField("address", e.target.value)}
-          placeholder="Full street address (e.g., 2199 California St, Denver, CO 80205)"
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-gold)] focus:outline-none"
-        />
-        <p className="mt-1 text-xs text-[var(--color-warm-gray)]">
-          Include city and zip code for Google Maps directions
-        </p>
-      </div>
+      <VenueSelector
+        venues={venues}
+        selectedVenueId={formData.venue_id}
+        onVenueChange={(venueId) => updateField("venue_id", venueId)}
+        onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
+        required
+        disabled={loading}
+      />
 
       {/* Schedule */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
