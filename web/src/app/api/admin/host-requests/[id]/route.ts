@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 
@@ -28,8 +29,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
+  // Use service role client for admin operations that bypass RLS
+  const serviceClient = createServiceRoleClient();
+
   // Get the request
-  const { data: hostRequest, error: fetchError } = await supabase
+  const { data: hostRequest, error: fetchError } = await serviceClient
     .from("host_requests")
     .select("*")
     .eq("id", id)
@@ -41,7 +45,7 @@ export async function PATCH(
 
   if (action === "approve") {
     // Update request status
-    const { error: updateError } = await supabase
+    const { error: updateError } = await serviceClient
       .from("host_requests")
       .update({
         status: "approved",
@@ -56,7 +60,7 @@ export async function PATCH(
     }
 
     // Add to approved hosts
-    const { error: insertError } = await supabase
+    const { error: insertError } = await serviceClient
       .from("approved_hosts")
       .insert({
         user_id: hostRequest.user_id,
@@ -69,7 +73,7 @@ export async function PATCH(
     }
   } else {
     // Reject
-    const { error: rejectError } = await supabase
+    const { error: rejectError } = await serviceClient
       .from("host_requests")
       .update({
         status: "rejected",

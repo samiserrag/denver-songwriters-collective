@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 
@@ -22,7 +23,10 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { data, error } = await supabase
+  // Use service role client for admin operations that bypass RLS
+  const serviceClient = createServiceRoleClient();
+
+  const { data, error } = await serviceClient
     .from("venues")
     .select("*")
     .eq("id", id)
@@ -55,6 +59,9 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Use service role client for admin operations that bypass RLS
+  const serviceClient = createServiceRoleClient();
+
   const body = await request.json();
   const updates: Record<string, string | null> = {};
 
@@ -72,7 +79,7 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await serviceClient
     .from("venues")
     .update(updates)
     .eq("id", id)
@@ -109,7 +116,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { error } = await supabase.from("venues").delete().eq("id", id);
+  // Use service role client for admin operations that bypass RLS
+  const serviceClient = createServiceRoleClient();
+
+  const { error } = await serviceClient.from("venues").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

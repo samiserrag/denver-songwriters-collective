@@ -2,18 +2,24 @@
 
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params;
+    const { id: idStr } = await context.params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
     const supabase = await createSupabaseServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (!profile || profile.role !== 'admin') return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
 
     type PatchBody = Partial<{ status: string; reviewed_by: string }>;
     const body = (await request.json()) as PatchBody;
@@ -25,7 +31,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
       .from('event_update_suggestions')
       .update({ ...allowed, reviewed_at: new Date().toISOString() })
       .eq('id', id)
@@ -43,16 +49,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params;
+    const { id: idStr } = await context.params;
+    const id = parseInt(idStr, 10);
+    if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (!profile || profile.role !== 'admin') return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: 'Access denied' }, { status: 403 });
 
-    const { error } = await supabase
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
+
+    const { error } = await serviceClient
       .from('event_update_suggestions')
       .delete()
       .eq('id', id);

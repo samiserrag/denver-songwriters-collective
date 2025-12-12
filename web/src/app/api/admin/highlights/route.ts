@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // GET all highlights
 export async function GET() {
@@ -11,18 +13,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin") {
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
+
+    const { data, error } = await serviceClient
       .from("monthly_highlights")
       .select(`
         *,
@@ -54,20 +53,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin") {
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
+
     const body = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
       .from("monthly_highlights")
       .insert({
         title: body.title,

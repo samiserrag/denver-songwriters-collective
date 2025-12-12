@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 
@@ -18,7 +19,10 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { data, error } = await supabase
+  // Use service role client for admin operations that bypass RLS
+  const serviceClient = createServiceRoleClient();
+
+  const { data, error } = await serviceClient
     .from("venues")
     .select("*")
     .order("name", { ascending: true });
@@ -46,6 +50,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Use service role client for admin operations that bypass RLS
+  const serviceClient = createServiceRoleClient();
+
   const body = await request.json();
   const { name, address, city, state, zip, website_url, phone, google_maps_url } = body;
 
@@ -53,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Venue name is required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await serviceClient
     .from("venues")
     .insert({
       name: name.trim(),

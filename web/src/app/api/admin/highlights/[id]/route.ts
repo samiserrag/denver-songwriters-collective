@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // GET single highlight
 export async function GET(
@@ -15,17 +17,15 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin") {
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
+
+    const { data, error } = await serviceClient
       .from("monthly_highlights")
       .select(`
         *,
@@ -66,15 +66,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin") {
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
 
     const body = await request.json();
     const updates: Record<string, unknown> = {};
@@ -94,7 +92,7 @@ export async function PATCH(
     if (body.start_date !== undefined) updates.start_date = body.start_date;
     if (body.end_date !== undefined) updates.end_date = body.end_date || null;
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
       .from("monthly_highlights")
       .update(updates)
       .eq("id", id)
@@ -130,17 +128,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin") {
+    const isAdmin = await checkAdminRole(supabase, user.id);
+    if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { error } = await supabase
+    // Use service role client for admin operations that bypass RLS
+    const serviceClient = createServiceRoleClient();
+
+    const { error } = await serviceClient
       .from("monthly_highlights")
       .delete()
       .eq("id", id);
