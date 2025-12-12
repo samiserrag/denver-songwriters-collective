@@ -14,7 +14,6 @@ interface EventEditFormProps {
     id: string;
     title: string;
     venue_id?: string;
-    venue_name?: string;
     day_of_week?: string;
     start_time?: string;
     end_time?: string;
@@ -43,7 +42,6 @@ export default function EventEditForm({ event, venues }: EventEditFormProps) {
   const [form, setForm] = useState({
     title: event.title || "",
     venue_id: event.venue_id || "",
-    venue_name: event.venue_name || "",
     day_of_week: event.day_of_week || "",
     start_time: event.start_time || "",
     end_time: event.end_time || "",
@@ -73,7 +71,6 @@ export default function EventEditForm({ event, venues }: EventEditFormProps) {
       .update({
         title: form.title,
         venue_id: form.venue_id || null,
-        venue_name: form.venue_name,
         day_of_week: form.day_of_week,
         start_time: form.start_time || null,
         end_time: form.end_time || null,
@@ -123,32 +120,20 @@ export default function EventEditForm({ event, venues }: EventEditFormProps) {
         />
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Venue</label>
-          <select
-            name="venue_id"
-            value={form.venue_id}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
-          >
-            <option value="">Select venue...</option>
-            {venues.map(v => (
-              <option key={v.id} value={v.id}>{v.name}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Venue Name (override)</label>
-          <input
-            type="text"
-            name="venue_name"
-            value={form.venue_name}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-neutral-300 mb-1">Venue *</label>
+        <select
+          name="venue_id"
+          value={form.venue_id}
+          onChange={handleChange}
+          required
+          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+        >
+          <option value="">Select venue...</option>
+          {venues.map(v => (
+            <option key={v.id} value={v.id}>{v.name}</option>
+          ))}
+        </select>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
