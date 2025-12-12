@@ -151,6 +151,7 @@ export default function AccordionList({
                       category={(ev as any).category ?? undefined}
                       map_url={(ev as any).mapUrl ?? undefined}
                       searchQuery={searchQuery ?? undefined}
+                      status={(ev as any).status ?? undefined}
                     />
                   ))
                 )}

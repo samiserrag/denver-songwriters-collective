@@ -8,6 +8,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   "all-acts": "bg-yellow-900/40 text-yellow-300",
 };
 
+const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  active: { bg: "bg-emerald-900/60", text: "text-emerald-300", label: "Active" },
+  inactive: { bg: "bg-red-900/60", text: "text-red-300", label: "Inactive" },
+  cancelled: { bg: "bg-red-900/60", text: "text-red-300", label: "Cancelled" },
+  unverified: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Schedule TBD" },
+  needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Schedule TBD" },
+  seasonal: { bg: "bg-sky-900/60", text: "text-sky-300", label: "Seasonal" },
+};
+
 function isValidMapUrl(url?: string | null): boolean {
   if (!url) return false;
   // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
@@ -32,6 +41,7 @@ type Props = {
   searchQuery?: string | null;
   signup_time?: string | null;
   category?: string | null;
+  status?: string | null;
 };
 
 export default function CompactListItem({
@@ -49,6 +59,7 @@ export default function CompactListItem({
   map_url,
   signup_time,
   category,
+  status,
 }: Props) {
   const humanRecurrence = humanizeRecurrence(recurrence_rule ?? null, day_of_week ?? null);
   const start = formatTimeToAMPM(start_time ?? null);
@@ -82,10 +93,21 @@ export default function CompactListItem({
       ? `${_city}, ${_state}`
       : null;
 
+  // Get status styling - show badge for non-active statuses
+  const statusStyle = status ? STATUS_STYLES[status] : null;
+  const showStatusBadge = status && status !== "active";
+
   return (
-    <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-white/6 bg-white/2">
+    <div className={`flex items-center justify-between gap-4 p-3 rounded-lg border ${showStatusBadge ? "border-amber-500/30 bg-amber-950/10" : "border-white/6 bg-white/2"}`}>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
+          {showStatusBadge && statusStyle && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
+              {statusStyle.label}
+            </span>
+          )}
+        </div>
 
         {category && (
           <span className={`text-xs px-2 py-0.5 rounded inline-block mt-1 ${CATEGORY_COLORS[category] || ""}`}>

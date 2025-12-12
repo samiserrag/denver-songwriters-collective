@@ -16,6 +16,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   mixed: "bg-sky-900/60 text-sky-200 border-sky-500/40",
 };
 
+const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  active: { bg: "bg-emerald-900/60", text: "text-emerald-300", border: "border-emerald-500/40", label: "Active" },
+  inactive: { bg: "bg-red-900/60", text: "text-red-300", border: "border-red-500/40", label: "Inactive" },
+  cancelled: { bg: "bg-red-900/60", text: "text-red-300", border: "border-red-500/40", label: "Cancelled" },
+  unverified: { bg: "bg-amber-900/60", text: "text-amber-300", border: "border-amber-500/40", label: "Schedule TBD" },
+  needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", border: "border-amber-500/40", label: "Schedule TBD" },
+  seasonal: { bg: "bg-sky-900/60", text: "text-sky-300", border: "border-sky-500/40", label: "Seasonal" },
+};
+
 type MaybeVenue = Venue | string | undefined | null;
 
 function getVenueName(v: MaybeVenue) {
@@ -169,9 +178,18 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
   const displayLocation =
     _city && String(_city).toUpperCase() !== "UNKNOWN" ? (_state ? `${_city}, ${_state}` : _city) : null;
 
+  // Get status for visual treatment
+  const eventStatus = (event as unknown as { status?: string | null }).status ?? null;
+  const statusStyle = eventStatus ? STATUS_STYLES[eventStatus] : null;
+  const showStatusBadge = eventStatus && eventStatus !== "active";
+
   return (
     <article
-      className="group rounded-xl bg-[var(--color-indigo-950)]/50 border border-white/10 overflow-hidden hover:border-[var(--color-gold)]/50 transition-all duration-200 card-hover"
+      className={`group rounded-xl bg-[var(--color-indigo-950)]/50 border overflow-hidden transition-all duration-200 card-hover ${
+        showStatusBadge
+          ? "border-amber-500/30 hover:border-amber-500/50"
+          : "border-white/10 hover:border-[var(--color-gold)]/50"
+      }`}
       role="article"
     >
       {/* Image/Placeholder */}
@@ -181,6 +199,12 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         {dayOfWeek && (
           <div className="absolute top-3 left-3 px-3 py-1 bg-black/70 backdrop-blur rounded-full">
             <span className="text-[var(--color-gold)] text-sm font-medium">{dayOfWeek}</span>
+          </div>
+        )}
+        {/* Status badge - show prominently for non-active */}
+        {showStatusBadge && statusStyle && (
+          <div className={`absolute bottom-3 left-3 px-3 py-1 backdrop-blur rounded-full ${statusStyle.bg} border ${statusStyle.border}`}>
+            <span className={`text-xs font-semibold uppercase tracking-wide ${statusStyle.text}`}>{statusStyle.label}</span>
           </div>
         )}
         {/* Favorite button */}
