@@ -137,10 +137,21 @@ export function ImageUpload({
       height: (completedCrop.height / 100) * image.height * scaleY,
     };
 
-    // Output size - max 800x800 for avatars
-    const outputSize = Math.min(800, Math.max(pixelCrop.width, pixelCrop.height));
-    canvas.width = outputSize;
-    canvas.height = outputSize;
+    // Output size - max 1200px on the larger dimension, preserving aspect ratio
+    const maxDimension = 1200;
+    let outputWidth: number;
+    let outputHeight: number;
+
+    if (pixelCrop.width >= pixelCrop.height) {
+      outputWidth = Math.min(maxDimension, pixelCrop.width);
+      outputHeight = outputWidth / (pixelCrop.width / pixelCrop.height);
+    } else {
+      outputHeight = Math.min(maxDimension, pixelCrop.height);
+      outputWidth = outputHeight * (pixelCrop.width / pixelCrop.height);
+    }
+
+    canvas.width = Math.round(outputWidth);
+    canvas.height = Math.round(outputHeight);
 
     ctx.drawImage(
       image,
@@ -150,8 +161,8 @@ export function ImageUpload({
       pixelCrop.height,
       0,
       0,
-      outputSize,
-      outputSize
+      canvas.width,
+      canvas.height
     );
 
     return new Promise((resolve) => {
@@ -261,7 +272,13 @@ export function ImageUpload({
           </div>
 
           <p className="text-sm text-[var(--color-warm-gray)] mb-4 text-center">
-            Drag to reposition. The image will be cropped to a {aspectRatio === 1 ? 'square' : `${aspectRatio}:1`} aspect ratio.
+            Drag to reposition. The image will be cropped to a {
+              aspectRatio === 1 ? 'square' :
+              aspectRatio === 16/9 ? '16:9' :
+              aspectRatio === 4/3 ? '4:3' :
+              aspectRatio === 3/2 ? '3:2' :
+              `${Math.round(aspectRatio * 10) / 10}:1`
+            } aspect ratio.
           </p>
 
           {error && (
