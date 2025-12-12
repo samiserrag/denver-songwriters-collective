@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth/useAuth";
 
 // Primary nav links (shown in main nav bar)
 const navLinks = [
-  { href: "/events", label: "Events" },
+  { href: "/events", label: "Happenings" },
   { href: "/open-mics", label: "Open Mics" },
   { href: "/performers", label: "Performers" },
   { href: "/studios", label: "Studios" },

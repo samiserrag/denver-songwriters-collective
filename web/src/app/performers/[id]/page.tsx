@@ -158,15 +158,33 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
                 )}
               </div>
 
-              {/* Open to Collaborations Badge */}
-              {performer.open_to_collabs && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium mb-4">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  Open to Collaborations
-                </span>
-              )}
+              {/* Collaboration & Availability Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {performer.open_to_collabs && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Open to Collaborations
+                  </span>
+                )}
+                {performer.interested_in_cowriting && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Interested in Co-writing
+                  </span>
+                )}
+                {performer.available_for_hire && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Available for Hire
+                  </span>
+                )}
+              </div>
 
               {/* Social Links */}
               {socialLinks.length > 0 && (
@@ -200,6 +218,40 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
             </p>
           </section>
 
+          {/* Genres Section */}
+          {performer.genres && performer.genres.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-white mb-4">Genres</h2>
+              <div className="flex flex-wrap gap-2">
+                {performer.genres.map((genre) => (
+                  <span
+                    key={genre}
+                    className="px-3 py-1.5 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-sm"
+                  >
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Instruments Section */}
+          {performer.instruments && performer.instruments.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-white mb-4">Instruments</h2>
+              <div className="flex flex-wrap gap-2">
+                {performer.instruments.map((instrument) => (
+                  <span
+                    key={instrument}
+                    className="px-3 py-1.5 rounded-full bg-white/10 text-neutral-200 text-sm"
+                  >
+                    {instrument}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Specialties Section */}
           {performer.specialties && performer.specialties.length > 0 && (
             <section className="mb-12">
@@ -222,6 +274,44 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-white mb-4">Favorite Open Mic</h2>
               <p className="text-neutral-300">{performer.favorite_open_mic}</p>
+            </section>
+          )}
+
+          {/* Song Links Section */}
+          {performer.song_links && performer.song_links.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-white mb-4">Listen to My Music</h2>
+              <div className="grid gap-3 max-w-xl">
+                {performer.song_links.map((link, index) => {
+                  // Determine the platform icon based on URL
+                  const getPlatformInfo = (url: string) => {
+                    if (url.includes("spotify")) return { name: "Spotify", color: "bg-[#1DB954]" };
+                    if (url.includes("soundcloud")) return { name: "SoundCloud", color: "bg-[#FF5500]" };
+                    if (url.includes("youtube") || url.includes("youtu.be")) return { name: "YouTube", color: "bg-[#FF0000]" };
+                    if (url.includes("bandcamp")) return { name: "Bandcamp", color: "bg-[#1DA0C3]" };
+                    if (url.includes("apple")) return { name: "Apple Music", color: "bg-[#FA2D48]" };
+                    return { name: "Listen", color: "bg-white/20" };
+                  };
+                  const platform = getPlatformInfo(link);
+                  return (
+                    <Link
+                      key={index}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-white transition-opacity`}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                      <span className="font-medium">{platform.name}</span>
+                      <svg className="w-4 h-4 ml-auto" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </Link>
+                  );
+                })}
+              </div>
             </section>
           )}
 

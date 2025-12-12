@@ -64,10 +64,15 @@ export interface Performer {
   name: string;
   bio?: string;
   genre?: string;
+  genres?: string[];
+  instruments?: string[];
   location?: string;
   avatarUrl?: string;
   isSpotlight?: boolean;
   socialLinks?: SocialLinks;
+  availableForHire?: boolean;
+  interestedInCowriting?: boolean;
+  songLinks?: string[];
 }
 
 export type SlotStatus = "open" | "claimed" | "full";

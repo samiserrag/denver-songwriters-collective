@@ -9,8 +9,8 @@ import type { Event } from "@/types";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 
 export const metadata: Metadata = {
-  title: "Events | Denver Songwriters Collective",
-  description: "Discover songwriter showcases, song circles, workshops, and special events in Denver's music community.",
+  title: "Happenings | Denver Songwriters Collective",
+  description: "Discover songwriter showcases, song circles, workshops, and special happenings in Denver's music community.",
 };
 
 export const dynamic = "force-dynamic";
@@ -144,7 +144,7 @@ export default async function EventsPage() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
-              Events
+              Happenings
             </h1>
             <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
               Showcases, song circles, workshops, and community gatherings

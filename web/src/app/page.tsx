@@ -66,7 +66,7 @@ export default async function HomePage() {
   const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
-  const [upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, spotlightOpenMicsRes, latestBlogRes] = await Promise.all([
+  const [upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
     // Single events query - upcoming events (removed duplicate "featured" query)
     supabase
       .from("events")
@@ -135,6 +135,15 @@ export default async function HomePage() {
       .order("published_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Monthly highlights for the homepage
+    supabase
+      .from("monthly_highlights")
+      .select("*")
+      .eq("is_active", true)
+      .lte("start_date", new Date().toISOString().split("T")[0])
+      .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split("T")[0]}`)
+      .order("display_order", { ascending: true })
+      .limit(4),
   ]);
 
   const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
@@ -163,16 +172,29 @@ export default async function HomePage() {
       : latestBlog.author
     : null;
 
+  // Monthly highlights
+  interface Highlight {
+    id: string;
+    title: string;
+    description: string | null;
+    highlight_type: string;
+    image_url: string | null;
+    link_url: string | null;
+    link_text: string | null;
+  }
+  const highlights: Highlight[] = highlightsRes.data ?? [];
+
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasFeaturedPerformers = featuredPerformers.length > 0;
   const hasFeaturedHosts = featuredHosts.length > 0;
   const hasFeaturedStudios = featuredStudios.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = !!latestBlog;
+  const hasHighlights = highlights.length > 0;
 
   return (
     <>
-      <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/red-rocks-sunset.png">
+      <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/open-mic-placeholder.jpg">
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Login-aware greeting */}
@@ -210,7 +232,7 @@ export default async function HomePage() {
                     href="/events"
                     className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
                   >
-                    Browse Events
+                    Browse Happenings
                   </Link>
                 </>
               ) : (
@@ -225,7 +247,7 @@ export default async function HomePage() {
                     href="/events"
                     className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
                   >
-                    Browse Events
+                    Browse Happenings
                   </Link>
                 </>
               )}
@@ -291,6 +313,65 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Monthly Highlights */}
+      {hasHighlights && (
+        <section className="py-10 px-6 border-t border-white/5 bg-gradient-to-b from-[var(--color-gold)]/5 to-transparent">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 text-center">
+              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                This Month&apos;s Highlights
+              </h2>
+              <p className="text-[var(--color-warm-gray)]">
+                Featured news and announcements from the community.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {highlights.map((highlight) => (
+                <div
+                  key={highlight.id}
+                  className="p-6 bg-[var(--color-indigo-950)]/50 border border-[var(--color-gold)]/20 rounded-xl hover:border-[var(--color-gold)]/50 transition-all"
+                >
+                  {highlight.image_url && (
+                    <div className="relative h-40 mb-4 rounded-lg overflow-hidden">
+                      <img
+                        src={highlight.image_url}
+                        alt={highlight.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] mb-3 inline-block">
+                    {highlight.highlight_type === "event" && "Featured Event"}
+                    {highlight.highlight_type === "performer" && "Featured Artist"}
+                    {highlight.highlight_type === "venue" && "Featured Venue"}
+                    {highlight.highlight_type === "custom" && "Announcement"}
+                  </span>
+                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2">
+                    {highlight.title}
+                  </h3>
+                  {highlight.description && (
+                    <p className="text-[var(--color-warm-gray)] text-sm mb-4 line-clamp-3">
+                      {highlight.description}
+                    </p>
+                  )}
+                  {highlight.link_url && (
+                    <Link
+                      href={highlight.link_url}
+                      className="inline-flex items-center gap-2 text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm font-medium"
+                    >
+                      {highlight.link_text || "Learn More"}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Playlists */}
       <section className="py-10 px-6 border-t border-white/5">
@@ -547,14 +628,14 @@ export default async function HomePage() {
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Upcoming Events
+                  Upcoming Happenings
                 </h2>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                  All upcoming showcases, open mics, and special nights.
+                  All upcoming showcases, song circles, and special nights.
                 </p>
               </div>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/events">View all events</Link>
+                <Link href="/events">View all happenings</Link>
               </Button>
             </div>
             {hasUpcomingEvents ? (

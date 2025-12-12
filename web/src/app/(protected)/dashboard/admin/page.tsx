@@ -59,6 +59,7 @@ export default async function AdminDashboardPage() {
   ];
 
   const adminLinks = [
+    { href: "/dashboard/admin/highlights", title: "Monthly Highlights", description: "Feature content on the homepage - events, performers, announcements" },
     { href: "/dashboard/admin/events", title: "Manage Events", description: "Edit event details, status, and featured rankings" },
     { href: "/dashboard/admin/dsc-events", title: "DSC Events", description: "View and moderate community-created events" },
     { href: "/dashboard/admin/event-update-suggestions", title: "Review Suggestions", description: "Approve or reject user-submitted corrections" },

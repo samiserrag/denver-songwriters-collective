@@ -24,6 +24,12 @@ type FormData = {
   open_to_collabs: boolean;
   specialties: string[];
   favorite_open_mic: string;
+  // New member directory fields
+  available_for_hire: boolean;
+  interested_in_cowriting: boolean;
+  genres: string[];
+  instruments: string[];
+  song_links: string[];
 };
 
 const initialFormData: FormData = {
@@ -42,6 +48,12 @@ const initialFormData: FormData = {
   open_to_collabs: false,
   specialties: [],
   favorite_open_mic: "",
+  // New member directory fields
+  available_for_hire: false,
+  interested_in_cowriting: false,
+  genres: [],
+  instruments: [],
+  song_links: [],
 };
 
 const SPECIALTY_OPTIONS = [
@@ -57,6 +69,48 @@ const SPECIALTY_OPTIONS = [
   "Live Performance",
   "Music Theory",
   "Arrangement",
+];
+
+const GENRE_OPTIONS = [
+  "Folk",
+  "Americana",
+  "Country",
+  "Rock",
+  "Indie",
+  "Pop",
+  "Singer-Songwriter",
+  "Blues",
+  "Jazz",
+  "R&B/Soul",
+  "Hip-Hop",
+  "Electronic",
+  "Classical",
+  "Bluegrass",
+  "Alternative",
+  "Punk",
+  "Metal",
+  "World",
+  "Experimental",
+];
+
+const INSTRUMENT_OPTIONS = [
+  "Acoustic Guitar",
+  "Electric Guitar",
+  "Bass Guitar",
+  "Piano/Keyboard",
+  "Drums/Percussion",
+  "Violin/Fiddle",
+  "Cello",
+  "Banjo",
+  "Mandolin",
+  "Ukulele",
+  "Harmonica",
+  "Saxophone",
+  "Trumpet",
+  "Flute",
+  "Voice",
+  "DJ/Electronic",
+  "Other",
 ];
 
 export default function EditProfilePage() {
@@ -103,6 +157,12 @@ export default function EditProfilePage() {
           open_to_collabs: (profile as any).open_to_collabs || false,
           specialties: (profile as any).specialties || [],
           favorite_open_mic: (profile as any).favorite_open_mic || "",
+          // New member directory fields
+          available_for_hire: (profile as any).available_for_hire || false,
+          interested_in_cowriting: (profile as any).interested_in_cowriting || false,
+          genres: (profile as any).genres || [],
+          instruments: (profile as any).instruments || [],
+          song_links: (profile as any).song_links || [],
         });
       }
       setLoading(false);
@@ -198,6 +258,12 @@ export default function EditProfilePage() {
           open_to_collabs: formData.open_to_collabs,
           specialties: formData.specialties.length > 0 ? formData.specialties : null,
           favorite_open_mic: formData.favorite_open_mic || null,
+          // New member directory fields
+          available_for_hire: formData.available_for_hire,
+          interested_in_cowriting: formData.interested_in_cowriting,
+          genres: formData.genres.length > 0 ? formData.genres : null,
+          instruments: formData.instruments.length > 0 ? formData.instruments : null,
+          song_links: formData.song_links.length > 0 ? formData.song_links : null,
         })
         .eq("id", user.id);
 
@@ -316,28 +382,87 @@ export default function EditProfilePage() {
               </div>
             </section>
 
-            {/* Collaboration (Performers only) */}
+            {/* Music & Skills (Performers only) */}
             {userRole === "performer" && (
               <section>
                 <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
-                  Collaboration
+                  Music & Skills
                 </h2>
                 <p className="text-sm text-[var(--color-warm-gray)] mb-4">
-                  Let other musicians know you&apos;re open to working together.
+                  Help others find you based on your musical style and abilities.
                 </p>
-                <div className="space-y-4">
-                  {/* Open to Collaborations Toggle */}
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.open_to_collabs}
-                      onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
-                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-gold)] focus:ring-[var(--color-gold)]/50"
-                    />
-                    <span className="text-[var(--color-warm-white)]">
-                      I&apos;m open to collaborations
-                    </span>
-                  </label>
+                <div className="space-y-6">
+                  {/* Genres */}
+                  <div>
+                    <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                      Genres
+                    </label>
+                    <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                      Select the genres you play or write
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {GENRE_OPTIONS.map((genre) => (
+                        <label
+                          key={genre}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                            formData.genres.includes(genre)
+                              ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold)]"
+                              : "border-white/10 hover:border-white/20 text-[var(--color-warm-gray-light)]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.genres.includes(genre)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({ ...prev, genres: [...prev.genres, genre] }));
+                              } else {
+                                setFormData(prev => ({ ...prev, genres: prev.genres.filter(g => g !== genre) }));
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm">{genre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Instruments */}
+                  <div>
+                    <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                      Instruments
+                    </label>
+                    <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                      Select the instruments you play
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {INSTRUMENT_OPTIONS.map((instrument) => (
+                        <label
+                          key={instrument}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                            formData.instruments.includes(instrument)
+                              ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold)]"
+                              : "border-white/10 hover:border-white/20 text-[var(--color-warm-gray-light)]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.instruments.includes(instrument)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({ ...prev, instruments: [...prev.instruments, instrument] }));
+                              } else {
+                                setFormData(prev => ({ ...prev, instruments: prev.instruments.filter(i => i !== instrument) }));
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm">{instrument}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* Specialties */}
                   <div>
@@ -380,6 +505,58 @@ export default function EditProfilePage() {
                       ))}
                     </div>
                   </div>
+                </div>
+              </section>
+            )}
+
+            {/* Collaboration & Availability (Performers only) */}
+            {userRole === "performer" && (
+              <section>
+                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                  Collaboration & Availability
+                </h2>
+                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                  Let other musicians know how you&apos;d like to connect.
+                </p>
+                <div className="space-y-4">
+                  {/* Availability Toggles */}
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.open_to_collabs}
+                        onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
+                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-gold)] focus:ring-[var(--color-gold)]/50"
+                      />
+                      <span className="text-[var(--color-warm-white)]">
+                        I&apos;m open to collaborations
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.interested_in_cowriting}
+                        onChange={(e) => setFormData(prev => ({ ...prev, interested_in_cowriting: e.target.checked }))}
+                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-gold)] focus:ring-[var(--color-gold)]/50"
+                      />
+                      <span className="text-[var(--color-warm-white)]">
+                        I&apos;m interested in co-writing
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.available_for_hire}
+                        onChange={(e) => setFormData(prev => ({ ...prev, available_for_hire: e.target.checked }))}
+                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-gold)] focus:ring-[var(--color-gold)]/50"
+                      />
+                      <span className="text-[var(--color-warm-white)]">
+                        I&apos;m available for hire (paid gigs, session work, etc.)
+                      </span>
+                    </label>
+                  </div>
 
                   {/* Favorite Open Mic */}
                   <div>
@@ -396,6 +573,59 @@ export default function EditProfilePage() {
                       className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
                     />
                   </div>
+                </div>
+              </section>
+            )}
+
+            {/* Song Links (Performers only) */}
+            {userRole === "performer" && (
+              <section>
+                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                  Your Music
+                </h2>
+                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                  Share links to your songs on SoundCloud, Bandcamp, YouTube, etc.
+                </p>
+                <div className="space-y-3">
+                  {formData.song_links.map((link, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="url"
+                        value={link}
+                        onChange={(e) => {
+                          const newLinks = [...formData.song_links];
+                          newLinks[index] = e.target.value;
+                          setFormData(prev => ({ ...prev, song_links: newLinks }));
+                        }}
+                        placeholder="https://soundcloud.com/... or https://youtu.be/..."
+                        className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            song_links: prev.song_links.filter((_, i) => i !== index)
+                          }));
+                        }}
+                        className="px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        song_links: [...prev.song_links, ""]
+                      }));
+                    }}
+                    className="px-4 py-2 rounded-lg border border-white/20 text-[var(--color-warm-gray-light)] hover:border-white/40 hover:text-white transition-colors"
+                  >
+                    + Add Song Link
+                  </button>
                 </div>
               </section>
             )}

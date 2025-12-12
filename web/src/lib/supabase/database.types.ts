@@ -964,6 +964,95 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_highlights: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          highlight_type: string
+          event_id: string | null
+          performer_id: string | null
+          venue_id: string | null
+          image_url: string | null
+          link_url: string | null
+          link_text: string | null
+          display_order: number | null
+          is_active: boolean | null
+          start_date: string | null
+          end_date: string | null
+          created_at: string | null
+          updated_at: string | null
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          highlight_type: string
+          event_id?: string | null
+          performer_id?: string | null
+          venue_id?: string | null
+          image_url?: string | null
+          link_url?: string | null
+          link_text?: string | null
+          display_order?: number | null
+          is_active?: boolean | null
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          highlight_type?: string
+          event_id?: string | null
+          performer_id?: string | null
+          venue_id?: string | null
+          image_url?: string | null
+          link_url?: string | null
+          link_text?: string | null
+          display_order?: number | null
+          is_active?: boolean | null
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_highlights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       open_mic_claims: {
         Row: {
           created_at: string | null
@@ -1062,6 +1151,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          available_for_hire: boolean | null
           bio: string | null
           cashapp_handle: string | null
           created_at: string | null
@@ -1070,14 +1160,18 @@ export type Database = {
           featured_at: string | null
           featured_rank: number | null
           full_name: string | null
+          genres: string[] | null
           id: string
           instagram_url: string | null
+          instruments: string[] | null
+          interested_in_cowriting: boolean | null
           is_featured: boolean | null
           is_host: boolean | null
           onboarding_complete: boolean | null
           open_to_collabs: boolean | null
           paypal_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          song_links: string[] | null
           specialties: string[] | null
           spotify_url: string | null
           spotlight_type: string | null
@@ -1089,6 +1183,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          available_for_hire?: boolean | null
           bio?: string | null
           cashapp_handle?: string | null
           created_at?: string | null
@@ -1097,14 +1192,18 @@ export type Database = {
           featured_at?: string | null
           featured_rank?: number | null
           full_name?: string | null
+          genres?: string[] | null
           id?: string
           instagram_url?: string | null
+          instruments?: string[] | null
+          interested_in_cowriting?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          song_links?: string[] | null
           specialties?: string[] | null
           spotify_url?: string | null
           spotlight_type?: string | null
@@ -1116,6 +1215,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          available_for_hire?: boolean | null
           bio?: string | null
           cashapp_handle?: string | null
           created_at?: string | null
@@ -1124,14 +1224,18 @@ export type Database = {
           featured_at?: string | null
           featured_rank?: number | null
           full_name?: string | null
+          genres?: string[] | null
           id?: string
           instagram_url?: string | null
+          instruments?: string[] | null
+          interested_in_cowriting?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          song_links?: string[] | null
           specialties?: string[] | null
           spotify_url?: string | null
           spotlight_type?: string | null
