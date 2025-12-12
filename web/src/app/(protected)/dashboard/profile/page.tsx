@@ -15,6 +15,7 @@ type FormData = {
   instagram_url: string;
   facebook_url: string;
   twitter_url: string;
+  tiktok_url: string;
   youtube_url: string;
   spotify_url: string;
   website_url: string;
@@ -39,6 +40,7 @@ const initialFormData: FormData = {
   instagram_url: "",
   facebook_url: "",
   twitter_url: "",
+  tiktok_url: "",
   youtube_url: "",
   spotify_url: "",
   website_url: "",
@@ -148,6 +150,7 @@ export default function EditProfilePage() {
           instagram_url: (profile as any).instagram_url || "",
           facebook_url: (profile as any).facebook_url || "",
           twitter_url: (profile as any).twitter_url || "",
+          tiktok_url: (profile as any).tiktok_url || "",
           youtube_url: (profile as any).youtube_url || "",
           spotify_url: (profile as any).spotify_url || "",
           website_url: (profile as any).website_url || "",
@@ -249,6 +252,7 @@ export default function EditProfilePage() {
           instagram_url: formData.instagram_url || null,
           facebook_url: formData.facebook_url || null,
           twitter_url: formData.twitter_url || null,
+          tiktok_url: formData.tiktok_url || null,
           youtube_url: formData.youtube_url || null,
           spotify_url: formData.spotify_url || null,
           website_url: formData.website_url || null,
@@ -664,6 +668,20 @@ export default function EditProfilePage() {
                     value={formData.facebook_url}
                     onChange={handleChange}
                     placeholder="https://facebook.com/..."
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="tiktok_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                    TikTok
+                  </label>
+                  <input
+                    type="url"
+                    id="tiktok_url"
+                    name="tiktok_url"
+                    value={formData.tiktok_url}
+                    onChange={handleChange}
+                    placeholder="https://tiktok.com/@..."
                     className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
                   />
                 </div>

@@ -15,6 +15,7 @@ type FormData = {
   twitter_url: string;
   youtube_url: string;
   spotify_url: string;
+  tiktok_url: string;
   website_url: string;
   venmo_handle: string;
   cashapp_handle: string;
@@ -33,6 +34,7 @@ const initialFormData: FormData = {
   twitter_url: "",
   youtube_url: "",
   spotify_url: "",
+  tiktok_url: "",
   website_url: "",
   venmo_handle: "",
   cashapp_handle: "",
@@ -95,6 +97,7 @@ export default function ProfileOnboarding() {
           twitter_url: (profile as any).twitter_url || "",
           youtube_url: (profile as any).youtube_url || "",
           spotify_url: (profile as any).spotify_url || "",
+          tiktok_url: (profile as any).tiktok_url || "",
           website_url: (profile as any).website_url || "",
           venmo_handle: (profile as any).venmo_handle || "",
           cashapp_handle: (profile as any).cashapp_handle || "",
@@ -197,6 +200,7 @@ export default function ProfileOnboarding() {
           twitter_url: formData.twitter_url || null,
           youtube_url: formData.youtube_url || null,
           spotify_url: formData.spotify_url || null,
+          tiktok_url: formData.tiktok_url || null,
           website_url: formData.website_url || null,
           venmo_handle: formData.venmo_handle || null,
           cashapp_handle: formData.cashapp_handle || null,
@@ -426,6 +430,20 @@ export default function ProfileOnboarding() {
                   value={formData.spotify_url}
                   onChange={handleChange}
                   placeholder="https://open.spotify.com/artist/..."
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                />
+              </div>
+              <div>
+                <label htmlFor="tiktok_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  TikTok
+                </label>
+                <input
+                  type="url"
+                  id="tiktok_url"
+                  name="tiktok_url"
+                  value={formData.tiktok_url}
+                  onChange={handleChange}
+                  placeholder="https://tiktok.com/@..."
                   className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
                 />
               </div>
