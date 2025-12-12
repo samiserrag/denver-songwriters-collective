@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,29 +49,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send welcome email via Resend
-    const resendApiKey = process.env.RESEND_API_KEY;
-
-    if (resendApiKey) {
-      try {
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "Denver Songwriters Collective <onboarding@resend.dev>",
-            to: normalizedEmail,
-            subject: "Welcome to the Denver Songwriters Collective!",
-            html: getWelcomeEmailHtml(),
-            text: getWelcomeEmailText(),
-          }),
-        });
-      } catch (emailError) {
-        // Log but don't fail the signup if email fails
-        console.error("Welcome email error:", emailError);
-      }
+    // Send welcome email via Fastmail SMTP
+    try {
+      await sendEmail({
+        to: normalizedEmail,
+        subject: "Welcome to the Denver Songwriters Collective!",
+        html: getWelcomeEmailHtml(),
+        text: getWelcomeEmailText(),
+      });
+    } catch (emailError) {
+      // Log but don't fail the signup if email fails
+      console.error("Welcome email error:", emailError);
     }
 
     return NextResponse.json({ success: true });
@@ -135,7 +124,7 @@ function getWelcomeEmailHtml(): string {
               <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                 <tr>
                   <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); border-radius: 8px;">
-                    <a href="https://denversongwriters.co/open-mics" style="display: inline-block; padding: 14px 28px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 16px;">
+                    <a href="https://denver-songwriters-collective.vercel.app/open-mics" style="display: inline-block; padding: 14px 28px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 16px;">
                       Browse Open Mics
                     </a>
                   </td>
@@ -152,12 +141,12 @@ function getWelcomeEmailHtml(): string {
               </p>
               <p style="margin: 0 0 12px 0; color: #525252; font-size: 12px;">
                 Denver Songwriters Collective<br>
-                <a href="https://denversongwriters.co" style="color: #d4a853; text-decoration: none;">denversongwriters.co</a>
+                <a href="https://denver-songwriters-collective.vercel.app" style="color: #d4a853; text-decoration: none;">denver-songwriters-collective.vercel.app</a>
               </p>
               <p style="margin: 0; color: #525252; font-size: 11px;">
-                <a href="https://denversongwriters.co/privacy" style="color: #737373; text-decoration: underline;">Privacy Policy</a>
+                <a href="https://denver-songwriters-collective.vercel.app/privacy" style="color: #737373; text-decoration: underline;">Privacy Policy</a>
                 &nbsp;|&nbsp;
-                <a href="https://denversongwriters.co/contact" style="color: #737373; text-decoration: underline;">Contact Us</a>
+                <a href="https://denver-songwriters-collective.vercel.app/contact" style="color: #737373; text-decoration: underline;">Contact Us</a>
               </p>
             </td>
           </tr>
@@ -182,14 +171,14 @@ Here's what you can expect:
 - Tips and resources for songwriters
 - Community news and opportunities
 
-Browse open mics: https://denversongwriters.co/open-mics
+Browse open mics: https://denver-songwriters-collective.vercel.app/open-mics
 
 Find your people. Find your stage. Find your songs.
 
 Denver Songwriters Collective
-https://denversongwriters.co
+https://denver-songwriters-collective.vercel.app
 
-Privacy Policy: https://denversongwriters.co/privacy
-Contact Us: https://denversongwriters.co/contact
+Privacy Policy: https://denver-songwriters-collective.vercel.app/privacy
+Contact Us: https://denver-songwriters-collective.vercel.app/contact
 `;
 }

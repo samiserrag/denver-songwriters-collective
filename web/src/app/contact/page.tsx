@@ -119,8 +119,8 @@ export default function ContactPage() {
           {status === "error" && (
             <p className="text-red-400 text-sm">
               Something went wrong. Please try again or email us directly at{" "}
-              <a href="mailto:sami.serrag@gmail.com" className="underline">
-                sami.serrag@gmail.com
+              <a href="mailto:admin@denversongwriterscollective.org" className="underline">
+                admin@denversongwriterscollective.org
               </a>
             </p>
           )}
@@ -138,8 +138,8 @@ export default function ContactPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Other Ways to Reach Us</h2>
           <p className="text-neutral-400">
             Email:{" "}
-            <a href="mailto:sami.serrag@gmail.com" className="text-[var(--color-gold)] hover:underline">
-              sami.serrag@gmail.com
+            <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-gold)] hover:underline">
+              admin@denversongwriterscollective.org
             </a>
           </p>
         </div>

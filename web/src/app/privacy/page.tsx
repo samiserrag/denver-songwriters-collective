@@ -79,8 +79,8 @@ export default function PrivacyPage() {
             <h2 className="font-display text-2xl text-white mb-4">Contact</h2>
             <p className="text-neutral-300">
               Questions? Email us at{" "}
-              <a href="mailto:privacy@denversongwriters.co" className="text-gold-400 hover:text-gold-300">
-                privacy@denversongwriters.co
+              <a href="mailto:admin@denversongwriterscollective.org" className="text-gold-400 hover:text-gold-300">
+                admin@denversongwriterscollective.org
               </a>
             </p>
           </section>

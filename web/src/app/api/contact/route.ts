@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sendEmail, ADMIN_EMAIL } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,36 +12,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send email via Resend
-    const resendApiKey = process.env.RESEND_API_KEY;
-
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY not configured");
-      return NextResponse.json(
-        { error: "Email service not configured" },
-        { status: 500 }
-      );
-    }
-
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Denver Songwriters Collective <onboarding@resend.dev>",
-        to: "sami.serrag@gmail.com",
-        reply_to: email,
-        subject: `[DSC Contact] Message from ${name}`,
-        html: getContactEmailHtml(name, email, message),
-        text: getContactEmailText(name, email, message),
-      }),
+    const success = await sendEmail({
+      to: ADMIN_EMAIL,
+      replyTo: email,
+      subject: `[DSC Contact] Message from ${name}`,
+      html: getContactEmailHtml(name, email, message),
+      text: getContactEmailText(name, email, message),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Resend error:", errorData);
+    if (!success) {
       return NextResponse.json(
         { error: "Failed to send email" },
         { status: 500 }
