@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "My Events | DSC"
 };

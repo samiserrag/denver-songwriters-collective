@@ -222,12 +222,24 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 # Development
 cd web && npm run dev
 
-# Build
-cd web && npm run build
+# Build (from worktree web directory)
+cd web && npx next build
 
 # Type check
 cd web && npm run lint
 
 # Generate Supabase types (after schema changes)
 npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/lib/supabase/database.types.ts
+
+# Deploy from worktree to production
+git push origin <worktree-branch>
+cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective
+git pull && git merge origin/<worktree-branch> --no-edit && git push
 ```
+
+---
+
+## Build Notes
+
+- All protected pages using `supabase.auth.getSession()` require `export const dynamic = "force-dynamic"` to prevent Next.js 16 prerender errors
+- Vercel auto-deploys from `main` branch
