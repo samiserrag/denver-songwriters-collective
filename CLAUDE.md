@@ -173,9 +173,32 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Recent Changes (December 2024)
 
+### Teal → Gold Color Migration (Complete)
+- Migrated all ~100 teal color instances to gold theme across 40+ files
+- Public pages: open-mics, events, submit-open-mic, performers
+- Components: MapViewButton, DayJumpBar, AccordionList, CompactListItem, EventCard, WorkInProgressBanner, HostCard, RequestHostButton
+- Admin/dashboard: VenueSelector, UserDirectoryTable, BlogPostForm, BlogPostsTable, GalleryAdminTabs, AdminHighlightsClient, CoHostManager
+- Forms: VolunteerSignupForm, EventSuggestionForm, OpenMicReportForm
+- Utilities: highlight.ts, PlaceholderImage.tsx, ProfileQRCode.tsx
+
+### Member Filters & Onboarding Enhancements
+- Added "Open to Collaborations" filter to Members page
+- Added collapsible "Specialties" filter section
+- Expanded SPECIALTY_OPTIONS to 70+ items organized by category:
+  - Instruments (Strings incl. Ukulele/Baritone Ukulele, Keys, Other)
+  - Vocals, Songwriting Skills, Production & Technical
+  - Performance, Music Knowledge, Genre Expertise, Other Skills
+- Added `interested_in_cowriting` and `available_for_hire` checkboxes to onboarding
+- Fixed filter label consistency ("Interested in Cowriting")
+
+### Homepage Consolidation
+- Merged three separate Spotlight sections (Performers, Open Mics, Hosts) into unified "Community Spotlight"
+- Fixed blog image hover issue (removed scale animation)
+- Changed blog image to aspect-square for consistent mobile sizing
+
 ### Members Directory
 - Unified `/members` page consolidating performers, studios, hosts
-- Filter by role, availability, genres, instruments
+- Filter by role, availability, genres, instruments, specialties
 - Redirects from `/performers` and `/studios` to `/members`
 
 ### Venue Data Enrichment
