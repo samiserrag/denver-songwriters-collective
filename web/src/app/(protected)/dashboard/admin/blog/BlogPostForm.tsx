@@ -22,7 +22,6 @@ interface BlogPost {
   content: string;
   cover_image_url: string | null;
   is_published: boolean;
-  is_approved: boolean;
   tags: string[];
 }
 
@@ -46,7 +45,6 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
     cover_image_url: post?.cover_image_url ?? "",
     tags: post?.tags?.join(", ") ?? "",
     is_published: post?.is_published ?? false,
-    is_approved: post?.is_approved ?? isAdmin, // Auto-approve for admins
   });
 
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialGallery);
@@ -230,7 +228,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       cover_image_url: formData.cover_image_url || null,
       tags: tagsArray,
       is_published: formData.is_published,
-      is_approved: isAdmin ? formData.is_approved : false, // Only admins can approve
+      is_approved: isAdmin, // Auto-approve for admins, require approval for non-admins
       published_at: formData.is_published && !post?.is_published
         ? new Date().toISOString()
         : undefined,
@@ -661,29 +659,6 @@ Regular paragraph text here. Use **bold** for emphasis.
         </div>
       </div>
 
-      {/* Admin: Approval Toggle */}
-      {isAdmin && (
-        <div className="flex items-center gap-3 p-4 bg-amber-900/20 rounded-lg border border-amber-700/50">
-          <input
-            type="checkbox"
-            id="is_approved"
-            checked={formData.is_approved}
-            onChange={(e) => setFormData((prev) => ({ ...prev, is_approved: e.target.checked }))}
-            className="w-5 h-5 rounded bg-neutral-800 border-neutral-600 text-amber-500 focus:ring-amber-500"
-          />
-          <div>
-            <label htmlFor="is_approved" className="text-white font-medium cursor-pointer">
-              Approve for public display
-            </label>
-            <p className="text-neutral-500 text-sm">
-              {formData.is_approved
-                ? "This post is approved and will be visible when published"
-                : "This post is pending approval"
-              }
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-4 border-t border-neutral-700">
