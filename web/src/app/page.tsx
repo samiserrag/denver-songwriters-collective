@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HeroSection, PageContainer } from "@/components/layout";
 import { EventGrid } from "@/components/events";
@@ -334,10 +335,12 @@ export default async function HomePage() {
                 >
                   {highlight.image_url && (
                     <div className="relative h-40 mb-4 rounded-lg overflow-hidden">
-                      <img
+                      <Image
                         src={highlight.image_url}
                         alt={highlight.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover"
                       />
                     </div>
                   )}
@@ -396,6 +399,7 @@ export default async function HomePage() {
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                 loading="lazy"
                 className="rounded-xl"
+                title="Denver Songwriters Collective Spotify Playlist - Community music from local songwriters"
               />
             </div>
             {/* YouTube Playlist */}
@@ -404,7 +408,7 @@ export default async function HomePage() {
                 width="100%"
                 height="100%"
                 src="https://www.youtube.com/embed/videoseries?si=JA6QrSYIVBwpfOi1&list=PL0HB-8-Ot_s5KVdniord-fsKK3rPz3O7e"
-                title="YouTube video player"
+                title="Denver Songwriters Collective YouTube Playlist - Live performances and music videos"
                 frameBorder={0}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerPolicy="strict-origin-when-cross-origin"
@@ -526,10 +530,12 @@ export default async function HomePage() {
               <div className="grid md:grid-cols-2 gap-8 items-center bg-[var(--color-indigo-950)]/30 border border-white/10 rounded-2xl overflow-hidden hover:border-[var(--color-gold)]/30 transition-all">
                 {latestBlog.cover_image_url ? (
                   <div className="relative h-64 md:h-80 overflow-hidden">
-                    <img
+                    <Image
                       src={latestBlog.cover_image_url}
                       alt={latestBlog.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--color-background)]/50 md:hidden" />
                   </div>
@@ -563,10 +569,12 @@ export default async function HomePage() {
                   )}
                   <div className="flex items-center gap-3">
                     {latestBlogAuthor?.avatar_url ? (
-                      <img
+                      <Image
                         src={latestBlogAuthor.avatar_url}
                         alt={latestBlogAuthor.full_name ?? "Author"}
-                        className="w-10 h-10 rounded-full object-cover"
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">

@@ -1,10 +1,67 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 import type { EventWithVenue } from "@/types/db";
 import Link from "next/link";
 import { highlight, escapeHtml, linkifyUrls } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
+
+// Generate dynamic metadata for SEO and social sharing
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createSupabaseServerClient();
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+
+  const { data: event } = isUUID
+    ? await supabase.from("events").select("*, venue:venues(name, city)").eq("id", slug).single()
+    : await supabase.from("events").select("*, venue:venues(name, city)").eq("slug", slug).single();
+
+  if (!event) {
+    return {
+      title: "Open Mic Not Found | Denver Songwriters Collective",
+      description: "This open mic could not be found.",
+    };
+  }
+
+  const venueName = event.venue?.name ?? "Denver";
+  const venueCity = event.venue?.city ?? "Denver";
+  const dayText = event.day_of_week ? `${event.day_of_week}s` : "";
+  const timeText = event.start_time ? formatTimeToAMPM(event.start_time) : "";
+
+  const title = `${event.title} | Open Mic in ${venueCity}`;
+  const description = event.description
+    ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
+    : `Join ${event.title} at ${venueName}${dayText ? ` every ${dayText}` : ""}${timeText ? ` at ${timeText}` : ""}. Find open mics in Denver with the Denver Songwriters Collective.`;
+
+  const canonicalUrl = `https://denver-songwriters-collective.vercel.app/open-mics/${event.slug || slug}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Denver Songwriters Collective",
+      type: "website",
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  };
+}
 
 const CATEGORY_COLORS: Record<string, string> = {
   "comedy": "bg-pink-900/40 text-pink-300",

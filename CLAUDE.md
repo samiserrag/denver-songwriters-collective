@@ -151,11 +151,14 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - [ ] Event recurrence handling (RRULE parsing for recurring events)
 - [ ] Mobile app considerations (PWA setup)
 
-### Pre-Launch Optimization (Defer until feature-complete)
-- [ ] Performance optimization (Lighthouse Core Web Vitals audit)
-- [ ] Dynamic SEO metadata for detail pages (`/open-mics/[slug]`, `/events/[id]`, `/blog/[slug]`)
-- [ ] OpenGraph/Twitter card images for social sharing
-- [ ] Image optimization with `next/image` component (replace raw `<img>` tags)
+### Pre-Launch Optimization (Completed December 2024)
+- [x] Image optimization with `next/image` component on homepage (highlights, blog images, author avatars)
+- [x] Dynamic SEO metadata for `/open-mics/[slug]` detail pages via `generateMetadata`
+- [x] OpenGraph/Twitter card metadata in root layout with default OG image
+- [x] Iframe accessibility - descriptive `title` attributes on Spotify/YouTube embeds
+- [x] Remote image patterns configured in `next.config.ts` for Supabase storage
+- [ ] Create `/public/images/og-image.jpg` (1200x630) for social sharing
+- [ ] Add `generateMetadata` to `/events/[id]` and `/blog/[slug]` pages
 
 ### Low Priority / Nice to Have
 - [ ] Event check-in system for hosts
