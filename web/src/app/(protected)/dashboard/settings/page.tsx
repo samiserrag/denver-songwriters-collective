@@ -64,18 +64,26 @@ export default function SettingsPage() {
       }
 
       // Delete user's favorites if table exists
-      await supabase
+      const { error: favoritesError } = await supabase
         .from("favorites")
         .delete()
-        .eq("user_id", user.id)
-        .catch(() => {}); // Ignore if table doesn't exist
+        .eq("user_id", user.id);
+
+      if (favoritesError) {
+        console.error("Favorites delete error:", favoritesError);
+        // Continue with deletion - this is not critical
+      }
 
       // Delete user's open mic claims if table exists
-      await supabase
+      const { error: claimsError } = await supabase
         .from("open_mic_claims")
         .delete()
-        .eq("profile_id", user.id)
-        .catch(() => {}); // Ignore if table doesn't exist
+        .eq("profile_id", user.id);
+
+      if (claimsError) {
+        console.error("Open mic claims delete error:", claimsError);
+        // Continue with deletion - this is not critical
+      }
 
       // Sign out the user (this ends their session)
       await supabase.auth.signOut();

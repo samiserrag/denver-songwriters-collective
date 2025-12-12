@@ -98,13 +98,18 @@ export async function POST(
   }
 
   // Send notification to invited user
-  await supabase.rpc("create_user_notification", {
+  const { error: notifyError } = await supabase.rpc("create_user_notification", {
     p_user_id: targetUserId,
     p_type: "cohost_invitation",
     p_title: "Co-host Invitation",
     p_message: "You've been invited to co-host an event",
     p_link: `/dashboard/invitations`
   });
+
+  if (notifyError) {
+    // Log the error but don't fail the request - the invitation was created successfully
+    console.error("Failed to send co-host invitation notification:", notifyError);
+  }
 
   return NextResponse.json(invitation);
 }

@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // PATCH - Approve or reject host request
 export async function PATCH(
@@ -9,15 +10,15 @@ export async function PATCH(
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: user } = await supabase.auth.getUser();
-  if (user?.user?.app_metadata?.role !== "admin") {
+  const isAdmin = await checkAdminRole(supabase, user.id);
+  if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -40,37 +41,48 @@ export async function PATCH(
 
   if (action === "approve") {
     // Update request status
-    await supabase
+    const { error: updateError } = await supabase
       .from("host_requests")
       .update({
         status: "approved",
-        reviewed_by: session.user.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);
+
+    if (updateError) {
+      console.error("Error updating host request:", updateError);
+      return NextResponse.json({ error: "Failed to update request" }, { status: 500 });
+    }
 
     // Add to approved hosts
     const { error: insertError } = await supabase
       .from("approved_hosts")
       .insert({
         user_id: hostRequest.user_id,
-        approved_by: session.user.id,
+        approved_by: user.id,
       });
 
     if (insertError) {
       console.error("Error adding approved host:", insertError);
+      return NextResponse.json({ error: "Failed to add approved host" }, { status: 500 });
     }
   } else {
     // Reject
-    await supabase
+    const { error: rejectError } = await supabase
       .from("host_requests")
       .update({
         status: "rejected",
-        reviewed_by: session.user.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
         rejection_reason,
       })
       .eq("id", id);
+
+    if (rejectError) {
+      console.error("Error rejecting host request:", rejectError);
+      return NextResponse.json({ error: "Failed to reject request" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });

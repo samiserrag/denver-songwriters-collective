@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, ADMIN_EMAIL } from "@/lib/email";
+import { escapeHtml } from "@/lib/highlight";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,11 @@ export async function POST(request: NextRequest) {
 }
 
 function getContactEmailHtml(name: string, email: string, message: string): string {
+  // Escape user inputs to prevent HTML injection in email clients
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeMessage = escapeHtml(message);
+
   return `
 <!DOCTYPE html>
 <html>
@@ -66,14 +72,14 @@ function getContactEmailHtml(name: string, email: string, message: string): stri
                 <tr>
                   <td style="padding-bottom: 16px;">
                     <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">From</p>
-                    <p style="margin: 0; color: #ffffff; font-size: 16px;">${name}</p>
+                    <p style="margin: 0; color: #ffffff; font-size: 16px;">${safeName}</p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding-bottom: 16px;">
                     <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Email</p>
                     <p style="margin: 0; color: #d4a853; font-size: 16px;">
-                      <a href="mailto:${email}" style="color: #d4a853; text-decoration: none;">${email}</a>
+                      <a href="mailto:${safeEmail}" style="color: #d4a853; text-decoration: none;">${safeEmail}</a>
                     </p>
                   </td>
                 </tr>
@@ -81,7 +87,7 @@ function getContactEmailHtml(name: string, email: string, message: string): stri
                   <td style="padding-bottom: 16px;">
                     <p style="margin: 0 0 8px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Message</p>
                     <div style="background-color: #262626; border-radius: 8px; padding: 16px;">
-                      <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+                      <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</p>
                     </div>
                   </td>
                 </tr>
@@ -90,8 +96,8 @@ function getContactEmailHtml(name: string, email: string, message: string): stri
               <table cellpadding="0" cellspacing="0" style="margin-top: 24px;">
                 <tr>
                   <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); border-radius: 8px;">
-                    <a href="mailto:${email}" style="display: inline-block; padding: 12px 24px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 14px;">
-                      Reply to ${name}
+                    <a href="mailto:${safeEmail}" style="display: inline-block; padding: 12px 24px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 14px;">
+                      Reply to ${safeName}
                     </a>
                   </td>
                 </tr>

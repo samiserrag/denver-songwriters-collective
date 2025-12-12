@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
 import { X, Plus, GripVertical } from "lucide-react";
+import { escapeHtml } from "@/lib/highlight";
 
 interface GalleryImage {
   id?: string;
@@ -344,7 +345,8 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
         );
       }
 
-      let text = block;
+      // Escape HTML first to prevent XSS, then apply markdown formatting
+      let text = escapeHtml(block);
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
       text = text.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
 

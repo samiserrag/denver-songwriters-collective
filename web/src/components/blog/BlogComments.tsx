@@ -154,7 +154,7 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
         <div className="mb-8 p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg text-center">
           <p className="text-neutral-400 mb-3">Sign in to join the conversation</p>
           <a
-            href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "")}`}
+            href={`/login?redirectTo=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "")}`}
             className="inline-block px-4 py-2 bg-[var(--color-gold)] text-neutral-900 rounded-lg font-medium hover:bg-[var(--color-gold)]/90 transition-colors"
           >
             Sign In

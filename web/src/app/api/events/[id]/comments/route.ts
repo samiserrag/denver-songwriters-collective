@@ -56,6 +56,22 @@ export async function POST(
     return NextResponse.json({ error: "Comment too long (max 2000 characters)" }, { status: 400 });
   }
 
+  // Rate limiting: Check how many comments user has posted in last 5 minutes
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { count: recentCommentCount } = await supabase
+    .from("event_comments")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", session.user.id)
+    .gte("created_at", fiveMinutesAgo);
+
+  // Limit to 10 comments per 5 minutes per user
+  if ((recentCommentCount || 0) >= 10) {
+    return NextResponse.json(
+      { error: "Too many comments. Please wait a few minutes before posting again." },
+      { status: 429 }
+    );
+  }
+
   // Verify event exists and is a DSC event
   const { data: event, error: eventError } = await supabase
     .from("events")

@@ -6,7 +6,9 @@ export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 
-    if (!email || !email.includes("@")) {
+    // Validate email format using a proper regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       return NextResponse.json(
         { error: "Valid email required" },
         { status: 400 }
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send welcome email via Fastmail SMTP
+    let emailSent = true;
     try {
       await sendEmail({
         to: normalizedEmail,
@@ -60,6 +63,15 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       // Log but don't fail the signup if email fails
       console.error("Welcome email error:", emailError);
+      emailSent = false;
+    }
+
+    // Return 202 Accepted if subscription succeeded but email failed
+    if (!emailSent) {
+      return NextResponse.json(
+        { success: true, warning: "Subscribed, but welcome email could not be sent" },
+        { status: 202 }
+      );
     }
 
     return NextResponse.json({ success: true });

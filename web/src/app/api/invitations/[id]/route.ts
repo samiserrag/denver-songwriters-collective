@@ -52,13 +52,18 @@ export async function PATCH(
   // Notify the person who invited them
   if (invitation.invited_by) {
     const statusText = action === "accept" ? "accepted" : "declined";
-    await supabase.rpc("create_user_notification", {
+    const { error: notifyError } = await supabase.rpc("create_user_notification", {
       p_user_id: invitation.invited_by,
       p_type: "invitation_response",
       p_title: `Co-host invitation ${statusText}`,
       p_message: `Your co-host invitation was ${statusText}`,
       p_link: `/dashboard/my-events/${invitation.event_id}`
     });
+
+    if (notifyError) {
+      // Log the error but don't fail the request - the main action succeeded
+      console.error("Failed to send invitation response notification:", notifyError);
+    }
   }
 
   return NextResponse.json(updated);

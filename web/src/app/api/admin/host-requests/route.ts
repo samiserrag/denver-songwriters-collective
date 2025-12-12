@@ -1,19 +1,20 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // GET - Get all pending host requests (admin only)
 export async function GET() {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: user } = await supabase.auth.getUser();
-  if (user?.user?.app_metadata?.role !== "admin") {
+  const isAdmin = await checkAdminRole(supabase, user.id);
+  if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

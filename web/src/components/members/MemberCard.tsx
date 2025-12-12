@@ -1,0 +1,167 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import type { Member, MemberRole } from "@/types";
+import { SpotlightBadge } from "@/components/special/spotlight-badge";
+import { SocialLinks } from "@/components/special/social-links";
+import { ImagePlaceholder } from "@/components/ui";
+
+interface MemberCardProps {
+  member: Member;
+  className?: string;
+}
+
+function getInitials(name: string): string {
+  if (!name) return "DSC";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function getRoleBadgeStyle(role: MemberRole): string {
+  switch (role) {
+    case "performer":
+      return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
+    case "studio":
+      return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+    case "host":
+      return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+    case "fan":
+      return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+    default:
+      return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+  }
+}
+
+function getRoleLabel(role: MemberRole, isHost?: boolean): string {
+  if (role === "performer" && isHost) {
+    return "Performer & Host";
+  }
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function getProfileLink(member: Member): string {
+  switch (member.role) {
+    case "performer":
+      return `/performers/${member.id}`;
+    case "studio":
+      return `/studios/${member.id}`;
+    case "host":
+      return `/performers/${member.id}`;
+    default:
+      return `/performers/${member.id}`;
+  }
+}
+
+export function MemberCard({ member, className }: MemberCardProps) {
+  const profileLink = getProfileLink(member);
+  const roleLabel = getRoleLabel(member.role, member.isHost);
+  const roleBadgeStyle = getRoleBadgeStyle(member.role);
+
+  return (
+    <Link href={profileLink} className="block h-full group">
+      <article
+        className={cn(
+          "h-full overflow-hidden rounded-3xl border border-white/10",
+          "bg-[radial-gradient(circle_at_top,_rgba(255,216,106,0.12),_rgba(6,15,44,1))]",
+          "shadow-[0_0_40px_rgba(0,0,0,0.55)]",
+          "transition-all duration-300",
+          "hover:-translate-y-1 hover:shadow-[0_0_60px_rgba(255,216,106,0.25)]",
+          "hover:border-[var(--color-gold)]/30",
+          className
+        )}
+      >
+        {/* Image Section */}
+        <div className="relative aspect-[4/3] overflow-hidden">
+          {member.avatarUrl ? (
+            <img
+              src={member.avatarUrl}
+              alt={member.name}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <ImagePlaceholder
+              initials={getInitials(member.name)}
+              className="w-full h-full"
+            />
+          )}
+
+          {/* Gradient overlay */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+          {/* Spotlight badge */}
+          {member.isSpotlight && (
+            <div className="absolute top-3 right-3">
+              <SpotlightBadge />
+            </div>
+          )}
+
+          {/* Role badge */}
+          <div className="absolute top-3 left-3">
+            <span
+              className={cn(
+                "px-2 py-1 text-xs font-medium rounded-full border",
+                roleBadgeStyle
+              )}
+            >
+              {roleLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="p-5 space-y-3">
+          <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight">
+            {member.name}
+          </h3>
+
+          {/* Tags - genres or specialties */}
+          {(member.genres?.length || member.specialties?.length) && (
+            <div className="flex flex-wrap gap-1.5">
+              {(member.genres || member.specialties)?.slice(0, 3).map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-0.5 text-xs bg-white/5 text-[var(--color-warm-gray-light)] rounded-full border border-white/10"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Availability indicators */}
+          <div className="flex flex-wrap gap-2">
+            {member.availableForHire && (
+              <span className="px-2 py-0.5 text-xs bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+                Available for Hire
+              </span>
+            )}
+            {member.interestedInCowriting && (
+              <span className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
+                Open to Cowriting
+              </span>
+            )}
+          </div>
+
+          {member.bio && (
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-2">
+              {member.bio}
+            </p>
+          )}
+
+          {member.location && (
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-warm-gray)]">
+              {member.location}
+            </p>
+          )}
+
+          {member.socialLinks && (
+            <SocialLinks links={member.socialLinks} className="mt-3" />
+          )}
+        </div>
+      </article>
+    </Link>
+  );
+}

@@ -172,7 +172,7 @@ export async function DELETE(
 
     if (nextInLine) {
       // Promote the next person in line
-      await supabase
+      const { error: promoteError } = await supabase
         .from("event_rsvps")
         .update({
           status: "confirmed",
@@ -181,22 +181,31 @@ export async function DELETE(
         })
         .eq("id", nextInLine.id);
 
-      // Get event title for notification
-      const { data: eventData } = await supabase
-        .from("events")
-        .select("title")
-        .eq("id", eventId)
-        .single();
+      if (promoteError) {
+        console.error("Failed to promote waitlist user:", promoteError);
+        // Continue anyway - the cancellation succeeded
+      } else {
+        // Get event title for notification
+        const { data: eventData } = await supabase
+          .from("events")
+          .select("title")
+          .eq("id", eventId)
+          .single();
 
-      // Send notification to promoted user (using SECURITY DEFINER function)
-      if (eventData?.title) {
-        await supabase.rpc("create_user_notification", {
-          p_user_id: nextInLine.user_id,
-          p_type: "waitlist_promotion",
-          p_title: "You're In!",
-          p_message: `A spot opened up for "${eventData.title}" and you've been confirmed!`,
-          p_link: `/events/${eventId}`,
-        });
+        // Send notification to promoted user (using SECURITY DEFINER function)
+        if (eventData?.title) {
+          const { error: notifyError } = await supabase.rpc("create_user_notification", {
+            p_user_id: nextInLine.user_id,
+            p_type: "waitlist_promotion",
+            p_title: "You're In!",
+            p_message: `A spot opened up for "${eventData.title}" and you've been confirmed!`,
+            p_link: `/events/${eventId}`,
+          });
+
+          if (notifyError) {
+            console.error("Failed to send waitlist promotion notification:", notifyError);
+          }
+        }
       }
     }
   }

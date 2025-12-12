@@ -40,17 +40,27 @@ export async function PATCH(request: Request) {
   const { ids, markAll } = await request.json();
 
   if (markAll) {
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("user_id", session.user.id)
       .eq("is_read", false);
+
+    if (error) {
+      console.error("Error marking all notifications as read:", error);
+      return NextResponse.json({ error: "Failed to update notifications" }, { status: 500 });
+    }
   } else if (ids?.length) {
-    await supabase
+    const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("user_id", session.user.id)
       .in("id", ids);
+
+    if (error) {
+      console.error("Error marking notifications as read:", error);
+      return NextResponse.json({ error: "Failed to update notifications" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });

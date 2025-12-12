@@ -149,3 +149,23 @@ export interface StudioOwnedAppointment {
   service_name: string;
   performer_name: string | null;
 }
+
+export type MemberRole = "performer" | "host" | "studio" | "fan";
+
+export interface Member {
+  id: string;
+  name: string;
+  role: MemberRole;
+  isHost?: boolean;
+  bio?: string;
+  genres?: string[];
+  instruments?: string[];
+  specialties?: string[];
+  location?: string;
+  avatarUrl?: string;
+  isSpotlight?: boolean;
+  socialLinks?: SocialLinks;
+  availableForHire?: boolean;
+  interestedInCowriting?: boolean;
+  songLinks?: string[];
+}

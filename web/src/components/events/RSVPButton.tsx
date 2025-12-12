@@ -43,9 +43,11 @@ export function RSVPButton({
 
       if (session) {
         const res = await fetch(`/api/events/${eventId}/rsvp`);
-        const data = await res.json();
-        if (data && data.status) {
-          setRsvp(data);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.status) {
+            setRsvp(data);
+          }
         }
       }
     };

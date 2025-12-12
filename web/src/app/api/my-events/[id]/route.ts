@@ -168,7 +168,7 @@ export async function DELETE(
 
   // Notify all RSVPed users that the event was cancelled
   if (rsvpUsers && rsvpUsers.length > 0 && event?.title) {
-    await Promise.all(
+    const notificationResults = await Promise.allSettled(
       rsvpUsers.map((rsvp) =>
         supabase.rpc("create_user_notification", {
           p_user_id: rsvp.user_id,
@@ -179,6 +179,12 @@ export async function DELETE(
         })
       )
     );
+
+    // Log any notification failures without failing the request
+    const failures = notificationResults.filter((r) => r.status === "rejected");
+    if (failures.length > 0) {
+      console.error(`Failed to send ${failures.length} event cancellation notifications`);
+    }
   }
 
   return NextResponse.json({ success: true });

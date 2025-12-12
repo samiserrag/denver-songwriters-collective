@@ -23,9 +23,9 @@ function isValidMapUrl(url?: string | null): boolean {
 
 function resolveMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, venueName?: string | null, venueAddress?: string): string | undefined {
   // Prefer explicit google_maps_url if valid
-  if (isValidMapUrl(googleMapsUrl)) return googleMapsUrl!;
+  if (isValidMapUrl(googleMapsUrl) && googleMapsUrl) return googleMapsUrl;
   // Fall back to map_link if it's not a broken goo.gl URL
-  if (isValidMapUrl(mapLink)) return mapLink!;
+  if (isValidMapUrl(mapLink) && mapLink) return mapLink;
   // Otherwise construct from venue name + address
   const parts: string[] = [];
   if (venueName && venueName !== "TBA" && venueName !== "Venue") parts.push(venueName);

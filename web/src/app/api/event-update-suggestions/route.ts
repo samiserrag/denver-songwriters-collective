@@ -1,7 +1,7 @@
 // web/src/app/api/event-update-suggestions/route.ts
 
 import { NextResponse } from "next/server";
-import { insertEventUpdateSuggestion } from "@/lib/eventUpdateSuggestions/server";
+import { insertEventUpdateSuggestion, EventUpdateSuggestionInsert } from "@/lib/eventUpdateSuggestions/server";
 
 // Allowed fields that can be suggested for update
 const ALLOWED_FIELDS = [
@@ -83,21 +83,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build payload (only accept a small set of fields)
-    const payload = {
-      event_id: body.event_id ?? null,
+    // Build payload with proper typing
+    const payload: EventUpdateSuggestionInsert = {
+      event_id: body.event_id,
       submitter_email: body.submitter_email ?? null,
       submitter_name: body.submitter_name ?? null,
-      field: String(body.field),
+      field: body.field,
       old_value: body.old_value ?? null,
-      new_value: String(body.new_value),
+      new_value: body.new_value,
       notes: body.notes ?? null,
-      // Ensure defaults for DB-not-null fields so TypeScript matches the insert type
       status: body.status ?? "pending",
       batch_id: body.batch_id ?? undefined,
     };
 
-    const { data, error } = await insertEventUpdateSuggestion(payload as any);
+    const { data, error } = await insertEventUpdateSuggestion(payload);
 
     if (error) {
       console.error("insertEventUpdateSuggestion error:", error);
