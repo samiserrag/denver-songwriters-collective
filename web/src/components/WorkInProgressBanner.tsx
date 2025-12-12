@@ -1,13 +1,16 @@
 import React from "react";
+import Link from "next/link";
 
 export default function WorkInProgressBanner() {
   return (
-    <div className="mb-6 rounded-xl border border-[#00FFCC]/40 bg-[rgba(0,10,30,0.9)] px-4 py-3 text-sm text-[var(--color-warm-gray-light)] shadow-[0_0_16px_rgba(0,255,204,0.12)]">
-      <p className="font-semibold text-[#00FFCC]">Work in Progress</p>
+    <div className="mb-6 rounded-xl border border-[var(--color-gold)]/30 bg-[rgba(30,20,0,0.4)] px-4 py-3 text-sm text-[var(--color-warm-gray-light)] shadow-[0_0_16px_rgba(255,216,106,0.08)]">
+      <p className="font-semibold text-[var(--color-gold)]">Help Us Keep This List Accurate</p>
       <p className="mt-1">
-        This section is under active development. Features are being added quickly.
-        Your feedback can help guide the experience — tell us what works, what
-        doesn't, and what you'd like added.
+        Open mic schedules change frequently. If you notice outdated information or know of an open mic we&apos;re missing,{" "}
+        <Link href="/submit-open-mic" className="text-teal-400 hover:underline">
+          let us know
+        </Link>
+        . Your input helps keep this directory reliable for everyone.
       </p>
     </div>
   );

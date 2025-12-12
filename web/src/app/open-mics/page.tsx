@@ -155,11 +155,15 @@ function mapDBEventToEvent(e: DBEvent): EventType {
 export default async function OpenMicsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string; active?: string; search?: string; city?: string; page?: string; view?: string }>;
+  searchParams: Promise<{ day?: string; status?: string; search?: string; city?: string; page?: string; view?: string }>;
 }) {
   const params = await searchParams;
 
   const view = params?.view ?? "list";
+
+  // Status filter: "all", "active", "unverified", "inactive"
+  const allowedStatuses = ["all", "active", "unverified", "inactive"];
+  const selectedStatus = params?.status && allowedStatuses.includes(params.status) ? params.status : "all";
 
   const allowedDays = [
     "Sunday",
@@ -191,17 +195,20 @@ export default async function OpenMicsPage({
   const supabase = await createSupabaseServerClient();
 
   // Run independent queries in parallel for better performance
-  const [cityResult, activeCountResult, suggestionsCountResult] = await Promise.all([
+  const [cityResult, activeCountResult, totalCountResult, suggestionsCountResult] = await Promise.all([
     // Fetch distinct cities for the city dropdown
     supabase.from("venues").select("city").not("city", "is", null),
-    // Fetch total active events count
+    // Fetch active events count (verified/active only)
     supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").eq("status", "active"),
+    // Fetch total events count (all statuses with venue_id)
+    supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").not("venue_id", "is", null),
     // Fetch approved suggestions count
     supabase.from("event_update_suggestions").select("*", { count: "exact", head: true }).eq("status", "approved"),
   ]);
 
   const cityRows = cityResult.data;
-  const totalActiveEvents = activeCountResult.count;
+  const totalActiveEvents = activeCountResult.count ?? 0;
+  const totalEvents = totalCountResult.count ?? 0;
   const approvedSuggestions = suggestionsCountResult.count;
 
   const cities = Array.from(
@@ -222,6 +229,15 @@ export default async function OpenMicsPage({
     query = query.eq("day_of_week", selectedDay);
   }
 
+  // Status filtering
+  if (selectedStatus && selectedStatus !== "all") {
+    if (selectedStatus === "unverified") {
+      // Include both "unverified" and "needs_verification"
+      query = query.in("status", ["unverified", "needs_verification"]);
+    } else {
+      query = query.eq("status", selectedStatus);
+    }
+  }
 
   // City filtering: resolve venue IDs for the selected city, then filter by venue_id
   if (selectedCity && selectedCity !== "all") {
@@ -329,8 +345,13 @@ function parseTimeToMinutes(t?: string | null) {
               Denver Open Mic Directory
             </h1>
             <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
-              {totalActiveEvents || 0} active open mics across the Front Range
+              {totalActiveEvents} verified open mics across the Front Range
             </p>
+            {totalEvents > totalActiveEvents && (
+              <p className="text-sm text-[var(--color-warm-gray-light)] mt-1 drop-shadow">
+                {totalEvents - totalActiveEvents} more pending verification
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -354,6 +375,7 @@ function parseTimeToMinutes(t?: string | null) {
             <OpenMicFilters
               cities={cities}
               selectedCity={selectedCity === "all" ? undefined : selectedCity}
+              selectedStatus={selectedStatus === "all" ? undefined : selectedStatus}
               search={search ?? undefined}
             />
             <div className="w-full sm:w-auto mt-3 sm:mt-0 flex items-center gap-2">
@@ -365,6 +387,7 @@ function parseTimeToMinutes(t?: string | null) {
                     if (search) p.set("search", search);
                     if (selectedDay) p.set("day", selectedDay);
                     if (selectedCity && selectedCity !== "all") p.set("city", selectedCity);
+                    if (selectedStatus && selectedStatus !== "all") p.set("status", selectedStatus);
                     p.set("view", "list");
                     return `/open-mics?${p.toString()}`;
                   })()}
@@ -379,6 +402,7 @@ function parseTimeToMinutes(t?: string | null) {
                     if (search) p.set("search", search);
                     if (selectedDay) p.set("day", selectedDay);
                     if (selectedCity && selectedCity !== "all") p.set("city", selectedCity);
+                    if (selectedStatus && selectedStatus !== "all") p.set("status", selectedStatus);
                     p.set("view", "grid");
                     return `/open-mics?${p.toString()}`;
                   })()}
