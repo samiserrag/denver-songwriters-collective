@@ -53,4 +53,5 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 // Admin email for receiving contact form submissions
-export const ADMIN_EMAIL = "admin@denversongwriterscollective.org";
+// Using primary mailbox address (admin@ alias routes here)
+export const ADMIN_EMAIL = "sami@denversongwriterscollective.org";
