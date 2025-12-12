@@ -8,7 +8,7 @@ import { HostGrid } from "@/components/hosts";
 import { StudioGrid } from "@/components/studios";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 import { Button } from "@/components/ui";
-import { ScrollIndicator } from "@/components/home";
+import { ScrollIndicator, LazyIframe } from "@/components/home";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Performer, Host, Studio } from "@/types";
 
@@ -388,34 +388,25 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Spotify Playlist */}
-            <div className="rounded-xl overflow-hidden">
-              <iframe
-                src="https://open.spotify.com/embed/playlist/6LohBdSSOxypGZeI4hIGqK?utm_source=generator"
-                width="100%"
-                height="352"
-                frameBorder={0}
-                allowFullScreen
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
-                className="rounded-xl"
-                title="Denver Songwriters Collective Spotify Playlist - Community music from local songwriters"
-              />
-            </div>
-            {/* YouTube Playlist */}
-            <div className="rounded-xl overflow-hidden aspect-video md:aspect-auto md:h-[352px]">
-              <iframe
-                width="100%"
-                height="100%"
-                src="https://www.youtube.com/embed/videoseries?si=JA6QrSYIVBwpfOi1&list=PL0HB-8-Ot_s5KVdniord-fsKK3rPz3O7e"
-                title="Denver Songwriters Collective YouTube Playlist - Live performances and music videos"
-                frameBorder={0}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="rounded-xl"
-              />
-            </div>
+            {/* Spotify Playlist - Lazy loaded to prevent LCP blocking */}
+            <LazyIframe
+              src="https://open.spotify.com/embed/playlist/6LohBdSSOxypGZeI4hIGqK?utm_source=generator"
+              title="Denver Songwriters Collective Spotify Playlist - Community music from local songwriters"
+              height="352px"
+              className="rounded-xl overflow-hidden"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+            {/* YouTube Playlist - Lazy loaded to prevent LCP blocking */}
+            <LazyIframe
+              src="https://www.youtube.com/embed/videoseries?si=JA6QrSYIVBwpfOi1&list=PL0HB-8-Ot_s5KVdniord-fsKK3rPz3O7e"
+              title="Denver Songwriters Collective YouTube Playlist - Live performances and music videos"
+              height="352px"
+              className="rounded-xl overflow-hidden"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
           </div>
         </div>
       </section>

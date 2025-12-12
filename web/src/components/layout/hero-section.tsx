@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface HeroSectionProps {
@@ -38,11 +39,15 @@ export function HeroSection({
         className
       )}
     >
-      {/* Background Image */}
+      {/* Background Image - Optimized with Next.js Image for LCP */}
       {backgroundImage && (
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+        <Image
+          src={backgroundImage}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
           aria-hidden="true"
         />
       )}

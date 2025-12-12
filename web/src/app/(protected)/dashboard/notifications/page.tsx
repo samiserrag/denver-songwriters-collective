@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import NotificationsList from "./NotificationsList";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Notifications | DSC"
 };
