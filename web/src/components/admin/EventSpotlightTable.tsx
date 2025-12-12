@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
-type DBEvent = Database["public"]["Tables"]["events"]["Row"];
+type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
+  venues?: { id: string; name: string } | null;
+};
 
  interface Props {
    events: DBEvent[];
@@ -97,7 +99,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"];
             <tr key={ev.id} className="border-b border-white/5">
               <td className="py-2 px-3">{ev.title}</td>
               <td className="py-2 px-3">{ev.event_date}</td>
-              <td className="py-2 px-3">{ev.venue_name ?? "—"}</td>
+              <td className="py-2 px-3">{ev.venues?.name ?? ev.venue_name ?? "—"}</td>
 
               <td className="py-2 px-3">
                 <input

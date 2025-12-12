@@ -31,7 +31,7 @@ export default async function AdminEventsPage() {
 
    const { data, error } = await supabase
      .from("events")
-     .select("*")
+     .select("*, venues(id, name)")
      .order("title", { ascending: true });
 
    // CRITICAL: Always pass an array, never null
