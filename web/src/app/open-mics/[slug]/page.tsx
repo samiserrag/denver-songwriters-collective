@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import type { EventWithVenue } from "@/types/db";
 import Link from "next/link";
-import { highlight, escapeHtml } from "@/lib/highlight";
+import { highlight, escapeHtml, linkifyUrls } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
@@ -89,10 +89,14 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
   const searchQuery = (searchParamsObj?.search ?? "").trim();
   // Prepare highlighted HTML (safe — highlight/escapeHtml escape input)
   const titleHtml = searchQuery ? highlight(event.title ?? "", searchQuery) : escapeHtml(event.title ?? "");
-  const descriptionHtml = event.description ? (searchQuery ? highlight(event.description, searchQuery) : escapeHtml(event.description)) : "";
+  const descriptionHtml = event.description ? linkifyUrls(searchQuery ? highlight(event.description, searchQuery) : escapeHtml(event.description)) : "";
   const venueNameHtml = venue?.name ? (searchQuery ? highlight(venue.name, searchQuery) : escapeHtml(venue.name)) : "";
   const venueAddressHtml = venue?.address ? (searchQuery ? highlight(venue.address, searchQuery) : escapeHtml(venue.address)) : "";
-  const notesHtml = event.notes ? (searchQuery ? highlight(event.notes, searchQuery) : escapeHtml(event.notes)) : "";
+  const notesHtml = event.notes ? linkifyUrls(searchQuery ? highlight(event.notes, searchQuery) : escapeHtml(event.notes)) : "";
+
+  // Combine description and notes for unified "About" section
+  const hasDescription = Boolean(event.description?.trim());
+  const hasNotes = Boolean(event.notes?.trim());
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -204,14 +208,24 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             )}
           </div>
 
-          {/* Description */}
-          {descriptionHtml && (
+          {/* About This Open Mic - merged description and notes */}
+          {(hasDescription || hasNotes) && (
             <div className="mb-8">
               <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-warm-white)] mb-3">About This Open Mic</h2>
-              <div
-                className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-              />
+              <div className="space-y-4">
+                {descriptionHtml && (
+                  <div
+                    className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                  />
+                )}
+                {notesHtml && (
+                  <div
+                    className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap leading-relaxed text-sm"
+                    dangerouslySetInnerHTML={{ __html: notesHtml }}
+                  />
+                )}
+              </div>
             </div>
           )}
 
@@ -225,14 +239,6 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
                   {venue.city}{venue.state ? `, ${venue.state}` : ""}
                 </p>
               )}
-            </div>
-          )}
-
-          {/* Notes */}
-          {notesHtml && (
-            <div className="mb-8 p-4 rounded-xl bg-teal-900/20 border border-teal-500/20">
-              <h2 className="font-[var(--font-family-serif)] text-lg text-teal-400 mb-2">Notes</h2>
-              <div className="text-[var(--color-warm-gray-light)] text-sm" dangerouslySetInnerHTML={{ __html: notesHtml }} />
             </div>
           )}
         </div>
