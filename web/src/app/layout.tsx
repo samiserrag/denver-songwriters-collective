@@ -156,9 +156,9 @@ export default function RootLayout({
           .justify-center { justify-content: center; }
           .justify-between { justify-content: space-between; }
 
-          /* Footer - force fixed height to prevent CLS */
-          footer { height: 400px !important; overflow: hidden; }
-          @media (min-width: 768px) { footer { height: 300px !important; } }
+          /* Footer - reserve adequate space to prevent CLS */
+          footer { min-height: 650px !important; contain: layout; }
+          @media (min-width: 768px) { footer { min-height: 280px !important; } }
         `}} />
       </head>
       <body
