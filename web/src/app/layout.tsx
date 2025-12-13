@@ -114,6 +114,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Preload LCP hero image for faster discovery */}
+        <link
+          rel="preload"
+          href="/images/open-mic-hero-optimized.jpg"
+          as="image"
+          fetchPriority="high"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} antialiased`}
       >

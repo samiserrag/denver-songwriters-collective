@@ -198,16 +198,18 @@ export default async function HomePage() {
       <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/open-mic-hero-optimized.jpg">
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-8">
-            {/* Login-aware greeting */}
-            {user ? (
-              <p className="text-[var(--color-gold-400)] font-medium text-lg">
-                Welcome back, {userName}
-              </p>
-            ) : (
-              <p className="text-[var(--color-gold)]/80 uppercase tracking-[0.3em] text-sm mb-4 font-medium">
-                Denver • Songwriters • Community
-              </p>
-            )}
+            {/* Login-aware greeting - fixed height container to prevent CLS */}
+            <div className="h-7">
+              {user ? (
+                <p className="text-[var(--color-gold-400)] font-medium text-lg">
+                  Welcome back, {userName}
+                </p>
+              ) : (
+                <p className="text-[var(--color-gold)]/80 uppercase tracking-[0.3em] text-sm font-medium">
+                  Denver • Songwriters • Community
+                </p>
+              )}
+            </div>
 
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[5rem] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
               Join Our Collective.<br />

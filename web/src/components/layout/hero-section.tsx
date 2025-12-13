@@ -12,12 +12,13 @@ interface HeroSectionProps {
   minHeight?: "sm" | "md" | "lg" | "xl" | "full";
 }
 
+// Use fixed heights instead of min-h to prevent CLS (Cumulative Layout Shift)
 const heightClasses = {
-  sm: "min-h-[300px] md:min-h-[350px]",
-  md: "min-h-[400px] md:min-h-[500px]",
-  lg: "min-h-[500px] md:min-h-[600px]",
-  xl: "min-h-[600px] md:min-h-[750px]",
-  full: "min-h-screen",
+  sm: "h-[300px] md:h-[350px]",
+  md: "h-[400px] md:h-[500px]",
+  lg: "h-[500px] md:h-[600px]",
+  xl: "h-[600px] md:h-[750px]",
+  full: "h-screen",
 };
 
 export function HeroSection({
