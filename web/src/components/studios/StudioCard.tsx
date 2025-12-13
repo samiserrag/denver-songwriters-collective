@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Studio } from "@/types";
 import { ImagePlaceholder } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -31,13 +32,15 @@ export function StudioCard({ studio, className }: StudioCardProps) {
           className
         )}
       >
-        {/* Image / Placeholder Section */}
+        {/* Image / Placeholder Section - aspect-[4/3] reserves stable space to prevent CLS */}
         <div className="relative aspect-[4/3] overflow-hidden">
           {studio.imageUrl ? (
-            <img
+            <Image
               src={studio.imageUrl}
               alt={studio.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <ImagePlaceholder

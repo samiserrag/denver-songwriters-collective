@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Host } from "@/types";
 import { SpotlightBadge } from "@/components/special/spotlight-badge";
@@ -33,13 +34,15 @@ export function HostCard({ host, className }: HostCardProps) {
           className
         )}
       >
-        {/* Image Section */}
+        {/* Image Section - aspect-[4/3] reserves stable space to prevent CLS */}
         <div className="relative aspect-[4/3] overflow-hidden">
           {host.avatarUrl ? (
-            <img
+            <Image
               src={host.avatarUrl}
               alt={host.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <ImagePlaceholder

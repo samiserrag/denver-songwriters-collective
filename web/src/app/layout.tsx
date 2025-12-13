@@ -119,13 +119,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
         <link rel="dns-prefetch" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
 
-        {/* Preload LCP hero image for faster discovery */}
-        <link
-          rel="preload"
-          href="/images/hero.jpg"
-          as="image"
-          fetchPriority="high"
-        />
+        {/*
+          Note: The hero image LCP is optimized via next/image with priority prop.
+          Next.js automatically handles preload and format optimization (WebP/AVIF).
+          Manual preload removed to avoid duplicate requests and let Next.js handle it.
+        */}
 
         {/* Critical CSS for above-the-fold content to prevent render blocking */}
         <style dangerouslySetInnerHTML={{ __html: `
@@ -157,7 +155,7 @@ export default function RootLayout({
           .justify-between { justify-content: space-between; }
 
           /* Footer - reserve adequate space to prevent CLS */
-          footer { min-height: 650px !important; contain: layout; }
+          footer { min-height: 650px !important; }
           @media (min-width: 768px) { footer { min-height: 280px !important; } }
         `}} />
       </head>

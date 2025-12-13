@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface PerformerAvatarProps {
@@ -12,6 +13,12 @@ const sizeClasses = {
   sm: "h-12 w-12",
   md: "h-20 w-20",
   lg: "h-28 w-28",
+};
+
+const sizePixels = {
+  sm: 48,
+  md: 80,
+  lg: 112,
 };
 
 export function PerformerAvatar({
@@ -29,9 +36,11 @@ export function PerformerAvatar({
       )}
     >
       {src ? (
-        <img
+        <Image
           src={src}
           alt={alt}
+          width={sizePixels[size]}
+          height={sizePixels[size]}
           className="h-full w-full object-cover"
           draggable={false}
         />
