@@ -181,6 +181,18 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Recent Changes (December 2024)
 
+### CLS & LCP Performance Fix (December 2024)
+- **CLS: 0.639 → 0.000** - Eliminated layout shift by converting images to `next/image` with explicit dimensions
+- **LCP improved** - Hero image uses `priority` flag for faster loading
+- Key files:
+  - `web/src/components/layout/hero-section.tsx` - next/image with priority
+  - `web/src/components/performers/PerformerCard.tsx` - next/image with fill
+  - `web/src/components/hosts/HostCard.tsx` - next/image with fill
+  - `web/src/components/studios/StudioCard.tsx` - next/image with fill
+  - `web/src/components/performers/PerformerAvatar.tsx` - next/image with dimensions
+  - `web/src/components/navigation/footer.tsx` - removed contain:layout causing CLS
+- New utility: `web/src/components/home/CLSLogger.tsx` - dev-only CLS debugging tool
+
 ### Teal → Gold Color Migration (Complete)
 - Migrated all ~100 teal color instances to gold theme across 40+ files
 - Public pages: open-mics, events, submit-open-mic, performers
