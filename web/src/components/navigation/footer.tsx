@@ -16,7 +16,7 @@ export function Footer({ className }: FooterProps) {
       className={cn(
         "border-t border-white/5",
         "bg-[var(--color-background-dark)]",
-        "min-h-[400px] md:min-h-[300px]", // Reserve space to prevent CLS
+        "h-[400px] md:h-[300px]", // Fixed height to prevent CLS
         className
       )}
       role="contentinfo"
