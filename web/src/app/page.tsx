@@ -133,6 +133,7 @@ export default async function HomePage() {
         author:profiles!blog_posts_author_id_fkey(full_name, avatar_url)
       `)
       .eq("is_published", true)
+      .eq("is_approved", true)
       .order("published_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -463,7 +464,7 @@ export default async function HomePage() {
             >
               <div className="grid md:grid-cols-2 gap-8 items-center bg-[var(--color-indigo-950)]/30 border border-white/10 rounded-2xl overflow-hidden hover:border-[var(--color-gold)]/30 transition-all">
                 {latestBlog.cover_image_url ? (
-                  <div className="relative aspect-square md:aspect-auto md:h-80 overflow-hidden">
+                  <div className="relative aspect-[16/9] md:aspect-auto md:h-80 overflow-hidden">
                     <Image
                       src={latestBlog.cover_image_url}
                       alt={latestBlog.title}
@@ -474,7 +475,7 @@ export default async function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--color-background)]/50 md:hidden" />
                   </div>
                 ) : (
-                  <div className="aspect-square md:aspect-auto md:h-80 bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
+                  <div className="aspect-[16/9] md:aspect-auto md:h-80 bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
                     <svg className="w-16 h-16 text-[var(--color-gold)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                     </svg>
