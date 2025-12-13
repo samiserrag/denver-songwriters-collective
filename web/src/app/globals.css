@@ -29,6 +29,16 @@
   --color-indigo-900: #1E1B4B;
   --color-indigo-800: #2E2A5E;
 
+  /* Accent Colors - Lighter palette for variety */
+  --color-sky-400: #38BDF8;
+  --color-sky-300: #7DD3FC;
+  --color-violet-400: #A78BFA;
+  --color-violet-300: #C4B5FD;
+  --color-rose-400: #FB7185;
+  --color-rose-300: #FDA4AF;
+  --color-amber-400: #FBBF24;
+  --color-amber-300: #FCD34D;
+
   /* Text Colors */
   --color-warm-white: #FAF9F7;
   --color-warm-gray: #A8A29E;
@@ -102,7 +112,7 @@ html {
 
 body {
   font-family: var(--font-family-sans);
-  background: linear-gradient(180deg, var(--color-background-light) 0%, var(--color-background) 100%);
+  background: linear-gradient(180deg, #0C1A47 0%, var(--color-background) 50%, var(--color-background-dark) 100%);
   background-attachment: fixed;
   color: var(--color-warm-white);
   min-height: 100vh;

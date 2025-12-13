@@ -53,29 +53,29 @@ export function HeroSection({
         />
       )}
 
-      {/* Main gradient overlay */}
+      {/* Main gradient overlay - lightened for brighter appearance */}
       <div
-        className="absolute inset-0 bg-gradient-to-b from-[var(--color-background)]/40 via-[var(--color-background)]/70 to-[var(--color-background)]"
+        className="absolute inset-0 bg-gradient-to-b from-[var(--color-background)]/20 via-[var(--color-background)]/40 to-[var(--color-background)]/90"
         aria-hidden="true"
       />
 
-      {/* Top vignette (stage curtain effect) */}
+      {/* Top vignette (stage curtain effect) - lightened */}
       {showVignette && (
         <div
-          className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/25 to-transparent pointer-events-none"
           aria-hidden="true"
         />
       )}
 
-      {/* Side vignettes (subtle) */}
+      {/* Side vignettes (subtle) - lightened */}
       {showVignette && (
         <>
           <div
-            className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black/30 to-transparent pointer-events-none"
+            className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black/15 to-transparent pointer-events-none"
             aria-hidden="true"
           />
           <div
-            className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black/30 to-transparent pointer-events-none"
+            className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black/15 to-transparent pointer-events-none"
             aria-hidden="true"
           />
         </>

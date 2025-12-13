@@ -176,6 +176,8 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - [ ] Event check-in system for hosts
 - [ ] Analytics dashboard for hosts (event attendance)
 - [ ] Integration with external calendars (Google Calendar, iCal)
+- [ ] Community forum (consider managed service like Discord, or simple in-app forum)
+- [ ] Blog content: Copyright/Music Business Education articles for songwriters
 
 ---
 
