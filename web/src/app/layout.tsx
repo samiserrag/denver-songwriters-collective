@@ -133,6 +133,7 @@ export default function RootLayout({
           .h-\\[300px\\] { height: 300px !important; }
           @media (min-width: 768px) {
             .md\\:h-\\[600px\\] { height: 600px !important; }
+            .md\\:h-\\[500px\\] { height: 500px !important; }
             .md\\:h-\\[300px\\] { height: 300px !important; }
           }
           .object-cover { object-fit: cover; }
@@ -153,6 +154,14 @@ export default function RootLayout({
           .items-center { align-items: center; }
           .justify-center { justify-content: center; }
           .justify-between { justify-content: space-between; }
+
+          /* Aspect ratio for image containers - critical for CLS prevention */
+          .aspect-\\[4\\/3\\] { aspect-ratio: 4/3; }
+          .aspect-\\[16\\/9\\] { aspect-ratio: 16/9; }
+          .aspect-square { aspect-ratio: 1/1; }
+
+          /* Fixed heights for highlights image container */
+          .h-40 { height: 10rem !important; min-height: 10rem !important; }
 
           /* Footer - reserve adequate space to prevent CLS */
           footer { min-height: 650px !important; }

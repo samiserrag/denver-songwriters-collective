@@ -16,12 +16,15 @@ interface LazyIframeProps {
 /**
  * LazyIframe - Defers iframe loading until the element is near the viewport.
  * This prevents render-blocking resources from delaying LCP.
+ *
+ * CLS Prevention: Uses both height AND minHeight to ensure the container
+ * reserves space correctly on both server render and client hydration.
  */
 export function LazyIframe({
   src,
   title,
   width = "100%",
-  height = "100%",
+  height = "352px",
   className,
   allow,
   allowFullScreen,
@@ -54,7 +57,12 @@ export function LazyIframe({
   }, []);
 
   return (
-    <div ref={containerRef} className={className} style={{ width, height }}>
+    <div
+      ref={containerRef}
+      className={className}
+      // Use both height and minHeight for robust CLS prevention
+      style={{ width, height, minHeight: height }}
+    >
       {isLoaded ? (
         <iframe
           src={src}
@@ -68,7 +76,9 @@ export function LazyIframe({
           className="rounded-xl"
         />
       ) : (
-        <div className="w-full h-full bg-[var(--color-indigo-950)]/50 rounded-xl flex items-center justify-center">
+        <div
+          className="w-full h-full bg-[var(--color-indigo-950)]/50 rounded-xl flex items-center justify-center"
+        >
           <div className="text-[var(--color-warm-gray)] text-sm">Loading...</div>
         </div>
       )}
