@@ -9,6 +9,7 @@ import Logo from "@/components/ui/Logo";
 import { NavLink } from "./nav-link";
 import { MobileMenu } from "./mobile-menu";
 import { useAuth } from "@/lib/auth/useAuth";
+import GlobalSearch from "@/components/GlobalSearch";
 
 // Primary nav links (shown in main nav bar)
 const navLinks = [
@@ -69,6 +70,9 @@ export function Header({ className }: HeaderProps) {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
+          {/* Global Search */}
+          <GlobalSearch />
+
           {/* Social Links */}
           <div className="flex items-center gap-2">
             <a href="https://www.instagram.com/denver_songwriters_collective" target="_blank" rel="noopener noreferrer" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors p-1" aria-label="Instagram">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 interface GalleryImage {
@@ -209,11 +210,15 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     image.is_approved ? "border-white/10" : "border-yellow-600"
                   }`}
                 >
-                  <img
-                    src={image.image_url}
-                    alt={image.caption ?? "Gallery image"}
-                    className="w-full aspect-square object-cover"
-                  />
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={image.image_url}
+                      alt={image.caption ?? "Gallery image"}
+                      fill
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className="object-cover"
+                    />
+                  </div>
 
                   {/* Status badges */}
                   <div className="absolute top-2 left-2 flex gap-1">
@@ -351,11 +356,15 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 className="rounded-lg border border-white/10 bg-neutral-800/50 overflow-hidden"
               >
                 {album.cover_image_url ? (
-                  <img
-                    src={album.cover_image_url}
-                    alt={album.name}
-                    className="w-full h-32 object-cover"
-                  />
+                  <div className="relative w-full h-32">
+                    <Image
+                      src={album.cover_image_url}
+                      alt={album.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-32 bg-neutral-900 flex items-center justify-center">
                     <span className="text-neutral-600">No cover</span>

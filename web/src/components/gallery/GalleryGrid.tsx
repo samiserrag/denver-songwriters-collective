@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 interface RawGalleryImage {
   id: string;
@@ -56,12 +57,15 @@ export default function GalleryGrid({ images }: Props) {
             onClick={() => setSelectedImage(image)}
           >
             <div className="relative rounded-xl overflow-hidden border border-white/10 hover:border-[var(--color-gold)]/30 transition-colors">
-              <img
-                src={image.image_url}
-                alt={image.caption ?? "Gallery image"}
-                className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
+              <div className="relative aspect-[4/3] w-full">
+                <Image
+                  src={image.image_url}
+                  alt={image.caption ?? "Gallery image"}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
               {image.is_featured && (
                 <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-gold)] text-black text-xs font-medium">
                   Featured
@@ -100,14 +104,19 @@ export default function GalleryGrid({ images }: Props) {
           </button>
 
           <div
-            className="max-w-5xl max-h-[90vh] flex flex-col"
+            className="max-w-5xl max-h-[90vh] flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={selectedImage.image_url}
-              alt={selectedImage.caption ?? "Gallery image"}
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
+            <div className="relative w-full max-w-4xl" style={{ height: "min(80vh, 800px)" }}>
+              <Image
+                src={selectedImage.image_url}
+                alt={selectedImage.caption ?? "Gallery image"}
+                fill
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-contain rounded-lg"
+                priority
+              />
+            </div>
             <div className="mt-4 text-center">
               {selectedImage.caption && (
                 <p className="text-white text-lg mb-2">{selectedImage.caption}</p>

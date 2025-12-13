@@ -266,9 +266,23 @@ export default async function OpenMicsPage({
     query = query.in("venue_id", venueIds);
   }
 
+  // Search logic: If searching, we need to match both event fields AND venue names
+  // Since we can't search joined venue fields in .or(), we:
+  // 1. Find venue IDs matching the search term
+  // 2. Combine with event field search using OR logic
+  let searchVenueIds: string[] = [];
   if (safeSearch) {
     const like = `%${safeSearch}%`;
-    // Search across event fields (note: can't search joined venue fields in .or())
+
+    // Find venues matching the search term
+    const { data: matchingVenues } = await supabase
+      .from("venues")
+      .select("id")
+      .or(`name.ilike.${like},address.ilike.${like},city.ilike.${like}`);
+
+    searchVenueIds = (matchingVenues ?? []).map((v: { id: string }) => v.id);
+
+    // Search across event fields
     query = query.or(
       `title.ilike.${like},notes.ilike.${like},day_of_week.ilike.${like},recurrence_rule.ilike.${like},description.ilike.${like}`
     );
@@ -277,8 +291,50 @@ export default async function OpenMicsPage({
 
   const { data: dbEvents, error, count } = await query;
 
+  // If we have venue search matches, we need to include events at those venues too
+  let allDbEvents = dbEvents ?? [];
+  if (safeSearch && searchVenueIds.length > 0) {
+    // Build a separate query for events at matching venues
+    let venueQuery = supabase
+      .from("events")
+      .select(
+        `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`
+      )
+      .eq("event_type", "open_mic")
+      .in("venue_id", searchVenueIds);
+
+    // Apply same filters as main query
+    if (selectedDay) {
+      venueQuery = venueQuery.eq("day_of_week", selectedDay);
+    }
+    if (selectedStatus && selectedStatus !== "all") {
+      if (selectedStatus === "unverified") {
+        venueQuery = venueQuery.in("status", ["unverified", "needs_verification"]);
+      } else {
+        venueQuery = venueQuery.eq("status", selectedStatus);
+      }
+    }
+    if (selectedCity && selectedCity !== "all") {
+      const { data: venueRows } = await supabase
+        .from("venues")
+        .select("id")
+        .eq("city", selectedCity);
+      const cityVenueIds: string[] = (venueRows ?? []).map((v: any) => v.id).filter(Boolean);
+      if (cityVenueIds.length > 0) {
+        venueQuery = venueQuery.in("venue_id", cityVenueIds);
+      }
+    }
+
+    const { data: venueMatchEvents } = await venueQuery;
+
+    // Merge and dedupe by ID
+    const existingIds = new Set((allDbEvents as any[]).map((e: any) => e.id));
+    const newEvents = (venueMatchEvents ?? []).filter((e: any) => !existingIds.has(e.id));
+    allDbEvents = [...allDbEvents, ...newEvents] as typeof allDbEvents;
+  }
+
   // Map and sort results client-side: day_of_week (Sun->Sat), start_time, then city
-  const mapped = ((dbEvents ?? []) as DBEvent[]).map(mapDBEventToEvent) as any[];
+  const mapped = (allDbEvents as DBEvent[]).map(mapDBEventToEvent) as any[];
 
   // TEMP DEBUG: log mapped events count and a small sample
   try {

@@ -1,5 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { sendEmail } from "@/lib/email";
+import { getRsvpConfirmationEmail, getWaitlistPromotionEmail } from "@/lib/emailTemplates";
 
 // GET - Get current user's RSVP status for this event
 export async function GET(
@@ -57,7 +59,7 @@ export async function POST(
   // Get event - must be DSC event and active
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, capacity, is_dsc_event, status")
+    .select("id, title, capacity, is_dsc_event, status, event_date, start_time, venue_name, venue_address")
     .eq("id", eventId)
     .single();
 
@@ -115,6 +117,33 @@ export async function POST(
   if (insertError) {
     console.error("RSVP insert error:", insertError);
     return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  // Send RSVP confirmation email (don't fail if email fails)
+  try {
+    const userEmail = session.user.email;
+    if (userEmail && event.title) {
+      const emailData = getRsvpConfirmationEmail({
+        eventTitle: event.title,
+        eventDate: event.event_date || "TBA",
+        eventTime: event.start_time || "TBA",
+        venueName: event.venue_name || "TBA",
+        venueAddress: event.venue_address || undefined,
+        eventId,
+        isWaitlist: status === "waitlist",
+        waitlistPosition: waitlistPosition ?? undefined,
+      });
+
+      await sendEmail({
+        to: userEmail,
+        subject: emailData.subject,
+        html: emailData.html,
+        text: emailData.text,
+      });
+    }
+  } catch (emailError) {
+    console.error("Failed to send RSVP confirmation email:", emailError);
+    // Don't fail the RSVP if email fails
   }
 
   return NextResponse.json(rsvp);
@@ -185,14 +214,20 @@ export async function DELETE(
         console.error("Failed to promote waitlist user:", promoteError);
         // Continue anyway - the cancellation succeeded
       } else {
-        // Get event title for notification
-        const { data: eventData } = await supabase
-          .from("events")
-          .select("title")
-          .eq("id", eventId)
-          .single();
+        // Get event details and promoted user's email for notifications
+        const [eventDataRes, promotedUserRes] = await Promise.all([
+          supabase
+            .from("events")
+            .select("title, event_date, start_time, venue_name")
+            .eq("id", eventId)
+            .single(),
+          supabase.auth.admin.getUserById(nextInLine.user_id),
+        ]);
 
-        // Send notification to promoted user (using SECURITY DEFINER function)
+        const eventData = eventDataRes.data;
+        const promotedUserEmail = promotedUserRes.data?.user?.email;
+
+        // Send in-app notification (using SECURITY DEFINER function)
         if (eventData?.title) {
           const { error: notifyError } = await supabase.rpc("create_user_notification", {
             p_user_id: nextInLine.user_id,
@@ -204,6 +239,28 @@ export async function DELETE(
 
           if (notifyError) {
             console.error("Failed to send waitlist promotion notification:", notifyError);
+          }
+
+          // Send email notification
+          if (promotedUserEmail) {
+            try {
+              const emailData = getWaitlistPromotionEmail({
+                eventTitle: eventData.title,
+                eventDate: eventData.event_date || "TBA",
+                eventTime: eventData.start_time || "TBA",
+                venueName: eventData.venue_name || "TBA",
+                eventId,
+              });
+
+              await sendEmail({
+                to: promotedUserEmail,
+                subject: emailData.subject,
+                html: emailData.html,
+                text: emailData.text,
+              });
+            } catch (emailError) {
+              console.error("Failed to send waitlist promotion email:", emailError);
+            }
           }
         }
       }

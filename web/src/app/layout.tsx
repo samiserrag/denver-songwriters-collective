@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display, Inter } from "next/font/google";
 import { Header, Footer } from "@/components/navigation";
@@ -33,6 +33,13 @@ const inter = Inter({
 
 const siteUrl = "https://denver-songwriters-collective.vercel.app";
 
+export const viewport: Viewport = {
+  themeColor: "#d4a853",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -40,6 +47,15 @@ export const metadata: Metadata = {
     template: "%s | Denver Songwriters Collective",
   },
   description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "DSC",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   keywords: [
     "Denver songwriters",
     "open mics Denver",

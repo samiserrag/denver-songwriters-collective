@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 
@@ -49,10 +50,13 @@ export default async function BlogPage() {
     <>
       {/* Hero Header with Background Image */}
       <div className="relative h-48 md:h-64 overflow-hidden">
-        <img
-          src="/images/open-mic-placeholder.jpg"
+        <Image
+          src="/images/open-mic-hero-optimized.jpg"
           alt="Denver Songwriters Blog"
-          className="w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -108,11 +112,13 @@ function BlogCard({ post }: { post: BlogPost }) {
       className="group block rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] overflow-hidden hover:border-[var(--color-gold)]/30 transition-colors"
     >
       {post.cover_image_url && (
-        <div className="aspect-video w-full overflow-hidden">
-          <img
+        <div className="relative aspect-video w-full overflow-hidden">
+          <Image
             src={post.cover_image_url}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
       )}
@@ -139,10 +145,12 @@ function BlogCard({ post }: { post: BlogPost }) {
         )}
         <div className="flex items-center gap-3 pt-2">
           {author?.avatar_url ? (
-            <img
+            <Image
               src={author.avatar_url}
               alt={author.full_name ?? "Author"}
-              className="w-8 h-8 rounded-full object-cover"
+              width={32}
+              height={32}
+              className="rounded-full object-cover"
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
