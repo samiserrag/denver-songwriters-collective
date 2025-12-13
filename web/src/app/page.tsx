@@ -458,83 +458,77 @@ export default async function HomePage() {
               </Link>
             </div>
 
+            {/* Blog Card - styled like PerformerCard */}
             <Link
               href={`/blog/${latestBlog.slug}`}
-              className="block group"
+              className="block group max-w-md"
             >
-              <div className="grid md:grid-cols-2 gap-8 items-center bg-[var(--color-indigo-950)]/30 border border-white/10 rounded-2xl overflow-hidden hover:border-[var(--color-gold)]/30 transition-all">
-                {latestBlog.cover_image_url ? (
-                  <div className="relative aspect-[16/9] md:aspect-auto md:h-80 overflow-hidden">
+              <article className="h-full overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,216,106,0.12),_rgba(6,15,44,1))] shadow-[0_0_40px_rgba(0,0,0,0.55)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_60px_rgba(255,216,106,0.25)] hover:border-[var(--color-gold)]/30">
+                {/* Image Section - aspect-[4/3] like performer cards */}
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  {latestBlog.cover_image_url ? (
                     <Image
                       src={latestBlog.cover_image_url}
                       alt={latestBlog.title}
                       fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[var(--color-background)]/50 md:hidden" />
-                  </div>
-                ) : (
-                  <div className="aspect-[16/9] md:aspect-auto md:h-80 bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-[var(--color-gold)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                    </svg>
-                  </div>
-                )}
-                <div className="p-6 md:p-8">
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-[var(--color-gold)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                      </svg>
+                    </div>
+                  )}
+                  {/* Gradient overlay */}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                </div>
+
+                {/* Content Section */}
+                <div className="p-5 space-y-3">
                   {latestBlog.tags && latestBlog.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {latestBlog.tags.slice(0, 3).map((tag: string) => (
+                    <div className="flex flex-wrap gap-2">
+                      {latestBlog.tags.slice(0, 2).map((tag: string) => (
                         <span
                           key={tag}
-                          className="text-xs px-2 py-1 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)] border border-[var(--color-gold)]/20"
+                          className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)]"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
                   )}
-                  <h3 className="text-2xl md:text-3xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-3 group-hover:text-[var(--color-gold)] transition-colors">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight group-hover:text-[var(--color-gold)] transition-colors">
                     {latestBlog.title}
                   </h3>
                   {latestBlog.excerpt && (
-                    <p className="text-[var(--color-warm-gray)] mb-4 line-clamp-3">
+                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-2">
                       {latestBlog.excerpt}
                     </p>
                   )}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 pt-2">
                     {latestBlogAuthor?.avatar_url ? (
                       <Image
                         src={latestBlogAuthor.avatar_url}
                         alt={latestBlogAuthor.full_name ?? "Author"}
-                        width={40}
-                        height={40}
+                        width={24}
+                        height={24}
                         className="rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
-                        <span className="text-[var(--color-gold)]">
+                      <div className="w-6 h-6 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
+                        <span className="text-[var(--color-gold)] text-xs">
                           {latestBlogAuthor?.full_name?.[0] ?? "?"}
                         </span>
                       </div>
                     )}
-                    <div>
-                      <p className="text-[var(--color-warm-white)] text-sm font-medium">
-                        {latestBlogAuthor?.full_name ?? "Anonymous"}
-                      </p>
-                      {latestBlog.published_at && (
-                        <p className="text-neutral-500 text-xs">
-                          {new Date(latestBlog.published_at).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-xs text-[var(--color-warm-gray)]">
+                      {latestBlogAuthor?.full_name ?? "Anonymous"}
+                    </p>
                   </div>
                 </div>
-              </div>
+              </article>
             </Link>
           </div>
         </section>
