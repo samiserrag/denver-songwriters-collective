@@ -195,7 +195,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/open-mic-hero-optimized.jpg">
+      <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/hero.jpg">
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Login-aware greeting - fixed height container to prevent CLS */}

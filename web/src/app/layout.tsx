@@ -118,7 +118,7 @@ export default function RootLayout({
         {/* Preload LCP hero image for faster discovery */}
         <link
           rel="preload"
-          href="/images/open-mic-hero-optimized.jpg"
+          href="/images/hero.jpg"
           as="image"
           fetchPriority="high"
         />
