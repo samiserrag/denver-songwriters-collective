@@ -16,11 +16,10 @@ export function Footer({ className }: FooterProps) {
       className={cn(
         "border-t border-white/5",
         "bg-[var(--color-background-dark)]",
-        // Use min-height with contain:layout to reserve space without cutting off content
+        // Reserve consistent space to prevent CLS from content above
         "min-h-[650px] md:min-h-[280px]",
         className
       )}
-      style={{ contain: "layout" }}
       role="contentinfo"
     >
       <div className="max-w-6xl mx-auto px-6 py-12">

@@ -8,7 +8,7 @@ import { HostGrid } from "@/components/hosts";
 import { StudioGrid } from "@/components/studios";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 import { Button } from "@/components/ui";
-import { LazyIframe } from "@/components/home";
+import { LazyIframe, CLSLogger } from "@/components/home";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Performer, Host, Studio } from "@/types";
 
@@ -195,6 +195,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <CLSLogger />
       <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/hero.jpg">
         <div />
       </HeroSection>
