@@ -81,7 +81,7 @@ export default function AboutPage() {
               What We Offer
             </h2>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
-              DSC offers multiple kinds of events to meet the needs of every songwriter and supporter:
+              DSC offers multiple kinds of happenings to meet the needs of every songwriter and supporter:
             </p>
 
             <div className="grid gap-6 sm:grid-cols-2">
@@ -201,11 +201,11 @@ export default function AboutPage() {
               If you love songwriting, love local music, love community, or simply want to support a creative movement that brings people together in meaningful ways, The Denver Songwriters Collective welcomes you.
             </p>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              Come help us shape the story, one song, one friendship, and one event at a time.
+              Come help us shape the story, one song, one friendship, and one happening at a time.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
-                <Link href="/events">Explore Events</Link>
+                <Link href="/events">Explore Happenings</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
                 <Link href="/open-mics">Find Open Mics</Link>

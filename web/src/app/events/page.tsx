@@ -136,8 +136,8 @@ export default async function EventsPage() {
       {/* Hero Header with Background Image */}
       <div className="relative h-48 md:h-64 overflow-hidden">
         <img
-          src="/images/open-mic-placeholder.jpg"
-          alt="Denver Songwriters Events"
+          src="/images/hero.jpg"
+          alt="Denver Songwriters Happenings"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
@@ -156,12 +156,12 @@ export default async function EventsPage() {
       <PageContainer>
         <div className="py-12 space-y-16">
 
-          {/* DSC Community Events */}
+          {/* DSC Community Happenings */}
           {dscEvents.length > 0 && (
             <section>
               <div className="mb-6">
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                  Community Events
+                  Community Happenings
                 </h2>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
                   Song circles, workshops, and gatherings hosted by DSC members
@@ -298,11 +298,11 @@ export default async function EventsPage() {
             </div>
           </section>
 
-          {/* Upcoming Events */}
+          {/* Upcoming Happenings */}
           <section>
             <div className="mb-8">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
-                Upcoming Events
+                Upcoming Happenings
               </h2>
               <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
                 Showcases, special nights, and community gatherings.
@@ -313,7 +313,7 @@ export default async function EventsPage() {
             ) : (
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-10 text-center">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)]">
-                  No upcoming events scheduled. Check back soon!
+                  No upcoming happenings scheduled. Check back soon!
                 </p>
               </div>
             )}
@@ -322,10 +322,10 @@ export default async function EventsPage() {
           {/* Get Involved CTA */}
           <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
-              Want to Help Shape Our Events?
+              Want to Help Shape Our Happenings?
             </h2>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              We&apos;re always looking for volunteers, venues, and partners to help expand our event offerings across the Front Range.
+              We&apos;re always looking for volunteers, venues, and partners to help expand our offerings across the Front Range.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-2">
               <Button asChild variant="primary" size="lg">

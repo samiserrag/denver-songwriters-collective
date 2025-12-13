@@ -33,8 +33,8 @@ export async function generateMetadata({
 
   if (!event) {
     return {
-      title: "Event Not Found | Denver Songwriters Collective",
-      description: "This event could not be found.",
+      title: "Happening Not Found | Denver Songwriters Collective",
+      description: "This happening could not be found.",
     };
   }
 
@@ -44,7 +44,7 @@ export async function generateMetadata({
   const title = `${event.title} | ${config.label} in Denver`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
-    : `Join ${event.title} at ${event.venue_name || "Denver"}${event.day_of_week ? ` on ${event.day_of_week}s` : ""}${event.start_time ? ` at ${event.start_time}` : ""}. Find events with the Denver Songwriters Collective.`;
+    : `Join ${event.title} at ${event.venue_name || "Denver"}${event.day_of_week ? ` on ${event.day_of_week}s` : ""}${event.start_time ? ` at ${event.start_time}` : ""}. Find happenings with the Denver Songwriters Collective.`;
 
   const canonicalUrl = `https://denver-songwriters-collective.vercel.app/events/${id}`;
 

@@ -8,7 +8,7 @@ import { HostGrid } from "@/components/hosts";
 import { StudioGrid } from "@/components/studios";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 import { Button } from "@/components/ui";
-import { ScrollIndicator, LazyIframe } from "@/components/home";
+import { LazyIframe } from "@/components/home";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Performer, Host, Studio } from "@/types";
 
@@ -196,71 +196,7 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/hero.jpg">
-        <PageContainer>
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            {/* Login-aware greeting - fixed height container to prevent CLS */}
-            <div className="h-7">
-              {user ? (
-                <p className="text-[var(--color-gold-400)] font-medium text-lg">
-                  Welcome back, {userName}
-                </p>
-              ) : (
-                <p className="text-[var(--color-gold)]/80 uppercase tracking-[0.3em] text-sm font-medium">
-                  Denver • Songwriters • Community
-                </p>
-              )}
-            </div>
-
-            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[5rem] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
-              Join Our Collective.<br />
-              <span className="text-gradient-gold">Share Your Songs.</span>
-            </h1>
-
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-gray-light)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
-              Denver&apos;s home for songwriters. Discover open mics, showcases,
-              song circles, and connect with your creative community.
-            </p>
-
-            {/* Login-aware CTAs - simplified to 2 buttons */}
-            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4">
-              {user ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="group relative px-8 py-4 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    <span className="relative z-10">Go to Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/events"
-                    className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
-                  >
-                    Browse Happenings
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/signup"
-                    className="group relative px-8 py-4 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    <span className="relative z-10">Join the Community</span>
-                  </Link>
-                  <Link
-                    href="/events"
-                    className="px-8 py-4 border-2 border-white/30 hover:border-white text-[var(--color-warm-white)] font-semibold rounded-lg transition-all hover:bg-white/5 hover:scale-105"
-                  >
-                    Browse Happenings
-                  </Link>
-                </>
-              )}
-            </div>
-
-          </div>
-        </PageContainer>
-
-        {/* Scroll indicator */}
-        <ScrollIndicator />
+        <div />
       </HeroSection>
 
       {/* What We Offer Each Other Section */}
@@ -624,7 +560,7 @@ export default async function HomePage() {
             )}
           </section>
 
-          {/* Upcoming Events */}
+          {/* Upcoming Happenings */}
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
@@ -643,7 +579,7 @@ export default async function HomePage() {
               <EventGrid events={upcomingEvents} />
             ) : (
               <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
-                No upcoming events scheduled. Check back soon.
+                No upcoming happenings scheduled. Check back soon.
               </p>
             )}
           </section>

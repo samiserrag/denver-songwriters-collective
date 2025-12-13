@@ -47,7 +47,7 @@ export function Footer({ className }: FooterProps) {
             <h4 className="text-[var(--color-warm-white)] font-semibold mb-4">Discover</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/open-mics" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Open Mics</Link></li>
-              <li><Link href="/events" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Events</Link></li>
+              <li><Link href="/events" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Happenings</Link></li>
               <li><Link href="/performers" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Artists</Link></li>
               <li><Link href="/studios" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Studios</Link></li>
             </ul>
@@ -58,7 +58,7 @@ export function Footer({ className }: FooterProps) {
             <h4 className="text-[var(--color-warm-white)] font-semibold mb-4">Community</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/about" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">About Us</Link></li>
-              <li><Link href="/submit-open-mic" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Submit Event</Link></li>
+              <li><Link href="/submit-open-mic" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Submit Open Mic</Link></li>
               <li><Link href="/get-involved" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Get Involved</Link></li>
               <li><Link href="/partners" className="text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors">Partners</Link></li>
             </ul>
