@@ -115,6 +115,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Preconnect to external domains for faster asset loading */}
+        <link rel="preconnect" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
+        <link rel="dns-prefetch" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
+
         {/* Preload LCP hero image for faster discovery */}
         <link
           rel="preload"
@@ -122,6 +126,31 @@ export default function RootLayout({
           as="image"
           fetchPriority="high"
         />
+
+        {/* Critical CSS for above-the-fold content to prevent render blocking */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          /* Critical hero section styles */
+          .h-\\[500px\\] { height: 500px; }
+          .md\\:h-\\[600px\\] { height: 600px; }
+          .object-cover { object-fit: cover; }
+          .object-center { object-position: center; }
+
+          /* Critical header styles */
+          .sticky { position: sticky; }
+          .top-0 { top: 0; }
+          .z-50 { z-index: 50; }
+
+          /* Critical layout */
+          .relative { position: relative; }
+          .absolute { position: absolute; }
+          .inset-0 { inset: 0; }
+          .w-full { width: 100%; }
+          .overflow-hidden { overflow: hidden; }
+          .flex { display: flex; }
+          .items-center { align-items: center; }
+          .justify-center { justify-content: center; }
+          .justify-between { justify-content: space-between; }
+        `}} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} antialiased`}
