@@ -201,7 +201,7 @@ export default async function HomePage() {
       </HeroSection>
 
       {/* What We Offer Each Other Section */}
-      <section className="py-12 px-6 bg-[var(--color-background-dark)]/50">
+      <section className="py-16 px-6 bg-gradient-to-b from-[var(--color-background)] to-[var(--color-background-dark)]/30">
         <div className="max-w-6xl mx-auto">
           <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-warm-white)] mb-4">
             What We Offer Each Other
@@ -217,31 +217,35 @@ export default async function HomePage() {
                 icon: "🎤",
                 title: "Stages to Share",
                 desc: "Community-maintained open mic listings. Know a spot? Help keep the list updated.",
-                href: "/open-mics"
+                href: "/open-mics",
+                accent: "from-amber-500/10 to-transparent"
               },
               {
                 icon: "🤝",
                 title: "Real Connections",
                 desc: "Meet fellow songwriters, find collaborators, and build lasting friendships.",
-                href: "/performers"
+                href: "/performers",
+                accent: "from-sky-500/10 to-transparent"
               },
               {
                 icon: "📖",
                 title: "Stories & Wisdom",
                 desc: "Share your journey, learn from others, and grow together.",
-                href: "/blog"
+                href: "/blog",
+                accent: "from-violet-500/10 to-transparent"
               },
               {
                 icon: "🎧",
                 title: "Local Resources",
                 desc: "Studios, gear, and services recommended by your fellow musicians.",
-                href: "/studios"
+                href: "/studios",
+                accent: "from-rose-500/10 to-transparent"
               },
             ].map((item) => (
               <Link
                 key={item.title}
                 href={item.href}
-                className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-xl hover:border-[var(--color-gold)]/50 transition-all group card-hover"
+                className={`p-6 bg-gradient-to-br ${item.accent} bg-[var(--color-indigo-950)]/40 border border-white/10 rounded-xl hover:border-[var(--color-gold)]/50 hover:bg-[var(--color-indigo-950)]/60 transition-all group card-hover`}
               >
                 <div className="text-4xl mb-4">{item.icon}</div>
                 <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2 group-hover:text-[var(--color-gold)] transition-colors">

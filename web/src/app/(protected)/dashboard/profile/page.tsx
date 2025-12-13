@@ -1,8 +1,5 @@
 "use client";
 
-// Force dynamic rendering to prevent Next.js 16 prerender errors with auth
-export const dynamic = "force-dynamic";
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -34,6 +31,8 @@ type FormData = {
   genres: string[];
   instruments: string[];
   song_links: string[];
+  // Featured song for profile display
+  featured_song_url: string;
 };
 
 const initialFormData: FormData = {
@@ -59,6 +58,7 @@ const initialFormData: FormData = {
   genres: [],
   instruments: [],
   song_links: [],
+  featured_song_url: "",
 };
 
 const SPECIALTY_OPTIONS = [
@@ -169,6 +169,7 @@ export default function EditProfilePage() {
           genres: (profile as any).genres || [],
           instruments: (profile as any).instruments || [],
           song_links: (profile as any).song_links || [],
+          featured_song_url: (profile as any).featured_song_url || "",
         });
       }
       setLoading(false);
@@ -271,6 +272,7 @@ export default function EditProfilePage() {
           genres: formData.genres.length > 0 ? formData.genres : null,
           instruments: formData.instruments.length > 0 ? formData.instruments : null,
           song_links: formData.song_links.length > 0 ? formData.song_links : null,
+          featured_song_url: formData.featured_song_url || null,
         })
         .eq("id", user.id);
 
@@ -584,14 +586,37 @@ export default function EditProfilePage() {
               </section>
             )}
 
+            {/* Featured Song (Performers only) */}
+            {userRole === "performer" && (
+              <section>
+                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                  Featured Song
+                </h2>
+                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                  Highlight one song that represents you best. This will be displayed prominently on your profile.
+                </p>
+                <input
+                  type="url"
+                  name="featured_song_url"
+                  value={formData.featured_song_url}
+                  onChange={handleChange}
+                  placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                />
+                <p className="text-xs text-[var(--color-warm-gray)] mt-2">
+                  Supports YouTube, Spotify, SoundCloud, Bandcamp, and other music platforms
+                </p>
+              </section>
+            )}
+
             {/* Song Links (Performers only) */}
             {userRole === "performer" && (
               <section>
                 <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
-                  Your Music
+                  Additional Songs
                 </h2>
                 <p className="text-sm text-[var(--color-warm-gray)] mb-4">
-                  Share links to your songs on SoundCloud, Bandcamp, YouTube, etc.
+                  Share more links to your songs on SoundCloud, Bandcamp, YouTube, etc.
                 </p>
                 <div className="space-y-3">
                   {formData.song_links.map((link, index) => (
