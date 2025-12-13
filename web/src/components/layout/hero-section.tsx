@@ -47,7 +47,7 @@ export function HeroSection({
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center"
+          className="object-cover object-bottom md:object-center"
           aria-hidden="true"
         />
       )}
