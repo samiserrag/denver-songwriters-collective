@@ -130,8 +130,13 @@ export default function RootLayout({
         {/* Critical CSS for above-the-fold content to prevent render blocking */}
         <style dangerouslySetInnerHTML={{ __html: `
           /* Critical hero section styles */
-          .h-\\[500px\\] { height: 500px; }
-          .md\\:h-\\[600px\\] { height: 600px; }
+          .h-\\[500px\\] { height: 500px !important; }
+          .h-\\[400px\\] { height: 400px !important; }
+          .h-\\[300px\\] { height: 300px !important; }
+          @media (min-width: 768px) {
+            .md\\:h-\\[600px\\] { height: 600px !important; }
+            .md\\:h-\\[300px\\] { height: 300px !important; }
+          }
           .object-cover { object-fit: cover; }
           .object-center { object-position: center; }
 
@@ -150,6 +155,10 @@ export default function RootLayout({
           .items-center { align-items: center; }
           .justify-center { justify-content: center; }
           .justify-between { justify-content: space-between; }
+
+          /* Footer - force fixed height to prevent CLS */
+          footer { height: 400px !important; overflow: hidden; }
+          @media (min-width: 768px) { footer { height: 300px !important; } }
         `}} />
       </head>
       <body
