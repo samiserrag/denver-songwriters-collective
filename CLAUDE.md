@@ -6,6 +6,8 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 **Live Site:** https://denver-songwriters-collective.vercel.app
 
+> **Architecture Evolution (December 2024):** This project is being transformed into a **white-label community platform template**. See [ARCHITECTURE_PLAN.md](./ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
+
 ## Project Structure
 
 This project uses **git worktrees** for development:
@@ -30,10 +32,11 @@ This project uses **git worktrees** for development:
 
 ## Tech Stack
 
-- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS
+- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
 - **Backend:** Supabase (PostgreSQL, Auth, Storage, RLS)
 - **Deployment:** Vercel
 - **Auth:** Supabase Auth (email/password, magic links)
+- **Future:** React Native/Expo for mobile app (shared codebase)
 
 ## Database
 
@@ -149,7 +152,7 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 ### Medium Priority
 - [ ] Search functionality across events/profiles
 - [ ] Event recurrence handling (RRULE parsing for recurring events)
-- [ ] Mobile app considerations (PWA setup)
+- [ ] Mobile app (React Native/Expo) - see ARCHITECTURE_PLAN.md
 
 ### Pre-Launch Optimization (Completed December 2024)
 - [x] Image optimization with `next/image` component on homepage (highlights, blog images, author avatars)
@@ -181,7 +184,53 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ---
 
+## White-Label Architecture (In Progress)
+
+**Status:** Planning complete, awaiting expert review before implementation
+
+**Goal:** Transform this codebase into a reusable template that can be:
+1. Re-themed for different brands via single config file
+2. Deployed as both web and mobile app
+3. Extended without forking
+
+**Key Documents:**
+- `ARCHITECTURE_PLAN.md` - Full technical roadmap (ready for review)
+
+**Planned Phases:**
+1. **Theme System Foundation** - Centralize all colors, fonts, shadows into CSS variables
+2. **Component Refactor** - Replace hardcoded Tailwind classes with theme references
+3. **Brand Config System** - Externalize all brand-specific content (logo, copy, features)
+4. **Build Tooling** - Environment-based brand/theme switching
+5. **Mobile Foundation** - Monorepo setup, shared packages, Expo app
+6. **Full Mobile Development** - Feature-complete iOS/Android apps
+
+**Current Audit Results:**
+- ~24 unique hex colors hardcoded across 40+ files
+- 111 files with hardcoded font weights
+- 109 files with hardcoded border radius
+- 18 files with custom inline shadows/gradients
+
+**Quick Theme Changes (Until Refactor):**
+- `web/src/app/globals.css` - CSS variables (colors, fonts, shadows)
+- `web/src/app/layout.tsx` - Font imports
+- `web/src/components/layout/hero-section.tsx` - Hero image
+
+---
+
 ## Recent Changes (December 2024)
+
+### White-Label Architecture Plan (December 2024)
+- Created comprehensive `ARCHITECTURE_PLAN.md` documenting the transformation roadmap
+- Completed codebase audit: identified all hardcoded colors, fonts, shadows, gradients
+- Designed 3-tier design token system (primitive → semantic → component tokens)
+- Planned 6-phase implementation from theme foundation to mobile app
+- Ready for expert review before execution
+
+### Blog Card Simplification (December 2024)
+- Simplified homepage blog card to match performer/member card style
+- Changed from 2-column grid to simple `max-w-md` card
+- Unified image aspect ratio to `4/3`
+- Key file: `web/src/app/page.tsx`
 
 ### CLS & LCP Performance Fix (December 2024)
 - **CLS: 0.639 → 0.000** - Eliminated layout shift by converting images to `next/image` with explicit dimensions
@@ -262,6 +311,7 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `web/src/lib/supabase/database.types.ts` | Generated TypeScript types |
 | `web/src/types/index.ts` | Custom TypeScript types |
 | `next.config.ts` | Next.js config with redirects |
+| `ARCHITECTURE_PLAN.md` | White-label platform roadmap |
 
 ---
 
