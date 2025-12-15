@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { unstable_noStore as noStore } from "next/cache";
 
 export interface SiteSettings {
   themePreset: string;
@@ -10,6 +11,9 @@ export interface SiteSettings {
  * Returns default empty strings if settings don't exist
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
+  // Disable caching - site settings should always be fresh after admin saves
+  noStore();
+
   try {
     const supabase = await createSupabaseServerClient();
 
