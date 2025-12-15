@@ -17,18 +17,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       "inline-flex items-center justify-center gap-2",
       "whitespace-nowrap font-medium",
       "transition-all duration-200",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50",
-      "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)]",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/50",
+      "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]",
       "disabled:pointer-events-none disabled:opacity-50",
       "select-none",
     ];
 
     const variantStyles: Record<ButtonVariant, string> = {
-      primary: "bg-[var(--color-gold)] text-[var(--color-indigo-950)] font-semibold hover:bg-[var(--color-gold-200)] hover:shadow-[var(--shadow-glow-gold-sm)] active:bg-[var(--color-gold-400)] rounded-full",
-      secondary: "border border-[var(--color-gold)]/60 bg-transparent text-[var(--color-gold)] hover:bg-[var(--color-gold)]/10 hover:border-[var(--color-gold)] active:bg-[var(--color-gold)]/20 rounded-full",
-      subtle: "bg-transparent text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] hover:bg-white/5 active:bg-white/10 rounded-lg",
-      ghost: "bg-transparent text-[var(--color-gold)]/80 hover:text-[var(--color-gold)] hover:bg-[var(--color-gold)]/5 active:bg-[var(--color-gold)]/10 rounded-lg",
-      outline: "border border-white/20 bg-transparent text-[var(--color-warm-white)] hover:border-white/40 hover:bg-white/5 active:bg-white/10 rounded-full",
+      primary: "bg-[var(--color-accent-primary)] text-[var(--color-bg-secondary)] font-semibold hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--shadow-glow-gold-sm)] active:bg-[var(--color-gold-400)] rounded-full",
+      secondary: "border border-[var(--color-accent-primary)]/60 bg-transparent text-[var(--color-text-accent)] hover:bg-[var(--color-accent-muted)] hover:border-[var(--color-accent-primary)] active:bg-[var(--color-accent-primary)]/20 rounded-full",
+      subtle: "bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5 active:bg-white/10 rounded-lg",
+      ghost: "bg-transparent text-[var(--color-text-accent)]/80 hover:text-[var(--color-text-accent)] hover:bg-[var(--color-accent-muted)] active:bg-[var(--color-accent-primary)]/10 rounded-lg",
+      outline: "border border-[var(--color-border-default)] bg-transparent text-[var(--color-text-primary)] hover:border-[var(--color-border-default)]/40 hover:bg-white/5 active:bg-white/10 rounded-full",
     };
 
     const sizeStyles: Record<ButtonSize, string> = {

@@ -27,21 +27,21 @@ export function SectionHeader({
       <div className="flex items-baseline justify-between gap-4">
         <div>
           {label && (
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-gold)]/70 uppercase mb-2">
+            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-text-accent)]/70 uppercase mb-2">
               {label}
             </p>
           )}
 
-          <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] leading-[var(--line-height-tight)]">
+          <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] leading-[var(--line-height-tight)]">
             {title}
           </h2>
 
           {showUnderline && (
-            <div className="mt-3 h-[2px] w-16 bg-gradient-to-r from-[var(--color-gold)] to-transparent rounded-full" />
+            <div className="mt-3 h-[2px] w-16 bg-gradient-to-r from-[var(--color-accent-primary)] to-transparent rounded-full" />
           )}
 
           {subtitle && (
-            <p className="mt-3 text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)] max-w-lg">
+            <p className="mt-3 text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] max-w-lg">
               {subtitle}
             </p>
           )}
