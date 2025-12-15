@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display, Inter } from "next/font/google";
 import { Header, Footer } from "@/components/navigation";
 import { Toaster } from "sonner";
+import { getSiteSettings } from "@/lib/site-settings";
+import { ThemeInitializer } from "@/components/ui/ThemeInitializer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -107,13 +109,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch site-wide default theme/font from database
+  const siteSettings = await getSiteSettings();
+
+  // Build data attributes for SSR
+  const dataTheme = siteSettings.themePreset || undefined;
+  const dataFont = siteSettings.fontPreset || undefined;
+
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      data-theme={dataTheme}
+      data-font={dataFont}
+    >
       <head>
         {/* Preconnect to external domains for faster asset loading */}
         <link rel="preconnect" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
@@ -175,6 +188,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} antialiased`}
       >
+        <ThemeInitializer
+          defaultTheme={siteSettings.themePreset}
+          defaultFont={siteSettings.fontPreset}
+        />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

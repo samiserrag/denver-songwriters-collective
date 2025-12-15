@@ -1,8 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
-import { FontSwitcher } from "@/components/ui/FontSwitcher";
+import { SiteStyleSettings } from "@/components/admin/SiteStyleSettings";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -31,19 +31,21 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  // Fetch counts for stats
+  // Fetch counts and site settings in parallel
   const [
     eventsRes,
     performersRes,
     studiosRes,
     suggestionsRes,
     usersRes,
+    siteSettings,
   ] = await Promise.all([
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "performer"),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "studio"),
     supabase.from("event_update_suggestions").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("profiles").select("*", { count: "exact", head: true }),
+    getSiteSettings(),
   ]);
 
   const eventsCount = (eventsRes as any).count ?? 0;
@@ -76,12 +78,12 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
         <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">Admin Dashboard</h1>
-        <div className="flex items-center gap-4">
-          <ThemeSwitcher />
-          <FontSwitcher />
-        </div>
+        <SiteStyleSettings
+          initialTheme={siteSettings.themePreset}
+          initialFont={siteSettings.fontPreset}
+        />
       </div>
       <p className="text-[var(--color-text-secondary)] mb-8">Manage all aspects of the platform.</p>
 
