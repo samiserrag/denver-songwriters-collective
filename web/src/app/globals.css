@@ -63,6 +63,8 @@
   --color-bg-tertiary: #1E1B4B;
   --color-bg-inverse: var(--color-warm-white);
   --color-bg-gradient-start: #0C1A47; /* Top of page gradient */
+  --color-bg-card: linear-gradient(180deg, rgba(14, 22, 41, 0.95) 0%, rgba(6, 15, 44, 0.98) 100%);
+  --color-bg-card-spotlight: radial-gradient(circle at top, var(--color-accent-muted), var(--color-bg-primary));
 
   /* Text Aliases */
   --color-text-primary: var(--color-warm-white);
@@ -85,6 +87,10 @@
      ═══════════════════════════════════════════════════════════════ */
   --font-family-serif: var(--font-serif), "Playfair Display", Georgia, serif;
   --font-family-sans: var(--font-sans), Inter, system-ui, sans-serif;
+
+  /* Semantic font aliases (overridable by font presets) */
+  --font-body: var(--font-family-sans);
+  --font-display: var(--font-family-serif);
 
   /* ═══════════════════════════════════════════════════════════════
      FONT SIZES
@@ -138,7 +144,7 @@ html {
 }
 
 body {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-body);
   background: linear-gradient(180deg, var(--color-bg-gradient-start) 0%, var(--color-bg-primary) 50%, var(--color-bg-secondary) 100%);
   background-attachment: fixed;
   color: var(--color-text-primary);
@@ -150,6 +156,11 @@ body {
   /* Flexbox layout to prevent footer CLS */
   display: flex;
   flex-direction: column;
+}
+
+/* Headings use display font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
 }
 
 /* Main content - min-height prevents footer from stretching during hydration */
@@ -205,7 +216,7 @@ body > footer {
   .card-base {
     border-radius: var(--radius-2xl);
     border: 1px solid var(--color-border-default);
-    background: linear-gradient(180deg, rgba(14, 22, 41, 0.95) 0%, rgba(6, 15, 44, 0.98) 100%);
+    background: var(--color-bg-card);
     box-shadow: var(--shadow-card);
     transition: all 0.3s ease;
   }
@@ -223,7 +234,7 @@ body > footer {
 
   /* Phase 2a: Spotlight card pattern for public cards */
   .card-spotlight {
-    background: radial-gradient(circle at top, var(--color-accent-muted), var(--color-bg-primary));
+    background: var(--color-bg-card-spotlight);
     box-shadow: var(--shadow-card);
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-2xl);

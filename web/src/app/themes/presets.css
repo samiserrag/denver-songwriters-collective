@@ -19,6 +19,8 @@
   --color-bg-tertiary: #FED7AA;
   --color-bg-inverse: #1F2937;
   --color-bg-gradient-start: #FFF7ED;
+  --color-bg-card: linear-gradient(180deg, #FFFFFF 0%, #FFF7ED 100%);
+  --color-bg-card-spotlight: radial-gradient(circle at top, rgba(249, 115, 22, 0.08), #FFFFFF);
 
   --color-text-primary: #1F2937;
   --color-text-secondary: #374151;
@@ -41,6 +43,8 @@
   --color-bg-tertiary: #BAE6FD;
   --color-bg-inverse: #0F172A;
   --color-bg-gradient-start: #F0F9FF;
+  --color-bg-card: linear-gradient(180deg, #FFFFFF 0%, #F0F9FF 100%);
+  --color-bg-card-spotlight: radial-gradient(circle at top, rgba(37, 99, 235, 0.08), #FFFFFF);
 
   --color-text-primary: #0F172A;
   --color-text-secondary: #1E293B;
@@ -63,6 +67,8 @@
   --color-bg-tertiary: #E2E8F0;
   --color-bg-inverse: #0F172A;
   --color-bg-gradient-start: #F8FAFC;
+  --color-bg-card: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --color-bg-card-spotlight: radial-gradient(circle at top, rgba(22, 163, 74, 0.08), #FFFFFF);
 
   --color-text-primary: #0F172A;
   --color-text-secondary: #334155;
@@ -85,6 +91,8 @@
   --color-bg-tertiary: #FFD2B8;
   --color-bg-inverse: #1F2937;
   --color-bg-gradient-start: #FFF1E6;
+  --color-bg-card: linear-gradient(180deg, #FFFFFF 0%, #FFF1E6 100%);
+  --color-bg-card-spotlight: radial-gradient(circle at top, rgba(220, 38, 38, 0.08), #FFFFFF);
 
   --color-text-primary: #1F2937;
   --color-text-secondary: #374151;
@@ -133,4 +141,39 @@
   --color-accent-hover: #00E7FF;
   --color-accent-muted: rgba(0, 255, 204, 0.15);
   --color-border-accent: rgba(0, 255, 204, 0.30);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FONT PRESETS
+   Override --font-body and --font-display via data-font attribute
+   ═══════════════════════════════════════════════════════════════ */
+
+:root[data-font="system"] {
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: ui-serif, Georgia, "Times New Roman", serif;
+}
+
+:root[data-font="playfair-inter"] {
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+}
+
+:root[data-font="fraunces-inter"] {
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+}
+
+:root[data-font="dmserif-inter"] {
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "DM Serif Display", ui-serif, Georgia, serif;
+}
+
+:root[data-font="oswald-inter"] {
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Oswald", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root[data-font="montserrat"] {
+  --font-body: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }

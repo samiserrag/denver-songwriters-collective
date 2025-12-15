@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
+import { FontSwitcher } from "@/components/ui/FontSwitcher";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,10 @@ export default async function AdminDashboardPage() {
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-4xl font-bold text-gold-400">Admin Dashboard</h1>
-        <ThemeSwitcher />
+        <div className="flex items-center gap-4">
+          <ThemeSwitcher />
+          <FontSwitcher />
+        </div>
       </div>
       <p className="text-neutral-300 mb-8">Manage all aspects of the platform.</p>
 
