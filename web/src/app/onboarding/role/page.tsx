@@ -92,16 +92,16 @@ export default function RoleOnboarding() {
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex flex-col items-center justify-center px-4 py-12">
       <div className="max-w-2xl w-full text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+        <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
           Welcome to Denver Songwriters Collective
         </h1>
-        <p className="text-[var(--color-warm-gray-light)] text-lg">
+        <p className="text-[var(--color-text-secondary)] text-lg">
           Tell us a bit about yourself so we can personalize your experience.
         </p>
       </div>
 
       <div className="max-w-2xl w-full">
-        <h2 className="text-xl text-[var(--color-warm-white)] mb-6 text-center">
+        <h2 className="text-xl text-[var(--color-text-primary)] mb-6 text-center">
           Which best describes you?
         </h2>
 
@@ -146,7 +146,7 @@ export default function RoleOnboarding() {
           ))}
         </div>
 
-        <p className="mt-8 text-center text-sm text-[var(--color-warm-gray)]">
+        <p className="mt-8 text-center text-sm text-[var(--color-text-secondary)]">
           Don&apos;t worry, you can change this later in your profile settings.
         </p>
       </div>

@@ -94,15 +94,15 @@ export default async function EditEventPage({
           <div>
             <Link
               href="/dashboard/my-events"
-              className="text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] text-sm mb-2 inline-block"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm mb-2 inline-block"
             >
               ← Back to My Events
             </Link>
             <div className="flex items-center gap-3 mt-1">
               <span className="text-3xl">{config.icon}</span>
               <div>
-                <h1 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-warm-white)]">{event.title}</h1>
-                <p className="text-[var(--color-warm-gray)] text-sm">{config.label} • {venueName}</p>
+                <h1 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-text-primary)]">{event.title}</h1>
+                <p className="text-[var(--color-text-secondary)] text-sm">{config.label} • {venueName}</p>
               </div>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default async function EditEventPage({
             </span>
             <Link
               href={`/events/${eventId}`}
-              className="px-3 py-1 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 text-[var(--color-warm-white)] text-sm rounded"
+              className="px-3 py-1 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 text-[var(--color-text-primary)] text-sm rounded"
               target="_blank"
             >
               View Public Page →
@@ -130,14 +130,14 @@ export default async function EditEventPage({
           <div className="lg:col-span-2 space-y-8">
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-              <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">Event Details</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Event Details</h2>
               <EventForm mode="edit" venues={venues ?? []} event={event} />
             </section>
 
             {/* Co-hosts (only for primary host) */}
             {isPrimaryHost && (
               <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">Co-hosts</h2>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Co-hosts</h2>
                 <CoHostManager eventId={eventId} hosts={(event.event_hosts as EventHost[]) || []} />
               </section>
             )}
@@ -147,7 +147,7 @@ export default async function EditEventPage({
           <div className="space-y-6">
             {/* RSVP Summary */}
             <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-              <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">Attendees</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Attendees</h2>
               <RSVPList eventId={eventId} capacity={event.capacity} />
             </section>
 

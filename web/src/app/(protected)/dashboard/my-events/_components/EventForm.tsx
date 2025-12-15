@@ -155,9 +155,9 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
 
       {/* Cover Image */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Cover Image
-          <span className="text-[var(--color-warm-gray)] font-normal ml-1">(optional)</span>
+          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
         </label>
         <div className="max-w-xs">
           <ImageUpload
@@ -170,14 +170,14 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             maxSizeMB={5}
           />
         </div>
-        <p className="mt-2 text-xs text-[var(--color-warm-gray)]">
+        <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
           Recommended: 1200x675px or larger, 16:9 aspect ratio
         </p>
       </div>
 
       {/* Event Type */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Event Type *
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -193,8 +193,8 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
               }}
               className={`p-3 rounded-lg border text-left transition-colors ${
                 formData.event_type === type
-                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-warm-white)]"
-                  : "bg-[var(--color-indigo-950)]/50 border-white/10 text-[var(--color-warm-gray-light)] hover:border-white/20"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-indigo-950)]/50 border-white/10 text-[var(--color-text-secondary)] hover:border-white/20"
               }`}
             >
               <div className="text-xl mb-1">{config.icon}</div>
@@ -202,12 +202,12 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-[var(--color-warm-gray)]">{selectedTypeConfig.description}</p>
+        <p className="mt-2 text-xs text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
       </div>
 
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Event Title *
         </label>
         <input
@@ -216,13 +216,13 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           onChange={(e) => updateField("title", e.target.value)}
           placeholder="e.g., Wednesday Night Song Circle"
           required
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Description
         </label>
         <textarea
@@ -230,7 +230,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           onChange={(e) => updateField("description", e.target.value)}
           placeholder="What should attendees expect? Any requirements?"
           rows={4}
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
         />
       </div>
 
@@ -247,13 +247,13 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
       {/* Schedule */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Day of Week
           </label>
           <select
             value={formData.day_of_week}
             onChange={(e) => updateField("day_of_week", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             <option value="">Select day</option>
             {DAYS_OF_WEEK.map(day => (
@@ -262,7 +262,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Start Time *
           </label>
           <input
@@ -273,12 +273,12 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             pattern="^(1[0-2]|0?[1-9]):([0-5][0-9])\s?(AM|PM|am|pm)$"
             title="Enter time in format: 7:00 PM"
             required
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           />
-          <p className="text-xs text-[var(--color-warm-gray)] mt-1">Format: 7:00 PM</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">Format: 7:00 PM</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             End Time
           </label>
           <input
@@ -288,21 +288,21 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             placeholder="9:00 PM"
             pattern="^(1[0-2]|0?[1-9]):([0-5][0-9])\s?(AM|PM|am|pm)$"
             title="Enter time in format: 9:00 PM"
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           />
-          <p className="text-xs text-[var(--color-warm-gray)] mt-1">Format: 9:00 PM</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">Format: 9:00 PM</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Frequency
           </label>
           <select
             value={formData.recurrence_rule}
             onChange={(e) => updateField("recurrence_rule", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             {FREQUENCIES.map(freq => (
               <option key={freq.value} value={freq.value}>{freq.label}</option>
@@ -310,9 +310,9 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Capacity
-            <span className="text-[var(--color-warm-gray)] font-normal ml-1">(leave empty for unlimited)</span>
+            <span className="text-[var(--color-text-secondary)] font-normal ml-1">(leave empty for unlimited)</span>
           </label>
           <input
             type="number"
@@ -320,23 +320,23 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             onChange={(e) => updateField("capacity", e.target.value)}
             placeholder="e.g., 12"
             min="1"
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           />
         </div>
       </div>
 
       {/* Host Notes (private) */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Host Notes
-          <span className="text-[var(--color-warm-gray)] font-normal ml-1">(private, only visible to hosts)</span>
+          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(private, only visible to hosts)</span>
         </label>
         <textarea
           value={formData.host_notes}
           onChange={(e) => updateField("host_notes", e.target.value)}
           placeholder="Internal notes, setup reminders, etc."
           rows={3}
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
         />
       </div>
 
@@ -353,7 +353,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           <button
             type="button"
             onClick={() => router.push("/dashboard/my-events")}
-            className="px-6 py-3 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 text-[var(--color-warm-white)] rounded-lg transition-colors"
+            className="px-6 py-3 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 text-[var(--color-text-primary)] rounded-lg transition-colors"
           >
             Cancel
           </button>

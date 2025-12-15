@@ -140,7 +140,7 @@ export function EventSlotsPanel({ eventId, slots }: EventSlotsPanelProps) {
             >
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-wide text-[var(--color-warm-gray-light)]">
+                  <span className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">
                     Slot {slot.slot_index}
                   </span>
                   {isMine && (
@@ -149,16 +149,16 @@ export function EventSlotsPanel({ eventId, slots }: EventSlotsPanelProps) {
                     </span>
                   )}
                   {isClaimed && !isMine && (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-[var(--color-warm-gray-light)]">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-white/10 text-[var(--color-text-secondary)]">
                       Taken
                     </span>
                   )}
                 </div>
 
-                <p className="font-medium text-[var(--color-warm-white)]">
+                <p className="font-medium text-[var(--color-text-primary)]">
                   {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                 </p>
-                <p className="text-xs text-[var(--color-warm-gray-light)]">
+                <p className="text-xs text-[var(--color-text-secondary)]">
                   First-come, first-served • One slot per performer
                 </p>
               </div>

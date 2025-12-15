@@ -54,37 +54,37 @@ function SignupForm() {
       {!submitted ? (
         <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label className="block text-sm text-[var(--color-warm-gray-light)]">Email</label>
+          <label className="block text-sm text-[var(--color-text-secondary)]">Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="email"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm text-[var(--color-warm-gray-light)]">Password</label>
+          <label className="block text-sm text-[var(--color-text-secondary)]">Password</label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="new-password"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm text-[var(--color-warm-gray-light)]">Confirm password</label>
+          <label className="block text-sm text-[var(--color-text-secondary)]">Confirm password</label>
           <input
             type="password"
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="new-password"
           />
         </div>
@@ -106,8 +106,8 @@ function SignupForm() {
       ) : (
         <div className="text-center py-8 text-[var(--color-gold-300)]">
           <h2 className="text-xl font-semibold mb-2">Check your email</h2>
-          <p className="text-[var(--color-warm-gray-light)]">
-            We&apos;ve sent a confirmation link to <strong className="text-[var(--color-warm-white)]">{email}</strong>.
+          <p className="text-[var(--color-text-secondary)]">
+            We&apos;ve sent a confirmation link to <strong className="text-[var(--color-text-primary)]">{email}</strong>.
             Click the link to activate your account.
           </p>
         </div>

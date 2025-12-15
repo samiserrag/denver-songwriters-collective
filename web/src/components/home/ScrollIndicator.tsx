@@ -13,7 +13,7 @@ export function ScrollIndicator() {
   return (
     <button
       onClick={handleClick}
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[var(--color-warm-gray)] hover:text-[var(--color-text-accent)] transition-colors cursor-pointer group"
+      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] transition-colors cursor-pointer group"
       aria-label="Scroll to content"
     >
       <span className="text-xs uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">

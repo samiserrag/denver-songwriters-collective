@@ -198,10 +198,10 @@ export function MemberFilters({
           placeholder="Search members..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 pl-10 bg-white/5 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+          className="w-full px-4 py-2 pl-10 bg-white/5 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
         />
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-warm-gray)]"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -225,7 +225,7 @@ export function MemberFilters({
               "px-3 py-1.5 text-sm rounded-full border transition-colors",
               selectedRoles.has(option.value)
                 ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
-                : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+                : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
             )}
           >
             {option.label}
@@ -241,7 +241,7 @@ export function MemberFilters({
             "px-3 py-1.5 text-sm rounded-full border transition-colors",
             availableForHire
               ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
-              : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+              : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
           )}
         >
           💼 Available for Hire
@@ -252,7 +252,7 @@ export function MemberFilters({
             "px-3 py-1.5 text-sm rounded-full border transition-colors",
             interestedInCowriting
               ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
-              : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+              : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
           )}
         >
           ✍️ Interested in Cowriting
@@ -263,7 +263,7 @@ export function MemberFilters({
             "px-3 py-1.5 text-sm rounded-full border transition-colors",
             openToCollabs
               ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-              : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+              : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
           )}
         >
           🤝 Open to Collaborations
@@ -273,7 +273,7 @@ export function MemberFilters({
       {/* Genre filters (collapsible) */}
       {allGenres.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-warm-gray-light)] hover:text-[var(--color-warm-white)]">
+          <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             Genres {selectedGenres.size > 0 && `(${selectedGenres.size})`}
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -285,7 +285,7 @@ export function MemberFilters({
                   "px-2 py-1 text-xs rounded-full border transition-colors",
                   selectedGenres.has(genre)
                     ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
-                    : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+                    : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
                 )}
               >
                 {genre}
@@ -298,7 +298,7 @@ export function MemberFilters({
       {/* Instrument filters (collapsible) */}
       {allInstruments.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-warm-gray-light)] hover:text-[var(--color-warm-white)]">
+          <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             Instruments {selectedInstruments.size > 0 && `(${selectedInstruments.size})`}
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -310,7 +310,7 @@ export function MemberFilters({
                   "px-2 py-1 text-xs rounded-full border transition-colors",
                   selectedInstruments.has(instrument)
                     ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
-                    : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+                    : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
                 )}
               >
                 {instrument}
@@ -323,7 +323,7 @@ export function MemberFilters({
       {/* Specialty filters (collapsible) */}
       {allSpecialties.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-warm-gray-light)] hover:text-[var(--color-warm-white)]">
+          <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             Specialties {selectedSpecialties.size > 0 && `(${selectedSpecialties.size})`}
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -335,7 +335,7 @@ export function MemberFilters({
                   "px-2 py-1 text-xs rounded-full border transition-colors",
                   selectedSpecialties.has(specialty)
                     ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
-                    : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
+                    : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
                 )}
               >
                 {specialty}
@@ -349,7 +349,7 @@ export function MemberFilters({
       {hasActiveFilters && (
         <button
           onClick={clearFilters}
-          className="text-sm text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] underline"
+          className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline"
         >
           Clear all filters
         </button>

@@ -58,7 +58,7 @@ export function NewsletterSignup() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           disabled={status === "loading" || status === "success"}
-          className="flex-1 px-3 py-2 bg-[var(--color-indigo-950)] border border-white/10 rounded-lg text-[var(--color-warm-white)] text-sm placeholder:text-[var(--color-warm-gray-dark)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+          className="flex-1 px-3 py-2 bg-[var(--color-indigo-950)] border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
         />
         <button
           type="submit"

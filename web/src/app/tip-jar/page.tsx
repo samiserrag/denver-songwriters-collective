@@ -17,7 +17,7 @@ export default function TipJarPage() {
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
               Tip Jar
             </h1>
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
               Help us keep the music playing and the community growing.
             </p>
           </div>
@@ -30,17 +30,17 @@ export default function TipJarPage() {
 
           {/* Why Support */}
           <section className="space-y-6 text-center">
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               The Denver Songwriters Collective is a grassroots, volunteer-run community. We don&apos;t charge membership fees or take cuts from performers. Everything we do is powered by passion and generosity.
             </p>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Your tips help cover costs like venue fees, equipment maintenance, website hosting, promotional materials, and the little things that make our events special.
             </p>
           </section>
 
           {/* Tip Options */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] text-center">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] text-center">
               Ways to Contribute
             </h2>
 
@@ -60,7 +60,7 @@ export default function TipJarPage() {
                 <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-gold-300)] transition-colors">
                   Venmo
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   @Sami-Serrag-Music
                 </p>
                 <span className="inline-block text-sm text-[var(--color-text-accent)] group-hover:underline">
@@ -83,7 +83,7 @@ export default function TipJarPage() {
                 <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-gold-300)] transition-colors">
                   PayPal
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   @SamiSerrag
                 </p>
                 <span className="inline-block text-sm text-[var(--color-text-accent)] group-hover:underline">
@@ -95,10 +95,10 @@ export default function TipJarPage() {
 
           {/* What Your Support Does */}
           <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] text-center">
+            <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] text-center">
               What Your Support Makes Possible
             </h2>
-            <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)]">
+            <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
               <li className="flex items-start gap-3">
                 <span className="text-[var(--color-text-accent)] mt-1">✓</span>
                 <span>Venue rental fees for open mics and showcases</span>
@@ -131,7 +131,7 @@ export default function TipJarPage() {
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-accent)]/90 italic leading-[var(--line-height-relaxed)]">
               Every dollar helps us create more opportunities for songwriters to connect, share, and grow together.
             </p>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)]">
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
               Thank you for being part of the collective.
             </p>
           </section>

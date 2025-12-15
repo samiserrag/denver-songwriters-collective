@@ -221,7 +221,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
       {/* Content */}
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-[var(--font-family-serif)] text-lg text-[var(--color-warm-white)] group-hover:text-[var(--color-text-accent)] transition-colors leading-tight break-words"
+          <h3 className="font-[var(--font-family-serif)] text-lg text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors leading-tight break-words"
             dangerouslySetInnerHTML={{ __html: highlight(event.title, searchQuery ?? "") }}
           />
           {event.category && (
@@ -233,7 +233,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           )}
         </div>
 
-        <div className="text-sm text-[var(--color-warm-gray-light)] flex items-center gap-2">
+        <div className="text-sm text-[var(--color-text-secondary)] flex items-center gap-2">
           <span>📍</span>
           <span
             className="break-words"
@@ -242,7 +242,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         </div>
 
         {displayLocation && (
-          <div className="text-sm text-[var(--color-warm-gray)]">
+          <div className="text-sm text-[var(--color-text-secondary)]">
             {displayLocation}
           </div>
         )}
@@ -250,7 +250,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         <div className="text-sm text-[var(--color-gold-400)]">
           {startTime}{endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}
           {recurrenceText && recurrenceText !== "Every week" && (
-            <span className="text-[var(--color-warm-gray)] ml-2">• {recurrenceText}</span>
+            <span className="text-[var(--color-text-secondary)] ml-2">• {recurrenceText}</span>
           )}
         </div>
 

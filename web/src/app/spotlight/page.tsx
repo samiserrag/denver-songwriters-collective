@@ -76,7 +76,7 @@ export default async function SpotlightPage() {
       <div className="relative h-48 md:h-64 overflow-hidden bg-gradient-to-b from-[var(--color-accent-primary)]/10 to-transparent">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
               Community Spotlight
             </h1>
             <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
@@ -91,10 +91,10 @@ export default async function SpotlightPage() {
           {/* Current Spotlights */}
           <section>
             <div className="mb-8 text-center">
-              <h2 className="text-3xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+              <h2 className="text-3xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                 Currently in the Spotlight
               </h2>
-              <p className="text-[var(--color-warm-gray)]">
+              <p className="text-[var(--color-text-secondary)]">
                 Meet our featured community members
               </p>
             </div>
@@ -124,10 +124,10 @@ export default async function SpotlightPage() {
           {previousSpotlights && previousSpotlights.length > 0 && (
             <section>
               <div className="mb-8 text-center">
-                <h2 className="text-2xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                <h2 className="text-2xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                   Previously Featured
                 </h2>
-                <p className="text-[var(--color-warm-gray)]">
+                <p className="text-[var(--color-text-secondary)]">
                   Past spotlight recipients from our community
                 </p>
               </div>
@@ -221,7 +221,7 @@ function SpotlightCard({
           )}
         </div>
 
-        <h3 className={`font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-text-accent)] transition-colors ${
+        <h3 className={`font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors ${
           isCurrent ? "text-xl" : "text-base"
         }`}>
           {profile.full_name ?? "Anonymous"}

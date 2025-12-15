@@ -33,7 +33,7 @@ export function NavLink({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-accent)]/50",
         isActive
           ? "text-[var(--color-text-accent)] bg-[var(--color-accent-primary)]/10"
-          : "text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] hover:bg-white/5",
+          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5",
         className
       )}
       aria-current={isActive ? "page" : undefined}

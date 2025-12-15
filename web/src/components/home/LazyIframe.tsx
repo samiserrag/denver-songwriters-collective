@@ -79,7 +79,7 @@ export function LazyIframe({
         <div
           className="w-full h-full bg-[var(--color-indigo-950)]/50 rounded-xl flex items-center justify-center"
         >
-          <div className="text-[var(--color-warm-gray)] text-sm">Loading...</div>
+          <div className="text-[var(--color-text-secondary)] text-sm">Loading...</div>
         </div>
       )}
     </div>

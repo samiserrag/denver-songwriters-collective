@@ -143,7 +143,7 @@ export default async function EventsPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/50 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center pt-8">
           <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
               Happenings
             </h1>
             <p className="text-lg text-[var(--color-text-accent)] mt-3 drop-shadow">
@@ -160,10 +160,10 @@ export default async function EventsPage() {
           {dscEvents.length > 0 && (
             <section>
               <div className="mb-6">
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                   Community Happenings
                 </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Song circles, workshops, and gatherings hosted by DSC members
                 </p>
               </div>
@@ -204,26 +204,26 @@ export default async function EventsPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-2xl">{config.icon}</span>
-                              <span className="px-2 py-0.5 bg-[var(--color-indigo-950)] text-[var(--color-warm-gray-light)] text-xs rounded">
+                              <span className="px-2 py-0.5 bg-[var(--color-indigo-950)] text-[var(--color-text-secondary)] text-xs rounded">
                                 {config.label}
                               </span>
                               <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded">
                                 DSC Event
                               </span>
                             </div>
-                            <h3 className="text-lg font-medium text-[var(--color-warm-white)] mb-1">{event.title}</h3>
-                            <p className="text-[var(--color-warm-gray)] text-sm">
+                            <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-1">{event.title}</h3>
+                            <p className="text-[var(--color-text-secondary)] text-sm">
                               {event.venue_name} {event.day_of_week && `• ${event.day_of_week}s`} {event.start_time && `at ${event.start_time}`}
                             </p>
                             {hostNames && (
-                              <p className="text-[var(--color-warm-gray)] text-xs mt-2">
+                              <p className="text-[var(--color-text-secondary)] text-xs mt-2">
                                 Hosted by {hostNames}
                               </p>
                             )}
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-[var(--color-warm-white)]">{event.rsvp_count || 0}</div>
-                            <div className="text-xs text-[var(--color-warm-gray)]">
+                            <div className="text-2xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count || 0}</div>
+                            <div className="text-xs text-[var(--color-text-secondary)]">
                               {event.capacity ? (
                                 remaining === 0 ? (
                                   <span className="text-amber-400">Full</span>
@@ -273,7 +273,7 @@ export default async function EventsPage() {
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {eventType.name}
                   </h3>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
                     {eventType.description}
                   </p>
                 </div>
@@ -288,7 +288,7 @@ export default async function EventsPage() {
                 <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] mb-2">
                   Looking for Open Mics?
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Explore Denver&apos;s full open mic scene in our community-maintained directory.
                 </p>
               </div>
@@ -301,10 +301,10 @@ export default async function EventsPage() {
           {/* Upcoming Happenings */}
           <section>
             <div className="mb-8">
-              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                 Upcoming Happenings
               </h2>
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                 Showcases, special nights, and community gatherings.
               </p>
             </div>
@@ -312,7 +312,7 @@ export default async function EventsPage() {
               <EventGrid events={events} />
             ) : (
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-10 text-center">
-                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)]">
+                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
                   No upcoming happenings scheduled. Check back soon!
                 </p>
               </div>
@@ -321,10 +321,10 @@ export default async function EventsPage() {
 
           {/* Get Involved CTA */}
           <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Want to Help Shape Our Happenings?
             </h2>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
               We&apos;re always looking for volunteers, venues, and partners to help expand our offerings across the Front Range.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-2">

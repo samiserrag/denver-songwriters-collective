@@ -49,7 +49,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
   }
 
   if (!data) {
-    return <p className="text-[var(--color-warm-gray)]">Failed to load attendees</p>;
+    return <p className="text-[var(--color-text-secondary)]">Failed to load attendees</p>;
   }
 
   const remaining = capacity ? Math.max(0, capacity - data.total_confirmed) : null;
@@ -59,8 +59,8 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
       {/* Summary */}
       <div className="flex items-center justify-between p-3 bg-[var(--color-indigo-950)]/50 rounded-lg">
         <div>
-          <div className="text-2xl font-bold text-[var(--color-warm-white)]">{data.total_confirmed}</div>
-          <div className="text-xs text-[var(--color-warm-gray)]">
+          <div className="text-2xl font-bold text-[var(--color-text-primary)]">{data.total_confirmed}</div>
+          <div className="text-xs text-[var(--color-text-secondary)]">
             {capacity ? `of ${capacity} confirmed` : "confirmed"}
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
       </div>
 
       {remaining !== null && remaining > 0 && (
-        <p className="text-sm text-[var(--color-warm-gray)]">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           {remaining} spot{remaining !== 1 ? "s" : ""} remaining
         </p>
       )}
@@ -81,7 +81,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
       {/* Confirmed List */}
       {data.confirmed.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-[var(--color-warm-gray-light)] mb-2">Confirmed</h3>
+          <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Confirmed</h3>
           <ul className="space-y-2">
             {data.confirmed.map((rsvp) => (
               <li key={rsvp.id} className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
                     rsvp.user?.full_name?.[0]?.toUpperCase() || "?"
                   )}
                 </div>
-                <span className="text-[var(--color-warm-white)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>
+                <span className="text-[var(--color-text-primary)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>
               </li>
             ))}
           </ul>
@@ -109,7 +109,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
                 <div className="w-8 h-8 bg-amber-900/50 text-amber-400 rounded-full flex items-center justify-center text-sm font-medium">
                   {index + 1}
                 </div>
-                <span className="text-[var(--color-warm-gray-light)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>
+                <span className="text-[var(--color-text-secondary)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>
               </li>
             ))}
           </ul>
@@ -117,7 +117,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
       )}
 
       {data.confirmed.length === 0 && data.waitlist.length === 0 && (
-        <p className="text-[var(--color-warm-gray)] text-sm text-center py-4">
+        <p className="text-[var(--color-text-secondary)] text-sm text-center py-4">
           No RSVPs yet
         </p>
       )}

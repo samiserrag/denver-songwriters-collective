@@ -19,7 +19,7 @@ export default function LogoutPage() {
 
   return (
     <PageContainer as="main" className="min-h-screen flex items-center justify-center">
-      <p className="text-[var(--color-warm-gray-light)]">
+      <p className="text-[var(--color-text-secondary)]">
         Signing you out...
       </p>
     </PageContainer>

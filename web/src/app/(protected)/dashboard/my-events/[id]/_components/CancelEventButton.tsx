@@ -36,7 +36,7 @@ export default function CancelEventButton({ eventId }: CancelEventButtonProps) {
 
   return (
     <div>
-      <p className="text-[var(--color-warm-gray)] text-sm mb-4">
+      <p className="text-[var(--color-text-secondary)] text-sm mb-4">
         Cancelling the event will notify all RSVPed attendees and remove it from public listings.
       </p>
       <button

@@ -16,11 +16,11 @@ export function AdminFormCard({
 }: AdminFormCardProps) {
   return (
     <div className={cn("card-base p-6", className)}>
-      <h3 className="font-semibold text-[var(--color-warm-white)] mb-1">
+      <h3 className="font-semibold text-[var(--color-text-primary)] mb-1">
         {title}
       </h3>
       {description && (
-        <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           {description}
         </p>
       )}

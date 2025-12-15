@@ -48,10 +48,10 @@ export default function GetInvolvedPage() {
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
               Help Us Build This Community
             </h1>
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
               DSC is powered by the people who show up — and we&apos;d love your help growing the platform, improving the directory, expanding our events, and finding the next great Denver venues and studios to partner with.
             </p>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
               You don&apos;t need experience. You just need enthusiasm and a willingness to be part of something meaningful.
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function GetInvolvedPage() {
 
           {/* Ways to Help */}
           <section>
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-8 text-center">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-8 text-center">
               Ways You Can Help
             </h2>
             <div className="grid gap-6 sm:grid-cols-2">
@@ -75,7 +75,7 @@ export default function GetInvolvedPage() {
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {way.title}
                   </h3>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
                     {way.description}
                   </p>
                   {way.cta && (
@@ -90,13 +90,13 @@ export default function GetInvolvedPage() {
 
           {/* Why It Matters */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Why Your Contribution Matters
             </h2>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               The more participation we receive, the stronger and more accurate the directory becomes and the more meaningful all of our gatherings will be. This project only succeeds because people care enough to be part of it.
             </p>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Every submission, every suggestion, every share helps build something real for Denver&apos;s creative community. Your contribution will have a lasting impact on songwriters across the Front Range.
             </p>
           </section>
@@ -104,10 +104,10 @@ export default function GetInvolvedPage() {
           {/* Volunteer Sign-Up */}
           <section className="space-y-8">
             <div className="text-center">
-              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
                 Volunteer Sign-Up
               </h2>
-              <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
+              <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
                 Interested in helping out at events, running open mics, or supporting DSC in other ways? Fill out the form below and we will be in touch.
               </p>
             </div>
@@ -118,13 +118,13 @@ export default function GetInvolvedPage() {
 
           {/* Donation & Sponsorship */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Support DSC Financially
             </h2>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               The Denver Songwriters Collective has operated for years as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm. We are deeply grateful for everyone who has helped us get this far.
             </p>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Financial contributions or sponsorships would make a meaningful difference in our ability to grow, host more events, and serve more musicians across Denver.
             </p>
             <div className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8 space-y-6">
@@ -133,7 +133,7 @@ export default function GetInvolvedPage() {
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     Individual Donations
                   </h3>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
                     Every donation, no matter the size, helps us continue hosting events, maintaining the directory, and building community resources.
                   </p>
                 </div>
@@ -141,13 +141,13 @@ export default function GetInvolvedPage() {
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     Corporate Sponsorships
                   </h3>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
                     Partner with DSC as a sponsor and support Denver&apos;s songwriting community while gaining visibility among a creative, engaged audience.
                   </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-white/10">
-                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] mb-4">
+                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] mb-4">
                   We are currently setting up our donation system. In the meantime, if you would like to contribute or discuss sponsorship opportunities, please reach out to us directly.
                 </p>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-accent)]/80 italic">
@@ -159,10 +159,10 @@ export default function GetInvolvedPage() {
 
           {/* Call to Action */}
           <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Ready to Get Started?
             </h2>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
               The easiest way to help right now is to submit or update an open mic listing. It only takes a few minutes and makes a real difference.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">

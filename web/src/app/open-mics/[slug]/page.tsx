@@ -186,7 +186,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
         <div className="p-6 md:p-8">
           <h1
-            className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-4"
+            className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4"
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
 
@@ -194,10 +194,10 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Time Card */}
             <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
-              <div className="flex items-center gap-2 text-[var(--color-warm-gray)] text-sm mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                 <span>🕐</span> Time
               </div>
-              <p className="text-[var(--color-warm-white)] font-medium">
+              <p className="text-[var(--color-text-primary)] font-medium">
                 {startFormatted}{endFormatted && endFormatted !== "TBD" ? ` — ${endFormatted}` : ""}
               </p>
               {signupFormatted && signupFormatted !== "TBD" && (
@@ -208,11 +208,11 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             {/* Venue Card */}
             {venue && (
               <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
-                <div className="flex items-center gap-2 text-[var(--color-warm-gray)] text-sm mb-1">
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <span>📍</span> Venue
                 </div>
-                <p className="text-[var(--color-warm-white)] font-medium" dangerouslySetInnerHTML={{ __html: venueNameHtml }} />
-                <p className="text-[var(--color-warm-gray-light)] text-sm mt-1">
+                <p className="text-[var(--color-text-primary)] font-medium" dangerouslySetInnerHTML={{ __html: venueNameHtml }} />
+                <p className="text-[var(--color-text-secondary)] text-sm mt-1">
                   {venue.city}{venue.state ? `, ${venue.state}` : ""}
                 </p>
               </div>
@@ -220,14 +220,14 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
             {/* Schedule Card */}
             <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
-              <div className="flex items-center gap-2 text-[var(--color-warm-gray)] text-sm mb-1">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                 <span>📅</span> Schedule
               </div>
-              <p className="text-[var(--color-warm-white)] font-medium">
+              <p className="text-[var(--color-text-primary)] font-medium">
                 {recurrenceText || "Weekly"}
               </p>
               {event.status && (
-                <p className={`text-sm mt-1 ${event.status === "active" ? "text-green-400" : "text-[var(--color-warm-gray)]"}`}>
+                <p className={`text-sm mt-1 ${event.status === "active" ? "text-green-400" : "text-[var(--color-text-secondary)]"}`}>
                   {event.status === "active" ? "✓ Active" : event.status}
                 </p>
               )}
@@ -255,7 +255,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
                 href={venue.website_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border-2 border-white/20 hover:border-white/40 text-[var(--color-warm-white)] font-semibold transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border-2 border-white/20 hover:border-white/40 text-[var(--color-text-primary)] font-semibold transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -268,17 +268,17 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           {/* About This Open Mic - merged description and notes */}
           {(hasDescription || hasNotes) && (
             <div className="mb-8">
-              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-warm-white)] mb-3">About This Open Mic</h2>
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Open Mic</h2>
               <div className="space-y-4">
                 {descriptionHtml && (
                   <div
-                    className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap leading-relaxed"
+                    className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: descriptionHtml }}
                   />
                 )}
                 {notesHtml && (
                   <div
-                    className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap leading-relaxed text-sm"
+                    className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed text-sm"
                     dangerouslySetInnerHTML={{ __html: notesHtml }}
                   />
                 )}
@@ -289,10 +289,10 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           {/* Address */}
           {venueAddressHtml && (
             <div className="mb-8">
-              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-warm-white)] mb-3">Location</h2>
-              <p className="text-[var(--color-warm-gray-light)]" dangerouslySetInnerHTML={{ __html: venueAddressHtml }} />
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">Location</h2>
+              <p className="text-[var(--color-text-secondary)]" dangerouslySetInnerHTML={{ __html: venueAddressHtml }} />
               {venue && (
-                <p className="text-[var(--color-warm-gray-light)]">
+                <p className="text-[var(--color-text-secondary)]">
                   {venue.city}{venue.state ? `, ${venue.state}` : ""}
                 </p>
               )}

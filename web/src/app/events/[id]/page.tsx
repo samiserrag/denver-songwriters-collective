@@ -118,7 +118,7 @@ export default async function EventPage({
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-3xl">{config.icon}</span>
-            <span className="px-2 py-1 bg-[var(--color-indigo-950)]/50 text-[var(--color-warm-gray-light)] text-xs rounded">
+            <span className="px-2 py-1 bg-[var(--color-indigo-950)]/50 text-[var(--color-text-secondary)] text-xs rounded">
               {config.label}
             </span>
             {event.is_dsc_event && (
@@ -127,7 +127,7 @@ export default async function EventPage({
               </span>
             )}
           </div>
-          <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-warm-white)]">{event.title}</h1>
+          <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">{event.title}</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -136,28 +136,28 @@ export default async function EventPage({
             {/* Description */}
             {event.description && (
               <section>
-                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-2">About</h2>
-                <p className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap">{event.description}</p>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">About</h2>
+                <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap">{event.description}</p>
               </section>
             )}
 
             {/* Hosts */}
             {acceptedHosts.length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-3">Hosted by</h2>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">Hosted by</h2>
                 <div className="flex flex-wrap gap-3">
                   {acceptedHosts.map((host) => (
                     <div key={host.id} className="flex items-center gap-2 p-2 bg-[var(--color-indigo-950)]/50 rounded-lg">
-                      <div className="w-8 h-8 bg-[var(--color-indigo-950)] rounded-full flex items-center justify-center text-sm text-[var(--color-warm-white)]">
+                      <div className="w-8 h-8 bg-[var(--color-indigo-950)] rounded-full flex items-center justify-center text-sm text-[var(--color-text-primary)]">
                         {host.user?.avatar_url ? (
                           <img src={host.user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                         ) : (
                           host.user?.full_name?.[0]?.toUpperCase() || "?"
                         )}
                       </div>
-                      <span className="text-[var(--color-warm-white)] text-sm">{host.user?.full_name || "Unknown"}</span>
+                      <span className="text-[var(--color-text-primary)] text-sm">{host.user?.full_name || "Unknown"}</span>
                       {host.role === "cohost" && (
-                        <span className="text-xs text-[var(--color-warm-gray)]">(co-host)</span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">(co-host)</span>
                       )}
                     </div>
                   ))}
@@ -175,17 +175,17 @@ export default async function EventPage({
           <div className="space-y-6">
             {/* Details Card */}
             <div className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-              <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">Details</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Details</h2>
 
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="text-[var(--color-warm-gray)]">Venue</dt>
-                  <dd className="text-[var(--color-warm-white)]">{event.venue_name}</dd>
+                  <dt className="text-[var(--color-text-secondary)]">Venue</dt>
+                  <dd className="text-[var(--color-text-primary)]">{event.venue_name}</dd>
                 </div>
                 {event.address && (
                   <div>
-                    <dt className="text-[var(--color-warm-gray)]">Address</dt>
-                    <dd className="text-[var(--color-warm-white)]">{event.address}</dd>
+                    <dt className="text-[var(--color-text-secondary)]">Address</dt>
+                    <dd className="text-[var(--color-text-primary)]">{event.address}</dd>
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
                       target="_blank"
@@ -197,8 +197,8 @@ export default async function EventPage({
                   </div>
                 )}
                 <div>
-                  <dt className="text-[var(--color-warm-gray)]">When</dt>
-                  <dd className="text-[var(--color-warm-white)]">
+                  <dt className="text-[var(--color-text-secondary)]">When</dt>
+                  <dd className="text-[var(--color-text-primary)]">
                     {event.day_of_week && `${event.day_of_week}s`}
                     {event.start_time && ` at ${event.start_time}`}
                     {event.end_time && ` - ${event.end_time}`}
@@ -206,8 +206,8 @@ export default async function EventPage({
                 </div>
                 {event.frequency && event.frequency !== "one_time" && (
                   <div>
-                    <dt className="text-[var(--color-warm-gray)]">Frequency</dt>
-                    <dd className="text-[var(--color-warm-white)] capitalize">{event.frequency}</dd>
+                    <dt className="text-[var(--color-text-secondary)]">Frequency</dt>
+                    <dd className="text-[var(--color-text-primary)] capitalize">{event.frequency}</dd>
                   </div>
                 )}
               </dl>
@@ -216,7 +216,7 @@ export default async function EventPage({
             {/* RSVP (DSC events only) */}
             {event.is_dsc_event && (
               <div className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-                <h2 className="text-lg font-semibold text-[var(--color-warm-white)] mb-4">RSVP</h2>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">RSVP</h2>
                 <RSVPButton
                   eventId={eventId}
                   capacity={event.capacity}

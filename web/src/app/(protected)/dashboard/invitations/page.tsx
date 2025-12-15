@@ -28,8 +28,8 @@ export default async function InvitationsPage() {
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-warm-white)] mb-2">Invitations</h1>
-        <p className="text-[var(--color-warm-gray)] mb-8">Co-host invitations from other hosts</p>
+        <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">Invitations</h1>
+        <p className="text-[var(--color-text-secondary)] mb-8">Co-host invitations from other hosts</p>
 
         <InvitationsList invitations={invitations || []} />
       </div>

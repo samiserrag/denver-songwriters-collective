@@ -87,7 +87,7 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
         {/* Content Section */}
         <div className="p-5 space-y-3">
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight line-clamp-2"
+            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight line-clamp-2"
           >
             {event.title}
           </h3>
@@ -100,17 +100,17 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
             </span>
           )}
 
-          <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-warm-gray)]">
+          <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
             {event.date} • {event.time}
           </div>
 
-          <div className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+          <div className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
             {venueDisplay}
             {event.location && ` — ${event.location}`}
           </div>
 
           {event.description && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
               {event.description}
             </p>
           )}

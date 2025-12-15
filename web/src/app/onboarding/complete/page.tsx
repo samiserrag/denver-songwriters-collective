@@ -54,16 +54,16 @@ export default function OnboardingComplete() {
 
       <div className="max-w-lg w-full text-center">
         <div className="text-6xl mb-6">🎉</div>
-        <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+        <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
           You&apos;re All Set{displayName ? `, ${displayName}` : ""}!
         </h1>
-        <p className="text-lg text-[var(--color-warm-gray-light)] mb-8">
+        <p className="text-lg text-[var(--color-text-secondary)] mb-8">
           Welcome to the Denver Songwriters Collective community.
           {role && ` You've joined as a ${roleLabels[role] || role}.`}
         </p>
 
         <div className="bg-white/5 rounded-2xl border border-white/10 p-6 mb-8">
-          <h2 className="text-xl text-[var(--color-warm-white)] mb-4">What&apos;s Next?</h2>
+          <h2 className="text-xl text-[var(--color-text-primary)] mb-4">What&apos;s Next?</h2>
           <div className="space-y-4 text-left">
             {role === "performer" && (
               <>
@@ -71,7 +71,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">🎤</span>
                   <div>
                     <h3 className="font-medium text-white">Find an Open Mic</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Browse our directory of open mics across Denver and sign up to perform.
                     </p>
                   </div>
@@ -80,7 +80,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">📅</span>
                   <div>
                     <h3 className="font-medium text-white">Check Out Events</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Discover showcases, songwriting workshops, and networking events.
                     </p>
                   </div>
@@ -93,7 +93,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">📝</span>
                   <div>
                     <h3 className="font-medium text-white">List Your Open Mic</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Add your venue to our directory and reach Denver&apos;s music community.
                     </p>
                   </div>
@@ -102,7 +102,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">👥</span>
                   <div>
                     <h3 className="font-medium text-white">Manage Sign-ups</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Let performers RSVP for slots and display the lineup on a screen.
                     </p>
                   </div>
@@ -115,7 +115,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">🎧</span>
                   <div>
                     <h3 className="font-medium text-white">Showcase Your Studio</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Add your services and availability for Denver musicians.
                     </p>
                   </div>
@@ -128,7 +128,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">🎵</span>
                   <div>
                     <h3 className="font-medium text-white">Discover Local Artists</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Explore performers in the Denver area and support their music.
                     </p>
                   </div>
@@ -137,7 +137,7 @@ export default function OnboardingComplete() {
                   <span className="text-xl">💜</span>
                   <div>
                     <h3 className="font-medium text-white">Support the Community</h3>
-                    <p className="text-sm text-[var(--color-warm-gray-light)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       Attend open mics, tip performers, and help grow the scene.
                     </p>
                   </div>
@@ -149,7 +149,7 @@ export default function OnboardingComplete() {
                 <span className="text-xl">🎵</span>
                 <div>
                   <h3 className="font-medium text-white">Explore the Community</h3>
-                  <p className="text-sm text-[var(--color-warm-gray-light)]">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
                     Check out open mics, events, and connect with local musicians.
                   </p>
                 </div>
@@ -167,7 +167,7 @@ export default function OnboardingComplete() {
           </Link>
           <Link
             href="/dashboard"
-            className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-warm-white)] font-semibold transition-colors"
+            className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-text-primary)] font-semibold transition-colors"
           >
             Go to Dashboard
           </Link>

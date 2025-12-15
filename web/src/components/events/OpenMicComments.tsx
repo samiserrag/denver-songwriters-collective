@@ -105,10 +105,10 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
 
   return (
     <div className="mt-8">
-      <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-warm-white)] mb-4">
+      <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-4">
         Community Thoughts
       </h2>
-      <p className="text-[var(--color-warm-gray)] text-sm mb-6">
+      <p className="text-[var(--color-text-secondary)] text-sm mb-6">
         Share your experience at this open mic. What makes it special?
       </p>
 
@@ -138,7 +138,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
         </form>
       ) : (
         <div className="mb-8 p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-          <p className="text-[var(--color-warm-gray)]">
+          <p className="text-[var(--color-text-secondary)]">
             <a href="/login" className="text-[var(--color-text-accent)] hover:underline">Log in</a> to share your thoughts about this open mic.
           </p>
         </div>
@@ -150,7 +150,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
           <div className="w-6 h-6 border-2 border-[var(--color-border-accent)] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : comments.length === 0 ? (
-        <p className="text-[var(--color-warm-gray)] text-center py-8">
+        <p className="text-[var(--color-text-secondary)] text-center py-8">
           No comments yet. Be the first to share your experience!
         </p>
       ) : (
@@ -179,14 +179,14 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
                 {/* Content */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[var(--color-warm-white)] font-medium">
+                    <span className="text-[var(--color-text-primary)] font-medium">
                       {comment.user?.full_name ?? "Anonymous"}
                     </span>
-                    <span className="text-[var(--color-warm-gray)] text-xs">
+                    <span className="text-[var(--color-text-secondary)] text-xs">
                       {formatDate(comment.created_at)}
                     </span>
                   </div>
-                  <p className="text-[var(--color-warm-gray-light)] whitespace-pre-wrap">
+                  <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap">
                     {comment.content}
                   </p>
                 </div>
@@ -195,7 +195,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
                 {userId === comment.user_id && (
                   <button
                     onClick={() => handleDelete(comment.id)}
-                    className="text-[var(--color-warm-gray)] hover:text-red-400 transition-colors p-1"
+                    className="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors p-1"
                     title="Delete comment"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

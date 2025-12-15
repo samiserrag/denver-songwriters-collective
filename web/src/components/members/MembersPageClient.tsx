@@ -20,7 +20,7 @@ export function MembersPageClient({ members, initialRole }: MembersPageClientPro
         onFilteredMembersChange={setFilteredMembers}
         initialRole={initialRole}
       />
-      <div className="text-sm text-[var(--color-warm-gray)]">
+      <div className="text-sm text-[var(--color-text-secondary)]">
         Showing {filteredMembers.length} of {members.length} members
       </div>
       <MembersGrid members={filteredMembers} />

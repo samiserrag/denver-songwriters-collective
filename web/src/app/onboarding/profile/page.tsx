@@ -341,10 +341,10 @@ export default function ProfileOnboarding() {
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+          <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
             Complete Your Profile
           </h1>
-          <p className="text-[var(--color-warm-gray-light)]">
+          <p className="text-[var(--color-text-secondary)]">
             Help others discover you! All fields below are <span className="text-[var(--color-text-accent)]">optional</span>.
           </p>
         </div>
@@ -355,7 +355,7 @@ export default function ProfileOnboarding() {
             <span className="text-xl">🔒</span>
             <div>
               <h3 className="font-semibold text-[var(--color-text-accent)] mb-1">Your Privacy Matters</h3>
-              <p className="text-sm text-[var(--color-warm-gray-light)]">
+              <p className="text-sm text-[var(--color-text-secondary)]">
                 Your email is never shown publicly. We only collect what you choose to share.
                 Read our full{" "}
                 <Link href="/privacy" className="text-[var(--color-text-accent)] hover:underline">
@@ -376,10 +376,10 @@ export default function ProfileOnboarding() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Profile Picture */}
           <section>
-            <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+            <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <span>📸</span> Profile Picture <span className="text-sm font-normal text-[var(--color-text-accent)]">(optional)</span>
             </h2>
-            <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               Add a profile picture to help others recognize you. Your photo will be displayed as a circle.
             </p>
             <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
@@ -394,10 +394,10 @@ export default function ProfileOnboarding() {
                 className="w-32 h-32 sm:w-40 sm:h-40"
               />
               <div className="text-center sm:text-left">
-                <p className="text-[var(--color-warm-gray-light)] text-sm mb-2">
+                <p className="text-[var(--color-text-secondary)] text-sm mb-2">
                   Recommended: A clear photo of your face
                 </p>
-                <ul className="text-xs text-[var(--color-warm-gray)] space-y-1">
+                <ul className="text-xs text-[var(--color-text-secondary)] space-y-1">
                   <li>• JPG, PNG, WebP, or GIF</li>
                   <li>• Max 5MB file size</li>
                   <li>• Will be cropped to a square</li>
@@ -408,12 +408,12 @@ export default function ProfileOnboarding() {
 
           {/* Basic Info */}
           <section>
-            <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+            <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <span>👤</span> Basic Info <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
             </h2>
             <div className="space-y-4">
               <div>
-                <label htmlFor="full_name" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="full_name" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Display Name <span className="text-[var(--color-text-accent)]/70">(optional)</span>
                 </label>
                 <input
@@ -427,7 +427,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="bio" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="bio" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Bio <span className="text-[var(--color-text-accent)]/70">(optional)</span>
                 </label>
                 <textarea
@@ -445,15 +445,15 @@ export default function ProfileOnboarding() {
 
           {/* Social Links */}
           <section>
-            <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+            <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <span>🔗</span> Social Links <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
             </h2>
-            <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               Share your social profiles so fans can follow you.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="instagram_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="instagram_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Instagram
                 </label>
                 <input
@@ -467,7 +467,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="facebook_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="facebook_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Facebook
                 </label>
                 <input
@@ -481,7 +481,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="youtube_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="youtube_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   YouTube
                 </label>
                 <input
@@ -495,7 +495,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="spotify_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="spotify_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Spotify
                 </label>
                 <input
@@ -509,7 +509,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="tiktok_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="tiktok_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   TikTok
                 </label>
                 <input
@@ -523,7 +523,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="website_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="website_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Website
                 </label>
                 <input
@@ -541,15 +541,15 @@ export default function ProfileOnboarding() {
 
           {/* Tip Links */}
           <section>
-            <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+            <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <span>💸</span> Accept Tips <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
             </h2>
-            <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               Let fans support you directly. These will appear on your profile and when you perform.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="venmo_handle" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="venmo_handle" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Venmo Handle
                 </label>
                 <input
@@ -563,7 +563,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="cashapp_handle" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="cashapp_handle" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Cash App
                 </label>
                 <input
@@ -577,7 +577,7 @@ export default function ProfileOnboarding() {
                 />
               </div>
               <div>
-                <label htmlFor="paypal_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                <label htmlFor="paypal_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   PayPal.me
                 </label>
                 <input
@@ -596,10 +596,10 @@ export default function ProfileOnboarding() {
           {/* Collaboration (Performers only) */}
           {userRole === "performer" && (
             <section>
-              <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
                 <span>🤝</span> Collaboration <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
               </h2>
-              <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                 Let other musicians know if you&apos;re open to collaborations and what you can offer.
               </p>
               <div className="space-y-6">
@@ -624,7 +624,7 @@ export default function ProfileOnboarding() {
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                    <span className="text-[var(--color-text-primary)] group-hover:text-white transition-colors">
                       🤝 Open to collaborations
                     </span>
                   </label>
@@ -648,7 +648,7 @@ export default function ProfileOnboarding() {
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                    <span className="text-[var(--color-text-primary)] group-hover:text-white transition-colors">
                       ✍️ Interested in cowriting
                     </span>
                   </label>
@@ -672,7 +672,7 @@ export default function ProfileOnboarding() {
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[var(--color-warm-white)] group-hover:text-white transition-colors">
+                    <span className="text-[var(--color-text-primary)] group-hover:text-white transition-colors">
                       💼 Available for hire
                     </span>
                   </label>
@@ -680,10 +680,10 @@ export default function ProfileOnboarding() {
 
                 {/* Specialties Multi-select */}
                 <div>
-                  <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
                     Specialties / Services
                   </label>
-                  <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-3">
                     Select what you can offer in collaborations
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -704,7 +704,7 @@ export default function ProfileOnboarding() {
                           className={`px-3 py-1.5 rounded-full text-sm transition-all ${
                             isSelected
                               ? "bg-[var(--color-accent-primary)] text-[var(--color-background)]"
-                              : "bg-white/5 text-[var(--color-warm-gray-light)] hover:bg-white/10 border border-white/10"
+                              : "bg-white/5 text-[var(--color-text-secondary)] hover:bg-white/10 border border-white/10"
                           }`}
                         >
                           {specialty}
@@ -716,7 +716,7 @@ export default function ProfileOnboarding() {
 
                 {/* Favorite Open Mic */}
                 <div>
-                  <label htmlFor="favorite_open_mic" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="favorite_open_mic" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Favorite Denver Open Mic
                   </label>
                   <input
@@ -746,7 +746,7 @@ export default function ProfileOnboarding() {
               type="button"
               onClick={handleSkip}
               disabled={saving}
-              className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-warm-gray-light)] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Skip for now
             </button>

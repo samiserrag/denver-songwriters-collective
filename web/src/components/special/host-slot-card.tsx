@@ -16,15 +16,15 @@ export function HostSlotCard({ className }: HostSlotCardProps) {
     >
       <div className="flex justify-between">
         <div>
-          <p className="text-xs text-[var(--color-warm-gray)]">Slot</p>
+          <p className="text-xs text-[var(--color-text-secondary)]">Slot</p>
           <p className="font-semibold text-[var(--color-text-accent)]">#1</p>
         </div>
-        <p className="font-semibold text-[var(--color-warm-white)]">
+        <p className="font-semibold text-[var(--color-text-primary)]">
           Performer
         </p>
       </div>
 
-      <div className="text-sm text-[var(--color-warm-gray)]">
+      <div className="text-sm text-[var(--color-text-secondary)]">
         (Performer details will appear here)
       </div>
 

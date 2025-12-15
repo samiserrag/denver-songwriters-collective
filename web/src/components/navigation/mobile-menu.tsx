@@ -69,11 +69,11 @@ export function MobileMenu({
         <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
           <span className="font-[var(--font-family-serif)] text-xl">
             <span className="text-[var(--color-text-accent)] italic">Denver</span>{" "}
-            <span className="text-[var(--color-warm-white)]">Songwriters</span>
+            <span className="text-[var(--color-text-primary)]">Songwriters</span>
           </span>
           <button
             onClick={onClose}
-            className="p-2 text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)]"
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             aria-label="Close menu"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -90,7 +90,7 @@ export function MobileMenu({
                 key={link.href}
                 href={link.href}
                 onClick={() => onClose()}
-                className="text-lg py-3 px-2 rounded-lg hover:bg-white/5 text-[var(--color-warm-white)]"
+                className="text-lg py-3 px-2 rounded-lg hover:bg-white/5 text-[var(--color-text-primary)]"
               >
                 {link.label}
               </Link>

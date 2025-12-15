@@ -120,7 +120,7 @@ export default function CompactListItem({
           <p className="text-sm text-gray-400">{humanRecurrence ?? "Schedule TBD"}</p>
           {/* City / State (clean, hide UNKNOWN) */}
           {displayLocation ? (
-            <div className="text-xs text-[var(--color-warm-gray-light)] mt-1">
+            <div className="text-xs text-[var(--color-text-secondary)] mt-1">
               📍 {displayLocation}
             </div>
           ) : null}
@@ -131,7 +131,7 @@ export default function CompactListItem({
         <div className="text-right">
           <div className="text-sm text-white font-medium">{start}{end && end !== "TBD" ? ` — ${end}` : ""}</div>
           <div className="text-xs text-[var(--color-gold-400)]">Signup: {signupDisplay}</div>
-          <div className="text-xs text-[var(--color-warm-gray-light)]">{venue_name}</div>
+          <div className="text-xs text-[var(--color-text-secondary)]">{venue_name}</div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">

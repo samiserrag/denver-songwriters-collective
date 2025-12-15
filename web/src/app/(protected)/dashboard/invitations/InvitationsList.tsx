@@ -56,8 +56,8 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">📬</div>
-        <h2 className="text-xl text-[var(--color-warm-white)] mb-2">No pending invitations</h2>
-        <p className="text-[var(--color-warm-gray)]">
+        <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No pending invitations</h2>
+        <p className="text-[var(--color-text-secondary)]">
           When someone invites you to co-host an event, it will appear here.
         </p>
       </div>
@@ -85,11 +85,11 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
             <div className="flex items-start gap-4">
               <div className="text-3xl">{config.icon}</div>
               <div className="flex-1">
-                <h3 className="text-[var(--color-warm-white)] font-medium">{eventTitle}</h3>
-                <p className="text-[var(--color-warm-gray)] text-sm">
+                <h3 className="text-[var(--color-text-primary)] font-medium">{eventTitle}</h3>
+                <p className="text-[var(--color-text-secondary)] text-sm">
                   {invitation.event?.venue_name} {invitation.event?.start_time && `• ${invitation.event.start_time}`}
                 </p>
-                <p className="text-[var(--color-warm-gray)] text-sm mt-2">
+                <p className="text-[var(--color-text-secondary)] text-sm mt-2">
                   Invited by {invitation.inviter?.full_name || "Unknown"} as {invitation.role}
                 </p>
               </div>
