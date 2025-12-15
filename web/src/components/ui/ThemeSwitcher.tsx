@@ -3,11 +3,15 @@
 import * as React from "react";
 
 const THEMES = [
-  { id: "", label: "Default" },
-  { id: "gold-night", label: "Gold Night" },
+  { id: "", label: "Default (Gold Night)" },
+  // Light themes
+  { id: "sunrise", label: "Sunrise" },
+  { id: "colorado-sky", label: "Colorado Sky" },
+  { id: "aspen-pop", label: "Aspen Pop" },
+  { id: "red-rocks", label: "Red Rocks" },
+  // Dark themes
+  { id: "night-neon", label: "Night Neon" },
   { id: "teal-night", label: "Teal Night" },
-  { id: "warm-light", label: "Warm Light" },
-  { id: "mono", label: "Mono" },
 ];
 
 const STORAGE_KEY = "dsc-theme";

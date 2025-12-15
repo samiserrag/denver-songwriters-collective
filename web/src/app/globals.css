@@ -62,6 +62,7 @@
   --color-bg-secondary: #0E1629;
   --color-bg-tertiary: #1E1B4B;
   --color-bg-inverse: var(--color-warm-white);
+  --color-bg-gradient-start: #0C1A47; /* Top of page gradient */
 
   /* Text Aliases */
   --color-text-primary: var(--color-warm-white);
@@ -138,9 +139,9 @@ html {
 
 body {
   font-family: var(--font-family-sans);
-  background: linear-gradient(180deg, #0C1A47 0%, var(--color-background) 50%, var(--color-background-dark) 100%);
+  background: linear-gradient(180deg, var(--color-bg-gradient-start) 0%, var(--color-bg-primary) 50%, var(--color-bg-secondary) 100%);
   background-attachment: fixed;
-  color: var(--color-warm-white);
+  color: var(--color-text-primary);
   /* Use lvh for consistent mobile behavior; vh fallback for older browsers */
   min-height: 100vh;
   min-height: 100lvh;
