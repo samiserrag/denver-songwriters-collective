@@ -10,6 +10,7 @@ import { NavLink } from "./nav-link";
 import { MobileMenu } from "./mobile-menu";
 import { useAuth } from "@/lib/auth/useAuth";
 import GlobalSearch from "@/components/GlobalSearch";
+import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
 
 // Primary nav links (shown in main nav bar)
 const navLinks = [
@@ -70,6 +71,9 @@ export function Header({ className }: HeaderProps) {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
+          {/* Theme Switcher */}
+          <ThemeSwitcher />
+
           {/* Global Search */}
           <GlobalSearch />
 

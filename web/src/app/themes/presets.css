@@ -1,0 +1,44 @@
+/* Theme Presets - Override semantic tokens based on data-theme attribute */
+
+:root {
+  /* Default theme uses globals.css tokens */
+}
+
+:root[data-theme="gold-night"] {
+  /* Matches current default - explicit for reference */
+}
+
+:root[data-theme="teal-night"] {
+  --color-text-accent: #00FFCC;
+  --color-accent-primary: #00FFCC;
+  --color-accent-hover: #00E7FF;
+  --color-accent-muted: rgba(0, 255, 204, 0.15);
+  --color-border-accent: rgba(0, 255, 204, 0.30);
+}
+
+:root[data-theme="warm-light"] {
+  --color-bg-primary: #FFFBF5;
+  --color-bg-secondary: #FEF3E2;
+  --color-bg-tertiary: #FBE6C8;
+  --color-bg-inverse: #111827;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #374151;
+  --color-text-tertiary: #6B7280;
+
+  --color-text-accent: #B45309;
+  --color-accent-primary: #D97706;
+  --color-accent-hover: #B45309;
+  --color-accent-muted: rgba(217, 119, 6, 0.15);
+  --color-border-default: rgba(17, 24, 39, 0.15);
+  --color-border-subtle: rgba(17, 24, 39, 0.08);
+  --color-border-accent: rgba(217, 119, 6, 0.35);
+}
+
+:root[data-theme="mono"] {
+  --color-text-accent: #E5E7EB;
+  --color-accent-primary: #E5E7EB;
+  --color-accent-hover: #FFFFFF;
+  --color-accent-muted: rgba(229, 231, 235, 0.12);
+  --color-border-accent: rgba(229, 231, 235, 0.30);
+}
