@@ -56,7 +56,7 @@ export function HeroSection({
 
       {/* Main gradient overlay - lightened for brighter appearance */}
       <div
-        className="absolute inset-0 bg-gradient-to-b from-[var(--color-background)]/20 via-[var(--color-background)]/40 to-[var(--color-background)]/90"
+        className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-primary)]/20 via-[var(--color-bg-primary)]/40 to-[var(--color-bg-primary)]/90"
         aria-hidden="true"
       />
 
@@ -96,7 +96,7 @@ export function HeroSection({
       {/* Bottom fade for smooth transition to content */}
       {showBottomFade && (
         <div
-          className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--color-background)] to-transparent pointer-events-none"
+          className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--color-bg-primary)] to-transparent pointer-events-none"
           aria-hidden="true"
         />
       )}

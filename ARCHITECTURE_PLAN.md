@@ -864,14 +864,60 @@ export const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 ## 6. Implementation Phases
 
-### Phase 1: Theme System Foundation (Week 1)
+### Phase 1a: CSS Token Foundation (Completed December 2024)
+**Goal:** Establish CSS-first semantic token system as the single source of truth
+
+**Approach:**
+- Source of truth = Tailwind v4 `@theme` block in `globals.css`
+- TypeScript config is Phase 1b (documentation/validation layer)
+- Generator scripts are deferred (optional tooling for future)
+
+**Completed:**
+1. Added semantic alias tokens in first `@theme` block:
+   - Background: `--color-bg-primary`, `--color-bg-secondary`, `--color-bg-tertiary`, `--color-bg-inverse`
+   - Text: `--color-text-primary`, `--color-text-secondary`, `--color-text-tertiary`, `--color-text-accent`
+   - Accent: `--color-accent-primary`, `--color-accent-hover`, `--color-accent-muted`
+   - Border: `--color-border-default`, `--color-border-subtle`, `--color-border-accent`
+2. Wrapped utility classes (`.card-base`, `.glass`, etc.) into `@layer components`
+3. Updated high-visibility components to use semantic tokens:
+   - `hero-section.tsx` - gradient overlays use `--color-bg-primary`
+   - `header.tsx` - background, borders, social link colors
+   - `footer.tsx` - text colors, borders, link hovers
+   - `button.tsx` - all 5 variants use semantic tokens
+   - `section-header.tsx` - title, label, subtitle colors
+
+**Usage Pattern:**
+```tsx
+// Use arbitrary value syntax with CSS variables
+className="bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)]"
+className="border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
+```
+
+---
+
+### Phase 1b: TypeScript Theme Types (Future)
+**Goal:** Add type-safe theme configuration for documentation and validation
+
+1. **Create TypeScript theme types** (`theme.types.ts`)
+2. **Create default theme config** (`denver-songwriters.ts`)
+3. **Optional: Add theme CSS generator** script
+
+**Files to create:**
+- `/config/theme.types.ts`
+- `/config/brands/denver-songwriters/theme.ts`
+- `/config/brands/denver-songwriters/index.ts`
+- `/scripts/generate-theme-css.ts` (optional)
+
+---
+
+### Phase 1 (Original): Theme System Foundation
 **Goal:** Centralize all styling into CSS variables without breaking existing UI
 
-1. **Expand `globals.css`** with complete semantic token system
-2. **Create CSS utility classes** that reference variables
-3. **Create TypeScript theme types** (`theme.types.ts`)
-4. **Create default theme config** (`denver-songwriters.ts`)
-5. **Add theme CSS generator** script
+1. **Expand `globals.css`** with complete semantic token system ✓ (Phase 1a)
+2. **Create CSS utility classes** that reference variables ✓ (Phase 1a)
+3. **Create TypeScript theme types** (`theme.types.ts`) → Phase 1b
+4. **Create default theme config** (`denver-songwriters.ts`) → Phase 1b
+5. **Add theme CSS generator** script → Phase 1b (optional)
 
 **Files to create:**
 - `/config/theme.types.ts`
@@ -880,7 +926,7 @@ export const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 - `/scripts/generate-theme-css.ts`
 
 **Files to modify:**
-- `web/src/app/globals.css` (expand variables)
+- `web/src/app/globals.css` (expand variables) ✓
 
 ### Phase 2: Component Refactor (Week 2-3)
 **Goal:** Replace all hardcoded values with theme references
