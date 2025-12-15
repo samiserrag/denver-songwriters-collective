@@ -54,9 +54,9 @@ export function HeroSection({
         />
       )}
 
-      {/* Main gradient overlay - lightened for brighter appearance */}
+      {/* Bottom blend overlay - blends hero image into page content */}
       <div
-        className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-primary)]/20 via-[var(--color-bg-primary)]/40 to-[var(--color-bg-primary)]/90"
+        className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--color-bg-primary)]"
         aria-hidden="true"
       />
 
