@@ -8,37 +8,129 @@
   /* Matches current default - explicit for reference */
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEMES
+   ═══════════════════════════════════════════════════════════════ */
+
+:root[data-theme="sunrise"] {
+  /* Bright warm, friendly */
+  --color-bg-primary: #FFF7ED;
+  --color-bg-secondary: #FFEDD5;
+  --color-bg-tertiary: #FED7AA;
+  --color-bg-inverse: #1F2937;
+  --color-bg-gradient-start: #FFF7ED;
+
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #374151;
+  --color-text-tertiary: #6B7280;
+  --color-text-accent: #F97316;
+
+  --color-accent-primary: #F97316;
+  --color-accent-hover: #EA580C;
+  --color-accent-muted: rgba(249, 115, 22, 0.16);
+
+  --color-border-default: rgba(31, 41, 55, 0.14);
+  --color-border-subtle: rgba(31, 41, 55, 0.08);
+  --color-border-accent: rgba(249, 115, 22, 0.35);
+}
+
+:root[data-theme="colorado-sky"] {
+  /* Light sky + deep navy, colorful but clean */
+  --color-bg-primary: #F0F9FF;
+  --color-bg-secondary: #E0F2FE;
+  --color-bg-tertiary: #BAE6FD;
+  --color-bg-inverse: #0F172A;
+  --color-bg-gradient-start: #F0F9FF;
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #1E293B;
+  --color-text-tertiary: #475569;
+  --color-text-accent: #2563EB;
+
+  --color-accent-primary: #2563EB;
+  --color-accent-hover: #1D4ED8;
+  --color-accent-muted: rgba(37, 99, 235, 0.16);
+
+  --color-border-default: rgba(15, 23, 42, 0.14);
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-accent: rgba(37, 99, 235, 0.35);
+}
+
+:root[data-theme="aspen-pop"] {
+  /* Light neutral + green accent */
+  --color-bg-primary: #F8FAFC;
+  --color-bg-secondary: #F1F5F9;
+  --color-bg-tertiary: #E2E8F0;
+  --color-bg-inverse: #0F172A;
+  --color-bg-gradient-start: #F8FAFC;
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #334155;
+  --color-text-tertiary: #64748B;
+  --color-text-accent: #16A34A;
+
+  --color-accent-primary: #16A34A;
+  --color-accent-hover: #15803D;
+  --color-accent-muted: rgba(22, 163, 74, 0.16);
+
+  --color-border-default: rgba(15, 23, 42, 0.14);
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-accent: rgba(22, 163, 74, 0.35);
+}
+
+:root[data-theme="red-rocks"] {
+  /* Sandstone + red accent, still readable */
+  --color-bg-primary: #FFF1E6;
+  --color-bg-secondary: #FFE4D6;
+  --color-bg-tertiary: #FFD2B8;
+  --color-bg-inverse: #1F2937;
+  --color-bg-gradient-start: #FFF1E6;
+
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #374151;
+  --color-text-tertiary: #6B7280;
+  --color-text-accent: #DC2626;
+
+  --color-accent-primary: #DC2626;
+  --color-accent-hover: #B91C1C;
+  --color-accent-muted: rgba(220, 38, 38, 0.14);
+
+  --color-border-default: rgba(31, 41, 55, 0.14);
+  --color-border-subtle: rgba(31, 41, 55, 0.08);
+  --color-border-accent: rgba(220, 38, 38, 0.32);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK THEMES
+   ═══════════════════════════════════════════════════════════════ */
+
+:root[data-theme="night-neon"] {
+  /* Dark with colorful purple accent */
+  --color-bg-primary: #070A1A;
+  --color-bg-secondary: #0B102A;
+  --color-bg-tertiary: #111B3D;
+  --color-bg-inverse: #F8FAFC;
+  --color-bg-gradient-start: #0B102A;
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-tertiary: #94A3B8;
+  --color-text-accent: #A78BFA;
+
+  --color-accent-primary: #A78BFA;
+  --color-accent-hover: #8B5CF6;
+  --color-accent-muted: rgba(167, 139, 250, 0.18);
+
+  --color-border-default: rgba(248, 250, 252, 0.14);
+  --color-border-subtle: rgba(248, 250, 252, 0.08);
+  --color-border-accent: rgba(167, 139, 250, 0.35);
+}
+
 :root[data-theme="teal-night"] {
+  /* Original teal accent on dark */
   --color-text-accent: #00FFCC;
   --color-accent-primary: #00FFCC;
   --color-accent-hover: #00E7FF;
   --color-accent-muted: rgba(0, 255, 204, 0.15);
   --color-border-accent: rgba(0, 255, 204, 0.30);
-}
-
-:root[data-theme="warm-light"] {
-  --color-bg-primary: #FFFBF5;
-  --color-bg-secondary: #FEF3E2;
-  --color-bg-tertiary: #FBE6C8;
-  --color-bg-inverse: #111827;
-
-  --color-text-primary: #111827;
-  --color-text-secondary: #374151;
-  --color-text-tertiary: #6B7280;
-
-  --color-text-accent: #B45309;
-  --color-accent-primary: #D97706;
-  --color-accent-hover: #B45309;
-  --color-accent-muted: rgba(217, 119, 6, 0.15);
-  --color-border-default: rgba(17, 24, 39, 0.15);
-  --color-border-subtle: rgba(17, 24, 39, 0.08);
-  --color-border-accent: rgba(217, 119, 6, 0.35);
-}
-
-:root[data-theme="mono"] {
-  --color-text-accent: #E5E7EB;
-  --color-accent-primary: #E5E7EB;
-  --color-accent-hover: #FFFFFF;
-  --color-accent-muted: rgba(229, 231, 235, 0.12);
-  --color-border-accent: rgba(229, 231, 235, 0.30);
 }
