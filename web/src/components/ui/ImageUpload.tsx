@@ -300,7 +300,7 @@ export function ImageUpload({
               type="button"
               onClick={handleCropComplete}
               disabled={isUploading || !completedCrop}
-              className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isUploading ? (
                 <>
@@ -326,7 +326,7 @@ export function ImageUpload({
           shape === 'circle' ? 'rounded-full' : 'rounded-xl'
         } overflow-hidden bg-[var(--color-indigo-950)] border-2 border-dashed transition-colors ${
           dragActive
-            ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/10'
+            ? 'border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10'
             : 'border-white/20 hover:border-white/40'
         }`}
         style={{ aspectRatio: '1 / 1' }}
@@ -374,7 +374,7 @@ export function ImageUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-warm-gray)] hover:text-[var(--color-gold)] transition-colors"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-warm-gray)] hover:text-[var(--color-text-accent)] transition-colors"
           >
             {isUploading ? (
               <Loader2 className="w-8 h-8 animate-spin" />

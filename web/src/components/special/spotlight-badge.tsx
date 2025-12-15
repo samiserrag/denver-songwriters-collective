@@ -11,7 +11,7 @@ export function SpotlightBadge({ className }: SpotlightBadgeProps) {
       className={cn(
         "inline-flex items-center px-3 py-1 rounded-full",
         "text-[var(--color-indigo-950)] text-xs font-semibold",
-        "bg-[var(--color-gold)] shadow-sm",
+        "bg-[var(--color-accent-primary)] shadow-sm",
         className
       )}
     >

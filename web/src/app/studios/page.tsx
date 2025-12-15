@@ -48,7 +48,7 @@ export default async function StudiosPage() {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Recording Studios
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               Professional recording services from our partner studios
             </p>
           </div>

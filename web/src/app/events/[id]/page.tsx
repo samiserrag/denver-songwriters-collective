@@ -122,7 +122,7 @@ export default async function EventPage({
               {config.label}
             </span>
             {event.is_dsc_event && (
-              <span className="px-2 py-1 bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-xs rounded">
+              <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded">
                 DSC Event
               </span>
             )}
@@ -190,7 +190,7 @@ export default async function EventPage({
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
                     >
                       View on map →
                     </a>

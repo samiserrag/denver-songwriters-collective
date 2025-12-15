@@ -10,7 +10,7 @@ export function SkeletonTable({ columns = 4, rows = 5 }: Props) {
         {/* Header */}
         <div className="flex gap-3 border-b border-white/10 pb-3">
           {Array.from({ length: columns }).map((_, i) => (
-            <div key={i} className="flex-1 h-4 bg-[var(--color-gold)]/20 rounded"></div>
+            <div key={i} className="flex-1 h-4 bg-[var(--color-accent-primary)]/20 rounded"></div>
           ))}
         </div>
         

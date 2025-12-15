@@ -100,14 +100,14 @@ export function EventSlotsPanel({ eventId, slots }: EventSlotsPanelProps) {
   return (
     <section className="mt-10 space-y-4">
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] italic text-[var(--color-gold)]">
+        <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] italic text-[var(--color-text-accent)]">
           Performance Slots
         </h2>
         {!authLoading && !user && (
           <button
             type="button"
             onClick={handleRequireAuth}
-            className="text-sm text-[var(--color-gold)] hover:underline"
+            className="text-sm text-[var(--color-text-accent)] hover:underline"
           >
             Log in to claim a slot
           </button>
@@ -133,8 +133,8 @@ export function EventSlotsPanel({ eventId, slots }: EventSlotsPanelProps) {
                 "card-base flex items-center justify-between gap-4 px-4 py-4 md:px-5 md:py-5",
                 "border border-white/8 bg-white/5",
                 "transition-all duration-200",
-                "hover:border-[var(--color-gold)]/60 hover:shadow-[var(--shadow-glow-gold-sm)]",
-                isMine && "border-[var(--color-gold)] bg-[var(--color-gold)]/5",
+                "hover:border-[var(--color-border-accent)]/60 hover:shadow-[var(--shadow-glow-gold-sm)]",
+                isMine && "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/5",
                 isClaimed && !isMine && "opacity-70"
               )}
             >
@@ -144,7 +144,7 @@ export function EventSlotsPanel({ eventId, slots }: EventSlotsPanelProps) {
                     Slot {slot.slot_index}
                   </span>
                   {isMine && (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[var(--color-gold)]/20 text-[var(--color-gold)]">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)]">
                       Your slot
                     </span>
                   )}

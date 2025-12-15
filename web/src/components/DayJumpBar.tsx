@@ -12,7 +12,7 @@ export default function DayJumpBar() {
         <a
           key={d}
           href={`#day-${d}`}
-          className="text-gray-300 hover:text-[var(--color-gold)] whitespace-nowrap"
+          className="text-gray-300 hover:text-[var(--color-text-accent)] whitespace-nowrap"
         >
           {d.slice(0,3)}
         </a>

@@ -120,7 +120,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Share your thoughts about this open mic..."
             rows={3}
-            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50 resize-none"
+            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
             disabled={submitting}
           />
           {error && (
@@ -130,7 +130,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
-              className="px-5 py-2 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Posting..." : "Post Comment"}
             </button>
@@ -139,7 +139,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
       ) : (
         <div className="mb-8 p-4 rounded-xl bg-white/5 border border-white/10 text-center">
           <p className="text-[var(--color-warm-gray)]">
-            <a href="/login" className="text-[var(--color-gold)] hover:underline">Log in</a> to share your thoughts about this open mic.
+            <a href="/login" className="text-[var(--color-text-accent)] hover:underline">Log in</a> to share your thoughts about this open mic.
           </p>
         </div>
       )}
@@ -147,7 +147,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
       {/* Comments List */}
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="w-6 h-6 border-2 border-[var(--color-gold)] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[var(--color-border-accent)] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : comments.length === 0 ? (
         <p className="text-[var(--color-warm-gray)] text-center py-8">
@@ -169,8 +169,8 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
-                    <span className="text-[var(--color-gold)] font-medium">
+                  <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                    <span className="text-[var(--color-text-accent)] font-medium">
                       {comment.user?.full_name?.[0]?.toUpperCase() ?? "?"}
                     </span>
                   </div>

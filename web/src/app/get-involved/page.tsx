@@ -42,10 +42,10 @@ export default function GetInvolvedPage() {
       <HeroSection minHeight="lg" showVignette showBottomFade>
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-gold)]/80 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-text-accent)]/80 uppercase">
               Be Part of the Movement
             </p>
-            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-gold)] leading-[var(--line-height-tight)]">
+            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
               Help Us Build This Community
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
@@ -72,7 +72,7 @@ export default function GetInvolvedPage() {
                   key={way.title}
                   className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-4"
                 >
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {way.title}
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
@@ -127,10 +127,10 @@ export default function GetInvolvedPage() {
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
               Financial contributions or sponsorships would make a meaningful difference in our ability to grow, host more events, and serve more musicians across Denver.
             </p>
-            <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8 space-y-6">
+            <div className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8 space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     Individual Donations
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
@@ -138,7 +138,7 @@ export default function GetInvolvedPage() {
                   </p>
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     Corporate Sponsorships
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
@@ -150,7 +150,7 @@ export default function GetInvolvedPage() {
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] mb-4">
                   We are currently setting up our donation system. In the meantime, if you would like to contribute or discuss sponsorship opportunities, please reach out to us directly.
                 </p>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-gold)]/80 italic">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-accent)]/80 italic">
                   Online donations coming soon.
                 </p>
               </div>
@@ -158,7 +158,7 @@ export default function GetInvolvedPage() {
           </section>
 
           {/* Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
               Ready to Get Started?
             </h2>

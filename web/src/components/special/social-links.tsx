@@ -56,11 +56,11 @@ export function SocialLinks({
           rel="noopener noreferrer"
           className={cn(
             sizes.button,
-            "rounded-full border border-[var(--color-gold)]/40",
+            "rounded-full border border-[var(--color-border-accent)]/40",
             "flex items-center justify-center",
-            "text-[var(--color-gold)]/70",
-            "hover:text-[var(--color-gold)] hover:border-[var(--color-gold)] hover:bg-[var(--color-gold)]/5",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50",
+            "text-[var(--color-text-accent)]/70",
+            "hover:text-[var(--color-text-accent)] hover:border-[var(--color-border-accent)] hover:bg-[var(--color-accent-primary)]/5",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-accent)]/50",
             "transition-all duration-200"
           )}
           aria-label={`${label} profile`}

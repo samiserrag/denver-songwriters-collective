@@ -30,9 +30,9 @@ export function NavLink({
         "text-[13px] font-medium",
         "px-2.5 py-1.5 rounded-md",
         "transition-colors duration-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-gold)]/50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-accent)]/50",
         isActive
-          ? "text-[var(--color-gold)] bg-[var(--color-gold)]/10"
+          ? "text-[var(--color-text-accent)] bg-[var(--color-accent-primary)]/10"
           : "text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] hover:bg-white/5",
         className
       )}

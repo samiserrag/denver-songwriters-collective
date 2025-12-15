@@ -166,7 +166,7 @@ export default function EventSuggestionForm({ event }: Props) {
               setIsOpen(true);
             }
           }}
-          className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] underline text-sm"
+          className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] underline text-sm"
         >
           {isLoggedIn ? "Suggest updates to this listing" : "Sign in to suggest updates"}
         </button>
@@ -319,7 +319,7 @@ export default function EventSuggestionForm({ event }: Props) {
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-background)] font-medium disabled:opacity-50"
+              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-background)] font-medium disabled:opacity-50"
             >
               {submitting ? "Submitting..." : "Submit Suggestions"}
             </button>

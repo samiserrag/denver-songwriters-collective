@@ -73,13 +73,13 @@ export default async function SpotlightPage() {
   return (
     <>
       {/* Hero Header */}
-      <div className="relative h-48 md:h-64 overflow-hidden bg-gradient-to-b from-[var(--color-gold)]/10 to-transparent">
+      <div className="relative h-48 md:h-64 overflow-hidden bg-gradient-to-b from-[var(--color-accent-primary)]/10 to-transparent">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Community Spotlight
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               Celebrating the artists, hosts, and studios of our community
             </p>
           </div>
@@ -174,7 +174,7 @@ function SpotlightCard({
       href={getProfileLink(profile)}
       className={`group block rounded-2xl border overflow-hidden transition-all ${
         isCurrent
-          ? "border-[var(--color-gold)]/30 bg-gradient-to-br from-[var(--color-gold)]/10 to-transparent hover:border-[var(--color-gold)]/50"
+          ? "border-[var(--color-border-accent)]/30 bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent hover:border-[var(--color-border-accent)]/50"
           : "border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] hover:border-white/20"
       }`}
     >
@@ -187,8 +187,8 @@ function SpotlightCard({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--color-gold)]/20 to-transparent">
-            <span className="text-4xl text-[var(--color-gold)]">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-transparent">
+            <span className="text-4xl text-[var(--color-text-accent)]">
               {profile.full_name?.[0] ?? "?"}
             </span>
           </div>
@@ -197,7 +197,7 @@ function SpotlightCard({
         {/* Current spotlight badge */}
         {isCurrent && (
           <div className="absolute top-3 right-3">
-            <span className="px-3 py-1 rounded-full bg-[var(--color-gold)] text-[var(--color-background)] text-xs font-semibold shadow-lg">
+            <span className="px-3 py-1 rounded-full bg-[var(--color-accent-primary)] text-[var(--color-background)] text-xs font-semibold shadow-lg">
               ★ Spotlight
             </span>
           </div>
@@ -209,7 +209,7 @@ function SpotlightCard({
         <div className="flex items-center gap-2 mb-2">
           <span className={`px-2 py-0.5 rounded-full text-xs ${
             isCurrent
-              ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)]"
+              ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)]"
               : "bg-neutral-800 text-neutral-400"
           }`}>
             {getRoleLabel(profile)}
@@ -221,7 +221,7 @@ function SpotlightCard({
           )}
         </div>
 
-        <h3 className={`font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-gold)] transition-colors ${
+        <h3 className={`font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-text-accent)] transition-colors ${
           isCurrent ? "text-xl" : "text-base"
         }`}>
           {profile.full_name ?? "Anonymous"}

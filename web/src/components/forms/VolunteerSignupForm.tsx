@@ -92,7 +92,7 @@ export function VolunteerSignupForm() {
 
   if (success) {
     return (
-      <div className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/10 p-8 text-center space-y-4">
+      <div className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-8 text-center space-y-4">
         <div className="text-4xl">Thank you for signing up to volunteer with DSC. We will be in touch soon.</div>
         <h3 className="text-xl font-semibold text-white">Thank You!</h3>
         <p className="text-neutral-300">
@@ -100,7 +100,7 @@ export function VolunteerSignupForm() {
         </p>
         <button
           onClick={() => setSuccess(false)}
-          className="mt-4 px-4 py-2 text-sm text-[var(--color-gold)] hover:text-[var(--color-gold-400)] underline"
+          className="mt-4 px-4 py-2 text-sm text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] underline"
         >
           Submit another response
         </button>
@@ -126,7 +126,7 @@ export function VolunteerSignupForm() {
             required
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-gold)] focus:outline-none"
+            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none"
             placeholder="Your full name"
           />
         </div>
@@ -140,7 +140,7 @@ export function VolunteerSignupForm() {
             required
             value={formData.email}
             onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-gold)] focus:outline-none"
+            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none"
             placeholder="your@email.com"
           />
         </div>
@@ -154,7 +154,7 @@ export function VolunteerSignupForm() {
           type="tel"
           value={formData.phone}
           onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-gold)] focus:outline-none"
+          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none"
           placeholder="(303) 555-1234"
         />
       </div>
@@ -169,7 +169,7 @@ export function VolunteerSignupForm() {
               key={role.id}
               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
                 formData.roles.includes(role.id)
-                  ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10"
+                  ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10"
                   : "border-neutral-700 hover:border-neutral-500"
               }`}
             >
@@ -182,7 +182,7 @@ export function VolunteerSignupForm() {
               <div
                 className={`w-5 h-5 rounded border flex items-center justify-center ${
                   formData.roles.includes(role.id)
-                    ? "bg-[var(--color-gold)] border-[var(--color-gold)]"
+                    ? "bg-[var(--color-accent-primary)] border-[var(--color-border-accent)]"
                     : "border-neutral-500"
                 }`}
               >
@@ -214,7 +214,7 @@ export function VolunteerSignupForm() {
               onClick={() => handleAvailabilityToggle(option.id)}
               className={`px-4 py-2 rounded-full border text-sm transition ${
                 formData.availability.includes(option.id)
-                  ? "border-[var(--color-gold)] bg-[var(--color-gold)]/20 text-[var(--color-gold)]"
+                  ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)]"
                   : "border-neutral-600 text-neutral-300 hover:border-neutral-400"
               }`}
             >
@@ -232,7 +232,7 @@ export function VolunteerSignupForm() {
           value={formData.notes}
           onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
           rows={4}
-          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-gold)] focus:outline-none resize-none"
+          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
           placeholder="Special skills, experience, or anything else you want to share..."
         />
       </div>
@@ -240,7 +240,7 @@ export function VolunteerSignupForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Submitting..." : "Sign Up to Volunteer"}
       </button>

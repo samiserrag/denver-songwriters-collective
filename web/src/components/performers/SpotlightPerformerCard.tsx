@@ -14,7 +14,7 @@ export function SpotlightPerformerCard({
   return (
     <div className="relative">
       <div
-        className="absolute inset-0 rounded-2xl bg-[var(--color-gold)]/10 blur-xl"
+        className="absolute inset-0 rounded-2xl bg-[var(--color-accent-primary)]/10 blur-xl"
         aria-hidden="true"
       />
       <PerformerCard performer={performer} className={className} />

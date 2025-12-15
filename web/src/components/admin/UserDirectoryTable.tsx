@@ -132,9 +132,9 @@ export default function UserDirectoryTable({ users }: Props) {
   const getSpotlightDisplayClass = (value: string): string => {
     switch (value) {
       case "performer":
-        return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
+        return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
       case "host":
-        return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
+        return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
       case "studio":
         return "bg-purple-500/20 text-purple-400 border-purple-500/30";
       default:
@@ -152,7 +152,7 @@ export default function UserDirectoryTable({ users }: Props) {
             placeholder="Search by name or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
           />
         </div>
         <div className="flex gap-2">
@@ -161,7 +161,7 @@ export default function UserDirectoryTable({ users }: Props) {
             onChange={(e) =>
               setRoleFilter(e.target.value as typeof roleFilter)
             }
-            className="rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
           >
             <option value="all">All roles</option>
             <option value="performer">Performers</option>
@@ -196,7 +196,7 @@ export default function UserDirectoryTable({ users }: Props) {
                   </td>
                   <td className="py-2 px-3">
                     <span
-                      className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs uppercase tracking-wide text-[var(--color-gold)]"
+                      className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs uppercase tracking-wide text-[var(--color-text-accent)]"
                     >
                       {ROLE_LABELS[u.role as string] ?? u.role ?? "Unknown"}
                     </span>
@@ -208,7 +208,7 @@ export default function UserDirectoryTable({ users }: Props) {
                         disabled={togglingHost === u.id}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                           user.is_host
-                            ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/30 border border-[var(--color-gold)]/30"
+                            ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] hover:bg-[var(--color-accent-primary)]/30 border border-[var(--color-border-accent)]/30"
                             : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
                         }`}
                       >
@@ -219,7 +219,7 @@ export default function UserDirectoryTable({ users }: Props) {
                           : "No"}
                       </button>
                     ) : u.role === "host" ? (
-                      <span className="text-[var(--color-gold)] text-xs">Primary Host</span>
+                      <span className="text-[var(--color-text-accent)] text-xs">Primary Host</span>
                     ) : (
                       <span className="text-neutral-500 text-xs">-</span>
                     )}

@@ -146,7 +146,7 @@ export default async function EventsPage() {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Happenings
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-3 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-3 drop-shadow">
               Showcases, song circles, workshops, and community gatherings
             </p>
           </div>
@@ -207,7 +207,7 @@ export default async function EventsPage() {
                               <span className="px-2 py-0.5 bg-[var(--color-indigo-950)] text-[var(--color-warm-gray-light)] text-xs rounded">
                                 {config.label}
                               </span>
-                              <span className="px-2 py-0.5 bg-[var(--color-gold)]/20 text-[var(--color-gold)] text-xs rounded">
+                              <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded">
                                 DSC Event
                               </span>
                             </div>
@@ -245,7 +245,7 @@ export default async function EventsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors"
                           >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -270,7 +270,7 @@ export default async function EventsPage() {
                   key={eventType.name}
                   className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-5 space-y-2"
                 >
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {eventType.name}
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
@@ -282,10 +282,10 @@ export default async function EventsPage() {
           </section>
 
           {/* Open Mic Directory Callout */}
-          <section className="rounded-2xl border border-[var(--color-gold)]/30 bg-[var(--color-gold)]/10 p-6 md:p-8">
+          <section className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)] mb-2">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] mb-2">
                   Looking for Open Mics?
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
@@ -320,7 +320,7 @@ export default async function EventsPage() {
           </section>
 
           {/* Get Involved CTA */}
-          <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
               Want to Help Shape Our Happenings?
             </h2>

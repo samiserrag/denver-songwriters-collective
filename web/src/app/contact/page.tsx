@@ -44,7 +44,7 @@ export default function ContactPage() {
     return (
       <PageContainer className="min-h-screen flex items-center justify-center">
         <div className="max-w-md w-full text-center px-6">
-          <div className="text-6xl mb-6 text-[var(--color-gold)]">✓</div>
+          <div className="text-6xl mb-6 text-[var(--color-text-accent)]">✓</div>
           <h1 className="font-display text-3xl text-white mb-4">
             Message Sent!
           </h1>
@@ -53,7 +53,7 @@ export default function ContactPage() {
           </p>
           <Link
             href="/"
-            className="inline-block px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-black font-medium rounded-lg transition-colors"
+            className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-black font-medium rounded-lg transition-colors"
           >
             Back to Home
           </Link>
@@ -81,7 +81,7 @@ export default function ContactPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none focus:ring-1 focus:ring-[var(--color-gold)]"
+              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
               placeholder="Jane Doe"
             />
           </div>
@@ -96,7 +96,7 @@ export default function ContactPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none focus:ring-1 focus:ring-[var(--color-gold)]"
+              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
               placeholder="jane@example.com"
             />
           </div>
@@ -111,7 +111,7 @@ export default function ContactPage() {
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={6}
-              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-gold)] focus:outline-none focus:ring-1 focus:ring-[var(--color-gold)] resize-none"
+              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)] resize-none"
               placeholder="How can we help?"
             />
           </div>
@@ -128,7 +128,7 @@ export default function ContactPage() {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-black font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-black font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {status === "sending" ? "Sending..." : "Send Message"}
           </button>
@@ -138,7 +138,7 @@ export default function ContactPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Other Ways to Reach Us</h2>
           <p className="text-neutral-400">
             Email:{" "}
-            <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-gold)] hover:underline">
+            <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-text-accent)] hover:underline">
               admin@denversongwriterscollective.org
             </a>
           </p>

@@ -35,7 +35,7 @@ export default async function NewEventPage() {
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-3xl mx-auto">
       <div className="mb-6">
-        <Link href="/dashboard/admin/events" className="text-[var(--color-gold)] hover:underline">
+        <Link href="/dashboard/admin/events" className="text-[var(--color-text-accent)] hover:underline">
           ← Back to Events
         </Link>
       </div>

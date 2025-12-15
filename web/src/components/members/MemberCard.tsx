@@ -23,7 +23,7 @@ function getInitials(name: string): string {
 function getRoleBadgeStyle(role: MemberRole): string {
   switch (role) {
     case "performer":
-      return "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30";
+      return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
     case "studio":
       return "bg-purple-500/20 text-purple-300 border-purple-500/30";
     case "host":

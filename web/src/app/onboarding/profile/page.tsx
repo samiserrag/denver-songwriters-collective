@@ -323,7 +323,7 @@ export default function ProfileOnboarding() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[var(--color-gold)] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[var(--color-border-accent)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -333,9 +333,9 @@ export default function ProfileOnboarding() {
       <div className="max-w-2xl mx-auto">
         {/* Progress indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-3 h-3 rounded-full bg-[var(--color-gold)]" />
-          <div className="w-12 h-0.5 bg-[var(--color-gold)]" />
-          <div className="w-3 h-3 rounded-full bg-[var(--color-gold)]" />
+          <div className="w-3 h-3 rounded-full bg-[var(--color-accent-primary)]" />
+          <div className="w-12 h-0.5 bg-[var(--color-accent-primary)]" />
+          <div className="w-3 h-3 rounded-full bg-[var(--color-accent-primary)]" />
           <div className="w-12 h-0.5 bg-white/20" />
           <div className="w-3 h-3 rounded-full bg-white/20" />
         </div>
@@ -345,20 +345,20 @@ export default function ProfileOnboarding() {
             Complete Your Profile
           </h1>
           <p className="text-[var(--color-warm-gray-light)]">
-            Help others discover you! All fields below are <span className="text-[var(--color-gold)]">optional</span>.
+            Help others discover you! All fields below are <span className="text-[var(--color-text-accent)]">optional</span>.
           </p>
         </div>
 
         {/* Privacy notice */}
-        <div className="mb-8 p-4 rounded-xl bg-[var(--color-gold)]/10 border border-[var(--color-gold)]/30">
+        <div className="mb-8 p-4 rounded-xl bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)]/30">
           <div className="flex items-start gap-3">
             <span className="text-xl">🔒</span>
             <div>
-              <h3 className="font-semibold text-[var(--color-gold)] mb-1">Your Privacy Matters</h3>
+              <h3 className="font-semibold text-[var(--color-text-accent)] mb-1">Your Privacy Matters</h3>
               <p className="text-sm text-[var(--color-warm-gray-light)]">
                 Your email is never shown publicly. We only collect what you choose to share.
                 Read our full{" "}
-                <Link href="/privacy" className="text-[var(--color-gold)] hover:underline">
+                <Link href="/privacy" className="text-[var(--color-text-accent)] hover:underline">
                   Privacy Policy
                 </Link>
                 .
@@ -377,7 +377,7 @@ export default function ProfileOnboarding() {
           {/* Profile Picture */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>📸</span> Profile Picture <span className="text-sm font-normal text-[var(--color-gold)]">(optional)</span>
+              <span>📸</span> Profile Picture <span className="text-sm font-normal text-[var(--color-text-accent)]">(optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Add a profile picture to help others recognize you. Your photo will be displayed as a circle.
@@ -409,12 +409,12 @@ export default function ProfileOnboarding() {
           {/* Basic Info */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>👤</span> Basic Info <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
+              <span>👤</span> Basic Info <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
             </h2>
             <div className="space-y-4">
               <div>
                 <label htmlFor="full_name" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Display Name <span className="text-[var(--color-gold)]/70">(optional)</span>
+                  Display Name <span className="text-[var(--color-text-accent)]/70">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -423,12 +423,12 @@ export default function ProfileOnboarding() {
                   value={formData.full_name}
                   onChange={handleChange}
                   placeholder="How you want to be known"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
                 <label htmlFor="bio" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
-                  Bio <span className="text-[var(--color-gold)]/70">(optional)</span>
+                  Bio <span className="text-[var(--color-text-accent)]/70">(optional)</span>
                 </label>
                 <textarea
                   id="bio"
@@ -437,7 +437,7 @@ export default function ProfileOnboarding() {
                   onChange={handleChange}
                   rows={3}
                   placeholder="Tell us about yourself (instruments, genres, experience...)"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50 resize-none"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
                 />
               </div>
             </div>
@@ -446,7 +446,7 @@ export default function ProfileOnboarding() {
           {/* Social Links */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>🔗</span> Social Links <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
+              <span>🔗</span> Social Links <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Share your social profiles so fans can follow you.
@@ -463,7 +463,7 @@ export default function ProfileOnboarding() {
                   value={formData.instagram_url}
                   onChange={handleChange}
                   placeholder="https://instagram.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -477,7 +477,7 @@ export default function ProfileOnboarding() {
                   value={formData.facebook_url}
                   onChange={handleChange}
                   placeholder="https://facebook.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -491,7 +491,7 @@ export default function ProfileOnboarding() {
                   value={formData.youtube_url}
                   onChange={handleChange}
                   placeholder="https://youtube.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -505,7 +505,7 @@ export default function ProfileOnboarding() {
                   value={formData.spotify_url}
                   onChange={handleChange}
                   placeholder="https://open.spotify.com/artist/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -519,7 +519,7 @@ export default function ProfileOnboarding() {
                   value={formData.tiktok_url}
                   onChange={handleChange}
                   placeholder="https://tiktok.com/@..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -533,7 +533,7 @@ export default function ProfileOnboarding() {
                   value={formData.website_url}
                   onChange={handleChange}
                   placeholder="https://yoursite.com"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
             </div>
@@ -542,7 +542,7 @@ export default function ProfileOnboarding() {
           {/* Tip Links */}
           <section>
             <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-              <span>💸</span> Accept Tips <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
+              <span>💸</span> Accept Tips <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
             </h2>
             <p className="text-sm text-[var(--color-warm-gray)] mb-4">
               Let fans support you directly. These will appear on your profile and when you perform.
@@ -559,7 +559,7 @@ export default function ProfileOnboarding() {
                   value={formData.venmo_handle}
                   onChange={handleChange}
                   placeholder="@username"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -573,7 +573,7 @@ export default function ProfileOnboarding() {
                   value={formData.cashapp_handle}
                   onChange={handleChange}
                   placeholder="$cashtag"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -587,7 +587,7 @@ export default function ProfileOnboarding() {
                   value={formData.paypal_url}
                   onChange={handleChange}
                   placeholder="https://paypal.me/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
             </div>
@@ -597,7 +597,7 @@ export default function ProfileOnboarding() {
           {userRole === "performer" && (
             <section>
               <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
-                <span>🤝</span> Collaboration <span className="text-sm font-normal text-[var(--color-gold)]">(all optional)</span>
+                <span>🤝</span> Collaboration <span className="text-sm font-normal text-[var(--color-text-accent)]">(all optional)</span>
               </h2>
               <p className="text-sm text-[var(--color-warm-gray)] mb-4">
                 Let other musicians know if you&apos;re open to collaborations and what you can offer.
@@ -613,7 +613,7 @@ export default function ProfileOnboarding() {
                         onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
                         className="sr-only peer"
                       />
-                      <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-[var(--color-gold)] peer-checked:border-[var(--color-gold)] transition-colors flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-[var(--color-accent-primary)] peer-checked:border-[var(--color-border-accent)] transition-colors flex items-center justify-center">
                         <svg
                           className="w-4 h-4 text-[var(--color-background)] opacity-0 peer-checked:opacity-100 transition-opacity"
                           fill="none"
@@ -703,7 +703,7 @@ export default function ProfileOnboarding() {
                           }}
                           className={`px-3 py-1.5 rounded-full text-sm transition-all ${
                             isSelected
-                              ? "bg-[var(--color-gold)] text-[var(--color-background)]"
+                              ? "bg-[var(--color-accent-primary)] text-[var(--color-background)]"
                               : "bg-white/5 text-[var(--color-warm-gray-light)] hover:bg-white/10 border border-white/10"
                           }`}
                         >
@@ -726,7 +726,7 @@ export default function ProfileOnboarding() {
                     value={formData.favorite_open_mic}
                     onChange={handleChange}
                     placeholder="e.g., Walnut Room Monday Night Open Mic"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-gold)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
               </div>
@@ -738,7 +738,7 @@ export default function ProfileOnboarding() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-6 py-3 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? "Saving..." : "Save & Continue"}
             </button>
