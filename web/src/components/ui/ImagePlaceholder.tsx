@@ -16,7 +16,7 @@ export function ImagePlaceholder({ initials, className }: ImagePlaceholderProps)
     <div
       className={clsx(
         "flex items-center justify-center rounded-2xl",
-        "bg-[radial-gradient(circle_at_top,_rgba(255,216,106,0.32),_rgba(6,15,44,1))]",
+        "bg-[radial-gradient(circle_at_top,_var(--color-accent-muted),_var(--color-bg-primary))]",
         "border border-white/10 text-[var(--color-warm-white)]",
         "text-2xl font-semibold tracking-[0.16em]",
         className

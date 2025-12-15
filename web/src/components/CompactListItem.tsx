@@ -140,7 +140,7 @@ export default function CompactListItem({
               href={mapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs px-2 py-1 rounded bg-white/5 text-[#00FFCC] hover:bg-white/6"
+              className="text-xs px-2 py-1 rounded bg-white/5 text-[var(--color-text-accent)] hover:bg-white/6"
             >
               Map
             </a>

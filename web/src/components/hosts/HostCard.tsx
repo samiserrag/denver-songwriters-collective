@@ -25,12 +25,8 @@ export function HostCard({ host, className }: HostCardProps) {
     <Link href={`/performers/${host.id}`} className="block h-full group">
       <article
         className={cn(
-          "h-full overflow-hidden rounded-3xl border border-white/10",
-          "bg-[radial-gradient(circle_at_top,_rgba(255,193,7,0.12),_rgba(6,15,44,1))]",
-          "shadow-[0_0_40px_rgba(0,0,0,0.55)]",
-          "transition-all duration-300",
-          "hover:-translate-y-1 hover:shadow-[0_0_60px_rgba(255,193,7,0.25)]",
-          "hover:border-[var(--color-gold)]/30",
+          "h-full overflow-hidden card-spotlight",
+          "hover:-translate-y-1",
           className
         )}
       >

@@ -57,12 +57,12 @@ export default function OpenMicFilters({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search title, venue, notes..."
-          className="w-full sm:w-80 rounded-xl bg-white/5 px-4 py-2 placeholder:text-white/40 text-white focus:outline-none focus:ring-2 focus:ring-[#00FFCC]/60 transition"
+          className="w-full sm:w-80 rounded-xl bg-white/5 px-4 py-2 placeholder:text-white/40 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/60 transition"
           aria-label="Search open mics"
         />
         <button
           onClick={() => navigateTo({ search: q })}
-          className="ml-2 inline-flex items-center px-4 py-2 rounded-xl bg-[#00FFCC]/20 text-[#00FFCC] hover:bg-[#00FFCC]/30 transition"
+          className="ml-2 inline-flex items-center px-4 py-2 rounded-xl bg-[var(--color-accent-muted)] text-[var(--color-text-accent)] hover:opacity-90 transition"
         >
           Search
         </button>
