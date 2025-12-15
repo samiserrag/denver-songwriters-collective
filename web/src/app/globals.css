@@ -326,3 +326,6 @@ h1, h2, h3 {
 .animate-scroll-bounce {
   animation: scroll-bounce 2s ease-in-out infinite;
 }
+
+/* Theme presets - must load after base tokens */
+@import "./themes/presets.css";
