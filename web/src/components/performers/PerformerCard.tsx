@@ -64,7 +64,7 @@ export function PerformerCard({ performer, className }: PerformerCardProps) {
         {/* Content Section */}
         <div className="p-5 space-y-3">
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight"
+            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
           >
             {performer.name}
           </h3>
@@ -74,13 +74,13 @@ export function PerformerCard({ performer, className }: PerformerCardProps) {
           )}
 
           {performer.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
               {performer.bio}
             </p>
           )}
 
           {performer.location && (
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-warm-gray)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
               {performer.location}
             </p>
           )}

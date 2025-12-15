@@ -66,13 +66,13 @@ export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
 
         {/* Content Section */}
         <div className="p-5 space-y-3">
-          <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-text-accent)] transition-colors">
+          <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
             {openMic.title}
           </h3>
 
           {/* Venue info */}
           {(openMic.venue_name || openMic.venue_city) && (
-            <p className="text-sm text-[var(--color-warm-gray-light)] flex items-center gap-2">
+            <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-2">
               <svg className="w-4 h-4 text-[var(--color-text-accent)]/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -85,7 +85,7 @@ export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
           )}
 
           {/* Time info */}
-          <div className="flex items-center gap-4 text-sm text-[var(--color-warm-gray)]">
+          <div className="flex items-center gap-4 text-sm text-[var(--color-text-tertiary)]">
             {openMic.start_time && (
               <span className="flex items-center gap-1">
                 <svg className="w-4 h-4 text-[var(--color-text-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
               </span>
             )}
             {openMic.signup_time && (
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs text-[var(--color-text-tertiary)]">
                 Sign-up: {formatTime(openMic.signup_time)}
               </span>
             )}
@@ -103,7 +103,7 @@ export function OpenMicCard({ openMic, className }: OpenMicCardProps) {
 
           {/* Description preview */}
           {openMic.description && (
-            <p className="text-sm text-[var(--color-warm-gray-light)] line-clamp-2">
+            <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
               {openMic.description}
             </p>
           )}

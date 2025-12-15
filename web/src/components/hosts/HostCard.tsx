@@ -68,13 +68,13 @@ export function HostCard({ host, className }: HostCardProps) {
         {/* Content Section */}
         <div className="p-5 space-y-3">
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight"
+            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
           >
             {host.name}
           </h3>
 
           {host.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
               {host.bio}
             </p>
           )}

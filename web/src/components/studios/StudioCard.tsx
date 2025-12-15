@@ -52,13 +52,13 @@ export function StudioCard({ studio, className }: StudioCardProps) {
         {/* Content */}
         <div className="p-5 space-y-3">
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight"
+            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
           >
             {studio.name}
           </h3>
 
           {studio.description && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-3">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-3">
               {studio.description}
             </p>
           )}

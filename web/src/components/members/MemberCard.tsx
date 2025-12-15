@@ -109,7 +109,7 @@ export function MemberCard({ member, className }: MemberCardProps) {
 
         {/* Content Section */}
         <div className="p-5 space-y-3">
-          <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight">
+          <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight">
             {member.name}
           </h3>
 
@@ -119,7 +119,7 @@ export function MemberCard({ member, className }: MemberCardProps) {
               {(member.genres || member.specialties)?.slice(0, 3).map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 text-xs bg-white/5 text-[var(--color-warm-gray-light)] rounded-full border border-white/10"
+                  className="px-2 py-0.5 text-xs bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] rounded-full border border-[var(--color-border-default)]"
                 >
                   {tag}
                 </span>
@@ -142,13 +142,13 @@ export function MemberCard({ member, className }: MemberCardProps) {
           </div>
 
           {member.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
               {member.bio}
             </p>
           )}
 
           {member.location && (
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-warm-gray)]">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
               {member.location}
             </p>
           )}
