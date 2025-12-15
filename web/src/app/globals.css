@@ -115,9 +115,25 @@ body {
   background: linear-gradient(180deg, #0C1A47 0%, var(--color-background) 50%, var(--color-background-dark) 100%);
   background-attachment: fixed;
   color: var(--color-warm-white);
+  /* Use lvh for consistent mobile behavior; vh fallback for older browsers */
   min-height: 100vh;
+  min-height: 100lvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Flexbox layout to prevent footer CLS */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content - min-height prevents footer from stretching during hydration */
+body > main {
+  flex: 1 0 auto;
+  min-height: calc(100lvh - 64px);
+}
+
+/* Footer stays at bottom, uses natural content height */
+body > footer {
+  flex-shrink: 0;
 }
 
 ::selection {
