@@ -77,13 +77,13 @@ export default async function AdminDashboardPage() {
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-4xl font-bold text-gold-400">Admin Dashboard</h1>
+        <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">Admin Dashboard</h1>
         <div className="flex items-center gap-4">
           <ThemeSwitcher />
           <FontSwitcher />
         </div>
       </div>
-      <p className="text-neutral-300 mb-8">Manage all aspects of the platform.</p>
+      <p className="text-[var(--color-text-secondary)] mb-8">Manage all aspects of the platform.</p>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
@@ -91,16 +91,16 @@ export default async function AdminDashboardPage() {
           <Link
             key={stat.label}
             href={stat.href}
-            className={`p-4 rounded-lg border text-center hover:border-[var(--color-border-accent)] transition-colors ${
-              stat.highlight 
-                ? "bg-yellow-900/30 border-yellow-600" 
-                : "bg-neutral-800/50 border-neutral-700"
+            className={`p-4 rounded-lg border text-center hover:border-[var(--color-border-accent)] transition-colors card-base ${
+              stat.highlight
+                ? "!bg-yellow-900/30 !border-yellow-600"
+                : ""
             }`}
           >
-            <p className={`text-3xl font-bold ${stat.highlight ? "text-yellow-400" : "text-white"}`}>
+            <p className={`text-3xl font-bold ${stat.highlight ? "text-yellow-400" : "text-[var(--color-text-primary)]"}`}>
               {stat.value}
             </p>
-            <p className="text-neutral-400 text-sm">{stat.label}</p>
+            <p className="text-[var(--color-text-secondary)] text-sm">{stat.label}</p>
           </Link>
         ))}
       </div>
@@ -111,10 +111,10 @@ export default async function AdminDashboardPage() {
           <Link
             key={link.href}
             href={link.href}
-            className="block p-6 bg-neutral-800/50 border border-neutral-700 rounded-lg hover:border-[var(--color-border-accent)] transition-colors"
+            className="block p-6 card-base hover:border-[var(--color-border-accent)] transition-colors"
           >
-            <h2 className="text-xl font-semibold text-white mb-2">{link.title}</h2>
-            <p className="text-neutral-400 text-sm">{link.description}</p>
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">{link.title}</h2>
+            <p className="text-[var(--color-text-secondary)] text-sm">{link.description}</p>
           </Link>
         ))}
       </div>
