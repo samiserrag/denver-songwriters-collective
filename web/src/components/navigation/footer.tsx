@@ -16,8 +16,8 @@ export function Footer({ className }: FooterProps) {
       className={cn(
         "border-t border-white/5",
         "bg-[var(--color-background-dark)]",
-        // Reserve consistent space to prevent CLS from content above
-        "min-h-[650px] md:min-h-[280px]",
+        // NOTE: min-height is set via critical inline CSS in layout.tsx to prevent CLS
+        // Do NOT add min-h classes here - they conflict with the inline styles
         className
       )}
       role="contentinfo"

@@ -163,16 +163,20 @@ export default function RootLayout({
           /* Fixed heights for highlights image container */
           .h-40 { height: 10rem !important; min-height: 10rem !important; }
 
-          /* Footer - reserve adequate space to prevent CLS */
-          footer { min-height: 650px !important; }
-          @media (min-width: 768px) { footer { min-height: 280px !important; } }
+          /* Main content - CRITICAL: min-height prevents footer from stretching */
+          /* Uses 100lvh (large viewport) - header(64px) to fill viewport */
+          /* This ensures footer stays at natural size from first paint */
+          main { flex: 1 0 auto; min-height: calc(100lvh - 64px); }
+
+          /* Footer - natural height, flex-shrink:0 prevents compression */
+          footer[role="contentinfo"] { flex-shrink: 0; }
         `}} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} antialiased`}
       >
         <Header />
-        {children}
+        <main className="flex-1">{children}</main>
         <Footer />
         <Toaster />
       </body>
