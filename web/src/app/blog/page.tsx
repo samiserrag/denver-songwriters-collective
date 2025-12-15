@@ -64,7 +64,7 @@ export default async function BlogPage() {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Blog
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               Stories, tips, and insights from the Denver songwriting community.{" "}
               <Link href="/dashboard/blog" className="underline hover:text-white transition-colors">Share your own!</Link>
             </p>
@@ -109,7 +109,7 @@ function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] overflow-hidden hover:border-[var(--color-gold)]/30 transition-colors"
+      className="group block rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] overflow-hidden hover:border-[var(--color-border-accent)]/30 transition-colors"
     >
       {post.cover_image_url && (
         <div className="relative aspect-video w-full overflow-hidden">
@@ -128,14 +128,14 @@ function BlogCard({ post }: { post: BlogPost }) {
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-2 py-1 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)] border border-[var(--color-gold)]/20"
+                className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
               >
                 {tag}
               </span>
             ))}
           </div>
         )}
-        <h2 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-gold)] transition-colors">
+        <h2 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] group-hover:text-[var(--color-text-accent)] transition-colors">
           {post.title}
         </h2>
         {post.excerpt && (
@@ -153,8 +153,8 @@ function BlogCard({ post }: { post: BlogPost }) {
               className="rounded-full object-cover"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
-              <span className="text-[var(--color-gold)] text-sm">
+            <div className="w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+              <span className="text-[var(--color-text-accent)] text-sm">
                 {author?.full_name?.[0] ?? "?"}
               </span>
             </div>

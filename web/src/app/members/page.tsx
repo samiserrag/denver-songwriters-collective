@@ -77,7 +77,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Our Members
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               Performers, studios, hosts, and fans who make our community thrive
             </p>
           </div>

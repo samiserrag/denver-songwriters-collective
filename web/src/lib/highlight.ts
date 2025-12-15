@@ -20,7 +20,7 @@ export function linkifyUrls(escapedText: string): string {
   return escapedText.replace(urlRegex, (url) => {
     // Truncate display URL if too long
     const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] underline break-all">${displayUrl}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] underline break-all">${displayUrl}</a>`;
   });
 }
 
@@ -45,5 +45,5 @@ export function highlight(text?: string | null, query?: string | null): string {
   const re = new RegExp(escapedQuery, 'ig');
 
   // Wrap matched (escaped) text in a <mark> for highlighting.
-  return escaped.replace(re, (m) => `<mark class="bg-[var(--color-gold)]/40 text-white px-1 rounded-sm">${m}</mark>`);
+  return escaped.replace(re, (m) => `<mark class="bg-[var(--color-accent-primary)]/40 text-white px-1 rounded-sm">${m}</mark>`);
 }

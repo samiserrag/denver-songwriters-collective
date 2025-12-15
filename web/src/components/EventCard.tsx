@@ -188,7 +188,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
       className={`group rounded-xl bg-[var(--color-indigo-950)]/50 border overflow-hidden transition-all duration-200 card-hover ${
         showStatusBadge
           ? "border-amber-500/30 hover:border-amber-500/50"
-          : "border-white/10 hover:border-[var(--color-gold)]/50"
+          : "border-white/10 hover:border-[var(--color-border-accent)]/50"
       }`}
       role="article"
     >
@@ -198,7 +198,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         {/* Day badge */}
         {dayOfWeek && (
           <div className="absolute top-3 left-3 px-3 py-1 bg-black/70 backdrop-blur rounded-full">
-            <span className="text-[var(--color-gold)] text-sm font-medium">{dayOfWeek}</span>
+            <span className="text-[var(--color-text-accent)] text-sm font-medium">{dayOfWeek}</span>
           </div>
         )}
         {/* Status badge - show prominently for non-active */}
@@ -211,7 +211,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         <button
           onClick={toggleFavorite}
           aria-label={favorited ? "Remove favorite" : "Add favorite"}
-          className="absolute top-3 right-3 text-xl leading-none px-2 py-1 rounded-full bg-black/50 backdrop-blur hover:bg-black/70 transition text-[var(--color-gold)]"
+          className="absolute top-3 right-3 text-xl leading-none px-2 py-1 rounded-full bg-black/50 backdrop-blur hover:bg-black/70 transition text-[var(--color-text-accent)]"
           disabled={loadingFav}
         >
           {favorited ? "★" : "☆"}
@@ -221,7 +221,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
       {/* Content */}
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-[var(--font-family-serif)] text-lg text-[var(--color-warm-white)] group-hover:text-[var(--color-gold)] transition-colors leading-tight break-words"
+          <h3 className="font-[var(--font-family-serif)] text-lg text-[var(--color-warm-white)] group-hover:text-[var(--color-text-accent)] transition-colors leading-tight break-words"
             dangerouslySetInnerHTML={{ __html: highlight(event.title, searchQuery ?? "") }}
           />
           {event.category && (
@@ -257,7 +257,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         <div className="flex items-center justify-between pt-2 border-t border-white/5">
           <Link
             href={event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`}
-            className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
+            className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
           >
             View Details →
           </Link>
@@ -266,7 +266,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
               href={eventMapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
+              className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
             >
               Map
             </a>

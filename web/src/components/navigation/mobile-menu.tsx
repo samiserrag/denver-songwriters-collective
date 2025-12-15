@@ -68,7 +68,7 @@ export function MobileMenu({
         {/* Fixed header */}
         <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
           <span className="font-[var(--font-family-serif)] text-xl">
-            <span className="text-[var(--color-gold)] italic">Denver</span>{" "}
+            <span className="text-[var(--color-text-accent)] italic">Denver</span>{" "}
             <span className="text-[var(--color-warm-white)]">Songwriters</span>
           </span>
           <button

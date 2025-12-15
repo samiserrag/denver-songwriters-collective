@@ -56,7 +56,7 @@ export default function GalleryGrid({ images }: Props) {
             className="break-inside-avoid group cursor-pointer"
             onClick={() => setSelectedImage(image)}
           >
-            <div className="relative rounded-xl overflow-hidden border border-white/10 hover:border-[var(--color-gold)]/30 transition-colors">
+            <div className="relative rounded-xl overflow-hidden border border-white/10 hover:border-[var(--color-border-accent)]/30 transition-colors">
               <div className="relative aspect-[4/3] w-full">
                 <Image
                   src={image.image_url}
@@ -67,7 +67,7 @@ export default function GalleryGrid({ images }: Props) {
                 />
               </div>
               {image.is_featured && (
-                <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-gold)] text-black text-xs font-medium">
+                <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-accent-primary)] text-black text-xs font-medium">
                   Featured
                 </div>
               )}

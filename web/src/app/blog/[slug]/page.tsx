@@ -207,7 +207,7 @@ export default async function BlogPostPage({ params }: Props) {
         return (
           <blockquote
             key={i}
-            className="border-l-4 border-[var(--color-gold)] pl-4 my-6 text-neutral-400 italic"
+            className="border-l-4 border-[var(--color-border-accent)] pl-4 my-6 text-neutral-400 italic"
           >
             {block.replace(/^> /gm, "")}
           </blockquote>
@@ -246,7 +246,7 @@ export default async function BlogPostPage({ params }: Props) {
           {/* Back link */}
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-neutral-400 hover:text-[var(--color-gold)] transition-colors mb-8"
+            className="inline-flex items-center gap-2 text-neutral-400 hover:text-[var(--color-text-accent)] transition-colors mb-8"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -260,7 +260,7 @@ export default async function BlogPostPage({ params }: Props) {
               {post.tags.map((tag: string) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-1 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)] border border-[var(--color-gold)]/20"
+                  className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
                 >
                   {tag}
                 </span>
@@ -282,8 +282,8 @@ export default async function BlogPostPage({ params }: Props) {
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
-                <span className="text-[var(--color-gold)] text-lg">
+              <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                <span className="text-[var(--color-text-accent)] text-lg">
                   {author?.full_name?.[0] ?? "?"}
                 </span>
               </div>
@@ -351,8 +351,8 @@ export default async function BlogPostPage({ params }: Props) {
                     className="w-16 h-16 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
-                    <span className="text-[var(--color-gold)] text-xl">
+                  <div className="w-16 h-16 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                    <span className="text-[var(--color-text-accent)] text-xl">
                       {author.full_name?.[0] ?? "?"}
                     </span>
                   </div>

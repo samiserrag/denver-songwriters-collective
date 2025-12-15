@@ -198,7 +198,7 @@ export function MemberFilters({
           placeholder="Search members..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 pl-10 bg-white/5 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:outline-none focus:border-[var(--color-gold)]/50"
+          className="w-full px-4 py-2 pl-10 bg-white/5 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
         />
         <svg
           className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-warm-gray)]"
@@ -224,7 +224,7 @@ export function MemberFilters({
             className={cn(
               "px-3 py-1.5 text-sm rounded-full border transition-colors",
               selectedRoles.has(option.value)
-                ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
+                ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                 : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
             )}
           >
@@ -240,7 +240,7 @@ export function MemberFilters({
           className={cn(
             "px-3 py-1.5 text-sm rounded-full border transition-colors",
             availableForHire
-              ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
+              ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
               : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
           )}
         >
@@ -284,7 +284,7 @@ export function MemberFilters({
                 className={cn(
                   "px-2 py-1 text-xs rounded-full border transition-colors",
                   selectedGenres.has(genre)
-                    ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
+                    ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                     : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
                 )}
               >
@@ -309,7 +309,7 @@ export function MemberFilters({
                 className={cn(
                   "px-2 py-1 text-xs rounded-full border transition-colors",
                   selectedInstruments.has(instrument)
-                    ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
+                    ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                     : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
                 )}
               >
@@ -334,7 +334,7 @@ export function MemberFilters({
                 className={cn(
                   "px-2 py-1 text-xs rounded-full border transition-colors",
                   selectedSpecialties.has(specialty)
-                    ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border-[var(--color-gold)]/30"
+                    ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                     : "bg-white/5 text-[var(--color-warm-gray-light)] border-white/10 hover:border-white/20"
                 )}
               >

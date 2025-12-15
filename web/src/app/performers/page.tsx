@@ -52,7 +52,7 @@ export default async function PerformersPage() {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Our Performers
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               Talented artists who grace our stages every week
             </p>
           </div>

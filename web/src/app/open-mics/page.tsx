@@ -400,7 +400,7 @@ function parseTimeToMinutes(t?: string | null) {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
               Denver Open Mic Directory
             </h1>
-            <p className="text-lg text-[var(--color-gold)] mt-2 drop-shadow">
+            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               {totalActiveEvents} verified open mics across the Front Range
             </p>
             {totalEvents > totalActiveEvents && (
@@ -420,7 +420,7 @@ function parseTimeToMinutes(t?: string | null) {
           </p>
           <p className="text-xs text-slate-400 max-w-md">
             Contact venues to confirm details.{" "}
-            <a href="/submit-open-mic" className="text-[var(--color-gold)] hover:underline">Help keep this list updated</a>.
+            <a href="/submit-open-mic" className="text-[var(--color-text-accent)] hover:underline">Help keep this list updated</a>.
           </p>
         </div>
 
@@ -447,7 +447,7 @@ function parseTimeToMinutes(t?: string | null) {
                     p.set("view", "list");
                     return `/open-mics?${p.toString()}`;
                   })()}
-                  className={view === "list" ? "px-3 py-2 rounded bg-[var(--color-gold)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                  className={view === "list" ? "px-3 py-2 rounded bg-[var(--color-accent-primary)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
                 >
                   List View
                 </Link>
@@ -462,7 +462,7 @@ function parseTimeToMinutes(t?: string | null) {
                     p.set("view", "grid");
                     return `/open-mics?${p.toString()}`;
                   })()}
-                  className={view === "grid" ? "px-3 py-2 rounded bg-[var(--color-gold)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                  className={view === "grid" ? "px-3 py-2 rounded bg-[var(--color-accent-primary)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
                 >
                   Grid View
                 </Link>
@@ -504,7 +504,7 @@ function parseTimeToMinutes(t?: string | null) {
                     const dayEvents = events.filter((e: any) => (e.day_of_week ?? "").toLowerCase() === day.toLowerCase());
                     return (
                       <section key={day} aria-labelledby={`day-${day}`} className="mt-6">
-                        <h2 id={`day-${day}`} className="text-xl font-semibold text-[var(--color-gold)] mt-8 mb-3">
+                        <h2 id={`day-${day}`} className="text-xl font-semibold text-[var(--color-text-accent)] mt-8 mb-3">
                           {day}
                         </h2>
 
@@ -532,7 +532,7 @@ function parseTimeToMinutes(t?: string | null) {
 
         {/* Contribution Section */}
         <div className="py-10">
-          <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 space-y-8">
+          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 space-y-8">
             <div className="text-center space-y-4">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
                 Help Keep This Directory Accurate
@@ -547,7 +547,7 @@ function parseTimeToMinutes(t?: string | null) {
 
             <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto">
               <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
-                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Submit New Open Mics
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
@@ -555,7 +555,7 @@ function parseTimeToMinutes(t?: string | null) {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
-                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Report Changes
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
@@ -563,7 +563,7 @@ function parseTimeToMinutes(t?: string | null) {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
-                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Confirm Active Events
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
@@ -571,7 +571,7 @@ function parseTimeToMinutes(t?: string | null) {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
-                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-gold)]">
+                <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Add Venue Details
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
@@ -583,7 +583,7 @@ function parseTimeToMinutes(t?: string | null) {
             <div className="text-center pt-4">
               <Link
                 href="/submit-open-mic"
-                className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-gold)] to-[var(--color-gold-400)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] hover:shadow-[0_0_20px_rgba(255,216,106,0.35)] transition"
+                className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-gold-400)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] hover:shadow-[0_0_20px_rgba(255,216,106,0.35)] transition"
               >
                 Submit, Claim, or Update an Open Mic
               </Link>

@@ -112,7 +112,7 @@ export default function BlogPostsTable({ posts }: Props) {
           onClick={() => setFilterStatus("all")}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "all"
-              ? "bg-[var(--color-gold)] text-[var(--color-background)]"
+              ? "bg-[var(--color-accent-primary)] text-[var(--color-background)]"
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
           }`}
         >
@@ -184,7 +184,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     disabled={isApproving === post.id}
                     className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                       post.is_approved
-                        ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/30"
+                        ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] hover:bg-[var(--color-accent-primary)]/30"
                         : "bg-amber-900/50 text-amber-400 hover:bg-amber-900"
                     }`}
                   >
@@ -243,7 +243,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     </Link>
                     <Link
                       href={`/dashboard/admin/blog/${post.id}/edit`}
-                      className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
                     >
                       Edit
                     </Link>

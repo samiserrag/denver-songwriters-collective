@@ -45,11 +45,11 @@ export default function OnboardingComplete() {
     <div className="min-h-screen bg-[var(--color-background)] flex flex-col items-center justify-center px-4 py-12">
       {/* Progress indicator - complete */}
       <div className="flex items-center justify-center gap-2 mb-8">
-        <div className="w-3 h-3 rounded-full bg-[var(--color-gold)]" />
-        <div className="w-12 h-0.5 bg-[var(--color-gold)]" />
-        <div className="w-3 h-3 rounded-full bg-[var(--color-gold)]" />
-        <div className="w-12 h-0.5 bg-[var(--color-gold)]" />
-        <div className="w-3 h-3 rounded-full bg-[var(--color-gold)]" />
+        <div className="w-3 h-3 rounded-full bg-[var(--color-accent-primary)]" />
+        <div className="w-12 h-0.5 bg-[var(--color-accent-primary)]" />
+        <div className="w-3 h-3 rounded-full bg-[var(--color-accent-primary)]" />
+        <div className="w-12 h-0.5 bg-[var(--color-accent-primary)]" />
+        <div className="w-3 h-3 rounded-full bg-[var(--color-accent-primary)]" />
       </div>
 
       <div className="max-w-lg w-full text-center">
@@ -161,7 +161,7 @@ export default function OnboardingComplete() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/open-mics"
-            className="px-6 py-3 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
+            className="px-6 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
           >
             Browse Open Mics
           </Link>

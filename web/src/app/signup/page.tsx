@@ -60,7 +60,7 @@ function SignupForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="email"
           />
         </div>
@@ -72,7 +72,7 @@ function SignupForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="new-password"
           />
         </div>
@@ -84,7 +84,7 @@ function SignupForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="new-password"
           />
         </div>
@@ -135,7 +135,7 @@ function SignupForm() {
 
           <p className="text-sm text-gray-400">
             Already have an account?{" "}
-            <Link href="/login" className="text-[var(--color-gold)] hover:underline">
+            <Link href="/login" className="text-[var(--color-text-accent)] hover:underline">
               Log in
             </Link>
           </p>

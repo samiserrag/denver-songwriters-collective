@@ -40,7 +40,7 @@ export default async function UserBlogDashboardPage() {
         </div>
         <Link
           href="/dashboard/blog/new"
-          className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg transition-colors"
+          className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg transition-colors"
         >
           + New Post
         </Link>

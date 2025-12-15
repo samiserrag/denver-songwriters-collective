@@ -89,7 +89,7 @@ function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="email"
           />
         </div>
@@ -101,7 +101,7 @@ function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="current-password"
           />
         </div>
@@ -112,7 +112,7 @@ function LoginForm() {
             {error === "You must confirm your email before logging in. Check your inbox." && (
               <button
                 type="button"
-                className="text-sm text-[var(--color-gold)] underline hover:text-[var(--color-gold-200)]"
+                className="text-sm text-[var(--color-text-accent)] underline hover:text-[var(--color-gold-200)]"
                 onClick={async () => {
                   const res = await resendConfirmationEmail(email);
                   if (res.success) {
@@ -166,7 +166,7 @@ function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-[var(--color-warm-gray)]">
         Need an account?{" "}
-        <Link href="/signup" className="text-[var(--color-gold)] hover:underline">
+        <Link href="/signup" className="text-[var(--color-text-accent)] hover:underline">
           Sign up
         </Link>
       </p>

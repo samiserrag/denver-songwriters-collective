@@ -59,7 +59,7 @@ export default function OpenMicReportForm({ eventId }: { eventId?: string | null
       </div>
 
       <div className="flex items-center gap-3">
-        <button disabled={loading} className="px-4 py-2 bg-[var(--color-gold)] rounded text-[var(--color-background)] font-medium">{loading ? 'Submitting...' : 'Submit'}</button>
+        <button disabled={loading} className="px-4 py-2 bg-[var(--color-accent-primary)] rounded text-[var(--color-background)] font-medium">{loading ? 'Submitting...' : 'Submit'}</button>
         {status && <div className="text-sm text-neutral-300">{status}</div>}
       </div>
     </form>

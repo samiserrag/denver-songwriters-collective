@@ -50,10 +50,10 @@ export default function PartnersPage() {
       <HeroSection minHeight="lg" showVignette showBottomFade>
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-gold)]/80 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-text-accent)]/80 uppercase">
               Grow Together
             </p>
-            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-gold)] leading-[var(--line-height-tight)]">
+            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
               Partner With The Denver Songwriters Collective
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
@@ -94,7 +94,7 @@ export default function PartnersPage() {
                   key={opportunity.title}
                   className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3"
                 >
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {opportunity.title}
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
@@ -112,47 +112,47 @@ export default function PartnersPage() {
             </h2>
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                   For Venues
                 </h3>
                 <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)]">
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Access to a community of engaged, talented performers
                   </li>
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Free promotion through our directory and events calendar
                   </li>
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Support in organizing songwriter-focused events
                   </li>
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Connection to a growing creative network
                   </li>
                 </ul>
               </div>
               <div className="space-y-4">
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-gold)]">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                   For Studios
                 </h3>
                 <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)]">
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Meet emerging artists looking for recording opportunities
                   </li>
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Feature your studio in our partner directory
                   </li>
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Host workshops, demo days, and educational sessions
                   </li>
                   <li className="flex gap-3">
-                    <span className="text-[var(--color-gold)]">•</span>
+                    <span className="text-[var(--color-text-accent)]">•</span>
                     Build lasting relationships with local songwriters
                   </li>
                 </ul>
@@ -187,14 +187,14 @@ export default function PartnersPage() {
           </section>
 
           {/* Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-gold)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
               Let&apos;s Build Something Together
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
               If you would like to host an event, collaborate on a showcase, support our livestream or web show production, help us find sponsors, provide space, offer resources, or become part of this creative movement in any way, we would love to speak with you.
             </p>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-gold)]/90 italic leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-accent)]/90 italic leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
               Your partnership directly strengthens the songwriting culture of Denver and helps us continue building a community where musicians feel seen, supported, and inspired.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">

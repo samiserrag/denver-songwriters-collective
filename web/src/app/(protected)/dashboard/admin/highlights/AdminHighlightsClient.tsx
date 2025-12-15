@@ -222,7 +222,7 @@ export default function AdminHighlightsClient() {
       {/* Add Highlight Button */}
       <button
         onClick={() => setShowNewForm(!showNewForm)}
-        className="mb-4 px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded text-black font-medium"
+        className="mb-4 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded text-black font-medium"
       >
         + Add Highlight
       </button>
@@ -436,7 +436,7 @@ export default function AdminHighlightsClient() {
               <button
                 type="submit"
                 disabled={actionLoading === editingHighlight.id}
-                className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-background)] disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-background)] disabled:opacity-50"
               >
                 {actionLoading === editingHighlight.id ? "Saving..." : "Save Changes"}
               </button>
@@ -467,7 +467,7 @@ export default function AdminHighlightsClient() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-gold)]/20 text-[var(--color-gold)] mr-2">
+                  <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mr-2">
                     {HIGHLIGHT_TYPES.find((t) => t.value === highlight.highlight_type)?.label}
                   </span>
                   <span className="text-xs text-neutral-500">Order: {highlight.display_order}</span>
@@ -475,7 +475,7 @@ export default function AdminHighlightsClient() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditingHighlight(highlight)}
-                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
                   >
                     Edit
                   </button>
@@ -502,7 +502,7 @@ export default function AdminHighlightsClient() {
                 </p>
               )}
               {highlight.link_url && (
-                <p className="text-[var(--color-gold)] text-xs mt-2 truncate">{highlight.link_url}</p>
+                <p className="text-[var(--color-text-accent)] text-xs mt-2 truncate">{highlight.link_url}</p>
               )}
             </div>
           ))}
@@ -528,7 +528,7 @@ export default function AdminHighlightsClient() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingHighlight(highlight)}
-                      className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] text-xs"
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
                     >
                       Edit
                     </button>

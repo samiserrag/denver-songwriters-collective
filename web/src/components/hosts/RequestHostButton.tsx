@@ -70,7 +70,7 @@ export function RequestHostButton() {
     return (
       <button
         onClick={() => router.push("/login?redirectTo=/dashboard")}
-        className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg"
+        className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg"
       >
         Log in to become a host
       </button>
@@ -109,7 +109,7 @@ export function RequestHostButton() {
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg"
+          className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg"
         >
           Request to become a host
         </button>
@@ -137,7 +137,7 @@ export function RequestHostButton() {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg disabled:opacity-50"
+              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] rounded-lg disabled:opacity-50"
             >
               {loading ? "Submitting..." : "Submit Request"}
             </button>

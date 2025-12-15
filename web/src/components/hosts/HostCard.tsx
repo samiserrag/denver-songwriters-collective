@@ -59,7 +59,7 @@ export function HostCard({ host, className }: HostCardProps) {
 
           {/* Host badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-[var(--color-gold)]/80 text-[var(--color-background)]">
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-[var(--color-accent-primary)]/80 text-[var(--color-background)]">
               Open Mic Host
             </span>
           </div>

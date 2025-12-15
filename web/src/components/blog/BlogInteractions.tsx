@@ -71,8 +71,8 @@ export default function BlogInteractions({
         disabled={isLoading}
         className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
           hasLiked
-            ? "bg-[var(--color-gold)]/20 text-[var(--color-gold)] border border-[var(--color-gold)]/40"
-            : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:border-[var(--color-gold)]/40 hover:text-[var(--color-gold)]"
+            ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/40"
+            : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:border-[var(--color-border-accent)]/40 hover:text-[var(--color-text-accent)]"
         } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         <svg

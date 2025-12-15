@@ -92,7 +92,7 @@ export default async function MyEventsPage() {
           {isApprovedHost && (
             <Link
               href="/dashboard/my-events/new"
-              className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-colors"
+              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-colors"
             >
               + Create Event
             </Link>
@@ -127,7 +127,7 @@ export default async function MyEventsPage() {
             {isApprovedHost && (
               <Link
                 href="/dashboard/my-events/new"
-                className="inline-block px-6 py-3 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg"
+                className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg"
               >
                 Create Your First Event
               </Link>
@@ -160,7 +160,7 @@ export default async function MyEventsPage() {
                           {config.label}
                         </span>
                         {event.user_role === "cohost" && (
-                          <span className="text-xs px-2 py-0.5 bg-[var(--color-gold)]/20 text-[var(--color-gold)] rounded">
+                          <span className="text-xs px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded">
                             Co-host
                           </span>
                         )}

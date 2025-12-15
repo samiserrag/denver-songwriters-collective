@@ -246,10 +246,10 @@ export default async function HomePage() {
               <Link
                 key={item.title}
                 href={item.href}
-                className={`p-6 bg-gradient-to-br ${item.accent} bg-[var(--color-indigo-950)]/40 border border-white/10 rounded-xl hover:border-[var(--color-gold)]/50 hover:bg-[var(--color-indigo-950)]/60 transition-all group card-hover`}
+                className={`p-6 bg-gradient-to-br ${item.accent} bg-[var(--color-indigo-950)]/40 border border-white/10 rounded-xl hover:border-[var(--color-border-accent)]/50 hover:bg-[var(--color-indigo-950)]/60 transition-all group card-hover`}
               >
                 <div className="text-4xl mb-4">{item.icon}</div>
-                <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2 group-hover:text-[var(--color-gold)] transition-colors">
+                <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2 group-hover:text-[var(--color-text-accent)] transition-colors">
                   {item.title}
                 </h3>
                 <p className="text-[var(--color-warm-gray)] text-sm">{item.desc}</p>
@@ -261,7 +261,7 @@ export default async function HomePage() {
 
       {/* Monthly Highlights */}
       {hasHighlights && (
-        <section className="py-10 px-6 border-t border-white/5 bg-gradient-to-b from-[var(--color-gold)]/5 to-transparent">
+        <section className="py-10 px-6 border-t border-white/5 bg-gradient-to-b from-[var(--color-accent-primary)]/5 to-transparent">
           <div className="max-w-6xl mx-auto">
             <div className="mb-6 text-center">
               <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
@@ -275,7 +275,7 @@ export default async function HomePage() {
               {highlights.map((highlight) => (
                 <div
                   key={highlight.id}
-                  className="p-6 bg-[var(--color-indigo-950)]/50 border border-[var(--color-gold)]/20 rounded-xl hover:border-[var(--color-gold)]/50 transition-all"
+                  className="p-6 bg-[var(--color-indigo-950)]/50 border border-[var(--color-border-accent)]/20 rounded-xl hover:border-[var(--color-border-accent)]/50 transition-all"
                 >
                   {highlight.image_url && (
                     <div className="relative h-40 mb-4 rounded-lg overflow-hidden">
@@ -288,7 +288,7 @@ export default async function HomePage() {
                       />
                     </div>
                   )}
-                  <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-gold)]/20 text-[var(--color-gold)] mb-3 inline-block">
+                  <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mb-3 inline-block">
                     {highlight.highlight_type === "event" && "Featured Event"}
                     {highlight.highlight_type === "performer" && "Featured Artist"}
                     {highlight.highlight_type === "venue" && "Featured Venue"}
@@ -305,7 +305,7 @@ export default async function HomePage() {
                   {highlight.link_url && (
                     <Link
                       href={highlight.link_url}
-                      className="inline-flex items-center gap-2 text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm font-medium"
+                      className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm font-medium"
                     >
                       {highlight.link_text || "Learn More"}
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -377,7 +377,7 @@ export default async function HomePage() {
                   </h3>
                   <Link
                     href="/performers"
-                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
                   >
                     View all
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -398,7 +398,7 @@ export default async function HomePage() {
                   </h3>
                   <Link
                     href="/open-mics"
-                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
                   >
                     View all
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,7 +419,7 @@ export default async function HomePage() {
                   </h3>
                   <Link
                     href="/members?role=host"
-                    className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
                   >
                     View all
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,12 +444,12 @@ export default async function HomePage() {
                   Latest from the Blog
                 </h2>
                 <p className="text-[var(--color-warm-gray)]">
-                  Tips, stories, and insights from the Denver songwriting community. <Link href="/dashboard/blog" className="text-[var(--color-gold)] hover:underline">Share your own story!</Link>
+                  Tips, stories, and insights from the Denver songwriting community. <Link href="/dashboard/blog" className="text-[var(--color-text-accent)] hover:underline">Share your own story!</Link>
                 </p>
               </div>
               <Link
                 href="/blog"
-                className="text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 View all posts
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -475,8 +475,8 @@ export default async function HomePage() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[var(--color-gold)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
-                      <svg className="w-16 h-16 text-[var(--color-gold)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-[var(--color-text-accent)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                       </svg>
                     </div>
@@ -492,14 +492,14 @@ export default async function HomePage() {
                       {latestBlog.tags.slice(0, 2).map((tag: string) => (
                         <span
                           key={tag}
-                          className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)]"
+                          className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
                   )}
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight group-hover:text-[var(--color-gold)] transition-colors">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
                     {latestBlog.title}
                   </h3>
                   {latestBlog.excerpt && (
@@ -517,8 +517,8 @@ export default async function HomePage() {
                         className="rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-[var(--color-gold)]/20 flex items-center justify-center">
-                        <span className="text-[var(--color-gold)] text-xs">
+                      <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                        <span className="text-[var(--color-text-accent)] text-xs">
                           {latestBlogAuthor?.full_name?.[0] ?? "?"}
                         </span>
                       </div>

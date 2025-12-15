@@ -58,12 +58,12 @@ export function NewsletterSignup() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           disabled={status === "loading" || status === "success"}
-          className="flex-1 px-3 py-2 bg-[var(--color-indigo-950)] border border-white/10 rounded-lg text-[var(--color-warm-white)] text-sm placeholder:text-[var(--color-warm-gray-dark)] focus:border-[var(--color-gold)] focus:outline-none disabled:opacity-50"
+          className="flex-1 px-3 py-2 bg-[var(--color-indigo-950)] border border-white/10 rounded-lg text-[var(--color-warm-white)] text-sm placeholder:text-[var(--color-warm-gray-dark)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={status === "loading" || status === "success"}
-          className="px-4 py-2 bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-medium rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-medium rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {status === "loading" ? "..." : status === "success" ? "✓" : "Join"}
         </button>

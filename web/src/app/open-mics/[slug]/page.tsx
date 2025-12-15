@@ -157,7 +157,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <Link href="/open-mics" className="inline-flex items-center gap-2 text-[var(--color-gold)] hover:text-[var(--color-gold-400)] transition-colors mb-6">
+      <Link href="/open-mics" className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors mb-6">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
@@ -171,7 +171,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           {/* Day badge */}
           {event.day_of_week && (
             <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
-              <span className="text-[var(--color-gold)] font-semibold">{event.day_of_week}s</span>
+              <span className="text-[var(--color-text-accent)] font-semibold">{event.day_of_week}s</span>
             </div>
           )}
           {/* Category badge */}
@@ -241,7 +241,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
                 href={mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--color-gold)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
