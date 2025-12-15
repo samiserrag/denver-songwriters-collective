@@ -19,12 +19,12 @@ export default function EmptyState({
     <div className="w-full flex flex-col items-center justify-center text-center py-16 px-4">
       {icon && <div className="text-6xl mb-4 opacity-80">{icon}</div>}
 
-      <h3 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-warm-white)] mb-2">
+      <h3 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-text-primary)] mb-2">
         {title}
       </h3>
 
       {subtitle && (
-        <p className="text-[var(--color-warm-gray)] mb-6 max-w-md mx-auto">
+        <p className="text-[var(--color-text-secondary)] mb-6 max-w-md mx-auto">
           {subtitle}
         </p>
       )}

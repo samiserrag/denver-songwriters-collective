@@ -83,25 +83,25 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
-          <label className="block text-sm text-[var(--color-warm-gray-light)]">Email</label>
+          <label className="block text-sm text-[var(--color-text-secondary)]">Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="email"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm text-[var(--color-warm-gray-light)]">Password</label>
+          <label className="block text-sm text-[var(--color-text-secondary)]">Password</label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-warm-white)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="current-password"
           />
         </div>
@@ -164,7 +164,7 @@ function LoginForm() {
       </button>
 
 
-      <p className="mt-6 text-center text-sm text-[var(--color-warm-gray)]">
+      <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
         Need an account?{" "}
         <Link href="/signup" className="text-[var(--color-text-accent)] hover:underline">
           Sign up

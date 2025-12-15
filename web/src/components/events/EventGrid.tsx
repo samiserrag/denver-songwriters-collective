@@ -13,7 +13,7 @@ interface EventGridProps {
 export function EventGrid({ events, onSelect, className }: EventGridProps) {
   if (!events.length) {
     return (
-      <div className="text-center text-[var(--color-warm-gray)] py-16">
+      <div className="text-center text-[var(--color-text-secondary)] py-16">
         No upcoming events.
       </div>
     );

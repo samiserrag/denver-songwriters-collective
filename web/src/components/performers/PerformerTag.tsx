@@ -12,7 +12,7 @@ export function PerformerTag({ children, className }: PerformerTagProps) {
       className={cn(
         "px-3 py-1 rounded-full text-xs font-medium",
         "bg-white/5 border border-white/10",
-        "text-[var(--color-warm-gray-light)]",
+        "text-[var(--color-text-secondary)]",
         className
       )}
     >

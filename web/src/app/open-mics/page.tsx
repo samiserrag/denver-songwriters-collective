@@ -254,7 +254,7 @@ export default async function OpenMicsPage({
         <PageContainer>
           <div className="mt-8">
             <div className="rounded-2xl border border-[var(--color-border-default)] bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)] p-10 text-center">
-              <h2 className="text-xl font-semibold text-[var(--color-warm-white)]">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
                 No open mics found in {selectedCity}
               </h2>
             </div>
@@ -397,14 +397,14 @@ function parseTimeToMinutes(t?: string | null) {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
               Denver Open Mic Directory
             </h1>
             <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               {totalActiveEvents} verified open mics across the Front Range
             </p>
             {totalEvents > totalActiveEvents && (
-              <p className="text-sm text-[var(--color-warm-gray-light)] mt-1 drop-shadow">
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1 drop-shadow">
                 {totalEvents - totalActiveEvents} more pending verification
               </p>
             )}
@@ -483,7 +483,7 @@ function parseTimeToMinutes(t?: string | null) {
 
           {events.length === 0 ? (
             <div className="rounded-2xl border border-[var(--color-border-default)] bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)] p-10 text-center">
-              <h2 className="text-xl font-semibold text-[var(--color-warm-white)]">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
                 No open mics listed yet. Check back soon!
               </h2>
             </div>
@@ -534,13 +534,13 @@ function parseTimeToMinutes(t?: string | null) {
         <div className="py-10">
           <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 space-y-8">
             <div className="text-center space-y-4">
-              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
                 Help Keep This Directory Accurate
               </h2>
-              <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-3xl mx-auto">
+              <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-3xl mx-auto">
                 We are building the most accurate, up-to-date, and easy-to-use open mic directory in the region — but we cannot do it alone. Denver&apos;s music scene moves quickly, and venues update their schedules often.
               </p>
-              <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+              <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
                 Your input makes the directory stronger, more reliable, and more helpful for everyone in the community.
               </p>
             </div>
@@ -550,7 +550,7 @@ function parseTimeToMinutes(t?: string | null) {
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Submit New Open Mics
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Tell us about new open mics we haven&apos;t listed yet.
                 </p>
               </div>
@@ -558,7 +558,7 @@ function parseTimeToMinutes(t?: string | null) {
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Report Changes
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Report changes to day, time, venue, or signup rules.
                 </p>
               </div>
@@ -566,7 +566,7 @@ function parseTimeToMinutes(t?: string | null) {
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Confirm Active Events
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Confirm events that are active or discontinued.
                 </p>
               </div>
@@ -574,7 +574,7 @@ function parseTimeToMinutes(t?: string | null) {
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Add Venue Details
                 </h3>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Provide venue details that help performers plan.
                 </p>
               </div>

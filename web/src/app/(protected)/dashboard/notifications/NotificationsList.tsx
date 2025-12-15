@@ -59,8 +59,8 @@ export default function NotificationsList({ notifications }: { notifications: No
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">🔔</div>
-        <h2 className="text-xl text-[var(--color-warm-white)] mb-2">No notifications</h2>
-        <p className="text-[var(--color-warm-gray)]">You&apos;re all caught up!</p>
+        <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No notifications</h2>
+        <p className="text-[var(--color-text-secondary)]">You&apos;re all caught up!</p>
       </div>
     );
   }
@@ -79,11 +79,11 @@ export default function NotificationsList({ notifications }: { notifications: No
           <div className="flex items-start gap-3">
             <div className="text-2xl">{getIcon(notification.type)}</div>
             <div className="flex-1">
-              <h3 className="text-[var(--color-warm-white)] font-medium">{notification.title}</h3>
+              <h3 className="text-[var(--color-text-primary)] font-medium">{notification.title}</h3>
               {notification.message && (
-                <p className="text-[var(--color-warm-gray)] text-sm mt-1">{notification.message}</p>
+                <p className="text-[var(--color-text-secondary)] text-sm mt-1">{notification.message}</p>
               )}
-              <p className="text-[var(--color-warm-gray)] text-xs mt-2">{formatDate(notification.created_at)}</p>
+              <p className="text-[var(--color-text-secondary)] text-xs mt-2">{formatDate(notification.created_at)}</p>
             </div>
             {notification.link && (
               <Link

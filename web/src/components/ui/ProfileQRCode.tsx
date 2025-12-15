@@ -26,11 +26,11 @@ export default function ProfileQRCode({
         />
       </div>
       {displayName && (
-        <p className="text-sm text-[var(--color-warm-gray-light)] text-center">
+        <p className="text-sm text-[var(--color-text-secondary)] text-center">
           {displayName}
         </p>
       )}
-      <p className="text-xs text-[var(--color-warm-gray)] text-center">
+      <p className="text-xs text-[var(--color-text-secondary)] text-center">
         Scan to view profile
       </p>
     </div>
@@ -88,7 +88,7 @@ export function TipQRCode({
         />
       </div>
       {displayName && (
-        <p className="text-sm text-[var(--color-warm-white)] font-medium text-center">
+        <p className="text-sm text-[var(--color-text-primary)] font-medium text-center">
           Tip {displayName}
         </p>
       )}
@@ -122,10 +122,10 @@ export function OrganizationQRCode({
           includeMargin={false}
         />
       </div>
-      <p className="text-sm text-[var(--color-warm-white)] font-medium text-center">
+      <p className="text-sm text-[var(--color-text-primary)] font-medium text-center">
         {label}
       </p>
-      <p className="text-xs text-[var(--color-warm-gray)] text-center">
+      <p className="text-xs text-[var(--color-text-secondary)] text-center">
         Scan to visit
       </p>
     </div>

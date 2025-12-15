@@ -13,7 +13,7 @@ export function PerformerDetailCard({ className }: PerformerDetailCardProps) {
         <p className="font-semibold text-[var(--color-text-accent)]">
           Performer Name
         </p>
-        <p className="text-sm text-[var(--color-warm-gray)] line-clamp-2">
+        <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
           Performer bio text goes here...
         </p>
       </div>

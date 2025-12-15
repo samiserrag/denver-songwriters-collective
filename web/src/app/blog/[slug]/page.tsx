@@ -158,21 +158,21 @@ export default async function BlogPostPage({ params }: Props) {
       // Headers
       if (block.startsWith("### ")) {
         return (
-          <h3 key={i} className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mt-8 mb-4">
+          <h3 key={i} className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-8 mb-4">
             {block.replace("### ", "")}
           </h3>
         );
       }
       if (block.startsWith("## ")) {
         return (
-          <h2 key={i} className="text-2xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mt-10 mb-4">
+          <h2 key={i} className="text-2xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-10 mb-4">
             {block.replace("## ", "")}
           </h2>
         );
       }
       if (block.startsWith("# ")) {
         return (
-          <h1 key={i} className="text-3xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mt-12 mb-6">
+          <h1 key={i} className="text-3xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-12 mb-6">
             {block.replace("# ", "")}
           </h1>
         );
@@ -269,7 +269,7 @@ export default async function BlogPostPage({ params }: Props) {
           )}
 
           {/* Title */}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-6">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-6">
             {post.title}
           </h1>
 
@@ -289,7 +289,7 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
             )}
             <div>
-              <p className="text-[var(--color-warm-white)] font-medium">
+              <p className="text-[var(--color-text-primary)] font-medium">
                 {author?.full_name ?? "Anonymous"}
               </p>
               {formattedDate && (
@@ -306,7 +306,7 @@ export default async function BlogPostPage({ params }: Props) {
           {/* Photo Gallery */}
           {galleryImages.length > 0 && (
             <div className="mt-12 pt-8 border-t border-white/10">
-              <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-6">
+              <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-6">
                 Photo Gallery
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -340,7 +340,7 @@ export default async function BlogPostPage({ params }: Props) {
           {/* Author bio */}
           {author?.bio && (
             <div className="mt-12 pt-8 border-t border-white/10">
-              <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+              <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
                 About the Author
               </h3>
               <div className="flex items-start gap-4">
@@ -358,7 +358,7 @@ export default async function BlogPostPage({ params }: Props) {
                   </div>
                 )}
                 <div>
-                  <p className="text-[var(--color-warm-white)] font-medium mb-2">
+                  <p className="text-[var(--color-text-primary)] font-medium mb-2">
                     {author.full_name}
                   </p>
                   <p className="text-neutral-400 text-sm">{author.bio}</p>

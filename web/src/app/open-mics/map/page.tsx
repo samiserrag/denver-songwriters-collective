@@ -140,7 +140,7 @@ export default async function OpenMicsMapPage() {
           <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
             Open Mic Map
           </h1>
-          <p className="text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)] max-w-3xl">
+          <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-3xl">
             Find open mics across the Denver metro area. Click any venue to get directions.
           </p>
         </PageContainer>
@@ -168,14 +168,14 @@ export default async function OpenMicsMapPage() {
           />
         </div>
 
-        <div className="mt-4 text-center text-sm text-[var(--color-warm-gray)]">
+        <div className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
           <p>Click any venue below to get directions on Google Maps</p>
         </div>
 
         <div className="mt-8">
           {events.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-10 text-center">
-              <h2 className="text-xl font-semibold text-[var(--color-warm-white)]">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
                 No open mics listed yet. Check back soon!
               </h2>
             </div>

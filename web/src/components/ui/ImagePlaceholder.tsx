@@ -17,7 +17,7 @@ export function ImagePlaceholder({ initials, className }: ImagePlaceholderProps)
       className={clsx(
         "flex items-center justify-center rounded-2xl",
         "bg-[radial-gradient(circle_at_top,_var(--color-accent-muted),_var(--color-bg-primary))]",
-        "border border-white/10 text-[var(--color-warm-white)]",
+        "border border-white/10 text-[var(--color-text-primary)]",
         "text-2xl font-semibold tracking-[0.16em]",
         className
       )}

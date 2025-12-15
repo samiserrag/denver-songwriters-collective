@@ -327,7 +327,7 @@ export default function EditProfilePage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Profile Picture */}
             <section>
-              <h2 className="text-xl text-[var(--color-warm-white)] mb-4 flex items-center gap-2">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
                 Profile Picture
               </h2>
               <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
@@ -342,10 +342,10 @@ export default function EditProfilePage() {
                   className="w-32 h-32 sm:w-40 sm:h-40"
                 />
                 <div className="text-center sm:text-left">
-                  <p className="text-[var(--color-warm-gray-light)] text-sm mb-2">
+                  <p className="text-[var(--color-text-secondary)] text-sm mb-2">
                     Recommended: A clear photo of your face
                   </p>
-                  <ul className="text-xs text-[var(--color-warm-gray)] space-y-1">
+                  <ul className="text-xs text-[var(--color-text-secondary)] space-y-1">
                     <li>JPG, PNG, WebP, or GIF</li>
                     <li>Max 5MB file size</li>
                     <li>Will be cropped to a square</li>
@@ -356,12 +356,12 @@ export default function EditProfilePage() {
 
             {/* Basic Info */}
             <section>
-              <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Basic Info
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="full_name" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="full_name" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Display Name
                   </label>
                   <input
@@ -375,7 +375,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="bio" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="bio" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Bio
                   </label>
                   <textarea
@@ -394,19 +394,19 @@ export default function EditProfilePage() {
             {/* Music & Skills (Performers only) */}
             {userRole === "performer" && (
               <section>
-                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Music & Skills
                 </h2>
-                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                   Help others find you based on your musical style and abilities.
                 </p>
                 <div className="space-y-6">
                   {/* Genres */}
                   <div>
-                    <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
                       Genres
                     </label>
-                    <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-3">
                       Select the genres you play or write
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -416,7 +416,7 @@ export default function EditProfilePage() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                             formData.genres.includes(genre)
                               ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                              : "border-white/10 hover:border-white/20 text-[var(--color-warm-gray-light)]"
+                              : "border-white/10 hover:border-white/20 text-[var(--color-text-secondary)]"
                           }`}
                         >
                           <input
@@ -439,10 +439,10 @@ export default function EditProfilePage() {
 
                   {/* Instruments */}
                   <div>
-                    <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
                       Instruments
                     </label>
-                    <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-3">
                       Select the instruments you play
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -452,7 +452,7 @@ export default function EditProfilePage() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                             formData.instruments.includes(instrument)
                               ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                              : "border-white/10 hover:border-white/20 text-[var(--color-warm-gray-light)]"
+                              : "border-white/10 hover:border-white/20 text-[var(--color-text-secondary)]"
                           }`}
                         >
                           <input
@@ -475,10 +475,10 @@ export default function EditProfilePage() {
 
                   {/* Specialties */}
                   <div>
-                    <label className="block text-sm text-[var(--color-warm-gray-light)] mb-2">
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
                       Specialties / Services
                     </label>
-                    <p className="text-xs text-[var(--color-warm-gray)] mb-3">
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-3">
                       Select skills you can offer for collaborations
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -488,7 +488,7 @@ export default function EditProfilePage() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                             formData.specialties.includes(specialty)
                               ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                              : "border-white/10 hover:border-white/20 text-[var(--color-warm-gray-light)]"
+                              : "border-white/10 hover:border-white/20 text-[var(--color-text-secondary)]"
                           }`}
                         >
                           <input
@@ -521,10 +521,10 @@ export default function EditProfilePage() {
             {/* Collaboration & Availability (Performers only) */}
             {userRole === "performer" && (
               <section>
-                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Collaboration & Availability
                 </h2>
-                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                   Let other musicians know how you&apos;d like to connect.
                 </p>
                 <div className="space-y-4">
@@ -537,7 +537,7 @@ export default function EditProfilePage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
                         className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
                       />
-                      <span className="text-[var(--color-warm-white)]">
+                      <span className="text-[var(--color-text-primary)]">
                         I&apos;m open to collaborations
                       </span>
                     </label>
@@ -549,7 +549,7 @@ export default function EditProfilePage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, interested_in_cowriting: e.target.checked }))}
                         className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
                       />
-                      <span className="text-[var(--color-warm-white)]">
+                      <span className="text-[var(--color-text-primary)]">
                         I&apos;m interested in co-writing
                       </span>
                     </label>
@@ -561,7 +561,7 @@ export default function EditProfilePage() {
                         onChange={(e) => setFormData(prev => ({ ...prev, available_for_hire: e.target.checked }))}
                         className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
                       />
-                      <span className="text-[var(--color-warm-white)]">
+                      <span className="text-[var(--color-text-primary)]">
                         I&apos;m available for hire (paid gigs, session work, etc.)
                       </span>
                     </label>
@@ -569,7 +569,7 @@ export default function EditProfilePage() {
 
                   {/* Favorite Open Mic */}
                   <div>
-                    <label htmlFor="favorite_open_mic" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                    <label htmlFor="favorite_open_mic" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       Favorite Denver Open Mic
                     </label>
                     <input
@@ -589,10 +589,10 @@ export default function EditProfilePage() {
             {/* Featured Song (Performers only) */}
             {userRole === "performer" && (
               <section>
-                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Featured Song
                 </h2>
-                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                   Highlight one song that represents you best. This will be displayed prominently on your profile.
                 </p>
                 <input
@@ -603,7 +603,7 @@ export default function EditProfilePage() {
                   placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
                   className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
-                <p className="text-xs text-[var(--color-warm-gray)] mt-2">
+                <p className="text-xs text-[var(--color-text-secondary)] mt-2">
                   Supports YouTube, Spotify, SoundCloud, Bandcamp, and other music platforms
                 </p>
               </section>
@@ -612,10 +612,10 @@ export default function EditProfilePage() {
             {/* Song Links (Performers only) */}
             {userRole === "performer" && (
               <section>
-                <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+                <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Additional Songs
                 </h2>
-                <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                   Share more links to your songs on SoundCloud, Bandcamp, YouTube, etc.
                 </p>
                 <div className="space-y-3">
@@ -654,7 +654,7 @@ export default function EditProfilePage() {
                         song_links: [...prev.song_links, ""]
                       }));
                     }}
-                    className="px-4 py-2 rounded-lg border border-white/20 text-[var(--color-warm-gray-light)] hover:border-white/40 hover:text-white transition-colors"
+                    className="px-4 py-2 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-white transition-colors"
                   >
                     + Add Song Link
                   </button>
@@ -664,15 +664,15 @@ export default function EditProfilePage() {
 
             {/* Social Links */}
             <section>
-              <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Social Links
               </h2>
-              <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                 Share your social profiles so fans can follow you.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="instagram_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="instagram_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Instagram
                   </label>
                   <input
@@ -686,7 +686,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="facebook_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="facebook_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Facebook
                   </label>
                   <input
@@ -700,7 +700,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="tiktok_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="tiktok_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     TikTok
                   </label>
                   <input
@@ -714,7 +714,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="youtube_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="youtube_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     YouTube
                   </label>
                   <input
@@ -728,7 +728,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="spotify_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="spotify_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Spotify
                   </label>
                   <input
@@ -742,7 +742,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="website_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="website_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Website
                   </label>
                   <input
@@ -760,15 +760,15 @@ export default function EditProfilePage() {
 
             {/* Tip Links */}
             <section>
-              <h2 className="text-xl text-[var(--color-warm-white)] mb-4">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Accept Tips
               </h2>
-              <p className="text-sm text-[var(--color-warm-gray)] mb-4">
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                 Let fans support you directly. These will appear on your profile and when you perform.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="venmo_handle" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="venmo_handle" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Venmo Handle
                   </label>
                   <input
@@ -782,7 +782,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="cashapp_handle" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="cashapp_handle" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Cash App
                   </label>
                   <input
@@ -796,7 +796,7 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="paypal_url" className="block text-sm text-[var(--color-warm-gray-light)] mb-1">
+                  <label htmlFor="paypal_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     PayPal.me
                   </label>
                   <input
@@ -823,7 +823,7 @@ export default function EditProfilePage() {
               </button>
               <Link
                 href="/dashboard"
-                className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-warm-gray-light)] hover:text-white transition-colors text-center"
+                className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-white transition-colors text-center"
               >
                 Cancel
               </Link>

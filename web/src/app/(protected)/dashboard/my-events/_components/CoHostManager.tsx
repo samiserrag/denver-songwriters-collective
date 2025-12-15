@@ -93,8 +93,8 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
                 )}
               </div>
               <div>
-                <p className="text-[var(--color-warm-white)] text-sm">{host.user?.full_name || "Unknown"}</p>
-                <p className="text-xs text-[var(--color-warm-gray)]">{host.role}</p>
+                <p className="text-[var(--color-text-primary)] text-sm">{host.user?.full_name || "Unknown"}</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">{host.role}</p>
               </div>
             </div>
             {host.role === "cohost" && (
@@ -112,7 +112,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
       {/* Pending invitations */}
       {pendingInvites.length > 0 && (
         <div>
-          <h4 className="text-sm text-[var(--color-warm-gray)] mb-2">Pending Invitations</h4>
+          <h4 className="text-sm text-[var(--color-text-secondary)] mb-2">Pending Invitations</h4>
           <ul className="space-y-2">
             {pendingInvites.map((invite) => (
               <li key={invite.id} className="flex items-center justify-between p-2 bg-amber-900/20 border border-amber-900/50 rounded-lg">
@@ -133,7 +133,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name..."
-            className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-warm-white)] placeholder:text-[var(--color-warm-gray)] text-sm"
+            className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] text-sm"
             autoFocus
           />
           <div className="flex gap-2">
@@ -156,7 +156,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
       ) : (
         <button
           onClick={() => setShowInvite(true)}
-          className="w-full px-3 py-2 border border-dashed border-white/20 hover:border-white/40 text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] text-sm rounded-lg transition-colors"
+          className="w-full px-3 py-2 border border-dashed border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm rounded-lg transition-colors"
         >
           + Invite Co-host
         </button>

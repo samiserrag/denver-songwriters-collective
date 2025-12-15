@@ -56,7 +56,7 @@ export default function PartnersPage() {
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
               Partner With The Denver Songwriters Collective
             </h1>
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-warm-white)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
               We invite venues, promoters, booking coordinators, festivals, studios, and independent organizations to connect with us. Together, we can create more pathways for local musicians to shine.
             </p>
           </div>
@@ -68,14 +68,14 @@ export default function PartnersPage() {
 
           {/* Who We Partner With */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] text-center">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] text-center">
               Who We Partner With
             </h2>
             <div className="flex flex-wrap justify-center gap-3">
               {partnerTypes.map((type) => (
                 <span
                   key={type}
-                  className="px-4 py-2 rounded-full border border-white/10 bg-[var(--color-indigo-950)] text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)]"
+                  className="px-4 py-2 rounded-full border border-white/10 bg-[var(--color-indigo-950)] text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]"
                 >
                   {type}
                 </span>
@@ -85,7 +85,7 @@ export default function PartnersPage() {
 
           {/* Partnership Opportunities */}
           <section className="space-y-8">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] text-center">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] text-center">
               Partnership Opportunities
             </h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -97,7 +97,7 @@ export default function PartnersPage() {
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {opportunity.title}
                   </h3>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] leading-relaxed">
+                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
                     {opportunity.description}
                   </p>
                 </div>
@@ -107,7 +107,7 @@ export default function PartnersPage() {
 
           {/* Benefits */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Why Partner With DSC?
             </h2>
             <div className="grid gap-6 md:grid-cols-2">
@@ -115,7 +115,7 @@ export default function PartnersPage() {
                 <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                   For Venues
                 </h3>
-                <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)]">
+                <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
                   <li className="flex gap-3">
                     <span className="text-[var(--color-text-accent)]">•</span>
                     Access to a community of engaged, talented performers
@@ -138,7 +138,7 @@ export default function PartnersPage() {
                 <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                   For Studios
                 </h3>
-                <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-warm-gray-light)]">
+                <ul className="space-y-3 text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
                   <li className="flex gap-3">
                     <span className="text-[var(--color-text-accent)]">•</span>
                     Meet emerging artists looking for recording opportunities
@@ -162,36 +162,36 @@ export default function PartnersPage() {
 
           {/* Proven Track Record */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Proven Community Impact
             </h2>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Our community is full of diverse and genuine talent. Several of our performers have already been invited to play at external events, including the Denver Chalk Festival, where eight DSC artists performed on a major stage for crowds of thousands. We are excited to continue helping artists find opportunities like this, and we welcome partnerships that create more pathways for local musicians to shine.
             </p>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Our partnerships will grow over time with studios, venues, audio engineers, photographers, videographers, educators, nonprofits, festivals, rehearsal spaces, and cultural organizations. We want to celebrate and lift up the entire creative ecosystem of the Front Range.
             </p>
           </section>
 
           {/* Vision */}
           <section className="space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Our Vision for Partnership
             </h2>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               DSC is committed to building a network where everyone benefits: venues receive engaged performers, performers discover supportive rooms, studios meet new artists, communities experience more local music, and fans build real connections with the people behind the songs.
             </p>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)]">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               To make all of this possible, DSC relies on the dedication of volunteers, the generosity of our community, and the support of partners who believe in our mission. For many years, the collective has operated as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm.
             </p>
           </section>
 
           {/* Call to Action */}
           <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)]">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Let&apos;s Build Something Together
             </h2>
-            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-warm-gray-light)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
               If you would like to host an event, collaborate on a showcase, support our livestream or web show production, help us find sponsors, provide space, offer resources, or become part of this creative movement in any way, we would love to speak with you.
             </p>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-accent)]/90 italic leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">

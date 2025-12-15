@@ -129,7 +129,7 @@ export default function AccordionList({
             {isOpen && (
               <div className="px-4 pb-4 space-y-3">
                 {list.length === 0 ? (
-                  <div className="text-sm text-[var(--color-warm-gray-light)] py-2">
+                  <div className="text-sm text-[var(--color-text-secondary)] py-2">
                     No open mics listed for this day.
                   </div>
                 ) : (

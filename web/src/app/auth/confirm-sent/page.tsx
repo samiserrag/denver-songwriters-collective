@@ -24,12 +24,12 @@ function ConfirmSentContent() {
 
   return (
     <div className="w-full max-w-md card-base px-8 py-10 text-center">
-      <h1 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-4">
+      <h1 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
         Check your email
       </h1>
-      <p className="text-[var(--color-warm-gray-light)] mb-6">
+      <p className="text-[var(--color-text-secondary)] mb-6">
         We sent a confirmation link to{" "}
-        <span className="font-bold text-[var(--color-warm-white)]">{email}</span>.
+        <span className="font-bold text-[var(--color-text-primary)]">{email}</span>.
         Click the link to activate your account.
       </p>
       <Button

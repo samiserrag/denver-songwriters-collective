@@ -108,7 +108,7 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
 
   return (
     <div className="mt-12 pt-8 border-t border-white/10">
-      <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-6">
+      <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-6">
         Comments ({comments.length})
       </h3>
 
@@ -186,7 +186,7 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
               )}
               <div className="flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[var(--color-warm-white)] font-medium">
+                  <span className="text-[var(--color-text-primary)] font-medium">
                     {comment.author.full_name ?? "Anonymous"}
                   </span>
                   <span className="text-neutral-500 text-sm">

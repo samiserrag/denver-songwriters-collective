@@ -240,7 +240,7 @@ export function ImageUpload({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
         <div className="bg-[var(--color-indigo-950)] rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-auto">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[var(--color-warm-white)]">
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Crop Your Image
             </h3>
             <button
@@ -249,7 +249,7 @@ export function ImageUpload({
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
               aria-label="Cancel"
             >
-              <X className="w-5 h-5 text-[var(--color-warm-gray)]" />
+              <X className="w-5 h-5 text-[var(--color-text-secondary)]" />
             </button>
           </div>
 
@@ -271,7 +271,7 @@ export function ImageUpload({
             </ReactCrop>
           </div>
 
-          <p className="text-sm text-[var(--color-warm-gray)] mb-4 text-center">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4 text-center">
             Drag to reposition. The image will be cropped to a {
               aspectRatio === 1 ? 'square' :
               aspectRatio === 16/9 ? '16:9' :
@@ -292,7 +292,7 @@ export function ImageUpload({
               type="button"
               onClick={handleCancel}
               disabled={isUploading}
-              className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-warm-gray-light)] hover:border-white/40 hover:text-white transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-white transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -374,7 +374,7 @@ export function ImageUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={isUploading}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-warm-gray)] hover:text-[var(--color-text-accent)] transition-colors"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] transition-colors"
           >
             {isUploading ? (
               <Loader2 className="w-8 h-8 animate-spin" />

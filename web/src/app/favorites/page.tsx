@@ -31,7 +31,7 @@ export default async function FavoritesPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
-        <p className="text-[var(--color-warm-gray-light)]">Unable to load favorites.</p>
+        <p className="text-[var(--color-text-secondary)]">Unable to load favorites.</p>
       </div>
     );
   }
@@ -77,7 +77,7 @@ export default async function FavoritesPage() {
 
       {events.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/2 p-6 text-center">
-          <p className="text-[var(--color-warm-gray-light)]">You have no favorites yet.</p>
+          <p className="text-[var(--color-text-secondary)]">You have no favorites yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

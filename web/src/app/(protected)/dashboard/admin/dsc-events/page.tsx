@@ -56,14 +56,14 @@ export default async function AdminDSCEventsPage() {
           <div>
             <Link
               href="/dashboard/admin"
-              className="text-[var(--color-warm-gray)] hover:text-[var(--color-warm-white)] text-sm mb-2 inline-block"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm mb-2 inline-block"
             >
               ← Back to Admin
             </Link>
-            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-warm-white)]">DSC Events</h1>
-            <p className="text-[var(--color-warm-gray)] mt-1">All community-created events</p>
+            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">DSC Events</h1>
+            <p className="text-[var(--color-text-secondary)] mt-1">All community-created events</p>
           </div>
-          <div className="text-right text-sm text-[var(--color-warm-gray)]">
+          <div className="text-right text-sm text-[var(--color-text-secondary)]">
             {events?.length || 0} total events
           </div>
         </div>
@@ -72,7 +72,7 @@ export default async function AdminDSCEventsPage() {
         <section className="mb-8">
           <h2 className="text-xl text-green-400 mb-4">Active ({eventsByStatus.active.length})</h2>
           {eventsByStatus.active.length === 0 ? (
-            <p className="text-[var(--color-warm-gray)]">No active events</p>
+            <p className="text-[var(--color-text-secondary)]">No active events</p>
           ) : (
             <div className="space-y-2">
               {eventsByStatus.active.map((event) => (
@@ -112,8 +112,8 @@ function EventRow({ event }: { event: DSCEvent }) {
       <div className="flex items-center gap-3">
         <span className="text-xl">{config.icon}</span>
         <div>
-          <h3 className="text-[var(--color-warm-white)] font-medium">{event.title}</h3>
-          <p className="text-[var(--color-warm-gray)] text-sm">
+          <h3 className="text-[var(--color-text-primary)] font-medium">{event.title}</h3>
+          <p className="text-[var(--color-text-secondary)] text-sm">
             {event.venue_name} • Host: {hostName}
           </p>
         </div>

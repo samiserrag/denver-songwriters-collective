@@ -45,7 +45,7 @@ export function PerformerAvatar({
           draggable={false}
         />
       ) : (
-        <div className="h-full w-full flex items-center justify-center text-[var(--color-warm-gray)] text-sm">
+        <div className="h-full w-full flex items-center justify-center text-[var(--color-text-secondary)] text-sm">
           No Photo
         </div>
       )}

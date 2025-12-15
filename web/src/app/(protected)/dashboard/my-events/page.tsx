@@ -86,8 +86,8 @@ export default async function MyEventsPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-warm-white)]">My Events</h1>
-            <p className="text-[var(--color-warm-gray)] mt-1">Events you host or co-host</p>
+            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">My Events</h1>
+            <p className="text-[var(--color-text-secondary)] mt-1">Events you host or co-host</p>
           </div>
           {isApprovedHost && (
             <Link
@@ -117,8 +117,8 @@ export default async function MyEventsPage() {
         {events.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🎵</div>
-            <h2 className="text-xl text-[var(--color-warm-white)] mb-2">No events yet</h2>
-            <p className="text-[var(--color-warm-gray)] mb-6">
+            <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No events yet</h2>
+            <p className="text-[var(--color-text-secondary)] mb-6">
               {isApprovedHost
                 ? "Create your first event to get started!"
                 : "Once you're an approved host, you can create events here."
@@ -165,14 +165,14 @@ export default async function MyEventsPage() {
                           </span>
                         )}
                       </div>
-                      <h2 className="text-lg text-[var(--color-warm-white)] font-medium">{event.title}</h2>
-                      <p className="text-[var(--color-warm-gray)] text-sm mt-1">
+                      <h2 className="text-lg text-[var(--color-text-primary)] font-medium">{event.title}</h2>
+                      <p className="text-[var(--color-text-secondary)] text-sm mt-1">
                         {event.venue_name} {event.day_of_week && `• ${event.day_of_week}`} {event.start_time && event.start_time}
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-[var(--color-warm-white)]">{event.rsvp_count}</div>
-                      <div className="text-xs text-[var(--color-warm-gray)]">
+                      <div className="text-2xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count}</div>
+                      <div className="text-xs text-[var(--color-text-secondary)]">
                         {event.capacity ? `of ${event.capacity}` : "RSVPs"}
                       </div>
                     </div>
