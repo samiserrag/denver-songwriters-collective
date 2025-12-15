@@ -219,6 +219,26 @@ body > footer {
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* Phase 2a: Spotlight card pattern for public cards */
+  .card-spotlight {
+    background: radial-gradient(circle at top, var(--color-accent-muted), var(--color-bg-primary));
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-2xl);
+    transition: all 0.3s ease;
+  }
+  .card-spotlight:hover {
+    border-color: var(--color-border-accent);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Phase 2a: Accent chip for filters/tags */
+  .chip-accent {
+    background: var(--color-accent-muted);
+    color: var(--color-text-accent);
+    border: 1px solid var(--color-border-accent);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

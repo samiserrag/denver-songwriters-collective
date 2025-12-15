@@ -253,7 +253,7 @@ export default async function OpenMicsPage({
       return (
         <PageContainer>
           <div className="mt-8">
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-10 text-center">
+            <div className="rounded-2xl border border-[var(--color-border-default)] bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)] p-10 text-center">
               <h2 className="text-xl font-semibold text-[var(--color-warm-white)]">
                 No open mics found in {selectedCity}
               </h2>
@@ -474,7 +474,7 @@ function parseTimeToMinutes(t?: string | null) {
             <div className="mb-6 flex justify-end">
               <Link
                 href="/submit-open-mic"
-                className="inline-block rounded-xl bg-gradient-to-r from-[#00202b] to-[#000] px-5 py-2 text-sm font-semibold text-[#00FFCC] ring-1 ring-[#00FFCC]/10 hover:shadow-[0_0_14px_rgba(0,255,204,0.15)] transition"
+                className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)] px-5 py-2 text-sm font-semibold text-[var(--color-text-accent)] ring-1 ring-[var(--color-border-accent)] hover:shadow-[var(--shadow-glow-gold-sm)] transition"
               >
                 Submit, claim, or update an Open Mic
               </Link>
@@ -482,7 +482,7 @@ function parseTimeToMinutes(t?: string | null) {
           </div>
 
           {events.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-10 text-center">
+            <div className="rounded-2xl border border-[var(--color-border-default)] bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)] p-10 text-center">
               <h2 className="text-xl font-semibold text-[var(--color-warm-white)]">
                 No open mics listed yet. Check back soon!
               </h2>
