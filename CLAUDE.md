@@ -233,16 +233,23 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - Key file: `web/src/app/page.tsx`
 
 ### CLS & LCP Performance Fix (December 2024)
-- **CLS: 0.639 → 0.000** - Eliminated layout shift by converting images to `next/image` with explicit dimensions
-- **LCP improved** - Hero image uses `priority` flag for faster loading
+- **CLS: 0.639 → 0.000** - Eliminated all layout shifts
+- **TBT: 40-52ms** - Excellent (no main thread blocking)
+- **LCP: 3.4s synthetic** - Optimized; remaining gap is Lighthouse throttling overhead
+- Key fixes:
+  - **Footer CLS fix**: Flexbox sticky footer with `min-height: calc(100lvh - 64px)` on main element
+  - Hero image uses `priority` prop with `fetchpriority="high"`
+  - All card images use `next/image` with explicit dimensions
 - Key files:
+  - `web/src/app/globals.css` - Body flexbox layout, `100lvh` with `100vh` fallback
+  - `web/src/app/layout.tsx` - Critical inline CSS for CLS prevention
   - `web/src/components/layout/hero-section.tsx` - next/image with priority
-  - `web/src/components/performers/PerformerCard.tsx` - next/image with fill
-  - `web/src/components/hosts/HostCard.tsx` - next/image with fill
-  - `web/src/components/studios/StudioCard.tsx` - next/image with fill
-  - `web/src/components/performers/PerformerAvatar.tsx` - next/image with dimensions
-  - `web/src/components/navigation/footer.tsx` - removed contain:layout causing CLS
-- New utility: `web/src/components/home/CLSLogger.tsx` - dev-only CLS debugging tool
+  - `web/src/components/navigation/footer.tsx` - `role="contentinfo"` for CSS targeting
+- Performance audit results:
+  - CSS payload: 18.9KB gzip (excellent)
+  - Unused CSS: 0 bytes (Tailwind purge working)
+  - No render-blocking resources
+- New utility: `web/src/components/home/CLSLogger.tsx` - dev-only CLS debugging tool with element selectors
 
 ### Teal → Gold Color Migration (Complete)
 - Migrated all ~100 teal color instances to gold theme across 40+ files
