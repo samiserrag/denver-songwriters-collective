@@ -202,12 +202,12 @@ export default async function HomePage() {
       </HeroSection>
 
       {/* What We Offer Each Other Section */}
-      <section className="py-16 px-6 bg-gradient-to-b from-[var(--color-background)] to-[var(--color-background-dark)]/30">
+      <section className="py-16 px-6 bg-[var(--color-bg-secondary)]">
         <div className="max-w-6xl mx-auto">
-          <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-warm-white)] mb-4">
+          <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-text-primary)] mb-4">
             What We Offer Each Other
           </h2>
-          <p className="text-[var(--color-warm-gray)] text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-[var(--color-text-secondary)] text-center mb-12 max-w-2xl mx-auto">
             Built by songwriters, for songwriters. This is our shared space to
             connect, collaborate, and lift each other up.
           </p>
@@ -246,13 +246,13 @@ export default async function HomePage() {
               <Link
                 key={item.title}
                 href={item.href}
-                className={`p-6 bg-gradient-to-br ${item.accent} bg-[var(--color-indigo-950)]/40 border border-white/10 rounded-xl hover:border-[var(--color-border-accent)]/50 hover:bg-[var(--color-indigo-950)]/60 transition-all group card-hover`}
+                className={`p-6 bg-gradient-to-br ${item.accent} card-base border border-[var(--color-border-default)] rounded-xl hover:border-[var(--color-border-accent)]/50 transition-all group card-hover`}
               >
                 <div className="text-4xl mb-4">{item.icon}</div>
-                <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2 group-hover:text-[var(--color-text-accent)] transition-colors">
+                <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2 group-hover:text-[var(--color-text-accent)] transition-colors">
                   {item.title}
                 </h3>
-                <p className="text-[var(--color-warm-gray)] text-sm">{item.desc}</p>
+                <p className="text-[var(--color-text-secondary)] text-sm">{item.desc}</p>
               </Link>
             ))}
           </div>
@@ -261,13 +261,13 @@ export default async function HomePage() {
 
       {/* Monthly Highlights */}
       {hasHighlights && (
-        <section className="py-10 px-6 border-t border-white/5 bg-gradient-to-b from-[var(--color-accent-primary)]/5 to-transparent">
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
           <div className="max-w-6xl mx-auto">
             <div className="mb-6 text-center">
-              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
                 This Month&apos;s Highlights
               </h2>
-              <p className="text-[var(--color-warm-gray)]">
+              <p className="text-[var(--color-text-secondary)]">
                 Featured news and announcements from the community.
               </p>
             </div>
@@ -275,7 +275,7 @@ export default async function HomePage() {
               {highlights.map((highlight) => (
                 <div
                   key={highlight.id}
-                  className="p-6 bg-[var(--color-indigo-950)]/50 border border-[var(--color-border-accent)]/20 rounded-xl hover:border-[var(--color-border-accent)]/50 transition-all"
+                  className="p-6 card-base border border-[var(--color-border-accent)]/20 rounded-xl hover:border-[var(--color-border-accent)]/50 transition-all"
                 >
                   {highlight.image_url && (
                     <div className="relative h-40 mb-4 rounded-lg overflow-hidden">
@@ -294,18 +294,18 @@ export default async function HomePage() {
                     {highlight.highlight_type === "venue" && "Featured Venue"}
                     {highlight.highlight_type === "custom" && "Announcement"}
                   </span>
-                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] mb-2">
+                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
                     {highlight.title}
                   </h3>
                   {highlight.description && (
-                    <p className="text-[var(--color-warm-gray)] text-sm mb-4 line-clamp-3">
+                    <p className="text-[var(--color-text-secondary)] text-sm mb-4 line-clamp-3">
                       {highlight.description}
                     </p>
                   )}
                   {highlight.link_url && (
                     <Link
                       href={highlight.link_url}
-                      className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm font-medium"
+                      className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm font-medium"
                     >
                       {highlight.link_text || "Learn More"}
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,13 +321,13 @@ export default async function HomePage() {
       )}
 
       {/* Featured Playlists */}
-      <section className="py-10 px-6 border-t border-white/5">
+      <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 text-center">
-            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
               Featured Playlists
             </h2>
-            <p className="text-[var(--color-warm-gray)]">
+            <p className="text-[var(--color-text-secondary)]">
               Music from the Denver songwriting community.
             </p>
           </div>
@@ -360,10 +360,10 @@ export default async function HomePage() {
         <section className="py-10 px-6">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8 text-center">
-              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
                 Community Spotlight
               </h2>
-              <p className="text-[var(--color-warm-gray)]">
+              <p className="text-[var(--color-text-secondary)]">
                 Featured performers, stages, and hosts from the Denver songwriting community.
               </p>
             </div>
@@ -372,12 +372,12 @@ export default async function HomePage() {
             {hasFeaturedPerformers && (
               <div className="mb-10">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                     <span>🎵</span> Featured Performers
                   </h3>
                   <Link
                     href="/performers"
-                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm flex items-center gap-1"
                   >
                     View all
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,14 +391,14 @@ export default async function HomePage() {
 
             {/* Open Mics Section */}
             {hasSpotlightOpenMics && (
-              <div className="mb-10 pt-8 border-t border-white/5">
+              <div className="mb-10 pt-8 border-t border-[var(--color-border-default)]">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                     <span>🎤</span> Featured Open Mics
                   </h3>
                   <Link
                     href="/open-mics"
-                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm flex items-center gap-1"
                   >
                     View all
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -412,14 +412,14 @@ export default async function HomePage() {
 
             {/* Hosts Section */}
             {hasFeaturedHosts && (
-              <div className="pt-8 border-t border-white/5">
+              <div className="pt-8 border-t border-[var(--color-border-default)]">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[var(--color-warm-white)] flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
                     <span>👑</span> Featured Hosts
                   </h3>
                   <Link
                     href="/members?role=host"
-                    className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-sm flex items-center gap-1"
+                    className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm flex items-center gap-1"
                   >
                     View all
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,20 +436,20 @@ export default async function HomePage() {
 
       {/* Latest from the Blog */}
       {hasLatestBlog && (
-        <section className="py-10 px-6 border-t border-white/5">
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-baseline justify-between gap-4 mb-6">
               <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-warm-white)] mb-2">
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
                   Latest from the Blog
                 </h2>
-                <p className="text-[var(--color-warm-gray)]">
+                <p className="text-[var(--color-text-secondary)]">
                   Tips, stories, and insights from the Denver songwriting community. <Link href="/dashboard/blog" className="text-[var(--color-text-accent)] hover:underline">Share your own story!</Link>
                 </p>
               </div>
               <Link
                 href="/blog"
-                className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors flex items-center gap-2 whitespace-nowrap"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 View all posts
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -475,7 +475,7 @@ export default async function HomePage() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-indigo-800)]/30 flex items-center justify-center">
+                    <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
                       <svg className="w-16 h-16 text-[var(--color-text-accent)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                       </svg>
@@ -499,11 +499,11 @@ export default async function HomePage() {
                       ))}
                     </div>
                   )}
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
                     {latestBlog.title}
                   </h3>
                   {latestBlog.excerpt && (
-                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray-light)] line-clamp-2">
+                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
                       {latestBlog.excerpt}
                     </p>
                   )}
@@ -523,7 +523,7 @@ export default async function HomePage() {
                         </span>
                       </div>
                     )}
-                    <p className="text-xs text-[var(--color-warm-gray)]">
+                    <p className="text-xs text-[var(--color-text-tertiary)]">
                       {latestBlogAuthor?.full_name ?? "Anonymous"}
                     </p>
                   </div>
@@ -540,10 +540,10 @@ export default async function HomePage() {
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                   Featured Studios
                 </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Top-rated partner studios for your recording sessions.
                 </p>
               </div>
@@ -554,7 +554,7 @@ export default async function HomePage() {
             {hasFeaturedStudios ? (
               <StudioGrid studios={featuredStudios} />
             ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                 No featured studios at this time.
               </p>
             )}
@@ -564,10 +564,10 @@ export default async function HomePage() {
           <section>
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-warm-white)] mb-2">
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                   Upcoming Happenings
                 </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   All upcoming showcases, song circles, and special nights.
                 </p>
               </div>
@@ -578,7 +578,7 @@ export default async function HomePage() {
             {hasUpcomingEvents ? (
               <EventGrid events={upcomingEvents} />
             ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-warm-gray)]">
+              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                 No upcoming happenings scheduled. Check back soon.
               </p>
             )}
