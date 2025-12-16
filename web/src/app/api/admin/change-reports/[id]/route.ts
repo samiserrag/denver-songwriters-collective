@@ -58,8 +58,7 @@ export async function PATCH(
     }
 
     // Use service role client to bypass RLS
-    // Cast to any because change_reports table is not yet in generated types
-    const serviceClient = createServiceRoleClient() as any;
+    const serviceClient = createServiceRoleClient();
 
     // Fetch the change report
     const { data: report, error: fetchError } = await serviceClient
@@ -75,6 +74,14 @@ export async function PATCH(
     if (report.status !== "pending") {
       return NextResponse.json(
         { error: "Report has already been processed" },
+        { status: 400 }
+      );
+    }
+
+    // Validate event_id exists (required for approval to update the event)
+    if (!report.event_id) {
+      return NextResponse.json(
+        { error: "Report is missing event reference" },
         { status: 400 }
       );
     }
@@ -211,8 +218,7 @@ export async function DELETE(
     }
 
     // Use service role client to bypass RLS
-    // Cast to any because change_reports table is not yet in generated types
-    const serviceClient = createServiceRoleClient() as any;
+    const serviceClient = createServiceRoleClient();
 
     const { error } = await serviceClient
       .from("change_reports")

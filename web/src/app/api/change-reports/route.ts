@@ -162,8 +162,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert the change report
-    // Cast to any because change_reports table is not yet in generated types
-    const { data: changeReport, error: insertError } = await (supabase as any)
+    const { data: changeReport, error: insertError } = await supabase
       .from("change_reports")
       .insert({
         event_id: body.event_id,

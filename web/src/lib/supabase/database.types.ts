@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_notifications: {
@@ -276,6 +251,83 @@ export type Database = {
           {
             foreignKeyName: "blog_posts_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          event_id: string | null
+          field_name: string
+          id: string
+          notes: string | null
+          proposed_value: string
+          reporter_email: string | null
+          reporter_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          field_name: string
+          id?: string
+          notes?: string | null
+          proposed_value: string
+          reporter_email?: string | null
+          reporter_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          field_name?: string
+          id?: string
+          notes?: string | null
+          proposed_value?: string
+          reporter_email?: string | null
+          reporter_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_reports_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "change_reports_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -567,6 +619,7 @@ export type Database = {
         Row: {
           capacity: number | null
           category: string | null
+          cover_image_url: string | null
           created_at: string | null
           day_of_week: string | null
           description: string | null
@@ -579,6 +632,7 @@ export type Database = {
           is_dsc_event: boolean | null
           is_showcase: boolean | null
           is_spotlight: boolean | null
+          last_verified_at: string | null
           notes: string | null
           recurrence_rule: string | null
           region_id: number | null
@@ -592,10 +646,12 @@ export type Database = {
           venue_address: string | null
           venue_id: string | null
           venue_name: string | null
+          verified_by: string | null
         }
         Insert: {
           capacity?: number | null
           category?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           day_of_week?: string | null
           description?: string | null
@@ -608,6 +664,7 @@ export type Database = {
           is_dsc_event?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
+          last_verified_at?: string | null
           notes?: string | null
           recurrence_rule?: string | null
           region_id?: number | null
@@ -621,10 +678,12 @@ export type Database = {
           venue_address?: string | null
           venue_id?: string | null
           venue_name?: string | null
+          verified_by?: string | null
         }
         Update: {
           capacity?: number | null
           category?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           day_of_week?: string | null
           description?: string | null
@@ -637,6 +696,7 @@ export type Database = {
           is_dsc_event?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
+          last_verified_at?: string | null
           notes?: string | null
           recurrence_rule?: string | null
           region_id?: number | null
@@ -650,6 +710,7 @@ export type Database = {
           venue_address?: string | null
           venue_id?: string | null
           venue_name?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -671,6 +732,13 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -907,6 +975,109 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_highlights: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          event_id: string | null
+          highlight_type: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_text: string | null
+          link_url: string | null
+          performer_id: string | null
+          start_date: string | null
+          title: string
+          updated_at: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          event_id?: string | null
+          highlight_type: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_text?: string | null
+          link_url?: string | null
+          performer_id?: string | null
+          start_date?: string | null
+          title: string
+          updated_at?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          event_id?: string | null
+          highlight_type?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_text?: string | null
+          link_url?: string | null
+          performer_id?: string | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_highlights_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_performer_id_fkey"
+            columns: ["performer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["matched_venue_id"]
+          },
+          {
+            foreignKeyName: "monthly_highlights_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           email: string
@@ -963,95 +1134,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      monthly_highlights: {
-        Row: {
-          id: string
-          title: string
-          description: string | null
-          highlight_type: string
-          event_id: string | null
-          performer_id: string | null
-          venue_id: string | null
-          image_url: string | null
-          link_url: string | null
-          link_text: string | null
-          display_order: number | null
-          is_active: boolean | null
-          start_date: string | null
-          end_date: string | null
-          created_at: string | null
-          updated_at: string | null
-          created_by: string | null
-        }
-        Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          highlight_type: string
-          event_id?: string | null
-          performer_id?: string | null
-          venue_id?: string | null
-          image_url?: string | null
-          link_url?: string | null
-          link_text?: string | null
-          display_order?: number | null
-          is_active?: boolean | null
-          start_date?: string | null
-          end_date?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          created_by?: string | null
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          highlight_type?: string
-          event_id?: string | null
-          performer_id?: string | null
-          venue_id?: string | null
-          image_url?: string | null
-          link_url?: string | null
-          link_text?: string | null
-          display_order?: number | null
-          is_active?: boolean | null
-          start_date?: string | null
-          end_date?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          created_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "monthly_highlights_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monthly_highlights_performer_id_fkey"
-            columns: ["performer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monthly_highlights_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "monthly_highlights_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       open_mic_claims: {
         Row: {
@@ -1150,8 +1232,8 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_url: string | null
           available_for_hire: boolean | null
+          avatar_url: string | null
           bio: string | null
           cashapp_handle: string | null
           created_at: string | null
@@ -1159,6 +1241,7 @@ export type Database = {
           favorite_open_mic: string | null
           featured_at: string | null
           featured_rank: number | null
+          featured_song_url: string | null
           full_name: string | null
           genres: string[] | null
           id: string
@@ -1167,6 +1250,7 @@ export type Database = {
           interested_in_cowriting: boolean | null
           is_featured: boolean | null
           is_host: boolean | null
+          last_active_at: string | null
           onboarding_complete: boolean | null
           open_to_collabs: boolean | null
           paypal_url: string | null
@@ -1175,6 +1259,7 @@ export type Database = {
           specialties: string[] | null
           spotify_url: string | null
           spotlight_type: string | null
+          tiktok_url: string | null
           twitter_url: string | null
           updated_at: string | null
           venmo_handle: string | null
@@ -1182,8 +1267,8 @@ export type Database = {
           youtube_url: string | null
         }
         Insert: {
-          avatar_url?: string | null
           available_for_hire?: boolean | null
+          avatar_url?: string | null
           bio?: string | null
           cashapp_handle?: string | null
           created_at?: string | null
@@ -1191,6 +1276,7 @@ export type Database = {
           favorite_open_mic?: string | null
           featured_at?: string | null
           featured_rank?: number | null
+          featured_song_url?: string | null
           full_name?: string | null
           genres?: string[] | null
           id?: string
@@ -1199,6 +1285,7 @@ export type Database = {
           interested_in_cowriting?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
+          last_active_at?: string | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
@@ -1207,6 +1294,7 @@ export type Database = {
           specialties?: string[] | null
           spotify_url?: string | null
           spotlight_type?: string | null
+          tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           venmo_handle?: string | null
@@ -1214,8 +1302,8 @@ export type Database = {
           youtube_url?: string | null
         }
         Update: {
-          avatar_url?: string | null
           available_for_hire?: boolean | null
+          avatar_url?: string | null
           bio?: string | null
           cashapp_handle?: string | null
           created_at?: string | null
@@ -1223,6 +1311,7 @@ export type Database = {
           favorite_open_mic?: string | null
           featured_at?: string | null
           featured_rank?: number | null
+          featured_song_url?: string | null
           full_name?: string | null
           genres?: string[] | null
           id?: string
@@ -1231,6 +1320,7 @@ export type Database = {
           interested_in_cowriting?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
+          last_active_at?: string | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
@@ -1239,11 +1329,36 @@ export type Database = {
           specialties?: string[] | null
           spotify_url?: string | null
           spotlight_type?: string | null
+          tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           venmo_handle?: string | null
           website_url?: string | null
           youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          font_preset: string
+          id: string
+          theme_preset: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          font_preset?: string
+          id?: string
+          theme_preset?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          font_preset?: string
+          id?: string
+          theme_preset?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1787,9 +1902,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       appointment_status: ["pending", "confirmed", "completed", "cancelled"],
