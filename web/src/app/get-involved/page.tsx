@@ -70,7 +70,7 @@ export default function GetInvolvedPage() {
               {waysToHelp.map((way) => (
                 <div
                   key={way.title}
-                  className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-4"
+                  className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-4"
                 >
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {way.title}
@@ -111,7 +111,7 @@ export default function GetInvolvedPage() {
                 Interested in helping out at events, running open mics, or supporting DSC in other ways? Fill out the form below and we will be in touch.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8">
+            <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 md:p-8">
               <VolunteerSignupForm />
             </div>
           </section>
@@ -127,7 +127,7 @@ export default function GetInvolvedPage() {
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Financial contributions or sponsorships would make a meaningful difference in our ability to grow, host more events, and serve more musicians across Denver.
             </p>
-            <div className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 md:p-8 space-y-6">
+            <div className="rounded-2xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
@@ -146,7 +146,7 @@ export default function GetInvolvedPage() {
                   </p>
                 </div>
               </div>
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-4 border-t border-[var(--color-border-default)]">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] mb-4">
                   We are currently setting up our donation system. In the meantime, if you would like to contribute or discuss sponsorship opportunities, please reach out to us directly.
                 </p>
@@ -158,7 +158,7 @@ export default function GetInvolvedPage() {
           </section>
 
           {/* Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Ready to Get Started?
             </h2>

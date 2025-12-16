@@ -75,7 +75,7 @@ export default function PartnersPage() {
               {partnerTypes.map((type) => (
                 <span
                   key={type}
-                  className="px-4 py-2 rounded-full border border-white/10 bg-[var(--color-indigo-950)] text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]"
+                  className="px-4 py-2 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]"
                 >
                   {type}
                 </span>
@@ -92,7 +92,7 @@ export default function PartnersPage() {
               {partnershipOpportunities.map((opportunity) => (
                 <div
                   key={opportunity.title}
-                  className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-6 space-y-3"
+                  className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-3"
                 >
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
                     {opportunity.title}
@@ -187,7 +187,7 @@ export default function PartnersPage() {
           </section>
 
           {/* Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Let&apos;s Build Something Together
             </h2>

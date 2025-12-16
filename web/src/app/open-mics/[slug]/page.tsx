@@ -165,7 +165,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
       </Link>
 
       {/* Hero section with placeholder image */}
-      <div className="rounded-2xl overflow-hidden border border-white/10 bg-[var(--color-indigo-950)]/50">
+      <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
         <div className="h-48 md:h-64 relative">
           <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title ?? "Open Mic"} />
           {/* Day badge */}
@@ -193,7 +193,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
           {/* Quick info cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Time Card */}
-            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
+            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-[var(--color-border-subtle)]">
               <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                 <span>🕐</span> Time
               </div>
@@ -207,7 +207,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
             {/* Venue Card */}
             {venue && (
-              <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
+              <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-[var(--color-border-subtle)]">
                 <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                   <span>📍</span> Venue
                 </div>
@@ -219,7 +219,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             )}
 
             {/* Schedule Card */}
-            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-white/5">
+            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-[var(--color-border-subtle)]">
               <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
                 <span>📅</span> Schedule
               </div>

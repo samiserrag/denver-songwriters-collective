@@ -112,8 +112,8 @@ export default async function SpotlightPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 bg-neutral-900/50 rounded-2xl border border-white/10">
-                <p className="text-neutral-400">
+              <div className="text-center py-12 bg-[var(--color-bg-secondary)] rounded-2xl border border-[var(--color-border-default)]">
+                <p className="text-[var(--color-text-secondary)]">
                   No one is currently in the spotlight. Check back soon!
                 </p>
               </div>
@@ -175,11 +175,11 @@ function SpotlightCard({
       className={`group block rounded-2xl border overflow-hidden transition-all ${
         isCurrent
           ? "border-[var(--color-border-accent)]/30 bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent hover:border-[var(--color-border-accent)]/50"
-          : "border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] hover:border-white/20"
+          : "border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)]"
       }`}
     >
       {/* Avatar */}
-      <div className={`relative ${isCurrent ? "aspect-square" : "aspect-[4/3]"} overflow-hidden bg-neutral-900`}>
+      <div className={`relative ${isCurrent ? "aspect-square" : "aspect-[4/3]"} overflow-hidden bg-[var(--color-bg-tertiary)]`}>
         {profile.avatar_url ? (
           <img
             src={profile.avatar_url}
@@ -210,12 +210,12 @@ function SpotlightCard({
           <span className={`px-2 py-0.5 rounded-full text-xs ${
             isCurrent
               ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)]"
-              : "bg-neutral-800 text-neutral-400"
+              : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
           }`}>
             {getRoleLabel(profile)}
           </span>
           {formattedDate && !isCurrent && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-[var(--color-text-tertiary)]">
               {formattedDate}
             </span>
           )}
@@ -228,7 +228,7 @@ function SpotlightCard({
         </h3>
 
         {isCurrent && profile.bio && (
-          <p className="text-neutral-400 text-sm mt-2 line-clamp-3">
+          <p className="text-[var(--color-text-secondary)] text-sm mt-2 line-clamp-3">
             {profile.bio}
           </p>
         )}

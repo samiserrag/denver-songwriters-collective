@@ -185,10 +185,10 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
 
   return (
     <article
-      className={`group rounded-xl bg-[var(--color-indigo-950)]/50 border overflow-hidden transition-all duration-200 card-hover ${
+      className={`group rounded-xl bg-[var(--color-bg-secondary)] border overflow-hidden transition-all duration-200 card-hover ${
         showStatusBadge
           ? "border-amber-500/30 hover:border-amber-500/50"
-          : "border-white/10 hover:border-[var(--color-border-accent)]/50"
+          : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
       }`}
       role="article"
     >
@@ -254,7 +254,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
           <Link
             href={event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`}
             className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"

@@ -77,7 +77,7 @@ export function LazyIframe({
         />
       ) : (
         <div
-          className="w-full h-full bg-[var(--color-indigo-950)]/50 rounded-xl flex items-center justify-center"
+          className="w-full h-full bg-[var(--color-bg-secondary)] rounded-xl flex items-center justify-center"
         >
           <div className="text-[var(--color-text-secondary)] text-sm">Loading...</div>
         </div>

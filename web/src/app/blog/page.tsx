@@ -133,7 +133,7 @@ function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block rounded-xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] overflow-hidden hover:border-[var(--color-border-accent)]/30 transition-colors"
+      className="group block rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] overflow-hidden hover:border-[var(--color-border-accent)] transition-colors"
     >
       {post.cover_image_url && (
         <div className="relative aspect-[4/3] w-full overflow-hidden">

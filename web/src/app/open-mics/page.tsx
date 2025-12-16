@@ -532,7 +532,7 @@ function parseTimeToMinutes(t?: string | null) {
 
         {/* Contribution Section */}
         <div className="py-10">
-          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 space-y-8">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 space-y-8">
             <div className="text-center space-y-4">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
                 Help Keep This Directory Accurate

@@ -10,7 +10,7 @@ export function SpotlightBadge({ className }: SpotlightBadgeProps) {
     <span
       className={cn(
         "inline-flex items-center px-3 py-1 rounded-full",
-        "text-[var(--color-indigo-950)] text-xs font-semibold",
+        "text-[var(--color-background)] text-xs font-semibold",
         "bg-[var(--color-accent-primary)] shadow-sm",
         className
       )}
