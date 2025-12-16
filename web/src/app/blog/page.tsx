@@ -75,7 +75,7 @@ export default async function BlogPage() {
       <PageContainer>
         <div className="py-12">
           {posts && posts.length > 0 ? (
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {posts.map((post) => (
                 <BlogCard key={post.id} post={post as BlogPost} />
               ))}
@@ -109,61 +109,58 @@ function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] overflow-hidden hover:border-[var(--color-border-accent)]/30 transition-colors"
+      className="group block rounded-xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] overflow-hidden hover:border-[var(--color-border-accent)]/30 transition-colors"
     >
       {post.cover_image_url && (
-        <div className="relative aspect-video w-full overflow-hidden">
+        <div className="relative aspect-[4/3] w-full overflow-hidden">
           <Image
             src={post.cover_image_url}
             alt={post.title}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover"
           />
         </div>
       )}
-      <div className="p-6 space-y-3">
+      <div className="p-4 space-y-2">
         {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {post.tags.slice(0, 3).map((tag) => (
+          <div className="flex flex-wrap gap-1">
+            {post.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
+                className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
               >
                 {tag}
               </span>
             ))}
           </div>
         )}
-        <h2 className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+        <h2 className="text-base font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-2">
           {post.title}
         </h2>
         {post.excerpt && (
-          <p className="text-neutral-400 text-sm line-clamp-3">
+          <p className="text-neutral-400 text-xs line-clamp-2">
             {post.excerpt}
           </p>
         )}
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-2 pt-1">
           {author?.avatar_url ? (
             <Image
               src={author.avatar_url}
               alt={author.full_name ?? "Author"}
-              width={32}
-              height={32}
+              width={24}
+              height={24}
               className="rounded-full object-cover"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-              <span className="text-[var(--color-text-accent)] text-sm">
+            <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+              <span className="text-[var(--color-text-accent)] text-xs">
                 {author?.full_name?.[0] ?? "?"}
               </span>
             </div>
           )}
-          <div className="text-sm">
+          <div className="text-xs">
             <p className="text-neutral-300">{author?.full_name ?? "Anonymous"}</p>
-            {formattedDate && (
-              <p className="text-neutral-500 text-xs">{formattedDate}</p>
-            )}
           </div>
         </div>
       </div>

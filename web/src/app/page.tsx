@@ -434,11 +434,12 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Blog Card */}
-            <Link
-              href={`/blog/${latestBlog.slug}`}
-              className="block group max-w-md"
-            >
+            {/* Blog Card - Same size as member cards (1 column in 4-col grid) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <Link
+                href={`/blog/${latestBlog.slug}`}
+                className="block group"
+              >
               <article className="h-full overflow-hidden card-spotlight hover:-translate-y-1">
                 {/* Image Section - aspect-[4/3] */}
                 <div className="relative aspect-[4/3] overflow-hidden">
@@ -447,8 +448,8 @@ export default async function HomePage() {
                       src={latestBlog.cover_image_url}
                       alt={latestBlog.title}
                       fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
@@ -506,6 +507,7 @@ export default async function HomePage() {
                 </div>
               </article>
             </Link>
+            </div>
           </div>
         </section>
       )}
