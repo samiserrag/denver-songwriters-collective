@@ -119,7 +119,7 @@ export default function VenueSelector({
           onChange={handleSelectChange}
           required={required && !showNewVenueForm}
           disabled={disabled || creating}
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
         >
           <option value="">Select a venue...</option>
           {venues.map((v) => (
@@ -133,7 +133,7 @@ export default function VenueSelector({
       </div>
 
       {showNewVenueForm && (
-        <div className="p-4 bg-[var(--color-indigo-950)]/30 border border-[var(--color-border-accent)]/20 rounded-lg space-y-4">
+        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-accent)]/20 rounded-lg space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">New Venue</h4>
             <button
@@ -162,7 +162,7 @@ export default function VenueSelector({
                 placeholder="Venue name *"
                 value={newVenue.name}
                 onChange={(e) => setNewVenue({ ...newVenue, name: e.target.value })}
-                className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 disabled={creating}
               />
             </div>
@@ -172,7 +172,7 @@ export default function VenueSelector({
                 placeholder="Street address *"
                 value={newVenue.address}
                 onChange={(e) => setNewVenue({ ...newVenue, address: e.target.value })}
-                className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 disabled={creating}
               />
             </div>
@@ -181,7 +181,7 @@ export default function VenueSelector({
               placeholder="City"
               value={newVenue.city}
               onChange={(e) => setNewVenue({ ...newVenue, city: e.target.value })}
-              className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
               disabled={creating}
             />
             <div className="grid grid-cols-2 gap-3">
@@ -190,7 +190,7 @@ export default function VenueSelector({
                 placeholder="State"
                 value={newVenue.state}
                 onChange={(e) => setNewVenue({ ...newVenue, state: e.target.value })}
-                className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 disabled={creating}
               />
               <input
@@ -198,7 +198,7 @@ export default function VenueSelector({
                 placeholder="ZIP"
                 value={newVenue.zip}
                 onChange={(e) => setNewVenue({ ...newVenue, zip: e.target.value })}
-                className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 disabled={creating}
               />
             </div>
@@ -207,7 +207,7 @@ export default function VenueSelector({
               placeholder="Phone (optional)"
               value={newVenue.phone}
               onChange={(e) => setNewVenue({ ...newVenue, phone: e.target.value })}
-              className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
               disabled={creating}
             />
             <input
@@ -215,7 +215,7 @@ export default function VenueSelector({
               placeholder="Website URL (optional)"
               value={newVenue.website_url}
               onChange={(e) => setNewVenue({ ...newVenue, website_url: e.target.value })}
-              className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
               disabled={creating}
             />
             <div className="md:col-span-2">
@@ -224,7 +224,7 @@ export default function VenueSelector({
                 placeholder="Google Maps URL (optional)"
                 value={newVenue.google_maps_url}
                 onChange={(e) => setNewVenue({ ...newVenue, google_maps_url: e.target.value })}
-                className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 disabled={creating}
               />
             </div>

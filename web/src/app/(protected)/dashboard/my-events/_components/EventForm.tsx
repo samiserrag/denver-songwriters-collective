@@ -229,7 +229,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           onChange={(e) => updateField("title", e.target.value)}
           placeholder="e.g., Wednesday Night Song Circle"
           required
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
         />
       </div>
 
@@ -243,7 +243,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           onChange={(e) => updateField("description", e.target.value)}
           placeholder="What should attendees expect? Any requirements?"
           rows={4}
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
         />
       </div>
 
@@ -266,7 +266,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           <select
             value={formData.day_of_week}
             onChange={(e) => updateField("day_of_week", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             <option value="">Select day</option>
             {DAYS_OF_WEEK.map(day => (
@@ -282,7 +282,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             value={formData.start_time}
             onChange={(e) => updateField("start_time", e.target.value)}
             required
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             <option value="">Select time</option>
             {TIME_OPTIONS.map(({ value, label }) => (
@@ -297,7 +297,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           <select
             value={formData.end_time}
             onChange={(e) => updateField("end_time", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             <option value="">Select time</option>
             {TIME_OPTIONS.map(({ value, label }) => (
@@ -315,7 +315,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           <select
             value={formData.recurrence_rule}
             onChange={(e) => updateField("recurrence_rule", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             {FREQUENCIES.map(freq => (
               <option key={freq.value} value={freq.value}>{freq.label}</option>
@@ -333,7 +333,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             onChange={(e) => updateField("capacity", e.target.value)}
             placeholder="e.g., 12"
             min="1"
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           />
         </div>
       </div>
@@ -349,7 +349,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           onChange={(e) => updateField("host_notes", e.target.value)}
           placeholder="Internal notes, setup reminders, etc."
           rows={3}
-          className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
         />
       </div>
 
