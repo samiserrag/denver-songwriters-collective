@@ -238,7 +238,7 @@ export function ImageUpload({
   if (showCropper && previewUrl) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-        <div className="bg-[var(--color-indigo-950)] rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-auto">
+        <div className="bg-[var(--color-bg-primary)] rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-auto border border-[var(--color-border-default)]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
               Crop Your Image
@@ -253,26 +253,62 @@ export function ImageUpload({
             </button>
           </div>
 
-          <div className="mb-4">
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(_, percentCrop) => setCompletedCrop(percentCrop)}
-              aspect={aspectRatio}
-              circularCrop={shape === 'circle'}
-            >
-              <img
-                ref={imgRef}
-                src={previewUrl}
-                alt="Crop preview"
-                onLoad={onImageLoad}
-                className="max-h-[50vh] w-auto mx-auto"
-              />
-            </ReactCrop>
+          <div className="mb-4 flex flex-col md:flex-row gap-4 items-start justify-center">
+            {/* Crop area */}
+            <div className="flex-1">
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-2 text-center">Drag to select crop area</p>
+              <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(_, percentCrop) => setCompletedCrop(percentCrop)}
+                aspect={aspectRatio}
+                circularCrop={shape === 'circle'}
+              >
+                <img
+                  ref={imgRef}
+                  src={previewUrl}
+                  alt="Crop preview"
+                  onLoad={onImageLoad}
+                  className="max-h-[40vh] w-auto mx-auto"
+                />
+              </ReactCrop>
+            </div>
+
+            {/* Live preview */}
+            {completedCrop && imgRef.current && (
+              <div className="flex flex-col items-center">
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-2">Final result preview</p>
+                <div
+                  className={`overflow-hidden border-2 border-[var(--color-border-accent)] ${shape === 'circle' ? 'rounded-full' : 'rounded-lg'}`}
+                  style={{
+                    width: 120,
+                    height: aspectRatio === 1 ? 120 : Math.round(120 / aspectRatio),
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${100 / (completedCrop.width / 100)}%`,
+                      marginLeft: `-${(completedCrop.x / completedCrop.width) * 100}%`,
+                      marginTop: `-${(completedCrop.y / completedCrop.height) * 100}%`,
+                    }}
+                  >
+                    <img
+                      src={previewUrl}
+                      alt="Final preview"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <p className="text-sm text-[var(--color-text-secondary)] mb-4 text-center">
-            Drag to reposition. The image will be cropped to a {
+            The image will be cropped to a {
               aspectRatio === 1 ? 'square' :
               aspectRatio === 16/9 ? '16:9' :
               aspectRatio === 4/3 ? '4:3' :
@@ -324,10 +360,10 @@ export function ImageUpload({
       <div
         className={`relative group ${
           shape === 'circle' ? 'rounded-full' : 'rounded-xl'
-        } overflow-hidden bg-[var(--color-indigo-950)] border-2 border-dashed transition-colors ${
+        } overflow-hidden bg-[var(--color-bg-secondary)] border-2 border-dashed transition-colors ${
           dragActive
             ? 'border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10'
-            : 'border-white/20 hover:border-white/40'
+            : 'border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]'
         }`}
         style={{ aspectRatio: '1 / 1' }}
         onDragEnter={handleDrag}

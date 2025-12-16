@@ -13,7 +13,7 @@ export function StudioGrid({ studios, compact = false }: StudioGridProps) {
   if (studios.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-neutral-400">No studios available yet.</p>
+        <p className="text-[var(--color-text-tertiary)]">No studios available yet.</p>
       </div>
     );
   }
@@ -21,7 +21,7 @@ export function StudioGrid({ studios, compact = false }: StudioGridProps) {
   return (
     <div className={compact
       ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
-      : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
     }>
       {studios.map((studio) => (
         <StudioCard key={studio.id} studio={studio} compact={compact} />
