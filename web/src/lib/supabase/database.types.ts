@@ -452,6 +452,7 @@ export type Database = {
           event_id: string
           id: string
           notes: string | null
+          offer_expires_at: string | null
           status: string
           updated_at: string | null
           user_id: string
@@ -462,6 +463,7 @@ export type Database = {
           event_id: string
           id?: string
           notes?: string | null
+          offer_expires_at?: string | null
           status?: string
           updated_at?: string | null
           user_id: string
@@ -472,6 +474,7 @@ export type Database = {
           event_id?: string
           id?: string
           notes?: string | null
+          offer_expires_at?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string

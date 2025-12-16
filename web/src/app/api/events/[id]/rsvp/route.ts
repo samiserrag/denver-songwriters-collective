@@ -1,7 +1,15 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
-import { getRsvpConfirmationEmail, getWaitlistPromotionEmail } from "@/lib/emailTemplates";
+import { getRsvpConfirmationEmail } from "@/lib/emailTemplates";
+import {
+  processExpiredOffers,
+  promoteNextWaitlistPerson,
+  sendOfferNotifications,
+  confirmOffer,
+  calculateOfferExpiry,
+  isOfferExpired,
+} from "@/lib/waitlistOffer";
 
 // GET - Get current user's RSVP status for this event
 export async function GET(
@@ -16,6 +24,9 @@ export async function GET(
     return NextResponse.json(null);
   }
 
+  // Process any expired offers for this event (opportunistic cleanup)
+  await processExpiredOffers(supabase, eventId);
+
   const { data } = await supabase
     .from("event_rsvps")
     .select("*")
@@ -23,6 +34,21 @@ export async function GET(
     .eq("user_id", session.user.id)
     .neq("status", "cancelled")
     .maybeSingle();
+
+  // Check if user's offer has expired (in case processing missed it)
+  if (data?.status === "offered" && isOfferExpired(data.offer_expires_at)) {
+    // Their offer expired, process it now
+    await processExpiredOffers(supabase, eventId);
+    // Re-fetch to get updated status
+    const { data: refreshedData } = await supabase
+      .from("event_rsvps")
+      .select("*")
+      .eq("event_id", eventId)
+      .eq("user_id", session.user.id)
+      .neq("status", "cancelled")
+      .maybeSingle();
+    return NextResponse.json(refreshedData);
+  }
 
   return NextResponse.json(data);
 }
@@ -149,7 +175,7 @@ export async function POST(
   return NextResponse.json(rsvp);
 }
 
-// DELETE - Cancel RSVP
+// DELETE - Cancel RSVP (or decline offer)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -174,12 +200,14 @@ export async function DELETE(
     return NextResponse.json({ error: "No RSVP found" }, { status: 404 });
   }
 
-  const wasConfirmed = currentRsvp.status === "confirmed";
+  // Track if we need to promote someone (confirmed or offered status opens a spot)
+  const opensSpot = currentRsvp.status === "confirmed" || currentRsvp.status === "offered";
 
   const { error: updateError } = await supabase
     .from("event_rsvps")
     .update({
       status: "cancelled",
+      offer_expires_at: null,
       updated_at: new Date().toISOString()
     })
     .eq("id", currentRsvp.id);
@@ -188,84 +216,63 @@ export async function DELETE(
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Auto-promote from waitlist if someone cancels
-  if (wasConfirmed) {
-    const { data: nextInLine } = await supabase
-      .from("event_rsvps")
-      .select("id, user_id")
-      .eq("event_id", eventId)
-      .eq("status", "waitlist")
-      .order("waitlist_position", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+  // Promote next waitlist person with 2-hour offer window
+  if (opensSpot) {
+    const promotedRsvpId = await promoteNextWaitlistPerson(supabase, eventId);
 
-    if (nextInLine) {
-      // Promote the next person in line
-      const { error: promoteError } = await supabase
+    if (promotedRsvpId) {
+      // Get the promoted RSVP to get user_id and offer_expires_at
+      const { data: promotedRsvp } = await supabase
         .from("event_rsvps")
-        .update({
-          status: "confirmed",
-          waitlist_position: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", nextInLine.id);
+        .select("user_id, offer_expires_at")
+        .eq("id", promotedRsvpId)
+        .single();
 
-      if (promoteError) {
-        console.error("Failed to promote waitlist user:", promoteError);
-        // Continue anyway - the cancellation succeeded
-      } else {
-        // Get event details and promoted user's email for notifications
-        const [eventDataRes, promotedUserRes] = await Promise.all([
-          supabase
-            .from("events")
-            .select("title, event_date, start_time, venue_name")
-            .eq("id", eventId)
-            .single(),
-          supabase.auth.admin.getUserById(nextInLine.user_id),
-        ]);
-
-        const eventData = eventDataRes.data;
-        const promotedUserEmail = promotedUserRes.data?.user?.email;
-
-        // Send in-app notification (using SECURITY DEFINER function)
-        if (eventData?.title) {
-          const { error: notifyError } = await supabase.rpc("create_user_notification", {
-            p_user_id: nextInLine.user_id,
-            p_type: "waitlist_promotion",
-            p_title: "You're In!",
-            p_message: `A spot opened up for "${eventData.title}" and you've been confirmed!`,
-            p_link: `/events/${eventId}`,
-          });
-
-          if (notifyError) {
-            console.error("Failed to send waitlist promotion notification:", notifyError);
-          }
-
-          // Send email notification
-          if (promotedUserEmail) {
-            try {
-              const emailData = getWaitlistPromotionEmail({
-                eventTitle: eventData.title,
-                eventDate: eventData.event_date || "TBA",
-                eventTime: eventData.start_time || "TBA",
-                venueName: eventData.venue_name || "TBA",
-                eventId,
-              });
-
-              await sendEmail({
-                to: promotedUserEmail,
-                subject: emailData.subject,
-                html: emailData.html,
-                text: emailData.text,
-              });
-            } catch (emailError) {
-              console.error("Failed to send waitlist promotion email:", emailError);
-            }
-          }
-        }
+      if (promotedRsvp) {
+        // Send notifications about the offer
+        await sendOfferNotifications(
+          supabase,
+          eventId,
+          promotedRsvp.user_id,
+          promotedRsvp.offer_expires_at!
+        );
       }
     }
   }
 
   return NextResponse.json({ success: true });
+}
+
+// PATCH - Confirm an offered spot
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: eventId } = await params;
+  const supabase = await createSupabaseServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Process any expired offers first
+  await processExpiredOffers(supabase, eventId);
+
+  // Try to confirm the offer
+  const result = await confirmOffer(supabase, eventId, session.user.id);
+
+  if (!result.success) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+
+  // Get updated RSVP data
+  const { data: rsvp } = await supabase
+    .from("event_rsvps")
+    .select("*")
+    .eq("event_id", eventId)
+    .eq("user_id", session.user.id)
+    .single();
+
+  return NextResponse.json(rsvp);
 }

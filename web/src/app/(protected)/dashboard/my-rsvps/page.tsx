@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 
 interface RSVPWithEvent {
   id: string;
-  status: "confirmed" | "waitlist" | "cancelled";
+  status: "confirmed" | "waitlist" | "cancelled" | "offered";
   waitlist_position: number | null;
+  offer_expires_at: string | null;
   created_at: string | null;
   event: RSVPCardEvent | null;
 }
@@ -43,15 +44,15 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
   let rsvps: RSVPWithEvent[] = [];
 
   if (activeTab === "upcoming") {
-    // Upcoming: confirmed or waitlist RSVPs for events with event_date >= today (or null date)
+    // Upcoming: confirmed, offered, or waitlist RSVPs for events with event_date >= today (or null date)
     const { data } = await supabase
       .from("event_rsvps")
       .select(`
-        id, status, waitlist_position, created_at,
+        id, status, waitlist_position, offer_expires_at, created_at,
         event:events(id, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
       `)
       .eq("user_id", userId)
-      .in("status", ["confirmed", "waitlist"])
+      .in("status", ["confirmed", "waitlist", "offered"])
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -77,7 +78,7 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
     const { data } = await supabase
       .from("event_rsvps")
       .select(`
-        id, status, waitlist_position, created_at,
+        id, status, waitlist_position, offer_expires_at, created_at,
         event:events(id, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
       `)
       .eq("user_id", userId)
@@ -103,7 +104,7 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
     const { data } = await supabase
       .from("event_rsvps")
       .select(`
-        id, status, waitlist_position, created_at,
+        id, status, waitlist_position, offer_expires_at, created_at,
         event:events(id, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
       `)
       .eq("user_id", userId)
@@ -119,7 +120,7 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
     .from("event_rsvps")
     .select("id, events!inner(event_date)", { count: "exact", head: true })
     .eq("user_id", userId)
-    .in("status", ["confirmed", "waitlist"])
+    .in("status", ["confirmed", "waitlist", "offered"])
     .or(`event_date.gte.${today},event_date.is.null`, { referencedTable: "events" });
 
   const { count: cancelledCount } = await supabase
@@ -221,6 +222,7 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
                   id: rsvp.id,
                   status: rsvp.status,
                   waitlist_position: rsvp.waitlist_position,
+                  offer_expires_at: rsvp.offer_expires_at,
                   created_at: rsvp.created_at,
                 }}
                 event={rsvp.event}

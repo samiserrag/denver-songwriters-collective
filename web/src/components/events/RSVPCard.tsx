@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AddToCalendarButton } from "./AddToCalendarButton";
+import { formatTimeRemaining } from "@/lib/waitlistOfferClient";
 
 export interface RSVPCardEvent {
   id: string;
@@ -19,8 +20,9 @@ export interface RSVPCardEvent {
 export interface RSVPCardProps {
   rsvp: {
     id: string;
-    status: "confirmed" | "waitlist" | "cancelled";
+    status: "confirmed" | "waitlist" | "cancelled" | "offered";
     waitlist_position: number | null;
+    offer_expires_at?: string | null;
     created_at: string | null;
   };
   event: RSVPCardEvent;
@@ -51,7 +53,7 @@ function formatTime(timeStr: string | null): string | null {
   return `${hour12}:${minute} ${ampm}`;
 }
 
-function getStatusBadge(status: string, waitlistPosition: number | null) {
+function getStatusBadge(status: string, waitlistPosition: number | null, offerExpiresAt?: string | null) {
   switch (status) {
     case "confirmed":
       return (
@@ -60,6 +62,15 @@ function getStatusBadge(status: string, waitlistPosition: number | null) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
           Confirmed
+        </span>
+      );
+    case "offered":
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/30 text-amber-300 text-xs font-medium animate-pulse">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Spot Offered - {formatTimeRemaining(offerExpiresAt ?? null)} left
         </span>
       );
     case "waitlist":
@@ -114,6 +125,29 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
     }
   };
 
+  const handleConfirmOffer = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/events/${event.id}/rsvp`, {
+        method: "PATCH",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to confirm");
+      }
+
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to confirm offer");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Build calendar dates if event has a specific date
   let calendarStartDate: Date | null = null;
   let calendarEndDate: Date | null = null;
@@ -138,10 +172,11 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
   const formattedDate = formatDate(event.event_date);
   const formattedTime = formatTime(event.start_time);
   const isCancelled = rsvp.status === "cancelled";
+  const isOffered = rsvp.status === "offered";
 
   return (
     <div className={`rounded-xl border bg-[var(--color-bg-secondary)] overflow-hidden ${
-      isCancelled ? "border-[var(--color-border-default)] opacity-70" : "border-[var(--color-border-default)]"
+      isCancelled ? "border-[var(--color-border-default)] opacity-70" : isOffered ? "border-amber-500/50 ring-1 ring-amber-500/30" : "border-[var(--color-border-default)]"
     }`}>
       <div className="p-4 sm:p-5">
         {/* Header with title and status */}
@@ -154,7 +189,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
               {event.title}
             </Link>
             <div className="mt-1">
-              {getStatusBadge(rsvp.status, rsvp.waitlist_position)}
+              {getStatusBadge(rsvp.status, rsvp.waitlist_position, rsvp.offer_expires_at)}
             </div>
           </div>
         </div>
@@ -192,8 +227,34 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
 
         {/* Actions */}
         <div className="mt-4 pt-4 border-t border-[var(--color-border-default)] flex flex-wrap items-center gap-3">
-          {/* Add to Calendar - only for non-cancelled RSVPs with dates */}
-          {!isCancelled && calendarStartDate && (
+          {/* Confirm button for offered status */}
+          {isOffered && (
+            <button
+              onClick={handleConfirmOffer}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Confirming...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Confirm My Spot
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Add to Calendar - only for confirmed RSVPs with dates */}
+          {rsvp.status === "confirmed" && calendarStartDate && (
             <AddToCalendarButton
               title={event.title}
               description={`RSVP confirmed for ${event.title}`}
@@ -214,12 +275,12 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
             </svg>
           </Link>
 
-          {/* Cancel button - only for active RSVPs */}
+          {/* Cancel/Decline button - only for active RSVPs */}
           {showCancel && !isCancelled && (
             <>
               {showCancelConfirm ? (
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-sm text-[var(--color-text-secondary)]">Cancel RSVP?</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">{isOffered ? "Decline offer?" : "Cancel RSVP?"}</span>
                   <button
                     onClick={handleCancel}
                     disabled={loading}
@@ -240,7 +301,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
                   onClick={() => setShowCancelConfirm(true)}
                   className="ml-auto text-sm text-[var(--color-text-secondary)] hover:text-red-400 transition-colors"
                 >
-                  Cancel RSVP
+                  {isOffered ? "Decline offer" : "Cancel RSVP"}
                 </button>
               )}
             </>

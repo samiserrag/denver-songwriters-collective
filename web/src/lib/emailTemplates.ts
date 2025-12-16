@@ -154,23 +154,44 @@ Denver Songwriters Collective
   };
 }
 
-// Waitlist Promotion Email
+// Waitlist Promotion Email (Offer with 2-hour window)
 export function getWaitlistPromotionEmail(params: {
   eventTitle: string;
   eventDate: string;
   eventTime: string;
   venueName: string;
   eventId: string;
+  offerExpiresAt?: string; // ISO timestamp for when offer expires
 }): { html: string; text: string; subject: string } {
-  const { eventTitle, eventDate, eventTime, venueName, eventId } = params;
+  const { eventTitle, eventDate, eventTime, venueName, eventId, offerExpiresAt } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeVenue = escapeHtml(venueName);
 
+  // Format expiry time for display
+  let expiryMessage = "";
+  if (offerExpiresAt) {
+    const expiryDate = new Date(offerExpiresAt);
+    const formattedExpiry = expiryDate.toLocaleString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
+    });
+    expiryMessage = `This offer expires at ${formattedExpiry}. After that, the spot will be offered to the next person on the waitlist.`;
+  }
+
   const content = `
-    <p style="margin: 0 0 24px 0; color: #a3a3a3; font-size: 16px; line-height: 1.6;">
-      Great news! A spot opened up and you've been moved from the waitlist to confirmed for this event.
+    <p style="margin: 0 0 16px 0; color: #a3a3a3; font-size: 16px; line-height: 1.6;">
+      Great news! A spot opened up for this event and you&apos;re next in line!
     </p>
+
+    <div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+      <p style="margin: 0 0 8px 0; color: #f59e0b; font-size: 15px; font-weight: 600;">
+        ⏰ Confirm within 2 hours to secure your spot
+      </p>
+      ${expiryMessage ? `<p style="margin: 0; color: #a3a3a3; font-size: 13px;">${expiryMessage}</p>` : ""}
+    </div>
 
     <div style="background-color: #262626; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
       <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Event</p>
@@ -193,44 +214,53 @@ export function getWaitlistPromotionEmail(params: {
       <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
 
       <p style="margin: 16px 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Status</p>
-      <span style="display: inline-block; padding: 4px 12px; background-color: #22c55e20; color: #22c55e; border-radius: 16px; font-size: 13px; font-weight: 500;">
-        Confirmed
+      <span style="display: inline-block; padding: 4px 12px; background-color: #f59e0b20; color: #f59e0b; border-radius: 16px; font-size: 13px; font-weight: 500;">
+        Spot Offered - Action Required
       </span>
     </div>
 
-    <table cellpadding="0" cellspacing="0">
+    <table cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
       <tr>
-        <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); border-radius: 8px;">
-          <a href="${SITE_URL}/events/${eventId}" style="display: inline-block; padding: 12px 24px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 14px;">
-            View Event Details
+        <td style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 8px;">
+          <a href="${SITE_URL}/events/${eventId}?confirm=true" style="display: inline-block; padding: 14px 28px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px;">
+            Confirm My Spot
           </a>
         </td>
       </tr>
     </table>
+
+    <p style="margin: 0; color: #737373; font-size: 13px;">
+      Can&apos;t make it? <a href="${SITE_URL}/events/${eventId}?cancel=true" style="color: #d4a853; text-decoration: none;">Decline this offer</a> so the next person can attend.
+    </p>
   `;
 
-  const subject = `You're In! Spot Opened for ${eventTitle}`;
+  const subject = `Action Required: Spot Available for ${eventTitle}`;
 
   const text = `
-You're In!
+A Spot Opened Up!
 ${"=".repeat(30)}
 
-Great news! A spot opened up and you've been moved from the waitlist to confirmed.
+Great news! A spot opened up for this event and you're next in line.
+
+⏰ CONFIRM WITHIN 2 HOURS to secure your spot.
+${expiryMessage}
 
 Event: ${eventTitle}
 Date: ${eventDate}
 Time: ${eventTime}
 Venue: ${venueName}
-Status: Confirmed
+Status: Spot Offered - Action Required
 
-View event: ${SITE_URL}/events/${eventId}
+Confirm your spot: ${SITE_URL}/events/${eventId}?confirm=true
+
+Can't make it? Decline so the next person can attend: ${SITE_URL}/events/${eventId}?cancel=true
 
 ---
 Denver Songwriters Collective
 `;
 
   return {
-    html: wrapEmail("You're In!", content),
+    html: wrapEmail("A Spot Opened Up!", content),
     text,
     subject,
   };
