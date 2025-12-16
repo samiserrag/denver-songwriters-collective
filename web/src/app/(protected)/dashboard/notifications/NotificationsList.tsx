@@ -72,8 +72,8 @@ export default function NotificationsList({ notifications }: { notifications: No
           key={notification.id}
           className={`p-4 rounded-lg border transition-colors ${
             notification.is_read
-              ? "bg-[var(--color-indigo-950)]/30 border-white/5"
-              : "bg-[var(--color-indigo-950)]/50 border-white/10"
+              ? "bg-[var(--color-bg-secondary)]/50 border-[var(--color-border-subtle)]"
+              : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)]"
           }`}
         >
           <div className="flex items-start gap-3">

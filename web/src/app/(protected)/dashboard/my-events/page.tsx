@@ -100,14 +100,14 @@ export default async function MyEventsPage() {
         </div>
 
         {!isApprovedHost && (
-          <div className="p-6 bg-amber-900/30 border border-amber-700 rounded-lg mb-8">
-            <h2 className="text-amber-300 font-medium mb-2">Become a Host</h2>
-            <p className="text-amber-400/70 text-sm mb-4">
+          <div className="p-6 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg mb-8">
+            <h2 className="text-[var(--color-text-primary)] font-medium mb-2">Become a Host</h2>
+            <p className="text-[var(--color-text-secondary)] text-sm mb-4">
               You need to be an approved host to create events. Request access from your dashboard.
             </p>
             <Link
               href="/dashboard"
-              className="text-amber-300 hover:text-amber-200 underline text-sm"
+              className="text-[var(--color-accent-primary)] hover:text-[var(--color-accent-hover)] underline text-sm"
             >
               Go to Dashboard
             </Link>
@@ -143,7 +143,7 @@ export default async function MyEventsPage() {
                 <Link
                   key={event.id}
                   href={`/dashboard/my-events/${event.id}`}
-                  className="block p-6 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 border border-white/10 hover:border-white/20 rounded-lg transition-colors"
+                  className="block p-6 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] rounded-lg transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
@@ -151,12 +151,12 @@ export default async function MyEventsPage() {
                         <span className="text-xl">{config.icon}</span>
                         <span className={`text-xs px-2 py-0.5 rounded ${
                           event.status === "active"
-                            ? "bg-green-900/50 text-green-400"
-                            : "bg-neutral-800 text-neutral-400"
+                            ? "bg-green-600/20 text-green-600 dark:bg-green-900/50 dark:text-green-400"
+                            : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]"
                         }`}>
                           {event.status}
                         </span>
-                        <span className="text-xs px-2 py-0.5 bg-neutral-800 text-neutral-400 rounded">
+                        <span className="text-xs px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] rounded">
                           {config.label}
                         </span>
                         {event.user_role === "cohost" && (

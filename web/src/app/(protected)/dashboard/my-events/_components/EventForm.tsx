@@ -142,13 +142,13 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-400">
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg text-green-400">
+        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600 dark:text-green-400">
           {success}
         </div>
       )}
@@ -194,7 +194,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
               className={`p-3 rounded-lg border text-left transition-colors ${
                 formData.event_type === type
                   ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
-                  : "bg-[var(--color-indigo-950)]/50 border-white/10 text-[var(--color-text-secondary)] hover:border-white/20"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
               }`}
             >
               <div className="text-xl mb-1">{config.icon}</div>
@@ -353,7 +353,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           <button
             type="button"
             onClick={() => router.push("/dashboard/my-events")}
-            className="px-6 py-3 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 text-[var(--color-text-primary)] rounded-lg transition-colors"
+            className="px-6 py-3 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg transition-colors"
           >
             Cancel
           </button>

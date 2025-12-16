@@ -107,7 +107,7 @@ function EventRow({ event }: { event: DSCEvent }) {
   return (
     <Link
       href={`/dashboard/my-events/${event.id}`}
-      className="flex items-center justify-between p-4 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 border border-white/10 rounded-lg transition-colors"
+      className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg transition-colors"
     >
       <div className="flex items-center gap-3">
         <span className="text-xl">{config.icon}</span>
