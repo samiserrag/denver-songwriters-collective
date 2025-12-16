@@ -63,19 +63,36 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
+  // Fetch event without the problematic join
   const { data: event, error } = await supabase
     .from("events")
     .select(`
       id, title, description, event_type, venue_name, venue_address,
       day_of_week, start_time, end_time, capacity, cover_image_url,
-      is_dsc_event, status, created_at,
-      event_hosts(user:profiles(id, full_name, avatar_url))
+      is_dsc_event, status, created_at
     `)
     .eq("id", id)
     .single();
 
   if (error || !event) {
     notFound();
+  }
+
+  // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
+  const { data: eventHosts } = await supabase
+    .from("event_hosts")
+    .select("user_id")
+    .eq("event_id", id);
+
+  // Fetch host profiles if there are hosts
+  let hosts: Array<{ id: string; full_name: string | null; avatar_url: string | null }> = [];
+  if (eventHosts && eventHosts.length > 0) {
+    const hostIds = eventHosts.map((h) => h.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", hostIds);
+    hosts = profiles || [];
   }
 
   const { count: rsvpCount } = await supabase
@@ -87,11 +104,6 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
   const mapsUrl = getGoogleMapsUrl(event.venue_address);
   const remaining = event.capacity ? Math.max(0, event.capacity - (rsvpCount || 0)) : null;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const eventHosts = event.event_hosts as any[] | null;
-  const hosts: Array<{ id: string; full_name: string | null; avatar_url: string | null }> =
-    eventHosts?.map((h) => h.user).filter(Boolean) || [];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
