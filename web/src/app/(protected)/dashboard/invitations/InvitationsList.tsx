@@ -67,7 +67,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
   return (
     <div className="space-y-4">
       {successMessage && (
-        <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg text-green-400">
+        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600 dark:text-green-400">
           {successMessage}
         </div>
       )}
@@ -80,7 +80,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
         return (
           <div
             key={invitation.id}
-            className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg"
+            className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
           >
             <div className="flex items-start gap-4">
               <div className="text-3xl">{config.icon}</div>
@@ -99,14 +99,14 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
               <button
                 onClick={() => handleRespond(invitation.id, "accept", eventTitle)}
                 disabled={processing === invitation.id}
-                className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg disabled:opacity-50"
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 text-[var(--color-bg-inverse)] rounded-lg disabled:opacity-50"
               >
                 {processing === invitation.id ? "..." : "Accept"}
               </button>
               <button
                 onClick={() => handleRespond(invitation.id, "decline", eventTitle)}
                 disabled={processing === invitation.id}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg disabled:opacity-50"
               >
                 Decline
               </button>

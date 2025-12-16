@@ -101,22 +101,22 @@ export default function SettingsPage() {
 
   if (deleteSuccess) {
     return (
-      <main className="min-h-screen bg-black flex items-center justify-center px-6">
+      <main className="min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-6">✓</div>
-          <h1 className="font-display text-3xl text-white mb-4">
+          <h1 className="font-display text-3xl text-[var(--color-text-primary)] mb-4">
             Account Deleted
           </h1>
-          <p className="text-neutral-300 mb-6">
+          <p className="text-[var(--color-text-secondary)] mb-6">
             Your account and all associated data have been permanently deleted.
             This action cannot be undone.
           </p>
-          <p className="text-neutral-400 text-sm mb-8">
+          <p className="text-[var(--color-text-tertiary)] text-sm mb-8">
             You can now close this page or refresh your browser.
           </p>
           <Link
             href="/"
-            className="inline-block px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors"
+            className="inline-block px-6 py-3 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg transition-colors"
           >
             Return to Home
           </Link>
@@ -126,28 +126,28 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black py-12 px-6">
+    <main className="min-h-screen py-12 px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-3xl text-white mb-8">Account Settings</h1>
+        <h1 className="font-display text-3xl text-[var(--color-text-primary)] mb-8">Account Settings</h1>
 
         {/* Privacy Link */}
-        <section className="mb-12 p-6 bg-neutral-900 border border-neutral-800 rounded-lg">
-          <h2 className="text-xl font-semibold text-white mb-2">Privacy</h2>
-          <p className="text-neutral-400 mb-4">
+        <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Privacy</h2>
+          <p className="text-[var(--color-text-secondary)] mb-4">
             Learn how we handle your data.
           </p>
           <Link
             href="/privacy"
-            className="text-gold-400 hover:text-gold-300 underline"
+            className="text-[var(--color-accent-primary)] hover:text-[var(--color-accent-hover)] underline"
           >
             Read our Privacy Policy →
           </Link>
         </section>
 
         {/* Danger Zone */}
-        <section className="p-6 bg-red-950/30 border border-red-900/50 rounded-lg">
-          <h2 className="text-xl font-semibold text-red-400 mb-2">Danger Zone</h2>
-          <p className="text-neutral-300 mb-4">
+        <section className="p-6 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
+          <p className="text-[var(--color-text-secondary)] mb-4">
             Permanently delete your account and all associated data.
             This action cannot be undone.
           </p>
@@ -161,11 +161,11 @@ export default function SettingsPage() {
             </button>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-red-900/30 border border-red-800 rounded-lg">
-                <p className="text-red-300 font-medium mb-2">
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-600 dark:text-red-300 font-medium mb-2">
                   This will permanently delete:
                 </p>
-                <ul className="text-red-200 text-sm space-y-1 ml-4">
+                <ul className="text-red-600 dark:text-red-200 text-sm space-y-1 ml-4">
                   <li>• Your account and login</li>
                   <li>• Your profile information</li>
                   <li>• All suggestions you&apos;ve submitted</li>
@@ -175,20 +175,20 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-neutral-300 text-sm mb-2">
-                  Type <strong className="text-white">DELETE MY ACCOUNT</strong> to confirm:
+                <label className="block text-[var(--color-text-secondary)] text-sm mb-2">
+                  Type <strong className="text-[var(--color-text-primary)]">DELETE MY ACCOUNT</strong> to confirm:
                 </label>
                 <input
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="DELETE MY ACCOUNT"
-                  className="w-full px-4 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder:text-neutral-500 focus:border-red-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-red-500 focus:outline-none"
                 />
               </div>
 
               {error && (
-                <p className="text-red-400 text-sm">{error}</p>
+                <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
               )}
 
               <div className="flex gap-3">
@@ -205,7 +205,7 @@ export default function SettingsPage() {
                     setDeleteConfirmText("");
                     setError("");
                   }}
-                  className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

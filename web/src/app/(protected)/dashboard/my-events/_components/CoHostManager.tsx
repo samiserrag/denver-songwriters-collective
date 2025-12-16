@@ -83,7 +83,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
       {/* Current hosts */}
       <ul className="space-y-2">
         {acceptedHosts.map((host) => (
-          <li key={host.id} className="flex items-center justify-between p-2 bg-[var(--color-indigo-950)]/50 rounded-lg">
+          <li key={host.id} className="flex items-center justify-between p-2 bg-[var(--color-bg-secondary)] rounded-lg">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm">
                 {host.user?.avatar_url ? (
@@ -115,9 +115,9 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
           <h4 className="text-sm text-[var(--color-text-secondary)] mb-2">Pending Invitations</h4>
           <ul className="space-y-2">
             {pendingInvites.map((invite) => (
-              <li key={invite.id} className="flex items-center justify-between p-2 bg-amber-900/20 border border-amber-900/50 rounded-lg">
-                <span className="text-amber-300 text-sm">{invite.user?.full_name || "Unknown"}</span>
-                <span className="text-xs text-amber-400/70">Pending</span>
+              <li key={invite.id} className="flex items-center justify-between p-2 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
+                <span className="text-[var(--color-text-primary)] text-sm">{invite.user?.full_name || "Unknown"}</span>
+                <span className="text-xs text-[var(--color-text-accent)]">Pending</span>
               </li>
             ))}
           </ul>
@@ -133,7 +133,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name..."
-            className="w-full px-3 py-2 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] text-sm"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] text-sm"
             autoFocus
           />
           <div className="flex gap-2">
@@ -147,7 +147,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
             <button
               type="button"
               onClick={() => setShowInvite(false)}
-              className="px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-sm rounded"
+              className="px-3 py-1 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-sm rounded"
             >
               Cancel
             </button>
@@ -156,7 +156,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
       ) : (
         <button
           onClick={() => setShowInvite(true)}
-          className="w-full px-3 py-2 border border-dashed border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm rounded-lg transition-colors"
+          className="w-full px-3 py-2 border border-dashed border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm rounded-lg transition-colors"
         >
           + Invite Co-host
         </button>

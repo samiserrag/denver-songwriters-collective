@@ -45,7 +45,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
   }, [eventId]);
 
   if (loading) {
-    return <div className="animate-pulse h-32 bg-[var(--color-indigo-950)]/50 rounded-lg"></div>;
+    return <div className="animate-pulse h-32 bg-[var(--color-bg-secondary)] rounded-lg"></div>;
   }
 
   if (!data) {
@@ -57,7 +57,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
   return (
     <div className="space-y-4">
       {/* Summary */}
-      <div className="flex items-center justify-between p-3 bg-[var(--color-indigo-950)]/50 rounded-lg">
+      <div className="flex items-center justify-between p-3 bg-[var(--color-bg-secondary)] rounded-lg">
         <div>
           <div className="text-2xl font-bold text-[var(--color-text-primary)]">{data.total_confirmed}</div>
           <div className="text-xs text-[var(--color-text-secondary)]">
@@ -66,8 +66,8 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
         </div>
         {data.total_waitlist > 0 && (
           <div className="text-right">
-            <div className="text-xl font-bold text-amber-400">{data.total_waitlist}</div>
-            <div className="text-xs text-amber-400/70">waitlist</div>
+            <div className="text-xl font-bold text-[var(--color-text-accent)]">{data.total_waitlist}</div>
+            <div className="text-xs text-[var(--color-text-secondary)]">waitlist</div>
           </div>
         )}
       </div>
@@ -102,11 +102,11 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
       {/* Waitlist */}
       {data.waitlist.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-amber-400 mb-2">Waitlist</h3>
+          <h3 className="text-sm font-medium text-[var(--color-text-accent)] mb-2">Waitlist</h3>
           <ul className="space-y-2">
             {data.waitlist.map((rsvp, index) => (
               <li key={rsvp.id} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-amber-900/50 text-amber-400 rounded-full flex items-center justify-center text-sm font-medium">
+                <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm font-medium">
                   {index + 1}
                 </div>
                 <span className="text-[var(--color-text-secondary)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>

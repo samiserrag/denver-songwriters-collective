@@ -116,7 +116,7 @@ export default async function EditEventPage({
             </span>
             <Link
               href={`/events/${eventId}`}
-              className="px-3 py-1 bg-[var(--color-indigo-950)]/50 hover:bg-[var(--color-indigo-950)]/70 text-[var(--color-text-primary)] text-sm rounded"
+              className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
               target="_blank"
             >
               View Public Page →
@@ -129,14 +129,14 @@ export default async function EditEventPage({
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Event Details */}
-            <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
+            <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Event Details</h2>
               <EventForm mode="edit" venues={venues ?? []} event={event} />
             </section>
 
             {/* Co-hosts (only for primary host) */}
             {isPrimaryHost && (
-              <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
+              <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
                 <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Co-hosts</h2>
                 <CoHostManager eventId={eventId} hosts={(event.event_hosts as EventHost[]) || []} />
               </section>
@@ -146,7 +146,7 @@ export default async function EditEventPage({
           {/* Sidebar */}
           <div className="space-y-6">
             {/* RSVP Summary */}
-            <section className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
+            <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Attendees</h2>
               <RSVPList eventId={eventId} capacity={event.capacity} />
             </section>
