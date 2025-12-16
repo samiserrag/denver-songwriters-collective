@@ -249,6 +249,26 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
   - `web/src/components/events/ReportChangeForm.tsx`
   - `web/src/components/CompactListItem.tsx` - Added `last_verified_at` display
 
+### Stream 3 Phase 1: Calendar & Confirmation UX (December 2024)
+- **AddToCalendarButton component** - Dropdown with Google Calendar, Apple Calendar (iCal), and Outlook support
+  - Generates calendar links dynamically from event data
+  - Downloads .ics file for Apple Calendar
+  - Opens web interfaces for Google/Outlook
+- **Enhanced RSVPButton** with improved UX:
+  - Animated success state with ring effect after confirming RSVP
+  - Inline cancel confirmation dialog (replaces browser confirm())
+  - Loading spinner during API calls
+  - Theme-aware colors using CSS variables
+  - Icons on RSVP/waitlist buttons
+- **Event detail page updates**:
+  - Fetches `event_date` field for calendar integration
+  - Shows AddToCalendarButton when event has a specific date
+  - Styled Get Directions button to match AddToCalendarButton
+- Key files:
+  - `web/src/components/events/AddToCalendarButton.tsx` - New component
+  - `web/src/components/events/RSVPButton.tsx` - Enhanced UX
+  - `web/src/app/events/[id]/page.tsx` - Added calendar button
+
 ### Events Page Improvements & Detail Page (December 2024)
 - **Created `/events/[id]` detail page** for DSC events - fixes 404 errors when clicking DSC events
 - **Reorganized events page** with new section order:
@@ -460,6 +480,10 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `web/src/app/globals.css` | Base CSS variables and global styles |
 | `web/src/components/ui/Logo.tsx` | Logo component with `inverse` prop for dark backgrounds |
 | `web/src/components/songwriters/` | Songwriter component suite (cards, grid, avatar, tags) |
+| `web/src/components/events/AddToCalendarButton.tsx` | Calendar dropdown (Google, Apple, Outlook) |
+| `web/src/components/events/RSVPButton.tsx` | RSVP/waitlist button with confirmation UX |
+| `web/src/components/events/ReportChangeForm.tsx` | Form for reporting event corrections |
+| `web/src/components/admin/ChangeReportsTable.tsx` | Admin table for reviewing change reports |
 
 ---
 
