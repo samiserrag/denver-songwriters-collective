@@ -229,6 +229,39 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Recent Changes (December 2024)
 
+### Theme-Aware Footer & Inverse Color System (December 2024)
+- **Footer now adapts to all theme presets** - Text colors properly contrast with inverse backgrounds
+- Added `--color-text-on-inverse-primary/secondary/tertiary` CSS tokens to `presets.css`
+- Light themes get light text on dark footer; dark themes get dark text on light footer
+- Key files:
+  - `web/src/app/themes/presets.css` - Added inverse text tokens for all light themes
+  - `web/src/components/navigation/footer.tsx` - Uses `--color-bg-inverse` and inverse text tokens
+  - `web/src/components/navigation/newsletter-signup.tsx` - Updated to use theme tokens
+  - `web/src/components/ui/Logo.tsx` - Added `inverse` prop for footer context
+
+### Performer → Songwriter Rename & Homepage Consolidation (December 2024)
+- **Renamed "performer/performers" to "songwriter/songwriters"** throughout the webapp
+- Created new `/songwriters` route with dedicated pages and components
+- Combined three homepage spotlight sections into single "Featured Members" section
+- New components:
+  - `web/src/components/songwriters/` - Full component suite (SongwriterCard, SongwriterGrid, SongwriterAvatar, SongwriterTag, SpotlightSongwriterCard)
+  - `web/src/components/empty/EmptySongwriters.tsx` - Empty state for songwriters
+- New pages:
+  - `web/src/app/songwriters/page.tsx` - Songwriters directory
+  - `web/src/app/songwriters/[id]/page.tsx` - Individual songwriter profile
+  - Error and loading states for both routes
+- Updated admin pages to use "Songwriter" terminology
+- Key files modified:
+  - `web/src/app/page.tsx` - Simplified homepage with combined Featured Members section
+  - `web/src/types/index.ts` - Added Songwriter type alias
+  - `web/next.config.ts` - Added redirect from `/performers` to `/songwriters`
+
+### Admin-Only Theme Switcher (December 2024)
+- Moved theme/font switcher from public footer to admin dashboard only
+- Theme switcher now appears in `/dashboard/admin/settings` or site settings page
+- Regular users see the theme set by admin, cannot change it themselves
+- Prevents theme inconsistency across user sessions
+
 ### Pre-Phase 1 Security Audit (December 2024)
 - **All security checks passed** - Ready for Phase 1 theme refactor
 - Audit results:
@@ -347,6 +380,10 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `web/src/types/index.ts` | Custom TypeScript types |
 | `next.config.ts` | Next.js config with redirects |
 | `ARCHITECTURE_PLAN.md` | White-label platform roadmap |
+| `web/src/app/themes/presets.css` | Theme preset CSS variables (colors per theme) |
+| `web/src/app/globals.css` | Base CSS variables and global styles |
+| `web/src/components/ui/Logo.tsx` | Logo component with `inverse` prop for dark backgrounds |
+| `web/src/components/songwriters/` | Songwriter component suite (cards, grid, avatar, tags) |
 
 ---
 
