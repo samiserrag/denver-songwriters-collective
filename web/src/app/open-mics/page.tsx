@@ -414,11 +414,11 @@ function parseTimeToMinutes(t?: string | null) {
 
       <PageContainer>
         {/* Subheader info */}
-        <div className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 mb-4">
-          <p className="text-sm text-neutral-400">
+        <div className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[var(--color-border-default)] mb-4">
+          <p className="text-sm text-[var(--color-text-secondary)]">
             {(approvedSuggestions || 0) > 0 ? `${approvedSuggestions} community updates applied` : "Community-curated directory"}
           </p>
-          <p className="text-xs text-slate-400 max-w-md">
+          <p className="text-xs text-[var(--color-text-tertiary)] max-w-md">
             Contact venues to confirm details.{" "}
             <a href="/submit-open-mic" className="text-[var(--color-text-accent)] hover:underline">Help keep this list updated</a>.
           </p>
@@ -447,7 +447,7 @@ function parseTimeToMinutes(t?: string | null) {
                     p.set("view", "list");
                     return `/open-mics?${p.toString()}`;
                   })()}
-                  className={view === "list" ? "px-3 py-2 rounded bg-[var(--color-accent-primary)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                  className={view === "list" ? "px-3 py-2 rounded bg-[var(--color-accent-primary)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm font-semibold"}
                 >
                   List View
                 </Link>
@@ -462,7 +462,7 @@ function parseTimeToMinutes(t?: string | null) {
                     p.set("view", "grid");
                     return `/open-mics?${p.toString()}`;
                   })()}
-                  className={view === "grid" ? "px-3 py-2 rounded bg-[var(--color-accent-primary)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-gray-800 text-gray-300 text-sm font-semibold"}
+                  className={view === "grid" ? "px-3 py-2 rounded bg-[var(--color-accent-primary)] text-[var(--color-background)] text-sm font-semibold" : "px-3 py-2 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm font-semibold"}
                 >
                   Grid View
                 </Link>
@@ -509,9 +509,9 @@ function parseTimeToMinutes(t?: string | null) {
                         </h2>
 
                         {dayEvents.length === 0 ? (
-                          <p className="text-gray-400 text-sm">No open mics listed for this day.</p>
+                          <p className="text-[var(--color-text-tertiary)] text-sm">No open mics listed for this day.</p>
                         ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {dayEvents.map((ev: any) => (
                               <EventCard key={ev.id} event={ev} searchQuery={search ?? undefined} />
                             ))}
@@ -546,7 +546,7 @@ function parseTimeToMinutes(t?: string | null) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto">
-              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+              <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50 p-5 space-y-2">
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Submit New Open Mics
                 </h3>
@@ -554,7 +554,7 @@ function parseTimeToMinutes(t?: string | null) {
                   Tell us about new open mics we haven&apos;t listed yet.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+              <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50 p-5 space-y-2">
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Report Changes
                 </h3>
@@ -562,7 +562,7 @@ function parseTimeToMinutes(t?: string | null) {
                   Report changes to day, time, venue, or signup rules.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+              <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50 p-5 space-y-2">
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Confirm Active Events
                 </h3>
@@ -570,7 +570,7 @@ function parseTimeToMinutes(t?: string | null) {
                   Confirm events that are active or discontinued.
                 </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-[var(--color-background)]/50 p-5 space-y-2">
+              <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50 p-5 space-y-2">
                 <h3 className="text-[length:var(--font-size-body)] font-semibold text-[var(--color-text-accent)]">
                   Add Venue Details
                 </h3>
