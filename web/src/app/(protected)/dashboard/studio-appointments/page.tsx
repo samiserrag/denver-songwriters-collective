@@ -58,7 +58,8 @@ export default async function StudioAppointmentsPage() {
       status: row.status,
       appointment_time: row.appointment_time,
       service_name: row.service.name,
-      performer_name: row.performer?.full_name ?? null,
+      songwriter_name: row.performer?.full_name ?? null,
+      performer_name: row.performer?.full_name ?? null, // deprecated alias
     })
   );
 

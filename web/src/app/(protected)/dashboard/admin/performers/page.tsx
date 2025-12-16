@@ -40,7 +40,7 @@ export default async function AdminPerformersPage() {
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold text-gold-400 mb-8">
-        Manage Featured Performers
+        Manage Featured Songwriters
       </h1>
 
       <p className="text-neutral-300 mb-6">

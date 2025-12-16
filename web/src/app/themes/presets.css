@@ -2,6 +2,10 @@
 
 :root {
   /* Default theme uses globals.css tokens */
+  /* Inverse text (for use on inverse backgrounds like footer) - defaults to dark theme values */
+  --color-text-on-inverse-primary: #0F172A;
+  --color-text-on-inverse-secondary: #334155;
+  --color-text-on-inverse-tertiary: #64748B;
 }
 
 :root[data-theme="gold-night"] {
@@ -27,6 +31,11 @@
   --color-text-tertiary: #6B7280;
   --color-text-accent: #F97316;
 
+  /* Light text for dark inverse background */
+  --color-text-on-inverse-primary: #FAF9F7;
+  --color-text-on-inverse-secondary: rgba(250, 249, 247, 0.75);
+  --color-text-on-inverse-tertiary: rgba(250, 249, 247, 0.55);
+
   --color-accent-primary: #F97316;
   --color-accent-hover: #EA580C;
   --color-accent-muted: rgba(249, 115, 22, 0.16);
@@ -50,6 +59,11 @@
   --color-text-secondary: #1E293B;
   --color-text-tertiary: #475569;
   --color-text-accent: #2563EB;
+
+  /* Light text for dark inverse background */
+  --color-text-on-inverse-primary: #F8FAFC;
+  --color-text-on-inverse-secondary: rgba(248, 250, 252, 0.75);
+  --color-text-on-inverse-tertiary: rgba(248, 250, 252, 0.55);
 
   --color-accent-primary: #2563EB;
   --color-accent-hover: #1D4ED8;
@@ -75,6 +89,11 @@
   --color-text-tertiary: #64748B;
   --color-text-accent: #16A34A;
 
+  /* Light text for dark inverse background */
+  --color-text-on-inverse-primary: #F8FAFC;
+  --color-text-on-inverse-secondary: rgba(248, 250, 252, 0.75);
+  --color-text-on-inverse-tertiary: rgba(248, 250, 252, 0.55);
+
   --color-accent-primary: #16A34A;
   --color-accent-hover: #15803D;
   --color-accent-muted: rgba(22, 163, 74, 0.16);
@@ -98,6 +117,11 @@
   --color-text-secondary: #374151;
   --color-text-tertiary: #6B7280;
   --color-text-accent: #DC2626;
+
+  /* Light text for dark inverse background */
+  --color-text-on-inverse-primary: #FAF9F7;
+  --color-text-on-inverse-secondary: rgba(250, 249, 247, 0.75);
+  --color-text-on-inverse-tertiary: rgba(250, 249, 247, 0.55);
 
   --color-accent-primary: #DC2626;
   --color-accent-hover: #B91C1C;

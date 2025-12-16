@@ -3,14 +3,18 @@ import Link from "next/link";
 interface LogoProps {
   variant?: "full" | "short" | "icon";
   className?: string;
+  inverse?: boolean;
 }
 
-export default function Logo({ variant = "full", className = "" }: LogoProps) {
+export default function Logo({ variant = "full", className = "", inverse = false }: LogoProps) {
+  const textPrimary = inverse ? "text-[var(--color-text-on-inverse-primary)]" : "text-[var(--color-text-primary)]";
+  const textAccent = "text-[var(--color-accent-primary)]";
+
   if (variant === "icon") {
     return (
       <Link href="/" className={`flex items-center ${className}`}>
-        <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-gold-500)] rounded-lg flex items-center justify-center shadow-lg">
-          <span className="text-[var(--color-background)] font-bold text-lg font-display">D</span>
+        <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] rounded-lg flex items-center justify-center shadow-lg">
+          <span className="text-[var(--color-bg-primary)] font-bold text-lg font-display">D</span>
         </div>
       </Link>
     );
@@ -19,22 +23,22 @@ export default function Logo({ variant = "full", className = "" }: LogoProps) {
   if (variant === "short") {
     return (
       <Link href="/" className={`flex items-center gap-2 ${className}`}>
-        <div className="w-8 h-8 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-gold-500)] rounded-lg flex items-center justify-center">
-          <span className="text-[var(--color-background)] font-bold text-sm">DSC</span>
+        <div className="w-8 h-8 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] rounded-lg flex items-center justify-center">
+          <span className="text-[var(--color-bg-primary)] font-bold text-sm">DSC</span>
         </div>
-        <span className="font-display text-xl text-[var(--color-text-primary)]">DSC</span>
+        <span className={`font-display text-xl ${textPrimary}`}>DSC</span>
       </Link>
     );
   }
 
   return (
     <Link href="/" className={`flex items-center gap-3 ${className}`}>
-      <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-gold-500)] rounded-lg flex items-center justify-center shadow-lg">
-        <span className="text-[var(--color-background)] font-bold text-sm">DSC</span>
+      <div className="w-10 h-10 bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] rounded-lg flex items-center justify-center shadow-lg">
+        <span className="text-[var(--color-bg-primary)] font-bold text-sm">DSC</span>
       </div>
       <div className="flex flex-col">
-        <span className="font-display text-lg text-[var(--color-text-primary)] leading-tight">Denver Songwriters</span>
-        <span className="text-xs text-[var(--color-text-accent)] tracking-widest uppercase">Collective</span>
+        <span className={`font-display text-lg ${textPrimary} leading-tight`}>Denver Songwriters</span>
+        <span className={`text-xs ${textAccent} tracking-widest uppercase`}>Collective</span>
       </div>
     </Link>
   );

@@ -3,14 +3,12 @@ import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HeroSection, PageContainer } from "@/components/layout";
 import { EventGrid } from "@/components/events";
-import { PerformerGrid } from "@/components/performers";
-import { HostGrid } from "@/components/hosts";
-import { StudioGrid } from "@/components/studios";
+import { MemberCard } from "@/components/members/MemberCard";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 import { Button } from "@/components/ui";
 import { LazyIframe, CLSLogger } from "@/components/home";
 import type { Database } from "@/lib/supabase/database.types";
-import type { Event, Performer, Host, Studio } from "@/types";
+import type { Event, Member, MemberRole } from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,31 +27,20 @@ function mapDBEventToEvent(dbEvent: DBEvent): Event {
   };
 }
 
-function mapDBProfileToPerformer(profile: DBProfile): Performer {
+function mapDBProfileToMember(profile: DBProfile): Member {
   return {
     id: profile.id,
-    name: profile.full_name ?? "Anonymous Performer",
+    name: profile.full_name ?? "Anonymous Member",
+    role: (profile.role as MemberRole) ?? "fan",
     bio: profile.bio ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
     isSpotlight: profile.is_featured ?? false,
-  };
-}
-
-function mapDBProfileToHost(profile: DBProfile): Host {
-  return {
-    id: profile.id,
-    name: profile.full_name ?? "Anonymous Host",
-    bio: profile.bio ?? undefined,
-    avatarUrl: profile.avatar_url ?? undefined,
-    isSpotlight: profile.is_featured ?? false,
-  };
-}
-
-function mapDBProfileToStudio(profile: DBProfile): Studio {
-  return {
-    id: profile.id,
-    name: profile.full_name ?? "Unnamed Studio",
-    description: profile.bio ?? undefined,
+    genres: profile.genres ?? undefined,
+    instruments: profile.instruments ?? undefined,
+    specialties: profile.specialties ?? undefined,
+    availableForHire: profile.available_for_hire ?? undefined,
+    interestedInCowriting: profile.interested_in_cowriting ?? undefined,
+    openToCollabs: profile.open_to_collabs ?? undefined,
   };
 }
 
@@ -67,38 +54,22 @@ export default async function HomePage() {
   const user = session?.user ?? null;
   const userName = user?.email ?? null;
 
-  const [upcomingEventsRes, featuredPerformersRes, featuredHostsRes, featuredStudiosRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
-    // Single events query - upcoming events (removed duplicate "featured" query)
+  const [upcomingEventsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
+    // Single events query - upcoming events
     supabase
       .from("events")
       .select("*")
       .gte("event_date", new Date().toISOString().slice(0, 10))
       .order("event_date", { ascending: true })
       .limit(6),
+    // Featured members of any role - only spotlighted members
     supabase
       .from("profiles")
       .select("*")
-      .eq("role", "performer")
-      .order("is_featured", { ascending: false })
+      .eq("is_featured", true)
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(8),
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "host")
-      .order("is_featured", { ascending: false })
-      .order("featured_rank", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(6),
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "studio")
-      .order("is_featured", { ascending: false })
-      .order("featured_rank", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(6),
     // Spotlight Open Mics - featured open mics from the directory
     supabase
       .from("events")
@@ -149,9 +120,7 @@ export default async function HomePage() {
   ]);
 
   const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
-  const featuredPerformers: Performer[] = (featuredPerformersRes.data ?? []).map(mapDBProfileToPerformer);
-  const featuredHosts: Host[] = (featuredHostsRes.data ?? []).map(mapDBProfileToHost);
-  const featuredStudios: Studio[] = (featuredStudiosRes.data ?? []).map(mapDBProfileToStudio);
+  const featuredMembers: Member[] = (featuredMembersRes.data ?? []).map(mapDBProfileToMember);
 
   // Map spotlight open mics
   const spotlightOpenMics: SpotlightOpenMic[] = (spotlightOpenMicsRes.data ?? []).map((om: any) => ({
@@ -187,9 +156,7 @@ export default async function HomePage() {
   const highlights: Highlight[] = highlightsRes.data ?? [];
 
   const hasUpcomingEvents = upcomingEvents.length > 0;
-  const hasFeaturedPerformers = featuredPerformers.length > 0;
-  const hasFeaturedHosts = featuredHosts.length > 0;
-  const hasFeaturedStudios = featuredStudios.length > 0;
+  const hasFeaturedMembers = featuredMembers.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = !!latestBlog;
   const hasHighlights = highlights.length > 0;
@@ -225,7 +192,7 @@ export default async function HomePage() {
                 icon: "🤝",
                 title: "Real Connections",
                 desc: "Meet fellow songwriters, find collaborators, and build lasting friendships.",
-                href: "/performers",
+                href: "/members",
                 accent: "from-sky-500/10 to-transparent"
               },
               {
@@ -290,7 +257,7 @@ export default async function HomePage() {
                   )}
                   <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mb-3 inline-block">
                     {highlight.highlight_type === "event" && "Featured Event"}
-                    {highlight.highlight_type === "performer" && "Featured Artist"}
+                    {highlight.highlight_type === "performer" && "Featured Songwriter"}
                     {highlight.highlight_type === "venue" && "Featured Venue"}
                     {highlight.highlight_type === "custom" && "Announcement"}
                   </span>
@@ -383,81 +350,62 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Community Spotlight - Unified section for performers, open mics, and hosts */}
-      {(hasFeaturedPerformers || hasSpotlightOpenMics || hasFeaturedHosts) && (
+      {/* Featured Members - Single unified section for all spotlighted members */}
+      {hasFeaturedMembers && (
         <section className="py-10 px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="mb-8 text-center">
-              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
-                Community Spotlight
-              </h2>
-              <p className="text-[var(--color-text-secondary)]">
-                Featured performers, stages, and hosts from the Denver songwriting community.
-              </p>
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                  Featured Members
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Spotlighted songwriters, hosts, and studios from our community.
+                </p>
+              </div>
+              <Link
+                href="/members"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                View all
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {featuredMembers.map((member) => (
+                <MemberCard key={member.id} member={member} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
-            {/* Performers Section */}
-            {hasFeaturedPerformers && (
-              <div className="mb-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-                    <span>🎵</span> Featured Performers
-                  </h3>
-                  <Link
-                    href="/performers"
-                    className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm flex items-center gap-1"
-                  >
-                    View all
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-                <PerformerGrid performers={featuredPerformers} />
+      {/* Featured Open Mics */}
+      {hasSpotlightOpenMics && (
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                  Featured Open Mics
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Popular stages around Denver for songwriters to share their music.
+                </p>
               </div>
-            )}
-
-            {/* Open Mics Section */}
-            {hasSpotlightOpenMics && (
-              <div className="mb-10 pt-8 border-t border-[var(--color-border-default)]">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-                    <span>🎤</span> Featured Open Mics
-                  </h3>
-                  <Link
-                    href="/open-mics"
-                    className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm flex items-center gap-1"
-                  >
-                    View all
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-                <OpenMicGrid openMics={spotlightOpenMics} />
-              </div>
-            )}
-
-            {/* Hosts Section */}
-            {hasFeaturedHosts && (
-              <div className="pt-8 border-t border-[var(--color-border-default)]">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-                    <span>👑</span> Featured Hosts
-                  </h3>
-                  <Link
-                    href="/members?role=host"
-                    className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm flex items-center gap-1"
-                  >
-                    View all
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-                <HostGrid hosts={featuredHosts} />
-              </div>
-            )}
+              <Link
+                href="/open-mics"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                View all
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <OpenMicGrid openMics={spotlightOpenMics} />
           </div>
         </section>
       )}
@@ -486,13 +434,13 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Blog Card - styled like PerformerCard */}
+            {/* Blog Card */}
             <Link
               href={`/blog/${latestBlog.slug}`}
               className="block group max-w-md"
             >
               <article className="h-full overflow-hidden card-spotlight hover:-translate-y-1">
-                {/* Image Section - aspect-[4/3] like performer cards */}
+                {/* Image Section - aspect-[4/3] */}
                 <div className="relative aspect-[4/3] overflow-hidden">
                   {latestBlog.cover_image_url ? (
                     <Image
@@ -558,34 +506,6 @@ export default async function HomePage() {
                 </div>
               </article>
             </Link>
-          </div>
-        </section>
-      )}
-
-      {/* Featured Studios */}
-      {hasFeaturedStudios && (
-        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
-                  Featured Studios
-                </h2>
-                <p className="text-[var(--color-text-secondary)]">
-                  Top-rated partner studios for your recording sessions.
-                </p>
-              </div>
-              <Link
-                href="/studios"
-                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
-              >
-                View all
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-            <StudioGrid studios={featuredStudios} compact />
           </div>
         </section>
       )}
