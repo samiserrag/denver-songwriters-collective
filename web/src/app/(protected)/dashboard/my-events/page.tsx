@@ -45,6 +45,7 @@ export default async function MyEventsPage() {
     day_of_week: string;
     start_time: string;
     status: string;
+    is_published: boolean;
     capacity: number | null;
     rsvp_count: number;
     user_role: string;
@@ -149,6 +150,14 @@ export default async function MyEventsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xl">{config.icon}</span>
+                        {/* Draft/Published badge */}
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          event.is_published
+                            ? "bg-emerald-600/20 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400"
+                            : "bg-amber-600/20 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400"
+                        }`}>
+                          {event.is_published ? "Published" : "Draft"}
+                        </span>
                         <span className={`text-xs px-2 py-0.5 rounded ${
                           event.status === "active"
                             ? "bg-green-600/20 text-green-600 dark:bg-green-900/50 dark:text-green-400"

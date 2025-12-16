@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase/server", () => {
       start_time: "2025-01-15T19:00:00Z",
       end_time: "2025-01-15T21:00:00Z",
       created_at: "2025-01-01T00:00:00Z",
+      is_published: true,
     },
   ];
 
@@ -24,6 +25,7 @@ vi.mock("@/lib/supabase/server", () => {
       day_of_week: "Wednesday",
       start_time: "7:00 PM",
       capacity: 12,
+      is_published: true,
       event_hosts: [{ user: { full_name: "Test Host" } }],
     },
   ];
@@ -68,15 +70,50 @@ vi.mock("@/lib/supabase/server", () => {
   const createQueryBuilder = (tableName: string) => {
     if (tableName === "events") {
       // For events table, we need to handle multiple query patterns
+      // The key insight: each query chain should return appropriate data
+      // regardless of how many .eq() calls are chained
       return {
         select: () => {
-          const chain = createChainableResult(mockNonOpenEvents);
-          // Override eq for DSC events query (.eq("is_dsc_event", true).eq("status", "active"))
-          chain.eq = () => {
-            const dscChain = createChainableResult(mockDSCEvents);
-            return dscChain;
+          let isDSCQuery = false;
+
+          // Create a chain that tracks whether this is a DSC query
+          const chain: Record<string, unknown> = {
+            data: mockNonOpenEvents,
+            error: null,
+            count: 0,
           };
-          return chain;
+
+          const makeChainable = (currentData: unknown) => {
+            const innerChain: Record<string, unknown> = {
+              data: currentData,
+              error: null,
+              count: 0,
+            };
+
+            // All methods return a new chainable with the same data
+            const methods = ['neq', 'gte', 'gt', 'lt', 'lte', 'order', 'limit',
+                           'single', 'maybeSingle', 'range', 'filter', 'match',
+                           'in', 'contains', 'containedBy', 'or', 'not', 'is',
+                           'ilike', 'like', 'select'];
+
+            methods.forEach(method => {
+              innerChain[method] = () => makeChainable(currentData);
+            });
+
+            // eq is special - it may switch to DSC data
+            innerChain.eq = (field: string, value: unknown) => {
+              if (field === 'is_dsc_event' && value === true) {
+                isDSCQuery = true;
+                return makeChainable(mockDSCEvents);
+              }
+              // For other eq calls, return current data
+              return makeChainable(isDSCQuery ? mockDSCEvents : mockNonOpenEvents);
+            };
+
+            return innerChain;
+          };
+
+          return makeChainable(mockNonOpenEvents);
         },
       };
     }

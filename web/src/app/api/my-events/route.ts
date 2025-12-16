@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // Create event
+  // Create event (default to draft unless explicitly published)
   const { data: event, error: eventError } = await supabase
     .from("events")
     .insert({
@@ -121,7 +121,8 @@ export async function POST(request: Request) {
       end_time: body.end_time || null,
       recurrence_rule: body.recurrence_rule || null,
       cover_image_url: body.cover_image_url || null,
-      status: "active"
+      status: "active",
+      is_published: body.is_published ?? false
     })
     .select()
     .single();

@@ -215,7 +215,7 @@ export default async function OpenMicsPage({
     new Set((cityRows ?? []).map((r: any) => (r.city ?? "").trim()).filter(Boolean))
   ).sort((a: string, b: string) => a.localeCompare(b));
 
-  // Build events query - venue_id required, join with venues table
+  // Build events query - venue_id required, join with venues table, published only
   let query = supabase
     .from("events")
     .select(
@@ -223,6 +223,7 @@ export default async function OpenMicsPage({
       { count: "exact" }
     )
     .eq("event_type", "open_mic")
+    .eq("is_published", true)
     .not("venue_id", "is", null); // Only show events with proper venue records
 
   if (selectedDay) {
@@ -294,13 +295,14 @@ export default async function OpenMicsPage({
   // If we have venue search matches, we need to include events at those venues too
   let allDbEvents = dbEvents ?? [];
   if (safeSearch && searchVenueIds.length > 0) {
-    // Build a separate query for events at matching venues
+    // Build a separate query for events at matching venues (published only)
     let venueQuery = supabase
       .from("events")
       .select(
         `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes,last_verified_at`
       )
       .eq("event_type", "open_mic")
+      .eq("is_published", true)
       .in("venue_id", searchVenueIds);
 
     // Apply same filters as main query

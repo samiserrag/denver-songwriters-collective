@@ -87,6 +87,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
         <thead className="border-b border-white/10 text-gold-400">
           <tr>
             <th className="py-2 px-3">Title</th>
+            <th className="py-2 px-3">Status</th>
             <th className="py-2 px-3">Date</th>
             <th className="py-2 px-3">Venue</th>
             <th className="py-2 px-3">Spotlight</th>
@@ -98,6 +99,24 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
           {rows.map((ev) => (
             <tr key={ev.id} className="border-b border-white/5">
               <td className="py-2 px-3">{ev.title}</td>
+              <td className="py-2 px-3">
+                <div className="flex items-center gap-1">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    ev.is_published
+                      ? "bg-emerald-900/50 text-emerald-400"
+                      : "bg-amber-900/50 text-amber-400"
+                  }`}>
+                    {ev.is_published ? "Published" : "Draft"}
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    ev.status === "active"
+                      ? "bg-green-900/50 text-green-400"
+                      : "bg-neutral-800 text-neutral-400"
+                  }`}>
+                    {ev.status}
+                  </span>
+                </div>
+              </td>
               <td className="py-2 px-3">{ev.event_date}</td>
               <td className="py-2 px-3">{ev.venues?.name ?? ev.venue_name ?? "—"}</td>
 
