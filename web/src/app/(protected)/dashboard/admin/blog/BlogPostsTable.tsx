@@ -113,7 +113,7 @@ export default function BlogPostsTable({ posts }: Props) {
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "all"
               ? "bg-[var(--color-accent-primary)] text-[var(--color-background)]"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
           All ({posts.length})
@@ -123,7 +123,7 @@ export default function BlogPostsTable({ posts }: Props) {
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "pending"
               ? "bg-amber-600 text-white"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
           Pending Approval ({pendingCount})
@@ -136,7 +136,7 @@ export default function BlogPostsTable({ posts }: Props) {
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "published"
               ? "bg-green-600 text-white"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
           Published
@@ -146,16 +146,16 @@ export default function BlogPostsTable({ posts }: Props) {
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "draft"
               ? "bg-yellow-600 text-white"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
           Drafts
         </button>
       </div>
 
-      <div className="w-full overflow-x-auto rounded-lg border border-white/10 bg-black/20">
-        <table className="min-w-full text-left text-sm text-white">
-          <thead className="border-b border-white/10 text-gold-400">
+      <div className="w-full overflow-x-auto rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
+        <table className="min-w-full text-left text-sm text-[var(--color-text-primary)]">
+          <thead className="border-b border-[var(--color-border-default)] text-[var(--color-accent-primary)]">
             <tr>
               <th className="py-3 px-4">Title</th>
               <th className="py-3 px-4">Author</th>
@@ -168,14 +168,14 @@ export default function BlogPostsTable({ posts }: Props) {
           </thead>
           <tbody>
             {filteredPosts.map((post) => (
-              <tr key={post.id} className={`border-b border-white/5 hover:bg-white/5 ${!post.is_approved ? "bg-amber-900/10" : ""}`}>
+              <tr key={post.id} className={`border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-tertiary)] ${!post.is_approved ? "bg-amber-500/5" : ""}`}>
                 <td className="py-3 px-4">
                   <div>
-                    <p className="font-medium text-white">{post.title}</p>
-                    <p className="text-neutral-500 text-xs">/{post.slug}</p>
+                    <p className="font-medium text-[var(--color-text-primary)]">{post.title}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">/{post.slug}</p>
                   </div>
                 </td>
-                <td className="py-3 px-4 text-neutral-300">
+                <td className="py-3 px-4 text-[var(--color-text-secondary)]">
                   {getAuthorName(post.author)}
                 </td>
                 <td className="py-3 px-4">
@@ -217,19 +217,19 @@ export default function BlogPostsTable({ posts }: Props) {
                     {post.tags?.slice(0, 2).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 text-xs"
+                        className="px-2 py-0.5 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] text-xs"
                       >
                         {tag}
                       </span>
                     ))}
                     {post.tags?.length > 2 && (
-                      <span className="text-neutral-500 text-xs">
+                      <span className="text-[var(--color-text-tertiary)] text-xs">
                         +{post.tags.length - 2}
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 text-neutral-400 text-xs">
+                <td className="py-3 px-4 text-[var(--color-text-tertiary)] text-xs">
                   {new Date(post.created_at).toLocaleDateString()}
                 </td>
                 <td className="py-3 px-4">
@@ -237,7 +237,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     <Link
                       href={`/blog/${post.slug}`}
                       target="_blank"
-                      className="text-neutral-400 hover:text-white text-xs"
+                      className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] text-xs"
                     >
                       View
                     </Link>
@@ -260,7 +260,7 @@ export default function BlogPostsTable({ posts }: Props) {
 
             {filteredPosts.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 px-4 text-center text-neutral-400">
+                <td colSpan={7} className="py-8 px-4 text-center text-[var(--color-text-tertiary)]">
                   {filterStatus === "all"
                     ? "No blog posts yet. Create your first post!"
                     : `No ${filterStatus} posts found.`}
@@ -274,9 +274,9 @@ export default function BlogPostsTable({ posts }: Props) {
       {/* Delete Modal */}
       {deleteModal.open && deleteModal.post && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-neutral-900 border border-red-900/50 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-red-400 mb-4">Delete Post</h2>
-            <p className="text-neutral-300 mb-6">
+          <div className="bg-[var(--color-bg-primary)] border border-red-500/30 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Delete Post</h2>
+            <p className="text-[var(--color-text-secondary)] mb-6">
               Are you sure you want to delete &quot;{deleteModal.post.title}&quot;? This action cannot be undone.
             </p>
             <div className="flex gap-3">
@@ -289,7 +289,7 @@ export default function BlogPostsTable({ posts }: Props) {
               </button>
               <button
                 onClick={() => setDeleteModal({ open: false, post: null })}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg transition-colors"
               >
                 Cancel
               </button>

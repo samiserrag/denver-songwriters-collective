@@ -146,20 +146,20 @@ export default function AdminVenuesClient() {
   if (loading) {
     return (
       <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-        <p className="text-neutral-400">Loading...</p>
+        <p className="text-[var(--color-text-secondary)]">Loading...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-2">Venue Management</h1>
-      <p className="text-neutral-300 mb-6">
+      <h1 className="text-4xl font-bold text-[var(--color-accent-primary)] mb-2">Venue Management</h1>
+      <p className="text-[var(--color-text-secondary)] mb-6">
         Manage venues for events. ({venues.length} venues)
       </p>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-red-300">
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
@@ -176,16 +176,16 @@ export default function AdminVenuesClient() {
       {showNewVenue && (
         <form
           onSubmit={handleCreateVenue}
-          className="mb-6 p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg"
+          className="mb-6 p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
         >
-          <h3 className="text-lg font-semibold text-white mb-4">New Venue</h3>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">New Venue</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Venue name *"
               value={newVenue.name}
               onChange={(e) => setNewVenue({ ...newVenue, name: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               required
             />
             <input
@@ -193,42 +193,42 @@ export default function AdminVenuesClient() {
               placeholder="Address"
               value={newVenue.address}
               onChange={(e) => setNewVenue({ ...newVenue, address: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="text"
               placeholder="City"
               value={newVenue.city}
               onChange={(e) => setNewVenue({ ...newVenue, city: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="text"
               placeholder="State"
               value={newVenue.state}
               onChange={(e) => setNewVenue({ ...newVenue, state: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="text"
               placeholder="ZIP Code"
               value={newVenue.zip}
               onChange={(e) => setNewVenue({ ...newVenue, zip: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="text"
               placeholder="Phone"
               value={newVenue.phone}
               onChange={(e) => setNewVenue({ ...newVenue, phone: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="url"
               placeholder="Website URL"
               value={newVenue.website_url}
               onChange={(e) => setNewVenue({ ...newVenue, website_url: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="url"
@@ -237,21 +237,21 @@ export default function AdminVenuesClient() {
               onChange={(e) =>
                 setNewVenue({ ...newVenue, google_maps_url: e.target.value })
               }
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
           </div>
           <div className="mt-4 flex gap-2">
             <button
               type="submit"
               disabled={actionLoading === "new"}
-              className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-white disabled:opacity-50"
+              className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-[var(--color-text-primary)] disabled:opacity-50"
             >
               {actionLoading === "new" ? "Creating..." : "Create Venue"}
             </button>
             <button
               type="button"
               onClick={() => setShowNewVenue(false)}
-              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
             >
               Cancel
             </button>
@@ -264,9 +264,9 @@ export default function AdminVenuesClient() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <form
             onSubmit={handleUpdateVenue}
-            className="w-full max-w-2xl p-6 bg-neutral-800 border border-neutral-700 rounded-lg"
+            className="w-full max-w-2xl p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Edit Venue</h3>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Edit Venue</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
@@ -275,7 +275,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, name: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
                 required
               />
               <input
@@ -285,7 +285,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, address: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="text"
@@ -294,7 +294,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, city: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="text"
@@ -303,7 +303,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, state: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="text"
@@ -312,7 +312,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, zip: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="text"
@@ -321,7 +321,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, phone: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="url"
@@ -330,7 +330,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, website_url: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="url"
@@ -339,7 +339,7 @@ export default function AdminVenuesClient() {
                 onChange={(e) =>
                   setEditingVenue({ ...editingVenue, google_maps_url: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
             </div>
             <div className="mt-4 flex gap-2">
@@ -353,7 +353,7 @@ export default function AdminVenuesClient() {
               <button
                 type="button"
                 onClick={() => setEditingVenue(null)}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
               >
                 Cancel
               </button>
@@ -364,12 +364,12 @@ export default function AdminVenuesClient() {
 
       {/* Venues Table */}
       {venues.length === 0 ? (
-        <p className="text-neutral-500">No venues found. Add your first venue above.</p>
+        <p className="text-[var(--color-text-tertiary)]">No venues found. Add your first venue above.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-neutral-400 border-b border-white/10">
+              <tr className="text-[var(--color-text-secondary)] border-b border-[var(--color-border-default)]">
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Address</th>
                 <th className="px-3 py-2">City</th>
@@ -381,16 +381,16 @@ export default function AdminVenuesClient() {
               {venues.map((venue) => (
                 <tr
                   key={venue.id}
-                  className="border-t border-white/5 hover:bg-white/5"
+                  className="border-t border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-secondary)]"
                 >
-                  <td className="px-3 py-2 text-white">{venue.name}</td>
-                  <td className="px-3 py-2 text-neutral-400">
+                  <td className="px-3 py-2 text-[var(--color-text-primary)]">{venue.name}</td>
+                  <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                     {venue.address || "—"}
                   </td>
-                  <td className="px-3 py-2 text-neutral-400">
+                  <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                     {venue.city || "—"}
                   </td>
-                  <td className="px-3 py-2 text-neutral-400">
+                  <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                     {venue.state || "—"}
                   </td>
                   <td className="px-3 py-2 space-x-2">

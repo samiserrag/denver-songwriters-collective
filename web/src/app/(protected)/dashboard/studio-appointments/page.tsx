@@ -69,7 +69,7 @@ export default async function StudioAppointmentsPage() {
           <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic">
             Studio Appointments
           </h1>
-          <p className="text-neutral-300 mt-3">
+          <p className="text-[var(--color-text-secondary)] mt-3">
             Manage your upcoming recording sessions.
           </p>
         </PageContainer>
@@ -77,7 +77,7 @@ export default async function StudioAppointmentsPage() {
 
       <PageContainer className="py-12 space-y-6">
         {appointments.length === 0 ? (
-          <p className="text-neutral-400">
+          <p className="text-[var(--color-text-tertiary)]">
             No appointments yet.
           </p>
         ) : (

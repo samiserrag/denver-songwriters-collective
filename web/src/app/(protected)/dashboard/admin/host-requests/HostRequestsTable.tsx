@@ -57,26 +57,26 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="text-xl text-white mb-4">Pending ({pending.length})</h2>
+        <h2 className="text-xl text-[var(--color-text-primary)] mb-4">Pending ({pending.length})</h2>
         {pending.length === 0 ? (
-          <p className="text-neutral-400">No pending requests</p>
+          <p className="text-[var(--color-text-tertiary)]">No pending requests</p>
         ) : (
           <div className="space-y-4">
             {pending.map((request) => (
               <div
                 key={request.id}
-                className="p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg"
+                className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-white font-medium">
+                    <p className="text-[var(--color-text-primary)] font-medium">
                       {request.user?.full_name || "Unknown User"}
                     </p>
-                    <p className="text-neutral-400 text-sm">
+                    <p className="text-[var(--color-text-tertiary)] text-sm">
                       Requested {formatDate(request.created_at)}
                     </p>
                     {request.message && (
-                      <p className="text-neutral-300 mt-2 text-sm italic">
+                      <p className="text-[var(--color-text-secondary)] mt-2 text-sm italic">
                         "{request.message}"
                       </p>
                     )}
@@ -108,21 +108,21 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
       </section>
 
       <section>
-        <h2 className="text-xl text-white mb-4">History ({processed.length})</h2>
+        <h2 className="text-xl text-[var(--color-text-primary)] mb-4">History ({processed.length})</h2>
         {processed.length === 0 ? (
-          <p className="text-neutral-400">No processed requests yet</p>
+          <p className="text-[var(--color-text-tertiary)]">No processed requests yet</p>
         ) : (
           <div className="space-y-2">
             {processed.map((request) => (
               <div
                 key={request.id}
-                className="p-3 bg-neutral-900 rounded-lg flex items-center justify-between"
+                className="p-3 bg-[var(--color-bg-tertiary)] rounded-lg flex items-center justify-between"
               >
                 <div>
-                  <span className="text-neutral-300">
+                  <span className="text-[var(--color-text-secondary)]">
                     {request.user?.full_name || "Unknown"}
                   </span>
-                  <span className="text-neutral-500 text-sm ml-2">
+                  <span className="text-[var(--color-text-tertiary)] text-sm ml-2">
                     {formatDate(request.created_at)}
                   </span>
                 </div>

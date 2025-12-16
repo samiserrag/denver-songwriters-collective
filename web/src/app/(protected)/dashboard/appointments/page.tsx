@@ -58,7 +58,7 @@ export default async function PerformerAppointmentsPage() {
           <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
             Your Booked Sessions
           </h1>
-          <p className="text-neutral-300 text-lg max-w-2xl">
+          <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl">
             View all your upcoming and past studio appointments.
           </p>
         </PageContainer>
@@ -67,7 +67,7 @@ export default async function PerformerAppointmentsPage() {
       <PageContainer>
         <div className="py-12 space-y-6">
           {appts.length === 0 ? (
-            <p className="text-neutral-400">
+            <p className="text-[var(--color-text-tertiary)]">
               You have no booked appointments yet.
             </p>
           ) : (

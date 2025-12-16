@@ -198,7 +198,7 @@ export default function AdminHighlightsClient() {
   if (loading) {
     return (
       <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-        <p className="text-neutral-400">Loading...</p>
+        <p className="text-[var(--color-text-tertiary)]">Loading...</p>
       </div>
     );
   }
@@ -208,13 +208,13 @@ export default function AdminHighlightsClient() {
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-2">Monthly Highlights</h1>
-      <p className="text-neutral-300 mb-6">
+      <h1 className="text-4xl font-bold text-[var(--color-accent-primary)] mb-2">Monthly Highlights</h1>
+      <p className="text-[var(--color-text-secondary)] mb-6">
         Manage featured content shown on the homepage. ({highlights.length} highlights)
       </p>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-red-300">
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
@@ -231,16 +231,16 @@ export default function AdminHighlightsClient() {
       {showNewForm && (
         <form
           onSubmit={handleCreateHighlight}
-          className="mb-6 p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg"
+          className="mb-6 p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
         >
-          <h3 className="text-lg font-semibold text-white mb-4">New Highlight</h3>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">New Highlight</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Title *"
               value={newHighlight.title}
               onChange={(e) => setNewHighlight({ ...newHighlight, title: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               required
             />
             <select
@@ -251,7 +251,7 @@ export default function AdminHighlightsClient() {
                   highlight_type: e.target.value as Highlight["highlight_type"],
                 })
               }
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             >
               {HIGHLIGHT_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -263,7 +263,7 @@ export default function AdminHighlightsClient() {
               placeholder="Description"
               value={newHighlight.description}
               onChange={(e) => setNewHighlight({ ...newHighlight, description: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white md:col-span-2"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] md:col-span-2"
               rows={2}
             />
             <input
@@ -271,21 +271,21 @@ export default function AdminHighlightsClient() {
               placeholder="Image URL"
               value={newHighlight.image_url}
               onChange={(e) => setNewHighlight({ ...newHighlight, image_url: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="url"
               placeholder="Link URL"
               value={newHighlight.link_url}
               onChange={(e) => setNewHighlight({ ...newHighlight, link_url: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="text"
               placeholder="Link Text"
               value={newHighlight.link_text}
               onChange={(e) => setNewHighlight({ ...newHighlight, link_text: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="number"
@@ -294,21 +294,21 @@ export default function AdminHighlightsClient() {
               onChange={(e) =>
                 setNewHighlight({ ...newHighlight, display_order: parseInt(e.target.value) || 0 })
               }
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="date"
               placeholder="Start Date"
               value={newHighlight.start_date}
               onChange={(e) => setNewHighlight({ ...newHighlight, start_date: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
             <input
               type="date"
               placeholder="End Date (optional)"
               value={newHighlight.end_date}
               onChange={(e) => setNewHighlight({ ...newHighlight, end_date: e.target.value })}
-              className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
             />
           </div>
           <div className="mt-4 flex gap-2">
@@ -322,7 +322,7 @@ export default function AdminHighlightsClient() {
             <button
               type="button"
               onClick={() => setShowNewForm(false)}
-              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
             >
               Cancel
             </button>
@@ -335,9 +335,9 @@ export default function AdminHighlightsClient() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <form
             onSubmit={handleUpdateHighlight}
-            className="w-full max-w-2xl p-6 bg-neutral-800 border border-neutral-700 rounded-lg max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-2xl p-6 bg-[var(--color-bg-primary)] border border-[var(--color-border-default)] rounded-lg max-h-[90vh] overflow-y-auto"
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Edit Highlight</h3>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Edit Highlight</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
@@ -346,7 +346,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, title: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
                 required
               />
               <select
@@ -357,7 +357,7 @@ export default function AdminHighlightsClient() {
                     highlight_type: e.target.value as Highlight["highlight_type"],
                   })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               >
                 {HIGHLIGHT_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -371,7 +371,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, description: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white md:col-span-2"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] md:col-span-2"
                 rows={2}
               />
               <input
@@ -381,7 +381,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, image_url: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="url"
@@ -390,7 +390,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, link_url: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="text"
@@ -399,7 +399,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, link_text: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="number"
@@ -411,7 +411,7 @@ export default function AdminHighlightsClient() {
                     display_order: parseInt(e.target.value) || 0,
                   })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="date"
@@ -420,7 +420,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, start_date: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
               <input
                 type="date"
@@ -429,7 +429,7 @@ export default function AdminHighlightsClient() {
                 onChange={(e) =>
                   setEditingHighlight({ ...editingHighlight, end_date: e.target.value })
                 }
-                className="px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
               />
             </div>
             <div className="mt-4 flex gap-2">
@@ -443,7 +443,7 @@ export default function AdminHighlightsClient() {
               <button
                 type="button"
                 onClick={() => setEditingHighlight(null)}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
               >
                 Cancel
               </button>
@@ -453,24 +453,24 @@ export default function AdminHighlightsClient() {
       )}
 
       {/* Active Highlights */}
-      <h2 className="text-xl font-semibold text-white mb-3 mt-8">
+      <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-3 mt-8">
         Active Highlights ({activeHighlights.length})
       </h2>
       {activeHighlights.length === 0 ? (
-        <p className="text-neutral-500 mb-6">No active highlights. Create one above!</p>
+        <p className="text-[var(--color-text-tertiary)] mb-6">No active highlights. Create one above!</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {activeHighlights.map((highlight) => (
             <div
               key={highlight.id}
-              className="p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg"
+              className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mr-2">
                     {HIGHLIGHT_TYPES.find((t) => t.value === highlight.highlight_type)?.label}
                   </span>
-                  <span className="text-xs text-neutral-500">Order: {highlight.display_order}</span>
+                  <span className="text-xs text-[var(--color-text-tertiary)]">Order: {highlight.display_order}</span>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -495,9 +495,9 @@ export default function AdminHighlightsClient() {
                   </button>
                 </div>
               </div>
-              <h3 className="text-white font-medium">{highlight.title}</h3>
+              <h3 className="text-[var(--color-text-primary)] font-medium">{highlight.title}</h3>
               {highlight.description && (
-                <p className="text-neutral-400 text-sm mt-1 line-clamp-2">
+                <p className="text-[var(--color-text-tertiary)] text-sm mt-1 line-clamp-2">
                   {highlight.description}
                 </p>
               )}
@@ -512,17 +512,17 @@ export default function AdminHighlightsClient() {
       {/* Inactive Highlights */}
       {inactiveHighlights.length > 0 && (
         <>
-          <h2 className="text-xl font-semibold text-neutral-400 mb-3">
+          <h2 className="text-xl font-semibold text-[var(--color-text-tertiary)] mb-3">
             Inactive Highlights ({inactiveHighlights.length})
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {inactiveHighlights.map((highlight) => (
               <div
                 key={highlight.id}
-                className="p-4 bg-neutral-900/50 border border-neutral-800 rounded-lg opacity-60"
+                className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-subtle)] rounded-lg opacity-60"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <span className="text-xs px-2 py-0.5 rounded bg-neutral-700 text-neutral-400">
+                  <span className="text-xs px-2 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)]">
                     {HIGHLIGHT_TYPES.find((t) => t.value === highlight.highlight_type)?.label}
                   </span>
                   <div className="flex gap-2">
@@ -548,7 +548,7 @@ export default function AdminHighlightsClient() {
                     </button>
                   </div>
                 </div>
-                <h3 className="text-neutral-300 font-medium">{highlight.title}</h3>
+                <h3 className="text-[var(--color-text-secondary)] font-medium">{highlight.title}</h3>
               </div>
             ))}
           </div>
