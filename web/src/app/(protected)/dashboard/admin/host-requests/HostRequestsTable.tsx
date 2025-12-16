@@ -77,7 +77,7 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
                     </p>
                     {request.message && (
                       <p className="text-[var(--color-text-secondary)] mt-2 text-sm italic">
-                        "{request.message}"
+                        &ldquo;{request.message}&rdquo;
                       </p>
                     )}
                   </div>

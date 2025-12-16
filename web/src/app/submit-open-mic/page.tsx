@@ -234,7 +234,7 @@ export default function SubmitOpenMicPage() {
           <div className="py-8">
             <h2 className="text-xl font-semibold text-white mb-4">Looking to update an existing listing?</h2>
             <p className="text-neutral-400 mb-4">
-              Visit the open mic's detail page and use the "Suggest updates" form. No account needed for suggestions!
+              Visit the open mic&apos;s detail page and use the "Suggest updates" form. No account needed for suggestions!
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
               Browse Open Mics →
@@ -290,7 +290,7 @@ export default function SubmitOpenMicPage() {
           <div className="py-6 border-t border-white/10">
             <h3 className="text-lg font-semibold text-white mb-3">Just want to suggest an update?</h3>
             <p className="text-neutral-400 mb-4">
-              Visit the open mic's page and use the suggestion form. You can update times, venue info, and more.
+              Visit the open mic&apos;s page and use the suggestion form. You can update times, venue info, and more.
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
               Browse Open Mics →
