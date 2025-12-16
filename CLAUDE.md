@@ -270,6 +270,22 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 - Comments on both albums and individual images
 - Requires database migration for `gallery_comments` table
 
+### Theme-Aware Color Migration & Lint Fixes (December 2024)
+- **Comprehensive theme color migration** - Replaced all hardcoded `indigo-950` colors with theme-aware tokens
+- **Light theme fix** - Added `--color-background` to all 4 light theme presets (sunrise, colorado-sky, aspen-pop, red-rocks)
+- **0 ESLint errors** - Fixed all unescaped entities and setState-in-useEffect issues
+- Key changes:
+  - `web/src/app/themes/presets.css` - Added `--color-background` override for light themes
+  - Forms use `bg-[var(--color-bg-secondary)]` instead of hardcoded `indigo-950`
+  - `AccordionList.tsx` - Refactored from useEffect+setState to useMemo for `effectiveOpenDays`
+  - `RequestHostButton.tsx` - Use `<Link>` instead of `<a>` for internal navigation
+- Files updated:
+  - EventForm.tsx, VenueSelector.tsx, EventCard.tsx
+  - about/page.tsx, blog/page.tsx, spotlight/page.tsx, partners/page.tsx, get-involved/page.tsx
+  - open-mics/page.tsx, open-mics/[slug]/page.tsx
+  - LazyIframe.tsx, spotlight-badge.tsx
+  - RSVPButton.tsx, RequestHostButton.tsx, AccordionList.tsx
+
 ### Theme-Aware Footer & Inverse Color System (December 2024)
 - **Footer now adapts to all theme presets** - Text colors properly contrast with inverse backgrounds
 - Added `--color-text-on-inverse-primary/secondary/tertiary` CSS tokens to `presets.css`
