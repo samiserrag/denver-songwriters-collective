@@ -79,12 +79,47 @@ export default async function BlogPage() {
               {posts.map((post) => (
                 <BlogCard key={post.id} post={post as BlogPost} />
               ))}
+
+              {/* Share Your Story CTA Card */}
+              <Link
+                href="/dashboard/blog"
+                className="group block rounded-xl border border-dashed border-[var(--color-border-accent)]/40 bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent overflow-hidden hover:border-[var(--color-border-accent)] transition-colors"
+              >
+                <div className="relative aspect-[4/3] w-full overflow-hidden flex items-center justify-center">
+                  <svg className="w-12 h-12 text-[var(--color-text-accent)]/50 group-hover:text-[var(--color-text-accent)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <div className="p-4 space-y-2">
+                  <h2 className="text-base font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+                    Share Your Story
+                  </h2>
+                  <p className="text-neutral-400 text-xs line-clamp-2">
+                    Got advice, insights, or a journey to share? Add your voice to the community.
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-[var(--color-text-accent)] text-xs font-medium pt-1">
+                    Write a post
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </div>
+              </Link>
             </div>
           ) : (
-            <div className="text-center py-16">
+            <div className="text-center py-16 space-y-6">
               <p className="text-neutral-400 text-lg">
-                No blog posts yet. Check back soon!
+                No blog posts yet. Be the first to share your story!
               </p>
+              <Link
+                href="/dashboard/blog"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/80 text-white rounded-lg font-medium transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Write the First Post
+              </Link>
             </div>
           )}
         </div>

@@ -455,8 +455,9 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Blog Card - Same size as member cards (1 column in 4-col grid) */}
+            {/* Blog Card + Share Your Story CTA */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Latest Blog Post */}
               <Link
                 href={`/blog/${latestBlog.slug}`}
                 className="block group"
@@ -528,6 +529,41 @@ export default async function HomePage() {
                 </div>
               </article>
             </Link>
+
+              {/* Share Your Story CTA Card */}
+              <Link
+                href="/dashboard/blog"
+                className="block group"
+              >
+                <article className="h-full overflow-hidden card-spotlight hover:-translate-y-1 flex flex-col">
+                  {/* Icon Section - same aspect ratio as blog image */}
+                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
+                    <div className="text-center">
+                      <svg className="w-16 h-16 mx-auto text-[var(--color-text-accent)]/70 group-hover:text-[var(--color-text-accent)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </div>
+                    {/* Gradient overlay */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-center">
+                    <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
+                      Share Your Story
+                    </h3>
+                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
+                      Got advice, insights, or a journey to share? Add your voice to the community.
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-[var(--color-text-accent)] text-sm font-medium">
+                      Write a post
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </article>
+              </Link>
             </div>
           </div>
         </section>
