@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 interface StudioCardProps {
   studio: Studio;
   className?: string;
+  /** Compact mode: smaller card with reduced padding and text */
+  compact?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -18,7 +20,7 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function StudioCard({ studio, className }: StudioCardProps) {
+export function StudioCard({ studio, className, compact = false }: StudioCardProps) {
   return (
     <Link href={`/studios/${studio.id}`} className="block h-full group">
       <article
@@ -28,20 +30,23 @@ export function StudioCard({ studio, className }: StudioCardProps) {
           className
         )}
       >
-        {/* Image / Placeholder Section - aspect-[4/3] reserves stable space to prevent CLS */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        {/* Image / Placeholder Section */}
+        <div className={cn("relative overflow-hidden", compact ? "aspect-[3/2]" : "aspect-[4/3]")}>
           {studio.imageUrl ? (
             <Image
               src={studio.imageUrl}
               alt={studio.name}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              sizes={compact
+                ? "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              }
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <ImagePlaceholder
               initials={getInitials(studio.name)}
-              className="w-full h-full text-3xl"
+              className={cn("w-full h-full", compact ? "text-xl" : "text-3xl")}
             />
           )}
 
@@ -50,14 +55,17 @@ export function StudioCard({ studio, className }: StudioCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-3">
+        <div className={cn(compact ? "p-3 space-y-1.5" : "p-5 space-y-3")}>
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
+            className={cn(
+              "font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight line-clamp-2",
+              compact ? "text-sm" : "text-[length:var(--font-size-heading-sm)]"
+            )}
           >
             {studio.name}
           </h3>
 
-          {studio.description && (
+          {!compact && studio.description && (
             <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-3">
               {studio.description}
             </p>
