@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import type { EventType } from "@/types/events";
+import { RSVPButton } from "@/components/events/RSVPButton";
 
 export const dynamic = "force-dynamic";
 
@@ -201,7 +202,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="flex flex-wrap items-start gap-6 mb-8">
+            {event.is_dsc_event && (
+              <RSVPButton
+                eventId={event.id}
+                capacity={event.capacity}
+                initialConfirmedCount={rsvpCount || 0}
+              />
+            )}
             {mapsUrl && (
               <a
                 href={mapsUrl}
