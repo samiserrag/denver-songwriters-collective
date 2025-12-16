@@ -104,14 +104,33 @@ function getGoogleMapsUrl(address: string | null): string | null {
 
 export default async function EventsPage() {
   const supabase = await createSupabaseServerClient();
+  const today = new Date().toISOString().split("T")[0];
 
-  const { data: dbEvents } = await supabase
+  // Fetch upcoming events (excluding open mics)
+  const { data: upcomingDbEvents } = await supabase
     .from("events")
     .select("*")
     .neq('event_type', 'open_mic')
+    .gte('event_date', today)
     .order("event_date", { ascending: true });
 
-  const events: Event[] = (dbEvents ?? []).map(mapDBEventToEvent);
+  const upcomingEvents: Event[] = (upcomingDbEvents ?? []).map(mapDBEventToEvent);
+
+  // Fetch past events (excluding open mics) - last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+
+  const { data: pastDbEvents } = await supabase
+    .from("events")
+    .select("*")
+    .neq('event_type', 'open_mic')
+    .lt('event_date', today)
+    .gte('event_date', thirtyDaysAgoStr)
+    .order("event_date", { ascending: false })
+    .limit(6);
+
+  const pastEvents: Event[] = (pastDbEvents ?? []).map(mapDBEventToEvent);
 
   // Fetch DSC community events
   const { data: dscEventsData } = await supabase
@@ -259,25 +278,6 @@ export default async function EventsPage() {
             </section>
           )}
 
-          {/* Event Types Grid */}
-          <section>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {eventTypes.map((eventType) => (
-                <div
-                  key={eventType.name}
-                  className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-5 space-y-2"
-                >
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-                    {eventType.name}
-                  </h3>
-                  <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
-                    {eventType.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
           {/* Open Mic Directory Callout */}
           <section className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -305,8 +305,8 @@ export default async function EventsPage() {
                 Showcases, special nights, and community gatherings.
               </p>
             </div>
-            {events.length > 0 ? (
-              <EventGrid events={events} />
+            {upcomingEvents.length > 0 ? (
+              <EventGrid events={upcomingEvents} />
             ) : (
               <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-10 text-center">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
@@ -314,6 +314,72 @@ export default async function EventsPage() {
                 </p>
               </div>
             )}
+          </section>
+
+          {/* Past Events */}
+          {pastEvents.length > 0 && (
+            <section>
+              <div className="mb-6">
+                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
+                  Past Events
+                </h2>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
+                  Recent happenings from the community.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {pastEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="p-4 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50 opacity-75"
+                  >
+                    <p className="text-sm text-[var(--color-text-secondary)] mb-1">
+                      {event.date ? new Date(event.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      }) : "Date TBA"}
+                    </p>
+                    <h3 className="text-[var(--color-text-primary)] font-medium line-clamp-1">
+                      {event.title}
+                    </h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] line-clamp-1">
+                      {typeof event.venue === "string" ? event.venue : event.venue?.name || "Venue TBA"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Event Types We Need Help Hosting */}
+          <section>
+            <div className="mb-4">
+              <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-1">
+                Types of Events We Need Volunteers &amp; Venues to Help Us Host
+              </h2>
+              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
+                Have a space or want to help? Reach out to host one of these!
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {eventTypes.map((eventType) => (
+                <div
+                  key={eventType.name}
+                  className="group relative px-3 py-1.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors cursor-default"
+                >
+                  <span className="text-sm text-[var(--color-text-primary)]">
+                    {eventType.name}
+                  </span>
+                  {/* Tooltip */}
+                  <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] shadow-lg z-10">
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      {eventType.description}
+                    </p>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-[var(--color-bg-tertiary)] border-b border-r border-[var(--color-border-default)] transform rotate-45" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
           {/* Get Involved CTA */}

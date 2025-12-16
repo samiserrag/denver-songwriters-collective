@@ -1,52 +1,40 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { Metadata } from "next";
-import { RSVPButton, EventComments } from "@/components/events";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
+import type { EventType } from "@/types/events";
 
-interface EventHost {
-  id: string;
-  user_id: string;
-  role: string;
-  invitation_status: string;
-  user?: {
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
+export const dynamic = "force-dynamic";
+
+interface EventPageProps {
+  params: Promise<{ id: string }>;
 }
 
-// Generate dynamic metadata for SEO and social sharing
 export async function generateMetadata({
-  params
-}: {
-  params: Promise<{ id: string }>
-}): Promise<Metadata> {
+  params,
+}: EventPageProps): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
   const { data: event } = await supabase
     .from("events")
-    .select("title, description, venue_name, day_of_week, start_time, event_type")
+    .select("title, description, event_type, venue_name")
     .eq("id", id)
     .single();
 
   if (!event) {
     return {
-      title: "Happening Not Found | Denver Songwriters Collective",
-      description: "This happening could not be found.",
+      title: "Event Not Found | Denver Songwriters Collective",
+      description: "This event could not be found.",
     };
   }
 
-  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
-    || EVENT_TYPE_CONFIG.other;
-
-  const title = `${event.title} | ${config.label} in Denver`;
+  const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
+  const title = `${event.title} | ${config.label} | Denver Songwriters Collective`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
-    : `Join ${event.title} at ${event.venue_name || "Denver"}${event.day_of_week ? ` on ${event.day_of_week}s` : ""}${event.start_time ? ` at ${event.start_time}` : ""}. Find happenings with the Denver Songwriters Collective.`;
-
-  const canonicalUrl = `https://denver-songwriters-collective.vercel.app/events/${id}`;
+    : `Join us for ${event.title}${event.venue_name ? ` at ${event.venue_name}` : ""}. A ${config.label.toLowerCase()} hosted by the Denver Songwriters Collective.`;
 
   return {
     title,
@@ -54,7 +42,6 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: canonicalUrl,
       siteName: "Denver Songwriters Collective",
       type: "website",
       locale: "en_US",
@@ -64,169 +51,211 @@ export async function generateMetadata({
       title,
       description,
     },
-    alternates: {
-      canonical: canonicalUrl,
-    },
   };
 }
 
-export default async function EventPage({
-  params
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id: eventId } = await params;
+function getGoogleMapsUrl(address: string | null): string | null {
+  if (!address) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+export default async function EventDetailPage({ params }: EventPageProps) {
+  const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  // Fetch event with hosts
   const { data: event, error } = await supabase
     .from("events")
     .select(`
-      *,
-      event_hosts(
-        id, user_id, role, invitation_status,
-        user:profiles(id, full_name, avatar_url)
-      )
+      id, title, description, event_type, venue_name, venue_address,
+      day_of_week, start_time, end_time, capacity, cover_image_url,
+      is_dsc_event, status, created_at,
+      event_hosts(user:profiles(id, full_name, avatar_url))
     `)
-    .eq("id", eventId)
+    .eq("id", id)
     .single();
 
-  if (error || !event) notFound();
-
-  // Get RSVP count for DSC events
-  let confirmedCount = 0;
-  if (event.is_dsc_event) {
-    const { count } = await supabase
-      .from("event_rsvps")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("status", "confirmed");
-    confirmedCount = count || 0;
+  if (error || !event) {
+    notFound();
   }
 
-  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
-    || EVENT_TYPE_CONFIG.other;
+  const { count: rsvpCount } = await supabase
+    .from("event_rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", id)
+    .eq("status", "confirmed");
 
-  const acceptedHosts = ((event.event_hosts as EventHost[]) || []).filter(
-    (h) => h.invitation_status === "accepted"
-  );
+  const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
+  const mapsUrl = getGoogleMapsUrl(event.venue_address);
+  const remaining = event.capacity ? Math.max(0, event.capacity - (rsvpCount || 0)) : null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eventHosts = event.event_hosts as any[] | null;
+  const hosts: Array<{ id: string; full_name: string | null; avatar_url: string | null }> =
+    eventHosts?.map((h) => h.user).filter(Boolean) || [];
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-3xl">{config.icon}</span>
-            <span className="px-2 py-1 bg-[var(--color-indigo-950)]/50 text-[var(--color-text-secondary)] text-xs rounded">
-              {config.label}
-            </span>
-            {event.is_dsc_event && (
-              <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded">
-                DSC Event
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <Link
+        href="/events"
+        className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors mb-6"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Happenings
+      </Link>
+
+      <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
+        {event.cover_image_url && (
+          <div className="h-48 md:h-64 relative">
+            <img
+              src={event.cover_image_url}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-4 left-4 flex items-center gap-2">
+              <span className="px-3 py-1 bg-black/70 backdrop-blur rounded-lg text-white font-medium text-sm">
+                {config.icon} {config.label}
               </span>
-            )}
+              {event.is_dsc_event && (
+                <span className="px-3 py-1 bg-[var(--color-accent-primary)]/90 backdrop-blur rounded-lg text-[var(--color-background)] font-medium text-sm">
+                  DSC Event
+                </span>
+              )}
+            </div>
           </div>
-          <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">{event.title}</h1>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Description */}
-            {event.description && (
-              <section>
-                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">About</h2>
-                <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap">{event.description}</p>
-              </section>
-            )}
+        <div className="p-6 md:p-8">
+          {!event.cover_image_url && (
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-3xl">{config.icon}</span>
+              <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded">
+                {config.label}
+              </span>
+              {event.is_dsc_event && (
+                <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded">
+                  DSC Event
+                </span>
+              )}
+            </div>
+          )}
 
-            {/* Hosts */}
-            {acceptedHosts.length > 0 && (
-              <section>
-                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">Hosted by</h2>
-                <div className="flex flex-wrap gap-3">
-                  {acceptedHosts.map((host) => (
-                    <div key={host.id} className="flex items-center gap-2 p-2 bg-[var(--color-indigo-950)]/50 rounded-lg">
-                      <div className="w-8 h-8 bg-[var(--color-indigo-950)] rounded-full flex items-center justify-center text-sm text-[var(--color-text-primary)]">
-                        {host.user?.avatar_url ? (
-                          <img src={host.user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
-                        ) : (
-                          host.user?.full_name?.[0]?.toUpperCase() || "?"
-                        )}
-                      </div>
-                      <span className="text-[var(--color-text-primary)] text-sm">{host.user?.full_name || "Unknown"}</span>
-                      {host.role === "cohost" && (
-                        <span className="text-xs text-[var(--color-text-secondary)]">(co-host)</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+          <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
+            {event.title}
+          </h1>
 
-            {/* Comments (DSC events only) */}
-            {event.is_dsc_event && (
-              <EventComments eventId={eventId} />
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Details Card */}
-            <div className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Details</h2>
-
-              <dl className="space-y-3 text-sm">
-                <div>
-                  <dt className="text-[var(--color-text-secondary)]">Venue</dt>
-                  <dd className="text-[var(--color-text-primary)]">{event.venue_name}</dd>
-                </div>
-                {event.address && (
-                  <div>
-                    <dt className="text-[var(--color-text-secondary)]">Address</dt>
-                    <dd className="text-[var(--color-text-primary)]">{event.address}</dd>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
-                    >
-                      View on map →
-                    </a>
-                  </div>
-                )}
-                <div>
-                  <dt className="text-[var(--color-text-secondary)]">When</dt>
-                  <dd className="text-[var(--color-text-primary)]">
-                    {event.day_of_week && `${event.day_of_week}s`}
-                    {event.start_time && ` at ${event.start_time}`}
-                    {event.end_time && ` - ${event.end_time}`}
-                  </dd>
-                </div>
-                {event.frequency && event.frequency !== "one_time" && (
-                  <div>
-                    <dt className="text-[var(--color-text-secondary)]">Frequency</dt>
-                    <dd className="text-[var(--color-text-primary)] capitalize">{event.frequency}</dd>
-                  </div>
-                )}
-              </dl>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
+                <span>When</span>
+              </div>
+              <p className="text-[var(--color-text-primary)] font-medium">
+                {event.day_of_week ? `${event.day_of_week}s` : "Schedule TBA"}
+              </p>
+              {event.start_time && (
+                <p className="text-[var(--color-text-secondary)] text-sm mt-1">
+                  {event.start_time}{event.end_time ? ` - ${event.end_time}` : ""}
+                </p>
+              )}
             </div>
 
-            {/* RSVP (DSC events only) */}
-            {event.is_dsc_event && (
-              <div className="p-6 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg">
-                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">RSVP</h2>
-                <RSVPButton
-                  eventId={eventId}
-                  capacity={event.capacity}
-                  initialConfirmedCount={confirmedCount}
-                />
+            <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
+                <span>Where</span>
               </div>
+              <p className="text-[var(--color-text-primary)] font-medium">
+                {event.venue_name || "Venue TBA"}
+              </p>
+              {event.venue_address && (
+                <p className="text-[var(--color-text-secondary)] text-sm mt-1 line-clamp-2">
+                  {event.venue_address}
+                </p>
+              )}
+            </div>
+
+            <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
+              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
+                <span>Attendance</span>
+              </div>
+              <p className="text-[var(--color-text-primary)] font-medium">
+                {rsvpCount || 0} going
+              </p>
+              {remaining !== null && (
+                <p className={`text-sm mt-1 ${remaining === 0 ? "text-amber-400" : "text-[var(--color-text-secondary)]"}`}>
+                  {remaining === 0 ? "Event is full" : `${remaining} spots left`}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mb-8">
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Get Directions
+              </a>
             )}
+          </div>
+
+          {event.description && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Event</h2>
+              <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">
+                {event.description}
+              </p>
+            </div>
+          )}
+
+          {hosts.length > 0 && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
+                {hosts.length === 1 ? "Host" : "Hosts"}
+              </h2>
+              <div className="flex flex-wrap gap-4">
+                {hosts.map((host) => host && (
+                  <Link
+                    key={host.id}
+                    href={`/songwriters/${host.id}`}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] transition-colors"
+                  >
+                    {host.avatar_url ? (
+                      <img
+                        src={host.avatar_url}
+                        alt={host.full_name || "Host"}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                        <span className="text-[var(--color-text-accent)]">
+                          {host.full_name?.[0] || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-[var(--color-text-primary)] font-medium">
+                      {host.full_name || "Anonymous Host"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/30 border border-[var(--color-border-default)]">
+            <p className="text-[var(--color-text-secondary)] text-sm">
+              <span className="font-medium text-[var(--color-text-primary)]">{config.label}:</span> {config.description}
+            </p>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
