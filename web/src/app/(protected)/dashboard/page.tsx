@@ -59,6 +59,13 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .eq("is_read", false);
 
+  // Get upcoming RSVP count (confirmed or waitlisted)
+  const { count: upcomingRsvps } = await supabase
+    .from("event_rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .in("status", ["confirmed", "waitlist"]);
+
   return (
     <>
       <Suspense fallback={null}>
@@ -97,6 +104,16 @@ export default async function DashboardPage() {
               </li>
               <li>
                 <Link href="/events" className="text-[var(--color-accent-primary)] hover:underline">Browse Events</Link>
+              </li>
+              <li>
+                <Link href="/dashboard/my-rsvps" className="text-[var(--color-accent-primary)] hover:underline">
+                  My RSVPs
+                  {(upcomingRsvps ?? 0) > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
+                      {upcomingRsvps} upcoming
+                    </span>
+                  )}
+                </Link>
               </li>
               <li>
                 <Link href="/performers" className="text-[var(--color-accent-primary)] hover:underline">Explore Performers</Link>
