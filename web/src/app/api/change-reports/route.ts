@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Validation constants
 const MAX_FIELD_NAME_LENGTH = 50;
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Supabase client and check for authenticated user
-    const supabase = await createClient();
+    const supabase = await createSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
