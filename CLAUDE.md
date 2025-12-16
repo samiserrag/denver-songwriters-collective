@@ -8,6 +8,18 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 > **Architecture Evolution (December 2024):** This project is being transformed into a **white-label community platform template**. See [ARCHITECTURE_PLAN.md](./ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+| Document | Purpose |
+|----------|---------|
+| [docs/releases/v0.3.0.md](./docs/releases/v0.3.0.md) | v0.3.0 release notes (Verification System) |
+| [docs/streams/stream-3-rsvp-flow.md](./docs/streams/stream-3-rsvp-flow.md) | Stream 3: RSVP & Booking System documentation |
+| [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
+| [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
+| [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
+
 ## Project Structure
 
 This project uses **git worktrees** for development:
@@ -53,6 +65,9 @@ This project uses **git worktrees** for development:
 | `venues` | Venue information with addresses and contact details |
 | `blog_posts` | User-submitted blog posts (requires admin approval) |
 | `gallery_images` | Community photo gallery (requires admin approval) |
+| `gallery_albums` | Photo album collections |
+| `change_reports` | Community-submitted event corrections |
+| `event_rsvps` | Event RSVPs with waitlist and offer tracking |
 | `monthly_highlights` | Featured content for homepage |
 | `host_requests` | Applications to become an event host |
 | `approved_hosts` | Approved host permissions |
@@ -82,7 +97,8 @@ This project uses **git worktrees** for development:
 - `/performers` - Performer profiles (redirects to /members)
 - `/studios` - Studio profiles (redirects to /members)
 - `/blog` - Community blog
-- `/gallery` - Photo gallery
+- `/gallery` - Photo gallery with albums
+- `/gallery/[slug]` - Album detail page
 - `/spotlight` - Featured members
 - `/submit-open-mic` - Submit event corrections
 - `/get-involved` - Volunteer opportunities
@@ -103,9 +119,10 @@ This project uses **git worktrees** for development:
 - `/dashboard/admin/venues` - Manage venues
 - `/dashboard/admin/users` - User management
 - `/dashboard/admin/blog` - Approve/manage blog posts
-- `/dashboard/admin/gallery` - Approve/manage gallery images
+- `/dashboard/admin/gallery` - Approve/manage gallery images and albums
 - `/dashboard/admin/highlights` - Manage homepage highlights
 - `/dashboard/admin/host-requests` - Approve host applications
+- `/dashboard/admin/verifications` - Review community change reports
 - `/dashboard/admin/event-update-suggestions` - Review community corrections
 
 ---
@@ -157,6 +174,8 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Known Issues / TODO
 
+See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
+
 ### High Priority
 - [ ] Email notifications not implemented (RSVP confirmations, host approvals)
 - [ ] Image optimization/CDN for gallery (currently direct Supabase storage)
@@ -168,31 +187,20 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ### Pre-Launch Optimization (Completed December 2024)
 - [x] Image optimization with `next/image` component on homepage (highlights, blog images, author avatars)
-- [x] Dynamic SEO metadata for all detail pages via `generateMetadata`:
-  - `/open-mics/[slug]` - Event title, venue, day/time, canonical URL
-  - `/events/[id]` - Event title, type label, venue, OpenGraph/Twitter
-  - `/blog/[slug]` - Post title, excerpt, author, cover image for social cards
+- [x] Dynamic SEO metadata for all detail pages via `generateMetadata`
 - [x] OpenGraph/Twitter card metadata in root layout with default OG image
 - [x] Iframe accessibility - descriptive `title` attributes on Spotify/YouTube embeds
 - [x] Remote image patterns configured in `next.config.ts` for Supabase storage
 
 ### Critical LCP Performance Fix (December 2024)
 - [x] **Fixed 16.0s LCP → target <2.5s** - Critical Lighthouse failure resolved
-- [x] Added `font-display: swap` to all 4 Google Fonts (Geist, Geist_Mono, Playfair_Display, Inter) to prevent FOIT
-- [x] Replaced CSS `background-image` in HeroSection with Next.js `<Image priority>` for LCP preloading
-- [x] Created `LazyIframe` component (`web/src/components/home/LazyIframe.tsx`) using IntersectionObserver
-- [x] Deferred Spotify/YouTube iframe loading until near viewport (200px rootMargin)
-- [x] Added `force-dynamic` to notifications page for build compatibility
+- [x] Added `font-display: swap` to all 4 Google Fonts
+- [x] Replaced CSS `background-image` in HeroSection with Next.js `<Image priority>`
+- [x] Created `LazyIframe` component using IntersectionObserver
+- [x] Deferred Spotify/YouTube iframe loading until near viewport
 
 ### Remaining Pre-Launch Tasks
 - [ ] Create `/public/images/og-image.jpg` (1200x630) for social sharing default
-
-### Low Priority / Nice to Have
-- [ ] Event check-in system for hosts
-- [ ] Analytics dashboard for hosts (event attendance)
-- [ ] Integration with external calendars (Google Calendar, iCal)
-- [ ] Community forum (consider managed service like Discord, or simple in-app forum)
-- [ ] Blog content: Copyright/Music Business Education articles for songwriters
 
 ---
 
@@ -216,12 +224,6 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 5. **Mobile Foundation** - Monorepo setup, shared packages, Expo app
 6. **Full Mobile Development** - Feature-complete iOS/Android apps
 
-**Current Audit Results:**
-- ~24 unique hex colors hardcoded across 40+ files
-- 111 files with hardcoded font weights
-- 109 files with hardcoded border radius
-- 18 files with custom inline shadows/gradients
-
 **Quick Theme Changes (Until Refactor):**
 - `web/src/app/globals.css` - CSS variables (colors, fonts, shadows)
 - `web/src/app/layout.tsx` - Font imports
@@ -231,214 +233,52 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Recent Changes (December 2024)
 
-### Stream 3: RSVP UX & My RSVPs Dashboard (December 2024)
-- **Phase 1: Calendar & Confirmation UX**
-  - `AddToCalendarButton` component - Google, Apple (ICS), Outlook calendar integration
-  - Enhanced `RSVPButton` with confirmation animations and inline cancel dialog
-  - Added calendar button to event detail pages for events with dates
-- **Phase 2: My RSVPs Dashboard**
-  - New `/dashboard/my-rsvps` page with 3 tabs: Upcoming, Past, Cancelled
-  - `RSVPCard` component with status badges (confirmed/waitlist/cancelled)
-  - Inline cancel confirmation (no `window.confirm`)
-  - AddToCalendar integration for non-cancelled RSVPs
-  - Dashboard nav link with upcoming RSVP count badge
+### Gallery Feature Enhancement (December 2024)
+- **Album listing** on `/gallery` page with cover images and photo counts
+- **Album detail page** at `/gallery/[slug]` with pagination
+- **Lightbox keyboard navigation** - arrow keys, escape, prev/next buttons
+- **Image counter** in lightbox ("3 / 24")
+- **Accessibility improvements** - focus-visible rings, ARIA labels, button elements
+- See [docs/gallery.md](./docs/gallery.md) for full documentation
 - Key files:
-  - `web/src/components/events/AddToCalendarButton.tsx` - Calendar dropdown with 3 providers
-  - `web/src/components/events/RSVPCard.tsx` - RSVP display card with actions
-  - `web/src/components/events/RSVPButton.tsx` - Enhanced with animations/cancel
-  - `web/src/app/(protected)/dashboard/my-rsvps/page.tsx` - My RSVPs page
-  - `web/src/app/(protected)/dashboard/page.tsx` - Added My RSVPs nav link
+  - `web/src/app/gallery/page.tsx` - Enhanced with albums section
+  - `web/src/app/gallery/[slug]/page.tsx` - New album detail page
+  - `web/src/components/gallery/GalleryGrid.tsx` - Keyboard navigation, accessibility
+
+### Stream 3: RSVP & Waitlist System (December 2024)
+- **24-hour waitlist claim window** - when a spot opens, next person has 24h to confirm
+- **CancelRSVPModal** - accessible cancellation with focus trap
+- **RSVPSection** - auth-aware wrapper with offer confirmation
+- **AddToCalendarButton** - Google, Apple (ICS), Outlook integration
+- **My RSVPs dashboard** at `/dashboard/my-rsvps`
+- See [docs/streams/stream-3-rsvp-flow.md](./docs/streams/stream-3-rsvp-flow.md) for full documentation
+- Key files:
+  - `web/src/lib/waitlistOffer.ts` - Server-side waitlist logic
+  - `web/src/lib/waitlistOfferClient.ts` - Client-safe utilities
+  - `web/src/components/events/RSVPButton.tsx` - Enhanced RSVP button
+  - `web/src/components/events/CancelRSVPModal.tsx` - Cancellation modal
+  - `web/src/components/events/RSVPSection.tsx` - Auth wrapper
 
 ### Event Verification System v0.3.0 (December 2024)
 - **Change Reports feature** for community-submitted event corrections
-  - `ReportChangeForm` component for quick inline submissions
-  - Admin verifications page at `/dashboard/admin/verifications`
-  - `change_reports` table with status tracking
-  - `last_verified_at` display on open mic listings
+- **Admin verifications page** at `/dashboard/admin/verifications`
+- **Verified badges** on open mic listings
+- See [docs/releases/v0.3.0.md](./docs/releases/v0.3.0.md) for full release notes
 - Key files:
   - `web/src/components/events/ReportChangeForm.tsx`
   - `web/src/app/(protected)/dashboard/admin/verifications/page.tsx`
   - `web/src/app/api/change-reports/route.ts`
-  - `web/src/components/admin/ChangeReportsTable.tsx`
 
 ### Events Page Improvements & Detail Page (December 2024)
-- **Created `/events/[id]` detail page** for DSC events - fixes 404 errors when clicking DSC events
-- **Reorganized events page** with new section order:
-  1. Community Happenings (DSC events)
-  2. Open Mic Directory Callout
-  3. Upcoming Happenings
-  4. Past Events (new section - shows last 30 days)
-  5. Types of Events We Need Volunteers & Venues to Help Us Host
-  6. Get Involved CTA
-- **Shrunk event types** from large grid cards to compact pill-style tags with hover tooltips
-- **Added past events section** showing events from the last 30 days
-- Key files:
-  - `web/src/app/events/[id]/page.tsx` - New event detail page with SEO metadata
-  - `web/src/app/events/page.tsx` - Reorganized layout, added past events
+- **Created `/events/[id]` detail page** for DSC events
+- **Reorganized events page** with past events section
+- **Shrunk event types** to compact pill-style tags
 
-### Remove Hero Images from Sub-Pages & Theme Color Fixes (December 2024)
-- **Removed hero images from all pages except homepage** - Cleaner, more consistent design
-- Replaced hero images with simple text-only headers on:
-  - `/events` (Happenings) page
-  - `/blog` page
-  - `/gallery` page
-  - `/songwriters` page
-- **Fixed theme-aware colors** on multiple pages:
-  - Tip jar page: Fixed `border-white/10` → `border-[var(--color-border-default)]` on cards
-  - Gallery page: Fixed hardcoded `text-neutral-*` colors in empty state
-  - Blog page: Fixed text colors and changed hero to "Community Blog"
-- Key files modified:
-  - `web/src/app/events/page.tsx` - Simple header instead of hero image
-  - `web/src/app/blog/page.tsx` - Simple header, fixed text colors
-  - `web/src/app/gallery/page.tsx` - Simple header, theme-aware empty state
-  - `web/src/app/songwriters/page.tsx` - Simple header
-  - `web/src/app/tip-jar/page.tsx` - Theme-aware card borders
-
-### Planned: Gallery Posts Feature
-- See `PLAN.md` for full implementation plan
-- Will allow users to create photo gallery albums with descriptions
-- Admin approval workflow before publication
-- Comments on both albums and individual images
-- Requires database migration for `gallery_comments` table
-
-### Theme-Aware Color Migration & Lint Fixes (December 2024)
-- **Comprehensive theme color migration** - Replaced all hardcoded `indigo-950` colors with theme-aware tokens
-- **Light theme fix** - Added `--color-background` to all 4 light theme presets (sunrise, colorado-sky, aspen-pop, red-rocks)
-- **0 ESLint errors** - Fixed all unescaped entities and setState-in-useEffect issues
-- Key changes:
-  - `web/src/app/themes/presets.css` - Added `--color-background` override for light themes
-  - Forms use `bg-[var(--color-bg-secondary)]` instead of hardcoded `indigo-950`
-  - `AccordionList.tsx` - Refactored from useEffect+setState to useMemo for `effectiveOpenDays`
-  - `RequestHostButton.tsx` - Use `<Link>` instead of `<a>` for internal navigation
-- Files updated:
-  - EventForm.tsx, VenueSelector.tsx, EventCard.tsx
-  - about/page.tsx, blog/page.tsx, spotlight/page.tsx, partners/page.tsx, get-involved/page.tsx
-  - open-mics/page.tsx, open-mics/[slug]/page.tsx
-  - LazyIframe.tsx, spotlight-badge.tsx
-  - RSVPButton.tsx, RequestHostButton.tsx, AccordionList.tsx
-
-### Theme-Aware Footer & Inverse Color System (December 2024)
-- **Footer now adapts to all theme presets** - Text colors properly contrast with inverse backgrounds
-- Added `--color-text-on-inverse-primary/secondary/tertiary` CSS tokens to `presets.css`
-- Light themes get light text on dark footer; dark themes get dark text on light footer
-- Key files:
-  - `web/src/app/themes/presets.css` - Added inverse text tokens for all light themes
-  - `web/src/components/navigation/footer.tsx` - Uses `--color-bg-inverse` and inverse text tokens
-  - `web/src/components/navigation/newsletter-signup.tsx` - Updated to use theme tokens
-  - `web/src/components/ui/Logo.tsx` - Added `inverse` prop for footer context
-
-### Performer → Songwriter Rename & Homepage Consolidation (December 2024)
-- **Renamed "performer/performers" to "songwriter/songwriters"** throughout the webapp
-- Created new `/songwriters` route with dedicated pages and components
-- Combined three homepage spotlight sections into single "Featured Members" section
-- New components:
-  - `web/src/components/songwriters/` - Full component suite (SongwriterCard, SongwriterGrid, SongwriterAvatar, SongwriterTag, SpotlightSongwriterCard)
-  - `web/src/components/empty/EmptySongwriters.tsx` - Empty state for songwriters
-- New pages:
-  - `web/src/app/songwriters/page.tsx` - Songwriters directory
-  - `web/src/app/songwriters/[id]/page.tsx` - Individual songwriter profile
-  - Error and loading states for both routes
-- Updated admin pages to use "Songwriter" terminology
-- Key files modified:
-  - `web/src/app/page.tsx` - Simplified homepage with combined Featured Members section
-  - `web/src/types/index.ts` - Added Songwriter type alias
-  - `web/next.config.ts` - Added redirect from `/performers` to `/songwriters`
-
-### Admin-Only Theme Switcher (December 2024)
-- Moved theme/font switcher from public footer to admin dashboard only
-- Theme switcher now appears in `/dashboard/admin/settings` or site settings page
-- Regular users see the theme set by admin, cannot change it themselves
-- Prevents theme inconsistency across user sessions
-
-### Pre-Phase 1 Security Audit (December 2024)
-- **All security checks passed** - Ready for Phase 1 theme refactor
-- Audit results:
-  | Check | Status |
-  |-------|--------|
-  | Secret exposure in code | PASS - No service role keys in source |
-  | Env file hygiene | PASS - Only `.env.test` tracked (local demo keys) |
-  | .gitignore protects secrets | PASS - `.env.local`, `.env*.local` patterns |
-  | Supabase key separation | PASS - `createServerClient` vs `createBrowserClient` |
-  | Hardcoded credentials | PASS - None found |
-  | Middleware present | YES - Auth protection on `/dashboard`, `/admin` |
-  | Security headers | YES - CSP, X-Frame-Options, HSTS configured |
-  | npm vulnerabilities | 0 high/critical |
-- Key files verified:
-  - `web/src/middleware.ts` - Validates JWT via `getUser()` not just `getSession()`
-  - `web/next.config.ts` - Full CSP with frame-ancestors, script-src
-  - `.gitignore` - Proper env file patterns
-
-### White-Label Architecture Plan (December 2024)
-- Created comprehensive `ARCHITECTURE_PLAN.md` documenting the transformation roadmap
-- Completed codebase audit: identified all hardcoded colors, fonts, shadows, gradients
-- Designed 3-tier design token system (primitive → semantic → component tokens)
-- Planned 6-phase implementation from theme foundation to mobile app
-- Ready for expert review before execution
-
-### Blog Card Simplification (December 2024)
-- Simplified homepage blog card to match performer/member card style
-- Changed from 2-column grid to simple `max-w-md` card
-- Unified image aspect ratio to `4/3`
-- Key file: `web/src/app/page.tsx`
-
-### CLS & LCP Performance Fix (December 2024)
-- **CLS: 0.639 → 0.000** - Eliminated all layout shifts
-- **TBT: 40-52ms** - Excellent (no main thread blocking)
-- **LCP: 3.4s synthetic** - Optimized; remaining gap is Lighthouse throttling overhead
-- Key fixes:
-  - **Footer CLS fix**: Flexbox sticky footer with `min-height: calc(100lvh - 64px)` on main element
-  - Hero image uses `priority` prop with `fetchpriority="high"`
-  - All card images use `next/image` with explicit dimensions
-- Key files:
-  - `web/src/app/globals.css` - Body flexbox layout, `100lvh` with `100vh` fallback
-  - `web/src/app/layout.tsx` - Critical inline CSS for CLS prevention
-  - `web/src/components/layout/hero-section.tsx` - next/image with priority
-  - `web/src/components/navigation/footer.tsx` - `role="contentinfo"` for CSS targeting
-- Performance audit results:
-  - CSS payload: 18.9KB gzip (excellent)
-  - Unused CSS: 0 bytes (Tailwind purge working)
-  - No render-blocking resources
-- New utility: `web/src/components/home/CLSLogger.tsx` - dev-only CLS debugging tool with element selectors
-
-### Teal → Gold Color Migration (Complete)
-- Migrated all ~100 teal color instances to gold theme across 40+ files
-- Public pages: open-mics, events, submit-open-mic, performers
-- Components: MapViewButton, DayJumpBar, AccordionList, CompactListItem, EventCard, WorkInProgressBanner, HostCard, RequestHostButton
-- Admin/dashboard: VenueSelector, UserDirectoryTable, BlogPostForm, BlogPostsTable, GalleryAdminTabs, AdminHighlightsClient, CoHostManager
-- Forms: VolunteerSignupForm, EventSuggestionForm, OpenMicReportForm
-- Utilities: highlight.ts, PlaceholderImage.tsx, ProfileQRCode.tsx
-
-### Member Filters & Onboarding Enhancements
-- Added "Open to Collaborations" filter to Members page
-- Added collapsible "Specialties" filter section
-- Expanded SPECIALTY_OPTIONS to 70+ items organized by category:
-  - Instruments (Strings incl. Ukulele/Baritone Ukulele, Keys, Other)
-  - Vocals, Songwriting Skills, Production & Technical
-  - Performance, Music Knowledge, Genre Expertise, Other Skills
-- Added `interested_in_cowriting` and `available_for_hire` checkboxes to onboarding
-- Fixed filter label consistency ("Interested in Cowriting")
-
-### Homepage Consolidation
-- Merged three separate Spotlight sections (Performers, Open Mics, Hosts) into unified "Community Spotlight"
-- Fixed blog image hover issue (removed scale animation)
-- Changed blog image to aspect-square for consistent mobile sizing
-
-### Members Directory
-- Unified `/members` page consolidating performers, studios, hosts
-- Filter by role, availability, genres, instruments, specialties
-- Redirects from `/performers` and `/studios` to `/members`
-
-### Venue Data Enrichment
-- Added 18 Denver-area venues with full address data
-- Updated 60+ events with proper venue associations
-- Fixed missing slugs on 83 events
-
-### Security Hardening
-- Complete RLS audit and remediation
-- Service role client for admin operations
-- Standardized admin role checking
-- Security headers configured in `next.config.ts` (CSP, X-Frame-Options, etc.)
-- Strengthened email validation regex (RFC 5322 compliant)
+### Theme & Performance (December 2024)
+- **Theme-aware color migration** - all hardcoded colors replaced with CSS variables
+- **Footer adapts to all theme presets** with inverse text colors
+- **CLS: 0.639 → 0.000** - eliminated all layout shifts
+- **Performer → Songwriter rename** throughout the webapp
 
 ---
 
@@ -465,13 +305,13 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `web/src/lib/supabase/serviceRoleClient.ts` | Admin operations (bypasses RLS) |
 | `web/src/lib/auth/adminAuth.ts` | `checkAdminRole()` utility |
 | `web/src/lib/supabase/database.types.ts` | Generated TypeScript types |
+| `web/src/lib/waitlistOffer.ts` | Waitlist promotion logic |
+| `web/src/lib/waitlistOfferClient.ts` | Client-safe waitlist utilities |
 | `web/src/types/index.ts` | Custom TypeScript types |
 | `next.config.ts` | Next.js config with redirects |
 | `ARCHITECTURE_PLAN.md` | White-label platform roadmap |
-| `web/src/app/themes/presets.css` | Theme preset CSS variables (colors per theme) |
+| `web/src/app/themes/presets.css` | Theme preset CSS variables |
 | `web/src/app/globals.css` | Base CSS variables and global styles |
-| `web/src/components/ui/Logo.tsx` | Logo component with `inverse` prop for dark backgrounds |
-| `web/src/components/songwriters/` | Songwriter component suite (cards, grid, avatar, tags) |
 
 ---
 
@@ -486,6 +326,9 @@ cd web && npx next build
 
 # Type check
 cd web && npm run lint
+
+# Full verification (see docs/quality-gates.md)
+cd web && npm run lint && npm run test -- --run && npm run build
 
 # Generate Supabase types (after schema changes)
 npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/lib/supabase/database.types.ts
