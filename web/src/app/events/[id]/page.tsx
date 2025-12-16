@@ -5,6 +5,7 @@ import Link from "next/link";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import type { EventType } from "@/types/events";
 import { RSVPButton } from "@/components/events/RSVPButton";
+import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +71,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     .select(`
       id, title, description, event_type, venue_name, venue_address,
       day_of_week, start_time, end_time, capacity, cover_image_url,
-      is_dsc_event, status, created_at
+      is_dsc_event, status, created_at, event_date
     `)
     .eq("id", id)
     .single();
@@ -105,6 +106,34 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
   const mapsUrl = getGoogleMapsUrl(event.venue_address);
   const remaining = event.capacity ? Math.max(0, event.capacity - (rsvpCount || 0)) : null;
+
+  // Build calendar date from event_date + start_time
+  let calendarStartDate: Date | null = null;
+  let calendarEndDate: Date | null = null;
+  if (event.event_date) {
+    // Parse date (YYYY-MM-DD format)
+    const [year, month, day] = event.event_date.split("-").map(Number);
+
+    // Parse start time (HH:MM:SS or HH:MM format)
+    if (event.start_time) {
+      const [startHour, startMin] = event.start_time.split(":").map(Number);
+      calendarStartDate = new Date(year, month - 1, day, startHour, startMin);
+
+      // Parse end time if available, otherwise default to 2 hours after start
+      if (event.end_time) {
+        const [endHour, endMin] = event.end_time.split(":").map(Number);
+        calendarEndDate = new Date(year, month - 1, day, endHour, endMin);
+      } else {
+        calendarEndDate = new Date(calendarStartDate.getTime() + 2 * 60 * 60 * 1000);
+      }
+    } else {
+      // All-day event if no start time
+      calendarStartDate = new Date(year, month - 1, day);
+      calendarEndDate = new Date(year, month - 1, day + 1);
+    }
+  }
+
+  const venueLocation = [event.venue_name, event.venue_address].filter(Boolean).join(", ");
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -202,7 +231,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-start gap-6 mb-8">
+          <div className="flex flex-wrap items-start gap-4 mb-8">
             {event.is_dsc_event && (
               <RSVPButton
                 eventId={event.id}
@@ -210,12 +239,21 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 initialConfirmedCount={rsvpCount || 0}
               />
             )}
+            {calendarStartDate && (
+              <AddToCalendarButton
+                title={event.title}
+                description={event.description}
+                location={venueLocation}
+                startDate={calendarStartDate}
+                endDate={calendarEndDate || undefined}
+              />
+            )}
             {mapsUrl && (
               <a
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] font-medium transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
