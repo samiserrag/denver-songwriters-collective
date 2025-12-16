@@ -48,27 +48,16 @@ export default async function BlogPage() {
 
   return (
     <>
-      {/* Hero Header with Background Image */}
-      <div className="relative h-48 md:h-64 overflow-hidden">
-        <Image
-          src="/images/open-mic-hero-optimized.jpg"
-          alt="Denver Songwriters Blog"
-          fill
-          sizes="100vw"
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
-              Community Blog
-            </h1>
-            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
-              Stories, tips, and insights from the Denver songwriting community.{" "}
-              <Link href="/dashboard/blog" className="underline hover:text-white transition-colors">Share your own!</Link>
-            </p>
-          </div>
+      {/* Page Header */}
+      <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
+        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
+            Community Blog
+          </h1>
+          <p className="text-lg text-[var(--color-text-secondary)] mt-3">
+            Stories, tips, and insights from the Denver songwriting community.{" "}
+            <Link href="/dashboard/blog" className="underline hover:text-[var(--color-text-accent)] transition-colors">Share your own!</Link>
+          </p>
         </div>
       </div>
 

@@ -229,6 +229,31 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Recent Changes (December 2024)
 
+### Remove Hero Images from Sub-Pages & Theme Color Fixes (December 2024)
+- **Removed hero images from all pages except homepage** - Cleaner, more consistent design
+- Replaced hero images with simple text-only headers on:
+  - `/events` (Happenings) page
+  - `/blog` page
+  - `/gallery` page
+  - `/songwriters` page
+- **Fixed theme-aware colors** on multiple pages:
+  - Tip jar page: Fixed `border-white/10` → `border-[var(--color-border-default)]` on cards
+  - Gallery page: Fixed hardcoded `text-neutral-*` colors in empty state
+  - Blog page: Fixed text colors and changed hero to "Community Blog"
+- Key files modified:
+  - `web/src/app/events/page.tsx` - Simple header instead of hero image
+  - `web/src/app/blog/page.tsx` - Simple header, fixed text colors
+  - `web/src/app/gallery/page.tsx` - Simple header, theme-aware empty state
+  - `web/src/app/songwriters/page.tsx` - Simple header
+  - `web/src/app/tip-jar/page.tsx` - Theme-aware card borders
+
+### Planned: Gallery Posts Feature
+- See `PLAN.md` for full implementation plan
+- Will allow users to create photo gallery albums with descriptions
+- Admin approval workflow before publication
+- Comments on both albums and individual images
+- Requires database migration for `gallery_comments` table
+
 ### Theme-Aware Footer & Inverse Color System (December 2024)
 - **Footer now adapts to all theme presets** - Text colors properly contrast with inverse backgrounds
 - Added `--color-text-on-inverse-primary/secondary/tertiary` CSS tokens to `presets.css`

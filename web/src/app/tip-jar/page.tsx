@@ -50,7 +50,7 @@ export default function TipJarPage() {
                 href="https://venmo.com/u/Sami-Serrag-Music"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-4 text-center hover:border-[var(--color-border-accent)]/50 transition-colors"
+                className="group rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-8 space-y-4 text-center hover:border-[var(--color-border-accent)]/50 transition-colors"
               >
                 <div className="w-16 h-16 mx-auto rounded-full bg-[#008CFF] flex items-center justify-center">
                   <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -73,7 +73,7 @@ export default function TipJarPage() {
                 href="https://paypal.me/SamiSerrag"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-4 text-center hover:border-[var(--color-border-accent)]/50 transition-colors"
+                className="group rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-8 space-y-4 text-center hover:border-[var(--color-border-accent)]/50 transition-colors"
               >
                 <div className="w-16 h-16 mx-auto rounded-full bg-[#003087] flex items-center justify-center">
                   <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -94,7 +94,7 @@ export default function TipJarPage() {
           </section>
 
           {/* What Your Support Does */}
-          <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 space-y-6">
+          <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-8 space-y-6">
             <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] text-center">
               What Your Support Makes Possible
             </h2>

@@ -1,135 +1,158 @@
-# Unified Members Directory - Implementation Plan
+# Gallery Posts Feature Implementation Plan
 
 ## Overview
-Replace separate `/performers` and `/studios` pages with a unified `/members` directory that displays all member types (performers, hosts, studios, fans) in a single searchable/filterable interface.
+Allow users to create photo gallery posts (albums) with descriptions, captions for each photo, and enable commenting on both the gallery as a whole and individual images. Galleries require admin approval before publication.
 
-## Current State
-- **Separate pages**: `/performers`, `/studios`, `/spotlight`
-- **Card components**: `PerformerCard`, `StudioCard`, `HostCard` (different layouts)
-- **Database roles**: `performer`, `host`, `studio`, `admin`, `fan`
-- **Profile fields available**: `genres[]`, `instruments[]`, `available_for_hire`, `interested_in_cowriting`, `song_links[]`, `is_featured`, `is_host`
-- **Navigation**: Header has separate "Performers" and "Studios" links
+## Existing Infrastructure (Already Available)
+The database already has the required tables:
+- `gallery_albums` - Album metadata (name, description, slug, created_by, is_published, cover_image_url, event_id, venue_id)
+- `gallery_images` - Individual images (album_id, caption, image_url, is_approved, uploaded_by)
+
+## New Database Requirements
+
+### 1. New Table: `gallery_comments`
+```sql
+CREATE TABLE gallery_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  album_id UUID REFERENCES gallery_albums(id) ON DELETE CASCADE,
+  image_id UUID REFERENCES gallery_images(id) ON DELETE CASCADE,
+  author_id UUID REFERENCES profiles(id) NOT NULL,
+  content TEXT NOT NULL,
+  is_approved BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT album_or_image CHECK (
+    (album_id IS NOT NULL AND image_id IS NULL) OR
+    (album_id IS NULL AND image_id IS NOT NULL)
+  )
+);
+```
+
+### 2. Add `is_approved` column to `gallery_albums`
+The table already has `is_published` but we need `is_approved` for admin review workflow.
 
 ## Implementation Steps
 
-### Step 1: Create Unified MemberCard Component
-**File**: `web/src/components/members/MemberCard.tsx`
+### Step 1: Database Migration
+- Add `gallery_comments` table
+- Add `is_approved` column to `gallery_albums` (default false)
+- Add RLS policies for both tables
 
-Create a versatile card component that handles all member types:
-- Display avatar/image with fallback initials
-- Show role badge (Performer, Studio, Host, Fan)
-- Display name, bio, location
-- Show relevant tags: genres, instruments, specialties
-- Availability indicators (available for hire, interested in cowriting)
-- Spotlight badge for featured members
-- Social links
-- Link to appropriate detail page (`/performers/[id]`, `/studios/[id]`)
+### Step 2: Create Gallery Album Form Component
+Similar to `BlogPostForm.tsx`, create `GalleryAlbumForm.tsx`:
+- Album name/title
+- Description (text area)
+- Cover image selection
+- Multiple image upload with individual captions
+- Optional event/venue association
+- Submit for approval workflow
 
-### Step 2: Create Members Grid Component
-**File**: `web/src/components/members/MembersGrid.tsx`
+### Step 3: User Dashboard Gallery Page
+- `/dashboard/gallery` - List user's gallery albums
+- `/dashboard/gallery/new` - Create new album
+- `/dashboard/gallery/[id]/edit` - Edit existing album
 
-Grid layout component that renders MemberCards with responsive columns.
+### Step 4: Public Gallery Album Detail Page
+- `/gallery/[slug]` - View individual gallery album
+- Display album description, all images with captions
+- Comments section for album-level comments
+- Click on image to view in lightbox with image-specific comments
 
-### Step 3: Create Filter Components
-**File**: `web/src/components/members/MemberFilters.tsx`
+### Step 5: Update Gallery Page
+- Show approved albums as cards/thumbnails
+- Add "Create Album" CTA similar to blog's "Share Your Story"
+- Keep existing individual images display as well
 
-Client-side filter controls:
-- **Role filter**: Checkboxes for Performer, Studio, Host, Fan
-- **Availability filters**: Available for hire, Interested in cowriting
-- **Genre filter**: Multi-select dropdown from available genres
-- **Instrument filter**: Multi-select dropdown from available instruments
-- **Search**: Text search for name/bio
+### Step 6: Admin Approval Interface
+- `/dashboard/admin/gallery` - Already exists, extend to show pending albums
+- Add approval workflow for new albums
 
-### Step 4: Create Members Page
-**File**: `web/src/app/members/page.tsx`
+### Step 7: Gallery Comments Component
+Create `GalleryComments.tsx` similar to `BlogComments.tsx`:
+- Accept albumId or imageId prop
+- Display comments with user avatars
+- Allow logged-in users to add comments
+- Auto-approve comments (or require approval if desired)
 
-Server component that:
-- Fetches all profiles with role != 'admin'
-- Passes data to client components for filtering
-- Orders by: is_featured DESC, featured_rank ASC, full_name ASC
-- Uses MembersGrid with MemberFilters
+## File Structure
 
-### Step 5: Add Member Type Definition
-**File**: `web/src/types/index.ts`
-
-Add unified `Member` type:
-```typescript
-export interface Member {
-  id: string;
-  name: string;
-  role: 'performer' | 'host' | 'studio' | 'fan';
-  isHost?: boolean;  // performers can also be hosts
-  bio?: string;
-  genres?: string[];
-  instruments?: string[];
-  specialties?: string[];
-  location?: string;
-  avatarUrl?: string;
-  isSpotlight?: boolean;
-  socialLinks?: SocialLinks;
-  availableForHire?: boolean;
-  interestedInCowriting?: boolean;
-  songLinks?: string[];
-}
+```
+web/src/
+├── app/
+│   ├── gallery/
+│   │   ├── page.tsx (update - add album grid + CTA)
+│   │   └── [slug]/
+│   │       └── page.tsx (NEW - album detail view)
+│   └── (protected)/
+│       └── dashboard/
+│           ├── gallery/
+│           │   ├── page.tsx (NEW - user's albums list)
+│           │   ├── new/
+│           │   │   └── page.tsx (NEW - create album)
+│           │   └── [id]/
+│           │       └── edit/
+│           │           └── page.tsx (NEW - edit album)
+│           └── admin/
+│               └── gallery/
+│                   └── page.tsx (UPDATE - add album approval)
+├── components/
+│   └── gallery/
+│       ├── GalleryGrid.tsx (existing)
+│       ├── GalleryAlbumCard.tsx (NEW)
+│       ├── GalleryAlbumForm.tsx (NEW)
+│       ├── GalleryAlbumView.tsx (NEW)
+│       ├── GalleryComments.tsx (NEW)
+│       └── index.ts (update exports)
 ```
 
-### Step 6: Update Navigation
-**File**: `web/src/components/navigation/header.tsx`
+## Key Components
 
-Replace:
-```typescript
-{ href: "/performers", label: "Performers" },
-{ href: "/studios", label: "Studios" },
-```
-With:
-```typescript
-{ href: "/members", label: "Members" },
-```
+### GalleryAlbumCard
+- Album cover image thumbnail
+- Title
+- Image count
+- Creator name
+- Created date
 
-### Step 7: Add Redirects for Old URLs
-**File**: `web/next.config.js` (or create redirect routes)
+### GalleryAlbumForm
+- Reuse `ImageUpload` component from blog
+- Multiple image upload support
+- Drag-to-reorder images
+- Caption input for each image
+- Description textarea
+- Event/Venue selector (optional)
 
-Add redirects:
-- `/performers` -> `/members?role=performer`
-- `/studios` -> `/members?role=studio`
+### GalleryAlbumView
+- Hero with cover image or first image
+- Album description
+- Masonry grid of images
+- Click image for lightbox with per-image comments
+- Album-level comments section below
 
-This preserves any bookmarked/linked URLs.
+### GalleryComments
+- Similar to BlogComments
+- Props: albumId OR imageId
+- Fetch/display comments for that target
+- Comment submission form
 
-### Step 8: Keep Detail Pages
-Maintain existing detail pages:
-- `/performers/[id]` - Keep as-is for performer profiles
-- `/studios/[id]` - Keep as-is for studio profiles
+## User Flow
 
-The MemberCard will link to the appropriate detail page based on role.
+1. **Create Album**: User goes to `/dashboard/gallery/new`
+2. **Fill Form**: Adds title, description, uploads images with captions
+3. **Submit**: Album saved with `is_approved = false`
+4. **Admin Review**: Admin sees pending album in admin gallery page
+5. **Approval**: Admin approves, sets `is_approved = true`
+6. **Public View**: Album appears on `/gallery` page
+7. **Comments**: Anyone can view, logged-in users can comment
 
-## Database Considerations
-No database changes required. Existing `profiles` table has all needed fields:
-- `role` (user_role ENUM)
-- `is_host` (boolean)
-- `genres` (text[])
-- `instruments` (text[])
-- `specialties` (text[])
-- `available_for_hire` (boolean)
-- `interested_in_cowriting` (boolean)
-- `song_links` (text[])
-- `is_featured`, `featured_rank`
+## Estimated Implementation Order
 
-## File Summary
-
-| Action | File Path |
-|--------|-----------|
-| CREATE | `web/src/components/members/MemberCard.tsx` |
-| CREATE | `web/src/components/members/MembersGrid.tsx` |
-| CREATE | `web/src/components/members/MemberFilters.tsx` |
-| CREATE | `web/src/components/members/index.ts` |
-| CREATE | `web/src/app/members/page.tsx` |
-| MODIFY | `web/src/types/index.ts` (add Member type) |
-| MODIFY | `web/src/components/navigation/header.tsx` (update nav) |
-| MODIFY | `web/next.config.js` (add redirects) |
-
-## Out of Scope (for future consideration)
-- Removing `/performers` and `/studios` pages (keep for now with redirects)
-- Homepage clutter reduction (separate task)
-- Open mic button clarity (separate task)
-- Monthly highlights section (separate task)
-- Color scheme changes (separate task)
+1. Database migration (gallery_comments + is_approved column)
+2. GalleryAlbumForm component
+3. Dashboard gallery pages (list, new, edit)
+4. GalleryAlbumCard component
+5. GalleryAlbumView component
+6. Public album detail page (/gallery/[slug])
+7. GalleryComments component
+8. Update main gallery page with albums + CTA
+9. Update admin gallery page for album approval
