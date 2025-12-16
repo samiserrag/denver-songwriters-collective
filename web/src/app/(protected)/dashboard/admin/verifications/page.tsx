@@ -55,8 +55,7 @@ export default async function AdminVerificationsPage() {
   }
 
   // Fetch change reports with event details
-  // Cast to any because change_reports table is not yet in generated types
-  const { data: changeReports, error } = await (supabase as any)
+  const { data: changeReports, error } = await supabase
     .from("change_reports")
     .select("*, events(id, title, slug, venue_name, day_of_week, start_time)")
     .order("created_at", { ascending: false });
