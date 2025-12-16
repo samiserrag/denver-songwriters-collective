@@ -76,7 +76,8 @@ This project uses **git worktrees** for development:
 - `/` - Homepage with monthly highlights
 - `/open-mics` - Open mic directory with map view
 - `/open-mics/[slug]` - Individual open mic detail page
-- `/events` - All events listing
+- `/events` - All events listing (DSC happenings, upcoming, past)
+- `/events/[id]` - Individual DSC event detail page
 - `/members` - Unified member directory (performers, studios, hosts, fans)
 - `/performers` - Performer profiles (redirects to /members)
 - `/studios` - Studio profiles (redirects to /members)
@@ -228,6 +229,21 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 ---
 
 ## Recent Changes (December 2024)
+
+### Events Page Improvements & Detail Page (December 2024)
+- **Created `/events/[id]` detail page** for DSC events - fixes 404 errors when clicking DSC events
+- **Reorganized events page** with new section order:
+  1. Community Happenings (DSC events)
+  2. Open Mic Directory Callout
+  3. Upcoming Happenings
+  4. Past Events (new section - shows last 30 days)
+  5. Types of Events We Need Volunteers & Venues to Help Us Host
+  6. Get Involved CTA
+- **Shrunk event types** from large grid cards to compact pill-style tags with hover tooltips
+- **Added past events section** showing events from the last 30 days
+- Key files:
+  - `web/src/app/events/[id]/page.tsx` - New event detail page with SEO metadata
+  - `web/src/app/events/page.tsx` - Reorganized layout, added past events
 
 ### Remove Hero Images from Sub-Pages & Theme Color Fixes (December 2024)
 - **Removed hero images from all pages except homepage** - Cleaner, more consistent design
