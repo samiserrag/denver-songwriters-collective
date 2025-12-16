@@ -66,9 +66,9 @@ export default async function AdminVerificationsPage() {
   }
 
   // Count pending reports for stats
-  const pendingCount = (changeReports ?? []).filter(r => r.status === "pending").length;
-  const approvedCount = (changeReports ?? []).filter(r => r.status === "approved").length;
-  const rejectedCount = (changeReports ?? []).filter(r => r.status === "rejected").length;
+  const pendingCount = (changeReports ?? []).filter((r: ChangeReport) => r.status === "pending").length;
+  const approvedCount = (changeReports ?? []).filter((r: ChangeReport) => r.status === "approved").length;
+  const rejectedCount = (changeReports ?? []).filter((r: ChangeReport) => r.status === "rejected").length;
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
