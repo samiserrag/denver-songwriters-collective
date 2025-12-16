@@ -59,7 +59,7 @@ export interface SocialLinks {
   website?: string;
 }
 
-export interface Performer {
+export interface Songwriter {
   id: string;
   name: string;
   bio?: string;
@@ -75,6 +75,9 @@ export interface Performer {
   songLinks?: string[];
 }
 
+/** @deprecated Use Songwriter instead */
+export type Performer = Songwriter;
+
 export type SlotStatus = "open" | "claimed" | "full";
 
 export interface Slot {
@@ -89,7 +92,9 @@ export interface Slot {
 }
 
 export interface HostSlot extends Slot {
-  performer?: Performer;
+  songwriter?: Songwriter;
+  /** @deprecated Use songwriter instead */
+  performer?: Songwriter;
 }
 
 export interface Host {
@@ -134,7 +139,7 @@ export interface FilterOption {
 
 export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
-export interface PerformerAppointment {
+export interface SongwriterAppointment {
   id: string;
   service_name: string;
   studio_name: string;
@@ -142,15 +147,20 @@ export interface PerformerAppointment {
   status: AppointmentStatus;
 }
 
+/** @deprecated Use SongwriterAppointment instead */
+export type PerformerAppointment = SongwriterAppointment;
+
 export interface StudioOwnedAppointment {
   id: string;
   status: AppointmentStatus;
   appointment_time: string;
   service_name: string;
-  performer_name: string | null;
+  songwriter_name: string | null;
+  /** @deprecated Use songwriter_name instead */
+  performer_name?: string | null;
 }
 
-export type MemberRole = "performer" | "host" | "studio" | "fan";
+export type MemberRole = "songwriter" | "performer" | "host" | "studio" | "fan";
 
 export interface Member {
   id: string;

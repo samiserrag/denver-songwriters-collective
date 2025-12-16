@@ -70,8 +70,13 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/performers",
-        destination: "/members?role=performer",
-        permanent: false,
+        destination: "/songwriters",
+        permanent: true,
+      },
+      {
+        source: "/performers/:id",
+        destination: "/songwriters/:id",
+        permanent: true,
       },
       {
         source: "/studios",

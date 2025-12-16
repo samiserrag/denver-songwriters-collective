@@ -53,7 +53,7 @@ export default function PerformerSpotlightTable({ performers }: Props) {
         <tbody>
           {rows.map((p) => (
             <tr key={p.id} className="border-b border-white/5">
-              <td className="py-2 px-3">{p.full_name ?? "Unnamed Performer"}</td>
+              <td className="py-2 px-3">{p.full_name ?? "Unnamed Songwriter"}</td>
 
               <td className="py-2 px-3">
                 <input

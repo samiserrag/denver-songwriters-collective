@@ -22,6 +22,7 @@ function getInitials(name: string): string {
 
 function getRoleBadgeStyle(role: MemberRole): string {
   switch (role) {
+    case "songwriter":
     case "performer":
       return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
     case "studio":
@@ -36,22 +37,25 @@ function getRoleBadgeStyle(role: MemberRole): string {
 }
 
 function getRoleLabel(role: MemberRole, isHost?: boolean): string {
-  if (role === "performer" && isHost) {
-    return "Performer & Host";
+  // Map "performer" to "Songwriter" in display
+  const displayRole = role === "performer" ? "songwriter" : role;
+  if ((role === "performer" || role === "songwriter") && isHost) {
+    return "Songwriter & Host";
   }
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  return displayRole.charAt(0).toUpperCase() + displayRole.slice(1);
 }
 
 function getProfileLink(member: Member): string {
   switch (member.role) {
+    case "songwriter":
     case "performer":
-      return `/performers/${member.id}`;
+      return `/songwriters/${member.id}`;
     case "studio":
       return `/studios/${member.id}`;
     case "host":
-      return `/performers/${member.id}`;
+      return `/songwriters/${member.id}`;
     default:
-      return `/performers/${member.id}`;
+      return `/songwriters/${member.id}`;
   }
 }
 

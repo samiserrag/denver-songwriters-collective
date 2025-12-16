@@ -12,7 +12,7 @@ interface MemberFiltersProps {
 }
 
 const ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
-  { value: "performer", label: "Performers" },
+  { value: "performer", label: "Songwriters" },
   { value: "studio", label: "Studios" },
   { value: "host", label: "Hosts" },
   { value: "fan", label: "Fans" },
