@@ -58,7 +58,8 @@ export async function PATCH(
     }
 
     // Use service role client to bypass RLS
-    const serviceClient = createServiceRoleClient();
+    // Cast to any because change_reports table is not yet in generated types
+    const serviceClient = createServiceRoleClient() as any;
 
     // Fetch the change report
     const { data: report, error: fetchError } = await serviceClient
@@ -210,7 +211,8 @@ export async function DELETE(
     }
 
     // Use service role client to bypass RLS
-    const serviceClient = createServiceRoleClient();
+    // Cast to any because change_reports table is not yet in generated types
+    const serviceClient = createServiceRoleClient() as any;
 
     const { error } = await serviceClient
       .from("change_reports")
