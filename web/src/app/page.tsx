@@ -320,6 +320,34 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Upcoming Happenings - Above playlists for visibility */}
+      {hasUpcomingEvents && (
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                  Upcoming Happenings
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Showcases, special nights, and community gatherings.
+                </p>
+              </div>
+              <Link
+                href="/events"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                View all
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <EventGrid events={upcomingEvents} compact />
+          </div>
+        </section>
+      )}
+
       {/* Featured Playlists */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
@@ -534,57 +562,33 @@ export default async function HomePage() {
         </section>
       )}
 
-      <PageContainer>
-        <div className="py-10 space-y-12">
-          {/* Featured Studios */}
-          <section>
+      {/* Featured Studios */}
+      {hasFeaturedStudios && (
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+          <div className="max-w-6xl mx-auto">
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
+                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
                   Featured Studios
                 </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
+                <p className="text-[var(--color-text-secondary)]">
                   Top-rated partner studios for your recording sessions.
                 </p>
               </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/studios">View all studios</Link>
-              </Button>
+              <Link
+                href="/studios"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                View all
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
-            {hasFeaturedStudios ? (
-              <StudioGrid studios={featuredStudios} />
-            ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                No featured studios at this time.
-              </p>
-            )}
-          </section>
-
-          {/* Upcoming Happenings */}
-          <section>
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
-                  Upcoming Happenings
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                  All upcoming showcases, song circles, and special nights.
-                </p>
-              </div>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/events">View all happenings</Link>
-              </Button>
-            </div>
-            {hasUpcomingEvents ? (
-              <EventGrid events={upcomingEvents} />
-            ) : (
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                No upcoming happenings scheduled. Check back soon.
-              </p>
-            )}
-          </section>
-        </div>
-      </PageContainer>
+            <StudioGrid studios={featuredStudios} compact />
+          </div>
+        </section>
+      )}
     </>
   );
 }

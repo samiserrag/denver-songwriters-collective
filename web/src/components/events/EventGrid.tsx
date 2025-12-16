@@ -8,9 +8,11 @@ interface EventGridProps {
   events: Event[];
   onSelect?: (event: Event) => void;
   className?: string;
+  /** Compact mode: smaller cards, more columns */
+  compact?: boolean;
 }
 
-export function EventGrid({ events, onSelect, className }: EventGridProps) {
+export function EventGrid({ events, onSelect, className, compact = false }: EventGridProps) {
   if (!events.length) {
     return (
       <div className="text-center text-[var(--color-text-secondary)] py-16">
@@ -25,12 +27,16 @@ export function EventGrid({ events, onSelect, className }: EventGridProps) {
       role="list"
       aria-label="Event list"
     >
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={compact
+        ? "grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+        : "grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+      }>
         {events.map((event) => (
           <EventCard
             key={event.id}
             event={event}
             onClick={() => onSelect?.(event)}
+            compact={compact}
           />
         ))}
       </div>

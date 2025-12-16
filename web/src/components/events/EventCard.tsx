@@ -16,6 +16,8 @@ interface EventCardProps {
   event: Event;
   onClick?: () => void;
   className?: string;
+  /** Compact mode: smaller card with reduced padding and text */
+  compact?: boolean;
 }
 
 function getDateInitials(date: string | null | undefined): string {
@@ -28,7 +30,7 @@ function getDateInitials(date: string | null | undefined): string {
   }).toUpperCase();
 }
 
-export function EventCard({ event, onClick, className }: EventCardProps) {
+export function EventCard({ event, onClick, className, compact = false }: EventCardProps) {
   const dateLabel = getDateInitials(event.date);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -61,7 +63,7 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
         )}
       >
         {/* Image Section */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div className={cn("relative overflow-hidden", compact ? "aspect-[3/2]" : "aspect-[4/3]")}>
           {event.imageUrl ? (
             <img
               src={event.imageUrl}
@@ -71,7 +73,7 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
           ) : (
             <ImagePlaceholder
               initials={dateLabel}
-              className="w-full h-full text-3xl"
+              className={cn("w-full h-full", compact ? "text-xl" : "text-3xl")}
             />
           )}
 
@@ -79,37 +81,52 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
           {/* Date badge */}
-          <div className="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-1 text-xs font-medium tracking-[0.18em] text-[var(--color-gold-400)] uppercase backdrop-blur-sm">
+          <div className={cn(
+            "absolute rounded-full bg-black/70 font-medium tracking-[0.18em] text-[var(--color-gold-400)] uppercase backdrop-blur-sm",
+            compact ? "left-2 top-2 px-2 py-0.5 text-[10px]" : "left-4 top-4 px-3 py-1 text-xs"
+          )}>
             {dateLabel}
           </div>
         </div>
 
         {/* Content Section */}
-        <div className="p-5 space-y-3">
+        <div className={cn(compact ? "p-3 space-y-1.5" : "p-5 space-y-3")}>
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight line-clamp-2"
+            className={cn(
+              "font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight line-clamp-2",
+              compact ? "text-sm" : "text-[length:var(--font-size-heading-sm)]"
+            )}
           >
             {event.title}
           </h3>
 
           {event.category && (
             <span
-              className={`text-xs px-2 py-0.5 rounded ${CATEGORY_COLORS[event.category] || ""}`}
+              className={cn(
+                "px-2 py-0.5 rounded",
+                compact ? "text-[10px]" : "text-xs",
+                CATEGORY_COLORS[event.category] || ""
+              )}
             >
               {event.category}
             </span>
           )}
 
-          <div className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
-            {event.date} • {event.time}
+          <div className={cn(
+            "uppercase tracking-[0.18em] text-[var(--color-text-secondary)]",
+            compact ? "text-[10px]" : "text-xs"
+          )}>
+            {event.time}
           </div>
 
-          <div className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
+          <div className={cn(
+            "text-[var(--color-text-secondary)] line-clamp-1",
+            compact ? "text-xs" : "text-[length:var(--font-size-body-sm)]"
+          )}>
             {venueDisplay}
-            {event.location && ` — ${event.location}`}
           </div>
 
-          {event.description && (
+          {!compact && event.description && (
             <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
               {event.description}
             </p>
