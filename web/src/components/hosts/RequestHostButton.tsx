@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -80,13 +81,13 @@ export function RequestHostButton() {
   if (isHost) {
     return (
       <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg">
-        <p className="text-green-300">&#10003; You're an approved host!</p>
-        <a
+        <p className="text-green-300">&#10003; You&apos;re an approved host!</p>
+        <Link
           href="/dashboard/my-events"
           className="text-green-400 hover:text-green-300 text-sm underline"
         >
           Manage your events &rarr;
-        </a>
+        </Link>
       </div>
     );
   }
@@ -98,7 +99,7 @@ export function RequestHostButton() {
           &#8987; Your host request is pending review.
         </p>
         <p className="text-amber-400/70 text-sm mt-1">
-          We'll notify you when it's approved.
+          We&apos;ll notify you when it&apos;s approved.
         </p>
       </div>
     );
@@ -120,7 +121,7 @@ export function RequestHostButton() {
         >
           <div>
             <label className="block text-sm text-neutral-300 mb-2">
-              Tell us why you'd like to host events (optional)
+              Tell us why you&apos;d like to host events (optional)
             </label>
             <textarea
               value={message}

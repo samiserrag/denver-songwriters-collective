@@ -234,7 +234,7 @@ export default function SubmitOpenMicPage() {
           <div className="py-8">
             <h2 className="text-xl font-semibold text-white mb-4">Looking to update an existing listing?</h2>
             <p className="text-neutral-400 mb-4">
-              Visit the open mic&apos;s detail page and use the "Suggest updates" form. No account needed for suggestions!
+              Visit the open mic&apos;s detail page and use the &ldquo;Suggest updates&rdquo; form. No account needed for suggestions!
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
               Browse Open Mics →
@@ -270,7 +270,7 @@ export default function SubmitOpenMicPage() {
               <div className="text-3xl mb-3">🎤</div>
               <h2 className="text-xl font-semibold text-white mb-2">Submit New Open Mic</h2>
               <p className="text-neutral-400 text-sm">
-                Know of an open mic not in our directory? Submit it for review and we'll add it.
+                Know of an open mic not in our directory? Submit it for review and we&apos;ll add it.
               </p>
             </button>
 
@@ -535,7 +535,7 @@ export default function SubmitOpenMicPage() {
             {claimEventId && (
               <div className="mt-6">
                 <label className="block text-sm text-neutral-300 mb-2">
-                  Tell us how you're connected to this open mic
+                  Tell us how you&apos;re connected to this open mic
                 </label>
                 <textarea
                   value={claimNotes}

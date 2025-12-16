@@ -149,8 +149,8 @@ export function RSVPButton({
           <div className="flex items-center gap-2 p-3 bg-green-900/30 border border-green-700 rounded-lg">
             <span className="text-green-400 text-xl">&#10003;</span>
             <div>
-              <p className="text-green-300 font-medium">You're going!</p>
-              <p className="text-green-400/70 text-xs">We'll see you there</p>
+              <p className="text-green-300 font-medium">You&apos;re going!</p>
+              <p className="text-green-400/70 text-xs">We&apos;ll see you there</p>
             </div>
           </div>
           <button
@@ -171,7 +171,7 @@ export function RSVPButton({
                 {rsvp.waitlist_position && `(#${rsvp.waitlist_position})`}
               </p>
               <p className="text-amber-400/70 text-xs">
-                We'll notify you if a spot opens
+                We&apos;ll notify you if a spot opens
               </p>
             </div>
           </div>
@@ -198,7 +198,7 @@ export function RSVPButton({
       )}
 
       {!isLoggedIn && (
-        <p className="text-neutral-500 text-xs">You'll need to log in to RSVP</p>
+        <p className="text-neutral-500 text-xs">You&apos;ll need to log in to RSVP</p>
       )}
     </div>
   );

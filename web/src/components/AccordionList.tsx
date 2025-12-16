@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import CompactListItem from "./CompactListItem";
 import type { EventWithVenue } from "@/types/db";
 
@@ -71,19 +71,19 @@ export default function AccordionList({
     return days;
   }, [events]);
 
-  const [openDays, setOpenDays] = useState<Set<string>>(new Set());
+  const [manualOpenDays, setManualOpenDays] = useState<Set<string>>(new Set());
 
-  // Auto-expand matching days when search is active
-  useEffect(() => {
+  // Compute effective open days: when searching, auto-expand all days with events
+  // When not searching, use manual toggles
+  const effectiveOpenDays = useMemo(() => {
     if (hasSearch && daysWithEvents.size > 0) {
-      setOpenDays(new Set(daysWithEvents));
-    } else if (!hasSearch) {
-      setOpenDays(new Set());
+      return new Set(daysWithEvents);
     }
-  }, [hasSearch, daysWithEvents]);
+    return manualOpenDays;
+  }, [hasSearch, daysWithEvents, manualOpenDays]);
 
   const toggleDay = (day: string) => {
-    setOpenDays(prev => {
+    setManualOpenDays(prev => {
       const next = new Set(prev);
       if (next.has(day)) {
         next.delete(day);
@@ -99,13 +99,13 @@ export default function AccordionList({
       {/* Search results summary */}
       {hasSearch && (
         <div className="text-sm text-[var(--color-text-accent)] mb-2">
-          Found {events.length} result{events.length !== 1 ? "s" : ""} for "{searchQuery}"
+          Found {events.length} result{events.length !== 1 ? "s" : ""} for &ldquo;{searchQuery}&rdquo;
         </div>
       )}
 
       {daysOrdered.map((day) => {
         const list = groupedByDay[day] || [];
-        const isOpen = openDays.has(day);
+        const isOpen = effectiveOpenDays.has(day);
         const hasEvents = list.length > 0;
 
         // When searching, hide days with no results

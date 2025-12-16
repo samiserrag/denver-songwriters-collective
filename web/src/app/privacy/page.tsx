@@ -17,7 +17,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-display text-2xl text-white mb-4">Overview</h2>
             <p className="text-neutral-300">
-              The Denver Songwriters Collective ("DSC", "we", "us") respects your privacy.
+              The Denver Songwriters Collective (&ldquo;DSC&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) respects your privacy.
               This policy explains what data we collect, how we use it, and your rights.
             </p>
           </section>
