@@ -90,6 +90,7 @@ This project uses **git worktrees** for development:
 ### Protected Pages (Auth Required)
 - `/dashboard` - User dashboard
 - `/dashboard/profile` - Edit profile
+- `/dashboard/my-rsvps` - User's event RSVPs (upcoming, past, cancelled)
 - `/dashboard/my-events` - Host's event management
 - `/dashboard/blog` - User's blog posts
 - `/dashboard/appointments` - Performer's studio bookings
@@ -229,6 +230,36 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 ---
 
 ## Recent Changes (December 2024)
+
+### Stream 3: RSVP UX & My RSVPs Dashboard (December 2024)
+- **Phase 1: Calendar & Confirmation UX**
+  - `AddToCalendarButton` component - Google, Apple (ICS), Outlook calendar integration
+  - Enhanced `RSVPButton` with confirmation animations and inline cancel dialog
+  - Added calendar button to event detail pages for events with dates
+- **Phase 2: My RSVPs Dashboard**
+  - New `/dashboard/my-rsvps` page with 3 tabs: Upcoming, Past, Cancelled
+  - `RSVPCard` component with status badges (confirmed/waitlist/cancelled)
+  - Inline cancel confirmation (no `window.confirm`)
+  - AddToCalendar integration for non-cancelled RSVPs
+  - Dashboard nav link with upcoming RSVP count badge
+- Key files:
+  - `web/src/components/events/AddToCalendarButton.tsx` - Calendar dropdown with 3 providers
+  - `web/src/components/events/RSVPCard.tsx` - RSVP display card with actions
+  - `web/src/components/events/RSVPButton.tsx` - Enhanced with animations/cancel
+  - `web/src/app/(protected)/dashboard/my-rsvps/page.tsx` - My RSVPs page
+  - `web/src/app/(protected)/dashboard/page.tsx` - Added My RSVPs nav link
+
+### Event Verification System v0.3.0 (December 2024)
+- **Change Reports feature** for community-submitted event corrections
+  - `ReportChangeForm` component for quick inline submissions
+  - Admin verifications page at `/dashboard/admin/verifications`
+  - `change_reports` table with status tracking
+  - `last_verified_at` display on open mic listings
+- Key files:
+  - `web/src/components/events/ReportChangeForm.tsx`
+  - `web/src/app/(protected)/dashboard/admin/verifications/page.tsx`
+  - `web/src/app/api/change-reports/route.ts`
+  - `web/src/components/admin/ChangeReportsTable.tsx`
 
 ### Events Page Improvements & Detail Page (December 2024)
 - **Created `/events/[id]` detail page** for DSC events - fixes 404 errors when clicking DSC events
