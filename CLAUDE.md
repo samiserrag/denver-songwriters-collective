@@ -56,7 +56,8 @@ This project uses **git worktrees** for development:
 | `monthly_highlights` | Featured content for homepage |
 | `host_requests` | Applications to become an event host |
 | `approved_hosts` | Approved host permissions |
-| `event_update_suggestions` | Community corrections for event data |
+| `event_update_suggestions` | Community corrections for event data (legacy) |
+| `change_reports` | Community-submitted corrections with verification workflow (v0.3.0) |
 | `studio_services` | Services offered by studio profiles |
 | `studio_appointments` | Bookings for studio services |
 | `favorites` | User favorites (events, profiles) |
@@ -105,7 +106,8 @@ This project uses **git worktrees** for development:
 - `/dashboard/admin/gallery` - Approve/manage gallery images
 - `/dashboard/admin/highlights` - Manage homepage highlights
 - `/dashboard/admin/host-requests` - Approve host applications
-- `/dashboard/admin/event-update-suggestions` - Review community corrections
+- `/dashboard/admin/verifications` - Review change reports (v0.3.0)
+- `/dashboard/admin/event-update-suggestions` - Review community corrections (legacy)
 
 ---
 
@@ -229,6 +231,23 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 ---
 
 ## Recent Changes (December 2024)
+
+### v0.3.0 Event Verification System (December 2024)
+- **New `change_reports` table** for community-submitted corrections
+- **Verification columns added to events**: `last_verified_at`, `verified_by`
+- **Public API**: `POST /api/change-reports` - Anonymous or authenticated submissions
+- **Admin API**: `PATCH/DELETE /api/admin/change-reports/[id]` - Approve/reject reports
+- **New admin page**: `/dashboard/admin/verifications` - Review and process change reports
+- **ReportChangeForm component** on open mic detail pages
+- **Verification display** on open mic listings (shows "Verified X days ago" or "Not yet verified")
+- Key files:
+  - `supabase/migrations/20251216000001_v030_verification_system.sql`
+  - `web/src/app/api/change-reports/route.ts`
+  - `web/src/app/api/admin/change-reports/[id]/route.ts`
+  - `web/src/app/(protected)/dashboard/admin/verifications/page.tsx`
+  - `web/src/components/admin/ChangeReportsTable.tsx`
+  - `web/src/components/events/ReportChangeForm.tsx`
+  - `web/src/components/CompactListItem.tsx` - Added `last_verified_at` display
 
 ### Events Page Improvements & Detail Page (December 2024)
 - **Created `/events/[id]` detail page** for DSC events - fixes 404 errors when clicking DSC events
