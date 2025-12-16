@@ -3,4 +3,5 @@ export { EventComments } from "./EventComments";
 export { EventGrid } from "./EventGrid";
 export { EventSlotsPanel } from "./EventSlotsPanel";
 export { OpenMicComments } from "./OpenMicComments";
+export { default as ReportChangeForm } from "./ReportChangeForm";
 export { RSVPButton } from "./RSVPButton";

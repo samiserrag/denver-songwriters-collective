@@ -304,8 +304,12 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
       {/* Community Comments */}
       <OpenMicComments eventId={event.id} />
 
-      {/* Suggestion form */}
-      <div className="mt-8">
+      {/* Community feedback section */}
+      <div className="mt-8 space-y-4">
+        {/* Quick report change form */}
+        <ReportChangeForm eventId={event.id} eventTitle={event.title ?? "Open Mic"} />
+
+        {/* Full suggestion form for logged-in users */}
         <EventSuggestionForm
           event={{
             id: event.id,
@@ -327,4 +331,5 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 }
 
 import EventSuggestionForm from "@/components/events/EventSuggestionForm";
+import ReportChangeForm from "@/components/events/ReportChangeForm";
 import { OpenMicComments } from "@/components/events";
