@@ -197,7 +197,7 @@ export default async function HomePage() {
   return (
     <>
       <CLSLogger />
-      <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage="/images/hero.jpg">
+      <HeroSection minHeight="lg" showVignette={false} showBottomFade={false} backgroundImage="/images/hero.jpg">
         <div />
       </HeroSection>
 

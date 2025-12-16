@@ -140,13 +140,13 @@ export default async function EventsPage() {
           alt="Denver Songwriters Happenings"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-primary)] via-transparent to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center pt-8">
           <div className="text-center px-4">
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
               Happenings
             </h1>
-            <p className="text-lg text-[var(--color-text-accent)] mt-3 drop-shadow">
+            <p className="text-lg text-[var(--color-text-secondary)] mt-3 drop-shadow">
               Showcases, song circles, workshops, and community gatherings
             </p>
           </div>
@@ -184,7 +184,7 @@ export default async function EventsPage() {
                   return (
                     <div
                       key={event.id}
-                      className="bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg overflow-hidden"
+                      className="bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg overflow-hidden"
                     >
                       {/* Cover Image */}
                       {event.cover_image_url && (
@@ -198,13 +198,13 @@ export default async function EventsPage() {
                       )}
                       <Link
                         href={`/events/${event.id}`}
-                        className="block p-6 hover:bg-[var(--color-indigo-950)]/70 transition-colors"
+                        className="block p-6 hover:bg-[var(--color-bg-tertiary)]/50 transition-colors"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-2xl">{config.icon}</span>
-                              <span className="px-2 py-0.5 bg-[var(--color-indigo-950)] text-[var(--color-text-secondary)] text-xs rounded">
+                              <span className="px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs rounded">
                                 {config.label}
                               </span>
                               <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded">
@@ -268,9 +268,9 @@ export default async function EventsPage() {
               {eventTypes.map((eventType) => (
                 <div
                   key={eventType.name}
-                  className="rounded-2xl border border-white/10 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-5 space-y-2"
+                  className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-5 space-y-2"
                 >
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
                     {eventType.name}
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
@@ -285,7 +285,7 @@ export default async function EventsPage() {
           <section className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] mb-2">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
                   Looking for Open Mics?
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
@@ -311,7 +311,7 @@ export default async function EventsPage() {
             {events.length > 0 ? (
               <EventGrid events={events} />
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#05060b] to-[#000000] p-10 text-center">
+              <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-10 text-center">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
                   No upcoming happenings scheduled. Check back soon!
                 </p>
@@ -320,7 +320,7 @@ export default async function EventsPage() {
           </section>
 
           {/* Get Involved CTA */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-gradient-to-br from-[var(--color-indigo-950)] to-[var(--color-background)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Want to Help Shape Our Happenings?
             </h2>

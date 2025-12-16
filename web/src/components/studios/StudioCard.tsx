@@ -50,8 +50,8 @@ export function StudioCard({ studio, className, compact = false }: StudioCardPro
             />
           )}
 
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          {/* Gradient Overlay - for text readability over images */}
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[var(--color-bg-primary)]/75 via-[var(--color-bg-primary)]/20 to-transparent" />
         </div>
 
         {/* Content */}
