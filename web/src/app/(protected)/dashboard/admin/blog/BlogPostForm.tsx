@@ -359,14 +359,14 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-300">
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
 
       {/* Non-admin notice */}
       {!isAdmin && (
-        <div className="p-4 bg-amber-900/30 border border-amber-700 rounded-lg text-amber-300">
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-600 dark:text-amber-400">
           <p className="font-medium">Note: Your blog post will need admin approval before it&apos;s published publicly.</p>
           <p className="text-sm mt-1 opacity-80">Once approved, it will appear on the blog page for everyone to see.</p>
         </div>
@@ -374,8 +374,8 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
       {/* Title */}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-neutral-300 mb-2">
-          Title <span className="text-red-400">*</span>
+        <label htmlFor="title" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Title <span className="text-red-600 dark:text-red-400">*</span>
         </label>
         <input
           type="text"
@@ -383,33 +383,33 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           value={formData.title}
           onChange={handleTitleChange}
           required
-          className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white text-lg placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-lg placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           placeholder="Your blog post title"
         />
       </div>
 
       {/* Slug */}
       <div>
-        <label htmlFor="slug" className="block text-sm font-medium text-neutral-300 mb-2">
-          URL Slug <span className="text-red-400">*</span>
+        <label htmlFor="slug" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          URL Slug <span className="text-red-600 dark:text-red-400">*</span>
         </label>
         <div className="flex items-center gap-2">
-          <span className="text-neutral-500">/blog/</span>
+          <span className="text-[var(--color-text-tertiary)]">/blog/</span>
           <input
             type="text"
             id="slug"
             value={formData.slug}
             onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
             required
-            className="flex-1 px-4 py-2 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="flex-1 px-4 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
             placeholder="your-post-slug"
           />
         </div>
       </div>
 
       {/* Cover Image Upload */}
-      <div className="p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
-        <label className="block text-sm font-medium text-neutral-300 mb-3">
+      <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
           Cover Image
         </label>
         <div className="flex items-start gap-6">
@@ -424,7 +424,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
               placeholderText="Upload Cover"
             />
           </div>
-          <div className="flex-1 text-sm text-neutral-400">
+          <div className="flex-1 text-sm text-[var(--color-text-tertiary)]">
             <p>Upload a cover image for your blog post.</p>
             <p className="mt-1">Recommended size: 1200x675 pixels (16:9 ratio)</p>
             <p className="mt-1">Max file size: 10MB</p>
@@ -434,26 +434,26 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
       {/* Excerpt */}
       <div>
-        <label htmlFor="excerpt" className="block text-sm font-medium text-neutral-300 mb-2">
-          Excerpt <span className="text-neutral-500 font-normal">(shown in listings)</span>
+        <label htmlFor="excerpt" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Excerpt <span className="text-[var(--color-text-tertiary)] font-normal">(shown in listings)</span>
         </label>
         <textarea
           id="excerpt"
           value={formData.excerpt}
           onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
           rows={2}
-          className="w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+          className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
           placeholder="A compelling summary that makes readers want to click..."
         />
       </div>
 
       {/* Content Editor */}
-      <div className="border border-neutral-700 rounded-lg overflow-hidden">
-        <div className="flex flex-wrap items-center gap-1 p-2 bg-neutral-800 border-b border-neutral-700">
+      <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">
+        <div className="flex flex-wrap items-center gap-1 p-2 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
           <button
             type="button"
             onClick={() => insertFormatting("## ", "")}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors"
             title="Heading"
           >
             H2
@@ -461,16 +461,16 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           <button
             type="button"
             onClick={() => insertFormatting("### ", "")}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors"
             title="Subheading"
           >
             H3
           </button>
-          <div className="w-px h-6 bg-neutral-600 mx-1" />
+          <div className="w-px h-6 bg-[var(--color-border-default)] mx-1" />
           <button
             type="button"
             onClick={() => insertFormatting("**", "**")}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors font-bold"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors font-bold"
             title="Bold"
           >
             B
@@ -478,16 +478,16 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           <button
             type="button"
             onClick={() => insertFormatting("*", "*")}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors italic"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors italic"
             title="Italic"
           >
             I
           </button>
-          <div className="w-px h-6 bg-neutral-600 mx-1" />
+          <div className="w-px h-6 bg-[var(--color-border-default)] mx-1" />
           <button
             type="button"
             onClick={() => insertFormatting("\n- ", "")}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors"
             title="Bullet List"
           >
             • List
@@ -495,16 +495,16 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           <button
             type="button"
             onClick={() => insertFormatting("\n> ", "")}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors"
             title="Quote"
           >
             &quot; Quote
           </button>
-          <div className="w-px h-6 bg-neutral-600 mx-1" />
+          <div className="w-px h-6 bg-[var(--color-border-default)] mx-1" />
           <button
             type="button"
             onClick={insertImageAtCursor}
-            className="px-3 py-1.5 text-sm bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors"
             title="Insert Image"
           >
             + Image
@@ -516,7 +516,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
             className={`px-3 py-1.5 text-sm rounded transition-colors ${
               showPreview
                 ? "bg-[var(--color-accent-primary)] text-[var(--color-background)]"
-                : "bg-neutral-700 hover:bg-neutral-600 text-white"
+                : "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
             }`}
           >
             {showPreview ? "Edit" : "Preview"}
@@ -524,11 +524,11 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
         </div>
 
         {showPreview ? (
-          <div className="p-6 bg-neutral-900 min-h-[400px] max-h-[600px] overflow-y-auto prose prose-invert">
+          <div className="p-6 bg-[var(--color-bg-tertiary)] min-h-[400px] max-h-[600px] overflow-y-auto prose prose-invert">
             {formData.cover_image_url && (
               <img src={formData.cover_image_url} alt="Cover" className="w-full h-48 object-cover rounded-lg mb-6" />
             )}
-            <h1 className="text-3xl font-bold text-white mb-4">{formData.title || "Untitled"}</h1>
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">{formData.title || "Untitled"}</h1>
             {renderPreview(formData.content)}
           </div>
         ) : (
@@ -539,7 +539,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
             onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
             required
             rows={20}
-            className="w-full px-4 py-4 bg-neutral-900 text-white placeholder:text-neutral-500 focus:outline-none font-mono text-sm leading-relaxed resize-none"
+            className="w-full px-4 py-4 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none font-mono text-sm leading-relaxed resize-none"
             placeholder="Start writing your post...
 
 Use the toolbar above or type markdown directly:
@@ -557,9 +557,9 @@ Regular paragraph text here. Use **bold** for emphasis.
       </div>
 
       {/* Gallery Images */}
-      <div className="p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
-        <label className="block text-sm font-medium text-neutral-300 mb-3">
-          Photo Gallery <span className="text-neutral-500 font-normal">(shown at bottom of post)</span>
+      <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+          Photo Gallery <span className="text-[var(--color-text-tertiary)] font-normal">(shown at bottom of post)</span>
         </label>
 
         {/* Existing gallery images */}
@@ -567,7 +567,7 @@ Regular paragraph text here. Use **bold** for emphasis.
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
             {galleryImages.map((img, index) => (
               <div key={index} className="relative group">
-                <div className="aspect-square rounded-lg overflow-hidden bg-neutral-900">
+                <div className="aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]">
                   <img
                     src={img.image_url}
                     alt={img.caption || `Gallery image ${index + 1}`}
@@ -587,7 +587,7 @@ Regular paragraph text here. Use **bold** for emphasis.
                   value={img.caption}
                   onChange={(e) => updateGalleryCaption(index, e.target.value)}
                   placeholder="Add caption..."
-                  className="mt-2 w-full px-2 py-1 text-xs rounded bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none"
+                  className="mt-2 w-full px-2 py-1 text-xs rounded bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 />
               </div>
             ))}
@@ -605,22 +605,22 @@ Regular paragraph text here. Use **bold** for emphasis.
             placeholderText="Add Photo"
           />
         </div>
-        <p className="text-xs text-neutral-500 mt-2">
+        <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
           Add photos to create a gallery at the bottom of your post. Max 10MB per image.
         </p>
       </div>
 
       {/* Tags */}
       <div>
-        <label htmlFor="tags" className="block text-sm font-medium text-neutral-300 mb-2">
-          Tags <span className="text-neutral-500 font-normal">(comma-separated)</span>
+        <label htmlFor="tags" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Tags <span className="text-[var(--color-text-tertiary)] font-normal">(comma-separated)</span>
         </label>
         <input
           type="text"
           id="tags"
           value={formData.tags}
           onChange={(e) => setFormData((prev) => ({ ...prev, tags: e.target.value }))}
-          className="w-full px-4 py-2 rounded-lg bg-neutral-800 border border-neutral-600 text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none"
+          className="w-full px-4 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           placeholder="tips, community, open mic, beginners"
         />
         {formData.tags && (
@@ -640,19 +640,19 @@ Regular paragraph text here. Use **bold** for emphasis.
       </div>
 
       {/* Publish Toggle */}
-      <div className="flex items-center gap-3 p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
+      <div className="flex items-center gap-3 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
         <input
           type="checkbox"
           id="is_published"
           checked={formData.is_published}
           onChange={(e) => setFormData((prev) => ({ ...prev, is_published: e.target.checked }))}
-          className="w-5 h-5 rounded bg-neutral-800 border-neutral-600 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]"
+          className="w-5 h-5 rounded bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]"
         />
         <div>
-          <label htmlFor="is_published" className="text-white font-medium cursor-pointer">
+          <label htmlFor="is_published" className="text-[var(--color-text-primary)] font-medium cursor-pointer">
             {isAdmin ? "Publish immediately" : "Submit for publication"}
           </label>
-          <p className="text-neutral-500 text-sm">
+          <p className="text-[var(--color-text-tertiary)] text-sm">
             {isAdmin
               ? (formData.is_published ? "This post will be visible to everyone" : "Save as draft for later")
               : (formData.is_published ? "This post will be submitted for admin approval" : "Save as draft for later")
@@ -663,7 +663,7 @@ Regular paragraph text here. Use **bold** for emphasis.
 
 
       {/* Actions */}
-      <div className="flex items-center gap-4 pt-4 border-t border-neutral-700">
+      <div className="flex items-center gap-4 pt-4 border-t border-[var(--color-border-default)]">
         <button
           type="submit"
           disabled={saving}
@@ -674,7 +674,7 @@ Regular paragraph text here. Use **bold** for emphasis.
         <button
           type="button"
           onClick={() => router.push(isAdmin ? "/dashboard/admin/blog" : "/dashboard/blog")}
-          className="px-6 py-3 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
+          className="px-6 py-3 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg transition-colors"
         >
           Cancel
         </button>
@@ -682,7 +682,7 @@ Regular paragraph text here. Use **bold** for emphasis.
           <a
             href={`/blog/${formData.slug}`}
             target="_blank"
-            className="px-6 py-3 text-neutral-400 hover:text-white transition-colors"
+            className="px-6 py-3 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
             View Post →
           </a>

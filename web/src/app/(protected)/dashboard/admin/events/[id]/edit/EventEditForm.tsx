@@ -102,26 +102,26 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
-      
+
       {success && (
-        <div className="p-3 bg-green-900/50 border border-green-500 rounded text-green-200 text-sm">
+        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded text-green-600 dark:text-green-400 text-sm">
           Event updated! Redirecting...
         </div>
       )}
       
       <div>
-        <label className="block text-sm font-medium text-neutral-300 mb-1">Title *</label>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Title *</label>
         <input
           type="text"
           name="title"
           value={form.title}
           onChange={handleChange}
           required
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
         />
       </div>
       
@@ -136,12 +136,12 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Day of Week</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Day of Week</label>
           <select
             name="day_of_week"
             value={form.day_of_week}
             onChange={handleChange}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
             <option value="">Select day...</option>
             {DAYS.map(d => (
@@ -149,14 +149,14 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
             ))}
           </select>
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Event Type</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Event Type</label>
           <select
             name="event_type"
             value={form.event_type}
             onChange={handleChange}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
             {EVENT_TYPES.map(t => (
               <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
@@ -167,64 +167,64 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
       
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Start Time</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Start Time</label>
           <input
             type="text"
             name="start_time"
             value={form.start_time}
             onChange={handleChange}
             placeholder="19:00:00"
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           />
-          <p className="text-xs text-neutral-500 mt-1">Format: HH:MM:SS</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Format: HH:MM:SS</p>
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">End Time</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">End Time</label>
           <input
             type="text"
             name="end_time"
             value={form.end_time}
             onChange={handleChange}
             placeholder="22:00:00"
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           />
-          <p className="text-xs text-neutral-500 mt-1">Format: HH:MM:SS</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Format: HH:MM:SS</p>
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Signup Time</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Signup Time</label>
           <input
             type="text"
             name="signup_time"
             value={form.signup_time}
             onChange={handleChange}
             placeholder="6:30 PM"
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           />
         </div>
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-neutral-300 mb-1">Recurrence Rule</label>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Recurrence Rule</label>
         <input
           type="text"
           name="recurrence_rule"
           value={form.recurrence_rule}
           onChange={handleChange}
           placeholder="Every Monday, 1st and 3rd Tuesday, etc."
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
         />
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Category</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Category</label>
           <select
             name="category"
             value={form.category}
             onChange={handleChange}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
             <option value="">Select category...</option>
             {CATEGORIES.map(c => (
@@ -232,14 +232,14 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
             ))}
           </select>
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Status</label>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Status</label>
           <select
             name="status"
             value={form.status}
             onChange={handleChange}
-            className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
           >
             {STATUSES.map(s => (
               <option key={s} value={s}>{s}</option>
@@ -247,26 +247,26 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
           </select>
         </div>
       </div>
-      
+
       <div>
-        <label className="block text-sm font-medium text-neutral-300 mb-1">Notes</label>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Notes</label>
         <textarea
           name="notes"
           value={form.notes}
           onChange={handleChange}
           rows={2}
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
         />
       </div>
-      
+
       <div>
-        <label className="block text-sm font-medium text-neutral-300 mb-1">Description</label>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Description</label>
         <textarea
           name="description"
           value={form.description}
           onChange={handleChange}
           rows={3}
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white"
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
         />
       </div>
       
@@ -282,7 +282,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         <button
           type="button"
           onClick={() => router.push("/dashboard/admin/events")}
-          className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+          className="px-6 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
         >
           Cancel
         </button>
