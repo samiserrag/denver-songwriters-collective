@@ -28,40 +28,66 @@ vi.mock("@/lib/supabase/server", () => {
     },
   ];
 
+  // Helper to create a fully chainable query builder that returns data at terminal methods
+  const createChainableResult = (data: unknown) => {
+    const chain: Record<string, unknown> = {};
+    // Terminal properties that hold the result
+    chain.data = data;
+    chain.error = null;
+    chain.count = 0;
+
+    // All chainable methods return the same chain object
+    const chainable = () => chain;
+    chain.select = chainable;
+    chain.eq = chainable;
+    chain.neq = chainable;
+    chain.gte = chainable;
+    chain.gt = chainable;
+    chain.lt = chainable;
+    chain.lte = chainable;
+    chain.order = chainable;
+    chain.limit = chainable;
+    chain.single = chainable;
+    chain.maybeSingle = chainable;
+    chain.range = chainable;
+    chain.filter = chainable;
+    chain.match = chainable;
+    chain.in = chainable;
+    chain.contains = chainable;
+    chain.containedBy = chainable;
+    chain.or = chainable;
+    chain.not = chainable;
+    chain.is = chainable;
+    chain.ilike = chainable;
+    chain.like = chainable;
+
+    return chain;
+  };
+
   // Create chainable query builder for different table queries
   const createQueryBuilder = (tableName: string) => {
     if (tableName === "events") {
+      // For events table, we need to handle multiple query patterns
       return {
-        select: () => ({
-          // .neq chain for non-open-mic events query
-          neq: () => ({
-            order: () => ({ data: mockNonOpenEvents, error: null }),
-          }),
-          // .eq chain for DSC events query
-          eq: () => ({
-            eq: () => ({
-              order: () => ({ data: mockDSCEvents, error: null }),
-            }),
-          }),
-          order: () => ({ data: mockNonOpenEvents, error: null }),
-        }),
+        select: () => {
+          const chain = createChainableResult(mockNonOpenEvents);
+          // Override eq for DSC events query (.eq("is_dsc_event", true).eq("status", "active"))
+          chain.eq = () => {
+            const dscChain = createChainableResult(mockDSCEvents);
+            return dscChain;
+          };
+          return chain;
+        },
       };
     }
     if (tableName === "event_rsvps") {
       return {
-        select: () => ({
-          eq: () => ({
-            eq: () => ({ count: 3, error: null }),
-          }),
-        }),
+        select: () => createChainableResult({ count: 3 }),
       };
     }
     // Default fallback
     return {
-      select: () => ({
-        eq: () => ({ data: [], error: null }),
-        order: () => ({ data: [], error: null }),
-      }),
+      select: () => createChainableResult([]),
     };
   };
 
@@ -95,9 +121,9 @@ describe("Events Page", () => {
     // Render returned JSX
     const { container } = render(element as any);
 
-    // Wait for the non-open-mic event to appear
+    // Wait for the non-open-mic event to appear (may appear in multiple sections)
     await waitFor(() => {
-      expect(screen.getByText(/Songwriter Showcase/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Songwriter Showcase/i).length).toBeGreaterThan(0);
     });
 
     // Assert that the open-mic event from our mock data does NOT appear.
