@@ -24,8 +24,13 @@ function mapDBEventToEvent(dbEvent: DBEvent): Event {
     description: dbEvent.description ?? undefined,
     date: dbEvent.event_date,
     time: dbEvent.start_time,
+    start_time: dbEvent.start_time,
+    end_time: dbEvent.end_time,
     venue: dbEvent.venue_name ?? "TBA",
+    venue_address: dbEvent.venue_address ?? undefined,
     location: dbEvent.venue_address ?? undefined,
+    capacity: dbEvent.capacity,
+    is_dsc_event: dbEvent.is_dsc_event,
   };
 }
 

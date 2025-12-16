@@ -12,6 +12,19 @@ import {
   type EventType
 } from "@/types/events";
 
+// Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
+const TIME_OPTIONS: { value: string; label: string }[] = [];
+for (let hour = 6; hour <= 23; hour++) {
+  for (const minute of [0, 30]) {
+    if (hour === 23 && minute === 30) continue; // Skip 11:30 PM
+    const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const label = `${hour12}:${minute.toString().padStart(2, "0")} ${ampm}`;
+    const value = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
+    TIME_OPTIONS.push({ value, label });
+  }
+}
+
 interface Venue {
   id: string;
   name: string;
@@ -265,32 +278,32 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Start Time *
           </label>
-          <input
-            type="text"
+          <select
             value={formData.start_time}
             onChange={(e) => updateField("start_time", e.target.value)}
-            placeholder="7:00 PM"
-            pattern="^(1[0-2]|0?[1-9]):([0-5][0-9])\s?(AM|PM|am|pm)$"
-            title="Enter time in format: 7:00 PM"
             required
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          />
-          <p className="text-xs text-[var(--color-text-secondary)] mt-1">Format: 7:00 PM</p>
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          >
+            <option value="">Select time</option>
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             End Time
           </label>
-          <input
-            type="text"
+          <select
             value={formData.end_time}
             onChange={(e) => updateField("end_time", e.target.value)}
-            placeholder="9:00 PM"
-            pattern="^(1[0-2]|0?[1-9]):([0-5][0-9])\s?(AM|PM|am|pm)$"
-            title="Enter time in format: 9:00 PM"
-            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          />
-          <p className="text-xs text-[var(--color-text-secondary)] mt-1">Format: 9:00 PM</p>
+            className="w-full px-4 py-3 bg-[var(--color-indigo-950)]/50 border border-white/10 rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          >
+            <option value="">Select time</option>
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
       </div>
 

@@ -37,6 +37,19 @@ const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
 const STATUSES = ["active", "inactive", "cancelled", "duplicate"];
 const EVENT_TYPES = ["open_mic", "showcase", "song_circle", "workshop", "other"];
 
+// Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
+const TIME_OPTIONS: { value: string; label: string }[] = [];
+for (let hour = 6; hour <= 23; hour++) {
+  for (const minute of [0, 30]) {
+    if (hour === 23 && minute === 30) continue; // Skip 11:30 PM
+    const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const label = `${hour12}:${minute.toString().padStart(2, "0")} ${ampm}`;
+    const value = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
+    TIME_OPTIONS.push({ value, label });
+  }
+}
+
 export default function EventEditForm({ event, venues: initialVenues }: EventEditFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
@@ -168,40 +181,47 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Start Time</label>
-          <input
-            type="text"
+          <select
             name="start_time"
             value={form.start_time}
             onChange={handleChange}
-            placeholder="19:00:00"
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          />
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Format: HH:MM:SS</p>
+          >
+            <option value="">Select time...</option>
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">End Time</label>
-          <input
-            type="text"
+          <select
             name="end_time"
             value={form.end_time}
             onChange={handleChange}
-            placeholder="22:00:00"
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          />
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Format: HH:MM:SS</p>
+          >
+            <option value="">Select time...</option>
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Signup Time</label>
-          <input
-            type="text"
+          <select
             name="signup_time"
             value={form.signup_time}
             onChange={handleChange}
-            placeholder="6:30 PM"
             className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          />
+          >
+            <option value="">Select time...</option>
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
       </div>
       

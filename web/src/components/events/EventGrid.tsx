@@ -35,7 +35,7 @@ export function EventGrid({ events, onSelect, className, compact = false }: Even
           <EventCard
             key={event.id}
             event={event}
-            onClick={() => onSelect?.(event)}
+            onClick={onSelect ? () => onSelect(event) : undefined}
             compact={compact}
           />
         ))}

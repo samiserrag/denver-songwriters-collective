@@ -30,8 +30,22 @@ function getDateInitials(date: string | null | undefined): string {
   }).toUpperCase();
 }
 
+// Format time from HH:MM:SS (24h) to h:MM AM/PM
+function formatTime(time: string | null | undefined): string | null {
+  if (!time) return null;
+  const match = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return time;
+  const hour = parseInt(match[1], 10);
+  const minute = match[2];
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${hour12}:${minute} ${ampm}`;
+}
+
 export function EventCard({ event, onClick, className, compact = false }: EventCardProps) {
   const dateLabel = getDateInitials(event.date);
+  const startTimeFormatted = formatTime(event.start_time);
+  const endTimeFormatted = formatTime(event.end_time);
 
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
@@ -49,6 +63,17 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
   const venueDisplay: string = typeof event.venue === "object" && event.venue && "name" in event.venue
     ? (event.venue as any).name ?? ""
     : (typeof event.venue === "string" ? event.venue : "") ?? "";
+
+  // Get location display (address or location field)
+  const locationDisplay = event.location || event.venue_address ||
+    (typeof event.venue === "object" && event.venue && "address" in event.venue
+      ? (event.venue as any).address
+      : null);
+
+  // Calculate remaining capacity
+  const spotsRemaining = event.capacity != null && event.rsvp_count != null
+    ? Math.max(0, event.capacity - event.rsvp_count)
+    : null;
 
   return (
     <CardWrapper
@@ -112,19 +137,64 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
             </span>
           )}
 
-          <div className={cn(
-            "uppercase tracking-[0.18em] text-[var(--color-text-secondary)]",
-            compact ? "text-[10px]" : "text-xs"
-          )}>
-            {event.time}
-          </div>
+          {/* Time display - formatted AM/PM */}
+          {(startTimeFormatted || event.time) && (
+            <div className={cn(
+              "text-[var(--color-text-secondary)]",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
+              {startTimeFormatted ? (
+                <>
+                  {startTimeFormatted}
+                  {endTimeFormatted && ` - ${endTimeFormatted}`}
+                </>
+              ) : (
+                event.time
+              )}
+            </div>
+          )}
 
-          <div className={cn(
-            "text-[var(--color-text-secondary)] line-clamp-1",
-            compact ? "text-xs" : "text-[length:var(--font-size-body-sm)]"
-          )}>
-            {venueDisplay}
-          </div>
+          {/* Venue name */}
+          {venueDisplay && (
+            <div className={cn(
+              "text-[var(--color-text-primary)] font-medium line-clamp-1",
+              compact ? "text-xs" : "text-sm"
+            )}>
+              {venueDisplay}
+            </div>
+          )}
+
+          {/* Location/Address */}
+          {locationDisplay && (
+            <div className={cn(
+              "text-[var(--color-text-secondary)] line-clamp-1",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
+              {locationDisplay}
+            </div>
+          )}
+
+          {/* Capacity / Spots remaining - only for DSC events with capacity */}
+          {event.is_dsc_event && event.capacity != null && (
+            <div className={cn(
+              "flex items-center gap-1.5",
+              compact ? "text-[10px]" : "text-xs"
+            )}>
+              {spotsRemaining === 0 ? (
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium">
+                  Full
+                </span>
+              ) : spotsRemaining != null ? (
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                  {spotsRemaining} {spotsRemaining === 1 ? "spot" : "spots"} left
+                </span>
+              ) : (
+                <span className="text-[var(--color-text-secondary)]">
+                  {event.rsvp_count || 0} going
+                </span>
+              )}
+            </div>
+          )}
 
           {!compact && event.description && (
             <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">

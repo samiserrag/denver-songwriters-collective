@@ -15,15 +15,21 @@ export const dynamic = "force-dynamic";
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 
-function mapDBEventToEvent(dbEvent: DBEvent): Event {
+function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number }): Event {
   return {
     id: dbEvent.id,
     title: dbEvent.title,
     description: dbEvent.description ?? undefined,
     date: dbEvent.event_date,
     time: dbEvent.start_time,
+    start_time: dbEvent.start_time,
+    end_time: dbEvent.end_time,
     venue: dbEvent.venue_name ?? "TBA",
+    venue_address: dbEvent.venue_address ?? undefined,
     location: dbEvent.venue_address ?? undefined,
+    capacity: dbEvent.capacity,
+    rsvp_count: dbEvent.rsvp_count ?? 0,
+    is_dsc_event: dbEvent.is_dsc_event,
   };
 }
 
@@ -119,7 +125,22 @@ export default async function HomePage() {
       .limit(4),
   ]);
 
-  const upcomingEvents: Event[] = (upcomingEventsRes.data ?? []).map(mapDBEventToEvent);
+  // Fetch RSVP counts for DSC events
+  const eventsData = upcomingEventsRes.data ?? [];
+  const upcomingEvents: Event[] = await Promise.all(
+    eventsData.map(async (dbEvent) => {
+      let rsvpCount = 0;
+      if (dbEvent.is_dsc_event) {
+        const { count } = await supabase
+          .from("event_rsvps")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", dbEvent.id)
+          .eq("status", "confirmed");
+        rsvpCount = count || 0;
+      }
+      return mapDBEventToEvent({ ...dbEvent, rsvp_count: rsvpCount });
+    })
+  );
   const featuredMembers: Member[] = (featuredMembersRes.data ?? []).map(mapDBProfileToMember);
 
   // Map spotlight open mics

@@ -47,6 +47,9 @@ export interface Event {
   updated_at?: string | null;
   signup_time?: string | null;
   category?: string | null;
+  capacity?: number | null;
+  rsvp_count?: number | null;
+  is_dsc_event?: boolean | null;
 }
 
 export interface EventWithVenue extends Event {
