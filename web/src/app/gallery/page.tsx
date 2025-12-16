@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import GalleryGrid from "@/components/gallery/GalleryGrid";
 
 export const metadata: Metadata = {
@@ -10,10 +12,47 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function GalleryPage() {
-  const supabase = await createSupabaseServerClient();
+const IMAGES_PER_PAGE = 24;
 
-  const { data: images } = await supabase
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function GalleryPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const page = Math.max(1, parseInt(params.page || "1", 10));
+  const offset = (page - 1) * IMAGES_PER_PAGE;
+
+  // Fetch published albums with image count
+  const { data: albums } = await supabase
+    .from("gallery_albums")
+    .select(`
+      id,
+      name,
+      slug,
+      description,
+      cover_image_url,
+      created_at
+    `)
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  // Count images in each album
+  const albumsWithCount = albums ? await Promise.all(
+    albums.map(async (album) => {
+      const { count } = await supabase
+        .from("gallery_images")
+        .select("*", { count: "exact", head: true })
+        .eq("album_id", album.id)
+        .eq("is_approved", true);
+      return { ...album, imageCount: count ?? 0 };
+    })
+  ) : [];
+
+  // Fetch paginated images (excluding those in albums for the main grid)
+  const { data: images, count: totalCount } = await supabase
     .from("gallery_images")
     .select(`
       id,
@@ -24,10 +63,14 @@ export default async function GalleryPage() {
       uploader:profiles!gallery_images_uploaded_by_fkey(full_name),
       event:events(title),
       venue:venues(name)
-    `)
+    `, { count: "exact" })
     .eq("is_approved", true)
+    .is("album_id", null)
     .order("is_featured", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(offset, offset + IMAGES_PER_PAGE - 1);
+
+  const totalPages = Math.ceil((totalCount ?? 0) / IMAGES_PER_PAGE);
 
   return (
     <>
@@ -45,18 +88,111 @@ export default async function GalleryPage() {
 
       <PageContainer>
         <div className="py-12">
-          {images && images.length > 0 ? (
-            <GalleryGrid images={images} />
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-[var(--color-text-secondary)] text-lg mb-4">
-                No photos yet. Be the first to share!
-              </p>
-              <p className="text-[var(--color-text-tertiary)] text-sm">
-                Photos from community members will appear here after approval.
-              </p>
-            </div>
+          {/* Albums Section */}
+          {albumsWithCount.length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">
+                Photo Albums
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {albumsWithCount.map((album) => (
+                  <Link
+                    key={album.id}
+                    href={`/gallery/${album.slug}`}
+                    className="group block rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                  >
+                    <div className="relative aspect-[16/10] w-full bg-[var(--color-bg-tertiary)]">
+                      {album.cover_image_url ? (
+                        <Image
+                          src={album.cover_image_url}
+                          alt={album.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-12 h-12 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+                        {album.name}
+                      </h3>
+                      {album.description && (
+                        <p className="text-sm text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                          {album.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+                        {album.imageCount} {album.imageCount === 1 ? "photo" : "photos"}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
           )}
+
+          {/* Individual Photos Section */}
+          <section>
+            {albumsWithCount.length > 0 && (
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">
+                All Photos
+              </h2>
+            )}
+
+            {images && images.length > 0 ? (
+              <>
+                <GalleryGrid images={images} />
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <nav className="mt-12 flex justify-center items-center gap-2" aria-label="Gallery pagination">
+                    {page > 1 && (
+                      <Link
+                        href={`/gallery?page=${page - 1}`}
+                        className="px-4 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        aria-label="Previous page"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </Link>
+                    )}
+
+                    <span className="px-4 py-2 text-[var(--color-text-secondary)]">
+                      Page {page} of {totalPages}
+                    </span>
+
+                    {page < totalPages && (
+                      <Link
+                        href={`/gallery?page=${page + 1}`}
+                        className="px-4 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        aria-label="Next page"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    )}
+                  </nav>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-[var(--color-text-secondary)] text-lg mb-4">
+                  {albumsWithCount.length > 0 ? "No individual photos yet." : "No photos yet. Be the first to share!"}
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-sm">
+                  Photos from community members will appear here after approval.
+                </p>
+              </div>
+            )}
+          </section>
         </div>
       </PageContainer>
     </>
