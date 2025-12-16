@@ -70,7 +70,7 @@ export async function processExpiredOffers(
 }
 
 /**
- * Promote next waitlist person to "offered" status with 2-hour window
+ * Promote next waitlist person to "offered" status with 24-hour window
  * Returns the promoted RSVP ID if successful, null otherwise
  */
 export async function promoteNextWaitlistPerson(
@@ -148,7 +148,7 @@ export async function sendOfferNotifications(
     p_user_id: userId,
     p_type: "waitlist_offer",
     p_title: "A Spot Opened Up!",
-    p_message: `A spot is available for "${eventData.title}". Confirm within 2 hours to secure it!`,
+    p_message: `A spot is available for "${eventData.title}". Confirm within 24 hours to secure it!`,
     p_link: `/events/${eventId}?confirm=true`,
   });
 

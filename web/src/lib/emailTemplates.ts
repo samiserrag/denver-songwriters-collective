@@ -154,7 +154,7 @@ Denver Songwriters Collective
   };
 }
 
-// Waitlist Promotion Email (Offer with 2-hour window)
+// Waitlist Promotion Email (Offer with 24-hour window)
 export function getWaitlistPromotionEmail(params: {
   eventTitle: string;
   eventDate: string;
@@ -188,7 +188,7 @@ export function getWaitlistPromotionEmail(params: {
 
     <div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
       <p style="margin: 0 0 8px 0; color: #f59e0b; font-size: 15px; font-weight: 600;">
-        ⏰ Confirm within 2 hours to secure your spot
+        ⏰ Confirm within 24 hours to secure your spot
       </p>
       ${expiryMessage ? `<p style="margin: 0; color: #a3a3a3; font-size: 13px;">${expiryMessage}</p>` : ""}
     </div>
@@ -242,7 +242,7 @@ ${"=".repeat(30)}
 
 Great news! A spot opened up for this event and you're next in line.
 
-⏰ CONFIRM WITHIN 2 HOURS to secure your spot.
+⏰ CONFIRM WITHIN 24 HOURS to secure your spot.
 ${expiryMessage}
 
 Event: ${eventTitle}

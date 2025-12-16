@@ -3,10 +3,10 @@
  * These functions can be used in "use client" components
  */
 
-const OFFER_WINDOW_HOURS = 2;
+const OFFER_WINDOW_HOURS = 24;
 
 /**
- * Calculate offer expiration time (2 hours from now)
+ * Calculate offer expiration time (24 hours from now)
  */
 export function calculateOfferExpiry(): string {
   const expiry = new Date();

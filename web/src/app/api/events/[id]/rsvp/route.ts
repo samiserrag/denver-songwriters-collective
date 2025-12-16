@@ -216,7 +216,7 @@ export async function DELETE(
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Promote next waitlist person with 2-hour offer window
+  // Promote next waitlist person with 24-hour offer window
   if (opensSpot) {
     const promotedRsvpId = await promoteNextWaitlistPerson(supabase, eventId);
 
