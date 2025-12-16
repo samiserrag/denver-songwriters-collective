@@ -56,8 +56,7 @@ This project uses **git worktrees** for development:
 | `monthly_highlights` | Featured content for homepage |
 | `host_requests` | Applications to become an event host |
 | `approved_hosts` | Approved host permissions |
-| `event_update_suggestions` | Community corrections for event data (legacy) |
-| `change_reports` | Community-submitted corrections with verification workflow (v0.3.0) |
+| `event_update_suggestions` | Community corrections for event data |
 | `studio_services` | Services offered by studio profiles |
 | `studio_appointments` | Bookings for studio services |
 | `favorites` | User favorites (events, profiles) |
@@ -91,6 +90,7 @@ This project uses **git worktrees** for development:
 ### Protected Pages (Auth Required)
 - `/dashboard` - User dashboard
 - `/dashboard/profile` - Edit profile
+- `/dashboard/my-rsvps` - User's event RSVPs (upcoming, past, cancelled)
 - `/dashboard/my-events` - Host's event management
 - `/dashboard/blog` - User's blog posts
 - `/dashboard/appointments` - Performer's studio bookings
@@ -106,8 +106,7 @@ This project uses **git worktrees** for development:
 - `/dashboard/admin/gallery` - Approve/manage gallery images
 - `/dashboard/admin/highlights` - Manage homepage highlights
 - `/dashboard/admin/host-requests` - Approve host applications
-- `/dashboard/admin/verifications` - Review change reports (v0.3.0)
-- `/dashboard/admin/event-update-suggestions` - Review community corrections (legacy)
+- `/dashboard/admin/event-update-suggestions` - Review community corrections
 
 ---
 
@@ -232,42 +231,35 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 
 ## Recent Changes (December 2024)
 
-### v0.3.0 Event Verification System (December 2024)
-- **New `change_reports` table** for community-submitted corrections
-- **Verification columns added to events**: `last_verified_at`, `verified_by`
-- **Public API**: `POST /api/change-reports` - Anonymous or authenticated submissions
-- **Admin API**: `PATCH/DELETE /api/admin/change-reports/[id]` - Approve/reject reports
-- **New admin page**: `/dashboard/admin/verifications` - Review and process change reports
-- **ReportChangeForm component** on open mic detail pages
-- **Verification display** on open mic listings (shows "Verified X days ago" or "Not yet verified")
+### Stream 3: RSVP UX & My RSVPs Dashboard (December 2024)
+- **Phase 1: Calendar & Confirmation UX**
+  - `AddToCalendarButton` component - Google, Apple (ICS), Outlook calendar integration
+  - Enhanced `RSVPButton` with confirmation animations and inline cancel dialog
+  - Added calendar button to event detail pages for events with dates
+- **Phase 2: My RSVPs Dashboard**
+  - New `/dashboard/my-rsvps` page with 3 tabs: Upcoming, Past, Cancelled
+  - `RSVPCard` component with status badges (confirmed/waitlist/cancelled)
+  - Inline cancel confirmation (no `window.confirm`)
+  - AddToCalendar integration for non-cancelled RSVPs
+  - Dashboard nav link with upcoming RSVP count badge
 - Key files:
-  - `supabase/migrations/20251216000001_v030_verification_system.sql`
-  - `web/src/app/api/change-reports/route.ts`
-  - `web/src/app/api/admin/change-reports/[id]/route.ts`
-  - `web/src/app/(protected)/dashboard/admin/verifications/page.tsx`
-  - `web/src/components/admin/ChangeReportsTable.tsx`
-  - `web/src/components/events/ReportChangeForm.tsx`
-  - `web/src/components/CompactListItem.tsx` - Added `last_verified_at` display
+  - `web/src/components/events/AddToCalendarButton.tsx` - Calendar dropdown with 3 providers
+  - `web/src/components/events/RSVPCard.tsx` - RSVP display card with actions
+  - `web/src/components/events/RSVPButton.tsx` - Enhanced with animations/cancel
+  - `web/src/app/(protected)/dashboard/my-rsvps/page.tsx` - My RSVPs page
+  - `web/src/app/(protected)/dashboard/page.tsx` - Added My RSVPs nav link
 
-### Stream 3 Phase 1: Calendar & Confirmation UX (December 2024)
-- **AddToCalendarButton component** - Dropdown with Google Calendar, Apple Calendar (iCal), and Outlook support
-  - Generates calendar links dynamically from event data
-  - Downloads .ics file for Apple Calendar
-  - Opens web interfaces for Google/Outlook
-- **Enhanced RSVPButton** with improved UX:
-  - Animated success state with ring effect after confirming RSVP
-  - Inline cancel confirmation dialog (replaces browser confirm())
-  - Loading spinner during API calls
-  - Theme-aware colors using CSS variables
-  - Icons on RSVP/waitlist buttons
-- **Event detail page updates**:
-  - Fetches `event_date` field for calendar integration
-  - Shows AddToCalendarButton when event has a specific date
-  - Styled Get Directions button to match AddToCalendarButton
+### Event Verification System v0.3.0 (December 2024)
+- **Change Reports feature** for community-submitted event corrections
+  - `ReportChangeForm` component for quick inline submissions
+  - Admin verifications page at `/dashboard/admin/verifications`
+  - `change_reports` table with status tracking
+  - `last_verified_at` display on open mic listings
 - Key files:
-  - `web/src/components/events/AddToCalendarButton.tsx` - New component
-  - `web/src/components/events/RSVPButton.tsx` - Enhanced UX
-  - `web/src/app/events/[id]/page.tsx` - Added calendar button
+  - `web/src/components/events/ReportChangeForm.tsx`
+  - `web/src/app/(protected)/dashboard/admin/verifications/page.tsx`
+  - `web/src/app/api/change-reports/route.ts`
+  - `web/src/components/admin/ChangeReportsTable.tsx`
 
 ### Events Page Improvements & Detail Page (December 2024)
 - **Created `/events/[id]` detail page** for DSC events - fixes 404 errors when clicking DSC events
@@ -480,10 +472,6 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `web/src/app/globals.css` | Base CSS variables and global styles |
 | `web/src/components/ui/Logo.tsx` | Logo component with `inverse` prop for dark backgrounds |
 | `web/src/components/songwriters/` | Songwriter component suite (cards, grid, avatar, tags) |
-| `web/src/components/events/AddToCalendarButton.tsx` | Calendar dropdown (Google, Apple, Outlook) |
-| `web/src/components/events/RSVPButton.tsx` | RSVP/waitlist button with confirmation UX |
-| `web/src/components/events/ReportChangeForm.tsx` | Form for reporting event corrections |
-| `web/src/components/admin/ChangeReportsTable.tsx` | Admin table for reviewing change reports |
 
 ---
 
