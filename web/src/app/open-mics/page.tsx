@@ -219,7 +219,7 @@ export default async function OpenMicsPage({
   let query = supabase
     .from("events")
     .select(
-      `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`,
+      `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes,last_verified_at`,
       { count: "exact" }
     )
     .eq("event_type", "open_mic")
@@ -298,7 +298,7 @@ export default async function OpenMicsPage({
     let venueQuery = supabase
       .from("events")
       .select(
-        `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes`
+        `id,slug,title,description,event_date,start_time,signup_time,category,recurrence_rule,day_of_week,venue_id,venues(name,address,city,state,website_url,phone,map_link,google_maps_url),status,notes,last_verified_at`
       )
       .eq("event_type", "open_mic")
       .in("venue_id", searchVenueIds);

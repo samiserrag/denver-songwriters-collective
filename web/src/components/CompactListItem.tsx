@@ -42,7 +42,33 @@ type Props = {
   signup_time?: string | null;
   category?: string | null;
   status?: string | null;
+  last_verified_at?: string | null;
 };
+
+// Format verification date for display
+function formatVerifiedDate(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "today";
+    if (diffDays === 1) return "yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+    }
+    if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months > 1 ? "s" : ""} ago`;
+    }
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  } catch {
+    return null;
+  }
+}
 
 export default function CompactListItem({
   id,
@@ -60,6 +86,7 @@ export default function CompactListItem({
   signup_time,
   category,
   status,
+  last_verified_at,
 }: Props) {
   const humanRecurrence = humanizeRecurrence(recurrence_rule ?? null, day_of_week ?? null);
   const start = formatTimeToAMPM(start_time ?? null);
@@ -97,6 +124,10 @@ export default function CompactListItem({
   const statusStyle = status ? STATUS_STYLES[status] : null;
   const showStatusBadge = status && status !== "active";
 
+  // Verification display
+  const verifiedText = formatVerifiedDate(last_verified_at);
+  const showUnverified = status === "unverified" && !last_verified_at;
+
   return (
     <div className={`flex items-center justify-between gap-4 p-3 rounded-lg border ${showStatusBadge ? "border-amber-500/30 bg-amber-950/10" : "border-white/6 bg-white/2"}`}>
       <div className="min-w-0">
@@ -124,6 +155,17 @@ export default function CompactListItem({
               📍 {displayLocation}
             </div>
           ) : null}
+          {/* Verification status */}
+          {verifiedText && (
+            <div className="text-xs text-emerald-400 mt-1" title={`Last verified: ${last_verified_at}`}>
+              ✓ Verified {verifiedText}
+            </div>
+          )}
+          {showUnverified && (
+            <div className="text-xs text-amber-400 mt-1">
+              Not yet verified
+            </div>
+          )}
         </div>
       </div>
 

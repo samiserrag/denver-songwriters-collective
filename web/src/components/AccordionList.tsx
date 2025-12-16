@@ -152,6 +152,7 @@ export default function AccordionList({
                       map_url={(ev as any).mapUrl ?? undefined}
                       searchQuery={searchQuery ?? undefined}
                       status={(ev as any).status ?? undefined}
+                      last_verified_at={(ev as any).last_verified_at ?? undefined}
                     />
                   ))
                 )}
