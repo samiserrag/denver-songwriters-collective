@@ -76,8 +76,8 @@ export default async function DashboardPage() {
               <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-3">
                 Welcome, {p?.full_name ?? "User"}
               </h1>
-              <p className="text-neutral-300 text-lg">
-                Role: <span className="text-gold-400">{p?.role}</span>
+              <p className="text-[var(--color-text-secondary)] text-lg">
+                Role: <span className="text-[var(--color-accent-primary)]">{p?.role}</span>
               </p>
             </div>
           </div>
@@ -87,34 +87,34 @@ export default async function DashboardPage() {
       <PageContainer>
         <div className="py-12 space-y-10">
           <section>
-            <h2 className="text-2xl font-semibold text-white mb-4">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">
               Quick Actions
             </h2>
 
-            <ul className="space-y-3 text-neutral-300 text-lg">
+            <ul className="space-y-3 text-[var(--color-text-secondary)] text-lg">
               <li>
-                <Link href="/dashboard/profile" className="text-gold-400 hover:underline">Edit My Profile</Link>
+                <Link href="/dashboard/profile" className="text-[var(--color-accent-primary)] hover:underline">Edit My Profile</Link>
               </li>
               <li>
-                <Link href="/events" className="text-gold-400 hover:underline">Browse Events</Link>
+                <Link href="/events" className="text-[var(--color-accent-primary)] hover:underline">Browse Events</Link>
               </li>
               <li>
-                <Link href="/performers" className="text-gold-400 hover:underline">Explore Performers</Link>
+                <Link href="/performers" className="text-[var(--color-accent-primary)] hover:underline">Explore Performers</Link>
               </li>
               <li>
-                <Link href="/studios" className="text-gold-400 hover:underline">Find Studios</Link>
+                <Link href="/studios" className="text-[var(--color-accent-primary)] hover:underline">Find Studios</Link>
               </li>
               <li>
-                <Link href="/dashboard/blog" className="text-gold-400 hover:underline">My Blog Posts</Link>
+                <Link href="/dashboard/blog" className="text-[var(--color-accent-primary)] hover:underline">My Blog Posts</Link>
               </li>
               <li>
-                <Link href="/dashboard/my-events" className="text-gold-400 hover:underline">
+                <Link href="/dashboard/my-events" className="text-[var(--color-accent-primary)] hover:underline">
                   My Events
                   {isApprovedHost && " (Host Dashboard)"}
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/invitations" className="text-gold-400 hover:underline">
+                <Link href="/dashboard/invitations" className="text-[var(--color-accent-primary)] hover:underline">
                   Co-host Invitations
                   {(pendingInvitations ?? 0) > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/notifications" className="text-gold-400 hover:underline">
+                <Link href="/dashboard/notifications" className="text-[var(--color-accent-primary)] hover:underline">
                   Notifications
                   {(unreadNotifications ?? 0) > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded-full">
@@ -137,34 +137,34 @@ export default async function DashboardPage() {
               {p?.role === "performer" && (
                 <>
                   <li>
-                    <Link href="/events" className="text-gold-400 hover:underline">Find Open Mic Slots</Link>
+                    <Link href="/events" className="text-[var(--color-accent-primary)] hover:underline">Find Open Mic Slots</Link>
                   </li>
                   <li>
-                    <Link href={`/performers/${user.id}`} className="text-gold-400 hover:underline">View My Public Profile</Link>
+                    <Link href={`/performers/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Public Profile</Link>
                   </li>
                 </>
               )}
 
               {p?.role === "studio" && (
                 <li>
-                  <Link href="/studios" className="text-gold-400 hover:underline">Manage Your Services (coming soon)</Link>
+                  <Link href="/studios" className="text-[var(--color-accent-primary)] hover:underline">Manage Your Services (coming soon)</Link>
                 </li>
               )}
 
               {p?.role === "host" && (
                 <li>
-                  <Link href="/events/manage" className="text-gold-400 hover:underline">Host Dashboard (coming soon)</Link>
+                  <Link href="/events/manage" className="text-[var(--color-accent-primary)] hover:underline">Host Dashboard (coming soon)</Link>
                 </li>
               )}
 
               {p?.role === "admin" && (
                 <li>
-                  <Link href="/dashboard/admin" className="text-gold-400 hover:underline">Admin Panel</Link>
+                  <Link href="/dashboard/admin" className="text-[var(--color-accent-primary)] hover:underline">Admin Panel</Link>
                 </li>
               )}
 
-              <li className="pt-4 mt-4 border-t border-neutral-800">
-                <Link href="/dashboard/settings" className="text-gold-400 hover:underline">Account Settings</Link>
+              <li className="pt-4 mt-4 border-t border-[var(--color-border-default)]">
+                <Link href="/dashboard/settings" className="text-[var(--color-accent-primary)] hover:underline">Account Settings</Link>
               </li>
             </ul>
           </section>

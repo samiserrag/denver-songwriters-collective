@@ -77,12 +77,12 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
             />
           )}
 
-          {/* Gradient overlay */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          {/* Gradient overlay - for text readability over images */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--color-bg-primary)]/75 via-[var(--color-bg-primary)]/20 to-transparent" />
 
           {/* Date badge */}
           <div className={cn(
-            "absolute rounded-full bg-black/70 font-medium tracking-[0.18em] text-[var(--color-gold-400)] uppercase backdrop-blur-sm",
+            "absolute rounded-full bg-[var(--color-bg-inverse)]/70 font-medium tracking-[0.18em] text-[var(--color-accent-primary)] uppercase backdrop-blur-sm",
             compact ? "left-2 top-2 px-2 py-0.5 text-[10px]" : "left-4 top-4 px-3 py-1 text-xs"
           )}>
             {dateLabel}
