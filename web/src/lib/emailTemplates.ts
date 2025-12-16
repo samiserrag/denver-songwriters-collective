@@ -108,7 +108,7 @@ export function getRsvpConfirmationEmail(params: {
       </span>
     </div>
 
-    <table cellpadding="0" cellspacing="0">
+    <table cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
       <tr>
         <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); border-radius: 8px;">
           <a href="${SITE_URL}/events/${eventId}" style="display: inline-block; padding: 12px 24px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 14px;">
@@ -117,6 +117,10 @@ export function getRsvpConfirmationEmail(params: {
         </td>
       </tr>
     </table>
+
+    <p style="margin: 0; color: #737373; font-size: 13px;">
+      Need to cancel? <a href="${SITE_URL}/events/${eventId}?cancel=true" style="color: #d4a853; text-decoration: none;">Cancel your RSVP</a>
+    </p>
   `;
 
   const subject = isWaitlist
@@ -136,6 +140,8 @@ Venue: ${venueName}${venueAddress ? `\nAddress: ${venueAddress}` : ""}
 Status: ${statusLabel}
 
 View event: ${SITE_URL}/events/${eventId}
+
+Need to cancel? ${SITE_URL}/events/${eventId}?cancel=true
 
 ---
 Denver Songwriters Collective

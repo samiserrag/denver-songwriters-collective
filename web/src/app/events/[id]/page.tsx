@@ -2,9 +2,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import type { EventType } from "@/types/events";
-import { RSVPButton } from "@/components/events/RSVPButton";
+import { RSVPSection } from "@/components/events/RSVPSection";
 import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 
 export const dynamic = "force-dynamic";
@@ -233,11 +234,18 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
           <div className="flex flex-wrap items-start gap-4 mb-8">
             {event.is_dsc_event && (
-              <RSVPButton
-                eventId={event.id}
-                capacity={event.capacity}
-                initialConfirmedCount={rsvpCount || 0}
-              />
+              <Suspense fallback={
+                <div className="animate-pulse">
+                  <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
+                </div>
+              }>
+                <RSVPSection
+                  eventId={event.id}
+                  eventTitle={event.title}
+                  capacity={event.capacity}
+                  initialConfirmedCount={rsvpCount || 0}
+                />
+              </Suspense>
             )}
             {calendarStartDate && (
               <AddToCalendarButton
