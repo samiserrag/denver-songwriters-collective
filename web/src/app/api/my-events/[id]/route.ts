@@ -96,7 +96,7 @@ export async function PATCH(
   const allowedFields = [
     "title", "description", "event_type", "capacity", "host_notes",
     "venue_id", "day_of_week", "start_time",
-    "end_time", "status", "recurrence_rule", "cover_image_url"
+    "end_time", "status", "recurrence_rule", "cover_image_url", "is_published"
   ];
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };

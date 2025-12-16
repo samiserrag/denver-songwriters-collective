@@ -106,11 +106,12 @@ export default async function EventsPage() {
   const supabase = await createSupabaseServerClient();
   const today = new Date().toISOString().split("T")[0];
 
-  // Fetch upcoming events (excluding open mics)
+  // Fetch upcoming events (excluding open mics, published only)
   const { data: upcomingDbEvents } = await supabase
     .from("events")
     .select("*")
     .neq('event_type', 'open_mic')
+    .eq('is_published', true)
     .gte('event_date', today)
     .order("event_date", { ascending: true });
 
@@ -125,6 +126,7 @@ export default async function EventsPage() {
     .from("events")
     .select("*")
     .neq('event_type', 'open_mic')
+    .eq('is_published', true)
     .lt('event_date', today)
     .gte('event_date', thirtyDaysAgoStr)
     .order("event_date", { ascending: false })
@@ -132,7 +134,7 @@ export default async function EventsPage() {
 
   const pastEvents: Event[] = (pastDbEvents ?? []).map(mapDBEventToEvent);
 
-  // Fetch DSC community events
+  // Fetch DSC community events (published only)
   const { data: dscEventsData } = await supabase
     .from("events")
     .select(`
@@ -141,6 +143,7 @@ export default async function EventsPage() {
     `)
     .eq("is_dsc_event", true)
     .eq("status", "active")
+    .eq("is_published", true)
     .order("day_of_week", { ascending: true });
 
   // Get RSVP counts for DSC events

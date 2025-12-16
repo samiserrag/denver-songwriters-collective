@@ -49,6 +49,7 @@ interface EventFormProps {
     recurrence_rule: string | null;
     host_notes: string | null;
     cover_image_url: string | null;
+    is_published?: boolean;
   };
 }
 
@@ -70,7 +71,8 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
     start_time: event?.start_time || "",
     end_time: event?.end_time || "",
     recurrence_rule: event?.recurrence_rule || "weekly",
-    host_notes: event?.host_notes || ""
+    host_notes: event?.host_notes || "",
+    is_published: event?.is_published ?? false // New events start as drafts
   });
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
@@ -120,7 +122,8 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
       const body = {
         ...formData,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
-        cover_image_url: coverImageUrl
+        cover_image_url: coverImageUrl,
+        is_published: formData.is_published
       };
 
       const res = await fetch(url, {
@@ -351,6 +354,39 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           rows={3}
           className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
         />
+      </div>
+
+      {/* Publish Toggle */}
+      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
+              {formData.is_published ? "Published" : "Draft"}
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+              {formData.is_published
+                ? "This event is visible to the public and accepting signups."
+                : "This event is hidden from the public. Publish when ready."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFormData(prev => ({ ...prev, is_published: !prev.is_published }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              formData.is_published
+                ? "bg-emerald-600"
+                : "bg-[var(--color-bg-secondary)]"
+            }`}
+            role="switch"
+            aria-checked={formData.is_published}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                formData.is_published ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Submit */}

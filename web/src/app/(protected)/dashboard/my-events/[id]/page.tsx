@@ -107,6 +107,14 @@ export default async function EditEventPage({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Draft/Published badge */}
+            <span className={`px-3 py-1 rounded text-sm ${
+              event.is_published
+                ? "bg-emerald-900/50 text-emerald-400"
+                : "bg-amber-900/50 text-amber-400"
+            }`}>
+              {event.is_published ? "Published" : "Draft"}
+            </span>
             <span className={`px-3 py-1 rounded text-sm ${
               event.status === "active"
                 ? "bg-green-900/50 text-green-400"
@@ -114,13 +122,15 @@ export default async function EditEventPage({
             }`}>
               {event.status}
             </span>
-            <Link
-              href={`/events/${eventId}`}
-              className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
-              target="_blank"
-            >
-              View Public Page →
-            </Link>
+            {event.is_published && (
+              <Link
+                href={`/events/${eventId}`}
+                className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
+                target="_blank"
+              >
+                View Public Page →
+              </Link>
+            )}
           </div>
         </div>
 
