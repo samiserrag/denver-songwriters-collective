@@ -18,6 +18,7 @@
 
 :root[data-theme="sunrise"] {
   /* Bright warm, friendly */
+  --color-background: #FFF7ED;
   --color-bg-primary: #FFF7ED;
   --color-bg-secondary: #FFEDD5;
   --color-bg-tertiary: #FED7AA;
@@ -47,6 +48,7 @@
 
 :root[data-theme="colorado-sky"] {
   /* Light sky + deep navy, colorful but clean */
+  --color-background: #F0F9FF;
   --color-bg-primary: #F0F9FF;
   --color-bg-secondary: #E0F2FE;
   --color-bg-tertiary: #BAE6FD;
@@ -76,6 +78,7 @@
 
 :root[data-theme="aspen-pop"] {
   /* Light neutral + green accent */
+  --color-background: #F8FAFC;
   --color-bg-primary: #F8FAFC;
   --color-bg-secondary: #F1F5F9;
   --color-bg-tertiary: #E2E8F0;
@@ -105,6 +108,7 @@
 
 :root[data-theme="red-rocks"] {
   /* Sandstone + red accent, still readable */
+  --color-background: #FFF1E6;
   --color-bg-primary: #FFF1E6;
   --color-bg-secondary: #FFE4D6;
   --color-bg-tertiary: #FFD2B8;
