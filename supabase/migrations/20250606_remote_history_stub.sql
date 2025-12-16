@@ -1,0 +1,2 @@
+-- Stub migration to match remote history version 20250606.
+-- Remote already has this version recorded; this file exists only to satisfy supabase CLI.
