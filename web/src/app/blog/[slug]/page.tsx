@@ -182,7 +182,7 @@ export default async function BlogPostPage({ params }: Props) {
       if (block.includes("\n- ") || block.startsWith("- ")) {
         const items = block.split("\n").filter((line) => line.startsWith("- "));
         return (
-          <ul key={i} className="list-disc list-inside space-y-2 my-4 text-neutral-300">
+          <ul key={i} className="list-disc list-inside space-y-2 my-4 text-[var(--color-text-secondary)]">
             {items.map((item, j) => (
               <li key={j}>{item.replace("- ", "")}</li>
             ))}
@@ -194,7 +194,7 @@ export default async function BlogPostPage({ params }: Props) {
       if (/^\d+\. /.test(block)) {
         const items = block.split("\n").filter((line) => /^\d+\. /.test(line));
         return (
-          <ol key={i} className="list-decimal list-inside space-y-2 my-4 text-neutral-300">
+          <ol key={i} className="list-decimal list-inside space-y-2 my-4 text-[var(--color-text-secondary)]">
             {items.map((item, j) => (
               <li key={j}>{item.replace(/^\d+\. /, "")}</li>
             ))}
@@ -207,7 +207,7 @@ export default async function BlogPostPage({ params }: Props) {
         return (
           <blockquote
             key={i}
-            className="border-l-4 border-[var(--color-border-accent)] pl-4 my-6 text-neutral-400 italic"
+            className="border-l-4 border-[var(--color-border-accent)] pl-4 my-6 text-[var(--color-text-tertiary)] italic"
           >
             {block.replace(/^> /gm, "")}
           </blockquote>
@@ -216,7 +216,7 @@ export default async function BlogPostPage({ params }: Props) {
 
       // Regular paragraph
       return (
-        <p key={i} className="text-neutral-300 leading-relaxed my-4">
+        <p key={i} className="text-[var(--color-text-secondary)] leading-relaxed my-4">
           {block}
         </p>
       );
@@ -246,7 +246,7 @@ export default async function BlogPostPage({ params }: Props) {
           {/* Back link */}
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-neutral-400 hover:text-[var(--color-text-accent)] transition-colors mb-8"
+            className="inline-flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] transition-colors mb-8"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -293,7 +293,7 @@ export default async function BlogPostPage({ params }: Props) {
                 {author?.full_name ?? "Anonymous"}
               </p>
               {formattedDate && (
-                <p className="text-neutral-500 text-sm">{formattedDate}</p>
+                <p className="text-[var(--color-text-tertiary)] text-sm">{formattedDate}</p>
               )}
             </div>
           </div>
@@ -320,7 +320,7 @@ export default async function BlogPostPage({ params }: Props) {
                       />
                     </div>
                     {image.caption && (
-                      <p className="mt-2 text-sm text-neutral-400 text-center">
+                      <p className="mt-2 text-sm text-[var(--color-text-tertiary)] text-center">
                         {image.caption}
                       </p>
                     )}
@@ -361,7 +361,7 @@ export default async function BlogPostPage({ params }: Props) {
                   <p className="text-[var(--color-text-primary)] font-medium mb-2">
                     {author.full_name}
                   </p>
-                  <p className="text-neutral-400 text-sm">{author.bio}</p>
+                  <p className="text-[var(--color-text-secondary)] text-sm">{author.bio}</p>
                 </div>
               </div>
             </div>

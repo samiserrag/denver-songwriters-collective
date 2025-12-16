@@ -138,23 +138,15 @@ export default async function EventsPage() {
 
   return (
     <>
-      {/* Hero Header with Background Image */}
-      <div className="relative h-56 md:h-72 overflow-hidden">
-        <img
-          src="/images/hero.jpg"
-          alt="Denver Songwriters Happenings"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-primary)] via-transparent to-transparent" />
-        <div className="absolute inset-0 flex items-center justify-center pt-8">
-          <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
-              Happenings
-            </h1>
-            <p className="text-lg text-[var(--color-text-secondary)] mt-3 drop-shadow">
-              Showcases, song circles, workshops, and community gatherings
-            </p>
-          </div>
+      {/* Page Header */}
+      <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
+        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
+            Happenings
+          </h1>
+          <p className="text-lg text-[var(--color-text-secondary)] mt-3">
+            Showcases, song circles, workshops, and community gatherings
+          </p>
         </div>
       </div>
 

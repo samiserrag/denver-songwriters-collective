@@ -62,7 +62,7 @@ export default async function BlogPage() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
-              Blog
+              Community Blog
             </h1>
             <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               Stories, tips, and insights from the Denver songwriting community.{" "}
@@ -94,7 +94,7 @@ export default async function BlogPage() {
                   <h2 className="text-base font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
                     Share Your Story
                   </h2>
-                  <p className="text-neutral-400 text-xs line-clamp-2">
+                  <p className="text-[var(--color-text-secondary)] text-xs line-clamp-2">
                     Got advice, insights, or a journey to share? Add your voice to the community.
                   </p>
                   <span className="inline-flex items-center gap-1 text-[var(--color-text-accent)] text-xs font-medium pt-1">
@@ -108,7 +108,7 @@ export default async function BlogPage() {
             </div>
           ) : (
             <div className="text-center py-16 space-y-6">
-              <p className="text-neutral-400 text-lg">
+              <p className="text-[var(--color-text-secondary)] text-lg">
                 No blog posts yet. Be the first to share your story!
               </p>
               <Link
@@ -174,7 +174,7 @@ function BlogCard({ post }: { post: BlogPost }) {
           {post.title}
         </h2>
         {post.excerpt && (
-          <p className="text-neutral-400 text-xs line-clamp-2">
+          <p className="text-[var(--color-text-secondary)] text-xs line-clamp-2">
             {post.excerpt}
           </p>
         )}
@@ -195,7 +195,7 @@ function BlogCard({ post }: { post: BlogPost }) {
             </div>
           )}
           <div className="text-xs">
-            <p className="text-neutral-300">{author?.full_name ?? "Anonymous"}</p>
+            <p className="text-[var(--color-text-primary)]">{author?.full_name ?? "Anonymous"}</p>
           </div>
         </div>
       </div>
