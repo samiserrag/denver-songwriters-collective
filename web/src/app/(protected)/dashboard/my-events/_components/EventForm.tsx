@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import VenueSelector from "@/components/ui/VenueSelector";
+import SlotConfigSection, {
+  TIMESLOT_EVENT_TYPES,
+  type SlotConfig,
+} from "./SlotConfigSection";
 import {
   EVENT_TYPE_CONFIG,
   DAYS_OF_WEEK,
@@ -75,6 +79,15 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
     is_published: event?.is_published ?? false // New events start as drafts
   });
 
+  // Slot configuration state - defaults based on event type
+  const defaultEventType = event?.event_type || "song_circle";
+  const [slotConfig, setSlotConfig] = useState<SlotConfig>({
+    has_timeslots: TIMESLOT_EVENT_TYPES.includes(defaultEventType),
+    total_slots: defaultEventType === "open_mic" ? 10 : 8,
+    slot_duration_minutes: defaultEventType === "open_mic" ? 10 : 15,
+    allow_guests: true,
+  });
+
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
   const handleImageUpload = async (file: File): Promise<string | null> => {
@@ -121,9 +134,14 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
 
       const body = {
         ...formData,
-        capacity: formData.capacity ? parseInt(formData.capacity) : null,
+        capacity: slotConfig.has_timeslots ? slotConfig.total_slots : (formData.capacity ? parseInt(formData.capacity) : null),
         cover_image_url: coverImageUrl,
-        is_published: formData.is_published
+        is_published: formData.is_published,
+        // Slot configuration
+        has_timeslots: slotConfig.has_timeslots,
+        total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
+        slot_duration_minutes: slotConfig.has_timeslots ? slotConfig.slot_duration_minutes : null,
+        allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
       };
 
       const res = await fetch(url, {
@@ -250,6 +268,14 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
         />
       </div>
 
+      {/* Slot Configuration (Performance Slots vs RSVP Mode) */}
+      <SlotConfigSection
+        eventType={formData.event_type}
+        config={slotConfig}
+        onChange={setSlotConfig}
+        disabled={loading}
+      />
+
       {/* Venue */}
       <VenueSelector
         venues={venues}
@@ -310,7 +336,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 ${!slotConfig.has_timeslots ? "sm:grid-cols-2" : ""} gap-4`}>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Frequency
@@ -325,20 +351,23 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Capacity
-            <span className="text-[var(--color-text-secondary)] font-normal ml-1">(leave empty for unlimited)</span>
-          </label>
-          <input
-            type="number"
-            value={formData.capacity}
-            onChange={(e) => updateField("capacity", e.target.value)}
-            placeholder="e.g., 12"
-            min="1"
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          />
-        </div>
+        {/* Only show capacity when NOT using timeslots (timeslots have their own slot count) */}
+        {!slotConfig.has_timeslots && (
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Capacity
+              <span className="text-[var(--color-text-secondary)] font-normal ml-1">(leave empty for unlimited)</span>
+            </label>
+            <input
+              type="number"
+              value={formData.capacity}
+              onChange={(e) => updateField("capacity", e.target.value)}
+              placeholder="e.g., 12"
+              min="1"
+              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            />
+          </div>
+        )}
       </div>
 
       {/* Host Notes (private) */}

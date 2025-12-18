@@ -140,5 +140,37 @@ export async function POST(request: Request) {
     // Event was created, so don't fail completely
   }
 
+  // Create timeslots if has_timeslots is enabled
+  if (body.has_timeslots && body.total_slots && body.slot_duration_minutes && body.start_time) {
+    const slots = [];
+    const [hours, minutes] = body.start_time.split(":").map(Number);
+
+    for (let i = 0; i < body.total_slots; i++) {
+      const slotStartMinutes = hours * 60 + minutes + (i * body.slot_duration_minutes);
+      const slotEndMinutes = slotStartMinutes + body.slot_duration_minutes;
+
+      const startHours = Math.floor(slotStartMinutes / 60);
+      const startMins = slotStartMinutes % 60;
+      const endHours = Math.floor(slotEndMinutes / 60);
+      const endMins = slotEndMinutes % 60;
+
+      slots.push({
+        event_id: event.id,
+        slot_index: i + 1,
+        start_time: `${startHours.toString().padStart(2, "0")}:${startMins.toString().padStart(2, "0")}:00`,
+        end_time: `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}:00`,
+      });
+    }
+
+    const { error: slotsError } = await supabase
+      .from("event_slots")
+      .insert(slots);
+
+    if (slotsError) {
+      console.error("Slot creation error:", slotsError);
+      // Event was created, so don't fail completely
+    }
+  }
+
   return NextResponse.json(event);
 }
