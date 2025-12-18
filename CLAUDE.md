@@ -233,6 +233,20 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Event Publishing UX Improvements (December 2025)
+- **Filter tabs on My Events page** - Live, Drafts, Cancelled tabs with count badges
+- **Publish/Unpublish button** on event detail page for quick state changes
+- **Unified status badges** - Draft (amber), Live (emerald), Cancelled (red)
+- **Theme-aware colors** - All badges work on both light and dark themes
+- **Cancelled events cannot be published** until restored
+- New components:
+  - `web/src/app/(protected)/dashboard/my-events/_components/MyEventsFilteredList.tsx` - Client component with filter tabs
+  - `web/src/app/(protected)/dashboard/my-events/[id]/_components/PublishButton.tsx` - Publish toggle button
+- Event publishing logic:
+  - `is_published = false` → Draft (not visible publicly)
+  - `is_published = true` + `status = 'active'` → Live on Happenings
+  - `status = 'cancelled'` → Hidden from public regardless of `is_published`
+
 ### Event Timeslot Configuration (December 2025)
 - **SlotConfigSection component** - Toggle between RSVP mode and performance slots
 - **Auto-enable timeslots** for open_mic and showcase event types
