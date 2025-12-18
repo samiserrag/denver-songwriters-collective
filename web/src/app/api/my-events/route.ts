@@ -119,9 +119,11 @@ export async function POST(request: Request) {
     .single();
 
   if (eventError) {
-    console.error("Event creation error:", eventError);
+    console.error("[POST /api/my-events] Event creation error:", eventError.message, "| Code:", eventError.code);
     return NextResponse.json({ error: eventError.message }, { status: 500 });
   }
+
+  console.log("[POST /api/my-events] Event created:", event.id, "| is_dsc_event:", event.is_dsc_event, "| is_published:", event.is_published);
 
   // Add creator as host
   const { error: hostError } = await supabase
@@ -136,8 +138,10 @@ export async function POST(request: Request) {
     });
 
   if (hostError) {
-    console.error("Host assignment error:", hostError);
+    console.error("[POST /api/my-events] Host assignment error:", hostError.message, "| Code:", hostError.code);
     // Event was created, so don't fail completely
+  } else {
+    console.log("[POST /api/my-events] Host assigned for user:", session.user.id, "to event:", event.id);
   }
 
   // Create timeslots if has_timeslots is enabled
