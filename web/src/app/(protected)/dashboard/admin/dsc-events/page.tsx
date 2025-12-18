@@ -33,21 +33,45 @@ export default async function AdminDSCEventsPage() {
     redirect("/dashboard");
   }
 
-  const { data: events } = await supabase
+  // Note: event_hosts.user_id references auth.users, not profiles
+  // So we fetch hosts without profile join, then fetch profiles separately
+  const { data: eventsData } = await supabase
     .from("events")
     .select(`
       *,
-      event_hosts(
-        user:profiles(full_name)
-      )
+      event_hosts(user_id)
     `)
     .eq("is_dsc_event", true)
     .order("created_at", { ascending: false });
 
+  // Collect all host user_ids and fetch profiles
+  const allHostUserIds = (eventsData || []).flatMap(e =>
+    (e.event_hosts as { user_id: string }[])?.map(h => h.user_id) || []
+  );
+  const uniqueHostUserIds = [...new Set(allHostUserIds)];
+
+  let hostProfileMap = new Map<string, { full_name: string | null }>();
+  if (uniqueHostUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", uniqueHostUserIds);
+
+    hostProfileMap = new Map(profiles?.map(p => [p.id, { full_name: p.full_name }]) || []);
+  }
+
+  // Enrich events with host profiles
+  const events: DSCEvent[] = (eventsData || []).map(event => ({
+    ...event,
+    event_hosts: (event.event_hosts as { user_id: string }[])?.map(h => ({
+      user: hostProfileMap.get(h.user_id) || null
+    })) || []
+  }));
+
   const eventsByStatus = {
-    active: (events as DSCEvent[] | null)?.filter(e => e.status === "active") || [],
-    cancelled: (events as DSCEvent[] | null)?.filter(e => e.status === "cancelled") || [],
-    draft: (events as DSCEvent[] | null)?.filter(e => e.status === "draft") || []
+    active: events.filter(e => e.status === "active"),
+    cancelled: events.filter(e => e.status === "cancelled"),
+    draft: events.filter(e => e.status === "draft")
   };
 
   return (
