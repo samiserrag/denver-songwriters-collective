@@ -233,6 +233,22 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2024)
 
+### Host/Admin Role Check Consolidation (December 2024)
+- **Fixed broken host logic** - All admin role checks now use `profiles.role` instead of unreliable `app_metadata`
+- **Admins automatically have host privileges** - No longer need entry in `approved_hosts` table
+- **New `checkHostStatus()` function** - Unified check that treats admins as hosts
+- Key files:
+  - `web/src/lib/auth/adminAuth.ts` - Added `checkHostStatus()` function
+  - `web/src/app/api/my-events/route.ts` - Uses `checkHostStatus()`
+  - `web/src/app/api/my-events/[id]/route.ts` - Uses `checkAdminRole()` in `canManageEvent()`
+  - `web/src/app/api/my-events/[id]/rsvps/route.ts` - Uses `checkAdminRole()`
+  - `web/src/app/api/my-events/[id]/cohosts/route.ts` - Uses `checkAdminRole()`
+  - `web/src/app/(protected)/dashboard/my-events/page.tsx` - Uses `checkHostStatus()`
+  - `web/src/app/(protected)/dashboard/my-events/new/page.tsx` - Uses `checkHostStatus()`
+  - `web/src/app/(protected)/dashboard/my-events/[id]/page.tsx` - Uses `checkAdminRole()`
+  - `web/src/app/(protected)/dashboard/admin/dsc-events/page.tsx` - Uses `checkAdminRole()`
+  - `web/src/app/(protected)/dashboard/admin/host-requests/page.tsx` - Uses `checkAdminRole()`
+
 ### Gallery Feature Enhancement (December 2024)
 - **Album listing** on `/gallery` page with cover images and photo counts
 - **Album detail page** at `/gallery/[slug]` with pagination
