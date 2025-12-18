@@ -132,13 +132,13 @@ export default function UserDirectoryTable({ users }: Props) {
   const getSpotlightDisplayClass = (value: string): string => {
     switch (value) {
       case "performer":
-        return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
+        return "bg-amber-100 text-amber-700 border-amber-300 dark:bg-[var(--color-accent-primary)]/20 dark:text-[var(--color-text-accent)] dark:border-[var(--color-border-accent)]/30";
       case "host":
-        return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
+        return "bg-amber-100 text-amber-700 border-amber-300 dark:bg-[var(--color-accent-primary)]/20 dark:text-[var(--color-text-accent)] dark:border-[var(--color-border-accent)]/30";
       case "studio":
-        return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+        return "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30";
       default:
-        return "bg-neutral-800 text-neutral-400 border-neutral-600";
+        return "bg-gray-100 text-gray-600 border-gray-300 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-600";
     }
   };
 
@@ -152,7 +152,7 @@ export default function UserDirectoryTable({ users }: Props) {
             placeholder="Search by name or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
           />
         </div>
         <div className="flex gap-2">
@@ -161,7 +161,7 @@ export default function UserDirectoryTable({ users }: Props) {
             onChange={(e) =>
               setRoleFilter(e.target.value as typeof roleFilter)
             }
-            className="rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
           >
             <option value="all">All roles</option>
             <option value="performer">Performers</option>
@@ -173,9 +173,9 @@ export default function UserDirectoryTable({ users }: Props) {
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-x-auto rounded-lg border border-white/10 p-4 bg-black/20">
-        <table className="min-w-full text-left text-sm text-white">
-          <thead className="border-b border-white/10 text-gold-400">
+      <div className="w-full overflow-x-auto rounded-lg border border-[var(--color-border-default)] p-4 bg-[var(--color-bg-card)]">
+        <table className="min-w-full text-left text-sm text-[var(--color-text-primary)]">
+          <thead className="border-b border-[var(--color-border-default)] text-[var(--color-text-accent)]">
             <tr>
               <th className="py-2 px-3">Name</th>
               <th className="py-2 px-3">Role</th>
@@ -190,13 +190,13 @@ export default function UserDirectoryTable({ users }: Props) {
               const user = u as ExtendedProfile;
               const spotlightValue = getSpotlightValue(user);
               return (
-                <tr key={u.id} className="border-b border-white/5">
-                  <td className="py-2 px-3">
+                <tr key={u.id} className="border-b border-[var(--color-border-default)]/30">
+                  <td className="py-2 px-3 text-[var(--color-text-primary)]">
                     {u.full_name ?? "Unnamed User"}
                   </td>
                   <td className="py-2 px-3">
                     <span
-                      className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-xs uppercase tracking-wide text-[var(--color-text-accent)]"
+                      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide bg-amber-100 text-amber-700 border-amber-300 dark:border-white/15 dark:bg-white/5 dark:text-[var(--color-text-accent)]"
                     >
                       {ROLE_LABELS[u.role as string] ?? u.role ?? "Unknown"}
                     </span>
@@ -208,8 +208,8 @@ export default function UserDirectoryTable({ users }: Props) {
                         disabled={togglingHost === u.id}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                           user.is_host
-                            ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] hover:bg-[var(--color-accent-primary)]/30 border border-[var(--color-border-accent)]/30"
-                            : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 border border-neutral-600"
+                            ? "bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200 dark:bg-[var(--color-accent-primary)]/20 dark:text-[var(--color-text-accent)] dark:hover:bg-[var(--color-accent-primary)]/30 dark:border-[var(--color-border-accent)]/30"
+                            : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:border-neutral-600"
                         }`}
                       >
                         {togglingHost === u.id
@@ -219,9 +219,9 @@ export default function UserDirectoryTable({ users }: Props) {
                           : "No"}
                       </button>
                     ) : u.role === "host" ? (
-                      <span className="text-[var(--color-text-accent)] text-xs">Primary Host</span>
+                      <span className="text-emerald-700 dark:text-[var(--color-text-accent)] text-xs">Primary Host</span>
                     ) : (
-                      <span className="text-neutral-500 text-xs">-</span>
+                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
                   </td>
                   <td className="py-2 px-3">
@@ -235,27 +235,27 @@ export default function UserDirectoryTable({ users }: Props) {
                         }`}
                       >
                         {SPOTLIGHT_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value} className="bg-neutral-900 text-white">
+                          <option key={opt.value} value={opt.value} className="bg-white text-gray-900 dark:bg-neutral-900 dark:text-white">
                             {opt.label}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <span className="text-neutral-500 text-xs">-</span>
+                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
                   </td>
-                  <td className="py-2 px-3 text-neutral-400 text-xs">
+                  <td className="py-2 px-3 text-[var(--color-text-secondary)] text-xs">
                     {u.created_at
                       ? new Date(u.created_at).toLocaleDateString()
                       : "-"}
                   </td>
                   <td className="py-2 px-3">
                     {u.role === "admin" ? (
-                      <span className="text-neutral-500 text-xs">Protected</span>
+                      <span className="text-[var(--color-text-secondary)] text-xs">Protected</span>
                     ) : (
                       <button
                         onClick={() => setDeleteModal({ open: true, user: u })}
-                        className="text-red-400 hover:text-red-300 text-xs underline"
+                        className="text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300 text-xs underline"
                       >
                         Delete
                       </button>
@@ -269,7 +269,7 @@ export default function UserDirectoryTable({ users }: Props) {
               <tr>
                 <td
                   colSpan={6}
-                  className="py-6 px-3 text-center text-neutral-400"
+                  className="py-6 px-3 text-center text-[var(--color-text-secondary)]"
                 >
                   No users found for this filter.
                 </td>
@@ -282,18 +282,18 @@ export default function UserDirectoryTable({ users }: Props) {
       {/* Delete Confirmation Modal */}
       {deleteModal.open && deleteModal.user && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-neutral-900 border border-red-900/50 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-red-400 mb-4">
+          <div className="bg-white dark:bg-neutral-900 border border-red-300 dark:border-red-900/50 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">
               Delete User
             </h2>
-            <p className="text-neutral-300 mb-4">
-              Are you sure you want to delete <strong className="text-white">{deleteModal.user.full_name ?? "this user"}</strong>?
+            <p className="text-gray-700 dark:text-neutral-300 mb-4">
+              Are you sure you want to delete <strong className="text-gray-900 dark:text-white">{deleteModal.user.full_name ?? "this user"}</strong>?
             </p>
-            <div className="p-4 bg-red-900/30 border border-red-800 rounded-lg mb-4">
-              <p className="text-red-300 font-medium mb-2">
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg mb-4">
+              <p className="text-red-700 dark:text-red-300 font-medium mb-2">
                 This action cannot be reversed. It will permanently delete:
               </p>
-              <ul className="text-red-200 text-sm space-y-1 ml-4">
+              <ul className="text-red-600 dark:text-red-200 text-sm space-y-1 ml-4">
                 <li>* Their profile information</li>
                 <li>* All suggestions they&apos;ve submitted</li>
                 <li>* All venue submissions</li>
@@ -302,27 +302,27 @@ export default function UserDirectoryTable({ users }: Props) {
             </div>
 
             <div className="mb-4">
-              <label className="block text-neutral-300 text-sm mb-2">
-                Type <strong className="text-white">DELETE</strong> to confirm:
+              <label className="block text-gray-700 dark:text-neutral-300 text-sm mb-2">
+                Type <strong className="text-gray-900 dark:text-white">DELETE</strong> to confirm:
               </label>
               <input
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full px-4 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder:text-neutral-500 focus:border-red-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-neutral-500 focus:border-red-500 focus:outline-none"
               />
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm mb-4">{error}</p>
+              <p className="text-red-600 dark:text-red-400 text-sm mb-4">{error}</p>
             )}
 
             <div className="flex gap-3">
               <button
                 onClick={handleDeleteUser}
                 disabled={isDeleting || confirmText !== "DELETE"}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 disabled:text-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-200 dark:disabled:bg-red-900 disabled:text-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
               >
                 {isDeleting ? "Deleting..." : "Delete User"}
               </button>
@@ -332,7 +332,7 @@ export default function UserDirectoryTable({ users }: Props) {
                   setConfirmText("");
                   setError("");
                 }}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-gray-900 dark:text-white rounded-lg transition-colors"
               >
                 Cancel
               </button>

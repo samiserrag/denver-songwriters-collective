@@ -35,10 +35,10 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-3">
+      <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-3">
         User Directory
       </h1>
-      <p className="text-neutral-300 mb-6">
+      <p className="text-[var(--color-text-secondary)] mb-6">
         Browse all users across roles. Use search and filters to find performers, studios, hosts, and admins.
       </p>
 
