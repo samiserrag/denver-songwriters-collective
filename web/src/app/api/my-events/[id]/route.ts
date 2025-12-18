@@ -39,14 +39,13 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Note: event_hosts.user_id references auth.users, not profiles
+  // So we fetch hosts without profile join, then fetch profiles separately
   const { data: event, error } = await supabase
     .from("events")
     .select(`
       *,
-      event_hosts(
-        id, user_id, role, invitation_status,
-        user:profiles(id, full_name, avatar_url)
-      )
+      event_hosts(id, user_id, role, invitation_status)
     `)
     .eq("id", eventId)
     .eq("is_dsc_event", true)
@@ -55,6 +54,27 @@ export async function GET(
   if (error || !event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
+
+  // Fetch profiles for all host user_ids
+  const hostUserIds = (event.event_hosts as { user_id: string }[])?.map(h => h.user_id) || [];
+  let hostsWithProfiles = event.event_hosts;
+
+  if (hostUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", hostUserIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    hostsWithProfiles = (event.event_hosts as { id: string; user_id: string; role: string; invitation_status: string }[])?.map(h => ({
+      ...h,
+      user: profileMap.get(h.user_id) || undefined
+    })) || [];
+  }
+
+  // Replace event_hosts with enriched version
+  const enrichedEvent = { ...event, event_hosts: hostsWithProfiles };
 
   // Get RSVPs
   const { data: rsvps } = await supabase
@@ -68,7 +88,7 @@ export async function GET(
     .order("created_at", { ascending: true });
 
   return NextResponse.json({
-    ...event,
+    ...enrichedEvent,
     rsvps: rsvps || []
   });
 }

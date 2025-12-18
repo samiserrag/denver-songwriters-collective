@@ -39,15 +39,14 @@ export default async function EditEventPage({
   const isAdmin = await checkAdminRole(supabase, session.user.id);
 
   // Fetch event with venue
+  // Note: event_hosts.user_id references auth.users, not profiles
+  // So we fetch hosts separately and join with profiles manually
   const { data: event, error } = await supabase
     .from("events")
     .select(`
       *,
       venues(id, name, address, city, state),
-      event_hosts(
-        id, user_id, role, invitation_status,
-        user:profiles(id, full_name, avatar_url)
-      )
+      event_hosts(id, user_id, role, invitation_status)
     `)
     .eq("id", eventId)
     .eq("is_dsc_event", true)
@@ -63,10 +62,26 @@ export default async function EditEventPage({
     notFound();
   }
 
-  console.log("[EditEventPage] Found event:", event.id, "| is_dsc_event:", event.is_dsc_event, "| is_published:", event.is_published);
+  // Fetch profiles for all host user_ids
+  const hostUserIds = (event.event_hosts as { user_id: string }[])?.map(h => h.user_id) || [];
+
+  let hostsWithProfiles: EventHost[] = [];
+  if (hostUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", hostUserIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    hostsWithProfiles = (event.event_hosts as { id: string; user_id: string; role: string; invitation_status: string }[])?.map(h => ({
+      ...h,
+      user: profileMap.get(h.user_id) || undefined
+    })) || [];
+  }
 
   // Check authorization
-  const userHost = (event.event_hosts as EventHost[])?.find(
+  const userHost = hostsWithProfiles.find(
     (h) => h.user_id === session.user.id && h.invitation_status === "accepted"
   );
 
@@ -150,7 +165,7 @@ export default async function EditEventPage({
             {isPrimaryHost && (
               <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
                 <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Co-hosts</h2>
-                <CoHostManager eventId={eventId} hosts={(event.event_hosts as EventHost[]) || []} />
+                <CoHostManager eventId={eventId} hosts={hostsWithProfiles} />
               </section>
             )}
           </div>
