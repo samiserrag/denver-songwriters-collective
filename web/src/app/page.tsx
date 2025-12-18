@@ -30,6 +30,7 @@ function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number }): Event {
     capacity: dbEvent.capacity,
     rsvp_count: dbEvent.rsvp_count ?? 0,
     is_dsc_event: dbEvent.is_dsc_event,
+    imageUrl: dbEvent.cover_image_url ?? undefined,
   };
 }
 

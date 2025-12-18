@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/events";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event } from "@/types";
-import { EVENT_TYPE_CONFIG } from "@/types/events";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -17,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 
-function mapDBEventToEvent(dbEvent: DBEvent): Event {
+function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number }): Event {
   return {
     id: dbEvent.id,
     title: dbEvent.title,
@@ -31,6 +30,8 @@ function mapDBEventToEvent(dbEvent: DBEvent): Event {
     location: dbEvent.venue_address ?? undefined,
     capacity: dbEvent.capacity,
     is_dsc_event: dbEvent.is_dsc_event,
+    imageUrl: dbEvent.cover_image_url ?? undefined,
+    rsvp_count: dbEvent.rsvp_count ?? 0,
   };
 }
 
@@ -81,27 +82,6 @@ const eventTypes = [
   },
 ];
 
-interface DSCEvent {
-  id: string;
-  title: string;
-  event_type: string;
-  venue_name: string | null;
-  venue_address: string | null;
-  day_of_week: string | null;
-  start_time: string | null;
-  capacity: number | null;
-  cover_image_url: string | null;
-  event_hosts: Array<{
-    user: { full_name: string | null } | null;
-  }>;
-  rsvp_count?: number;
-}
-
-function getGoogleMapsUrl(address: string | null): string | null {
-  if (!address) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-}
-
 export default async function EventsPage() {
   const supabase = await createSupabaseServerClient();
   const today = new Date().toISOString().split("T")[0];
@@ -138,37 +118,16 @@ export default async function EventsPage() {
   const pastEvents: Event[] = (pastDbEvents ?? []).map(mapDBEventToEvent);
 
   // Fetch DSC community events (published only)
-  // Note: event_hosts.user_id references auth.users, not profiles
-  // So we fetch hosts without profile join, then fetch profiles separately
   const { data: dscEventsData } = await supabase
     .from("events")
-    .select(`
-      id, title, event_type, venue_name, venue_address, day_of_week, start_time, capacity, cover_image_url,
-      event_hosts(user_id)
-    `)
+    .select("*")
     .eq("is_dsc_event", true)
     .eq("status", "active")
     .eq("is_published", true)
-    .order("day_of_week", { ascending: true });
+    .order("created_at", { ascending: false });
 
-  // Collect all host user_ids and fetch profiles
-  const allHostUserIds = (dscEventsData || []).flatMap(e =>
-    (e.event_hosts as { user_id: string }[])?.map(h => h.user_id) || []
-  );
-  const uniqueHostUserIds = [...new Set(allHostUserIds)];
-
-  let hostProfileMap = new Map<string, { full_name: string | null }>();
-  if (uniqueHostUserIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", uniqueHostUserIds);
-
-    hostProfileMap = new Map(profiles?.map(p => [p.id, { full_name: p.full_name }]) || []);
-  }
-
-  // Enrich events with host profiles and get RSVP counts
-  const dscEvents: DSCEvent[] = await Promise.all(
+  // Convert DSC events to Event type with RSVP counts
+  const dscEvents: Event[] = await Promise.all(
     (dscEventsData || []).map(async (event) => {
       const { count } = await supabase
         .from("event_rsvps")
@@ -176,16 +135,7 @@ export default async function EventsPage() {
         .eq("event_id", event.id)
         .eq("status", "confirmed");
 
-      // Map hosts with profiles
-      const enrichedHosts = (event.event_hosts as { user_id: string }[])?.map(h => ({
-        user: hostProfileMap.get(h.user_id) || null
-      })) || [];
-
-      return {
-        ...event,
-        event_hosts: enrichedHosts,
-        rsvp_count: count || 0
-      } as DSCEvent;
+      return mapDBEventToEvent({ ...event, rsvp_count: count || 0 });
     })
   );
 
@@ -217,71 +167,7 @@ export default async function EventsPage() {
               </p>
             </div>
             {dscEvents.length > 0 || upcomingEvents.length > 0 ? (
-              <div className="space-y-6">
-                {/* DSC Community Events */}
-                {dscEvents.length > 0 && (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {dscEvents.map((event) => {
-                      const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
-                        || EVENT_TYPE_CONFIG.other;
-                      const hostNames = event.event_hosts
-                        ?.map((h) => h.user?.full_name)
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .join(", ");
-                      const remaining = event.capacity
-                        ? Math.max(0, event.capacity - (event.rsvp_count || 0))
-                        : null;
-
-                      return (
-                        <Link
-                          key={event.id}
-                          href={`/events/${event.id}`}
-                          className="block p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-tertiary)]/50 hover:border-[var(--color-border-accent)] transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xl">{config.icon}</span>
-                                <span className="px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs rounded truncate">
-                                  {config.label}
-                                </span>
-                              </div>
-                              <h3 className="text-[var(--color-text-primary)] font-medium mb-1 line-clamp-1">{event.title}</h3>
-                              <p className="text-[var(--color-text-secondary)] text-sm line-clamp-1">
-                                • {event.day_of_week}s {event.start_time && `at ${event.start_time}`}
-                              </p>
-                              {hostNames && (
-                                <p className="text-[var(--color-text-secondary)] text-xs mt-1.5 line-clamp-1">
-                                  Hosted by {hostNames}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right shrink-0">
-                              <div className="text-xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count || 0}</div>
-                              <div className="text-xs text-[var(--color-text-secondary)]">
-                                {event.capacity ? (
-                                  remaining === 0 ? (
-                                    <span className="text-amber-400">Full</span>
-                                  ) : (
-                                    `of ${event.capacity}`
-                                  )
-                                ) : (
-                                  "going"
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-                {/* Other upcoming events (non-DSC) */}
-                {upcomingEvents.length > 0 && (
-                  <EventGrid events={upcomingEvents} />
-                )}
-              </div>
+              <EventGrid events={[...dscEvents, ...upcomingEvents]} />
             ) : (
               <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-10 text-center">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">

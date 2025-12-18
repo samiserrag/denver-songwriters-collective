@@ -200,14 +200,14 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             currentImageUrl={coverImageUrl}
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            aspectRatio={16 / 9}
+            aspectRatio={1}
             shape="square"
             placeholderText="Add Cover Photo"
             maxSizeMB={5}
           />
         </div>
         <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-          Recommended: 1200x675px or larger, 16:9 aspect ratio
+          Recommended: 800x800px (square). Image will be cropped to 1:1.
         </p>
       </div>
 

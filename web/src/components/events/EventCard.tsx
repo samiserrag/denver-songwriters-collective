@@ -87,8 +87,8 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           className
         )}
       >
-        {/* Image Section */}
-        <div className={cn("relative overflow-hidden", compact ? "aspect-[3/2]" : "aspect-[4/3]")}>
+        {/* Image Section - 1:1 square for consistent display */}
+        <div className={cn("relative overflow-hidden", "aspect-square")}>
           {event.imageUrl ? (
             <img
               src={event.imageUrl}

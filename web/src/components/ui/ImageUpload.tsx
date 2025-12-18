@@ -137,8 +137,9 @@ export function ImageUpload({
       height: (completedCrop.height / 100) * image.height * scaleY,
     };
 
-    // Output size - max 1200px on the larger dimension, preserving aspect ratio
-    const maxDimension = 1200;
+    // Output size - max 800px for square, 1200px for landscape
+    const isSquare = Math.abs(pixelCrop.width - pixelCrop.height) < 1;
+    const maxDimension = isSquare ? 800 : 1200;
     let outputWidth: number;
     let outputHeight: number;
 
@@ -308,13 +309,17 @@ export function ImageUpload({
           </div>
 
           <p className="text-sm text-[var(--color-text-secondary)] mb-4 text-center">
-            The image will be cropped to a {
-              aspectRatio === 1 ? 'square' :
-              aspectRatio === 16/9 ? '16:9' :
-              aspectRatio === 4/3 ? '4:3' :
-              aspectRatio === 3/2 ? '3:2' :
-              `${Math.round(aspectRatio * 10) / 10}:1`
-            } aspect ratio.
+            {aspectRatio === 1 ? (
+              <>Cropping to <strong>square (1:1)</strong>. Output: 800x800px max.</>
+            ) : aspectRatio === 16/9 ? (
+              <>Cropping to <strong>16:9</strong>. Output: 1200x675px max.</>
+            ) : aspectRatio === 4/3 ? (
+              <>Cropping to <strong>4:3</strong>. Output: 1200x900px max.</>
+            ) : aspectRatio === 3/2 ? (
+              <>Cropping to <strong>3:2</strong>. Output: 1200x800px max.</>
+            ) : (
+              <>Cropping to <strong>{Math.round(aspectRatio * 10) / 10}:1</strong> aspect ratio.</>
+            )}
           </p>
 
           {error && (
