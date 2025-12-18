@@ -121,24 +121,33 @@ export async function POST(request: Request) {
   }
 
   // Create event (default to draft unless explicitly published)
+  // Note: Using type assertion for new columns until database.types.ts is regenerated
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eventInsertData: any = {
+    title: body.title,
+    description: body.description || null,
+    event_type: body.event_type,
+    is_dsc_event: true,
+    capacity: body.has_timeslots ? body.total_slots : (body.capacity || null), // For timeslot events, capacity = total_slots
+    host_notes: body.host_notes || null,
+    venue_id: body.venue_id,
+    day_of_week: body.day_of_week || null,
+    start_time: body.start_time,
+    end_time: body.end_time || null,
+    recurrence_rule: body.recurrence_rule || null,
+    cover_image_url: body.cover_image_url || null,
+    status: "active",
+    is_published: body.is_published ?? false,
+    // New timeslot columns (added via migration 20251216100001)
+    has_timeslots: body.has_timeslots ?? false,
+    total_slots: body.has_timeslots ? body.total_slots : null,
+    slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
+    allow_guest_slots: body.has_timeslots ? (body.allow_guests ?? false) : false,
+  };
+
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .insert({
-      title: body.title,
-      description: body.description || null,
-      event_type: body.event_type,
-      is_dsc_event: true,
-      capacity: body.capacity || null,
-      host_notes: body.host_notes || null,
-      venue_id: body.venue_id,
-      day_of_week: body.day_of_week || null,
-      start_time: body.start_time,
-      end_time: body.end_time || null,
-      recurrence_rule: body.recurrence_rule || null,
-      cover_image_url: body.cover_image_url || null,
-      status: "active",
-      is_published: body.is_published ?? false
-    })
+    .insert(eventInsertData)
     .select()
     .single();
 
@@ -168,35 +177,16 @@ export async function POST(request: Request) {
     console.log("[POST /api/my-events] Host assigned for user:", session.user.id, "to event:", event.id);
   }
 
-  // Create timeslots if has_timeslots is enabled
-  if (body.has_timeslots && body.total_slots && body.slot_duration_minutes && body.start_time) {
-    const slots = [];
-    const [hours, minutes] = body.start_time.split(":").map(Number);
+  // Generate timeslots using the database function if has_timeslots is enabled
+  if (body.has_timeslots && body.total_slots) {
+    const { error: timeslotsError } = await supabase
+      .rpc("generate_event_timeslots", { p_event_id: event.id });
 
-    for (let i = 0; i < body.total_slots; i++) {
-      const slotStartMinutes = hours * 60 + minutes + (i * body.slot_duration_minutes);
-      const slotEndMinutes = slotStartMinutes + body.slot_duration_minutes;
-
-      const startHours = Math.floor(slotStartMinutes / 60);
-      const startMins = slotStartMinutes % 60;
-      const endHours = Math.floor(slotEndMinutes / 60);
-      const endMins = slotEndMinutes % 60;
-
-      slots.push({
-        event_id: event.id,
-        slot_index: i + 1,
-        start_time: `${startHours.toString().padStart(2, "0")}:${startMins.toString().padStart(2, "0")}:00`,
-        end_time: `${endHours.toString().padStart(2, "0")}:${endMins.toString().padStart(2, "0")}:00`,
-      });
-    }
-
-    const { error: slotsError } = await supabase
-      .from("event_slots")
-      .insert(slots);
-
-    if (slotsError) {
-      console.error("Slot creation error:", slotsError);
-      // Event was created, so don't fail completely
+    if (timeslotsError) {
+      console.error("[POST /api/my-events] Timeslot generation error:", timeslotsError.message, "| Code:", timeslotsError.code);
+      // Event was created, so don't fail completely - slots can be regenerated
+    } else {
+      console.log("[POST /api/my-events] Timeslots generated for event:", event.id);
     }
   }
 

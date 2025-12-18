@@ -7,6 +7,7 @@ import { EVENT_TYPE_CONFIG } from "@/types/events";
 import type { EventType } from "@/types/events";
 import { RSVPSection } from "@/components/events/RSVPSection";
 import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
+import { TimeslotSection } from "@/components/events/TimeslotSection";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +73,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     .select(`
       id, title, description, event_type, venue_name, venue_address,
       day_of_week, start_time, end_time, capacity, cover_image_url,
-      is_dsc_event, status, created_at, event_date
+      is_dsc_event, status, created_at, event_date,
+      has_timeslots, total_slots, slot_duration_minutes, is_published
     `)
     .eq("id", id)
     .single();
@@ -232,8 +234,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             </div>
           </div>
 
+          {/* Action buttons row */}
           <div className="flex flex-wrap items-start gap-4 mb-8">
-            {event.is_dsc_event && (
+            {/* Show RSVP button only for non-timeslot DSC events */}
+            {event.is_dsc_event && !(event as { has_timeslots?: boolean }).has_timeslots && (
               <Suspense fallback={
                 <div className="animate-pulse">
                   <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
@@ -271,6 +275,18 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </a>
             )}
           </div>
+
+          {/* Timeslot claiming section for timeslot-enabled events */}
+          {event.is_dsc_event && (event as { has_timeslots?: boolean }).has_timeslots && (
+            <div className="mb-8">
+              <TimeslotSection
+                eventId={event.id}
+                eventStartTime={event.start_time}
+                totalSlots={(event as { total_slots?: number }).total_slots || 10}
+                slotDuration={(event as { slot_duration_minutes?: number }).slot_duration_minutes || 15}
+              />
+            </div>
+          )}
 
           {event.description && (
             <div className="mb-8">
