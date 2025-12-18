@@ -121,33 +121,28 @@ export async function POST(request: Request) {
   }
 
   // Create event (default to draft unless explicitly published)
-  // Note: Using type assertion for new columns until database.types.ts is regenerated
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const eventInsertData: any = {
-    title: body.title,
-    description: body.description || null,
-    event_type: body.event_type,
-    is_dsc_event: true,
-    capacity: body.has_timeslots ? body.total_slots : (body.capacity || null), // For timeslot events, capacity = total_slots
-    host_notes: body.host_notes || null,
-    venue_id: body.venue_id,
-    day_of_week: body.day_of_week || null,
-    start_time: body.start_time,
-    end_time: body.end_time || null,
-    recurrence_rule: body.recurrence_rule || null,
-    cover_image_url: body.cover_image_url || null,
-    status: "active",
-    is_published: body.is_published ?? false,
-    // New timeslot columns (added via migration 20251216100001)
-    has_timeslots: body.has_timeslots ?? false,
-    total_slots: body.has_timeslots ? body.total_slots : null,
-    slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
-    allow_guest_slots: body.has_timeslots ? (body.allow_guests ?? false) : false,
-  };
-
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .insert(eventInsertData)
+    .insert({
+      title: body.title,
+      description: body.description || null,
+      event_type: body.event_type,
+      is_dsc_event: true,
+      capacity: body.has_timeslots ? body.total_slots : (body.capacity || null), // For timeslot events, capacity = total_slots
+      host_notes: body.host_notes || null,
+      venue_id: body.venue_id,
+      day_of_week: body.day_of_week || null,
+      start_time: body.start_time,
+      end_time: body.end_time || null,
+      recurrence_rule: body.recurrence_rule || null,
+      cover_image_url: body.cover_image_url || null,
+      status: "active",
+      is_published: body.is_published ?? false,
+      has_timeslots: body.has_timeslots ?? false,
+      total_slots: body.has_timeslots ? body.total_slots : null,
+      slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
+      allow_guest_slots: body.has_timeslots ? (body.allow_guests ?? false) : false,
+    })
     .select()
     .single();
 

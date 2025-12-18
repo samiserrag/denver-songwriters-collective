@@ -446,13 +446,62 @@ export type Database = {
           },
         ]
       }
+      event_lineup_state: {
+        Row: {
+          event_id: string
+          now_playing_timeslot_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          event_id: string
+          now_playing_timeslot_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          event_id?: string
+          now_playing_timeslot_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_lineup_state_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_lineup_state_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lineup_state_now_playing_timeslot_id_fkey"
+            columns: ["now_playing_timeslot_id"]
+            isOneToOne: false
+            referencedRelation: "event_timeslots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lineup_state_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_rsvps: {
         Row: {
           created_at: string | null
           event_id: string
           id: string
           notes: string | null
-          offer_expires_at: string | null
           status: string
           updated_at: string | null
           user_id: string
@@ -463,7 +512,6 @@ export type Database = {
           event_id: string
           id?: string
           notes?: string | null
-          offer_expires_at?: string | null
           status?: string
           updated_at?: string | null
           user_id: string
@@ -474,7 +522,6 @@ export type Database = {
           event_id?: string
           id?: string
           notes?: string | null
-          offer_expires_at?: string | null
           status?: string
           updated_at?: string | null
           user_id?: string
@@ -552,6 +599,48 @@ export type Database = {
           },
         ]
       }
+      event_timeslots: {
+        Row: {
+          created_at: string | null
+          duration_minutes: number
+          event_id: string
+          id: string
+          slot_index: number
+          start_offset_minutes: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_minutes?: number
+          event_id: string
+          id?: string
+          slot_index: number
+          start_offset_minutes?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_minutes?: number
+          event_id?: string
+          id?: string
+          slot_index?: number
+          start_offset_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_timeslots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_timeslots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_update_suggestions: {
         Row: {
           admin_response: string | null
@@ -620,6 +709,7 @@ export type Database = {
       }
       events: {
         Row: {
+          allow_guest_slots: boolean | null
           capacity: number | null
           category: string | null
           cover_image_url: string | null
@@ -629,10 +719,12 @@ export type Database = {
           end_time: string | null
           event_date: string | null
           event_type: Database["public"]["Enums"]["event_type"]
+          has_timeslots: boolean | null
           host_id: string | null
           host_notes: string | null
           id: string
           is_dsc_event: boolean | null
+          is_published: boolean | null
           is_showcase: boolean | null
           is_spotlight: boolean | null
           last_verified_at: string | null
@@ -640,11 +732,14 @@ export type Database = {
           recurrence_rule: string | null
           region_id: number | null
           signup_time: string | null
+          slot_duration_minutes: number | null
+          slot_offer_window_minutes: number | null
           slug: string | null
           spotlight_reason: string | null
           start_time: string | null
           status: string | null
           title: string
+          total_slots: number | null
           updated_at: string | null
           venue_address: string | null
           venue_id: string | null
@@ -652,6 +747,7 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          allow_guest_slots?: boolean | null
           capacity?: number | null
           category?: string | null
           cover_image_url?: string | null
@@ -661,10 +757,12 @@ export type Database = {
           end_time?: string | null
           event_date?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
+          has_timeslots?: boolean | null
           host_id?: string | null
           host_notes?: string | null
           id?: string
           is_dsc_event?: boolean | null
+          is_published?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
           last_verified_at?: string | null
@@ -672,11 +770,14 @@ export type Database = {
           recurrence_rule?: string | null
           region_id?: number | null
           signup_time?: string | null
+          slot_duration_minutes?: number | null
+          slot_offer_window_minutes?: number | null
           slug?: string | null
           spotlight_reason?: string | null
           start_time?: string | null
           status?: string | null
           title: string
+          total_slots?: number | null
           updated_at?: string | null
           venue_address?: string | null
           venue_id?: string | null
@@ -684,6 +785,7 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          allow_guest_slots?: boolean | null
           capacity?: number | null
           category?: string | null
           cover_image_url?: string | null
@@ -693,10 +795,12 @@ export type Database = {
           end_time?: string | null
           event_date?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
+          has_timeslots?: boolean | null
           host_id?: string | null
           host_notes?: string | null
           id?: string
           is_dsc_event?: boolean | null
+          is_published?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
           last_verified_at?: string | null
@@ -704,11 +808,14 @@ export type Database = {
           recurrence_rule?: string | null
           region_id?: number | null
           signup_time?: string | null
+          slot_duration_minutes?: number | null
+          slot_offer_window_minutes?: number | null
           slug?: string | null
           spotlight_reason?: string | null
           start_time?: string | null
           status?: string | null
           title?: string
+          total_slots?: number | null
           updated_at?: string | null
           venue_address?: string | null
           venue_id?: string | null
@@ -790,6 +897,7 @@ export type Database = {
           description: string | null
           event_id: string | null
           id: string
+          is_approved: boolean | null
           is_published: boolean | null
           name: string
           slug: string
@@ -803,6 +911,7 @@ export type Database = {
           description?: string | null
           event_id?: string | null
           id?: string
+          is_approved?: boolean | null
           is_published?: boolean | null
           name: string
           slug: string
@@ -816,6 +925,7 @@ export type Database = {
           description?: string | null
           event_id?: string | null
           id?: string
+          is_approved?: boolean | null
           is_published?: boolean | null
           name?: string
           slug?: string
@@ -941,6 +1051,95 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_verifications: {
+        Row: {
+          action_token: string | null
+          action_type: string | null
+          claim_id: string | null
+          code: string | null
+          code_attempts: number | null
+          code_expires_at: string | null
+          created_at: string | null
+          email: string
+          event_id: string
+          guest_name: string
+          id: string
+          locked_until: string | null
+          timeslot_id: string | null
+          token_expires_at: string | null
+          token_used: boolean | null
+          updated_at: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          action_token?: string | null
+          action_type?: string | null
+          claim_id?: string | null
+          code?: string | null
+          code_attempts?: number | null
+          code_expires_at?: string | null
+          created_at?: string | null
+          email: string
+          event_id: string
+          guest_name: string
+          id?: string
+          locked_until?: string | null
+          timeslot_id?: string | null
+          token_expires_at?: string | null
+          token_used?: boolean | null
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          action_token?: string | null
+          action_type?: string | null
+          claim_id?: string | null
+          code?: string | null
+          code_attempts?: number | null
+          code_expires_at?: string | null
+          created_at?: string | null
+          email?: string
+          event_id?: string
+          guest_name?: string
+          id?: string
+          locked_until?: string | null
+          timeslot_id?: string | null
+          token_expires_at?: string | null
+          token_used?: boolean | null
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_verifications_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "timeslot_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_timeslot_id_fkey"
+            columns: ["timeslot_id"]
+            isOneToOne: false
+            referencedRelation: "event_timeslots"
             referencedColumns: ["id"]
           },
         ]
@@ -1254,6 +1453,7 @@ export type Database = {
           is_featured: boolean | null
           is_host: boolean | null
           last_active_at: string | null
+          no_show_count: number | null
           onboarding_complete: boolean | null
           open_to_collabs: boolean | null
           paypal_url: string | null
@@ -1289,6 +1489,7 @@ export type Database = {
           is_featured?: boolean | null
           is_host?: boolean | null
           last_active_at?: string | null
+          no_show_count?: number | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
@@ -1324,6 +1525,7 @@ export type Database = {
           is_featured?: boolean | null
           is_host?: boolean | null
           last_active_at?: string | null
+          no_show_count?: number | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
@@ -1486,6 +1688,83 @@ export type Database = {
           {
             foreignKeyName: "studio_services_studio_id_fkey"
             columns: ["studio_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timeslot_claims: {
+        Row: {
+          claimed_at: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean | null
+          id: string
+          member_id: string | null
+          offer_expires_at: string | null
+          status: string
+          timeslot_id: string
+          updated_at: string | null
+          updated_by: string | null
+          waitlist_position: number | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean | null
+          id?: string
+          member_id?: string | null
+          offer_expires_at?: string | null
+          status?: string
+          timeslot_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+          waitlist_position?: number | null
+        }
+        Update: {
+          claimed_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean | null
+          id?: string
+          member_id?: string | null
+          offer_expires_at?: string | null
+          status?: string
+          timeslot_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          waitlist_position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timeslot_claims_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeslot_claims_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeslot_claims_timeslot_id_fkey"
+            columns: ["timeslot_id"]
+            isOneToOne: false
+            referencedRelation: "event_timeslots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timeslot_claims_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1667,7 +1946,76 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_event_timeslots: {
+        Args: { p_event_id: string }
+        Returns: {
+          created_at: string | null
+          duration_minutes: number
+          event_id: string
+          id: string
+          slot_index: number
+          start_offset_minutes: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "event_timeslots"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       is_admin: { Args: never; Returns: boolean }
+      mark_timeslot_no_show: {
+        Args: { p_claim_id: string; p_updated_by: string }
+        Returns: {
+          claimed_at: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean | null
+          id: string
+          member_id: string | null
+          offer_expires_at: string | null
+          status: string
+          timeslot_id: string
+          updated_at: string | null
+          updated_by: string | null
+          waitlist_position: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "timeslot_claims"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_timeslot_performed: {
+        Args: { p_claim_id: string; p_updated_by: string }
+        Returns: {
+          claimed_at: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean | null
+          id: string
+          member_id: string | null
+          offer_expires_at: string | null
+          status: string
+          timeslot_id: string
+          updated_at: string | null
+          updated_by: string | null
+          waitlist_position: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "timeslot_claims"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      promote_timeslot_waitlist: {
+        Args: { p_offer_window_minutes?: number; p_timeslot_id: string }
+        Returns: string
+      }
       rpc_admin_set_showcase_lineup: {
         Args: { event_id: string; performer_ids: string[] }
         Returns: {

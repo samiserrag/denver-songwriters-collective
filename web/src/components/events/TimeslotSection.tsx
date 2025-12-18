@@ -6,34 +6,20 @@ import { useAuth } from "@/lib/auth/useAuth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import type { Database } from "@/lib/supabase/database.types";
 
-// Inline types until database.types.ts is regenerated
-interface Timeslot {
-  id: string;
-  event_id: string;
-  slot_index: number;
-  start_offset_minutes: number | null;
-  duration_minutes: number;
-  created_at: string | null;
-}
+type DBTimeslot = Database["public"]["Tables"]["event_timeslots"]["Row"];
+type DBTimeslotClaim = Database["public"]["Tables"]["timeslot_claims"]["Row"];
 
-interface TimeslotClaim {
-  id: string;
-  timeslot_id: string;
-  member_id: string | null;
-  guest_name: string | null;
-  status: "confirmed" | "offered" | "waitlist" | "cancelled" | "no_show" | "performed";
-  offer_expires_at: string | null;
-  waitlist_position: number | null;
-  claimed_at: string | null;
+interface TimeslotClaim extends DBTimeslotClaim {
   // Joined profile data
   member?: {
     id: string;
     full_name: string | null;
-  };
+  } | null;
 }
 
-interface TimeslotWithClaim extends Timeslot {
+interface TimeslotWithClaim extends DBTimeslot {
   claim?: TimeslotClaim | null;
 }
 
@@ -66,13 +52,11 @@ export function TimeslotSection({
       setLoading(true);
 
       // Fetch timeslots for this event
-      // Note: Using type assertion until database.types.ts is regenerated with event_timeslots table
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: slots, error: slotsError } = await (supabase as any)
+      const { data: slots, error: slotsError } = await supabase
         .from("event_timeslots")
         .select("*")
         .eq("event_id", eventId)
-        .order("slot_index", { ascending: true }) as { data: Timeslot[] | null; error: Error | null };
+        .order("slot_index", { ascending: true });
 
       if (slotsError) {
         console.error("Error fetching timeslots:", slotsError);
@@ -86,16 +70,15 @@ export function TimeslotSection({
       }
 
       // Fetch claims for these timeslots
-      const slotIds = slots.map((s: Timeslot) => s.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: claims, error: claimsError } = await (supabase as any)
+      const slotIds = slots.map((s: DBTimeslot) => s.id);
+      const { data: claims, error: claimsError } = await supabase
         .from("timeslot_claims")
         .select(`
           *,
           member:profiles!timeslot_claims_member_id_fkey(id, full_name)
         `)
         .in("timeslot_id", slotIds)
-        .not("status", "in", "(cancelled,no_show)") as { data: TimeslotClaim[] | null; error: Error | null };
+        .not("status", "in", "(cancelled,no_show)");
 
       if (claimsError) {
         console.error("Error fetching claims:", claimsError);
@@ -103,14 +86,14 @@ export function TimeslotSection({
 
       // Map claims to their slots
       const claimsBySlot = new Map<string, TimeslotClaim>();
-      (claims || []).forEach((claim: TimeslotClaim) => {
+      ((claims || []) as TimeslotClaim[]).forEach(claim => {
         // Only track confirmed claims for display (not waitlist)
         if (claim.status === "confirmed" || claim.status === "performed") {
           claimsBySlot.set(claim.timeslot_id, claim);
         }
       });
 
-      const slotsWithClaims: TimeslotWithClaim[] = slots.map(slot => ({
+      const slotsWithClaims: TimeslotWithClaim[] = (slots as DBTimeslot[]).map(slot => ({
         ...slot,
         claim: claimsBySlot.get(slot.id) || null,
       }));
@@ -145,8 +128,7 @@ export function TimeslotSection({
     }
 
     // Insert a new claim
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: newClaim, error: claimError } = await (supabase as any)
+    const { data: newClaim, error: claimError } = await supabase
       .from("timeslot_claims")
       .insert({
         timeslot_id: timeslotId,
@@ -157,7 +139,7 @@ export function TimeslotSection({
         *,
         member:profiles!timeslot_claims_member_id_fkey(id, full_name)
       `)
-      .single() as { data: TimeslotClaim | null; error: { code?: string; message?: string } | null };
+      .single();
 
     setPendingSlotId(null);
 
@@ -193,12 +175,11 @@ export function TimeslotSection({
     }
 
     // Update claim status to cancelled
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from("timeslot_claims")
       .update({ status: "cancelled" })
       .eq("id", slot.claim.id)
-      .eq("member_id", user.id) as { error: { message?: string } | null };
+      .eq("member_id", user.id);
 
     setPendingSlotId(null);
 
