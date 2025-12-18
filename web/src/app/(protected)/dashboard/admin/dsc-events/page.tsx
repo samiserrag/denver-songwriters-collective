@@ -95,7 +95,10 @@ export default async function AdminDSCEventsPage() {
 
         {/* Active Events */}
         <section className="mb-8">
-          <h2 className="text-xl text-green-400 mb-4">Active ({eventsByStatus.active.length})</h2>
+          <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Active ({eventsByStatus.active.length})
+          </h2>
           {eventsByStatus.active.length === 0 ? (
             <p className="text-[var(--color-text-secondary)]">No active events</p>
           ) : (
@@ -110,7 +113,10 @@ export default async function AdminDSCEventsPage() {
         {/* Cancelled Events */}
         {eventsByStatus.cancelled.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-xl text-red-400 mb-4">Cancelled ({eventsByStatus.cancelled.length})</h2>
+            <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              Cancelled ({eventsByStatus.cancelled.length})
+            </h2>
             <div className="space-y-2">
               {eventsByStatus.cancelled.map((event) => (
                 <EventRow key={event.id} event={event} />
@@ -143,10 +149,10 @@ function EventRow({ event }: { event: DSCEvent }) {
           </p>
         </div>
       </div>
-      <span className={`text-xs px-2 py-1 rounded ${
+      <span className={`text-xs px-2 py-1 rounded font-medium ${
         event.status === "active"
-          ? "bg-green-900/50 text-green-400"
-          : "bg-red-900/50 text-red-400"
+          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
+          : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
       }`}>
         {event.status}
       </span>
