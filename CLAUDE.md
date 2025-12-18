@@ -68,6 +68,9 @@ This project uses **git worktrees** for development:
 | `gallery_albums` | Photo album collections |
 | `change_reports` | Community-submitted event corrections |
 | `event_rsvps` | Event RSVPs with waitlist and offer tracking |
+| `event_timeslots` | Individual performance slots for timeslot-enabled events |
+| `timeslot_claims` | Claims on timeslots (confirmed, waitlist, cancelled, etc.) |
+| `event_lineup_state` | "Now playing" tracking for live events |
 | `monthly_highlights` | Featured content for homepage |
 | `host_requests` | Applications to become an event host |
 | `approved_hosts` | Approved host permissions |
@@ -233,6 +236,21 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Timeslot Claiming UI (December 2025)
+- **TimeslotSection component** - Public event detail page shows claimable performance slots
+- **Conditional UI** - Events with `has_timeslots=true` show slot grid; others show RSVP button
+- **Slot claiming** - Authenticated users can claim available slots (one per person)
+- **API wiring** - Event creation now calls `generate_event_timeslots()` RPC
+- **New columns inserted** - `has_timeslots`, `total_slots`, `slot_duration_minutes`, `allow_guest_slots`
+- Key files:
+  - `web/src/components/events/TimeslotSection.tsx` - New client component for claiming slots
+  - `web/src/app/events/[id]/page.tsx` - Conditional rendering of timeslots vs RSVP
+  - `web/src/app/api/my-events/route.ts` - Inserts new columns, calls RPC
+- Database tables (migration 20251216100001):
+  - `event_timeslots` - Individual performance slots per event
+  - `timeslot_claims` - Claims on slots with status tracking
+  - `event_lineup_state` - "Now playing" state for live events
+
 ### Event Publishing UX Improvements (December 2025)
 - **Filter tabs on My Events page** - Live, Drafts, Cancelled tabs with count badges
 - **Publish/Unpublish button** on event detail page for quick state changes
@@ -252,7 +270,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 - **Auto-enable timeslots** for open_mic and showcase event types
 - **Configurable slot parameters** - Number of slots, duration (5-30 min), allow guests
 - **Capacity field hidden** when timeslots enabled (slots = capacity)
-- **Event creation creates slots** - Generates `event_slots` rows with calculated times
+- **Event creation creates slots** - Uses `generate_event_timeslots()` RPC to populate `event_timeslots` table
 - Key files:
   - `web/src/app/(protected)/dashboard/my-events/_components/SlotConfigSection.tsx` - New component
   - `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - Integration
