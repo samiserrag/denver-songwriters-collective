@@ -29,14 +29,13 @@ export async function GET() {
   const eventIds = hostEntries.map(h => h.event_id);
 
   // Get full event data
+  // Note: event_hosts.user_id references auth.users, not profiles
+  // So we fetch hosts without profile join, then fetch profiles separately
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select(`
       *,
-      event_hosts(
-        id, user_id, role, invitation_status,
-        user:profiles(id, full_name, avatar_url)
-      )
+      event_hosts(id, user_id, role, invitation_status)
     `)
     .in("id", eventIds)
     .eq("is_dsc_event", true)
@@ -46,9 +45,34 @@ export async function GET() {
     return NextResponse.json({ error: eventsError.message }, { status: 500 });
   }
 
-  // Add RSVP counts
+  // Collect all host user_ids across all events and fetch profiles
+  const allHostUserIds = (events || []).flatMap(e =>
+    (e.event_hosts as { user_id: string }[])?.map(h => h.user_id) || []
+  );
+  const uniqueHostUserIds = [...new Set(allHostUserIds)];
+
+  let profileMap = new Map<string, { id: string; full_name: string | null; avatar_url: string | null }>();
+  if (uniqueHostUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", uniqueHostUserIds);
+
+    profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+  }
+
+  // Enrich events with host profiles
+  const enrichedEvents = (events || []).map(event => ({
+    ...event,
+    event_hosts: (event.event_hosts as { id: string; user_id: string; role: string; invitation_status: string }[])?.map(h => ({
+      ...h,
+      user: profileMap.get(h.user_id) || undefined
+    })) || []
+  }));
+
+  // Add RSVP counts to enriched events
   const eventsWithCounts = await Promise.all(
-    (events || []).map(async (event) => {
+    enrichedEvents.map(async (event) => {
       const { count } = await supabase
         .from("event_rsvps")
         .select("*", { count: "exact", head: true })
