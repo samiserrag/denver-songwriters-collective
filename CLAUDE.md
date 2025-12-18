@@ -6,7 +6,7 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 **Live Site:** https://denver-songwriters-collective.vercel.app
 
-> **Architecture Evolution (December 2024):** This project is being transformed into a **white-label community platform template**. See [ARCHITECTURE_PLAN.md](./ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
+> **Architecture Evolution (December 2025):** This project is being transformed into a **white-label community platform template**. See [ARCHITECTURE_PLAN.md](./ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
 
 ## Documentation
 
@@ -129,7 +129,7 @@ This project uses **git worktrees** for development:
 
 ## Security Audit Status
 
-### Completed (December 2024)
+### Completed (December 2025)
 
 #### Phase 1: RLS Security
 - [x] All 28 tables have RLS enabled
@@ -185,14 +185,14 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 - [ ] Event recurrence handling (RRULE parsing for recurring events)
 - [ ] Mobile app (React Native/Expo) - see ARCHITECTURE_PLAN.md
 
-### Pre-Launch Optimization (Completed December 2024)
+### Pre-Launch Optimization (Completed December 2025)
 - [x] Image optimization with `next/image` component on homepage (highlights, blog images, author avatars)
 - [x] Dynamic SEO metadata for all detail pages via `generateMetadata`
 - [x] OpenGraph/Twitter card metadata in root layout with default OG image
 - [x] Iframe accessibility - descriptive `title` attributes on Spotify/YouTube embeds
 - [x] Remote image patterns configured in `next.config.ts` for Supabase storage
 
-### Critical LCP Performance Fix (December 2024)
+### Critical LCP Performance Fix (December 2025)
 - [x] **Fixed 16.0s LCP → target <2.5s** - Critical Lighthouse failure resolved
 - [x] Added `font-display: swap` to all 4 Google Fonts
 - [x] Replaced CSS `background-image` in HeroSection with Next.js `<Image priority>`
@@ -231,9 +231,9 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ---
 
-## Recent Changes (December 2024)
+## Recent Changes (December 2025)
 
-### Event Timeslot Configuration (December 2024)
+### Event Timeslot Configuration (December 2025)
 - **SlotConfigSection component** - Toggle between RSVP mode and performance slots
 - **Auto-enable timeslots** for open_mic and showcase event types
 - **Configurable slot parameters** - Number of slots, duration (5-30 min), allow guests
@@ -244,7 +244,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
   - `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - Integration
   - `web/src/app/api/my-events/route.ts` - Slot creation on event POST
 
-### Host/Admin Role Consolidation (December 2024)
+### Host/Admin Role Consolidation (December 2025)
 - **checkHostStatus() function** - Treats admins as hosts automatically
 - **Unified role checks** - All files now use `checkAdminRole()` from profiles.role
 - **Admins have host privileges** - No need for separate approved_hosts entry
@@ -252,7 +252,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
   - `web/src/lib/auth/adminAuth.ts` - Added checkHostStatus()
   - Multiple API routes and pages updated to use profiles.role checks
 
-### Gallery Feature Enhancement (December 2024)
+### Gallery Feature Enhancement (December 2025)
 - **Album listing** on `/gallery` page with cover images and photo counts
 - **Album detail page** at `/gallery/[slug]` with pagination
 - **Lightbox keyboard navigation** - arrow keys, escape, prev/next buttons
@@ -264,7 +264,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
   - `web/src/app/gallery/[slug]/page.tsx` - New album detail page
   - `web/src/components/gallery/GalleryGrid.tsx` - Keyboard navigation, accessibility
 
-### Stream 3: RSVP & Waitlist System (December 2024)
+### Stream 3: RSVP & Waitlist System (December 2025)
 - **24-hour waitlist claim window** - when a spot opens, next person has 24h to confirm
 - **CancelRSVPModal** - accessible cancellation with focus trap
 - **RSVPSection** - auth-aware wrapper with offer confirmation
@@ -278,7 +278,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
   - `web/src/components/events/CancelRSVPModal.tsx` - Cancellation modal
   - `web/src/components/events/RSVPSection.tsx` - Auth wrapper
 
-### Event Verification System v0.3.0 (December 2024)
+### Event Verification System v0.3.0 (December 2025)
 - **Change Reports feature** for community-submitted event corrections
 - **Admin verifications page** at `/dashboard/admin/verifications`
 - **Verified badges** on open mic listings
@@ -288,12 +288,12 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
   - `web/src/app/(protected)/dashboard/admin/verifications/page.tsx`
   - `web/src/app/api/change-reports/route.ts`
 
-### Events Page Improvements & Detail Page (December 2024)
+### Events Page Improvements & Detail Page (December 2025)
 - **Created `/events/[id]` detail page** for DSC events
 - **Reorganized events page** with past events section
 - **Shrunk event types** to compact pill-style tags
 
-### Theme & Performance (December 2024)
+### Theme & Performance (December 2025)
 - **Theme-aware color migration** - all hardcoded colors replaced with CSS variables
 - **Footer adapts to all theme presets** with inverse text colors
 - **CLS: 0.639 → 0.000** - eliminated all layout shifts
