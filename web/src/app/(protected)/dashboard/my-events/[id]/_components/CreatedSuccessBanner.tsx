@@ -29,11 +29,15 @@ export default function CreatedSuccessBanner({ isDraft, eventId }: CreatedSucces
           isDraft ? "text-amber-700 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-300"
         }`}>
           {isDraft
-            ? "Your event is saved but not visible to the public yet. Toggle the publish switch below when you're ready to go live."
+            ? "Your event is saved but not visible to the public yet."
             : "Your event is now live and visible on the Happenings page!"
           }
         </p>
-        {!isDraft && (
+        {isDraft ? (
+          <p className={`text-sm mt-2 font-medium text-amber-700 dark:text-amber-300`}>
+            To publish: Scroll down to the &quot;Draft/Published&quot; toggle at the bottom of the form and switch it to Published, then click Save Changes.
+          </p>
+        ) : (
           <Link
             href={`/events/${eventId}`}
             className="inline-block mt-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"

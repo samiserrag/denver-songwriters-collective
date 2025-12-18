@@ -106,18 +106,20 @@ export default async function EventsPage() {
   const supabase = await createSupabaseServerClient();
   const today = new Date().toISOString().split("T")[0];
 
-  // Fetch upcoming events (excluding open mics, published only)
+  // Fetch upcoming events (excluding open mics and DSC community events, published only)
+  // DSC events are shown separately in the Community Happenings section
   const { data: upcomingDbEvents } = await supabase
     .from("events")
     .select("*")
     .neq('event_type', 'open_mic')
+    .neq('is_dsc_event', true)
     .eq('is_published', true)
     .gte('event_date', today)
     .order("event_date", { ascending: true });
 
   const upcomingEvents: Event[] = (upcomingDbEvents ?? []).map(mapDBEventToEvent);
 
-  // Fetch past events (excluding open mics) - last 30 days
+  // Fetch past events (excluding open mics and DSC events) - last 30 days
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
@@ -126,6 +128,7 @@ export default async function EventsPage() {
     .from("events")
     .select("*")
     .neq('event_type', 'open_mic')
+    .neq('is_dsc_event', true)
     .eq('is_published', true)
     .lt('event_date', today)
     .gte('event_date', thirtyDaysAgoStr)
@@ -214,7 +217,7 @@ export default async function EventsPage() {
                   Song circles, workshops, and gatherings hosted by DSC members
                 </p>
               </div>
-              <div className="grid gap-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {dscEvents.map((event) => {
                   const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
                     || EVENT_TYPE_CONFIG.other;
@@ -226,83 +229,47 @@ export default async function EventsPage() {
                   const remaining = event.capacity
                     ? Math.max(0, event.capacity - (event.rsvp_count || 0))
                     : null;
-                  const mapsUrl = getGoogleMapsUrl(event.venue_address);
 
                   return (
-                    <div
+                    <Link
                       key={event.id}
-                      className="bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg overflow-hidden"
+                      href={`/events/${event.id}`}
+                      className="block p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-tertiary)]/50 hover:border-[var(--color-border-accent)] transition-colors"
                     >
-                      {/* Cover Image */}
-                      {event.cover_image_url && (
-                        <Link href={`/events/${event.id}`} className="block">
-                          <img
-                            src={event.cover_image_url}
-                            alt={event.title}
-                            className="w-full h-40 object-cover hover:opacity-90 transition-opacity"
-                          />
-                        </Link>
-                      )}
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="block p-6 hover:bg-[var(--color-bg-tertiary)]/50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-2xl">{config.icon}</span>
-                              <span className="px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs rounded">
-                                {config.label}
-                              </span>
-                              <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded">
-                                DSC Event
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-1">{event.title}</h3>
-                            <p className="text-[var(--color-text-secondary)] text-sm">
-                              {event.venue_name} {event.day_of_week && `• ${event.day_of_week}s`} {event.start_time && `at ${event.start_time}`}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl">{config.icon}</span>
+                            <span className="px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs rounded truncate">
+                              {config.label}
+                            </span>
+                          </div>
+                          <h3 className="text-[var(--color-text-primary)] font-medium mb-1 line-clamp-1">{event.title}</h3>
+                          <p className="text-[var(--color-text-secondary)] text-sm line-clamp-1">
+                            • {event.day_of_week}s {event.start_time && `at ${event.start_time}`}
+                          </p>
+                          {hostNames && (
+                            <p className="text-[var(--color-text-secondary)] text-xs mt-1.5 line-clamp-1">
+                              Hosted by {hostNames}
                             </p>
-                            {hostNames && (
-                              <p className="text-[var(--color-text-secondary)] text-xs mt-2">
-                                Hosted by {hostNames}
-                              </p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count || 0}</div>
+                          <div className="text-xs text-[var(--color-text-secondary)]">
+                            {event.capacity ? (
+                              remaining === 0 ? (
+                                <span className="text-amber-400">Full</span>
+                              ) : (
+                                `of ${event.capacity}`
+                              )
+                            ) : (
+                              "going"
                             )}
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count || 0}</div>
-                            <div className="text-xs text-[var(--color-text-secondary)]">
-                              {event.capacity ? (
-                                remaining === 0 ? (
-                                  <span className="text-amber-400">Full</span>
-                                ) : (
-                                  `${remaining} left`
-                                )
-                              ) : (
-                                "going"
-                              )}
-                            </div>
-                          </div>
                         </div>
-                      </Link>
-                      {/* Google Maps Link */}
-                      {mapsUrl && (
-                        <div className="px-6 pb-4 -mt-2">
-                          <a
-                            href={mapsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Get Directions
-                          </a>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    </Link>
                   );
                 })}
               </div>
