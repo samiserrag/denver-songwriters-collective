@@ -44,7 +44,7 @@ export default async function AdminEventsPage() {
    return (
      <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
        <div className="flex items-center justify-between mb-8">
-         <h1 className="text-4xl font-bold text-gold-400">Manage Events</h1>
+         <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">Manage Events</h1>
          <Link
            href="/dashboard/admin/events/new"
            className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white font-medium transition-colors"

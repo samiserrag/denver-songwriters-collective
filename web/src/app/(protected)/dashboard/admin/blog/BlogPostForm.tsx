@@ -319,18 +319,18 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       }
 
       if (block.startsWith("### ")) {
-        return <h3 key={i} className="text-xl font-semibold text-white mt-6 mb-3">{block.replace("### ", "")}</h3>;
+        return <h3 key={i} className="text-xl font-semibold text-[var(--color-text-primary)] mt-6 mb-3">{block.replace("### ", "")}</h3>;
       }
       if (block.startsWith("## ")) {
-        return <h2 key={i} className="text-2xl font-semibold text-white mt-8 mb-4">{block.replace("## ", "")}</h2>;
+        return <h2 key={i} className="text-2xl font-semibold text-[var(--color-text-primary)] mt-8 mb-4">{block.replace("## ", "")}</h2>;
       }
       if (block.startsWith("# ")) {
-        return <h1 key={i} className="text-3xl font-bold text-white mt-10 mb-5">{block.replace("# ", "")}</h1>;
+        return <h1 key={i} className="text-3xl font-bold text-[var(--color-text-primary)] mt-10 mb-5">{block.replace("# ", "")}</h1>;
       }
 
       if (block.startsWith("> ")) {
         return (
-          <blockquote key={i} className="border-l-4 border-[var(--color-border-accent)] pl-4 my-4 text-neutral-400 italic">
+          <blockquote key={i} className="border-l-4 border-[var(--color-border-accent)] pl-4 my-4 text-[var(--color-text-secondary)] italic">
             {block.replace(/^> /gm, "")}
           </blockquote>
         );
@@ -339,7 +339,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       if (block.includes("\n- ") || block.startsWith("- ")) {
         const items = block.split("\n").filter((line) => line.startsWith("- "));
         return (
-          <ul key={i} className="list-disc list-inside space-y-1 my-4 text-neutral-300">
+          <ul key={i} className="list-disc list-inside space-y-1 my-4 text-[var(--color-text-secondary)]">
             {items.map((item, j) => <li key={j}>{item.replace("- ", "")}</li>)}
           </ul>
         );
@@ -347,11 +347,11 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
       // Escape HTML first to prevent XSS, then apply markdown formatting
       let text = escapeHtml(block);
-      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
       text = text.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
 
       return (
-        <p key={i} className="text-neutral-300 leading-relaxed my-3" dangerouslySetInnerHTML={{ __html: text }} />
+        <p key={i} className="text-[var(--color-text-secondary)] leading-relaxed my-3" dangerouslySetInnerHTML={{ __html: text }} />
       );
     });
   };

@@ -38,8 +38,8 @@ export default async function AdminEventUpdateSuggestionsPage() {
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-8">Review Event Update Suggestions</h1>
-      <p className="text-neutral-300 mb-6">Review and moderate user-submitted corrections for events.</p>
+      <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-8">Review Event Update Suggestions</h1>
+      <p className="text-[var(--color-text-secondary)] mb-6">Review and moderate user-submitted corrections for events.</p>
 
       <EventUpdateSuggestionsTable suggestions={(suggestions as EventUpdateSuggestion[]) ?? null} />
     </div>

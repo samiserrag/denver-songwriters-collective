@@ -310,11 +310,11 @@ export default function EditProfilePage() {
               <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
                 Edit Profile
               </h1>
-              <p className="text-neutral-400">Update your public profile information</p>
+              <p className="text-[var(--color-text-secondary)]">Update your public profile information</p>
             </div>
             <Link
               href="/dashboard"
-              className="text-neutral-400 hover:text-white transition-colors"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
             >
               Back to Dashboard
             </Link>
@@ -371,7 +371,7 @@ export default function EditProfilePage() {
                     value={formData.full_name}
                     onChange={handleChange}
                     placeholder="How you want to be known"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -416,7 +416,7 @@ export default function EditProfilePage() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                             formData.genres.includes(genre)
                               ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                              : "border-white/10 hover:border-white/20 text-[var(--color-text-secondary)]"
+                              : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/30 text-[var(--color-text-secondary)]"
                           }`}
                         >
                           <input
@@ -452,7 +452,7 @@ export default function EditProfilePage() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                             formData.instruments.includes(instrument)
                               ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                              : "border-white/10 hover:border-white/20 text-[var(--color-text-secondary)]"
+                              : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/30 text-[var(--color-text-secondary)]"
                           }`}
                         >
                           <input
@@ -488,7 +488,7 @@ export default function EditProfilePage() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                             formData.specialties.includes(specialty)
                               ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                              : "border-white/10 hover:border-white/20 text-[var(--color-text-secondary)]"
+                              : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/30 text-[var(--color-text-secondary)]"
                           }`}
                         >
                           <input
@@ -535,7 +535,7 @@ export default function EditProfilePage() {
                         type="checkbox"
                         checked={formData.open_to_collabs}
                         onChange={(e) => setFormData(prev => ({ ...prev, open_to_collabs: e.target.checked }))}
-                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                        className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
                       />
                       <span className="text-[var(--color-text-primary)]">
                         I&apos;m open to collaborations
@@ -547,7 +547,7 @@ export default function EditProfilePage() {
                         type="checkbox"
                         checked={formData.interested_in_cowriting}
                         onChange={(e) => setFormData(prev => ({ ...prev, interested_in_cowriting: e.target.checked }))}
-                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                        className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
                       />
                       <span className="text-[var(--color-text-primary)]">
                         I&apos;m interested in co-writing
@@ -559,7 +559,7 @@ export default function EditProfilePage() {
                         type="checkbox"
                         checked={formData.available_for_hire}
                         onChange={(e) => setFormData(prev => ({ ...prev, available_for_hire: e.target.checked }))}
-                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                        className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
                       />
                       <span className="text-[var(--color-text-primary)]">
                         I&apos;m available for hire (paid gigs, session work, etc.)
@@ -579,7 +579,7 @@ export default function EditProfilePage() {
                       value={formData.favorite_open_mic}
                       onChange={handleChange}
                       placeholder="e.g., Lion's Lair, Goosetown Tavern..."
-                      className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                      className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                     />
                   </div>
                 </div>
@@ -630,7 +630,7 @@ export default function EditProfilePage() {
                           setFormData(prev => ({ ...prev, song_links: newLinks }));
                         }}
                         placeholder="https://soundcloud.com/... or https://youtu.be/..."
-                        className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                        className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                       />
                       <button
                         type="button"
@@ -654,7 +654,7 @@ export default function EditProfilePage() {
                         song_links: [...prev.song_links, ""]
                       }));
                     }}
-                    className="px-4 py-2 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-white transition-colors"
+                    className="px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition-colors"
                   >
                     + Add Song Link
                   </button>
@@ -682,7 +682,7 @@ export default function EditProfilePage() {
                     value={formData.instagram_url}
                     onChange={handleChange}
                     placeholder="https://instagram.com/..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -696,7 +696,7 @@ export default function EditProfilePage() {
                     value={formData.facebook_url}
                     onChange={handleChange}
                     placeholder="https://facebook.com/..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -710,7 +710,7 @@ export default function EditProfilePage() {
                     value={formData.tiktok_url}
                     onChange={handleChange}
                     placeholder="https://tiktok.com/@..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -724,7 +724,7 @@ export default function EditProfilePage() {
                     value={formData.youtube_url}
                     onChange={handleChange}
                     placeholder="https://youtube.com/..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -738,7 +738,7 @@ export default function EditProfilePage() {
                     value={formData.spotify_url}
                     onChange={handleChange}
                     placeholder="https://open.spotify.com/artist/..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -752,7 +752,7 @@ export default function EditProfilePage() {
                     value={formData.website_url}
                     onChange={handleChange}
                     placeholder="https://yoursite.com"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
               </div>
@@ -778,7 +778,7 @@ export default function EditProfilePage() {
                     value={formData.venmo_handle}
                     onChange={handleChange}
                     placeholder="@username"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -792,7 +792,7 @@ export default function EditProfilePage() {
                     value={formData.cashapp_handle}
                     onChange={handleChange}
                     placeholder="$cashtag"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
                 <div>
@@ -806,14 +806,14 @@ export default function EditProfilePage() {
                     value={formData.paypal_url}
                     onChange={handleChange}
                     placeholder="https://paypal.me/..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
               </div>
             </section>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-[var(--color-border-default)]">
               <button
                 type="submit"
                 disabled={saving}
@@ -823,7 +823,7 @@ export default function EditProfilePage() {
               </button>
               <Link
                 href="/dashboard"
-                className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-white transition-colors text-center"
+                className="px-6 py-3 rounded-lg border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-center"
               >
                 Cancel
               </Link>

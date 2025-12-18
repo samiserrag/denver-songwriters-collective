@@ -27,9 +27,9 @@ export default async function AdminHostRequestsPage() {
     .order("created_at", { ascending: true });
 
   return (
-    <main className="min-h-screen bg-black py-12 px-6">
+    <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="font-display text-3xl text-white mb-8">Host Requests</h1>
+        <h1 className="font-display text-3xl text-[var(--color-text-primary)] mb-8">Host Requests</h1>
         <HostRequestsTable requests={requests || []} />
       </div>
     </main>

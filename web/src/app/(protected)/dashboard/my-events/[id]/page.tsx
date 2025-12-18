@@ -6,6 +6,7 @@ import RSVPList from "../_components/RSVPList";
 import CoHostManager from "../_components/CoHostManager";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
+import PublishButton from "./_components/PublishButton";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 
@@ -133,22 +134,29 @@ export default async function EditEventPage({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Draft/Published badge */}
-            <span className={`px-3 py-1 rounded text-sm ${
-              event.is_published
-                ? "bg-emerald-900/50 text-emerald-400"
-                : "bg-amber-900/50 text-amber-400"
-            }`}>
-              {event.is_published ? "Published" : "Draft"}
-            </span>
-            <span className={`px-3 py-1 rounded text-sm ${
-              event.status === "active"
-                ? "bg-green-900/50 text-green-400"
-                : "bg-red-900/50 text-red-400"
-            }`}>
-              {event.status}
-            </span>
-            {event.is_published && (
+            {/* Status badge - single badge showing overall state */}
+            {event.status === "cancelled" ? (
+              <span className="px-3 py-1 rounded text-sm bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">
+                Cancelled
+              </span>
+            ) : !event.is_published ? (
+              <span className="px-3 py-1 rounded text-sm bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+                Draft
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded text-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+                Live
+              </span>
+            )}
+
+            {/* Publish/Unpublish button */}
+            <PublishButton
+              eventId={eventId}
+              isPublished={event.is_published}
+              status={event.status}
+            />
+
+            {event.is_published && event.status === "active" && (
               <Link
                 href={`/events/${eventId}`}
                 className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
