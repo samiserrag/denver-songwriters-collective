@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth/useAuth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui";
@@ -316,7 +317,18 @@ export function TimeslotSection({
 
                 {isClaimed && slot.claim?.member?.full_name && (
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {isMine ? "You" : slot.claim.member.full_name}
+                    {isMine ? (
+                      "You"
+                    ) : slot.claim.member.id ? (
+                      <Link
+                        href={`/songwriters/${slot.claim.member.id}`}
+                        className="hover:text-[var(--color-text-accent)] hover:underline transition-colors"
+                      >
+                        {slot.claim.member.full_name}
+                      </Link>
+                    ) : (
+                      slot.claim.member.full_name
+                    )}
                   </p>
                 )}
               </div>

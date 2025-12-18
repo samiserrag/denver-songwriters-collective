@@ -206,75 +206,90 @@ export default async function EventsPage() {
       <PageContainer>
         <div className="py-12 space-y-16">
 
-          {/* DSC Community Happenings */}
-          {dscEvents.length > 0 && (
-            <section>
-              <div className="mb-6">
-                <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
-                  Community Happenings
-                </h2>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                  Song circles, workshops, and gatherings hosted by DSC members
+          {/* Community Happenings - Single consolidated section */}
+          <section>
+            <div className="mb-6">
+              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
+                Upcoming Happenings
+              </h2>
+              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
+                Song circles, workshops, showcases, and community gatherings
+              </p>
+            </div>
+            {dscEvents.length > 0 || upcomingEvents.length > 0 ? (
+              <div className="space-y-6">
+                {/* DSC Community Events */}
+                {dscEvents.length > 0 && (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {dscEvents.map((event) => {
+                      const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+                        || EVENT_TYPE_CONFIG.other;
+                      const hostNames = event.event_hosts
+                        ?.map((h) => h.user?.full_name)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join(", ");
+                      const remaining = event.capacity
+                        ? Math.max(0, event.capacity - (event.rsvp_count || 0))
+                        : null;
+
+                      return (
+                        <Link
+                          key={event.id}
+                          href={`/events/${event.id}`}
+                          className="block p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-tertiary)]/50 hover:border-[var(--color-border-accent)] transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xl">{config.icon}</span>
+                                <span className="px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs rounded truncate">
+                                  {config.label}
+                                </span>
+                              </div>
+                              <h3 className="text-[var(--color-text-primary)] font-medium mb-1 line-clamp-1">{event.title}</h3>
+                              <p className="text-[var(--color-text-secondary)] text-sm line-clamp-1">
+                                • {event.day_of_week}s {event.start_time && `at ${event.start_time}`}
+                              </p>
+                              {hostNames && (
+                                <p className="text-[var(--color-text-secondary)] text-xs mt-1.5 line-clamp-1">
+                                  Hosted by {hostNames}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count || 0}</div>
+                              <div className="text-xs text-[var(--color-text-secondary)]">
+                                {event.capacity ? (
+                                  remaining === 0 ? (
+                                    <span className="text-amber-400">Full</span>
+                                  ) : (
+                                    `of ${event.capacity}`
+                                  )
+                                ) : (
+                                  "going"
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Other upcoming events (non-DSC) */}
+                {upcomingEvents.length > 0 && (
+                  <EventGrid events={upcomingEvents} />
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-10 text-center">
+                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
+                  No upcoming happenings scheduled. Check back soon!
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {dscEvents.map((event) => {
-                  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
-                    || EVENT_TYPE_CONFIG.other;
-                  const hostNames = event.event_hosts
-                    ?.map((h) => h.user?.full_name)
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .join(", ");
-                  const remaining = event.capacity
-                    ? Math.max(0, event.capacity - (event.rsvp_count || 0))
-                    : null;
-
-                  return (
-                    <Link
-                      key={event.id}
-                      href={`/events/${event.id}`}
-                      className="block p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-tertiary)]/50 hover:border-[var(--color-border-accent)] transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">{config.icon}</span>
-                            <span className="px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs rounded truncate">
-                              {config.label}
-                            </span>
-                          </div>
-                          <h3 className="text-[var(--color-text-primary)] font-medium mb-1 line-clamp-1">{event.title}</h3>
-                          <p className="text-[var(--color-text-secondary)] text-sm line-clamp-1">
-                            • {event.day_of_week}s {event.start_time && `at ${event.start_time}`}
-                          </p>
-                          {hostNames && (
-                            <p className="text-[var(--color-text-secondary)] text-xs mt-1.5 line-clamp-1">
-                              Hosted by {hostNames}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count || 0}</div>
-                          <div className="text-xs text-[var(--color-text-secondary)]">
-                            {event.capacity ? (
-                              remaining === 0 ? (
-                                <span className="text-amber-400">Full</span>
-                              ) : (
-                                `of ${event.capacity}`
-                              )
-                            ) : (
-                              "going"
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* Open Mic Directory Callout */}
           <section className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-6 md:p-8">
@@ -291,27 +306,6 @@ export default async function EventsPage() {
                 <Link href="/open-mics">Visit the Open Mic Directory</Link>
               </Button>
             </div>
-          </section>
-
-          {/* Upcoming Happenings */}
-          <section>
-            <div className="mb-8">
-              <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
-                Upcoming Happenings
-              </h2>
-              <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                Showcases, special nights, and community gatherings.
-              </p>
-            </div>
-            {upcomingEvents.length > 0 ? (
-              <EventGrid events={upcomingEvents} />
-            ) : (
-              <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-10 text-center">
-                <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
-                  No upcoming happenings scheduled. Check back soon!
-                </p>
-              </div>
-            )}
           </section>
 
           {/* Past Events */}

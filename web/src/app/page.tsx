@@ -61,12 +61,14 @@ export default async function HomePage() {
   const userName = user?.email ?? null;
 
   const [upcomingEventsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
-    // Single events query - upcoming events
+    // Single events query - upcoming DSC events (published only)
     supabase
       .from("events")
       .select("*")
-      .gte("event_date", new Date().toISOString().slice(0, 10))
-      .order("event_date", { ascending: true })
+      .eq("is_dsc_event", true)
+      .eq("is_published", true)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
       .limit(6),
     // Featured members of any role - only spotlighted members
     supabase
@@ -308,17 +310,17 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Upcoming Happenings - Above playlists for visibility */}
+      {/* Community Happenings - DSC events */}
       {hasUpcomingEvents && (
         <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
           <div className="max-w-6xl mx-auto">
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
                 <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
-                  Upcoming Happenings
+                  Community Happenings
                 </h2>
                 <p className="text-[var(--color-text-secondary)]">
-                  Showcases, special nights, and community gatherings.
+                  Song circles, workshops, and gatherings hosted by DSC members.
                 </p>
               </div>
               <Link
