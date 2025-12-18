@@ -7,6 +7,7 @@ import CoHostManager from "../_components/CoHostManager";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 
 export const metadata = {
   title: "Edit Event | DSC"
@@ -25,11 +26,14 @@ interface EventHost {
 }
 
 export default async function EditEventPage({
-  params
+  params,
+  searchParams
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string; status?: string }>;
 }) {
   const { id: eventId } = await params;
+  const { created, status } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -106,6 +110,11 @@ export default async function EditEventPage({
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
+        {/* Success Banner for newly created events */}
+        {created === "true" && (
+          <CreatedSuccessBanner isDraft={status === "draft"} eventId={eventId} />
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>

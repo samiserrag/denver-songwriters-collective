@@ -157,7 +157,9 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
       }
 
       if (mode === "create") {
-        router.push(`/dashboard/my-events/${data.id}`);
+        // Redirect with success message
+        const publishStatus = formData.is_published ? "published" : "draft";
+        router.push(`/dashboard/my-events/${data.id}?created=true&status=${publishStatus}`);
       } else {
         setSuccess("Changes saved successfully!");
         router.refresh();
