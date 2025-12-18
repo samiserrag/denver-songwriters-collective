@@ -135,26 +135,54 @@ export default async function EventsPage() {
   const pastEvents: Event[] = (pastDbEvents ?? []).map(mapDBEventToEvent);
 
   // Fetch DSC community events (published only)
+  // Note: event_hosts.user_id references auth.users, not profiles
+  // So we fetch hosts without profile join, then fetch profiles separately
   const { data: dscEventsData } = await supabase
     .from("events")
     .select(`
       id, title, event_type, venue_name, venue_address, day_of_week, start_time, capacity, cover_image_url,
-      event_hosts(user:profiles(full_name))
+      event_hosts(user_id)
     `)
     .eq("is_dsc_event", true)
     .eq("status", "active")
     .eq("is_published", true)
     .order("day_of_week", { ascending: true });
 
-  // Get RSVP counts for DSC events
+  // Collect all host user_ids and fetch profiles
+  const allHostUserIds = (dscEventsData || []).flatMap(e =>
+    (e.event_hosts as { user_id: string }[])?.map(h => h.user_id) || []
+  );
+  const uniqueHostUserIds = [...new Set(allHostUserIds)];
+
+  let hostProfileMap = new Map<string, { full_name: string | null }>();
+  if (uniqueHostUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", uniqueHostUserIds);
+
+    hostProfileMap = new Map(profiles?.map(p => [p.id, { full_name: p.full_name }]) || []);
+  }
+
+  // Enrich events with host profiles and get RSVP counts
   const dscEvents: DSCEvent[] = await Promise.all(
-    ((dscEventsData as unknown as DSCEvent[]) || []).map(async (event) => {
+    (dscEventsData || []).map(async (event) => {
       const { count } = await supabase
         .from("event_rsvps")
         .select("*", { count: "exact", head: true })
         .eq("event_id", event.id)
         .eq("status", "confirmed");
-      return { ...event, rsvp_count: count || 0 };
+
+      // Map hosts with profiles
+      const enrichedHosts = (event.event_hosts as { user_id: string }[])?.map(h => ({
+        user: hostProfileMap.get(h.user_id) || null
+      })) || [];
+
+      return {
+        ...event,
+        event_hosts: enrichedHosts,
+        rsvp_count: count || 0
+      } as DSCEvent;
     })
   );
 
