@@ -54,14 +54,16 @@ export default async function EditEventPage({
     .single();
 
   if (error) {
-    console.error("Event fetch error:", error);
+    console.error("[EditEventPage] Event fetch error for ID:", eventId, "| Error:", error.message, "| Code:", error.code, "| Details:", error.details);
     notFound();
   }
 
   if (!event) {
-    console.error("Event not found for ID:", eventId);
+    console.error("[EditEventPage] Event not found for ID:", eventId, "- query returned null (may not be DSC event)");
     notFound();
   }
+
+  console.log("[EditEventPage] Found event:", event.id, "| is_dsc_event:", event.is_dsc_event, "| is_published:", event.is_published);
 
   // Check authorization
   const userHost = (event.event_hosts as EventHost[])?.find(
