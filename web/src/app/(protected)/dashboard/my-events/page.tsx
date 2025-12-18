@@ -1,8 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { EVENT_TYPE_CONFIG } from "@/types/events";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
+import MyEventsFilteredList from "./_components/MyEventsFilteredList";
 
 export const dynamic = "force-dynamic";
 
@@ -104,82 +104,7 @@ export default async function MyEventsPage() {
           </div>
         )}
 
-        {events.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🎵</div>
-            <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No events yet</h2>
-            <p className="text-[var(--color-text-secondary)] mb-6">
-              {isApprovedHost
-                ? "Create your first event to get started!"
-                : "Once you're an approved host, you can create events here."
-              }
-            </p>
-            {isApprovedHost && (
-              <Link
-                href="/dashboard/my-events/new"
-                className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg"
-              >
-                Create Your First Event
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {events.map((event) => {
-              const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
-                || EVENT_TYPE_CONFIG.other;
-
-              return (
-                <Link
-                  key={event.id}
-                  href={`/dashboard/my-events/${event.id}`}
-                  className="block p-6 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] rounded-lg transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xl">{config.icon}</span>
-                        {/* Draft/Published badge */}
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          event.is_published
-                            ? "bg-emerald-600/20 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400"
-                            : "bg-amber-600/20 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400"
-                        }`}>
-                          {event.is_published ? "Published" : "Draft"}
-                        </span>
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          event.status === "active"
-                            ? "bg-green-600/20 text-green-600 dark:bg-green-900/50 dark:text-green-400"
-                            : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]"
-                        }`}>
-                          {event.status}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] rounded">
-                          {config.label}
-                        </span>
-                        {event.user_role === "cohost" && (
-                          <span className="text-xs px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded">
-                            Co-host
-                          </span>
-                        )}
-                      </div>
-                      <h2 className="text-lg text-[var(--color-text-primary)] font-medium">{event.title}</h2>
-                      <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                        {event.venue_name} {event.day_of_week && `• ${event.day_of_week}`} {event.start_time && event.start_time}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count}</div>
-                      <div className="text-xs text-[var(--color-text-secondary)]">
-                        {event.capacity ? `of ${event.capacity}` : "RSVPs"}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <MyEventsFilteredList events={events} isApprovedHost={isApprovedHost} />
       </div>
     </main>
   );

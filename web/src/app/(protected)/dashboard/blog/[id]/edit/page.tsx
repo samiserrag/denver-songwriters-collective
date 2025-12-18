@@ -43,16 +43,16 @@ export default async function EditUserBlogPostPage({ params }: Props) {
   if (post.author_id !== user.id) {
     return (
       <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
-        <p className="text-neutral-400 mt-2">You can only edit your own posts.</p>
+        <h1 className="text-2xl font-bold text-red-600 dark:text-red-400">Access Denied</h1>
+        <p className="text-[var(--color-text-secondary)] mt-2">You can only edit your own posts.</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-4xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-2">Edit Blog Post</h1>
-      <p className="text-neutral-300 mb-8">Update &quot;{post.title}&quot;</p>
+      <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-2">Edit Blog Post</h1>
+      <p className="text-[var(--color-text-secondary)] mb-8">Update &quot;{post.title}&quot;</p>
 
       <BlogPostForm
         authorId={user.id}

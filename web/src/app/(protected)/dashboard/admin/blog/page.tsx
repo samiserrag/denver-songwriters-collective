@@ -24,8 +24,8 @@ export default async function AdminBlogPage() {
   if (!profile || profile.role !== "admin") {
     return (
       <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
-        <p className="text-neutral-400 mt-2">Admin privileges required.</p>
+        <h1 className="text-2xl font-bold text-red-600 dark:text-red-400">Access Denied</h1>
+        <p className="text-[var(--color-text-secondary)] mt-2">Admin privileges required.</p>
       </div>
     );
   }
@@ -50,8 +50,8 @@ export default async function AdminBlogPage() {
     <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gold-400 mb-2">Blog Management</h1>
-          <p className="text-neutral-300">Create, edit, and manage blog posts.</p>
+          <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-2">Blog Management</h1>
+          <p className="text-[var(--color-text-secondary)]">Create, edit, and manage blog posts.</p>
         </div>
         <Link
           href="/dashboard/admin/blog/new"

@@ -185,7 +185,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                       post.is_approved
                         ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] hover:bg-[var(--color-accent-primary)]/30"
-                        : "bg-amber-900/50 text-amber-400 hover:bg-amber-900"
+                        : "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:hover:bg-amber-900"
                     }`}
                   >
                     {isApproving === post.id
@@ -201,8 +201,8 @@ export default function BlogPostsTable({ posts }: Props) {
                     disabled={isToggling === post.id}
                     className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                       post.is_published
-                        ? "bg-green-900/50 text-green-400 hover:bg-green-900"
-                        : "bg-yellow-900/50 text-yellow-400 hover:bg-yellow-900"
+                        ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-400 dark:hover:bg-green-900"
+                        : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-400 dark:hover:bg-yellow-900"
                     }`}
                   >
                     {isToggling === post.id

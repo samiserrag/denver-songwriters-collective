@@ -239,11 +239,11 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     {image.caption && (
                       <p className="text-white text-xs truncate mb-1">{image.caption}</p>
                     )}
-                    <p className="text-neutral-300 text-xs">
+                    <p className="text-gray-200 text-xs">
                       by {uploader?.full_name ?? "Unknown"}
                     </p>
                     {(event || venue) && (
-                      <p className="text-neutral-400 text-xs truncate">
+                      <p className="text-gray-300 text-xs truncate">
                         @ {event?.title ?? venue?.name}
                       </p>
                     )}
@@ -281,7 +281,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                         </button>
                         <button
                           onClick={() => handleReject(image.id)}
-                          className="px-2 py-1 bg-red-900 hover:bg-red-800 text-red-300 text-xs rounded"
+                          className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-300 text-xs rounded"
                         >
                           Delete
                         </button>
@@ -379,8 +379,8 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs ${
                         album.is_published
-                          ? "bg-green-900/50 text-green-400"
-                          : "bg-yellow-900/50 text-yellow-400"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
                       }`}
                     >
                       {album.is_published ? "Published" : "Draft"}
@@ -400,7 +400,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     </button>
                     <button
                       onClick={() => handleDeleteAlbum(album.id)}
-                      className="px-3 py-1 bg-red-900 hover:bg-red-800 text-red-300 text-xs rounded"
+                      className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-300 text-xs rounded"
                     >
                       Delete
                     </button>

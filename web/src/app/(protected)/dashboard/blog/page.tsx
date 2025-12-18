@@ -35,8 +35,8 @@ export default async function UserBlogDashboardPage() {
     <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gold-400 mb-2">My Blog Posts</h1>
-          <p className="text-neutral-300">Create and manage your blog posts.</p>
+          <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-2">My Blog Posts</h1>
+          <p className="text-[var(--color-text-secondary)]">Create and manage your blog posts.</p>
         </div>
         <Link
           href="/dashboard/blog/new"

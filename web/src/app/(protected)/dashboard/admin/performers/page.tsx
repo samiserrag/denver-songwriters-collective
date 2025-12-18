@@ -39,11 +39,11 @@ export default async function AdminPerformersPage() {
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-gold-400 mb-8">
+      <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-8">
         Manage Featured Songwriters
       </h1>
 
-      <p className="text-neutral-300 mb-6">
+      <p className="text-[var(--color-text-secondary)] mb-6">
         Toggle spotlight status or adjust ranking for homepage ordering.
       </p>
 
