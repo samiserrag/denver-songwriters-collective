@@ -233,6 +233,17 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2024)
 
+### Event Timeslot Configuration (December 2024)
+- **SlotConfigSection component** - Toggle between RSVP mode and performance slots
+- **Auto-enable timeslots** for open_mic and showcase event types
+- **Configurable slot parameters** - Number of slots, duration (5-30 min), allow guests
+- **Capacity field hidden** when timeslots enabled (slots = capacity)
+- **Event creation creates slots** - Generates `event_slots` rows with calculated times
+- Key files:
+  - `web/src/app/(protected)/dashboard/my-events/_components/SlotConfigSection.tsx` - New component
+  - `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - Integration
+  - `web/src/app/api/my-events/route.ts` - Slot creation on event POST
+
 ### Host/Admin Role Check Consolidation (December 2024)
 - **Fixed broken host logic** - All admin role checks now use `profiles.role` instead of unreliable `app_metadata`
 - **Admins automatically have host privileges** - No longer need entry in `approved_hosts` table
