@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { checkHostStatus } from "@/lib/auth/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,20 +16,8 @@ export default async function MyEventsPage() {
 
   if (!session) redirect("/login");
 
-  // Check if approved host or admin
-  const { data: user } = await supabase.auth.getUser();
-  const isAdmin = user?.user?.app_metadata?.role === "admin";
-
-  let isApprovedHost = isAdmin;
-  if (!isAdmin) {
-    const { data: hostStatus } = await supabase
-      .from("approved_hosts")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .eq("status", "active")
-      .maybeSingle();
-    isApprovedHost = !!hostStatus;
-  }
+  // Check if approved host or admin (admins are automatically hosts)
+  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
 
   // Fetch user's events via direct query
   const { data: hostEntries } = await supabase

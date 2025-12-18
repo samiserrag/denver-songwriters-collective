@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkHostStatus } from "@/lib/auth/adminAuth";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -76,23 +77,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if user is approved host or admin
-  const { data: user } = await supabase.auth.getUser();
-  const isAdmin = user?.user?.app_metadata?.role === "admin";
+  // Check if user is approved host or admin (admins are automatically hosts)
+  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
 
-  if (!isAdmin) {
-    const { data: hostStatus } = await supabase
-      .from("approved_hosts")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (!hostStatus) {
-      return NextResponse.json({
-        error: "You must be an approved host to create events"
-      }, { status: 403 });
-    }
+  if (!isApprovedHost) {
+    return NextResponse.json({
+      error: "You must be an approved host to create events"
+    }, { status: 403 });
   }
 
   const body = await request.json();

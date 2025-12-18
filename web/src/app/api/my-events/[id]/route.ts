@@ -1,12 +1,13 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
-  // Check admin
-  const { data: user } = await supabase.auth.getUser();
-  if (user?.user?.app_metadata?.role === "admin") return true;
+  // Check admin (using profiles.role, not app_metadata)
+  const isAdmin = await checkAdminRole(supabase, userId);
+  if (isAdmin) return true;
 
   // Check host
   const { data: hostEntry } = await supabase

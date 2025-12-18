@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { HostRequestsTable } from "./HostRequestsTable";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 export default async function AdminHostRequestsPage() {
   const supabase = await createSupabaseServerClient();
@@ -10,8 +11,8 @@ export default async function AdminHostRequestsPage() {
 
   if (!session) redirect("/login");
 
-  const { data: user } = await supabase.auth.getUser();
-  if (user?.user?.app_metadata?.role !== "admin") {
+  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  if (!isAdmin) {
     redirect("/dashboard");
   }
 

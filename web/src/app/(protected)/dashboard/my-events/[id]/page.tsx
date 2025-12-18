@@ -6,6 +6,7 @@ import RSVPList from "../_components/RSVPList";
 import CoHostManager from "../_components/CoHostManager";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 export const metadata = {
   title: "Edit Event | DSC"
@@ -34,9 +35,8 @@ export default async function EditEventPage({
 
   if (!session) redirect("/login");
 
-  // Check if user can manage this event
-  const { data: user } = await supabase.auth.getUser();
-  const isAdmin = user?.user?.app_metadata?.role === "admin";
+  // Check if user can manage this event (admins have full access)
+  const isAdmin = await checkAdminRole(supabase, session.user.id);
 
   // Fetch event with venue
   const { data: event, error } = await supabase

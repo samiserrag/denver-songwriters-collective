@@ -8,6 +8,7 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
   venues?: { id: string; name: string } | null;
+  is_published?: boolean | null;
 };
 
  interface Props {

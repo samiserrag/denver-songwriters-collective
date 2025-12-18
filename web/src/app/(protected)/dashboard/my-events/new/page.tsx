@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import EventForm from "../_components/EventForm";
+import { checkHostStatus } from "@/lib/auth/adminAuth";
 
 export const metadata = {
   title: "Create Event | DSC"
@@ -12,21 +13,11 @@ export default async function NewEventPage() {
 
   if (!session) redirect("/login");
 
-  // Verify approved host or admin
-  const { data: user } = await supabase.auth.getUser();
-  const isAdmin = user?.user?.app_metadata?.role === "admin";
+  // Verify approved host or admin (admins are automatically hosts)
+  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
 
-  if (!isAdmin) {
-    const { data: hostStatus } = await supabase
-      .from("approved_hosts")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    if (!hostStatus) {
-      redirect("/dashboard");
-    }
+  if (!isApprovedHost) {
+    redirect("/dashboard");
   }
 
   // Fetch venues for the selector

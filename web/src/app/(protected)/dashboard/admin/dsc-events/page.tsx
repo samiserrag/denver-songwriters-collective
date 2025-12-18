@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 export const metadata = {
   title: "DSC Events Admin | DSC"
@@ -27,8 +28,8 @@ export default async function AdminDSCEventsPage() {
 
   if (!session) redirect("/login");
 
-  const { data: user } = await supabase.auth.getUser();
-  if (user?.user?.app_metadata?.role !== "admin") {
+  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  if (!isAdmin) {
     redirect("/dashboard");
   }
 

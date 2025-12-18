@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // POST - Invite a co-host
 export async function POST(
@@ -14,9 +15,8 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if user is primary host or admin
-  const { data: user } = await supabase.auth.getUser();
-  const isAdmin = user?.user?.app_metadata?.role === "admin";
+  // Check if user is primary host or admin (using profiles.role, not app_metadata)
+  const isAdmin = await checkAdminRole(supabase, session.user.id);
 
   if (!isAdmin) {
     const { data: hostEntry } = await supabase
@@ -129,9 +129,8 @@ export async function DELETE(
 
   const { user_id } = await request.json();
 
-  // Check if user is primary host or admin
-  const { data: user } = await supabase.auth.getUser();
-  const isAdmin = user?.user?.app_metadata?.role === "admin";
+  // Check if user is primary host or admin (using profiles.role, not app_metadata)
+  const isAdmin = await checkAdminRole(supabase, session.user.id);
 
   if (!isAdmin) {
     const { data: hostEntry } = await supabase
