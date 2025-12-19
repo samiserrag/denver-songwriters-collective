@@ -19,6 +19,7 @@ Comprehensive documentation is available in the `docs/` folder:
 | [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
 | [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
 | [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
+| [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
 
 ## Project Structure
 
@@ -219,6 +220,33 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 ---
 
 ## Recent Changes (December 2025)
+
+### Theme System Overhaul (December 2025)
+- **New CSS tokens added:**
+  - `--color-text-on-accent` - Button text on accent backgrounds
+  - `--color-link` / `--color-link-hover` - Link colors
+  - `--color-bg-input` / `--color-border-input` / `--color-placeholder` - Form input styling
+- **New theme presets:** `sunset` (light), `night` (dark) in `presets.css`
+- **Normalized 130+ hardcoded Tailwind colors** to CSS custom properties
+- **Removed all non-functional `dark:` variants** (no `.dark` class applied to html)
+- **Replaced all `text-gradient-gold`** with `text-[var(--color-text-accent)]`
+- **Replaced all `--color-gold-*` references** with accent tokens
+- **Light theme accent text darkened** for WCAG contrast compliance
+- **Footer stays dark** across all themes via `bg-[var(--color-bg-footer)]`
+- **Deleted unused `web/src/lib/fonts.ts`** - fonts consolidated in layout.tsx
+- See [docs/theme-system.md](./docs/theme-system.md) for full style guide
+- Key files:
+  - `web/src/app/globals.css` - Base CSS variables
+  - `web/src/app/themes/presets.css` - Theme preset definitions
+
+### Guest Verification System (December 2025)
+- **Email templates added:** verificationCode, claimConfirmed, waitlistOffer
+- **Guest verification modules:** config, crypto, storage in `web/src/lib/guest-verification/`
+- **Feature flags system:** `web/src/lib/featureFlags.ts`
+- **jose dependency added** for JWT handling
+- Key files:
+  - `web/src/lib/email/` - Email module with templates
+  - `web/src/app/api/guest/` - Guest verification API routes
 
 ### Middleware → Proxy Migration (December 2025)
 - **Migrated to Next.js 16 proxy convention** - renamed `middleware.ts` to `proxy.ts`
