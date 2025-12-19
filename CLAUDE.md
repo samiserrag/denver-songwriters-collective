@@ -45,7 +45,7 @@ Comprehensive documentation is available in the `docs/` folder:
 
 | Table | Purpose |
 |-------|---------|
-| `profiles` | User profiles with roles (performer, host, studio, fan, admin) |
+| `profiles` | User profiles with identity flags (`is_songwriter`, `is_studio`, `is_host`, `is_fan`) and role (`member`, `admin`) |
 | `events` | All events including open mics, showcases, workshops |
 | `venues` | Venue information with addresses and contact details |
 | `blog_posts` | User-submitted blog posts (requires admin approval) |
@@ -65,13 +65,20 @@ Comprehensive documentation is available in the `docs/` folder:
 | `favorites` | User favorites (events, profiles) |
 | `open_mic_comments` | Comments on open mic events |
 
-## User Roles
+## User Roles & Identity
 
-- **fan** - Basic user, can favorite events/profiles, RSVP to events
-- **performer** - Can create profile with instruments, genres, collaboration preferences
-- **host** - Can create and manage events (requires admin approval)
-- **studio** - Can list studio services and accept bookings
+### Role Field (Authorization)
+- **member** - Default role for all users
 - **admin** - Full access to admin dashboard, can approve content
+
+### Identity Flags (Self-Identification)
+Users can select multiple identity flags during onboarding:
+- **is_songwriter** - Musicians, singers, songwriters (formerly "performer")
+- **is_studio** - Recording studios offering services
+- **is_host** - Open mic hosts (requires admin approval to create events)
+- **is_fan** - Music supporters and community members
+
+> **Note:** The legacy `role` enum (`performer`, `host`, `studio`, `fan`) is being deprecated. New code should use the boolean identity flags instead.
 
 ## Features
 
@@ -220,6 +227,17 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 ---
 
 ## Recent Changes (December 2025)
+
+### Member Role Simplification (December 2025)
+- **New identity flags added to profiles table:** `is_songwriter`, `is_studio`, `is_fan` (boolean columns)
+- **Onboarding redesigned:** Changed from single role selection to multi-select checkboxes
+- **Skip option added:** Users can skip onboarding and go directly to dashboard
+- **Terminology update:** "Performer" → "Songwriter" in onboarding UI
+- Key files:
+  - `web/src/app/onboarding/role/page.tsx` - Complete rewrite with checkbox UI
+  - `web/src/lib/supabase/database.types.ts` - Regenerated with new columns
+- Migration: `supabase/migrations/20251218000001_add_member_identity_flags.sql`
+- **Next steps:** Update pages that filter by `role` to use boolean flags instead
 
 ### Theme System Overhaul (December 2025)
 - **New CSS tokens added:**

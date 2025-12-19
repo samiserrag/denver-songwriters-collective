@@ -1450,8 +1450,11 @@ export type Database = {
           instagram_url: string | null
           instruments: string[] | null
           interested_in_cowriting: boolean | null
+          is_fan: boolean | null
           is_featured: boolean | null
           is_host: boolean | null
+          is_songwriter: boolean | null
+          is_studio: boolean | null
           last_active_at: string | null
           no_show_count: number | null
           onboarding_complete: boolean | null
@@ -1486,8 +1489,11 @@ export type Database = {
           instagram_url?: string | null
           instruments?: string[] | null
           interested_in_cowriting?: boolean | null
+          is_fan?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
+          is_songwriter?: boolean | null
+          is_studio?: boolean | null
           last_active_at?: string | null
           no_show_count?: number | null
           onboarding_complete?: boolean | null
@@ -1522,8 +1528,11 @@ export type Database = {
           instagram_url?: string | null
           instruments?: string[] | null
           interested_in_cowriting?: boolean | null
+          is_fan?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
+          is_songwriter?: boolean | null
+          is_studio?: boolean | null
           last_active_at?: string | null
           no_show_count?: number | null
           onboarding_complete?: boolean | null

@@ -4,42 +4,37 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type RoleOption = {
-  value: string;
+type IdentityOption = {
+  key: "is_songwriter" | "is_studio" | "is_host" | "is_fan";
   label: string;
   description: string;
   icon: string;
-  color: string;
 };
 
-const roleOptions: RoleOption[] = [
+const identityOptions: IdentityOption[] = [
   {
-    value: "performer",
-    label: "Performer",
+    key: "is_songwriter",
+    label: "I'm a Songwriter",
     description: "Musicians, singers, and songwriters looking to play at open mics and events",
     icon: "🎤",
-    color: "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600",
   },
   {
-    value: "host",
-    label: "Open Mic Host",
-    description: "You host or organize open mic nights and want to manage your events",
-    icon: "🎯",
-    color: "from-green-600 to-green-700 hover:from-green-500 hover:to-green-600",
-  },
-  {
-    value: "studio",
-    label: "Studio",
+    key: "is_studio",
+    label: "I run a Studio",
     description: "Recording studios offering services to the Denver music community",
     icon: "🎧",
-    color: "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600",
   },
   {
-    value: "fan",
-    label: "Supporter / Fan",
+    key: "is_host",
+    label: "I host Open Mics",
+    description: "You host or organize open mic nights and want to manage your events",
+    icon: "🎯",
+  },
+  {
+    key: "is_fan",
+    label: "I'm a Fan/Supporter",
     description: "Music lovers who want to discover local artists and support the community",
     icon: "❤️",
-    color: "from-pink-600 to-pink-700 hover:from-pink-500 hover:to-pink-600",
   },
 ];
 
@@ -48,12 +43,23 @@ export default function RoleOnboarding() {
   const supabase = createSupabaseBrowserClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  async function selectRole(role: string) {
+  function toggleOption(key: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  async function handleContinue() {
     setLoading(true);
     setError(null);
-    setSelectedRole(role);
 
     try {
       const {
@@ -62,24 +68,30 @@ export default function RoleOnboarding() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        setError("You must be logged in to select a role. Please log in and try again.");
+        setError("You must be logged in. Please log in and try again.");
         setLoading(false);
         return;
+      }
+
+      // Build update object with selected identity flags
+      const updates: Record<string, boolean> = {};
+      for (const option of identityOptions) {
+        updates[option.key] = selected.has(option.key);
       }
 
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ role })
+        .update(updates)
         .eq("id", user.id);
 
       if (updateError) {
-        console.error("Role update error:", updateError);
-        setError("Failed to save your role. Please try again.");
+        console.error("Profile update error:", updateError);
+        setError("Failed to save your selections. Please try again.");
         setLoading(false);
         return;
       }
 
-      // Success - refresh to clear cache, then redirect to onboarding profile step
+      // Success - refresh to clear cache, then redirect to profile step
       router.refresh();
       router.push("/onboarding/profile");
     } catch (err) {
@@ -89,6 +101,10 @@ export default function RoleOnboarding() {
     }
   }
 
+  function handleSkip() {
+    router.push("/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex flex-col items-center justify-center px-4 py-12">
       <div className="max-w-2xl w-full text-center mb-8">
@@ -96,13 +112,13 @@ export default function RoleOnboarding() {
           Welcome to Denver Songwriters Collective
         </h1>
         <p className="text-[var(--color-text-secondary)] text-lg">
-          Tell us a bit about yourself so we can personalize your experience.
+          Tell us about yourself (optional)
         </p>
       </div>
 
       <div className="max-w-2xl w-full">
         <h2 className="text-xl text-[var(--color-text-primary)] mb-6 text-center">
-          Which best describes you?
+          Select all that apply
         </h2>
 
         {error && (
@@ -112,42 +128,94 @@ export default function RoleOnboarding() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {roleOptions.map((option) => (
-            <button
-              key={option.value}
-              disabled={loading}
-              onClick={() => selectRole(option.value)}
-              className={`
-                relative p-6 rounded-xl text-left transition-all duration-200
-                bg-gradient-to-br ${option.color}
-                border border-white/10
-                ${loading && selectedRole === option.value ? "opacity-70" : ""}
-                ${loading && selectedRole !== option.value ? "opacity-50 cursor-not-allowed" : ""}
-                disabled:cursor-not-allowed
-              `}
-            >
-              <div className="flex items-start gap-4">
-                <span className="text-3xl">{option.icon}</span>
-                <div>
-                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
-                    {option.label}
-                  </h3>
-                  <p className="text-sm text-[var(--color-text-primary)]/80">
-                    {option.description}
-                  </p>
+          {identityOptions.map((option) => {
+            const isSelected = selected.has(option.key);
+            return (
+              <button
+                key={option.key}
+                type="button"
+                disabled={loading}
+                onClick={() => toggleOption(option.key)}
+                className={`
+                  relative p-6 rounded-xl text-left transition-all duration-200
+                  border-2
+                  ${
+                    isSelected
+                      ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10"
+                      : "border-[var(--color-border)] bg-[var(--color-bg-surface)] hover:border-[var(--color-accent-primary)]/50"
+                  }
+                  ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+                `}
+              >
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl">{option.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
+                        {option.label}
+                      </h3>
+                      <div
+                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)]"
+                            : "border-[var(--color-border)]"
+                        }`}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="w-4 h-4 text-[var(--color-text-on-accent)]"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
+                      {option.description}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {loading && selectedRole === option.value && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
 
-        <p className="mt-8 text-center text-sm text-[var(--color-text-secondary)]">
-          Don&apos;t worry, you can change this later in your profile settings.
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={loading}
+            className="px-8 py-3 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors disabled:opacity-50"
+          >
+            Skip for now
+          </button>
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={loading}
+            className="px-8 py-3 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Continue"
+            )}
+          </button>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-[var(--color-text-tertiary)]">
+          You can change these anytime in your profile settings.
         </p>
       </div>
     </div>
