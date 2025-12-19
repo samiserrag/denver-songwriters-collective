@@ -40,7 +40,7 @@ export function ImageUpload({
   currentImageUrl,
   onUpload,
   onRemove,
-  aspectRatio = 1,
+  aspectRatio = 4/3,
   maxSizeMB = 5,
   className = '',
   shape = 'circle',
@@ -137,7 +137,7 @@ export function ImageUpload({
       height: (completedCrop.height / 100) * image.height * scaleY,
     };
 
-    // Output size - max 800px for square, 1200px for landscape
+    // Output size - max 1200px wide for all images, 800px for avatars (1:1)
     const isSquare = Math.abs(pixelCrop.width - pixelCrop.height) < 1;
     const maxDimension = isSquare ? 800 : 1200;
     let outputWidth: number;
@@ -310,13 +310,13 @@ export function ImageUpload({
 
           <p className="text-sm text-[var(--color-text-secondary)] mb-4 text-center">
             {aspectRatio === 1 ? (
-              <>Cropping to <strong>square (1:1)</strong>. Output: 800x800px max.</>
+              <>Cropping to <strong>square (1:1)</strong>. Output: 800×800px max.</>
+            ) : Math.abs(aspectRatio - 4/3) < 0.01 ? (
+              <>Cropping to <strong>4:3</strong>. Output: 1200×900px. Most phone photos are already 4:3.</>
             ) : aspectRatio === 16/9 ? (
-              <>Cropping to <strong>16:9</strong>. Output: 1200x675px max.</>
-            ) : aspectRatio === 4/3 ? (
-              <>Cropping to <strong>4:3</strong>. Output: 1200x900px max.</>
+              <>Cropping to <strong>16:9</strong>. Output: 1200×675px max.</>
             ) : aspectRatio === 3/2 ? (
-              <>Cropping to <strong>3:2</strong>. Output: 1200x800px max.</>
+              <>Cropping to <strong>3:2</strong>. Output: 1200×800px max.</>
             ) : (
               <>Cropping to <strong>{Math.round(aspectRatio * 10) / 10}:1</strong> aspect ratio.</>
             )}

@@ -111,16 +111,15 @@ export default function GalleryGrid({ images }: Props) {
               aria-label={`View ${image.caption || "gallery image"}`}
             >
               <div className="relative rounded-xl overflow-hidden border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/30 transition-colors cursor-pointer">
-                <div className="relative aspect-[4/3] w-full">
-                  <Image
-                    src={image.image_url}
-                    alt={image.caption ?? "Gallery image"}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                </div>
+                <Image
+                  src={image.image_url}
+                  alt={image.caption ?? "Gallery image"}
+                  width={800}
+                  height={600}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
                 {image.is_featured && (
                   <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs font-medium">
                     Featured

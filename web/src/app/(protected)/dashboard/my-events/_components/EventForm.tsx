@@ -200,14 +200,14 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
             currentImageUrl={coverImageUrl}
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            aspectRatio={1}
+            aspectRatio={4/3}
             shape="square"
             placeholderText="Add Cover Photo"
             maxSizeMB={5}
           />
         </div>
         <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-          Recommended: 800x800px (square). Image will be cropped to 1:1.
+          Recommended: 1200×900px (4:3). Most phone photos are already 4:3.
         </p>
       </div>
 

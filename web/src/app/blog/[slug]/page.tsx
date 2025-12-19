@@ -231,13 +231,12 @@ export default async function BlogPostPage({ params }: Props) {
     <article className="min-h-screen">
       {/* Hero with cover image */}
       {post.cover_image_url && (
-        <div className="relative w-full h-[40vh] md:h-[50vh]">
+        <div className="relative aspect-[4/3] w-full">
           <img
             src={post.cover_image_url}
             alt={post.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/50 to-transparent" />
         </div>
       )}
 
