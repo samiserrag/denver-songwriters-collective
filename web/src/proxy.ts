@@ -67,28 +67,18 @@ export async function proxy(req: NextRequest) {
   // Fetch user profile to determine onboarding status
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, onboarding_complete")
+    .select("onboarding_complete")
     .eq("id", user.id)
     .single();
 
   // All onboarding paths should be accessible during onboarding
-  const onboardingPaths = ["/onboarding/role", "/onboarding/profile", "/onboarding/complete"];
-  const isOnboardingPath = onboardingPaths.some(p => pathname.startsWith(p));
+  const isOnboardingPath = pathname.startsWith("/onboarding");
 
-  // User needs role selection if they have no role set
-  const needsRoleSelection = !profile?.role;
+  // User needs onboarding if onboarding_complete is false/null
+  const needsOnboarding = !profile?.onboarding_complete;
 
-  // User needs profile completion if onboarding_complete is false/null
-  const needsProfileCompletion = !profile?.onboarding_complete;
-
-  // Redirect to role selection if no role is set
-  if (needsRoleSelection && !isOnboardingPath) {
-    const redirectUrl = new URL("/onboarding/role", req.url);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // Redirect to profile completion if role is set but onboarding not complete
-  if (!needsRoleSelection && needsProfileCompletion && !isOnboardingPath) {
+  // Redirect to onboarding if not complete
+  if (needsOnboarding && !isOnboardingPath) {
     const redirectUrl = new URL("/onboarding/profile", req.url);
     return NextResponse.redirect(redirectUrl);
   }

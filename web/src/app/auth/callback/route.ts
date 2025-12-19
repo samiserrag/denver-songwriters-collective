@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Handle Google OAuth
     if (provider === "google" || type === "google") {
       const redirectTo = needsOnboarding
-        ? "/onboarding/role?google=1"
+        ? "/onboarding/profile?google=1"
         : "/dashboard?google=1";
       return NextResponse.redirect(new URL(redirectTo, origin));
     }
@@ -62,19 +62,19 @@ export async function GET(request: NextRequest) {
     // Handle Magic Link login
     if (type === "magic" || type === "magiclink") {
       const redirectTo = needsOnboarding
-        ? "/onboarding/role?magic=1"
+        ? "/onboarding/profile?magic=1"
         : "/dashboard?magic=1";
       return NextResponse.redirect(new URL(redirectTo, origin));
     }
 
     // Handle signup
     if (type === "signup") {
-      return NextResponse.redirect(new URL("/onboarding/role?signup=1", origin));
+      return NextResponse.redirect(new URL("/onboarding/profile?signup=1", origin));
     }
 
     // Next param support / default fallback
     const nextParam = searchParams.get("next");
-    const next = nextParam ?? (needsOnboarding ? "/onboarding/role" : "/dashboard");
+    const next = nextParam ?? (needsOnboarding ? "/onboarding/profile" : "/dashboard");
     return NextResponse.redirect(new URL(next, origin));
   }
 

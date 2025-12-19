@@ -228,14 +228,23 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Unified Onboarding Page (December 2025)
+- **Single-page onboarding:** Replaced multi-step flow with one welcoming page
+- **Collapsible sections:** Identity, bio, social links, tipping, collaboration preferences
+- **Privacy-first messaging:** Clear language about email privacy and data control
+- **Skip anytime:** Users can skip directly to dashboard, onboarding marked complete
+- **Auth callback updated:** Now redirects to `/onboarding/profile` instead of `/onboarding/role`
+- **Proxy simplified:** Only checks `onboarding_complete` flag, no role dependency
+- Key files:
+  - `web/src/app/onboarding/profile/page.tsx` - New unified onboarding page
+  - `web/src/app/onboarding/role/page.tsx` - Now redirects to profile
+  - `web/src/app/onboarding/complete/page.tsx` - Now redirects to dashboard
+  - `web/src/app/auth/callback/route.ts` - Updated redirect targets
+  - `web/src/proxy.ts` - Simplified onboarding check
+
 ### Member Role Simplification (December 2025)
 - **New identity flags added to profiles table:** `is_songwriter`, `is_studio`, `is_fan` (boolean columns)
-- **Onboarding redesigned:** Changed from single role selection to multi-select checkboxes
-- **Skip option added:** Users can skip onboarding and go directly to dashboard
-- **Terminology update:** "Performer" → "Songwriter" in onboarding UI
-- Key files:
-  - `web/src/app/onboarding/role/page.tsx` - Complete rewrite with checkbox UI
-  - `web/src/lib/supabase/database.types.ts` - Regenerated with new columns
+- **Terminology update:** "Performer" → "Songwriter" throughout
 - Migration: `supabase/migrations/20251218000001_add_member_identity_flags.sql`
 - **Next steps:** Update pages that filter by `role` to use boolean flags instead
 
