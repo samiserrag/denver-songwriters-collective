@@ -158,7 +158,7 @@ function LoginForm() {
       <button
         type="button"
         onClick={signInWithGoogle}
-        className="w-full mt-4 bg-white text-[var(--color-text-on-accent)] py-2 rounded border border-gray-300 hover:bg-gray-100"
+        className="w-full mt-4 bg-[var(--color-bg-input)] text-[var(--color-text-primary)] py-2 rounded border border-[var(--color-border-input)] hover:bg-[var(--color-bg-secondary)]"
       >
         Continue with Google
       </button>
