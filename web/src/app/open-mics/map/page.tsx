@@ -137,7 +137,7 @@ export default async function OpenMicsMapPage() {
     <>
       <HeroSection minHeight="md">
         <PageContainer>
-          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
+          <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
             Open Mic Map
           </h1>
           <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-3xl">

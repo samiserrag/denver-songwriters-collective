@@ -2,10 +2,10 @@
 
 :root {
   /* Default theme uses globals.css tokens */
-  /* Inverse text (for use on inverse backgrounds like footer) - defaults to dark theme values */
-  --color-text-on-inverse-primary: #0F172A;
-  --color-text-on-inverse-secondary: #334155;
-  --color-text-on-inverse-tertiary: #64748B;
+  /* Inverse text (for dark footer/backgrounds) */
+  --color-text-on-inverse-primary: #FAF9F7;
+  --color-text-on-inverse-secondary: rgba(250, 249, 247, 0.75);
+  --color-text-on-inverse-tertiary: rgba(250, 249, 247, 0.55);
 }
 
 :root[data-theme="gold-night"] {

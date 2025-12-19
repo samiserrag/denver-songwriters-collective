@@ -67,7 +67,7 @@ export default async function StudioAppointmentsPage() {
     <>
       <HeroSection minHeight="md">
         <PageContainer>
-          <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic">
+          <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic">
             Studio Appointments
           </h1>
           <p className="text-[var(--color-text-secondary)] mt-3">

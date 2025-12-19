@@ -177,7 +177,7 @@ export default function SubmitOpenMicPage() {
           <PageContainer>
             <div className="text-center">
               <div className="text-6xl mb-4">✓</div>
-              <h1 className="text-gradient-gold text-3xl font-serif italic mb-4">
+              <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-4">
                 {success === "new" ? "Submission Received!" : "Claim Request Submitted!"}
               </h1>
               <p className="text-[var(--color-text-secondary)] mb-6">
@@ -215,7 +215,7 @@ export default function SubmitOpenMicPage() {
       <div>
         <HeroSection minHeight="md">
           <PageContainer>
-            <h1 className="text-gradient-gold text-3xl font-serif italic mb-4">
+            <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-4">
               Submit or Claim an Open Mic
             </h1>
             <p className="text-[var(--color-text-secondary)] mb-6">
@@ -251,7 +251,7 @@ export default function SubmitOpenMicPage() {
       <div>
         <HeroSection minHeight="md">
           <PageContainer>
-            <h1 className="text-gradient-gold text-3xl font-serif italic mb-2">
+            <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-2">
               Submit or Claim an Open Mic
             </h1>
             <p className="text-[var(--color-text-secondary)]">
@@ -310,7 +310,7 @@ export default function SubmitOpenMicPage() {
             <button onClick={() => setMode(null)} className="text-[var(--color-text-accent)] hover:underline mb-4">
               ← Back
             </button>
-            <h1 className="text-gradient-gold text-3xl font-serif italic">Submit New Open Mic</h1>
+            <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic">Submit New Open Mic</h1>
           </PageContainer>
         </HeroSection>
 
@@ -484,7 +484,7 @@ export default function SubmitOpenMicPage() {
             <button onClick={() => setMode(null)} className="text-[var(--color-text-accent)] hover:underline mb-4">
               ← Back
             </button>
-            <h1 className="text-gradient-gold text-3xl font-serif italic">Claim as Host</h1>
+            <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic">Claim as Host</h1>
             <p className="text-[var(--color-text-secondary)] mt-2">
               Select the open mic you host to claim management access.
             </p>

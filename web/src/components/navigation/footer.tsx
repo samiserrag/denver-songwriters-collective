@@ -15,7 +15,7 @@ export function Footer({ className }: FooterProps) {
     <footer
       className={cn(
         "border-t border-[var(--color-border-subtle)]",
-        "bg-[var(--color-bg-inverse)]",
+        "bg-[var(--color-background-dark)]",
         // NOTE: min-height is set via critical inline CSS in layout.tsx to prevent CLS
         // Do NOT add min-h classes here - they conflict with the inline styles
         className

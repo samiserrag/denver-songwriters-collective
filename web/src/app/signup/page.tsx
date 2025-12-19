@@ -47,7 +47,7 @@ function SignupForm() {
 
   return (
     <div className="w-full max-w-md card-base px-8 py-10">
-      <h1 className="text-gradient-gold text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] italic mb-6 text-center">
+      <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] italic mb-6 text-center">
         Sign up
       </h1>
 

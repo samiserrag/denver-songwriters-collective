@@ -307,7 +307,7 @@ export default function EditProfilePage() {
         <PageContainer>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
+              <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-2">
                 Edit Profile
               </h1>
               <p className="text-[var(--color-text-secondary)]">Update your public profile information</p>

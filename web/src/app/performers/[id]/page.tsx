@@ -134,7 +134,7 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
               size="lg"
             />
             <div>
-              <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
+              <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
                 {performer.full_name ?? "Anonymous Performer"}
               </h1>
 

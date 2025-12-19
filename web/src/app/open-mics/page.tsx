@@ -585,7 +585,7 @@ function parseTimeToMinutes(t?: string | null) {
             <div className="text-center pt-4">
               <Link
                 href="/submit-open-mic"
-                className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-gold-400)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] hover:shadow-[0_0_20px_rgba(255,216,106,0.35)] transition"
+                className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] hover:shadow-[0_0_20px_rgba(255,216,106,0.35)] transition"
               >
                 Submit, Claim, or Update an Open Mic
               </Link>

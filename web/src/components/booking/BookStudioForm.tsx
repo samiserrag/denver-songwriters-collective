@@ -55,7 +55,7 @@ export default function BookStudioForm({
 
   return (
     <div className="card-base p-8 max-w-lg mx-auto">
-      <h2 className="text-gradient-gold text-3xl font-[var(--font-family-serif)] italic mb-6">
+      <h2 className="text-[var(--color-text-accent)] text-3xl font-[var(--font-family-serif)] italic mb-6">
         Book: {serviceName}
       </h2>
 

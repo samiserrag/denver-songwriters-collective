@@ -80,7 +80,7 @@ export default async function DashboardPage() {
               size="lg"
             />
             <div>
-              <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-3">
+              <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-3">
                 Welcome, {p?.full_name ?? "User"}
               </h1>
               <p className="text-[var(--color-text-secondary)] text-lg">

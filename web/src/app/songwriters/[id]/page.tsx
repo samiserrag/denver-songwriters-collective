@@ -134,7 +134,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               size="lg"
             />
             <div>
-              <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
+              <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
                 {songwriter.full_name ?? "Anonymous Songwriter"}
               </h1>
 
