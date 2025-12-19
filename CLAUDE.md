@@ -22,25 +22,9 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ## Project Structure
 
-This project uses **git worktrees** for development:
-
-- **Main repo (production):** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective`
-  - Branch: `main`
-  - Vercel auto-deploys from main
-
-- **Worktree (development):** Check current worktree branch with `git branch`
-  - Development branches are named after Docker-style names (e.g., `relaxed-meninsky`, `optimistic-jennings`)
-
-### Deployment Workflow
-
-1. Make changes in the worktree
-2. Commit and push to the worktree branch
-3. Merge to `main`:
-   ```bash
-   cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective
-   git pull && git merge origin/<worktree-branch> --no-edit && git push
-   ```
-4. Vercel auto-deploys from main
+- **Repository:** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective`
+- **Branch:** `main`
+- **Deployment:** Vercel auto-deploys from main
 
 ## Tech Stack
 
@@ -236,6 +220,12 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Middleware → Proxy Migration (December 2025)
+- **Migrated to Next.js 16 proxy convention** - renamed `middleware.ts` to `proxy.ts`
+- **Function renamed** - `middleware()` → `proxy()` as per Next.js 16 deprecation
+- **Fixed TypeScript errors** - removed invalid `templateName` property from `sendEmail()` calls
+- Key file: `web/src/proxy.ts` - Auth proxy for protected routes
+
 ### Timeslot Claiming UI (December 2025)
 - **TimeslotSection component** - Public event detail page shows claimable performance slots
 - **Conditional UI** - Events with `has_timeslots=true` show slot grid; others show RSVP button
@@ -363,6 +353,7 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `ARCHITECTURE_PLAN.md` | White-label platform roadmap |
 | `web/src/app/themes/presets.css` | Theme preset CSS variables |
 | `web/src/app/globals.css` | Base CSS variables and global styles |
+| `web/src/proxy.ts` | Auth proxy for protected routes (Next.js 16) |
 
 ---
 
@@ -372,8 +363,8 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 # Development
 cd web && npm run dev
 
-# Build (from worktree web directory)
-cd web && npx next build
+# Build
+cd web && npm run build
 
 # Type check
 cd web && npm run lint
@@ -384,10 +375,8 @@ cd web && npm run lint && npm run test -- --run && npm run build
 # Generate Supabase types (after schema changes)
 npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/lib/supabase/database.types.ts
 
-# Deploy from worktree to production
-git push origin <worktree-branch>
-cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective
-git pull && git merge origin/<worktree-branch> --no-edit && git push
+# Deploy to production
+git add . && git commit -m "your message" && git push
 ```
 
 ---

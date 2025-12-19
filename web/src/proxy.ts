@@ -12,7 +12,7 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
   if (!isProtectedPath(pathname)) {
