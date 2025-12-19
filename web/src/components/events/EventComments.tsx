@@ -89,20 +89,20 @@ export function EventComments({ eventId }: EventCommentsProps) {
 
   return (
     <div className="mt-8">
-      <h3 className="text-lg font-semibold text-white mb-4">
+      <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
         Comments ({comments.length})
       </h3>
 
       <div className="space-y-4 mb-6">
         {comments.length === 0 ? (
-          <p className="text-neutral-400 text-sm">
+          <p className="text-[var(--color-text-tertiary)] text-sm">
             No comments yet. Be the first!
           </p>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="p-4 bg-neutral-800/50 rounded-lg">
+            <div key={comment.id} className="p-4 bg-[var(--color-bg-secondary)]/50 rounded-lg">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center text-sm text-white overflow-hidden">
+                <div className="w-8 h-8 bg-[var(--color-bg-tertiary)] rounded-full flex items-center justify-center text-sm text-[var(--color-text-primary)] overflow-hidden">
                   {comment.user?.avatar_url ? (
                     <img
                       src={comment.user.avatar_url}
@@ -116,15 +116,15 @@ export function EventComments({ eventId }: EventCommentsProps) {
                   )}
                 </div>
                 <div>
-                  <p className="text-white text-sm font-medium">
+                  <p className="text-[var(--color-text-primary)] text-sm font-medium">
                     {comment.user?.full_name || "Anonymous"}
                   </p>
-                  <p className="text-neutral-500 text-xs">
+                  <p className="text-[var(--color-text-tertiary)] text-xs">
                     {formatDate(comment.created_at)}
                   </p>
                 </div>
               </div>
-              <p className="text-neutral-300 text-sm">{comment.content}</p>
+              <p className="text-[var(--color-text-secondary)] text-sm">{comment.content}</p>
             </div>
           ))
         )}
@@ -138,18 +138,18 @@ export function EventComments({ eventId }: EventCommentsProps) {
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Add a comment..."
             rows={3}
-            className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-gold-400 focus:outline-none resize-none"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-gold-400 focus:outline-none resize-none"
           />
           <button
             type="submit"
             disabled={loading || !newComment.trim()}
-            className="px-4 py-2 bg-gold-400 hover:bg-gold-300 text-black font-medium rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-gold-400 hover:bg-gold-300 text-[var(--color-text-on-accent)] font-medium rounded-lg disabled:opacity-50"
           >
             {loading ? "Posting..." : "Post Comment"}
           </button>
         </form>
       ) : (
-        <p className="text-neutral-400 text-sm">
+        <p className="text-[var(--color-text-tertiary)] text-sm">
           <a
             href="/login"
             className="text-gold-400 hover:text-gold-300 underline"

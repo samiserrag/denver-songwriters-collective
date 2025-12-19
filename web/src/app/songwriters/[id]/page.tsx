@@ -141,12 +141,12 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               {/* Role badges */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {songwriter.role === "host" ? (
-                  <span className="px-3 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
-                    🎤 Open Mic Host
-                  </span>
+                    <span className="px-3 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
+                      🎤 Open Mic Host
+                    </span>
                 ) : (
                   <>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-neutral-300 text-sm">
+                    <span className="px-3 py-1 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm">
                       Songwriter
                     </span>
                     {(songwriter as DBProfile & { is_host?: boolean }).is_host && (
@@ -195,7 +195,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                       href={link.url!}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                       title={link.label}
                     >
                       <SocialIcon type={link.type} />
@@ -212,8 +212,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
       <PageContainer>
         <div className="py-12">
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-4">About</h2>
-            <p className="text-neutral-300 leading-relaxed max-w-3xl">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">About</h2>
+            <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-3xl">
               {songwriter.bio ?? "This songwriter hasn't added a bio yet."}
             </p>
           </section>
@@ -221,7 +221,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           {/* Genres Section */}
           {songwriter.genres && songwriter.genres.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-white mb-4">Genres</h2>
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Genres</h2>
               <div className="flex flex-wrap gap-2">
                 {songwriter.genres.map((genre) => (
                   <span
@@ -238,12 +238,12 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           {/* Instruments Section */}
           {songwriter.instruments && songwriter.instruments.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-white mb-4">Instruments</h2>
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Instruments</h2>
               <div className="flex flex-wrap gap-2">
                 {songwriter.instruments.map((instrument) => (
                   <span
                     key={instrument}
-                    className="px-3 py-1.5 rounded-full bg-white/10 text-neutral-200 text-sm"
+                    className="px-3 py-1.5 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm"
                   >
                     {instrument}
                   </span>
@@ -255,12 +255,12 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           {/* Specialties Section */}
           {songwriter.specialties && songwriter.specialties.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-white mb-4">Specialties</h2>
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Specialties</h2>
               <div className="flex flex-wrap gap-2">
                 {songwriter.specialties.map((specialty) => (
                   <span
                     key={specialty}
-                    className="px-3 py-1.5 rounded-full bg-white/10 text-neutral-200 text-sm"
+                    className="px-3 py-1.5 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm"
                   >
                     {specialty}
                   </span>
@@ -272,15 +272,15 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           {/* Favorite Open Mic */}
           {songwriter.favorite_open_mic && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-white mb-4">Favorite Open Mic</h2>
-              <p className="text-neutral-300">{songwriter.favorite_open_mic}</p>
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Favorite Open Mic</h2>
+              <p className="text-[var(--color-text-secondary)]">{songwriter.favorite_open_mic}</p>
             </section>
           )}
 
           {/* Song Links Section */}
           {songwriter.song_links && songwriter.song_links.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-white mb-4">Listen to My Music</h2>
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
               <div className="grid gap-3 max-w-xl">
                 {songwriter.song_links.map((link, index) => {
                   // Determine the platform icon based on URL
@@ -290,7 +290,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                     if (url.includes("youtube") || url.includes("youtu.be")) return { name: "YouTube", color: "bg-[#FF0000]" };
                     if (url.includes("bandcamp")) return { name: "Bandcamp", color: "bg-[#1DA0C3]" };
                     if (url.includes("apple")) return { name: "Apple Music", color: "bg-[#FA2D48]" };
-                    return { name: "Listen", color: "bg-white/20" };
+                    return { name: "Listen", color: "bg-[var(--color-accent-muted)]" };
                   };
                   const platform = getPlatformInfo(link);
                   return (
@@ -299,7 +299,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                       href={link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-white transition-opacity`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg ${platform.color} hover:opacity-90 text-[var(--color-text-primary)] transition-opacity`}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -318,8 +318,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           {/* Tip/Support Section */}
           {tipLinks.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-white mb-4">Support This Songwriter</h2>
-              <p className="text-neutral-400 mb-4">Show your appreciation with a tip!</p>
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Support This Songwriter</h2>
+              <p className="text-[var(--color-text-tertiary)] mb-4">Show your appreciation with a tip!</p>
               <div className="flex flex-wrap gap-3">
                 {tipLinks.map((tip) => (
                   <Link
@@ -327,11 +327,11 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                     href={tip.url!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${tip.color} hover:opacity-90 text-white transition-opacity`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg ${tip.color} hover:opacity-90 text-[var(--color-text-primary)] transition-opacity`}
                   >
                     <TipIcon type={tip.type} />
                     <span className="font-medium">{tip.label}</span>
-                    {tip.handle && <span className="text-white/80">{tip.handle}</span>}
+                    {tip.handle && <span className="text-[var(--color-text-primary)]/80">{tip.handle}</span>}
                   </Link>
                 ))}
               </div>
@@ -339,8 +339,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           )}
 
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-4">Upcoming Performances</h2>
-            <p className="text-neutral-400">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Upcoming Performances</h2>
+            <p className="text-[var(--color-text-tertiary)]">
               Check back soon for upcoming show dates.
             </p>
           </section>

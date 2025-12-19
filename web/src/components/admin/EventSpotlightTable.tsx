@@ -27,13 +27,13 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
    // CRITICAL: Guard MUST be first line
    if (!events || !Array.isArray(events)) {
      return (
-       <div className="text-neutral-400 py-4">No events available.</div>
+       <div className="text-[var(--color-text-tertiary)] py-4">No events available.</div>
      );
    }
 
    if (rows.length === 0) {
      return (
-       <div className="text-neutral-400 py-4">No events found.</div>
+       <div className="text-[var(--color-text-tertiary)] py-4">No events found.</div>
      );
    }
 
@@ -84,7 +84,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
 
   return (
     <div className="w-full overflow-x-auto rounded-lg border border-white/10 p-4 bg-black/20">
-      <table className="min-w-full text-left text-white">
+      <table className="min-w-full text-left text-[var(--color-text-primary)]">
         <thead className="border-b border-white/10 text-gold-400">
           <tr>
             <th className="py-2 px-3">Title</th>
@@ -112,7 +112,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
                     ev.status === "active"
                       ? "bg-green-900/50 text-green-400"
-                      : "bg-neutral-800 text-neutral-400"
+                      : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)]"
                   }`}>
                     {ev.status}
                   </span>
@@ -139,13 +139,13 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/dashboard/admin/events/${ev.id}/edit`}
-                      className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white text-xs"
+                      className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-[var(--color-text-primary)] text-xs"
                     >
                       Edit
                     </Link>
                     <button
                       onClick={() => setDeleteModal({ id: ev.id, title: ev.title })}
-                      className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-xs"
+                      className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[var(--color-text-primary)] text-xs"
                     >
                       Delete
                     </button>
@@ -160,23 +160,23 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
       {/* Delete Confirmation Modal */}
       {deleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-neutral-900 border border-white/10 rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold text-white mb-4">Delete Event</h3>
-            <p className="text-neutral-300 mb-2">
-              Are you sure you want to delete <strong className="text-white">{deleteModal.title}</strong>?
+          <div className="bg-[var(--color-bg-input)] border border-white/10 rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Delete Event</h3>
+            <p className="text-[var(--color-text-secondary)] mb-2">
+              Are you sure you want to delete <strong className="text-[var(--color-text-primary)]">{deleteModal.title}</strong>?
             </p>
             <p className="text-red-400 text-sm mb-4">
               This action cannot be reversed.
             </p>
-            <p className="text-neutral-400 text-sm mb-2">
-              Type <strong className="text-white">DELETE</strong> to confirm:
+            <p className="text-[var(--color-text-tertiary)] text-sm mb-2">
+              Type <strong className="text-[var(--color-text-primary)]">DELETE</strong> to confirm:
             </p>
             <input
               type="text"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder="DELETE"
-              className="w-full px-3 py-2 bg-black border border-white/20 rounded text-white mb-4 focus:border-red-500 focus:outline-none"
+              className="w-full px-3 py-2 bg-black border border-white/20 rounded text-[var(--color-text-primary)] mb-4 focus:border-red-500 focus:outline-none"
             />
             <div className="flex gap-3">
               <button
@@ -184,7 +184,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                   setDeleteModal(null);
                   setDeleteConfirm("");
                 }}
-                className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+                className="flex-1 px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
                 disabled={deleting}
               >
                 Cancel
@@ -192,7 +192,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
               <button
                 onClick={handleDelete}
                 disabled={deleteConfirm !== "DELETE" || deleting}
-                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white"
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-[var(--color-text-primary)]"
               >
                 {deleting ? "Deleting..." : "Delete Event"}
               </button>

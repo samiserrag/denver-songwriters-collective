@@ -232,7 +232,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
             <button
               onClick={handleConfirmOffer}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-[var(--color-text-primary)] font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -284,7 +284,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
                   <button
                     onClick={handleCancel}
                     disabled={loading}
-                    className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-50"
+                    className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] rounded-md transition-colors disabled:opacity-50"
                   >
                     {loading ? "..." : "Yes"}
                   </button>

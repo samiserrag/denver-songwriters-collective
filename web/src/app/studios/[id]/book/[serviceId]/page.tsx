@@ -35,7 +35,7 @@ export default async function BookingPage({ params }: BookingPageProps) {
           <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic">
             Book a Service
           </h1>
-          <p className="text-neutral-300 mt-2">
+          <p className="text-[var(--color-text-secondary)] mt-2">
             Choose a date and time for your session.
           </p>
         </PageContainer>

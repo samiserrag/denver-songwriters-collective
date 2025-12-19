@@ -209,7 +209,7 @@ export function RSVPButton({
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-50"
+                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] rounded-md transition-colors disabled:opacity-50"
               >
                 {loading ? "..." : "Yes"}
               </button>
@@ -253,7 +253,7 @@ export function RSVPButton({
           <button
             onClick={handleConfirmOffer}
             disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all disabled:opacity-50 shadow-sm"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-[var(--color-text-primary)] font-semibold rounded-xl transition-all disabled:opacity-50 shadow-sm"
           >
             {loading ? (
               <>
@@ -279,7 +279,7 @@ export function RSVPButton({
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-50"
+                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] rounded-md transition-colors disabled:opacity-50"
               >
                 {loading ? "..." : "Yes"}
               </button>
@@ -328,7 +328,7 @@ export function RSVPButton({
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-50"
+                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] rounded-md transition-colors disabled:opacity-50"
               >
                 {loading ? "..." : "Yes"}
               </button>
@@ -356,7 +356,7 @@ export function RSVPButton({
           disabled={loading}
           className={`inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl transition-all disabled:opacity-50 shadow-sm ${
             isFull
-              ? "bg-amber-600 hover:bg-amber-500 text-white"
+              ? "bg-amber-600 hover:bg-amber-500 text-[var(--color-text-primary)]"
               : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)]"
           }`}
         >

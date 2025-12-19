@@ -146,7 +146,7 @@ export default function EventSuggestionForm({ event }: Props) {
     return (
       <div className="mt-8 p-4 bg-green-900/30 border border-green-700 rounded-lg text-center">
         <p className="text-green-300 font-medium">Thank you!</p>
-        <p className="text-neutral-400 text-sm mt-1">Your suggestions will be reviewed.</p>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-1">Your suggestions will be reviewed.</p>
       </div>
     );
   }
@@ -171,9 +171,9 @@ export default function EventSuggestionForm({ event }: Props) {
           {isLoggedIn ? "Suggest updates to this listing" : "Sign in to suggest updates"}
         </button>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-neutral-800/50 border border-neutral-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Suggest Updates</h3>
-          <p className="text-neutral-400 text-sm mb-4">
+        <form onSubmit={handleSubmit} className="bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Suggest Updates</h3>
+          <p className="text-[var(--color-text-tertiary)] text-sm mb-4">
             Edit any fields that need correction. Only changed fields will be submitted.
           </p>
 
@@ -185,31 +185,31 @@ export default function EventSuggestionForm({ event }: Props) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Title</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Title</label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleChange("title", e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Venue Name</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Venue Name</label>
               <input
                 type="text"
                 value={formData.venue_name}
                 onChange={(e) => handleChange("venue_name", e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Day of Week</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Day of Week</label>
               <select
                 value={formData.day_of_week}
                 onChange={(e) => handleChange("day_of_week", e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               >
                 <option value="">Select day...</option>
                 {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
@@ -217,11 +217,11 @@ export default function EventSuggestionForm({ event }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Category</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Category</label>
               <select
                 value={formData.category}
                 onChange={(e) => handleChange("category", e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               >
                 <option value="">Select...</option>
                 {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -229,89 +229,89 @@ export default function EventSuggestionForm({ event }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Start Time</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Start Time</label>
               <input
                 type="text"
                 value={formData.start_time}
                 onChange={(e) => handleChange("start_time", e.target.value)}
                 placeholder="7:00 PM"
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">End Time</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">End Time</label>
               <input
                 type="text"
                 value={formData.end_time}
                 onChange={(e) => handleChange("end_time", e.target.value)}
                 placeholder="10:00 PM"
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Signup Time</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Signup Time</label>
               <input
                 type="text"
                 value={formData.signup_time}
                 onChange={(e) => handleChange("signup_time", e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Recurrence</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Recurrence</label>
               <input
                 type="text"
                 value={formData.recurrence_rule}
                 onChange={(e) => handleChange("recurrence_rule", e.target.value)}
                 placeholder="Every Monday"
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm text-neutral-300 mb-1">Description</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => handleChange("description", e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Your Name (optional)</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Your Name (optional)</label>
               <input
                 type="text"
                 value={submitterName}
                 onChange={(e) => setSubmitterName(e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
               />
             </div>
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Your Email</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Your Email</label>
               <input
                 type="email"
                 value={submitterEmail}
                 onChange={(e) => setSubmitterEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
                 readOnly={!!submitterEmail}
               />
             </div>
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm text-neutral-300 mb-1">Notes for Reviewers</label>
+            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Notes for Reviewers</label>
             <textarea
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
               rows={2}
               placeholder="Source or reason for changes..."
-              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white"
+              className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
             />
           </div>
 
@@ -326,7 +326,7 @@ export default function EventSuggestionForm({ event }: Props) {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
             >
               Cancel
             </button>

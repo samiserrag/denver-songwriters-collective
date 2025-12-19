@@ -333,7 +333,7 @@ export function ImageUpload({
               type="button"
               onClick={handleCancel}
               disabled={isUploading}
-              className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-white transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -391,7 +391,7 @@ export function ImageUpload({
                 className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
                 aria-label="Change image"
               >
-                <Camera className="w-5 h-5 text-white" />
+                <Camera className="w-5 h-5 text-[var(--color-text-primary)]" />
               </button>
               {onRemove && (
                 <button
@@ -402,9 +402,9 @@ export function ImageUpload({
                   aria-label="Remove image"
                 >
                   {isUploading ? (
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    <Loader2 className="w-5 h-5 text-[var(--color-text-primary)] animate-spin" />
                   ) : (
-                    <X className="w-5 h-5 text-white" />
+                    <X className="w-5 h-5 text-[var(--color-text-primary)]" />
                   )}
                 </button>
               )}

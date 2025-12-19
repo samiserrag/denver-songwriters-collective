@@ -85,7 +85,7 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
                     <button
                       onClick={() => handleAction(request.id, "approve")}
                       disabled={processing === request.id}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded disabled:opacity-50"
+                      className="px-3 py-1 bg-green-600 hover:bg-green-500 text-[var(--color-text-primary)] text-sm rounded disabled:opacity-50"
                     >
                       {processing === request.id ? "..." : "Approve"}
                     </button>
@@ -95,7 +95,7 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
                         handleAction(request.id, "reject", reason || undefined);
                       }}
                       disabled={processing === request.id}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded disabled:opacity-50"
+                      className="px-3 py-1 bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] text-sm rounded disabled:opacity-50"
                     >
                       Reject
                     </button>
@@ -129,8 +129,8 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
                 <span
                   className={`text-sm px-2 py-1 rounded ${
                     request.status === "approved"
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
                   }`}
                 >
                   {request.status}

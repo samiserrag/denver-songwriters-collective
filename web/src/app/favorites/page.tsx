@@ -30,7 +30,7 @@ export default async function FavoritesPage() {
   if (error) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
+        <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">My Favorites</h1>
         <p className="text-[var(--color-text-secondary)]">Unable to load favorites.</p>
       </div>
     );
@@ -69,14 +69,14 @@ export default async function FavoritesPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-white mb-4">My Favorites</h1>
-        <Link href="/open-mics" className="text-[#00FFCC] underline">
+        <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">My Favorites</h1>
+        <Link href="/open-mics" className="text-[var(--color-link)] hover:text-[var(--color-link-hover)] underline">
           Back to Directory
         </Link>
       </div>
 
       {events.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/2 p-6 text-center">
+        <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-accent-muted)] p-6 text-center">
           <p className="text-[var(--color-text-secondary)]">You have no favorites yet.</p>
         </div>
       ) : (

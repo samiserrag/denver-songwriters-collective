@@ -31,6 +31,10 @@
   --color-text-secondary: #374151;
   --color-text-tertiary: #6B7280;
   --color-text-accent: #F97316;
+  --color-text-on-accent: #FFFFFF;
+  --color-bg-input: #FFFFFF;
+  --color-border-input: rgba(0, 0, 0, 0.20);
+  --color-placeholder: rgba(0, 0, 0, 0.45);
 
   /* Light text for dark inverse background */
   --color-text-on-inverse-primary: #FAF9F7;
@@ -44,6 +48,40 @@
   --color-border-default: rgba(31, 41, 55, 0.14);
   --color-border-subtle: rgba(31, 41, 55, 0.08);
   --color-border-accent: rgba(249, 115, 22, 0.35);
+}
+
+:root[data-theme="sunset"] {
+  /* Warm sunset, higher contrast */
+  --color-background: #FFF2E8;
+  --color-bg-primary: #FFF2E8;
+  --color-bg-secondary: #FFE4D1;
+  --color-bg-tertiary: #FFD1AD;
+  --color-bg-inverse: #1F2937;
+  --color-bg-gradient-start: #FFF2E8;
+  --color-bg-card: linear-gradient(180deg, #FFFFFF 0%, #FFF2E8 100%);
+  --color-bg-card-spotlight: radial-gradient(circle at top, rgba(234, 88, 12, 0.08), #FFFFFF);
+
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #374151;
+  --color-text-tertiary: #6B7280;
+  --color-text-accent: #C2410C;
+  --color-text-on-accent: #FFF7ED;
+  --color-bg-input: #FFFFFF;
+  --color-border-input: rgba(0, 0, 0, 0.20);
+  --color-placeholder: rgba(0, 0, 0, 0.45);
+
+  /* Light text for dark inverse background */
+  --color-text-on-inverse-primary: #FAF9F7;
+  --color-text-on-inverse-secondary: rgba(250, 249, 247, 0.75);
+  --color-text-on-inverse-tertiary: rgba(250, 249, 247, 0.55);
+
+  --color-accent-primary: #C2410C;
+  --color-accent-hover: #9A3412;
+  --color-accent-muted: rgba(194, 65, 12, 0.16);
+
+  --color-border-default: rgba(31, 41, 55, 0.14);
+  --color-border-subtle: rgba(31, 41, 55, 0.08);
+  --color-border-accent: rgba(194, 65, 12, 0.35);
 }
 
 :root[data-theme="colorado-sky"] {
@@ -61,6 +99,10 @@
   --color-text-secondary: #1E293B;
   --color-text-tertiary: #475569;
   --color-text-accent: #2563EB;
+  --color-text-on-accent: #F8FAFC;
+  --color-bg-input: #FFFFFF;
+  --color-border-input: rgba(0, 0, 0, 0.20);
+  --color-placeholder: rgba(0, 0, 0, 0.45);
 
   /* Light text for dark inverse background */
   --color-text-on-inverse-primary: #F8FAFC;
@@ -91,6 +133,10 @@
   --color-text-secondary: #334155;
   --color-text-tertiary: #64748B;
   --color-text-accent: #16A34A;
+  --color-text-on-accent: #F8FAFC;
+  --color-bg-input: #FFFFFF;
+  --color-border-input: rgba(0, 0, 0, 0.20);
+  --color-placeholder: rgba(0, 0, 0, 0.45);
 
   /* Light text for dark inverse background */
   --color-text-on-inverse-primary: #F8FAFC;
@@ -121,6 +167,10 @@
   --color-text-secondary: #374151;
   --color-text-tertiary: #6B7280;
   --color-text-accent: #DC2626;
+  --color-text-on-accent: #F8FAFC;
+  --color-bg-input: #FFFFFF;
+  --color-border-input: rgba(0, 0, 0, 0.20);
+  --color-placeholder: rgba(0, 0, 0, 0.45);
 
   /* Light text for dark inverse background */
   --color-text-on-inverse-primary: #FAF9F7;
@@ -152,6 +202,7 @@
   --color-text-secondary: #CBD5E1;
   --color-text-tertiary: #94A3B8;
   --color-text-accent: #A78BFA;
+  --color-text-on-accent: #0F172A;
 
   --color-accent-primary: #A78BFA;
   --color-accent-hover: #8B5CF6;
@@ -162,9 +213,33 @@
   --color-border-accent: rgba(167, 139, 250, 0.35);
 }
 
+:root[data-theme="night"] {
+  /* Dark, warm accent */
+  --color-bg-primary: #0B0F1A;
+  --color-bg-secondary: #11162B;
+  --color-bg-tertiary: #191F3A;
+  --color-bg-inverse: #F8FAFC;
+  --color-bg-gradient-start: #0B0F1A;
+
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-tertiary: #94A3B8;
+  --color-text-accent: #F6C177;
+  --color-text-on-accent: #0F172A;
+
+  --color-accent-primary: #F6C177;
+  --color-accent-hover: #EAB25F;
+  --color-accent-muted: rgba(246, 193, 119, 0.2);
+
+  --color-border-default: rgba(248, 250, 252, 0.14);
+  --color-border-subtle: rgba(248, 250, 252, 0.08);
+  --color-border-accent: rgba(246, 193, 119, 0.35);
+}
+
 :root[data-theme="teal-night"] {
   /* Original teal accent on dark */
   --color-text-accent: #00FFCC;
+  --color-text-on-accent: #0F172A;
   --color-accent-primary: #00FFCC;
   --color-accent-hover: #00E7FF;
   --color-accent-muted: rgba(0, 255, 204, 0.15);

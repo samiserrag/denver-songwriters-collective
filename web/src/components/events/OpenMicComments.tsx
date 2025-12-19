@@ -120,7 +120,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Share your thoughts about this open mic..."
             rows={3}
-            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
+            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
             disabled={submitting}
           />
           {error && (

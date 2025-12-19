@@ -24,7 +24,7 @@ export default async function AdminGalleryPage() {
   if (!profile || profile.role !== "admin") {
     return (
       <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-red-600 dark:text-red-400">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
         <p className="text-[var(--color-text-secondary)] mt-2">Admin privileges required.</p>
       </div>
     );
@@ -83,7 +83,7 @@ export default async function AdminGalleryPage() {
           <p className="text-[var(--color-text-secondary)]">
             Manage photos and albums.
             {pendingCount > 0 && (
-              <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 rounded-full text-sm">
+              <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">
                 {pendingCount} pending approval
               </span>
             )}

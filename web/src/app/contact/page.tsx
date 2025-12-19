@@ -45,15 +45,15 @@ export default function ContactPage() {
       <PageContainer className="min-h-screen flex items-center justify-center">
         <div className="max-w-md w-full text-center px-6">
           <div className="text-6xl mb-6 text-[var(--color-text-accent)]">✓</div>
-          <h1 className="font-display text-3xl text-white mb-4">
+          <h1 className="font-display text-3xl text-[var(--color-text-primary)] mb-4">
             Message Sent!
           </h1>
-          <p className="text-neutral-300 mb-8">
+          <p className="text-[var(--color-text-secondary)] mb-8">
             Thanks for reaching out. We&apos;ll get back to you soon.
           </p>
           <Link
             href="/"
-            className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-black font-medium rounded-lg transition-colors"
+            className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg transition-colors"
           >
             Back to Home
           </Link>
@@ -65,14 +65,14 @@ export default function ContactPage() {
   return (
     <PageContainer className="min-h-screen py-16 px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-4xl text-white mb-4">Contact Us</h1>
-        <p className="text-neutral-400 mb-8">
+        <h1 className="font-display text-4xl text-[var(--color-text-primary)] mb-4">Contact Us</h1>
+        <p className="text-[var(--color-text-tertiary)] mb-8">
           Have a question, suggestion, or want to get involved? We&apos;d love to hear from you.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-neutral-300 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
               Your Name
             </label>
             <input
@@ -81,13 +81,13 @@ export default function ContactPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
+              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
               placeholder="Jane Doe"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
               Email Address
             </label>
             <input
@@ -96,13 +96,13 @@ export default function ContactPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
+              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
               placeholder="jane@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="message" className="block text-sm font-medium text-neutral-300 mb-2">
+            <label htmlFor="message" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
               Message
             </label>
             <textarea
@@ -111,7 +111,7 @@ export default function ContactPage() {
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={6}
-              className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)] resize-none"
+              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)] resize-none"
               placeholder="How can we help?"
             />
           </div>
@@ -128,15 +128,15 @@ export default function ContactPage() {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-black font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {status === "sending" ? "Sending..." : "Send Message"}
           </button>
         </form>
 
-        <div className="mt-12 pt-8 border-t border-neutral-800">
-          <h2 className="text-lg font-semibold text-white mb-4">Other Ways to Reach Us</h2>
-          <p className="text-neutral-400">
+        <div className="mt-12 pt-8 border-t border-[var(--color-border-subtle)]">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Other Ways to Reach Us</h2>
+          <p className="text-[var(--color-text-tertiary)]">
             Email:{" "}
             <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-text-accent)] hover:underline">
               admin@denversongwriterscollective.org

@@ -146,7 +146,7 @@ export default function SettingsPage() {
 
         {/* Danger Zone */}
         <section className="p-6 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Danger Zone</h2>
           <p className="text-[var(--color-text-secondary)] mb-4">
             Permanently delete your account and all associated data.
             This action cannot be undone.
@@ -155,17 +155,17 @@ export default function SettingsPage() {
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] rounded-lg transition-colors"
             >
               Delete My Account
             </button>
           ) : (
             <div className="space-y-4">
               <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-red-600 dark:text-red-300 font-medium mb-2">
+                <p className="text-red-600 font-medium mb-2">
                   This will permanently delete:
                 </p>
-                <ul className="text-red-600 dark:text-red-200 text-sm space-y-1 ml-4">
+                <ul className="text-red-600 text-sm space-y-1 ml-4">
                   <li>• Your account and login</li>
                   <li>• Your profile information</li>
                   <li>• All suggestions you&apos;ve submitted</li>
@@ -188,14 +188,14 @@ export default function SettingsPage() {
               </div>
 
               {error && (
-                <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                <p className="text-red-600 text-sm">{error}</p>
               )}
 
               <div className="flex gap-3">
                 <button
                   onClick={handleDeleteAccount}
                   disabled={isDeleting || deleteConfirmText !== "DELETE MY ACCOUNT"}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 disabled:text-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 disabled:text-red-400 text-[var(--color-text-primary)] rounded-lg transition-colors disabled:cursor-not-allowed"
                 >
                   {isDeleting ? "Deleting..." : "Permanently Delete Account"}
                 </button>

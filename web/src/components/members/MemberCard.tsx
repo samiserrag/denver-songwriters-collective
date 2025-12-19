@@ -32,7 +32,7 @@ function getRoleBadgeStyle(role: MemberRole): string {
     case "fan":
       return "bg-blue-500/20 text-blue-300 border-blue-500/30";
     default:
-      return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+      return "bg-gray-500/20 text-[var(--color-text-secondary)] border-gray-500/30";
   }
 }
 

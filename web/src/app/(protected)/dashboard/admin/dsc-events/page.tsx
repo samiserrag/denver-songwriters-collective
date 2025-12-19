@@ -151,8 +151,8 @@ function EventRow({ event }: { event: DSCEvent }) {
       </div>
       <span className={`text-xs px-2 py-1 rounded font-medium ${
         event.status === "active"
-          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
-          : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-red-100 text-red-700"
       }`}>
         {event.status}
       </span>

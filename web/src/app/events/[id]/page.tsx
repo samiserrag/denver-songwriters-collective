@@ -159,7 +159,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               className="w-full h-full object-cover"
             />
             <div className="absolute top-4 left-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-black/70 backdrop-blur rounded-lg text-white font-medium text-sm">
+              <span className="px-3 py-1 bg-black/70 backdrop-blur rounded-lg text-[var(--color-text-primary)] font-medium text-sm">
                 {config.icon} {config.label}
               </span>
               {event.is_dsc_event && (

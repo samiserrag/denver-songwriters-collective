@@ -359,14 +359,14 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600">
           {error}
         </div>
       )}
 
       {/* Non-admin notice */}
       {!isAdmin && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-600 dark:text-amber-400">
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-600">
           <p className="font-medium">Note: Your blog post will need admin approval before it&apos;s published publicly.</p>
           <p className="text-sm mt-1 opacity-80">Once approved, it will appear on the blog page for everyone to see.</p>
         </div>
@@ -375,7 +375,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       {/* Title */}
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Title <span className="text-red-600 dark:text-red-400">*</span>
+          Title <span className="text-red-600">*</span>
         </label>
         <input
           type="text"
@@ -391,7 +391,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       {/* Slug */}
       <div>
         <label htmlFor="slug" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          URL Slug <span className="text-red-600 dark:text-red-400">*</span>
+          URL Slug <span className="text-red-600">*</span>
         </label>
         <div className="flex items-center gap-2">
           <span className="text-[var(--color-text-tertiary)]">/blog/</span>
@@ -580,7 +580,7 @@ Regular paragraph text here. Use **bold** for emphasis.
                   className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   aria-label="Remove image"
                 >
-                  <X className="w-4 h-4 text-white" />
+                  <X className="w-4 h-4 text-[var(--color-text-primary)]" />
                 </button>
                 <input
                   type="text"

@@ -36,10 +36,10 @@ export default function OpenMicReportForm({ eventId }: { eventId?: string | null
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 p-4 rounded-lg bg-neutral-900">
+    <form onSubmit={handleSubmit} className="mt-6 p-4 rounded-lg bg-[var(--color-bg-input)]">
       <div className="mb-3">
-        <label className="block text-sm text-neutral-300">Field</label>
-        <select value={field} onChange={(e) => setField(e.target.value)} className="mt-1 w-full bg-neutral-800 p-2 rounded">
+        <label className="block text-sm text-[var(--color-text-secondary)]">Field</label>
+        <select value={field} onChange={(e) => setField(e.target.value)} className="mt-1 w-full bg-[var(--color-bg-secondary)] p-2 rounded">
           <option value="title">Title</option>
           <option value="description">Description</option>
           <option value="venue_name">Venue name</option>
@@ -49,18 +49,18 @@ export default function OpenMicReportForm({ eventId }: { eventId?: string | null
       </div>
 
       <div className="mb-3">
-        <label className="block text-sm text-neutral-300">Corrected value</label>
-        <input value={newValue} onChange={(e) => setNewValue(e.target.value)} className="mt-1 w-full bg-neutral-800 p-2 rounded" />
+        <label className="block text-sm text-[var(--color-text-secondary)]">Corrected value</label>
+        <input value={newValue} onChange={(e) => setNewValue(e.target.value)} className="mt-1 w-full bg-[var(--color-bg-secondary)] p-2 rounded" />
       </div>
 
       <div className="mb-3">
-        <label className="block text-sm text-neutral-300">Notes (optional)</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 w-full bg-neutral-800 p-2 rounded" />
+        <label className="block text-sm text-[var(--color-text-secondary)]">Notes (optional)</label>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 w-full bg-[var(--color-bg-secondary)] p-2 rounded" />
       </div>
 
       <div className="flex items-center gap-3">
         <button disabled={loading} className="px-4 py-2 bg-[var(--color-accent-primary)] rounded text-[var(--color-background)] font-medium">{loading ? 'Submitting...' : 'Submit'}</button>
-        {status && <div className="text-sm text-neutral-300">{status}</div>}
+        {status && <div className="text-sm text-[var(--color-text-secondary)]">{status}</div>}
       </div>
     </form>
   );

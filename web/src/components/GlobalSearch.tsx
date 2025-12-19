@@ -131,13 +131,13 @@ export default function GlobalSearch() {
           setIsOpen(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-neutral-400 bg-neutral-800/50 border border-white/10 rounded-lg hover:border-white/20 hover:text-neutral-300 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-tertiary)] bg-[var(--color-bg-secondary)]/50 border border-white/10 rounded-lg hover:border-white/20 hover:text-[var(--color-text-secondary)] transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <span className="hidden sm:inline">Search</span>
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs text-neutral-500 bg-neutral-900 border border-neutral-700 rounded">
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded">
           <span className="text-[10px]">⌘</span>K
         </kbd>
       </button>
@@ -145,10 +145,10 @@ export default function GlobalSearch() {
       {/* Search Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-neutral-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-full max-w-lg bg-[var(--color-bg-input)] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
             {/* Search Input */}
             <div className="flex items-center gap-3 px-4 border-b border-white/10">
-              <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -157,10 +157,10 @@ export default function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search open mics, events, members, blog..."
-                className="flex-1 py-4 bg-transparent text-white placeholder:text-neutral-500 focus:outline-none"
+                className="flex-1 py-4 bg-transparent text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none"
               />
               {isLoading && (
-                <div className="w-4 h-4 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--color-border-input)] border-t-transparent rounded-full animate-spin" />
               )}
               <button
                 onClick={() => {
@@ -168,7 +168,7 @@ export default function GlobalSearch() {
                   setQuery("");
                   setResults([]);
                 }}
-                className="p-1 text-neutral-500 hover:text-neutral-300"
+                className="p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -198,17 +198,17 @@ export default function GlobalSearch() {
                         />
                       </div>
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-[var(--color-bg-secondary)] flex items-center justify-center flex-shrink-0">
                         <span className="text-lg">{TYPE_ICONS[result.type]}</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium truncate">{result.title}</p>
+                      <p className="text-[var(--color-text-primary)] font-medium truncate">{result.title}</p>
                       {result.subtitle && (
-                        <p className="text-neutral-500 text-sm truncate">{result.subtitle}</p>
+                        <p className="text-[var(--color-text-tertiary)] text-sm truncate">{result.subtitle}</p>
                       )}
                     </div>
-                    <span className="text-xs px-2 py-1 rounded-full bg-neutral-800 text-neutral-400 flex-shrink-0">
+                    <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] flex-shrink-0">
                       {TYPE_LABELS[result.type]}
                     </span>
                   </button>
@@ -218,33 +218,33 @@ export default function GlobalSearch() {
 
             {/* Empty State */}
             {query.length >= 2 && !isLoading && results.length === 0 && (
-              <div className="px-4 py-8 text-center text-neutral-500">
+              <div className="px-4 py-8 text-center text-[var(--color-text-tertiary)]">
                 <p>No results found for &ldquo;{query}&rdquo;</p>
               </div>
             )}
 
             {/* Hint */}
             {query.length < 2 && (
-              <div className="px-4 py-6 text-center text-neutral-500 text-sm">
+              <div className="px-4 py-6 text-center text-[var(--color-text-tertiary)] text-sm">
                 <p>Type at least 2 characters to search</p>
               </div>
             )}
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-xs text-neutral-500">
+            <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-xs text-[var(--color-text-tertiary)]">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded">↑</kbd>
-                  <kbd className="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded">↓</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded">↑</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded">↓</kbd>
                   to navigate
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded">↵</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded">↵</kbd>
                   to select
                 </span>
               </div>
               <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-neutral-800 border border-neutral-700 rounded">esc</kbd>
+                <kbd className="px-1.5 py-0.5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded">esc</kbd>
                 to close
               </span>
             </div>

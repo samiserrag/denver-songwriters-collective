@@ -59,7 +59,7 @@ export function SiteStyleSettings({ initialTheme, initialFont }: SiteStyleSettin
       <button
         onClick={handleSave}
         disabled={saving}
-        className="px-4 py-1.5 bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-text-on-brand)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+        className="px-4 py-1.5 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save as Site Default"}
       </button>

@@ -274,7 +274,7 @@ export default async function BlogPostPage({ params }: Props) {
           </h1>
 
           {/* Author info */}
-          <div className="flex items-center gap-4 pb-8 mb-8 border-b border-white/10">
+          <div className="flex items-center gap-4 pb-8 mb-8 border-b border-[var(--color-border-subtle)]">
             {author?.avatar_url ? (
               <img
                 src={author.avatar_url}
@@ -299,20 +299,20 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
 
           {/* Content */}
-          <div className="prose prose-invert max-w-none">
+          <div className="prose max-w-none">
             {renderContent(post.content)}
           </div>
 
           {/* Photo Gallery */}
           {galleryImages.length > 0 && (
-            <div className="mt-12 pt-8 border-t border-white/10">
+            <div className="mt-12 pt-8 border-t border-[var(--color-border-subtle)]">
               <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-6">
                 Photo Gallery
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {galleryImages.map((image: { id: string; image_url: string; caption: string | null }) => (
                   <div key={image.id} className="group relative">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-neutral-900">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]">
                       <img
                         src={image.image_url}
                         alt={image.caption || "Gallery image"}
@@ -339,7 +339,7 @@ export default async function BlogPostPage({ params }: Props) {
 
           {/* Author bio */}
           {author?.bio && (
-            <div className="mt-12 pt-8 border-t border-white/10">
+            <div className="mt-12 pt-8 border-t border-[var(--color-border-subtle)]">
               <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
                 About the Author
               </h3>

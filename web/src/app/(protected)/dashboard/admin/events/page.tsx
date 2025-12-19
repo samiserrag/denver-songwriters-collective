@@ -47,7 +47,7 @@ export default async function AdminEventsPage() {
          <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">Manage Events</h1>
          <Link
            href="/dashboard/admin/events/new"
-           className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white font-medium transition-colors"
+           className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-[var(--color-text-primary)] font-medium transition-colors"
          >
            + Add New Event
          </Link>

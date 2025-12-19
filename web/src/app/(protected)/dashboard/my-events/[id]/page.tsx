@@ -136,15 +136,15 @@ export default async function EditEventPage({
           <div className="flex items-center gap-2">
             {/* Status badge - single badge showing overall state */}
             {event.status === "cancelled" ? (
-              <span className="px-3 py-1 rounded text-sm bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">
+              <span className="px-3 py-1 rounded text-sm bg-red-100 text-red-700">
                 Cancelled
               </span>
             ) : !event.is_published ? (
-              <span className="px-3 py-1 rounded text-sm bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+              <span className="px-3 py-1 rounded text-sm bg-amber-100 text-amber-700">
                 Draft
               </span>
             ) : (
-              <span className="px-3 py-1 rounded text-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+              <span className="px-3 py-1 rounded text-sm bg-emerald-100 text-emerald-700">
                 Live
               </span>
             )}

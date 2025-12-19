@@ -223,7 +223,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                   {/* Status badges */}
                   <div className="absolute top-2 left-2 flex gap-1">
                     {!image.is_approved && (
-                      <span className="px-2 py-0.5 bg-yellow-600 text-black text-xs rounded-full">
+                      <span className="px-2 py-0.5 bg-yellow-600 text-[var(--color-text-on-accent)] text-xs rounded-full">
                         Pending
                       </span>
                     )}
@@ -237,13 +237,13 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                   {/* Info overlay */}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3">
                     {image.caption && (
-                      <p className="text-white text-xs truncate mb-1">{image.caption}</p>
+                      <p className="text-[var(--color-text-primary)] text-xs truncate mb-1">{image.caption}</p>
                     )}
-                    <p className="text-gray-200 text-xs">
+                    <p className="text-[var(--color-text-secondary)] text-xs">
                       by {uploader?.full_name ?? "Unknown"}
                     </p>
                     {(event || venue) && (
-                      <p className="text-gray-300 text-xs truncate">
+                      <p className="text-[var(--color-text-tertiary)] text-xs truncate">
                         @ {event?.title ?? venue?.name}
                       </p>
                     )}
@@ -255,13 +255,13 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                       <>
                         <button
                           onClick={() => handleApprove(image.id)}
-                          className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded"
+                          className="px-2 py-1 bg-green-600 hover:bg-green-500 text-[var(--color-text-primary)] text-xs rounded"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => handleReject(image.id)}
-                          className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white text-xs rounded"
+                          className="px-2 py-1 bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] text-xs rounded"
                         >
                           Reject
                         </button>
@@ -281,7 +281,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                         </button>
                         <button
                           onClick={() => handleReject(image.id)}
-                          className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-300 text-xs rounded"
+                          className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded"
                         >
                           Delete
                         </button>
@@ -379,8 +379,8 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs ${
                         album.is_published
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400"
-                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
                       }`}
                     >
                       {album.is_published ? "Published" : "Draft"}
@@ -400,7 +400,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     </button>
                     <button
                       onClick={() => handleDeleteAlbum(album.id)}
-                      className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-300 text-xs rounded"
+                      className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded"
                     >
                       Delete
                     </button>
@@ -423,7 +423,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
         <form onSubmit={handleUpload} className="max-w-xl space-y-4">
           <div>
             <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
-              Image URL <span className="text-red-600 dark:text-red-400">*</span>
+              Image URL <span className="text-red-600">*</span>
             </label>
             <input
               type="url"

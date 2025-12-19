@@ -385,7 +385,7 @@ export default function EditProfilePage() {
                     onChange={handleChange}
                     rows={3}
                     placeholder="Tell us about yourself (instruments, genres, experience...)"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
                   />
                 </div>
               </div>
@@ -601,7 +601,7 @@ export default function EditProfilePage() {
                   value={formData.featured_song_url}
                   onChange={handleChange}
                   placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
                 <p className="text-xs text-[var(--color-text-secondary)] mt-2">
                   Supports YouTube, Spotify, SoundCloud, Bandcamp, and other music platforms

@@ -105,13 +105,13 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 dark:text-red-400 text-sm">
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded text-green-600 dark:text-green-400 text-sm">
+        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded text-green-600 text-sm">
           Event created! Redirecting...
         </div>
       )}
@@ -284,7 +284,7 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:bg-green-800 rounded text-white font-medium"
+          className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:bg-green-800 rounded text-[var(--color-text-primary)] font-medium"
         >
           {saving ? "Creating..." : "Create Event"}
         </button>

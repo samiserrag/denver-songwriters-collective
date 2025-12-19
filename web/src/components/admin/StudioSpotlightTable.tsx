@@ -40,7 +40,7 @@ export default function StudioSpotlightTable({ studios }: Props) {
 
   return (
     <div className="w-full overflow-x-auto rounded-lg border border-white/10 p-4 bg-black/20">
-      <table className="min-w-full text-left text-white">
+      <table className="min-w-full text-left text-[var(--color-text-primary)]">
         <thead className="border-b border-white/10 text-gold-400">
           <tr>
             <th className="py-2 px-3">Studio Name</th>
@@ -90,7 +90,7 @@ export default function StudioSpotlightTable({ studios }: Props) {
                 {loadingId === s.id ? (
                   <span className="text-gold-400">Saving…</span>
                 ) : (
-                  <span className="text-neutral-400 text-sm">Ready</span>
+                  <span className="text-[var(--color-text-tertiary)] text-sm">Ready</span>
                 )}
               </td>
             </tr>

@@ -59,10 +59,10 @@ export default function BookStudioForm({
         Book: {serviceName}
       </h2>
 
-      <p className="text-neutral-300 mb-4">
+      <p className="text-[var(--color-text-secondary)] mb-4">
         Duration: <span className="text-gold-400">{durationMin} min</span>
       </p>
-      <p className="text-neutral-300 mb-6">
+      <p className="text-[var(--color-text-secondary)] mb-6">
         Price:{" "}
         <span className="text-gold-400">
           ${(priceCents / 100).toFixed(2)}
@@ -71,24 +71,24 @@ export default function BookStudioForm({
 
       <form onSubmit={submit} className="space-y-6">
         <div>
-          <label className="block text-sm text-neutral-400 mb-1">Date</label>
+          <label className="block text-sm text-[var(--color-text-tertiary)] mb-1">Date</label>
           <input
             type="date"
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-md bg-black/40 border border-white/10 px-3 py-2 text-white"
+            className="w-full rounded-md bg-black/40 border border-white/10 px-3 py-2 text-[var(--color-text-primary)]"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-neutral-400 mb-1">Time</label>
+          <label className="block text-sm text-[var(--color-text-tertiary)] mb-1">Time</label>
           <input
             type="time"
             required
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="w-full rounded-md bg-black/40 border border-white/10 px-3 py-2 text-white"
+            className="w-full rounded-md bg-black/40 border border-white/10 px-3 py-2 text-[var(--color-text-primary)]"
           />
         </div>
 

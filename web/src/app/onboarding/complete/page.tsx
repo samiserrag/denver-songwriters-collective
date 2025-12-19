@@ -70,7 +70,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">🎤</span>
                   <div>
-                    <h3 className="font-medium text-white">Find an Open Mic</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Find an Open Mic</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Browse our directory of open mics across Denver and sign up to perform.
                     </p>
@@ -79,7 +79,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">📅</span>
                   <div>
-                    <h3 className="font-medium text-white">Check Out Events</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Check Out Events</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Discover showcases, songwriting workshops, and networking events.
                     </p>
@@ -92,7 +92,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">📝</span>
                   <div>
-                    <h3 className="font-medium text-white">List Your Open Mic</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">List Your Open Mic</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Add your venue to our directory and reach Denver&apos;s music community.
                     </p>
@@ -101,7 +101,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">👥</span>
                   <div>
-                    <h3 className="font-medium text-white">Manage Sign-ups</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Manage Sign-ups</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Let performers RSVP for slots and display the lineup on a screen.
                     </p>
@@ -114,7 +114,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">🎧</span>
                   <div>
-                    <h3 className="font-medium text-white">Showcase Your Studio</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Showcase Your Studio</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Add your services and availability for Denver musicians.
                     </p>
@@ -127,7 +127,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">🎵</span>
                   <div>
-                    <h3 className="font-medium text-white">Discover Local Artists</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Discover Local Artists</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Explore performers in the Denver area and support their music.
                     </p>
@@ -136,7 +136,7 @@ export default function OnboardingComplete() {
                 <div className="flex items-start gap-3">
                   <span className="text-xl">💜</span>
                   <div>
-                    <h3 className="font-medium text-white">Support the Community</h3>
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Support the Community</h3>
                     <p className="text-sm text-[var(--color-text-secondary)]">
                       Attend open mics, tip performers, and help grow the scene.
                     </p>
@@ -148,7 +148,7 @@ export default function OnboardingComplete() {
               <div className="flex items-start gap-3">
                 <span className="text-xl">🎵</span>
                 <div>
-                  <h3 className="font-medium text-white">Explore the Community</h3>
+                  <h3 className="font-medium text-[var(--color-text-primary)]">Explore the Community</h3>
                   <p className="text-sm text-[var(--color-text-secondary)]">
                     Check out open mics, events, and connect with local musicians.
                   </p>

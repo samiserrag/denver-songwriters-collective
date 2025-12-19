@@ -135,14 +135,14 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Share your thoughts..."
                 rows={3}
-                className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-secondary)] placeholder-[var(--color-placeholder)] focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
               />
               {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
               <div className="flex justify-end mt-2">
                 <button
                   type="submit"
                   disabled={isSubmitting || !newComment.trim()}
-                  className="px-4 py-2 bg-[var(--color-accent-primary)] text-neutral-900 rounded-lg font-medium hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-primary)] rounded-lg font-medium hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Posting..." : "Post Comment"}
                 </button>
@@ -151,11 +151,11 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
           </div>
         </form>
       ) : (
-        <div className="mb-8 p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg text-center">
-          <p className="text-neutral-400 mb-3">Sign in to join the conversation</p>
+        <div className="mb-8 p-4 bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg text-center">
+          <p className="text-[var(--color-text-tertiary)] mb-3">Sign in to join the conversation</p>
           <a
             href={`/login?redirectTo=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "")}`}
-            className="inline-block px-4 py-2 bg-[var(--color-accent-primary)] text-neutral-900 rounded-lg font-medium hover:bg-[var(--color-accent-primary)]/90 transition-colors"
+            className="inline-block px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-primary)] rounded-lg font-medium hover:bg-[var(--color-accent-primary)]/90 transition-colors"
           >
             Sign In
           </a>
@@ -164,7 +164,7 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
 
       {/* Comments list */}
       {comments.length === 0 ? (
-        <p className="text-neutral-500 text-center py-8">
+        <p className="text-[var(--color-text-tertiary)] text-center py-8">
           No comments yet. Be the first to share your thoughts!
         </p>
       ) : (
@@ -189,11 +189,11 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
                   <span className="text-[var(--color-text-primary)] font-medium">
                     {comment.author.full_name ?? "Anonymous"}
                   </span>
-                  <span className="text-neutral-500 text-sm">
+                  <span className="text-[var(--color-text-tertiary)] text-sm">
                     {formatDate(comment.created_at)}
                   </span>
                 </div>
-                <p className="text-neutral-300 mt-1">{comment.content}</p>
+                <p className="text-[var(--color-text-secondary)] mt-1">{comment.content}</p>
               </div>
             </div>
           ))}

@@ -214,7 +214,7 @@ export default function AdminHighlightsClient() {
       </p>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 dark:text-red-400">
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600">
           {error}
         </div>
       )}
@@ -222,7 +222,7 @@ export default function AdminHighlightsClient() {
       {/* Add Highlight Button */}
       <button
         onClick={() => setShowNewForm(!showNewForm)}
-        className="mb-4 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded text-black font-medium"
+        className="mb-4 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-text-on-accent)] font-medium"
       >
         + Add Highlight
       </button>
@@ -315,7 +315,7 @@ export default function AdminHighlightsClient() {
             <button
               type="submit"
               disabled={actionLoading === "new"}
-              className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-white disabled:opacity-50"
+              className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-[var(--color-text-primary)] disabled:opacity-50"
             >
               {actionLoading === "new" ? "Creating..." : "Create Highlight"}
             </button>

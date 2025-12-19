@@ -51,11 +51,11 @@ export function AppointmentCard({ appt }: AppointmentCardProps) {
         </span>
       </div>
 
-      <p className="text-neutral-300 text-sm">
-        Studio: <span className="text-white">{appt.studio_name}</span>
+      <p className="text-[var(--color-text-secondary)] text-sm">
+        Studio: <span className="text-[var(--color-text-primary)]">{appt.studio_name}</span>
       </p>
 
-      <p className="text-neutral-400 text-sm">
+      <p className="text-[var(--color-text-tertiary)] text-sm">
         Appointment: {dateStr}
       </p>
 

@@ -423,7 +423,7 @@ export default function ProfileOnboarding() {
                   value={formData.full_name}
                   onChange={handleChange}
                   placeholder="How you want to be known"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -437,7 +437,7 @@ export default function ProfileOnboarding() {
                   onChange={handleChange}
                   rows={3}
                   placeholder="Tell us about yourself (instruments, genres, experience...)"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
                 />
               </div>
             </div>
@@ -463,7 +463,7 @@ export default function ProfileOnboarding() {
                   value={formData.instagram_url}
                   onChange={handleChange}
                   placeholder="https://instagram.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -477,7 +477,7 @@ export default function ProfileOnboarding() {
                   value={formData.facebook_url}
                   onChange={handleChange}
                   placeholder="https://facebook.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -491,7 +491,7 @@ export default function ProfileOnboarding() {
                   value={formData.youtube_url}
                   onChange={handleChange}
                   placeholder="https://youtube.com/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -505,7 +505,7 @@ export default function ProfileOnboarding() {
                   value={formData.spotify_url}
                   onChange={handleChange}
                   placeholder="https://open.spotify.com/artist/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -519,7 +519,7 @@ export default function ProfileOnboarding() {
                   value={formData.tiktok_url}
                   onChange={handleChange}
                   placeholder="https://tiktok.com/@..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -533,7 +533,7 @@ export default function ProfileOnboarding() {
                   value={formData.website_url}
                   onChange={handleChange}
                   placeholder="https://yoursite.com"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
             </div>
@@ -559,7 +559,7 @@ export default function ProfileOnboarding() {
                   value={formData.venmo_handle}
                   onChange={handleChange}
                   placeholder="@username"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -573,7 +573,7 @@ export default function ProfileOnboarding() {
                   value={formData.cashapp_handle}
                   onChange={handleChange}
                   placeholder="$cashtag"
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
               <div>
@@ -587,7 +587,7 @@ export default function ProfileOnboarding() {
                   value={formData.paypal_url}
                   onChange={handleChange}
                   placeholder="https://paypal.me/..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                 />
               </div>
             </div>
@@ -624,7 +624,7 @@ export default function ProfileOnboarding() {
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[var(--color-text-primary)] group-hover:text-white transition-colors">
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-primary)] transition-colors">
                       🤝 Open to collaborations
                     </span>
                   </label>
@@ -639,7 +639,7 @@ export default function ProfileOnboarding() {
                       />
                       <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-purple-500 peer-checked:border-purple-500 transition-colors flex items-center justify-center">
                         <svg
-                          className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                          className="w-4 h-4 text-[var(--color-text-primary)] opacity-0 peer-checked:opacity-100 transition-opacity"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -648,7 +648,7 @@ export default function ProfileOnboarding() {
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[var(--color-text-primary)] group-hover:text-white transition-colors">
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-primary)] transition-colors">
                       ✍️ Interested in cowriting
                     </span>
                   </label>
@@ -663,7 +663,7 @@ export default function ProfileOnboarding() {
                       />
                       <div className="w-6 h-6 rounded-md border-2 border-white/30 bg-white/5 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-colors flex items-center justify-center">
                         <svg
-                          className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                          className="w-4 h-4 text-[var(--color-text-primary)] opacity-0 peer-checked:opacity-100 transition-opacity"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -672,7 +672,7 @@ export default function ProfileOnboarding() {
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[var(--color-text-primary)] group-hover:text-white transition-colors">
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-primary)] transition-colors">
                       💼 Available for hire
                     </span>
                   </label>
@@ -726,7 +726,7 @@ export default function ProfileOnboarding() {
                     value={formData.favorite_open_mic}
                     onChange={handleChange}
                     placeholder="e.g., Walnut Room Monday Night Open Mic"
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
               </div>
@@ -746,7 +746,7 @@ export default function ProfileOnboarding() {
               type="button"
               onClick={handleSkip}
               disabled={saving}
-              className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-lg border border-white/20 hover:border-white/40 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Skip for now
             </button>

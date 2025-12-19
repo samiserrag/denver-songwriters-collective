@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="New password"
-        className="w-full border px-3 py-2 rounded bg-white text-black mb-3"
+        className="w-full border border-[var(--color-border-input)] px-3 py-2 rounded bg-[var(--color-bg-input)] text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] mb-3"
       />
 
       {status === "ok" ? (
@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
       ) : (
         <button
           onClick={submit}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
+          className="px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:bg-[var(--color-accent-hover)] rounded transition-colors"
         >
           Update password
         </button>

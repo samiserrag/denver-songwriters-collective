@@ -94,8 +94,8 @@ export function VolunteerSignupForm() {
     return (
       <div className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-8 text-center space-y-4">
         <div className="text-4xl">Thank you for signing up to volunteer with DSC. We will be in touch soon.</div>
-        <h3 className="text-xl font-semibold text-white">Thank You!</h3>
-        <p className="text-neutral-300">
+        <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">Thank You!</h3>
+        <p className="text-[var(--color-text-secondary)]">
           We have received your volunteer sign-up. Someone from DSC will reach out to you soon.
         </p>
         <button
@@ -118,7 +118,7 @@ export function VolunteerSignupForm() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-neutral-300 mb-1">
+          <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
             Name <span className="text-red-400">*</span>
           </label>
           <input
@@ -126,13 +126,13 @@ export function VolunteerSignupForm() {
             required
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
             placeholder="Your full name"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-neutral-300 mb-1">
+          <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
             Email <span className="text-red-400">*</span>
           </label>
           <input
@@ -140,28 +140,28 @@ export function VolunteerSignupForm() {
             required
             value={formData.email}
             onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none"
+            className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
             placeholder="your@email.com"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-300 mb-1">
-          Phone <span className="text-neutral-500">(optional)</span>
+        <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+          Phone <span className="text-[var(--color-text-tertiary)]">(optional)</span>
         </label>
         <input
           type="tel"
           value={formData.phone}
           onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none"
+          className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           placeholder="(303) 555-1234"
         />
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-300 mb-3">
-          What would you like to help with? <span className="text-neutral-500">(select all that apply)</span>
+        <label className="block text-sm text-[var(--color-text-secondary)] mb-3">
+          What would you like to help with? <span className="text-[var(--color-text-tertiary)]">(select all that apply)</span>
         </label>
         <div className="grid sm:grid-cols-2 gap-2">
           {VOLUNTEER_ROLES.map((role) => (
@@ -170,7 +170,7 @@ export function VolunteerSignupForm() {
               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
                 formData.roles.includes(role.id)
                   ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10"
-                  : "border-neutral-700 hover:border-neutral-500"
+                  : "border-[var(--color-border-input)] hover:border-[var(--color-border-input)]"
               }`}
             >
               <input
@@ -183,7 +183,7 @@ export function VolunteerSignupForm() {
                 className={`w-5 h-5 rounded border flex items-center justify-center ${
                   formData.roles.includes(role.id)
                     ? "bg-[var(--color-accent-primary)] border-[var(--color-border-accent)]"
-                    : "border-neutral-500"
+                    : "border-[var(--color-border-input)]"
                 }`}
               >
                 {formData.roles.includes(role.id) && (
@@ -196,15 +196,15 @@ export function VolunteerSignupForm() {
                   </svg>
                 )}
               </div>
-              <span className="text-sm text-neutral-200">{role.label}</span>
+              <span className="text-sm text-[var(--color-text-secondary)]">{role.label}</span>
             </label>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-300 mb-3">
-          When are you generally available? <span className="text-neutral-500">(select all that apply)</span>
+        <label className="block text-sm text-[var(--color-text-secondary)] mb-3">
+          When are you generally available? <span className="text-[var(--color-text-tertiary)]">(select all that apply)</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {AVAILABILITY_OPTIONS.map((option) => (
@@ -215,7 +215,7 @@ export function VolunteerSignupForm() {
               className={`px-4 py-2 rounded-full border text-sm transition ${
                 formData.availability.includes(option.id)
                   ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)]"
-                  : "border-neutral-600 text-neutral-300 hover:border-neutral-400"
+                  : "border-[var(--color-border-input)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
               }`}
             >
               {option.label}
@@ -225,14 +225,14 @@ export function VolunteerSignupForm() {
       </div>
 
       <div>
-        <label className="block text-sm text-neutral-300 mb-1">
+        <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
           Anything else you would like us to know?
         </label>
         <textarea
           value={formData.notes}
           onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
           rows={4}
-          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+          className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
           placeholder="Special skills, experience, or anything else you want to share..."
         />
       </div>

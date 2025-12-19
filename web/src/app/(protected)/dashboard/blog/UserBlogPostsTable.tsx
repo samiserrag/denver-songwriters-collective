@@ -44,20 +44,20 @@ export default function UserBlogPostsTable({ posts }: Props) {
   const getStatusBadge = (post: BlogPost) => {
     if (post.is_published && post.is_approved) {
       return (
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
           Published
         </span>
       );
     }
     if (post.is_published && !post.is_approved) {
       return (
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
           Pending Approval
         </span>
       );
     }
     return (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-neutral-400">
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
         Draft
       </span>
     );
@@ -66,8 +66,8 @@ export default function UserBlogPostsTable({ posts }: Props) {
   return (
     <>
       {/* Info banner */}
-      <div className="mb-6 p-4 bg-blue-100 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700/50 rounded-lg">
-        <p className="text-blue-700 dark:text-blue-300 text-sm">
+      <div className="mb-6 p-4 bg-blue-100 border border-blue-300 rounded-lg">
+        <p className="text-blue-700 text-sm">
           <strong>How it works:</strong> When you submit a post for publication, it will be reviewed by an admin before appearing on the public blog. You&apos;ll see the status update here once it&apos;s approved.
         </p>
       </div>
@@ -100,7 +100,7 @@ export default function UserBlogPostsTable({ posts }: Props) {
                     {post.tags?.slice(0, 2).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-neutral-400 text-xs"
+                        className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs"
                       >
                         {tag}
                       </span>
@@ -160,22 +160,22 @@ export default function UserBlogPostsTable({ posts }: Props) {
       {/* Delete Modal */}
       {deleteModal.open && deleteModal.post && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-white dark:bg-neutral-900 border border-red-300 dark:border-red-900/50 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Delete Post</h2>
-            <p className="text-gray-700 dark:text-neutral-300 mb-6">
+          <div className="bg-white border border-red-300 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">Delete Post</h2>
+            <p className="text-gray-700 mb-6">
               Are you sure you want to delete &quot;{deleteModal.post.title}&quot;? This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-200 dark:disabled:bg-red-900 disabled:text-red-400 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-200 disabled:text-red-400 text-[var(--color-text-primary)] rounded-lg transition-colors"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>
               <button
                 onClick={() => setDeleteModal({ open: false, post: null })}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-gray-900 dark:text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg transition-colors"
               >
                 Cancel
               </button>

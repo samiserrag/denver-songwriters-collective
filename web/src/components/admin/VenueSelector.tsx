@@ -111,7 +111,7 @@ export default function VenueSelector({
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-neutral-300 mb-1">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
           Venue {required && "*"}
         </label>
         <select
@@ -119,7 +119,7 @@ export default function VenueSelector({
           onChange={handleSelectChange}
           required={required && !showNewVenueForm}
           disabled={disabled || creating}
-          className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-white disabled:opacity-50"
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] disabled:opacity-50"
         >
           <option value="">Select venue...</option>
           {venues.map((v) => (
@@ -135,7 +135,7 @@ export default function VenueSelector({
       </div>
 
       {showNewVenueForm && (
-        <div className="p-4 bg-neutral-800/50 border border-[var(--color-border-accent)]/30 rounded-lg space-y-4">
+        <div className="p-4 bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-accent)]/30 rounded-lg space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">New Venue</h4>
             <button
@@ -145,7 +145,7 @@ export default function VenueSelector({
                 setNewVenue(initialNewVenue);
                 setError(null);
               }}
-              className="text-xs text-neutral-400 hover:text-white"
+              className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
             >
               Cancel
             </button>
@@ -164,7 +164,7 @@ export default function VenueSelector({
                 placeholder="Venue name *"
                 value={newVenue.name}
                 onChange={(e) => setNewVenue({ ...newVenue, name: e.target.value })}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
                 disabled={creating}
               />
             </div>
@@ -174,7 +174,7 @@ export default function VenueSelector({
                 placeholder="Street address *"
                 value={newVenue.address}
                 onChange={(e) => setNewVenue({ ...newVenue, address: e.target.value })}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
                 disabled={creating}
               />
             </div>
@@ -183,7 +183,7 @@ export default function VenueSelector({
               placeholder="City"
               value={newVenue.city}
               onChange={(e) => setNewVenue({ ...newVenue, city: e.target.value })}
-              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+              className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
               disabled={creating}
             />
             <div className="grid grid-cols-2 gap-3">
@@ -192,7 +192,7 @@ export default function VenueSelector({
                 placeholder="State"
                 value={newVenue.state}
                 onChange={(e) => setNewVenue({ ...newVenue, state: e.target.value })}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
                 disabled={creating}
               />
               <input
@@ -200,7 +200,7 @@ export default function VenueSelector({
                 placeholder="ZIP"
                 value={newVenue.zip}
                 onChange={(e) => setNewVenue({ ...newVenue, zip: e.target.value })}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
                 disabled={creating}
               />
             </div>
@@ -209,7 +209,7 @@ export default function VenueSelector({
               placeholder="Phone (optional)"
               value={newVenue.phone}
               onChange={(e) => setNewVenue({ ...newVenue, phone: e.target.value })}
-              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+              className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
               disabled={creating}
             />
             <input
@@ -217,7 +217,7 @@ export default function VenueSelector({
               placeholder="Website URL (optional)"
               value={newVenue.website_url}
               onChange={(e) => setNewVenue({ ...newVenue, website_url: e.target.value })}
-              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+              className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
               disabled={creating}
             />
             <div className="md:col-span-2">
@@ -226,7 +226,7 @@ export default function VenueSelector({
                 placeholder="Google Maps URL (optional)"
                 value={newVenue.google_maps_url}
                 onChange={(e) => setNewVenue({ ...newVenue, google_maps_url: e.target.value })}
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded text-white text-sm"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] text-sm"
                 disabled={creating}
               />
             </div>

@@ -206,7 +206,7 @@ export function CancelRSVPModal({
                 ref={cancelButtonRef}
                 onClick={handleCancel}
                 disabled={loading}
-                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-[var(--color-text-primary)] font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">

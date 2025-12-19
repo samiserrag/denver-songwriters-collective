@@ -117,10 +117,10 @@ export function RequestHostButton() {
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 p-4 bg-neutral-800/50 border border-neutral-700 rounded-lg"
+          className="space-y-4 p-4 bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg"
         >
           <div>
-            <label className="block text-sm text-neutral-300 mb-2">
+            <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
               Tell us why you&apos;d like to host events (optional)
             </label>
             <textarea
@@ -128,7 +128,7 @@ export function RequestHostButton() {
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
               placeholder="I'd like to host song circles, workshops, etc..."
-              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white placeholder:text-neutral-500"
+              className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
             />
           </div>
 
@@ -145,7 +145,7 @@ export function RequestHostButton() {
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg"
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg"
             >
               Cancel
             </button>

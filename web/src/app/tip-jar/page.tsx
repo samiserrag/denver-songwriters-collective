@@ -57,7 +57,7 @@ export default function TipJarPage() {
                     <path d="M19.5 3c.9 1.5 1.3 3 1.3 5 0 4-3.4 9.3-6.2 13H6.8L4 3.5l6-.6 1.3 10.4C12.5 11 15 6.5 15 4.5c0-.8-.1-1.3-.3-1.8l4.8.3z"/>
                   </svg>
                 </div>
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-gold-300)] transition-colors">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-link-hover)] transition-colors">
                   Venmo
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
@@ -80,7 +80,7 @@ export default function TipJarPage() {
                     <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.384a.77.77 0 0 1 .757-.645h6.483c2.953 0 4.937 1.543 4.448 4.49-.612 3.684-2.93 5.04-5.812 5.04H8.233l-.996 8.363a.641.641 0 0 1-.633.56l-.528.145zm12.82-14.533c.138-.827.063-1.39-.254-1.9-.35-.563-1.075-.948-2.008-1.042a3.555 3.555 0 0 0-.422-.025h-1.94l-.663 4.205h1.808c1.433 0 2.593-.316 3.097-1.238.12-.22.302-.668.382-1zm.826 4.398c-.613 3.685-2.93 5.04-5.813 5.04h-2.586l-.996 8.363a.64.64 0 0 1-.633.56H6.692a.641.641 0 0 1-.633-.74l.353-2.968h2.52a.77.77 0 0 0 .757-.645l.85-5.384h3.005c3.954 0 6.91-1.883 7.778-5.226.27-.77.4-1.452.4-2.048 0-.378-.04-.728-.118-1.052a2.79 2.79 0 0 1 .138 1.052c0 .596-.13 1.278-.4 2.048-.268.78-.556 1.5-.856 2.088.32-.15.634-.32.956-.538z"/>
                   </svg>
                 </div>
-                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-gold-300)] transition-colors">
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-link-hover)] transition-colors">
                   PayPal
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
@@ -140,7 +140,7 @@ export default function TipJarPage() {
           <div className="text-center pt-8">
             <Link
               href="/about"
-              className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-300)] underline"
+              className="text-[var(--color-text-accent)] hover:text-[var(--color-link-hover)] underline"
             >
               ← Back to About
             </Link>

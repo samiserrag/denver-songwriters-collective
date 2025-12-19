@@ -35,7 +35,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!suggestions || suggestions.length === 0) {
-    return <p className="text-neutral-400">No suggestions to review.</p>;
+    return <p className="text-[var(--color-text-tertiary)]">No suggestions to review.</p>;
   }
 
   const openModal = (suggestion: Suggestion, action: "approve" | "reject" | "needs_info") => {
@@ -103,7 +103,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           <thead>
-            <tr className="text-neutral-400 border-b border-white/10">
+            <tr className="text-[var(--color-text-tertiary)] border-b border-white/10">
               <th className="px-3 py-2">Event</th>
               <th className="px-3 py-2">Field</th>
               <th className="px-3 py-2">Current</th>
@@ -126,21 +126,21 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                     >
                       {s.events?.title || "Unknown Event"}
                     </Link>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-[var(--color-text-tertiary)]">
                       {s.events?.venue_name} • {s.events?.day_of_week}
                     </p>
-                    <p className="text-xs text-neutral-500 mt-1">
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
                       {s.batch_id && <span>batch: {s.batch_id} </span>}
                       {s.event_id && <span>event: {s.event_id}</span>}
                     </p>
                   </div>
                 </td>
-                <td className="px-3 py-2 text-neutral-300">{s.field}</td>
-                <td className="px-3 py-2 text-neutral-500">{s.old_value || "—"}</td>
+                <td className="px-3 py-2 text-[var(--color-text-secondary)]">{s.field}</td>
+                <td className="px-3 py-2 text-[var(--color-text-tertiary)]">{s.old_value || "—"}</td>
                 <td className="px-3 py-2 text-green-400 font-medium">{s.new_value}</td>
                 <td className="px-3 py-2">
                   <div>
-                    <p className="text-neutral-300">{s.submitter_name || "Anonymous"}</p>
+                    <p className="text-[var(--color-text-secondary)]">{s.submitter_name || "Anonymous"}</p>
                     {s.submitter_email && (
                       <a 
                         href={`mailto:${s.submitter_email}`}
@@ -156,12 +156,12 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                     s.status === "approved" ? "bg-green-900 text-green-300" :
                     s.status === "rejected" ? "bg-red-900 text-red-300" :
                     s.status === "needs_info" ? "bg-yellow-900 text-yellow-300" :
-                    "bg-neutral-700 text-neutral-300"
+                    "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
                   }`}>
                     {s.status}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-neutral-400 text-xs">
+                <td className="px-3 py-2 text-[var(--color-text-tertiary)] text-xs">
                   {new Date(s.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-3 py-2">
@@ -169,19 +169,19 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                     <div className="flex gap-1 flex-wrap">
                       <button
                         onClick={() => openModal(s, "approve")}
-                        className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-white text-xs"
+                        className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-[var(--color-text-primary)] text-xs"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => openModal(s, "reject")}
-                        className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-xs"
+                        className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[var(--color-text-primary)] text-xs"
                       >
                         Reject
                       </button>
                       <button
                         onClick={() => openModal(s, "needs_info")}
-                        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-white text-xs"
+                        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-[var(--color-text-primary)] text-xs"
                       >
                         Need Info
                       </button>
@@ -203,32 +203,32 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
       {/* Response Modal */}
       {actionModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 rounded-lg max-w-lg w-full p-6 border border-neutral-700">
-            <h3 className="text-xl font-semibold text-white mb-2">
+          <div className="bg-[var(--color-bg-input)] rounded-lg max-w-lg w-full p-6 border border-[var(--color-border-input)]">
+            <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
               {actionModal.action === "approve" && "Approve Suggestion"}
               {actionModal.action === "reject" && "Reject Suggestion"}
               {actionModal.action === "needs_info" && "Request More Info"}
             </h3>
             
-            <div className="mb-4 p-3 bg-neutral-800 rounded text-sm">
-              <p className="text-neutral-400">Event: <span className="text-white">{actionModal.suggestion.events?.title}</span></p>
-              <p className="text-neutral-400">Field: <span className="text-white">{actionModal.suggestion.field}</span></p>
-              <p className="text-neutral-400">Change: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span> → <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+            <div className="mb-4 p-3 bg-[var(--color-bg-secondary)] rounded text-sm">
+              <p className="text-[var(--color-text-tertiary)]">Event: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.events?.title}</span></p>
+              <p className="text-[var(--color-text-tertiary)]">Field: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.field}</span></p>
+              <p className="text-[var(--color-text-tertiary)]">Change: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span> → <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
               {actionModal.suggestion.notes && (
-                <p className="text-neutral-400 mt-2">Notes: <span className="text-white">{actionModal.suggestion.notes}</span></p>
+                <p className="text-[var(--color-text-tertiary)] mt-2">Notes: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.notes}</span></p>
               )}
             </div>
 
             {actionModal.suggestion.submitter_email && (
               <>
-                <label className="block text-sm text-neutral-300 mb-1">
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                   Response to {actionModal.suggestion.submitter_email}:
                 </label>
                 <textarea
                   value={responseText}
                   onChange={(e) => setResponseText(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white mb-4"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] mb-4"
                 />
               </>
             )}
@@ -236,14 +236,14 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 rounded text-white"
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAction}
                 disabled={sending}
-                className={`px-4 py-2 rounded text-white font-medium ${
+                className={`px-4 py-2 rounded text-[var(--color-text-primary)] font-medium ${
                   actionModal.action === "approve" ? "bg-green-600 hover:bg-green-500" :
                   actionModal.action === "reject" ? "bg-red-600 hover:bg-red-500" :
                   "bg-yellow-600 hover:bg-yellow-500"

@@ -54,21 +54,21 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
   const getStatusBadge = (event: Event) => {
     if (event.status === "cancelled") {
       return (
-        <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">
+        <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">
           Cancelled
         </span>
       );
     }
     if (!event.is_published) {
       return (
-        <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+        <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-700">
           Draft
         </span>
       );
     }
     // Published and active = Live
     return (
-      <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+      <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">
         Live
       </span>
     );
@@ -88,7 +88,7 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
         {isApprovedHost && (
           <Link
             href="/dashboard/my-events/new"
-            className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg"
+            className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg"
           >
             Create Your First Event
           </Link>
@@ -111,7 +111,7 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
         >
           Live
           {counts.active > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700">
               {counts.active}
             </span>
           )}
@@ -126,7 +126,7 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
         >
           Drafts
           {counts.drafts > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">
               {counts.drafts}
             </span>
           )}
@@ -141,7 +141,7 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
         >
           Cancelled
           {counts.cancelled > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">
+            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
               {counts.cancelled}
             </span>
           )}

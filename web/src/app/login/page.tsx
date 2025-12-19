@@ -32,7 +32,7 @@ function LoginForm() {
   if (authLoading) {
     return (
       <div className="w-full max-w-md card-base px-8 py-10 text-center">
-        <p className="text-neutral-400">Checking authentication...</p>
+        <p className="text-[var(--color-text-tertiary)]">Checking authentication...</p>
       </div>
     );
   }
@@ -41,7 +41,7 @@ function LoginForm() {
   if (user) {
     return (
       <div className="w-full max-w-md card-base px-8 py-10 text-center">
-        <p className="text-neutral-400">Redirecting...</p>
+        <p className="text-[var(--color-text-tertiary)]">Redirecting...</p>
       </div>
     );
   }
@@ -158,7 +158,7 @@ function LoginForm() {
       <button
         type="button"
         onClick={signInWithGoogle}
-        className="w-full mt-4 bg-white text-black py-2 rounded border border-gray-300 hover:bg-gray-100"
+        className="w-full mt-4 bg-white text-[var(--color-text-on-accent)] py-2 rounded border border-gray-300 hover:bg-gray-100"
       >
         Continue with Google
       </button>
@@ -178,7 +178,7 @@ export default function LoginPage() {
   return (
     <PageContainer as="main" className="min-h-screen flex items-center justify-center">
       <div className="mx-auto max-w-md px-4 py-12">
-        <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
+        <Suspense fallback={<div className="text-[var(--color-text-tertiary)]">Loading...</div>}>
           <LoginForm />
         </Suspense>
       </div>

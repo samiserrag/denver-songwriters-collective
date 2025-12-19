@@ -29,7 +29,7 @@ export default function MagicLoginPage() {
       <h1 className="text-3xl font-bold text-center mb-6">
         Log in with a Magic Link
       </h1>
-      <p className="text-center text-sm text-neutral-400 mb-6">
+      <p className="text-center text-sm text-[var(--color-text-tertiary)] mb-6">
         Password-free login — we’ll email you a one-click sign-in link.
       </p>
 
@@ -40,7 +40,7 @@ export default function MagicLoginPage() {
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded bg-black/40 p-3 text-white"
+          className="w-full rounded bg-black/40 p-3 text-[var(--color-text-primary)]"
         />
 
         <button

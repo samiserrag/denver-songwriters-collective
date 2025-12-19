@@ -45,7 +45,7 @@ export default function PlaceholderImage({
     >
       <div className="text-center">
         <span className="text-5xl opacity-50">{icons[type]}</span>
-        <p className="text-white/30 text-xs mt-2 uppercase tracking-wider">DSC</p>
+        <p className="text-[var(--color-text-primary)]/30 text-xs mt-2 uppercase tracking-wider">DSC</p>
       </div>
     </div>
   );

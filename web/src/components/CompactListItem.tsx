@@ -132,7 +132,7 @@ export default function CompactListItem({
     <div className={`flex items-center justify-between gap-4 p-3 rounded-lg border ${showStatusBadge ? "border-amber-500/30 bg-amber-950/10" : "border-white/6 bg-white/2"}`}>
       <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
+          <h3 className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{title}</h3>
           {showStatusBadge && statusStyle && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
               {statusStyle.label}
@@ -148,7 +148,7 @@ export default function CompactListItem({
 
         <div className="mt-1">
           {/* Block 2: replace recurrence display with clean numeric/ordinal text */}
-          <p className="text-sm text-gray-400">{humanRecurrence ?? "Schedule TBD"}</p>
+          <p className="text-sm text-[var(--color-text-tertiary)]">{humanRecurrence ?? "Schedule TBD"}</p>
           {/* City / State (clean, hide UNKNOWN) */}
           {displayLocation ? (
             <div className="text-xs text-[var(--color-text-secondary)] mt-1">
@@ -171,7 +171,7 @@ export default function CompactListItem({
 
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <div className="text-sm text-white font-medium">{start}{end && end !== "TBD" ? ` — ${end}` : ""}</div>
+          <div className="text-sm text-[var(--color-text-primary)] font-medium">{start}{end && end !== "TBD" ? ` — ${end}` : ""}</div>
           <div className="text-xs text-[var(--color-gold-400)]">Signup: {signupDisplay}</div>
           <div className="text-xs text-[var(--color-text-secondary)]">{venue_name}</div>
         </div>
@@ -187,7 +187,7 @@ export default function CompactListItem({
               Map
             </a>
           ) : null}
-          <Link href={detailsHref} className="text-xs px-2 py-1 rounded bg-white/5 text-white hover:bg-white/6">
+          <Link href={detailsHref} className="text-xs px-2 py-1 rounded bg-white/5 text-[var(--color-text-primary)] hover:bg-white/6">
             Details
           </Link>
         </div>

@@ -67,7 +67,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
   return (
     <div className="space-y-4">
       {successMessage && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600 dark:text-green-400">
+        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600">
           {successMessage}
         </div>
       )}

@@ -7,12 +7,12 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 
 export default function DayJumpBar() {
   return (
-    <nav className="flex gap-4 px-1 pb-3 border-b border-gray-700 overflow-x-auto">
+    <nav className="flex gap-4 px-1 pb-3 border-b border-[var(--color-border-default)] overflow-x-auto">
       {DAYS.map((d) => (
         <a
           key={d}
           href={`#day-${d}`}
-          className="text-gray-300 hover:text-[var(--color-text-accent)] whitespace-nowrap"
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] whitespace-nowrap"
         >
           {d.slice(0,3)}
         </a>

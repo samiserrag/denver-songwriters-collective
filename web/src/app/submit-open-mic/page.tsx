@@ -164,7 +164,7 @@ export default function SubmitOpenMicPage() {
   if (authLoading) {
     return (
       <PageContainer>
-        <div className="py-16 text-center text-neutral-400">Loading...</div>
+        <div className="py-16 text-center text-[var(--color-text-tertiary)]">Loading...</div>
       </PageContainer>
     );
   }
@@ -180,7 +180,7 @@ export default function SubmitOpenMicPage() {
               <h1 className="text-gradient-gold text-3xl font-serif italic mb-4">
                 {success === "new" ? "Submission Received!" : "Claim Request Submitted!"}
               </h1>
-              <p className="text-neutral-300 mb-6">
+              <p className="text-[var(--color-text-secondary)] mb-6">
                 {success === "new"
                   ? "Thank you for submitting a new open mic. Our team will review it shortly."
                   : "Your host claim request has been submitted. We'll verify and get back to you."}
@@ -188,7 +188,7 @@ export default function SubmitOpenMicPage() {
               <div className="flex gap-4 justify-center">
                 <Link
                   href="/open-mics"
-                  className="px-6 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)]"
+                  className="px-6 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)]"
                 >
                   Browse Open Mics
                 </Link>
@@ -197,7 +197,7 @@ export default function SubmitOpenMicPage() {
                     setSuccess(null);
                     setMode(null);
                   }}
-                  className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white"
+                  className="px-6 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded-lg text-[var(--color-text-primary)]"
                 >
                   Submit Another
                 </button>
@@ -218,12 +218,12 @@ export default function SubmitOpenMicPage() {
             <h1 className="text-gradient-gold text-3xl font-serif italic mb-4">
               Submit or Claim an Open Mic
             </h1>
-            <p className="text-neutral-300 mb-6">
+            <p className="text-[var(--color-text-secondary)] mb-6">
               Sign in to submit a new open mic or claim one you host.
             </p>
             <Link
               href="/login?redirectTo=/submit-open-mic"
-              className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold"
+              className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold"
             >
               Sign In to Continue
             </Link>
@@ -232,8 +232,8 @@ export default function SubmitOpenMicPage() {
 
         <PageContainer>
           <div className="py-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Looking to update an existing listing?</h2>
-            <p className="text-neutral-400 mb-4">
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Looking to update an existing listing?</h2>
+            <p className="text-[var(--color-text-tertiary)] mb-4">
               Visit the open mic&apos;s detail page and use the &ldquo;Suggest updates&rdquo; form. No account needed for suggestions!
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
@@ -254,7 +254,7 @@ export default function SubmitOpenMicPage() {
             <h1 className="text-gradient-gold text-3xl font-serif italic mb-2">
               Submit or Claim an Open Mic
             </h1>
-            <p className="text-neutral-300">
+            <p className="text-[var(--color-text-secondary)]">
               Help keep the Denver open mic community informed and accurate.
             </p>
           </PageContainer>
@@ -265,11 +265,11 @@ export default function SubmitOpenMicPage() {
             {/* Submit New */}
             <button
               onClick={() => setMode("new")}
-              className="p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-left transition"
+              className="p-6 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-left transition"
             >
               <div className="text-3xl mb-3">🎤</div>
-              <h2 className="text-xl font-semibold text-white mb-2">Submit New Open Mic</h2>
-              <p className="text-neutral-400 text-sm">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Submit New Open Mic</h2>
+              <p className="text-[var(--color-text-tertiary)] text-sm">
                 Know of an open mic not in our directory? Submit it for review and we&apos;ll add it.
               </p>
             </button>
@@ -277,19 +277,19 @@ export default function SubmitOpenMicPage() {
             {/* Claim Existing */}
             <button
               onClick={() => setMode("claim")}
-              className="p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-left transition"
+              className="p-6 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-left transition"
             >
               <div className="text-3xl mb-3">👑</div>
-              <h2 className="text-xl font-semibold text-white mb-2">Claim as Host</h2>
-              <p className="text-neutral-400 text-sm">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Claim as Host</h2>
+              <p className="text-[var(--color-text-tertiary)] text-sm">
                 Are you the host of an open mic? Claim it to manage the listing and keep it updated.
               </p>
             </button>
           </div>
 
-          <div className="py-6 border-t border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-3">Just want to suggest an update?</h3>
-            <p className="text-neutral-400 mb-4">
+          <div className="py-6 border-t border-[var(--color-border-subtle)]">
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">Just want to suggest an update?</h3>
+            <p className="text-[var(--color-text-tertiary)] mb-4">
               Visit the open mic&apos;s page and use the suggestion form. You can update times, venue info, and more.
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
@@ -325,7 +325,7 @@ export default function SubmitOpenMicPage() {
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Open Mic Name <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -333,20 +333,20 @@ export default function SubmitOpenMicPage() {
                     required
                     value={formData.title}
                     onChange={(e) => handleChange("title", e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                     placeholder="e.g., Comedy Night at The Venue"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Category <span className="text-red-400">*</span>
                   </label>
                   <select
                     required
                     value={formData.category}
                     onChange={(e) => handleChange("category", e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
                   >
                     <option value="">Select category...</option>
                     {CATEGORIES.map((cat) => (
@@ -360,7 +360,7 @@ export default function SubmitOpenMicPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Venue Name <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -368,31 +368,31 @@ export default function SubmitOpenMicPage() {
                     required
                     value={formData.venue_name}
                     onChange={(e) => handleChange("venue_name", e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">Venue Address</label>
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Venue Address</label>
                   <input
                     type="text"
                     value={formData.venue_address}
                     onChange={(e) => handleChange("venue_address", e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
                   />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Day of Week <span className="text-red-400">*</span>
                   </label>
                   <select
                     required
                     value={formData.day_of_week}
                     onChange={(e) => handleChange("day_of_week", e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
                   >
                     <option value="">Select day...</option>
                     {DAYS.map((day) => (
@@ -404,58 +404,58 @@ export default function SubmitOpenMicPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">Start Time</label>
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Start Time</label>
                   <input
                     type="text"
                     value={formData.start_time}
                     onChange={(e) => handleChange("start_time", e.target.value)}
                     placeholder="e.g., 7:00 PM"
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-neutral-300 mb-1">Signup Time</label>
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Signup Time</label>
                   <input
                     type="text"
                     value={formData.signup_time}
                     onChange={(e) => handleChange("signup_time", e.target.value)}
                     placeholder="e.g., 6:30 PM"
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-300 mb-1">Recurrence</label>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Recurrence</label>
                 <input
                   type="text"
                   value={formData.recurrence_rule}
                   onChange={(e) => handleChange("recurrence_rule", e.target.value)}
                   placeholder="e.g., Every Monday, First Tuesday of month"
-                  className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-300 mb-1">Description</label>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
                   rows={3}
                   placeholder="Tell us about this open mic..."
-                  className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-300 mb-1">Additional Notes</label>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Additional Notes</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
                   rows={2}
                   placeholder="Cover charge, equipment provided, etc."
-                  className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                 />
               </div>
             </div>
@@ -464,7 +464,7 @@ export default function SubmitOpenMicPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold disabled:opacity-50"
+                className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50"
               >
                 {submitting ? "Submitting..." : "Submit Open Mic"}
               </button>
@@ -485,7 +485,7 @@ export default function SubmitOpenMicPage() {
               ← Back
             </button>
             <h1 className="text-gradient-gold text-3xl font-serif italic">Claim as Host</h1>
-            <p className="text-neutral-300 mt-2">
+            <p className="text-[var(--color-text-secondary)] mt-2">
               Select the open mic you host to claim management access.
             </p>
           </PageContainer>
@@ -500,31 +500,31 @@ export default function SubmitOpenMicPage() {
             )}
 
             <div className="mb-6">
-              <label className="block text-sm text-neutral-300 mb-2">Search Open Mics</label>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Search Open Mics</label>
               <input
                 type="text"
                 value={searchExisting}
                 onChange={(e) => setSearchExisting(e.target.value)}
                 placeholder="Search by name or venue..."
-                className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
               />
             </div>
 
-            <div className="max-h-64 overflow-y-auto border border-neutral-700 rounded-lg">
+            <div className="max-h-64 overflow-y-auto border border-[var(--color-border-input)] rounded-lg">
               {filteredEvents.length === 0 ? (
-                <div className="p-4 text-neutral-400 text-center">No open mics found</div>
+                <div className="p-4 text-[var(--color-text-tertiary)] text-center">No open mics found</div>
               ) : (
                 filteredEvents.map((event) => (
                   <button
                     key={event.id}
                     type="button"
                     onClick={() => setClaimEventId(event.id)}
-                    className={`w-full p-3 text-left border-b border-neutral-700 last:border-0 hover:bg-white/5 ${
+                    className={`w-full p-3 text-left border-b border-[var(--color-border-input)] last:border-0 hover:bg-[var(--color-accent-muted)] ${
                       claimEventId === event.id ? "bg-[var(--color-accent-primary)]/10 border-l-4 border-l-[var(--color-accent-primary)]" : ""
                     }`}
                   >
-                    <div className="font-medium text-white">{event.title}</div>
-                    <div className="text-sm text-neutral-400">
+                    <div className="font-medium text-[var(--color-text-primary)]">{event.title}</div>
+                    <div className="text-sm text-[var(--color-text-tertiary)]">
                       {event.venue_name} • {event.day_of_week}
                     </div>
                   </button>
@@ -534,7 +534,7 @@ export default function SubmitOpenMicPage() {
 
             {claimEventId && (
               <div className="mt-6">
-                <label className="block text-sm text-neutral-300 mb-2">
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
                   Tell us how you&apos;re connected to this open mic
                 </label>
                 <textarea
@@ -542,13 +542,13 @@ export default function SubmitOpenMicPage() {
                   onChange={(e) => setClaimNotes(e.target.value)}
                   rows={3}
                   placeholder="I'm the host / I run this venue / etc."
-                  className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-white"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
                 />
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="mt-4 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold disabled:opacity-50"
+                  className="mt-4 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit Claim Request"}
                 </button>

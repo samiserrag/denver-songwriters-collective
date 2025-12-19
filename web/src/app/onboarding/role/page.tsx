@@ -129,10 +129,10 @@ export default function RoleOnboarding() {
               <div className="flex items-start gap-4">
                 <span className="text-3xl">{option.icon}</span>
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
                     {option.label}
                   </h3>
-                  <p className="text-sm text-white/80">
+                  <p className="text-sm text-[var(--color-text-primary)]/80">
                     {option.description}
                   </p>
                 </div>

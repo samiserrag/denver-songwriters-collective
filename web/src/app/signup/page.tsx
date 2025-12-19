@@ -60,7 +60,7 @@ function SignupForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="email"
           />
         </div>
@@ -72,7 +72,7 @@ function SignupForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="new-password"
           />
         </div>
@@ -84,7 +84,7 @@ function SignupForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="new-password"
           />
         </div>
@@ -121,28 +121,28 @@ function SignupForm() {
               if (!result.ok) toast.error(result.error || "Unable to send magic link.");
               else toast.success("Magic link sent! Check your email.");
             }}
-            className="text-sm text-blue-300 hover:underline w-full"
+            className="text-sm text-[var(--color-link)] hover:underline w-full"
           >
             Sign up with a magic link
           </button>
 
           <button
             onClick={() => signInWithGoogle()}
-            className="w-full rounded bg-white/90 text-black py-2 font-semibold"
+            className="w-full rounded bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] py-2 font-semibold hover:border-[var(--color-border-accent)] transition-colors"
           >
             Continue with Google
           </button>
 
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[var(--color-text-tertiary)]">
             Already have an account?{" "}
             <Link href="/login" className="text-[var(--color-text-accent)] hover:underline">
               Log in
             </Link>
           </p>
 
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-4">
             By signing up, you agree to our{" "}
-            <Link href="/privacy" className="text-gray-400 hover:text-white underline">
+            <Link href="/privacy" className="text-[var(--color-link)] hover:text-[var(--color-link-hover)] underline">
               Privacy Policy
             </Link>
           </p>
@@ -156,7 +156,7 @@ export default function SignupPage() {
   return (
     <PageContainer as="main" className="min-h-screen flex items-center justify-center">
       <div className="mx-auto max-w-md px-4 py-12">
-        <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
+        <Suspense fallback={<div className="text-[var(--color-text-tertiary)]">Loading...</div>}>
           <SignupForm />
         </Suspense>
       </div>

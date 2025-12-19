@@ -43,7 +43,7 @@ export function StudioAppointmentCard({ appointment }: { appointment: StudioOwne
           <h3 className="text-gold-400 text-xl font-semibold">
             {appointment.service_name}
           </h3>
-          <p className="text-neutral-300 mt-1">
+          <p className="text-[var(--color-text-secondary)] mt-1">
             {appointment.performer_name ?? "Unknown Performer"}
           </p>
         </div>
@@ -58,7 +58,7 @@ export function StudioAppointmentCard({ appointment }: { appointment: StudioOwne
         </span>
       </div>
 
-      <p className="mt-4 text-neutral-400">
+      <p className="mt-4 text-[var(--color-text-tertiary)]">
         {format(new Date(appointment.appointment_time), "EEEE, MMM d • h:mm a")}
       </p>
 

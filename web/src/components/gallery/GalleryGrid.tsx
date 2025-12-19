@@ -122,17 +122,17 @@ export default function GalleryGrid({ images }: Props) {
                   />
                 </div>
                 {image.is_featured && (
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-accent-primary)] text-black text-xs font-medium">
+                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs font-medium">
                     Featured
                   </div>
                 )}
                 {(image.caption || image.venue || image.event) && (
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     {image.caption && (
-                      <p className="text-white text-sm mb-1">{image.caption}</p>
+                      <p className="text-[var(--color-text-primary)] text-sm mb-1">{image.caption}</p>
                     )}
                     {(image.venue || image.event) && (
-                      <p className="text-neutral-400 text-xs">
+                      <p className="text-[var(--color-text-tertiary)] text-xs">
                         {image.event?.title ?? image.venue?.name}
                       </p>
                     )}
@@ -155,7 +155,7 @@ export default function GalleryGrid({ images }: Props) {
         >
           {/* Close button */}
           <button
-            className="absolute top-4 right-4 text-white/60 hover:text-white p-2 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
+            className="absolute top-4 right-4 text-[var(--color-text-primary)]/60 hover:text-[var(--color-text-primary)] p-2 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
             onClick={closeLightbox}
             aria-label="Close lightbox"
           >
@@ -167,7 +167,7 @@ export default function GalleryGrid({ images }: Props) {
           {/* Previous button */}
           {normalizedImages.length > 1 && (
             <button
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white p-2 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-primary)]/60 hover:text-[var(--color-text-primary)] p-2 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
               onClick={(e) => {
                 e.stopPropagation();
                 goToPrevious();
@@ -183,7 +183,7 @@ export default function GalleryGrid({ images }: Props) {
           {/* Next button */}
           {normalizedImages.length > 1 && (
             <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white p-2 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-primary)]/60 hover:text-[var(--color-text-primary)] p-2 z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
               onClick={(e) => {
                 e.stopPropagation();
                 goToNext();
@@ -213,9 +213,9 @@ export default function GalleryGrid({ images }: Props) {
             </div>
             <div className="mt-4 text-center">
               {selectedImage.caption && (
-                <p className="text-white text-lg mb-2">{selectedImage.caption}</p>
+                <p className="text-[var(--color-text-primary)] text-lg mb-2">{selectedImage.caption}</p>
               )}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-neutral-400 text-sm">
+              <div className="flex flex-wrap items-center justify-center gap-4 text-[var(--color-text-tertiary)] text-sm">
                 {selectedImage.uploader?.full_name && (
                   <span>Photo by {selectedImage.uploader.full_name}</span>
                 )}
@@ -228,7 +228,7 @@ export default function GalleryGrid({ images }: Props) {
               </div>
               {/* Image counter */}
               {normalizedImages.length > 1 && (
-                <p className="text-neutral-500 text-xs mt-2">
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-2">
                   {selectedIndex + 1} / {normalizedImages.length}
                 </p>
               )}

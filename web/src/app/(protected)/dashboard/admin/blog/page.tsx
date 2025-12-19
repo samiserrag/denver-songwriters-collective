@@ -24,7 +24,7 @@ export default async function AdminBlogPage() {
   if (!profile || profile.role !== "admin") {
     return (
       <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-red-600 dark:text-red-400">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
         <p className="text-[var(--color-text-secondary)] mt-2">Admin privileges required.</p>
       </div>
     );

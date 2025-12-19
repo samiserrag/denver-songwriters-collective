@@ -211,14 +211,14 @@ export default function ChangeReportsTable({ reports }: Props) {
                         <button
                           onClick={() => openModal(r, "approve")}
                           disabled={processingId === r.id}
-                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-white text-xs disabled:opacity-50"
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-[var(--color-text-primary)] text-xs disabled:opacity-50"
                         >
                           {processingId === r.id ? "..." : "Approve"}
                         </button>
                         <button
                           onClick={() => openModal(r, "reject")}
                           disabled={processingId === r.id}
-                          className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-xs disabled:opacity-50"
+                          className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[var(--color-text-primary)] text-xs disabled:opacity-50"
                         >
                           {processingId === r.id ? "..." : "Reject"}
                         </button>
@@ -297,7 +297,7 @@ export default function ChangeReportsTable({ reports }: Props) {
               <button
                 onClick={handleAction}
                 disabled={processingId === modalReport.id}
-                className={`px-4 py-2 rounded text-white font-medium disabled:opacity-50 ${
+                className={`px-4 py-2 rounded text-[var(--color-text-primary)] font-medium disabled:opacity-50 ${
                   modalAction === "approve"
                     ? "bg-emerald-600 hover:bg-emerald-500"
                     : "bg-red-600 hover:bg-red-500"

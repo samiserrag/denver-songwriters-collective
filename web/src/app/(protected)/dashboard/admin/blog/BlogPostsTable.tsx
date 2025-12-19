@@ -122,7 +122,7 @@ export default function BlogPostsTable({ posts }: Props) {
           onClick={() => setFilterStatus("pending")}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "pending"
-              ? "bg-amber-600 text-white"
+              ? "bg-amber-600 text-[var(--color-text-primary)]"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
@@ -135,7 +135,7 @@ export default function BlogPostsTable({ posts }: Props) {
           onClick={() => setFilterStatus("published")}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "published"
-              ? "bg-green-600 text-white"
+              ? "bg-green-600 text-[var(--color-text-primary)]"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
@@ -145,7 +145,7 @@ export default function BlogPostsTable({ posts }: Props) {
           onClick={() => setFilterStatus("draft")}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
             filterStatus === "draft"
-              ? "bg-yellow-600 text-white"
+              ? "bg-yellow-600 text-[var(--color-text-primary)]"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
           }`}
         >
@@ -185,7 +185,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                       post.is_approved
                         ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] hover:bg-[var(--color-accent-primary)]/30"
-                        : "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:hover:bg-amber-900"
+                        : "bg-amber-100 text-amber-700 hover:bg-amber-200"
                     }`}
                   >
                     {isApproving === post.id
@@ -201,8 +201,8 @@ export default function BlogPostsTable({ posts }: Props) {
                     disabled={isToggling === post.id}
                     className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
                       post.is_published
-                        ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-400 dark:hover:bg-green-900"
-                        : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-400 dark:hover:bg-yellow-900"
+                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                        : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                     }`}
                   >
                     {isToggling === post.id
@@ -275,7 +275,7 @@ export default function BlogPostsTable({ posts }: Props) {
       {deleteModal.open && deleteModal.post && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
           <div className="bg-[var(--color-bg-primary)] border border-red-500/30 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Delete Post</h2>
+            <h2 className="text-xl font-semibold text-red-600 mb-4">Delete Post</h2>
             <p className="text-[var(--color-text-secondary)] mb-6">
               Are you sure you want to delete &quot;{deleteModal.post.title}&quot;? This action cannot be undone.
             </p>
@@ -283,7 +283,7 @@ export default function BlogPostsTable({ posts }: Props) {
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-900 text-[var(--color-text-primary)] rounded-lg transition-colors"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>

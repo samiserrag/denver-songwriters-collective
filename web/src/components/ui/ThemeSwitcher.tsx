@@ -6,10 +6,12 @@ const THEMES = [
   { id: "", label: "Default (Gold Night)" },
   // Light themes
   { id: "sunrise", label: "Sunrise" },
+  { id: "sunset", label: "Sunset" },
   { id: "colorado-sky", label: "Colorado Sky" },
   { id: "aspen-pop", label: "Aspen Pop" },
   { id: "red-rocks", label: "Red Rocks" },
   // Dark themes
+  { id: "night", label: "Night" },
   { id: "night-neon", label: "Night Neon" },
   { id: "teal-night", label: "Teal Night" },
 ];

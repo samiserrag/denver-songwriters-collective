@@ -57,7 +57,7 @@ export default function OpenMicFilters({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search title, venue, notes..."
-          className="w-full sm:w-80 rounded-xl bg-white/5 px-4 py-2 placeholder:text-white/40 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/60 transition"
+          className="w-full sm:w-80 rounded-xl bg-white/5 px-4 py-2 placeholder:text-[var(--color-text-primary)]/40 text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/60 transition"
           aria-label="Search open mics"
         />
         <button
@@ -75,7 +75,7 @@ export default function OpenMicFilters({
             setStatus(e.target.value);
             navigateTo({ status: e.target.value });
           }}
-          className="rounded-full bg-white/10 px-3 py-2 text-sm text-white focus:outline-none"
+          className="rounded-full bg-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none"
           aria-label="Filter by status"
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -90,7 +90,7 @@ export default function OpenMicFilters({
             setCity(e.target.value);
             navigateTo({ city: e.target.value });
           }}
-          className="rounded-full bg-white/10 px-3 py-2 text-sm text-white focus:outline-none"
+          className="rounded-full bg-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none"
           aria-label="Filter by city"
         >
           <option value="all">All Cities</option>

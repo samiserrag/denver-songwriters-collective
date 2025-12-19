@@ -47,7 +47,7 @@ function ConfirmSentContent() {
 export default function ConfirmSentPage() {
   return (
     <PageContainer as="main" className="min-h-screen flex items-center justify-center">
-      <Suspense fallback={<div className="text-neutral-400">Loading...</div>}>
+      <Suspense fallback={<div className="text-[var(--color-text-tertiary)]">Loading...</div>}>
         <ConfirmSentContent />
       </Suspense>
     </PageContainer>

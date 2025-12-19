@@ -55,21 +55,21 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
           <h1 className="text-gradient-gold text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
             {studio.full_name ?? "Studio"}
           </h1>
-          <p className="text-neutral-400">Recording Studio</p>
+          <p className="text-[var(--color-text-tertiary)]">Recording Studio</p>
         </PageContainer>
       </HeroSection>
 
       <PageContainer>
         <div className="py-12">
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-4">About</h2>
-            <p className="text-neutral-300 leading-relaxed max-w-3xl">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">About</h2>
+            <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-3xl">
               {studio.bio ?? "This studio hasn't added a description yet."}
             </p>
           </section>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-6">Services</h2>
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">Services</h2>
             {services.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {services.map((service) => (
@@ -77,7 +77,7 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
                 ))}
               </div>
             ) : (
-              <p className="text-neutral-400">No services listed yet.</p>
+              <p className="text-[var(--color-text-tertiary)]">No services listed yet.</p>
             )}
           </section>
         </div>

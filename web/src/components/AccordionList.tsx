@@ -121,9 +121,9 @@ export default function AccordionList({
             >
               <span>
                 {day}
-                {hasEvents && <span className="ml-2 text-sm text-gray-400">({list.length})</span>}
+                {hasEvents && <span className="ml-2 text-sm text-[var(--color-text-tertiary)]">({list.length})</span>}
               </span>
-              <span className="text-gray-400">{isOpen ? "−" : "+"}</span>
+              <span className="text-[var(--color-text-tertiary)]">{isOpen ? "−" : "+"}</span>
             </button>
 
             {isOpen && (

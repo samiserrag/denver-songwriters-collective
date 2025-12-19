@@ -143,7 +143,7 @@ export default function VenueSelector({
                 setNewVenue(initialNewVenue);
                 setError(null);
               }}
-              className="text-xs text-[var(--color-text-secondary)] hover:text-white"
+              className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             >
               Cancel
             </button>

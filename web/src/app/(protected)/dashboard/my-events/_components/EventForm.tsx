@@ -178,13 +178,13 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 dark:text-red-400">
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600 dark:text-green-400">
+        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-600">
           {success}
         </div>
       )}
@@ -425,7 +425,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold rounded-lg transition-colors disabled:opacity-50"
+          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
         >
           {loading ? "Saving..." : mode === "create" ? "Create Event" : "Save Changes"}
         </button>
