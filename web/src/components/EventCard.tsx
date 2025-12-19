@@ -247,7 +247,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           </div>
         )}
 
-        <div className="text-sm text-[var(--color-gold-400)]">
+        <div className="text-sm text-[var(--color-text-accent)]">
           {startTime}{endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}
           {recurrenceText && recurrenceText !== "Every week" && (
             <span className="text-[var(--color-text-secondary)] ml-2">• {recurrenceText}</span>
@@ -257,7 +257,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
           <Link
             href={event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`}
-            className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
+            className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm font-medium transition-colors"
           >
             View Details →
           </Link>
@@ -266,7 +266,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
               href={eventMapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm font-medium transition-colors"
+              className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm font-medium transition-colors"
             >
               Map
             </a>

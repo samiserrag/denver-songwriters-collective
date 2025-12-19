@@ -75,7 +75,7 @@ export default function ReportChangeForm({ eventId, eventTitle }: Props) {
         <p className="text-green-300 font-medium">Thanks! A human will review this.</p>
         <button
           onClick={() => setSuccess(false)}
-          className="mt-2 text-sm text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] underline"
+          className="mt-2 text-sm text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] underline"
         >
           Report another change
         </button>
@@ -88,7 +88,7 @@ export default function ReportChangeForm({ eventId, eventTitle }: Props) {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm transition-colors"
+          className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -188,7 +188,7 @@ export default function ReportChangeForm({ eventId, eventTitle }: Props) {
               <button
                 type="submit"
                 disabled={submitting || !fieldName || !proposedValue}
-                className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded text-[var(--color-background)] font-medium disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded text-[var(--color-background)] font-medium disabled:opacity-50 transition-colors"
               >
                 {submitting ? "Submitting..." : "Submit Report"}
               </button>

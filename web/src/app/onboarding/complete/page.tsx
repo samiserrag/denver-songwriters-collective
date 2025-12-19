@@ -161,7 +161,7 @@ export default function OnboardingComplete() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/open-mics"
-            className="px-6 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors"
+            className="px-6 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors"
           >
             Browse Open Mics
           </Link>

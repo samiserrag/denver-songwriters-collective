@@ -341,7 +341,7 @@ export function ImageUpload({
               type="button"
               onClick={handleCropComplete}
               disabled={isUploading || !completedCrop}
-              className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isUploading ? (
                 <>

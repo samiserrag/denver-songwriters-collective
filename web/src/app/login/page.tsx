@@ -112,7 +112,7 @@ function LoginForm() {
             {error === "You must confirm your email before logging in. Check your inbox." && (
               <button
                 type="button"
-                className="text-sm text-[var(--color-text-accent)] underline hover:text-[var(--color-gold-200)]"
+                className="text-sm text-[var(--color-text-accent)] underline hover:text-[var(--color-accent-hover)]"
                 onClick={async () => {
                   const res = await resendConfirmationEmail(email);
                   if (res.success) {

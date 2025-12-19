@@ -667,7 +667,7 @@ Regular paragraph text here. Use **bold** for emphasis.
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] font-medium rounded-lg transition-colors"
+          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] font-medium rounded-lg transition-colors"
         >
           {saving ? "Saving..." : isEditing ? "Update Post" : "Create Post"}
         </button>

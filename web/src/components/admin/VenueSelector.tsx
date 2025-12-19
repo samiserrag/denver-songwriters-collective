@@ -236,7 +236,7 @@ export default function VenueSelector({
             type="button"
             onClick={handleCreateVenue}
             disabled={creating || !newVenue.name.trim() || !newVenue.address.trim()}
-            className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-accent-primary)]/50 disabled:cursor-not-allowed rounded text-[var(--color-background)] text-sm font-medium"
+            className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 disabled:cursor-not-allowed rounded text-[var(--color-background)] text-sm font-medium"
           >
             {creating ? "Creating..." : "Create Venue"}
           </button>

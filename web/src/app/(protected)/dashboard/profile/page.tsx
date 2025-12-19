@@ -817,7 +817,7 @@ export default function EditProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 px-6 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
@@ -830,7 +830,7 @@ export default function EditProfilePage() {
               {userRole === "performer" && userId && (
                 <Link
                   href={`/performers/${userId}`}
-                  className="px-6 py-3 rounded-lg border border-[var(--color-border-accent)]/30 hover:border-[var(--color-border-accent)]/60 text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] transition-colors text-center"
+                  className="px-6 py-3 rounded-lg border border-[var(--color-border-accent)]/30 hover:border-[var(--color-border-accent)]/60 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors text-center"
                 >
                   View Public Profile
                 </Link>

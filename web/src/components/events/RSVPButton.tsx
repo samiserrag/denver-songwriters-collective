@@ -357,7 +357,7 @@ export function RSVPButton({
           className={`inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl transition-all disabled:opacity-50 shadow-sm ${
             isFull
               ? "bg-amber-600 hover:bg-amber-500 text-[var(--color-text-primary)]"
-              : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)]"
+              : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)]"
           }`}
         >
           {loading ? (

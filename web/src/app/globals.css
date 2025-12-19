@@ -91,8 +91,8 @@
   /* ═══════════════════════════════════════════════════════════════
      FONTS
      ═══════════════════════════════════════════════════════════════ */
-  --font-family-serif: var(--font-serif), "Playfair Display", Georgia, serif;
-  --font-family-sans: var(--font-sans), Inter, system-ui, sans-serif;
+  --font-family-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-family-sans: var(--font-inter), "Inter", system-ui, sans-serif;
 
   /* Semantic font aliases (overridable by font presets) */
   --font-body: var(--font-family-sans);
@@ -104,14 +104,21 @@
   --font-size-display-xl: 4.5rem;
   --font-size-display-lg: 3.75rem;
   --font-size-display: 3rem;
-  --font-size-heading-xl: 2.25rem;
-  --font-size-heading-lg: 1.875rem;
+  --font-size-heading-2xl: 3.5rem;
+  --font-size-heading-xl: 2.75rem;
+  --font-size-heading-lg: 2.25rem;
+  --font-size-heading-md: 1.75rem;
   --font-size-heading: 1.5rem;
-  --font-size-heading-sm: 1.25rem;
+  --font-size-heading-sm: 1.35rem;
   --font-size-body-lg: 1.125rem;
   --font-size-body: 1rem;
   --font-size-body-sm: 0.875rem;
   --font-size-caption: 0.75rem;
+
+  /* Line Heights */
+  --line-height-tight: 1.1;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
 
   /* ═══════════════════════════════════════════════════════════════
      BORDER RADIUS
@@ -257,33 +264,6 @@ body > footer {
     color: var(--color-text-accent);
     border: 1px solid var(--color-border-accent);
   }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   TYPOGRAPHY (Phase 10A)
-   ═══════════════════════════════════════════════════════════════ */
-
-@theme {
-  /* Font Families */
-  --font-family-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
-  --font-family-sans: var(--font-inter), "Inter", system-ui, sans-serif;
-
-  /* Heading Scale */
-  --font-size-heading-2xl: 3.5rem;
-  --font-size-heading-xl: 2.75rem;
-  --font-size-heading-lg: 2.25rem;
-  --font-size-heading-md: 1.75rem;
-  --font-size-heading-sm: 1.35rem;
-
-  /* Body Scale */
-  --font-size-body-lg: 1.125rem;
-  --font-size-body: 1rem;
-  --font-size-body-sm: 0.875rem;
-
-  /* Line Heights */
-  --line-height-tight: 1.1;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
 }
 
 /* ═══════════════════════════════════════════════════════════════

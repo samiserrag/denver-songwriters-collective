@@ -130,7 +130,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
-              className="px-5 py-2 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Posting..." : "Post Comment"}
             </button>

@@ -100,7 +100,7 @@ export function VolunteerSignupForm() {
         </p>
         <button
           onClick={() => setSuccess(false)}
-          className="mt-4 px-4 py-2 text-sm text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] underline"
+          className="mt-4 px-4 py-2 text-sm text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] underline"
         >
           Submit another response
         </button>
@@ -240,7 +240,7 @@ export function VolunteerSignupForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] rounded-lg text-[var(--color-background)] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-background)] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Submitting..." : "Sign Up to Volunteer"}
       </button>

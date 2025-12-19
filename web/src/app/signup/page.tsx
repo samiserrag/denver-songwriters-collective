@@ -104,7 +104,7 @@ function SignupForm() {
         </Button>
       </form>
       ) : (
-        <div className="text-center py-8 text-[var(--color-gold-300)]">
+        <div className="text-center py-8 text-[var(--color-text-accent)]">
           <h2 className="text-xl font-semibold mb-2">Check your email</h2>
           <p className="text-[var(--color-text-secondary)]">
             We&apos;ve sent a confirmation link to <strong className="text-[var(--color-text-primary)]">{email}</strong>.

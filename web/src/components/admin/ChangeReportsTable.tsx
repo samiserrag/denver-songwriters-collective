@@ -155,7 +155,7 @@ export default function ChangeReportsTable({ reports }: Props) {
                       <Link
                         href={`/open-mics/${r.events?.slug || r.event_id}`}
                         target="_blank"
-                        className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] font-medium"
+                        className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] font-medium"
                       >
                         {r.events?.title || "Unknown Event"}
                       </Link>
@@ -185,7 +185,7 @@ export default function ChangeReportsTable({ reports }: Props) {
                     {r.reporter_email ? (
                       <a
                         href={`mailto:${r.reporter_email}`}
-                        className="text-xs text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)]"
+                        className="text-xs text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)]"
                       >
                         {r.reporter_email}
                       </a>

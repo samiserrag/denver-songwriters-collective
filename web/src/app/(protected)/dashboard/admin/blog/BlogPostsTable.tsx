@@ -243,7 +243,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     </Link>
                     <Link
                       href={`/dashboard/admin/blog/${post.id}/edit`}
-                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-xs"
                     >
                       Edit
                     </Link>

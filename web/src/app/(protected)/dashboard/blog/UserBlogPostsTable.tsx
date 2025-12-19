@@ -128,7 +128,7 @@ export default function UserBlogPostsTable({ posts }: Props) {
                     )}
                     <Link
                       href={`/dashboard/blog/${post.id}/edit`}
-                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-xs"
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-xs"
                     >
                       Edit
                     </Link>
@@ -147,7 +147,7 @@ export default function UserBlogPostsTable({ posts }: Props) {
               <tr>
                 <td colSpan={5} className="py-8 px-4 text-center text-[var(--color-text-secondary)]">
                   You haven&apos;t created any blog posts yet.{" "}
-                  <Link href="/dashboard/blog/new" className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)]">
+                  <Link href="/dashboard/blog/new" className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)]">
                     Create your first post!
                   </Link>
                 </td>

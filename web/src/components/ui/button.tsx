@@ -24,7 +24,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ];
 
     const variantStyles: Record<ButtonVariant, string> = {
-      primary: "bg-[var(--color-accent-primary)] text-[var(--color-bg-secondary)] font-semibold hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--shadow-glow-gold-sm)] active:bg-[var(--color-gold-400)] rounded-full",
+      primary: "bg-[var(--color-accent-primary)] text-[var(--color-bg-secondary)] font-semibold hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--shadow-glow-gold-sm)] active:bg-[var(--color-accent-hover)] rounded-full",
       secondary: "border border-[var(--color-accent-primary)]/60 bg-transparent text-[var(--color-text-accent)] hover:bg-[var(--color-accent-muted)] hover:border-[var(--color-accent-primary)] active:bg-[var(--color-accent-primary)]/20 rounded-full",
       subtle: "bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5 active:bg-white/10 rounded-lg",
       ghost: "bg-transparent text-[var(--color-text-accent)]/80 hover:text-[var(--color-text-accent)] hover:bg-[var(--color-accent-muted)] active:bg-[var(--color-accent-primary)]/10 rounded-lg",

@@ -172,7 +172,7 @@ export default function CompactListItem({
       <div className="flex items-center gap-3">
         <div className="text-right">
           <div className="text-sm text-[var(--color-text-primary)] font-medium">{start}{end && end !== "TBD" ? ` — ${end}` : ""}</div>
-          <div className="text-xs text-[var(--color-gold-400)]">Signup: {signupDisplay}</div>
+          <div className="text-xs text-[var(--color-text-accent)]">Signup: {signupDisplay}</div>
           <div className="text-xs text-[var(--color-text-secondary)]">{venue_name}</div>
         </div>
 

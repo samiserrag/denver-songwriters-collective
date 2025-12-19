@@ -342,7 +342,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             <button
               type="submit"
               disabled={isCreatingAlbum || !albumName}
-              className="mt-4 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
+              className="mt-4 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
             >
               {isCreatingAlbum ? "Creating..." : "Create Album"}
             </button>
@@ -509,7 +509,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
           <button
             type="submit"
             disabled={isUploading || !uploadUrl}
-            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
+            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
           >
             {isUploading ? "Uploading..." : "Upload Photo"}
           </button>

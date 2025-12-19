@@ -122,7 +122,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                     <Link
                       href={`/open-mics/${s.events?.slug || s.event_id}`}
                       target="_blank"
-                      className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] font-medium"
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] font-medium"
                     >
                       {s.events?.title || "Unknown Event"}
                     </Link>
@@ -144,7 +144,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                     {s.submitter_email && (
                       <a 
                         href={`mailto:${s.submitter_email}`}
-                        className="text-xs text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)]"
+                        className="text-xs text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)]"
                       >
                         {s.submitter_email}
                       </a>

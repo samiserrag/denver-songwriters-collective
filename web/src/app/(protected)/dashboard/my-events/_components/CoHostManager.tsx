@@ -140,7 +140,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
             <button
               type="submit"
               disabled={loading || !searchQuery.trim()}
-              className="px-3 py-1 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] text-sm rounded disabled:opacity-50"
+              className="px-3 py-1 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] text-sm rounded disabled:opacity-50"
             >
               {loading ? "Sending..." : "Send Invite"}
             </button>

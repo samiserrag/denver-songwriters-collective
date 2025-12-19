@@ -88,7 +88,7 @@ export default function NotificationsList({ notifications }: { notifications: No
             {notification.link && (
               <Link
                 href={notification.link}
-                className="text-[var(--color-text-accent)] hover:text-[var(--color-gold-400)] text-sm"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm"
               >
                 View →
               </Link>

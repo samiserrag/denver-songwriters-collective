@@ -115,7 +115,7 @@ export function RSVPSection({
           </p>
           <a
             href={`/login?redirectTo=/events/${eventId}?${redirectParam}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-gold-400)] text-[var(--color-background)] font-medium rounded-lg transition-colors text-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-medium rounded-lg transition-colors text-sm"
           >
             Log In
           </a>
