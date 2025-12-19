@@ -418,7 +418,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
               currentImageUrl={formData.cover_image_url || null}
               onUpload={handleCoverUpload}
               onRemove={handleCoverRemove}
-              aspectRatio={16/9}
+              aspectRatio={4/3}
               maxSizeMB={10}
               shape="square"
               placeholderText="Upload Cover"
@@ -426,7 +426,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           </div>
           <div className="flex-1 text-sm text-[var(--color-text-tertiary)]">
             <p>Upload a cover image for your blog post.</p>
-            <p className="mt-1">Recommended size: 1200x675 pixels (16:9 ratio)</p>
+            <p className="mt-1">Recommended size: 1200×900 pixels (4:3 ratio)</p>
             <p className="mt-1">Max file size: 10MB</p>
           </div>
         </div>

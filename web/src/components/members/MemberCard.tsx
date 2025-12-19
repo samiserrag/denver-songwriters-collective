@@ -79,7 +79,7 @@ export function MemberCard({ member, className }: MemberCardProps) {
             <img
               src={member.avatarUrl}
               alt={member.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
             <ImagePlaceholder
@@ -87,9 +87,6 @@ export function MemberCard({ member, className }: MemberCardProps) {
               className="w-full h-full"
             />
           )}
-
-          {/* Gradient overlay */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
           {/* Spotlight badge */}
           {member.isSpotlight && (

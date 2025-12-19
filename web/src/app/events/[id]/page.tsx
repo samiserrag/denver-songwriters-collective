@@ -152,7 +152,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
       <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
         {event.cover_image_url && (
-          <div className="h-48 md:h-64 relative">
+          <div className="aspect-[4/3] w-full relative">
             <img
               src={event.cover_image_url}
               alt={event.title}

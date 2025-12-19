@@ -31,7 +31,7 @@ export function StudioCard({ studio, className, compact = false }: StudioCardPro
         )}
       >
         {/* Image / Placeholder Section */}
-        <div className={cn("relative overflow-hidden", compact ? "aspect-[3/2]" : "aspect-[4/3]")}>
+        <div className={cn("relative overflow-hidden", "aspect-[4/3]")}>
           {studio.imageUrl ? (
             <Image
               src={studio.imageUrl}
@@ -41,7 +41,7 @@ export function StudioCard({ studio, className, compact = false }: StudioCardPro
                 ? "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               }
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-cover"
             />
           ) : (
             <ImagePlaceholder
@@ -49,9 +49,6 @@ export function StudioCard({ studio, className, compact = false }: StudioCardPro
               className={cn("w-full h-full", compact ? "text-xl" : "text-3xl")}
             />
           )}
-
-          {/* Gradient Overlay - for text readability over images */}
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[var(--color-bg-primary)]/75 via-[var(--color-bg-primary)]/20 to-transparent" />
         </div>
 
         {/* Content */}

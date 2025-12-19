@@ -87,13 +87,13 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           className
         )}
       >
-        {/* Image Section - 1:1 square for consistent display */}
-        <div className={cn("relative overflow-hidden", "aspect-square")}>
+        {/* Image Section - 4:3 for consistent display */}
+        <div className={cn("relative overflow-hidden", "aspect-[4/3]")}>
           {event.imageUrl ? (
             <img
               src={event.imageUrl}
               alt={event.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
             <ImagePlaceholder
@@ -101,9 +101,6 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
               className={cn("w-full h-full", compact ? "text-xl" : "text-3xl")}
             />
           )}
-
-          {/* Gradient overlay - for text readability over images */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--color-bg-primary)]/75 via-[var(--color-bg-primary)]/20 to-transparent" />
 
           {/* Date badge */}
           <div className={cn(

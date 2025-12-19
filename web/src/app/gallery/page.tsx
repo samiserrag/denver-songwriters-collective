@@ -101,14 +101,14 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                     href={`/gallery/${album.slug}`}
                     className="group block rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
                   >
-                    <div className="relative aspect-[16/10] w-full bg-[var(--color-bg-tertiary)]">
+                    <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
                       {album.cover_image_url ? (
                         <Image
                           src={album.cover_image_url}
                           alt={album.name}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">

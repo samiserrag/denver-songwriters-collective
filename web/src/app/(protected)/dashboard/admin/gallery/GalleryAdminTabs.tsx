@@ -210,15 +210,14 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                     image.is_approved ? "border-[var(--color-border-default)]" : "border-yellow-600"
                   }`}
                 >
-                  <div className="relative w-full aspect-square">
-                    <Image
-                      src={image.image_url}
-                      alt={image.caption ?? "Gallery image"}
-                      fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover"
-                    />
-                  </div>
+                  <Image
+                    src={image.image_url}
+                    alt={image.caption ?? "Gallery image"}
+                    width={400}
+                    height={300}
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="w-full h-auto object-cover"
+                  />
 
                   {/* Status badges */}
                   <div className="absolute top-2 left-2 flex gap-1">
