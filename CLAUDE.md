@@ -353,6 +353,31 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
   - `supabase/migrations/20251220014630_update_profiles_rls_for_identity_flags.sql` - Migration file (applied manually)
   - `web/.env.local` - Added DATABASE_URL for psql access
 
+### Default is_fan for New Users (December 2025)
+- **New users now default to `is_fan = true`** - Ensures visibility on Members page immediately after signup
+- **Updated `handle_new_user()` trigger** - Sets `is_fan = true` during profile creation
+- **Backfill migration** - Sets `is_fan = true` for existing users with no identity flags
+- Key file:
+  - `supabase/migrations/20251220020000_default_is_fan_for_new_users.sql`
+
+### Suggestion Response Emails (December 2025)
+- **Email notifications for suggestion reviews** - Submitters receive emails when their suggestions are approved/rejected/need info
+- **Contextual subjects** - "Your open mic submission is live!" for approved, "About your suggestion" for rejected, "Quick question..." for needs_info
+- **Friendly, warm tone** - Messages thank submitters and explain next steps
+- **Admin message included** - Custom admin response appears in the email body
+- Key files:
+  - `web/src/lib/email/templates/suggestionResponse.ts` - New email template
+  - `web/src/app/api/admin/event-update-suggestions/[id]/route.ts` - Sends email on status change
+  - `web/src/lib/email/index.ts` - Exports new template
+
+### Admin Suggestions Table Enhancement (December 2025)
+- **New open mic submissions display properly** - `_new_event` JSON is parsed and displayed as structured data
+- **"NEW SUBMISSION" badge** - Visual indicator for new event submissions vs corrections
+- **Structured data display** - Shows venue, address, schedule, recurrence, description
+- **Modal shows parsed details** - Review modal displays formatted event data instead of raw JSON
+- Key file:
+  - `web/src/components/admin/EventUpdateSuggestionsTable.tsx`
+
 ### Image System Standardization (December 2025)
 - **Standardized 4:3 aspect ratio** across all image uploads and card displays
 - **Removed visual effects** - no more gradient overlays or hover scale effects on cards
