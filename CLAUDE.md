@@ -10,19 +10,20 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 ## Documentation
 
-The `docs/` folder contains reference documentation for implemented features:
+The `docs/` folder contains reference documentation:
 
 | Document | Purpose |
 |----------|---------|
-| [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) | White-label platform roadmap (future work) |
+| [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) | White-label platform roadmap |
 | [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
 | [docs/stream-3-rsvp-flow.md](./docs/stream-3-rsvp-flow.md) | RSVP & Waitlist System documentation |
 | [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
 | [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
 | [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
-| [docs/v0.3.0.md](./docs/v0.3.0.md) | v0.3.0 release notes (Verification System) |
 
-**Archived specs** (unimplemented future plans) are in `docs/_archive/`.
+**Subfolders:**
+- `docs/future-specs/` — Unimplemented feature specs (Progressive Identity, White-Label MVP, etc.)
+- `docs/completed/` — Old release notes and completed planning docs
 
 ## Project Structure
 
@@ -276,7 +277,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 - [ ] Progressive Identity System (guest email verification for slot claims without account)
   - Guest claim flow: name + email → 6-digit code → verified claim
   - Magic links for offer confirmation / cancellation
-  - See [archived spec](./docs/_archive/progressive-identity.md) for full details
+  - See [docs/future-specs/progressive-identity.md](./docs/future-specs/progressive-identity.md) for full details
 
 ### Medium Priority
 - [ ] Search functionality across events/profiles
