@@ -7,6 +7,7 @@ import { MemberCard } from "@/components/members/MemberCard";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 import { Button } from "@/components/ui";
 import { LazyIframe, CLSLogger } from "@/components/home";
+import { NewsletterSection } from "@/components/navigation/NewsletterSection";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 
@@ -571,6 +572,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Newsletter Signup */}
+      <NewsletterSection />
     </>
   );
 }

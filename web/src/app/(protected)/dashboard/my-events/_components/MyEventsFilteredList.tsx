@@ -8,6 +8,7 @@ interface Event {
   id: string;
   title: string;
   event_type: string;
+  event_date: string | null;
   venue_name: string;
   day_of_week: string;
   start_time: string;
@@ -16,6 +17,17 @@ interface Event {
   capacity: number | null;
   rsvp_count: number;
   user_role: string;
+  series_id: string | null;
+}
+
+function formatEventDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr + "T00:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 interface Props {
@@ -167,14 +179,30 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
                 href={`/dashboard/my-events/${event.id}`}
                 className="block p-6 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] rounded-lg transition-colors"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  {/* Date box */}
+                  {event.event_date && (
+                    <div className="flex-shrink-0 w-14 h-14 bg-[var(--color-accent-primary)] rounded-lg flex flex-col items-center justify-center text-[var(--color-text-on-accent)]">
+                      <span className="text-xs font-medium uppercase">
+                        {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+                      </span>
+                      <span className="text-xl font-bold leading-none">
+                        {new Date(event.event_date + "T00:00:00").getDate()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-xl">{config.icon}</span>
                       {getStatusBadge(event)}
                       <span className="text-xs px-2 py-0.5 bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] rounded">
                         {config.label}
                       </span>
+                      {event.series_id && (
+                        <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+                          Series
+                        </span>
+                      )}
                       {event.user_role === "cohost" && (
                         <span className="text-xs px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded">
                           Co-host
@@ -183,7 +211,7 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
                     </div>
                     <h2 className="text-lg text-[var(--color-text-primary)] font-medium">{event.title}</h2>
                     <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                      {event.venue_name} {event.day_of_week && `• ${event.day_of_week}`} {event.start_time && event.start_time}
+                      {formatEventDate(event.event_date)} • {event.venue_name}
                     </p>
                   </div>
                   <div className="text-right">

@@ -92,7 +92,21 @@ export async function GET() {
   return NextResponse.json(eventsWithCounts);
 }
 
-// POST - Create new DSC event
+// Generate dates for a recurring series (weekly)
+function generateSeriesDates(startDate: string, count: number): string[] {
+  const dates: string[] = [];
+  const start = new Date(startDate + "T00:00:00");
+
+  for (let i = 0; i < count; i++) {
+    const eventDate = new Date(start);
+    eventDate.setDate(start.getDate() + (i * 7)); // Weekly
+    dates.push(eventDate.toISOString().split("T")[0]);
+  }
+
+  return dates;
+}
+
+// POST - Create new DSC event (or series of events)
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -113,77 +127,113 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   // Validate required fields
-  const required = ["title", "event_type", "venue_id", "start_time"];
+  const required = ["title", "event_type", "venue_id", "start_time", "day_of_week"];
   for (const field of required) {
     if (!body[field]) {
       return NextResponse.json({ error: `${field} is required` }, { status: 400 });
     }
   }
 
-  // Create event (default to draft unless explicitly published)
-  const { data: event, error: eventError } = await supabase
-    .from("events")
-    .insert({
-      title: body.title,
-      description: body.description || null,
-      event_type: body.event_type,
-      is_dsc_event: true,
-      capacity: body.has_timeslots ? body.total_slots : (body.capacity || null), // For timeslot events, capacity = total_slots
-      host_notes: body.host_notes || null,
-      venue_id: body.venue_id,
-      day_of_week: body.day_of_week || null,
-      start_time: body.start_time,
-      end_time: body.end_time || null,
-      recurrence_rule: body.recurrence_rule || null,
-      cover_image_url: body.cover_image_url || null,
-      status: "active",
-      is_published: body.is_published ?? false,
-      has_timeslots: body.has_timeslots ?? false,
-      total_slots: body.has_timeslots ? body.total_slots : null,
-      slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
-      allow_guest_slots: body.has_timeslots ? (body.allow_guests ?? false) : false,
-    })
-    .select()
-    .single();
+  // Determine series configuration
+  const occurrenceCount = Math.min(Math.max(body.occurrence_count || 1, 1), 12); // Clamp between 1-12
+  const startDate = body.start_date;
 
-  if (eventError) {
-    console.error("[POST /api/my-events] Event creation error:", eventError.message, "| Code:", eventError.code);
-    return NextResponse.json({ error: eventError.message }, { status: 500 });
+  if (!startDate) {
+    return NextResponse.json({ error: "start_date is required" }, { status: 400 });
   }
 
-  console.log("[POST /api/my-events] Event created:", event.id, "| is_dsc_event:", event.is_dsc_event, "| is_published:", event.is_published);
+  // Generate series_id if creating multiple events
+  const seriesId = occurrenceCount > 1 ? crypto.randomUUID() : null;
+  const eventDates = generateSeriesDates(startDate, occurrenceCount);
 
-  // Add creator as host
-  const { error: hostError } = await supabase
-    .from("event_hosts")
-    .insert({
-      event_id: event.id,
-      user_id: session.user.id,
-      role: "host",
-      invitation_status: "accepted",
-      invited_by: session.user.id,
-      responded_at: new Date().toISOString()
-    });
+  console.log("[POST /api/my-events] Creating", occurrenceCount, "event(s), series_id:", seriesId);
 
-  if (hostError) {
-    console.error("[POST /api/my-events] Host assignment error:", hostError.message, "| Code:", hostError.code);
-    // Event was created, so don't fail completely
-  } else {
-    console.log("[POST /api/my-events] Host assigned for user:", session.user.id, "to event:", event.id);
-  }
+  // Create all events in the series
+  const createdEvents: { id: string; event_date: string | null }[] = [];
 
-  // Generate timeslots using the database function if has_timeslots is enabled
-  if (body.has_timeslots && body.total_slots) {
-    const { error: timeslotsError } = await supabase
-      .rpc("generate_event_timeslots", { p_event_id: event.id });
+  for (let i = 0; i < eventDates.length; i++) {
+    const eventDate = eventDates[i];
 
-    if (timeslotsError) {
-      console.error("[POST /api/my-events] Timeslot generation error:", timeslotsError.message, "| Code:", timeslotsError.code);
-      // Event was created, so don't fail completely - slots can be regenerated
-    } else {
-      console.log("[POST /api/my-events] Timeslots generated for event:", event.id);
+    const { data: event, error: eventError } = await supabase
+      .from("events")
+      .insert({
+        title: body.title,
+        description: body.description || null,
+        event_type: body.event_type,
+        is_dsc_event: true,
+        capacity: body.has_timeslots ? body.total_slots : (body.capacity || null),
+        host_notes: body.host_notes || null,
+        venue_id: body.venue_id,
+        day_of_week: body.day_of_week || null,
+        start_time: body.start_time,
+        end_time: body.end_time || null,
+        recurrence_rule: body.recurrence_rule || null,
+        cover_image_url: body.cover_image_url || null,
+        status: "active",
+        is_published: body.is_published ?? false,
+        has_timeslots: body.has_timeslots ?? false,
+        total_slots: body.has_timeslots ? body.total_slots : null,
+        slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
+        allow_guest_slots: body.has_timeslots ? (body.allow_guests ?? false) : false,
+        // Series fields
+        event_date: eventDate,
+        series_id: seriesId,
+        series_index: seriesId ? i : null,
+      })
+      .select()
+      .single();
+
+    if (eventError) {
+      console.error("[POST /api/my-events] Event creation error:", eventError.message, "| Code:", eventError.code);
+      // If this is not the first event, we've already created some - return partial success
+      if (createdEvents.length > 0) {
+        return NextResponse.json({
+          ...createdEvents[0],
+          series_count: createdEvents.length,
+          error: `Created ${createdEvents.length} of ${occurrenceCount} events. Error: ${eventError.message}`
+        });
+      }
+      return NextResponse.json({ error: eventError.message }, { status: 500 });
+    }
+
+    console.log("[POST /api/my-events] Event created:", event.id, "| date:", eventDate, "| series_index:", i);
+    createdEvents.push({ id: event.id, event_date: event.event_date });
+
+    // Add creator as host
+    const { error: hostError } = await supabase
+      .from("event_hosts")
+      .insert({
+        event_id: event.id,
+        user_id: session.user.id,
+        role: "host",
+        invitation_status: "accepted",
+        invited_by: session.user.id,
+        responded_at: new Date().toISOString()
+      });
+
+    if (hostError) {
+      console.error("[POST /api/my-events] Host assignment error:", hostError.message, "| Code:", hostError.code);
+    }
+
+    // Generate timeslots using the database function if has_timeslots is enabled
+    if (body.has_timeslots && body.total_slots) {
+      const { error: timeslotsError } = await supabase
+        .rpc("generate_event_timeslots", { p_event_id: event.id });
+
+      if (timeslotsError) {
+        console.error("[POST /api/my-events] Timeslot generation error:", timeslotsError.message);
+      } else {
+        console.log("[POST /api/my-events] Timeslots generated for event:", event.id);
+      }
     }
   }
 
-  return NextResponse.json(event);
+  // Return the first event with series info
+  const firstEvent = createdEvents[0];
+  return NextResponse.json({
+    id: firstEvent.id,
+    event_date: firstEvent.event_date,
+    series_id: seriesId,
+    series_count: createdEvents.length,
+  });
 }

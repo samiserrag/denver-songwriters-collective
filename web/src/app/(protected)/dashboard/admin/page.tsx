@@ -75,6 +75,8 @@ export default async function AdminDashboardPage() {
     { href: "/dashboard/admin/users", title: "Manage Users", description: "View user profiles and roles" },
     { href: "/dashboard/admin/blog", title: "Manage Blog", description: "Create, edit, and publish blog posts" },
     { href: "/dashboard/admin/gallery", title: "Manage Gallery", description: "Upload photos, create albums, approve submissions" },
+    { href: "/dashboard/admin/newsletter", title: "Newsletter Subscribers", description: "View subscriber list and export emails for bulk sending" },
+    { href: "/dashboard/admin/logs", title: "Application Logs", description: "Debug errors and monitor application activity" },
   ];
 
   return (

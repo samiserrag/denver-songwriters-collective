@@ -4,7 +4,7 @@ import { sendEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, source = "footer" } = await request.json();
 
     // Validate email format using RFC 5322 compliant regex
     // Requires: valid local part, @ symbol, domain with TLD (min 2 chars)
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .upsert(
         {
           email: normalizedEmail,
-          source: "footer",
+          source: source,
           subscribed_at: new Date().toISOString(),
           unsubscribed_at: null,
         },

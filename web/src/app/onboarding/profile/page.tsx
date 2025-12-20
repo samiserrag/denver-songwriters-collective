@@ -106,10 +106,14 @@ export default function OnboardingProfile() {
     try {
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
-      if (!user) {
-        setError("You must be logged in.");
+
+      if (authError || !user) {
+        console.error("Auth error:", authError);
+        setError("Session expired. Please log in again.");
         setSaving(false);
+        window.location.href = "/login";
         return;
       }
 
@@ -134,6 +138,8 @@ export default function OnboardingProfile() {
         updated_at: new Date().toISOString(),
       };
 
+      console.log("[Onboarding] Updating profile for user:", user.id);
+
       const { error: updateError } = await supabase
         .from("profiles")
         .update(updates)
@@ -141,13 +147,15 @@ export default function OnboardingProfile() {
 
       if (updateError) {
         console.error("Profile update error:", updateError);
-        setError("Something went wrong. Please try again.");
+        setError(`Failed to save: ${updateError.message}`);
         setSaving(false);
         return;
       }
 
-      router.refresh();
-      router.push("/dashboard?welcome=1");
+      console.log("[Onboarding] Profile updated successfully, redirecting to dashboard");
+
+      // Use window.location for a hard redirect to ensure proxy re-runs with fresh state
+      window.location.href = "/dashboard?welcome=1";
     } catch (err) {
       console.error("Unexpected error:", err);
       setError("Something went wrong. Please try again.");
@@ -170,9 +178,10 @@ export default function OnboardingProfile() {
           })
           .eq("id", user.id);
       }
-      router.push("/dashboard");
+      // Use window.location for a hard redirect
+      window.location.href = "/dashboard";
     } catch {
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     }
   };
 

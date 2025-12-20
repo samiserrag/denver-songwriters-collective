@@ -117,14 +117,15 @@ export default async function EventsPage() {
 
   const pastEvents: Event[] = (pastDbEvents ?? []).map(mapDBEventToEvent);
 
-  // Fetch DSC community events (published only)
+  // Fetch DSC community events (published only, upcoming dates)
   const { data: dscEventsData } = await supabase
     .from("events")
     .select("*")
     .eq("is_dsc_event", true)
     .eq("status", "active")
     .eq("is_published", true)
-    .order("created_at", { ascending: false });
+    .gte("event_date", today)
+    .order("event_date", { ascending: true });
 
   // Convert DSC events to Event type with RSVP counts
   const dscEvents: Event[] = await Promise.all(

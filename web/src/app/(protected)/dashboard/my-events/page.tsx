@@ -30,6 +30,7 @@ export default async function MyEventsPage() {
     id: string;
     title: string;
     event_type: string;
+    event_date: string | null;
     venue_name: string;
     day_of_week: string;
     start_time: string;
@@ -38,6 +39,7 @@ export default async function MyEventsPage() {
     capacity: number | null;
     rsvp_count: number;
     user_role: string;
+    series_id: string | null;
   }> = [];
 
   if (hostEntries && hostEntries.length > 0) {
@@ -48,7 +50,7 @@ export default async function MyEventsPage() {
       .select("*")
       .in("id", eventIds)
       .eq("is_dsc_event", true)
-      .order("created_at", { ascending: false });
+      .order("event_date", { ascending: true, nullsFirst: false });
 
     if (eventsData) {
       events = await Promise.all(

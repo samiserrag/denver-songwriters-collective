@@ -65,6 +65,22 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
   const [success, setSuccess] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
 
+  // Get next occurrence of a day of week from today
+  const getNextDayOfWeek = (dayName: string): string => {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const today = new Date();
+    const targetDay = days.indexOf(dayName);
+    if (targetDay === -1) return "";
+
+    const currentDay = today.getDay();
+    let daysUntil = targetDay - currentDay;
+    if (daysUntil <= 0) daysUntil += 7; // Next week if today or past
+
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + daysUntil);
+    return nextDate.toISOString().split("T")[0];
+  };
+
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
@@ -76,7 +92,10 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
     end_time: event?.end_time || "",
     recurrence_rule: event?.recurrence_rule || "weekly",
     host_notes: event?.host_notes || "",
-    is_published: event?.is_published ?? false // New events start as drafts
+    is_published: event?.is_published ?? false, // New events start as drafts
+    // Recurring series fields (only for create mode)
+    start_date: "",
+    occurrence_count: "4", // Default to 4 events in series
   });
 
   // Slot configuration state - defaults based on event type
@@ -142,6 +161,9 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
         slot_duration_minutes: slotConfig.has_timeslots ? slotConfig.slot_duration_minutes : null,
         allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
+        // Series configuration (for create mode)
+        start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeek(formData.day_of_week) : null),
+        occurrence_count: parseInt(formData.occurrence_count) || 1,
       };
 
       const res = await fetch(url, {
@@ -292,11 +314,18 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Day of Week
+            Day of Week *
           </label>
           <select
             value={formData.day_of_week}
-            onChange={(e) => updateField("day_of_week", e.target.value)}
+            onChange={(e) => {
+              updateField("day_of_week", e.target.value);
+              // Auto-set start date when day is selected
+              if (e.target.value) {
+                updateField("start_date", getNextDayOfWeek(e.target.value));
+              }
+            }}
+            required
             className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           >
             <option value="">Select day</option>
@@ -338,39 +367,92 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 ${!slotConfig.has_timeslots ? "sm:grid-cols-2" : ""} gap-4`}>
+      {/* Only show capacity when NOT using timeslots (timeslots have their own slot count) */}
+      {!slotConfig.has_timeslots && (
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Frequency
+            Capacity
+            <span className="text-[var(--color-text-secondary)] font-normal ml-1">(leave empty for unlimited)</span>
           </label>
-          <select
-            value={formData.recurrence_rule}
-            onChange={(e) => updateField("recurrence_rule", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            {FREQUENCIES.map(freq => (
-              <option key={freq.value} value={freq.value}>{freq.label}</option>
-            ))}
-          </select>
+          <input
+            type="number"
+            value={formData.capacity}
+            onChange={(e) => updateField("capacity", e.target.value)}
+            placeholder="e.g., 12"
+            min="1"
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          />
         </div>
-        {/* Only show capacity when NOT using timeslots (timeslots have their own slot count) */}
-        {!slotConfig.has_timeslots && (
+      )}
+
+      {/* Recurring Event Series - Only show in create mode */}
+      {mode === "create" && formData.day_of_week && (
+        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Capacity
-              <span className="text-[var(--color-text-secondary)] font-normal ml-1">(leave empty for unlimited)</span>
-            </label>
-            <input
-              type="number"
-              value={formData.capacity}
-              onChange={(e) => updateField("capacity", e.target.value)}
-              placeholder="e.g., 12"
-              min="1"
-              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            />
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
+              Create Event Series
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Create multiple events for a recurring series. Each event will have its own page and signups.
+            </p>
           </div>
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                First Event Date *
+              </label>
+              <input
+                type="date"
+                value={formData.start_date || getNextDayOfWeek(formData.day_of_week)}
+                onChange={(e) => updateField("start_date", e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Number of Events *
+              </label>
+              <select
+                value={formData.occurrence_count}
+                onChange={(e) => updateField("occurrence_count", e.target.value)}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                  <option key={n} value={n.toString()}>
+                    {n} {n === 1 ? "event" : "events"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Preview of dates */}
+          {formData.start_date && parseInt(formData.occurrence_count) > 1 && (
+            <div className="pt-2 border-t border-[var(--color-border-default)]">
+              <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+                Events will be created for:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: Math.min(parseInt(formData.occurrence_count), 12) }, (_, i) => {
+                  const startDate = new Date(formData.start_date + "T00:00:00");
+                  const eventDate = new Date(startDate);
+                  eventDate.setDate(startDate.getDate() + (i * 7)); // Weekly
+                  return (
+                    <span
+                      key={i}
+                      className="px-2 py-1 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-primary)]"
+                    >
+                      {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Host Notes (private) */}
       <div>
