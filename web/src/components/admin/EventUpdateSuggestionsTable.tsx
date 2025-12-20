@@ -19,6 +19,30 @@ interface Props {
   suggestions: Suggestion[] | null;
 }
 
+interface NewEventData {
+  title?: string;
+  venue_name?: string;
+  venue_address?: string;
+  venue_city?: string;
+  venue_state?: string;
+  day_of_week?: string;
+  start_time?: string;
+  end_time?: string;
+  signup_time?: string;
+  recurrence_rule?: string;
+  category?: string;
+  description?: string;
+  notes?: string;
+}
+
+function parseNewEventData(jsonStr: string): NewEventData | null {
+  try {
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
 const RESPONSE_TEMPLATES = {
   approve: "Thank you for your contribution! Your correction has been approved and the listing has been updated.",
   reject: "Thank you for your submission. After review, we weren't able to verify this change. If you have additional information, please resubmit.",
@@ -115,29 +139,65 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
             </tr>
           </thead>
           <tbody>
-            {suggestions.map((s) => (
+            {suggestions.map((s) => {
+              const isNewEvent = s.field === "_new_event";
+              const newEventData = isNewEvent ? parseNewEventData(s.new_value) : null;
+
+              return (
               <tr key={s.id} className="border-t border-white/5 hover:bg-white/5">
                 <td className="px-3 py-3">
-                  <div>
-                    <Link
-                      href={`/open-mics/${s.events?.slug || s.event_id}`}
-                      target="_blank"
-                      className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] font-medium"
-                    >
-                      {s.events?.title || "Unknown Event"}
-                    </Link>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">
-                      {s.events?.venue_name} • {s.events?.day_of_week}
-                    </p>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      {s.batch_id && <span>batch: {s.batch_id} </span>}
-                      {s.event_id && <span>event: {s.event_id}</span>}
-                    </p>
-                  </div>
+                  {isNewEvent && newEventData ? (
+                    <div>
+                      <span className="px-2 py-0.5 rounded text-xs bg-emerald-600 text-white mb-1 inline-block">
+                        NEW SUBMISSION
+                      </span>
+                      <p className="text-[var(--color-text-accent)] font-medium">
+                        {newEventData.title || "Untitled Event"}
+                      </p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">
+                        {newEventData.venue_name} • {newEventData.day_of_week}s @ {newEventData.start_time}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Link
+                        href={`/open-mics/${s.events?.slug || s.event_id}`}
+                        target="_blank"
+                        className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] font-medium"
+                      >
+                        {s.events?.title || "Unknown Event"}
+                      </Link>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">
+                        {s.events?.venue_name} • {s.events?.day_of_week}
+                      </p>
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                        {s.batch_id && <span>batch: {s.batch_id} </span>}
+                        {s.event_id && <span>event: {s.event_id}</span>}
+                      </p>
+                    </div>
+                  )}
                 </td>
-                <td className="px-3 py-2 text-[var(--color-text-secondary)]">{s.field}</td>
-                <td className="px-3 py-2 text-[var(--color-text-tertiary)]">{s.old_value || "—"}</td>
-                <td className="px-3 py-2 text-green-400 font-medium">{s.new_value}</td>
+                <td className="px-3 py-2 text-[var(--color-text-secondary)]">
+                  {isNewEvent ? "New Open Mic" : s.field}
+                </td>
+                <td className="px-3 py-2 text-[var(--color-text-tertiary)]">
+                  {isNewEvent ? "—" : (s.old_value || "—")}
+                </td>
+                <td className="px-3 py-2">
+                  {isNewEvent && newEventData ? (
+                    <div className="text-sm space-y-1 max-w-md">
+                      <p><span className="text-[var(--color-text-tertiary)]">Venue:</span> <span className="text-[var(--color-text-primary)]">{newEventData.venue_name}</span></p>
+                      <p><span className="text-[var(--color-text-tertiary)]">Address:</span> <span className="text-[var(--color-text-primary)]">{newEventData.venue_address}, {newEventData.venue_city}, {newEventData.venue_state}</span></p>
+                      <p><span className="text-[var(--color-text-tertiary)]">When:</span> <span className="text-[var(--color-text-primary)]">{newEventData.day_of_week}s @ {newEventData.start_time}</span></p>
+                      {newEventData.signup_time && <p><span className="text-[var(--color-text-tertiary)]">Sign-up:</span> <span className="text-[var(--color-text-primary)]">{newEventData.signup_time}</span></p>}
+                      <p><span className="text-[var(--color-text-tertiary)]">Recurrence:</span> <span className="text-[var(--color-text-primary)]">{newEventData.recurrence_rule || "Weekly"}</span></p>
+                      {newEventData.description && <p className="text-[var(--color-text-secondary)] text-xs mt-2 italic">{newEventData.description}</p>}
+                      {newEventData.notes && <p className="text-[var(--color-text-tertiary)] text-xs">Notes: {newEventData.notes}</p>}
+                    </div>
+                  ) : (
+                    <span className="text-green-400 font-medium">{s.new_value}</span>
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   <div>
                     <p className="text-[var(--color-text-secondary)]">{s.submitter_name || "Anonymous"}</p>
@@ -195,7 +255,8 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -211,9 +272,30 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
             </h3>
             
             <div className="mb-4 p-3 bg-[var(--color-bg-secondary)] rounded text-sm">
-              <p className="text-[var(--color-text-tertiary)]">Event: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.events?.title}</span></p>
-              <p className="text-[var(--color-text-tertiary)]">Field: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.field}</span></p>
-              <p className="text-[var(--color-text-tertiary)]">Change: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span> → <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+              {actionModal.suggestion.field === "_new_event" ? (
+                (() => {
+                  const eventData = parseNewEventData(actionModal.suggestion.new_value);
+                  return eventData ? (
+                    <div className="space-y-1">
+                      <p className="text-emerald-400 font-medium">New Open Mic Submission</p>
+                      <p className="text-[var(--color-text-tertiary)]">Title: <span className="text-[var(--color-text-primary)]">{eventData.title}</span></p>
+                      <p className="text-[var(--color-text-tertiary)]">Venue: <span className="text-[var(--color-text-primary)]">{eventData.venue_name}</span></p>
+                      <p className="text-[var(--color-text-tertiary)]">Address: <span className="text-[var(--color-text-primary)]">{eventData.venue_address}, {eventData.venue_city}, {eventData.venue_state}</span></p>
+                      <p className="text-[var(--color-text-tertiary)]">When: <span className="text-[var(--color-text-primary)]">{eventData.day_of_week}s @ {eventData.start_time}</span></p>
+                      <p className="text-[var(--color-text-tertiary)]">Recurrence: <span className="text-[var(--color-text-primary)]">{eventData.recurrence_rule || "Weekly"}</span></p>
+                      {eventData.description && <p className="text-[var(--color-text-tertiary)] mt-2">Description: <span className="text-[var(--color-text-secondary)]">{eventData.description}</span></p>}
+                    </div>
+                  ) : (
+                    <p className="text-red-400">Could not parse event data</p>
+                  );
+                })()
+              ) : (
+                <>
+                  <p className="text-[var(--color-text-tertiary)]">Event: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.events?.title}</span></p>
+                  <p className="text-[var(--color-text-tertiary)]">Field: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.field}</span></p>
+                  <p className="text-[var(--color-text-tertiary)]">Change: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span> → <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+                </>
+              )}
               {actionModal.suggestion.notes && (
                 <p className="text-[var(--color-text-tertiary)] mt-2">Notes: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.notes}</span></p>
               )}
