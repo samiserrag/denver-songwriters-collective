@@ -35,6 +35,7 @@ import { getNewsletterWelcomeEmail } from "./templates/newsletterWelcome";
 import { getEventReminderEmail } from "./templates/eventReminder";
 import { getEventUpdatedEmail } from "./templates/eventUpdated";
 import { getEventCancelledEmail } from "./templates/eventCancelled";
+import { getSuggestionResponseEmail } from "./templates/suggestionResponse";
 
 describe("Email Templates", () => {
   describe("getVerificationCodeEmail", () => {
@@ -347,7 +348,8 @@ describe("Email Registry", () => {
     expect(keys).toContain("eventReminder");
     expect(keys).toContain("eventUpdated");
     expect(keys).toContain("eventCancelled");
-    expect(keys.length).toBe(12);
+    expect(keys).toContain("suggestionResponse");
+    expect(keys.length).toBe(13);
   });
 
   it("getTemplate returns valid output for all templates", () => {
@@ -596,6 +598,47 @@ describe("New Email Templates", () => {
       expect(result.html).not.toContain("Note from");
     });
   });
+
+  describe("getSuggestionResponseEmail", () => {
+    it("generates approved email for new event", () => {
+      const result = getSuggestionResponseEmail({
+        submitterName: "Alex",
+        status: "approved",
+        isNewEvent: true,
+        eventTitle: "Monday Night Mic",
+        adminMessage: "This is a great addition!",
+      });
+
+      expect(result.subject).toBe("Your open mic submission is live!");
+      expect(result.html).toContain("Hi Alex,");
+      expect(result.html).toContain("Monday Night Mic");
+      expect(result.html).toContain("This is a great addition!");
+      expect(result.text).toContain("open-mics");
+    });
+
+    it("generates needs_info email", () => {
+      const result = getSuggestionResponseEmail({
+        status: "needs_info",
+        isNewEvent: false,
+        adminMessage: "What time does it start?",
+      });
+
+      expect(result.subject).toBe("Quick question about your suggestion");
+      expect(result.html).toContain("What time does it start?");
+      expect(result.text).toContain("submit-open-mic");
+    });
+
+    it("generates rejected email", () => {
+      const result = getSuggestionResponseEmail({
+        status: "rejected",
+        isNewEvent: true,
+        adminMessage: "This venue closed down.",
+      });
+
+      expect(result.subject).toBe("About your open mic submission");
+      expect(result.html).toContain("This venue closed down.");
+    });
+  });
 });
 
 describe("All Templates - Common Requirements", () => {
@@ -613,6 +656,7 @@ describe("All Templates - Common Requirements", () => {
     getEventReminderEmail({ eventTitle: "Event", eventDate: "Dec 20", eventTime: "7pm", venueName: "Venue", eventId: "123", reminderType: "tonight" }),
     getEventUpdatedEmail({ eventTitle: "Event", eventId: "123", changes: {}, eventDate: "Dec 20", eventTime: "7pm", venueName: "Venue" }),
     getEventCancelledEmail({ eventTitle: "Event", eventDate: "Dec 20", venueName: "Venue" }),
+    getSuggestionResponseEmail({ status: "approved", isNewEvent: true, adminMessage: "Looks great!" }),
   ];
 
   it("all templates render both html and text", () => {

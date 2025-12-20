@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, getNewsletterWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,11 +55,13 @@ export async function POST(request: NextRequest) {
     // Send welcome email via Fastmail SMTP
     let emailSent = true;
     try {
+      const emailContent = getNewsletterWelcomeEmail();
       await sendEmail({
         to: normalizedEmail,
-        subject: "Welcome to the Denver Songwriters Collective!",
-        html: getWelcomeEmailHtml(),
-        text: getWelcomeEmailText(),
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        templateName: "newsletterWelcome",
       });
     } catch (emailError) {
       // Log but don't fail the signup if email fails
@@ -83,115 +85,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function getWelcomeEmailHtml(): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #171717; border-radius: 12px; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); padding: 32px; text-align: center;">
-              <h1 style="margin: 0; color: #0a0a0a; font-size: 24px; font-weight: bold;">
-                Denver Songwriters Collective
-              </h1>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding: 40px 32px;">
-              <h2 style="margin: 0 0 16px 0; color: #ffffff; font-size: 28px; font-weight: 600;">
-                Welcome to the community!
-              </h2>
-
-              <p style="margin: 0 0 24px 0; color: #a3a3a3; font-size: 16px; line-height: 1.6;">
-                Thanks for joining the Denver Songwriters Collective newsletter. You're now connected to Denver's vibrant songwriter scene.
-              </p>
-
-              <p style="margin: 0 0 24px 0; color: #a3a3a3; font-size: 16px; line-height: 1.6;">
-                Here's what you can expect:
-              </p>
-
-              <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #a3a3a3; font-size: 16px; line-height: 1.8;">
-                <li>Weekly roundups of open mics and songwriter events</li>
-                <li>Featured artist spotlights</li>
-                <li>Tips and resources for songwriters</li>
-                <li>Community news and opportunities</li>
-              </ul>
-
-              <p style="margin: 0 0 32px 0; color: #a3a3a3; font-size: 16px; line-height: 1.6;">
-                In the meantime, explore what's happening in Denver's songwriter community:
-              </p>
-
-              <!-- CTA Button -->
-              <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); border-radius: 8px;">
-                    <a href="https://denver-songwriters-collective.vercel.app/open-mics" style="display: inline-block; padding: 14px 28px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 16px;">
-                      Browse Open Mics
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #262626; text-align: center;">
-              <p style="margin: 0 0 8px 0; color: #737373; font-size: 14px;">
-                Find your people. Find your stage. Find your songs.
-              </p>
-              <p style="margin: 0 0 12px 0; color: #525252; font-size: 12px;">
-                Denver Songwriters Collective<br>
-                <a href="https://denver-songwriters-collective.vercel.app" style="color: #d4a853; text-decoration: none;">denver-songwriters-collective.vercel.app</a>
-              </p>
-              <p style="margin: 0; color: #525252; font-size: 11px;">
-                <a href="https://denver-songwriters-collective.vercel.app/privacy" style="color: #737373; text-decoration: underline;">Privacy Policy</a>
-                &nbsp;|&nbsp;
-                <a href="https://denver-songwriters-collective.vercel.app/contact" style="color: #737373; text-decoration: underline;">Contact Us</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-`;
-}
-
-function getWelcomeEmailText(): string {
-  return `
-Welcome to the Denver Songwriters Collective!
-
-Thanks for joining our newsletter. You're now connected to Denver's vibrant songwriter scene.
-
-Here's what you can expect:
-- Weekly roundups of open mics and songwriter events
-- Featured artist spotlights
-- Tips and resources for songwriters
-- Community news and opportunities
-
-Browse open mics: https://denver-songwriters-collective.vercel.app/open-mics
-
-Find your people. Find your stage. Find your songs.
-
-Denver Songwriters Collective
-https://denver-songwriters-collective.vercel.app
-
-Privacy Policy: https://denver-songwriters-collective.vercel.app/privacy
-Contact Us: https://denver-songwriters-collective.vercel.app/contact
-`;
 }

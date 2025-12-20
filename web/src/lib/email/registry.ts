@@ -53,6 +53,10 @@ import {
   getEventCancelledEmail,
   type EventCancelledEmailParams,
 } from "./templates/eventCancelled";
+import {
+  getSuggestionResponseEmail,
+  type SuggestionResponseEmailParams,
+} from "./templates/suggestionResponse";
 
 /**
  * All available email template keys
@@ -69,7 +73,8 @@ export type EmailTemplateKey =
   | "newsletterWelcome"
   | "eventReminder"
   | "eventUpdated"
-  | "eventCancelled";
+  | "eventCancelled"
+  | "suggestionResponse";
 
 /**
  * Map of template keys to their parameter types
@@ -87,6 +92,7 @@ export interface EmailTemplateParams {
   eventReminder: EventReminderEmailParams;
   eventUpdated: EventUpdatedEmailParams;
   eventCancelled: EventCancelledEmailParams;
+  suggestionResponse: SuggestionResponseEmailParams;
 }
 
 /**
@@ -210,6 +216,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: true,
   },
+  suggestionResponse: {
+    key: "suggestionResponse",
+    name: "Suggestion Response",
+    description: "Response to community event submission/correction",
+    audience: "guest",
+    hasLinks: true,
+    requiresEventTitle: false,
+  },
 };
 
 /**
@@ -252,6 +266,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getEventUpdatedEmail(params as EventUpdatedEmailParams);
     case "eventCancelled":
       return getEventCancelledEmail(params as EventCancelledEmailParams);
+    case "suggestionResponse":
+      return getSuggestionResponseEmail(params as SuggestionResponseEmailParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -288,6 +304,7 @@ export {
   getEventReminderEmail,
   getEventUpdatedEmail,
   getEventCancelledEmail,
+  getSuggestionResponseEmail,
 };
 
 // Re-export param types
@@ -304,4 +321,5 @@ export type {
   EventReminderEmailParams,
   EventUpdatedEmailParams,
   EventCancelledEmailParams,
+  SuggestionResponseEmailParams,
 };
