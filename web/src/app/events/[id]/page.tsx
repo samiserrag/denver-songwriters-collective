@@ -63,6 +63,17 @@ function getGoogleMapsUrl(address: string | null): string | null {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
+/**
+ * Format time from HH:MM:SS or HH:MM to human-readable format (e.g., "6:00 PM")
+ */
+function formatTime(time: string | null): string | null {
+  if (!time) return null;
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
 export default async function EventDetailPage({ params }: EventPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
@@ -200,7 +211,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </p>
               {event.start_time && (
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                  {event.start_time}{event.end_time ? ` - ${event.end_time}` : ""}
+                  {formatTime(event.start_time)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
                 </p>
               )}
             </div>
