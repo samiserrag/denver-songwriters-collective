@@ -251,139 +251,120 @@ export function TimeslotSection({
     s => s.claim?.member_id === user?.id && s.claim?.status === "confirmed"
   );
 
+  const claimedCount = timeslots.filter(s => s.claim?.status === "confirmed").length;
+  const openCount = timeslots.length - claimedCount;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <div>
-          <h2 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-text-primary)]">
-            Tonight&apos;s Lineup
-          </h2>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            {timeslots.filter(s => s.claim?.status === "confirmed").length} of {timeslots.length} slots claimed
-          </p>
-        </div>
-        {!authLoading && !user && (
-          <button
-            type="button"
-            onClick={handleRequireAuth}
-            className="text-sm text-[var(--color-text-accent)] hover:underline font-medium"
-          >
-            Sign in to perform →
-          </button>
-        )}
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-text-primary)]">
+          Tonight&apos;s Lineup
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+          {claimedCount} performer{claimedCount !== 1 ? "s" : ""} signed up
+          {openCount > 0 && ` • ${openCount} slot${openCount !== 1 ? "s" : ""} available`}
+        </p>
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">{error}</p>
+        <p className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg text-center">{error}</p>
       )}
 
       {userHasSlot && (
-        <div className="flex items-center gap-2 text-[var(--color-text-accent)] bg-[var(--color-accent-primary)]/10 px-4 py-3 rounded-lg">
-          <span className="text-xl">🎤</span>
-          <p className="font-medium">You&apos;re on the lineup! Find your slot below.</p>
+        <div className="flex items-center justify-center gap-2 text-[var(--color-text-accent)] bg-[var(--color-accent-primary)]/10 px-4 py-2 rounded-lg">
+          <span>🎤</span>
+          <p className="font-medium">You&apos;re on the lineup!</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Open slots CTA - show once at top if there are open slots and user doesn't have one */}
+      {openCount > 0 && !userHasSlot && !authLoading && (
+        <div className="text-center py-3 px-4 rounded-lg border-2 border-dashed border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5">
+          <p className="text-lg font-medium text-[var(--color-text-primary)]">
+            Want to perform? Claim a slot below!
+          </p>
+          {!user && (
+            <button
+              type="button"
+              onClick={handleRequireAuth}
+              className="text-sm text-[var(--color-text-accent)] hover:underline font-medium mt-1"
+            >
+              Sign in to claim a slot →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Slots grid - compact layout */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {timeslots.map((slot) => {
           const isClaimed = slot.claim?.status === "confirmed" || slot.claim?.status === "performed";
           const isMine = user && slot.claim?.member_id === user.id;
           const isPending = pendingSlotId === slot.id;
 
-          // Claimed slots get the spotlight treatment
+          // Claimed slots - celebrate the performer
           if (isClaimed && slot.claim?.member?.full_name) {
             return (
               <div
                 key={slot.id}
                 className={cn(
-                  "relative overflow-hidden rounded-xl border-2 p-5 transition-all",
+                  "rounded-lg border p-3 text-center transition-all",
                   isMine
-                    ? "border-[var(--color-accent-primary)] bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-accent-primary)]/5"
-                    : "border-[var(--color-border-accent)]/50 bg-gradient-to-br from-[var(--color-bg-surface)] to-[var(--color-bg-secondary)]"
+                    ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10"
+                    : "border-[var(--color-border-accent)]/50 bg-[var(--color-bg-surface)]"
                 )}
               >
-                {/* Decorative music note or star */}
-                <div className="absolute top-2 right-2 text-[var(--color-accent-primary)]/20 text-4xl">
-                  ♪
-                </div>
+                {/* Time - prominent */}
+                <p className="text-lg font-bold text-[var(--color-text-accent)] mb-1">
+                  {formatSlotTime(slot).split(" - ")[0]}
+                </p>
 
-                {/* Slot number badge */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs font-bold mb-3">
-                  <span>#{slot.slot_index + 1}</span>
-                  <span className="opacity-70">•</span>
-                  <span>{formatSlotTime(slot)}</span>
-                </div>
-
-                {/* PERFORMER NAME - THE STAR OF THE SHOW */}
-                <div className="mb-3">
-                  {isMine ? (
-                    <div>
-                      <p className="text-2xl font-bold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic">
-                        You&apos;re performing!
-                      </p>
-                      <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                        Get ready to shine ✨
-                      </p>
-                    </div>
-                  ) : (
-                    <Link
-                      href={`/songwriters/${slot.claim.member.id}`}
-                      className="group block"
+                {/* Performer name */}
+                {isMine ? (
+                  <div>
+                    <p className="text-base font-semibold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic">
+                      You!
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => handleUnclaim(slot.id)}
+                      className="mt-2 text-xs"
                     >
-                      <p className="text-2xl font-bold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic group-hover:underline decoration-2 underline-offset-4 transition-all">
-                        {slot.claim.member.full_name}
-                      </p>
-                      <p className="text-sm text-[var(--color-text-secondary)] mt-1 group-hover:text-[var(--color-text-primary)] transition-colors">
-                        View profile →
-                      </p>
-                    </Link>
-                  )}
-                </div>
-
-                {/* Release button for own slot */}
-                {isMine && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => handleUnclaim(slot.id)}
-                    className="mt-2"
+                      {isPending ? "..." : "Release"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Link
+                    href={`/songwriters/${slot.claim.member.id}`}
+                    className="group block"
                   >
-                    {isPending ? "Releasing..." : "Release My Slot"}
-                  </Button>
+                    <p className="text-base font-semibold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic group-hover:underline">
+                      {slot.claim.member.full_name}
+                    </p>
+                  </Link>
                 )}
               </div>
             );
           }
 
-          // Open slots - inviting people to claim
+          // Open slots - simple and compact
           return (
             <div
               key={slot.id}
               className={cn(
-                "relative rounded-xl border-2 border-dashed p-5 transition-all",
-                "border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50",
+                "rounded-lg border border-dashed p-3 text-center transition-all",
+                "border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/30",
                 "hover:border-[var(--color-accent-primary)]/50 hover:bg-[var(--color-bg-secondary)]",
-                userHasSlot && "opacity-50"
+                userHasSlot && "opacity-40"
               )}
             >
-              {/* Slot number */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-xs font-medium">
-                  Slot #{slot.slot_index + 1}
-                </span>
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  {formatSlotTime(slot)}
-                </span>
-              </div>
-
-              {/* Open slot message */}
-              <p className="text-lg font-medium text-[var(--color-text-primary)] mb-1">
-                This could be you!
-              </p>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                Claim this slot and share your music
+              {/* Time - prominent */}
+              <p className="text-lg font-bold text-[var(--color-text-secondary)] mb-2">
+                {formatSlotTime(slot).split(" - ")[0]}
               </p>
 
               {/* Claim button */}
@@ -391,23 +372,19 @@ export function TimeslotSection({
                 type="button"
                 variant="primary"
                 size="sm"
-                disabled={isPending || userHasSlot}
-                onClick={() => handleClaim(slot.id)}
-                className="w-full"
+                disabled={isPending || userHasSlot || !user}
+                onClick={() => user ? handleClaim(slot.id) : handleRequireAuth()}
+                className="w-full text-xs"
               >
-                {userHasSlot
-                  ? "You already have a slot"
-                  : isPending
-                  ? "Claiming..."
-                  : "Claim This Slot"}
+                {isPending ? "..." : "Claim"}
               </Button>
             </div>
           );
         })}
       </div>
 
-      <p className="text-xs text-[var(--color-text-secondary)]">
-        {slotDuration} minutes per performer. One slot per person. First-come, first-served.
+      <p className="text-xs text-[var(--color-text-secondary)] text-center">
+        {slotDuration} min each • First come, first served
       </p>
     </div>
   );

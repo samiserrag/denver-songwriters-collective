@@ -79,20 +79,36 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  // Fetch event without the problematic join
+  // Fetch event with venue join and recurrence info
   const { data: event, error } = await supabase
     .from("events")
     .select(`
-      id, title, description, event_type, venue_name, venue_address,
+      id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
       is_dsc_event, status, created_at, event_date,
-      has_timeslots, total_slots, slot_duration_minutes, is_published
+      has_timeslots, total_slots, slot_duration_minutes, is_published,
+      is_recurring, recurrence_pattern
     `)
     .eq("id", id)
     .single();
 
   if (error || !event) {
     notFound();
+  }
+
+  // If venue_name is null but venue_id exists, fetch from venues table
+  let venueName = event.venue_name;
+  let venueAddress = event.venue_address;
+  if (!venueName && event.venue_id) {
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("name, address")
+      .eq("id", event.venue_id)
+      .single();
+    if (venue) {
+      venueName = venue.name;
+      venueAddress = venue.address;
+    }
   }
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
@@ -112,15 +128,48 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     hosts = profiles || [];
   }
 
-  const { count: rsvpCount } = await supabase
-    .from("event_rsvps")
-    .select("*", { count: "exact", head: true })
-    .eq("event_id", id)
-    .eq("status", "confirmed");
+  // Get attendance count - use timeslot_claims for timeslot events, event_rsvps otherwise
+  let attendanceCount = 0;
+  if (event.has_timeslots) {
+    // First get the timeslot IDs for this event
+    const { data: timeslots } = await supabase
+      .from("event_timeslots")
+      .select("id")
+      .eq("event_id", id);
+
+    if (timeslots && timeslots.length > 0) {
+      const slotIds = timeslots.map(s => s.id);
+      const { count } = await supabase
+        .from("timeslot_claims")
+        .select("*", { count: "exact", head: true })
+        .in("timeslot_id", slotIds)
+        .in("status", ["confirmed", "performed"]);
+      attendanceCount = count || 0;
+    }
+  } else {
+    const { count: rsvpCount } = await supabase
+      .from("event_rsvps")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", id)
+      .eq("status", "confirmed");
+    attendanceCount = rsvpCount || 0;
+  }
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
-  const mapsUrl = getGoogleMapsUrl(event.venue_address);
-  const remaining = event.capacity ? Math.max(0, event.capacity - (rsvpCount || 0)) : null;
+  const mapsUrl = getGoogleMapsUrl(venueAddress);
+  const remaining = event.capacity ? Math.max(0, event.capacity - attendanceCount) : null;
+
+  // Format recurrence pattern for display
+  const getRecurrenceLabel = () => {
+    if (!event.is_recurring || !event.recurrence_pattern) return null;
+    switch (event.recurrence_pattern) {
+      case "weekly": return `Every ${event.day_of_week || "week"}`;
+      case "biweekly": return `Every other ${event.day_of_week || "week"}`;
+      case "monthly": return "Monthly";
+      default: return null;
+    }
+  };
+  const recurrenceLabel = getRecurrenceLabel();
 
   // Build calendar date from event_date + start_time
   let calendarStartDate: Date | null = null;
@@ -148,7 +197,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     }
   }
 
-  const venueLocation = [event.venue_name, event.venue_address].filter(Boolean).join(", ");
+  const venueLocation = [venueName, venueAddress].filter(Boolean).join(", ");
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -241,11 +290,16 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 <span>When</span>
               </div>
               <p className="text-[var(--color-text-primary)] font-medium">
-                {event.day_of_week ? `${event.day_of_week}s` : "Schedule TBA"}
+                {recurrenceLabel || (event.day_of_week ? `${event.day_of_week}s` : "Schedule TBA")}
               </p>
               {event.start_time && (
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1">
                   {formatTime(event.start_time)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
+                </p>
+              )}
+              {recurrenceLabel && (
+                <p className="text-[var(--color-text-accent)] text-xs mt-1 font-medium">
+                  🔄 Recurring
                 </p>
               )}
             </div>
@@ -255,21 +309,21 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 <span>Where</span>
               </div>
               <p className="text-[var(--color-text-primary)] font-medium">
-                {event.venue_name || "Venue TBA"}
+                {venueName || "Venue TBA"}
               </p>
-              {event.venue_address && (
+              {venueAddress && (
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1 line-clamp-2">
-                  {event.venue_address}
+                  {venueAddress}
                 </p>
               )}
             </div>
 
             <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
               <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <span>Attendance</span>
+                <span>{event.has_timeslots ? "Performers" : "Attendance"}</span>
               </div>
               <p className="text-[var(--color-text-primary)] font-medium">
-                {rsvpCount || 0} going
+                {attendanceCount} {event.has_timeslots ? "signed up" : "going"}
               </p>
               {remaining !== null && (
                 <p className={`text-sm mt-1 ${remaining === 0 ? "text-amber-400" : "text-[var(--color-text-secondary)]"}`}>
@@ -292,7 +346,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                   eventId={event.id}
                   eventTitle={event.title}
                   capacity={event.capacity}
-                  initialConfirmedCount={rsvpCount || 0}
+                  initialConfirmedCount={attendanceCount}
                 />
               </Suspense>
             )}
@@ -329,6 +383,16 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             />
           )}
 
+          {/* About section - shown above timeslots */}
+          {event.description && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Event</h2>
+              <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">
+                {event.description}
+              </p>
+            </div>
+          )}
+
           {/* Timeslot claiming section for timeslot-enabled events */}
           {event.is_dsc_event && (event as { has_timeslots?: boolean }).has_timeslots && (
             <div className="mb-8">
@@ -338,15 +402,6 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 totalSlots={(event as { total_slots?: number }).total_slots || 10}
                 slotDuration={(event as { slot_duration_minutes?: number }).slot_duration_minutes || 15}
               />
-            </div>
-          )}
-
-          {event.description && (
-            <div className="mb-8">
-              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Event</h2>
-              <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">
-                {event.description}
-              </p>
             </div>
           )}
 
