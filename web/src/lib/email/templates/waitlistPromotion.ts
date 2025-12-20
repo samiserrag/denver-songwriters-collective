@@ -1,0 +1,120 @@
+/**
+ * Waitlist Promotion Email Template (Member)
+ *
+ * Sent when a spot opens up and a waitlisted member is promoted to "offered" status.
+ * Similar to waitlistOffer.ts but for authenticated members (not guests).
+ */
+
+import { escapeHtml } from "@/lib/highlight";
+import {
+  wrapEmailHtml,
+  wrapEmailText,
+  getGreeting,
+  paragraph,
+  createButton,
+  createSecondaryLink,
+  SITE_URL,
+} from "../render";
+
+export interface WaitlistPromotionEmailParams {
+  userName?: string | null;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  venueName: string;
+  eventId: string;
+  offerExpiresAt?: string; // ISO timestamp
+}
+
+export function getWaitlistPromotionEmail(params: WaitlistPromotionEmailParams): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const { userName, eventTitle, eventDate, eventTime, venueName, eventId, offerExpiresAt } = params;
+
+  const safeTitle = escapeHtml(eventTitle);
+  const safeVenue = escapeHtml(venueName);
+  const safeDate = escapeHtml(eventDate);
+  const safeTime = escapeHtml(eventTime);
+
+  const confirmUrl = `${SITE_URL}/events/${eventId}?confirm=true`;
+  const cancelUrl = `${SITE_URL}/events/${eventId}?cancel=true`;
+
+  // Format expiry time for display
+  let expiryMessage = "";
+  let formattedExpiry = "";
+  if (offerExpiresAt) {
+    const expiryDate = new Date(offerExpiresAt);
+    formattedExpiry = expiryDate.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
+    });
+    expiryMessage = `After that, the spot will be offered to the next person on the waitlist.`;
+  }
+
+  const subject = `A spot just opened up at ${eventTitle}`;
+
+  const htmlContent = `
+${paragraph(getGreeting(userName))}
+
+${paragraph(`Good news! A spot just opened up at <strong>${safeTitle}</strong>, and you're next in line.`)}
+
+<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; color: #f59e0b; font-size: 15px; font-weight: 600;">
+    Confirm by ${escapeHtml(formattedExpiry)} to lock in your spot.
+  </p>
+  ${expiryMessage ? `<p style="margin: 0; color: #a3a3a3; font-size: 13px;">${expiryMessage}</p>` : ""}
+</div>
+
+<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="padding-bottom: 12px;">
+        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
+        <p style="margin: 0; color: #d4a853; font-size: 15px;">${safeDate} at ${safeTime}</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
+        <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+${createButton("Confirm my spot", confirmUrl, "green")}
+
+${paragraph("If you can't make it, no worries—just let us know so we can offer the spot to someone else.", { muted: true })}
+
+${createSecondaryLink("I can't make it", cancelUrl)}
+`;
+
+  const html = wrapEmailHtml(htmlContent);
+
+  const textContent = `${userName?.trim() ? `Hi ${userName.trim()},` : "Hi there,"}
+
+Good news! A spot just opened up at ${eventTitle}, and you're next in line.
+
+CONFIRM BY ${formattedExpiry} to lock in your spot.
+${expiryMessage}
+
+WHEN: ${safeDate} at ${safeTime}
+WHERE: ${safeVenue}
+
+CONFIRM MY SPOT: ${confirmUrl}
+
+If you can't make it, no worries—just let us know so we can offer the spot to someone else.
+
+I can't make it: ${cancelUrl}`;
+
+  const text = wrapEmailText(textContent);
+
+  return { subject, html, text };
+}

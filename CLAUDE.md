@@ -39,7 +39,91 @@ Comprehensive documentation is available in the `docs/` folder:
 
 - **Supabase Project ID:** `oipozdbfxyskoscsgbfq`
 - **Migrations:** Located in `supabase/migrations/`
-- Run migrations via Supabase SQL Editor (Dashboard > SQL Editor)
+
+### IMPORTANT: Run All SQL Directly via CLI
+
+**Claude MUST run all database operations directly. NEVER ask the user to run SQL in the Supabase Dashboard.**
+
+#### 1. CRUD Operations (SELECT, INSERT, UPDATE, DELETE)
+
+Run from the `web/` directory using Node.js with the Supabase JS client:
+
+```javascript
+cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective/web && node -e "
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  'https://oipozdbfxyskoscsgbfq.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pcG96ZGJmeHlza29zY3NnYmZxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzkyNTAxOSwiZXhwIjoyMDc5NTAxMDE5fQ.iSNMtMm9Nt5Vq-jnbJXVskL07M5fPGU-pJqe2aLHSjQ'
+);
+
+async function main() {
+  // SELECT
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, role')
+    .eq('role', 'admin');
+  console.log(JSON.stringify(data, null, 2));
+
+  // UPDATE
+  const { data: updated } = await supabase
+    .from('profiles')
+    .update({ role: 'performer' })
+    .eq('id', 'some-uuid')
+    .select();
+  console.log(updated);
+}
+main();
+"
+```
+
+**To test what PUBLIC users see (respects RLS)**, use the anon key instead:
+```javascript
+const supabase = createClient(
+  'https://oipozdbfxyskoscsgbfq.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pcG96ZGJmeHlza29zY3NnYmZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjUwMTksImV4cCI6MjA3OTUwMTAxOX0.fCrizcRIuNIsutA48IWEcVeo0vwPQxTHloYKhNDMdO0'
+);
+```
+
+#### 2. DDL Operations (CREATE TABLE, DROP POLICY, ALTER TABLE, etc.)
+
+For schema changes and RLS policies, use `psql` with DATABASE_URL from `.env.local`:
+
+```bash
+cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective/web && source .env.local && psql "$DATABASE_URL" -c "
+DROP POLICY IF EXISTS select_profiles ON profiles;
+CREATE POLICY select_profiles ON profiles FOR SELECT USING (
+  (role = 'performer')
+  OR (is_songwriter = true OR is_studio = true OR is_fan = true OR is_host = true)
+  OR (auth.uid() IS NOT NULL AND auth.uid() = id)
+  OR is_admin()
+);
+"
+```
+
+**DATABASE_URL is configured in `.env.local`** - Claude can run all DDL directly via psql.
+
+#### 3. Creating Migrations
+
+Always create migration files for tracking, even if applying directly:
+
+```bash
+npx supabase migration new my_migration_name
+# Then edit the file in supabase/migrations/
+```
+
+#### 4. Troubleshooting Migration History
+
+If `npx supabase db push` fails due to history mismatch:
+1. Check status: `npx supabase migration list`
+2. Repair if needed: `npx supabase migration repair --status reverted <version>`
+3. Or apply DDL directly via psql (see above)
+
+**Key points:**
+- Service role key bypasses RLS - use for admin operations
+- Anon key respects RLS - use to test public visibility
+- Always run from `web/` directory where node_modules is installed
+- Create migration files for version control even when applying directly
 
 ### Key Tables
 
@@ -70,6 +154,16 @@ Comprehensive documentation is available in the `docs/` folder:
 ### Role Field (Authorization)
 - **member** - Default role for all users
 - **admin** - Full access to admin dashboard, can approve content
+- **super admin** - `sami.serrag@gmail.com` only - can promote/demote other admins
+
+### Super Admin System
+- **Super admin email:** `sami.serrag@gmail.com` (hardcoded in `web/src/lib/auth/adminAuth.ts`)
+- **Capabilities:** Only super admin can promote users to admin or demote admins
+- **UI Location:** `/dashboard/admin/users` - "Make Admin" / "Remove Admin" buttons
+- **Key files:**
+  - `web/src/lib/auth/adminAuth.ts` - `isSuperAdmin()` function, `SUPER_ADMIN_EMAIL` constant
+  - `web/src/app/(protected)/dashboard/admin/users/actions.ts` - `toggleAdminRole()` server action
+  - `web/src/components/admin/UserDirectoryTable.tsx` - Admin toggle UI
 
 ### Identity Flags (Self-Identification)
 Users can select multiple identity flags during onboarding:
@@ -400,6 +494,27 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 - **Footer adapts to all theme presets** with inverse text colors
 - **CLS: 0.639 → 0.000** - eliminated all layout shifts
 - **Performer → Songwriter rename** throughout the webapp
+
+### Members Page Visibility Fix (December 2025)
+- **Root cause:** New Google OAuth users had `role = NULL`, blocked by RLS policy
+- **Fix 1:** Updated `role = 'performer'` for existing users with `is_songwriter = true`
+- **Fix 2:** Updated RLS policy to also check identity flags (`is_songwriter`, `is_studio`, `is_fan`, `is_host`)
+- **Database access configured:** `DATABASE_URL` added to `.env.local` for direct psql access
+- **Claude can now run all SQL directly** - CRUD via Supabase JS client, DDL via psql
+- Key files:
+  - `supabase/migrations/20251220014630_update_profiles_rls_for_identity_flags.sql` - Migration file (applied manually)
+  - `web/.env.local` - Added DATABASE_URL for psql access
+
+### Super Admin System (December 2025)
+- **Added super admin role** - Only `sami.serrag@gmail.com` can promote/demote admins
+- **Admin toggle UI** in User Directory (`/dashboard/admin/users`)
+- **"Make Admin" button** - Promotes user to admin role (green link)
+- **"Remove Admin" button** - Demotes admin to performer role (orange link)
+- **Security:** Super admin email is hardcoded, not configurable via database
+- Key files:
+  - `web/src/lib/auth/adminAuth.ts` - `isSuperAdmin()`, `SUPER_ADMIN_EMAIL`
+  - `web/src/app/(protected)/dashboard/admin/users/actions.ts` - `toggleAdminRole()` server action
+  - `web/src/components/admin/UserDirectoryTable.tsx` - Admin toggle buttons
 
 ---
 

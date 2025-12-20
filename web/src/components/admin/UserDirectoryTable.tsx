@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Database } from "@/lib/supabase/database.types";
-import { deleteUser, updateSpotlightType, toggleHostStatus } from "@/app/(protected)/dashboard/admin/users/actions";
+import { deleteUser, updateSpotlightType, toggleHostStatus, toggleAdminRole } from "@/app/(protected)/dashboard/admin/users/actions";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ExtendedProfile = Profile & { is_host?: boolean; spotlight_type?: string | null };
 
 interface Props {
   users: Profile[];
+  isSuperAdmin?: boolean;
+  currentUserId?: string;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -26,7 +28,7 @@ const SPOTLIGHT_OPTIONS = [
   { value: "studio", label: "Studio Spotlight" },
 ];
 
-export default function UserDirectoryTable({ users }: Props) {
+export default function UserDirectoryTable({ users, isSuperAdmin = false, currentUserId }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "performer" | "studio" | "host" | "admin">("all");
@@ -39,6 +41,7 @@ export default function UserDirectoryTable({ users }: Props) {
   const [error, setError] = useState("");
   const [updatingSpotlight, setUpdatingSpotlight] = useState<string | null>(null);
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
+  const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -87,6 +90,23 @@ export default function UserDirectoryTable({ users }: Props) {
       console.error("Toggle host error:", err);
     } finally {
       setTogglingHost(null);
+    }
+  };
+
+  const handleToggleAdmin = async (user: Profile) => {
+    setTogglingAdmin(user.id);
+    try {
+      const makeAdmin = user.role !== "admin";
+      const result = await toggleAdminRole(user.id, makeAdmin);
+      if (!result.success) {
+        console.error("Toggle admin error:", result.error);
+        alert(result.error);
+      }
+      router.refresh();
+    } catch (err) {
+      console.error("Toggle admin error:", err);
+    } finally {
+      setTogglingAdmin(null);
     }
   };
 
@@ -250,16 +270,41 @@ export default function UserDirectoryTable({ users }: Props) {
                       : "-"}
                   </td>
                   <td className="py-2 px-3">
-                    {u.role === "admin" ? (
-                      <span className="text-[var(--color-text-secondary)] text-xs">Protected</span>
-                    ) : (
-                      <button
-                        onClick={() => setDeleteModal({ open: true, user: u })}
-                        className="text-red-600 hover:text-red-500 text-xs underline"
-                      >
-                        Delete
-                      </button>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {/* Admin toggle - only visible to super admin */}
+                      {isSuperAdmin && u.id !== currentUserId && (
+                        <button
+                          onClick={() => handleToggleAdmin(u)}
+                          disabled={togglingAdmin === u.id}
+                          className={`text-xs underline ${
+                            u.role === "admin"
+                              ? "text-orange-600 hover:text-orange-500"
+                              : "text-emerald-600 hover:text-emerald-500"
+                          }`}
+                        >
+                          {togglingAdmin === u.id
+                            ? "..."
+                            : u.role === "admin"
+                            ? "Remove Admin"
+                            : "Make Admin"}
+                        </button>
+                      )}
+                      {/* Delete button - not for admins */}
+                      {u.role === "admin" ? (
+                        u.id === currentUserId ? (
+                          <span className="text-[var(--color-text-secondary)] text-xs">You</span>
+                        ) : (
+                          <span className="text-[var(--color-text-secondary)] text-xs">Admin</span>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => setDeleteModal({ open: true, user: u })}
+                          className="text-red-600 hover:text-red-500 text-xs underline"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

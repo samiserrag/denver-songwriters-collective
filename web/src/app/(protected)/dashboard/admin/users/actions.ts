@@ -2,6 +2,58 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { isSuperAdmin } from "@/lib/auth/adminAuth";
+
+export async function toggleAdminRole(
+  userId: string,
+  makeAdmin: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createSupabaseServerClient();
+
+  // Verify the current user is authenticated and is the super admin
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  if (!isSuperAdmin(user.email)) {
+    return { success: false, error: "Only the super admin can promote/demote admins" };
+  }
+
+  // Prevent demoting yourself
+  if (userId === user.id && !makeAdmin) {
+    return { success: false, error: "Cannot demote yourself" };
+  }
+
+  // Get target user info
+  const { data: targetProfile } = await supabase
+    .from("profiles")
+    .select("full_name, role")
+    .eq("id", userId)
+    .single();
+
+  if (!targetProfile) {
+    return { success: false, error: "User not found" };
+  }
+
+  // Update the role
+  const newRole = makeAdmin ? "admin" : "performer";
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role: newRole })
+    .eq("id", userId);
+
+  if (error) {
+    console.error("Toggle admin role error:", error);
+    return { success: false, error: `Failed to update role: ${error.message}` };
+  }
+
+  revalidatePath("/dashboard/admin/users");
+  return { success: true };
+}
 
 export async function deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createSupabaseServerClient();

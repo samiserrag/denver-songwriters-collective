@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UserDirectoryTable } from "@/components/admin";
 import type { Database } from "@/lib/supabase/database.types";
+import { isSuperAdmin } from "@/lib/auth/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ export default async function AdminUsersPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
+  const currentUserIsSuperAdmin = isSuperAdmin(user.email);
+
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
       <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-3">
@@ -42,7 +45,11 @@ export default async function AdminUsersPage() {
         Browse all users across roles. Use search and filters to find performers, studios, hosts, and admins.
       </p>
 
-      <UserDirectoryTable users={(users ?? []) as Profile[]} />
+      <UserDirectoryTable
+        users={(users ?? []) as Profile[]}
+        isSuperAdmin={currentUserIsSuperAdmin}
+        currentUserId={user.id}
+      />
     </div>
   );
 }

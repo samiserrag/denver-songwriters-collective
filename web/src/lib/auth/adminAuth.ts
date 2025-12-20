@@ -1,6 +1,23 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
+ * Super admin email - only this user can promote/demote other admins.
+ * This is hardcoded for security - cannot be changed via database.
+ */
+export const SUPER_ADMIN_EMAIL = "sami.serrag@gmail.com";
+
+/**
+ * Checks if a user is the super admin by email.
+ * Super admin can promote/demote other users to admin role.
+ *
+ * @param email - The user's email to check
+ * @returns true if user is super admin, false otherwise
+ */
+export function isSuperAdmin(email: string | null | undefined): boolean {
+  return email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+}
+
+/**
  * Checks if a user has admin role by querying the profiles table.
  * This is the authoritative check - always use database, not JWT metadata.
  *
