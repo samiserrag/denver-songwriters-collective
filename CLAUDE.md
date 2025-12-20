@@ -19,28 +19,13 @@ Comprehensive documentation is available in the `docs/` folder:
 | [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
 | [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
 | [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
+| [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
 
 ## Project Structure
 
-This project uses **git worktrees** for development:
-
-- **Main repo (production):** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective`
-  - Branch: `main`
-  - Vercel auto-deploys from main
-
-- **Worktree (development):** Check current worktree branch with `git branch`
-  - Development branches are named after Docker-style names (e.g., `relaxed-meninsky`, `optimistic-jennings`)
-
-### Deployment Workflow
-
-1. Make changes in the worktree
-2. Commit and push to the worktree branch
-3. Merge to `main`:
-   ```bash
-   cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective
-   git pull && git merge origin/<worktree-branch> --no-edit && git push
-   ```
-4. Vercel auto-deploys from main
+- **Repository:** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective`
+- **Branch:** `main`
+- **Deployment:** Vercel auto-deploys from main
 
 ## Tech Stack
 
@@ -60,7 +45,7 @@ This project uses **git worktrees** for development:
 
 | Table | Purpose |
 |-------|---------|
-| `profiles` | User profiles with roles (performer, host, studio, fan, admin) |
+| `profiles` | User profiles with identity flags (`is_songwriter`, `is_studio`, `is_host`, `is_fan`) and role (`member`, `admin`) |
 | `events` | All events including open mics, showcases, workshops |
 | `venues` | Venue information with addresses and contact details |
 | `blog_posts` | User-submitted blog posts (requires admin approval) |
@@ -80,13 +65,20 @@ This project uses **git worktrees** for development:
 | `favorites` | User favorites (events, profiles) |
 | `open_mic_comments` | Comments on open mic events |
 
-## User Roles
+## User Roles & Identity
 
-- **fan** - Basic user, can favorite events/profiles, RSVP to events
-- **performer** - Can create profile with instruments, genres, collaboration preferences
-- **host** - Can create and manage events (requires admin approval)
-- **studio** - Can list studio services and accept bookings
+### Role Field (Authorization)
+- **member** - Default role for all users
 - **admin** - Full access to admin dashboard, can approve content
+
+### Identity Flags (Self-Identification)
+Users can select multiple identity flags during onboarding:
+- **is_songwriter** - Musicians, singers, songwriters (formerly "performer")
+- **is_studio** - Recording studios offering services
+- **is_host** - Open mic hosts (requires admin approval to create events)
+- **is_fan** - Music supporters and community members
+
+> **Note:** The legacy `role` enum (`performer`, `host`, `studio`, `fan`) is being deprecated. New code should use the boolean identity flags instead.
 
 ## Features
 
@@ -236,6 +228,84 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Image System Standardization (December 2025)
+- **Standardized 4:3 aspect ratio** across all image uploads and card displays
+- **Removed visual effects** - no more gradient overlays or hover scale effects on cards
+- **Upload forms updated** - ImageUpload default changed from 1:1 to 4:3
+- **Card components updated** - EventCard, MemberCard, SongwriterCard, PerformerCard, HostCard, StudioCard all use 4:3
+- **Detail pages updated** - Event and blog detail pages use aspect-[4/3] instead of fixed heights
+- **Gallery preserves original ratios** - GalleryGrid and GalleryAdminTabs no longer force aspect ratios
+- **Profile avatars unchanged** - Still use 1:1 circular styling
+- Key files modified:
+  - `web/src/components/ui/ImageUpload.tsx` - Default aspectRatio now 4/3
+  - `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - aspectRatio={4/3}
+  - `web/src/app/(protected)/dashboard/admin/blog/BlogPostForm.tsx` - aspectRatio={4/3}
+  - `web/src/components/events/EventCard.tsx` - aspect-[4/3], no gradient/hover
+  - `web/src/components/members/MemberCard.tsx` - No gradient/hover
+  - `web/src/components/songwriters/SongwriterCard.tsx` - No gradient/hover
+  - `web/src/components/performers/PerformerCard.tsx` - No gradient/hover
+  - `web/src/components/hosts/HostCard.tsx` - No gradient/hover
+  - `web/src/components/studios/StudioCard.tsx` - No gradient/hover
+  - `web/src/app/events/[id]/page.tsx` - aspect-[4/3] for hero image
+  - `web/src/app/blog/[slug]/page.tsx` - aspect-[4/3], no gradient
+  - `web/src/components/gallery/GalleryGrid.tsx` - Preserves original ratios
+  - `web/src/app/gallery/page.tsx` - Album covers use 4:3
+  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Preserves original ratios
+- **Note:** Existing images uploaded at 1:1 or 16:9 will display in 4:3 containers with object-cover cropping
+
+### Unified Onboarding Page (December 2025)
+- **Single-page onboarding:** Replaced multi-step flow with one welcoming page
+- **Collapsible sections:** Identity, bio, social links, tipping, collaboration preferences
+- **Privacy-first messaging:** Clear language about email privacy and data control
+- **Skip anytime:** Users can skip directly to dashboard, onboarding marked complete
+- **Auth callback updated:** Now redirects to `/onboarding/profile` instead of `/onboarding/role`
+- **Proxy simplified:** Only checks `onboarding_complete` flag, no role dependency
+- Key files:
+  - `web/src/app/onboarding/profile/page.tsx` - New unified onboarding page
+  - `web/src/app/onboarding/role/page.tsx` - Now redirects to profile
+  - `web/src/app/onboarding/complete/page.tsx` - Now redirects to dashboard
+  - `web/src/app/auth/callback/route.ts` - Updated redirect targets
+  - `web/src/proxy.ts` - Simplified onboarding check
+
+### Member Role Simplification (December 2025)
+- **New identity flags added to profiles table:** `is_songwriter`, `is_studio`, `is_fan` (boolean columns)
+- **Terminology update:** "Performer" → "Songwriter" throughout
+- Migration: `supabase/migrations/20251218000001_add_member_identity_flags.sql`
+- **Next steps:** Update pages that filter by `role` to use boolean flags instead
+
+### Theme System Overhaul (December 2025)
+- **New CSS tokens added:**
+  - `--color-text-on-accent` - Button text on accent backgrounds
+  - `--color-link` / `--color-link-hover` - Link colors
+  - `--color-bg-input` / `--color-border-input` / `--color-placeholder` - Form input styling
+- **New theme presets:** `sunset` (light), `night` (dark) in `presets.css`
+- **Normalized 130+ hardcoded Tailwind colors** to CSS custom properties
+- **Removed all non-functional `dark:` variants** (no `.dark` class applied to html)
+- **Replaced all `text-gradient-gold`** with `text-[var(--color-text-accent)]`
+- **Replaced all `--color-gold-*` references** with accent tokens
+- **Light theme accent text darkened** for WCAG contrast compliance
+- **Footer stays dark** across all themes via `bg-[var(--color-bg-footer)]`
+- **Deleted unused `web/src/lib/fonts.ts`** - fonts consolidated in layout.tsx
+- See [docs/theme-system.md](./docs/theme-system.md) for full style guide
+- Key files:
+  - `web/src/app/globals.css` - Base CSS variables
+  - `web/src/app/themes/presets.css` - Theme preset definitions
+
+### Guest Verification System (December 2025)
+- **Email templates added:** verificationCode, claimConfirmed, waitlistOffer
+- **Guest verification modules:** config, crypto, storage in `web/src/lib/guest-verification/`
+- **Feature flags system:** `web/src/lib/featureFlags.ts`
+- **jose dependency added** for JWT handling
+- Key files:
+  - `web/src/lib/email/` - Email module with templates
+  - `web/src/app/api/guest/` - Guest verification API routes
+
+### Middleware → Proxy Migration (December 2025)
+- **Migrated to Next.js 16 proxy convention** - renamed `middleware.ts` to `proxy.ts`
+- **Function renamed** - `middleware()` → `proxy()` as per Next.js 16 deprecation
+- **Fixed TypeScript errors** - removed invalid `templateName` property from `sendEmail()` calls
+- Key file: `web/src/proxy.ts` - Auth proxy for protected routes
+
 ### Timeslot Claiming UI (December 2025)
 - **TimeslotSection component** - Public event detail page shows claimable performance slots
 - **Conditional UI** - Events with `has_timeslots=true` show slot grid; others show RSVP button
@@ -363,6 +433,7 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `ARCHITECTURE_PLAN.md` | White-label platform roadmap |
 | `web/src/app/themes/presets.css` | Theme preset CSS variables |
 | `web/src/app/globals.css` | Base CSS variables and global styles |
+| `web/src/proxy.ts` | Auth proxy for protected routes (Next.js 16) |
 
 ---
 
@@ -372,8 +443,8 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 # Development
 cd web && npm run dev
 
-# Build (from worktree web directory)
-cd web && npx next build
+# Build
+cd web && npm run build
 
 # Type check
 cd web && npm run lint
@@ -384,10 +455,8 @@ cd web && npm run lint && npm run test -- --run && npm run build
 # Generate Supabase types (after schema changes)
 npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/lib/supabase/database.types.ts
 
-# Deploy from worktree to production
-git push origin <worktree-branch>
-cd /Users/samiserrag/Documents/GitHub/denver-songwriters-collective
-git pull && git merge origin/<worktree-branch> --no-edit && git push
+# Deploy to production
+git add . && git commit -m "your message" && git push
 ```
 
 ---
