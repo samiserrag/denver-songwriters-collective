@@ -5,7 +5,6 @@ import type { Database } from "@/lib/supabase/database.types";
 
 export const dynamic = "force-dynamic";
 
-type DBAppt = Database["public"]["Tables"]["studio_appointments"]["Row"];
 type DBService = Database["public"]["Tables"]["studio_services"]["Row"];
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 

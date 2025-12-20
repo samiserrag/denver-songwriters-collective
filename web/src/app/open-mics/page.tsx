@@ -3,14 +3,11 @@ import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
 import type { Event as EventType } from "@/types";
-import type { EventWithVenue } from "@/types/db";
 import EventCard from "@/components/EventCard";
 import OpenMicFilters from "@/components/OpenMicFilters";
 import MapViewButton from "@/components/MapViewButton";
-import CompactListItem from "@/components/CompactListItem";
 import AccordionList from "@/components/AccordionList";
 import DayJumpBar from "@/components/DayJumpBar";
-import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import WorkInProgressBanner from "@/components/WorkInProgressBanner";
 
 export const metadata: Metadata = {
@@ -68,42 +65,6 @@ function getMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, venue
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
   }
   return undefined;
-}
-
-function formatTime(dbEvent: DBEvent) {
-  if (dbEvent.recurrence_rule) {
-    const rule = dbEvent.recurrence_rule;
-    try {
-      const bydayMatch = rule.match(/BYDAY=([^;\\n]+)/);
-      const freqMatch = rule.match(/FREQ=([^;\\n]+)/);
-      if (bydayMatch) {
-        return `Weekly • ${bydayMatch[1].replace(/,/g, ", ")}`;
-      }
-      if (freqMatch) {
-        return freqMatch[1].toLowerCase();
-      }
-    } catch {
-      /* ignore */
-    }
-    return rule;
-  }
-
-  if (dbEvent.start_time) {
-    try {
-      const t = dbEvent.start_time;
-      const timeOnly = t.includes("T") ? t.split("T")[1] : t;
-      const [hh, mm] = timeOnly.split(":");
-      const hour = parseInt(hh, 10);
-      const minutes = mm ?? "00";
-      const ampm = hour >= 12 ? "PM" : "AM";
-      const hour12 = ((hour + 11) % 12) + 1;
-      return `${hour12}:${minutes} ${ampm}`;
-    } catch {
-      return dbEvent.start_time;
-    }
-  }
-
-  return "Time TBD";
 }
 
 function mapDBEventToEvent(e: DBEvent): EventType {

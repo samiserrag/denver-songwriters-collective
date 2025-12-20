@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -60,7 +60,6 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
 
 export default function LineupControlPage() {
   const params = useParams();
-  const router = useRouter();
   const eventId = params.id as string;
   const { user, loading: authLoading } = useAuth();
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);

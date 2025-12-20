@@ -213,11 +213,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
       <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
         {event.cover_image_url && (
-          <div className="aspect-[4/3] max-h-64 w-full relative overflow-hidden">
+          <div className="aspect-[4/3] w-full max-w-md mx-auto relative">
             <img
               src={event.cover_image_url}
               alt={event.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-t-2xl"
             />
             <div className="absolute top-4 left-4 flex items-center gap-2">
               <span className="px-3 py-1 bg-black/70 backdrop-blur rounded-lg text-[var(--color-text-primary)] font-medium text-sm">

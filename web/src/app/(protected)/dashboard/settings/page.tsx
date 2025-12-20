@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 export default function SettingsPage() {
-  const router = useRouter();
   const supabase = createClient();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

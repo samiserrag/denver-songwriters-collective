@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 
 export const metadata: Metadata = {
   title: "Blog | Denver Songwriters Collective",
@@ -121,14 +121,6 @@ function BlogCard({ post }: { post: BlogPost }) {
   // Handle array response from Supabase join
   const authorData = post.author;
   const author = Array.isArray(authorData) ? authorData[0] : authorData;
-
-  const formattedDate = post.published_at
-    ? new Date(post.published_at).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
 
   return (
     <Link

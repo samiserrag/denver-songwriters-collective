@@ -7,7 +7,6 @@ import {
   promoteNextWaitlistPerson,
   sendOfferNotifications,
   confirmOffer,
-  calculateOfferExpiry,
   isOfferExpired,
 } from "@/lib/waitlistOffer";
 

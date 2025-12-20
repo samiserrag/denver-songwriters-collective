@@ -12,7 +12,6 @@ import SlotConfigSection, {
 import {
   EVENT_TYPE_CONFIG,
   DAYS_OF_WEEK,
-  FREQUENCIES,
   type EventType
 } from "@/types/events";
 

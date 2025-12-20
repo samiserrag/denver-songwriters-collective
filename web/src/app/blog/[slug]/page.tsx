@@ -229,14 +229,16 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <article className="min-h-screen">
-      {/* Hero with cover image */}
+      {/* Hero with cover image - constrained width for smaller display */}
       {post.cover_image_url && (
-        <div className="relative aspect-[4/3] w-full">
-          <img
-            src={post.cover_image_url}
-            alt={post.title}
-            className="w-full h-full object-cover"
-          />
+        <div className="max-w-2xl mx-auto px-4 pt-8">
+          <div className="relative aspect-[4/3] w-full">
+            <img
+              src={post.cover_image_url}
+              alt={post.title}
+              className="w-full h-full object-cover rounded-2xl"
+            />
+          </div>
         </div>
       )}
 

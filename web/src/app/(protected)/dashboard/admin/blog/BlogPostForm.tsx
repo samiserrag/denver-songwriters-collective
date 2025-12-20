@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
-import { X, Plus, GripVertical } from "lucide-react";
+import { X } from "lucide-react";
 import { escapeHtml } from "@/lib/highlight";
 
 interface GalleryImage {
@@ -52,8 +52,6 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   // Auto-generate slug from title
   const generateSlug = (title: string) => {
@@ -114,7 +112,6 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
   // Cover image upload handler
   const handleCoverUpload = useCallback(async (file: File): Promise<string | null> => {
-    setUploadingCover(true);
     const supabase = createClient();
 
     try {
@@ -143,8 +140,6 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       console.error('Upload error:', err);
       toast.error('Failed to upload cover image');
       return null;
-    } finally {
-      setUploadingCover(false);
     }
   }, [authorId]);
 
@@ -155,7 +150,6 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
   // Gallery image upload handler
   const handleGalleryUpload = useCallback(async (file: File): Promise<string | null> => {
-    setUploadingGallery(true);
     const supabase = createClient();
 
     try {
@@ -194,8 +188,6 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       console.error('Upload error:', err);
       toast.error('Failed to upload gallery image');
       return null;
-    } finally {
-      setUploadingGallery(false);
     }
   }, [authorId]);
 

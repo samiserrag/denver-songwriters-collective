@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Header } from "@/components/navigation";
 
 interface ProtectedLayoutProps {
   children: ReactNode;
