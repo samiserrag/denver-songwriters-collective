@@ -324,6 +324,21 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Timeslot Performer Name & Profile Page Fixes (December 2025)
+- **Performer name now prominent** - Changed from `text-xs` to `text-sm font-medium` with accent color
+- **Profile link always visible** - Name displays in accent color so it's obviously clickable
+- **Profile page query updated** - Now shows profiles with `is_songwriter=true` or `is_host=true`, not just legacy role field
+- **Fixed 404 for admin profiles** - Users with `role='admin'` but `is_songwriter=true` now display correctly on `/songwriters/[id]`
+- Key files:
+  - `web/src/components/events/TimeslotSection.tsx` - Lines 318-333: Larger, more prominent performer name display
+  - `web/src/app/songwriters/[id]/page.tsx` - Lines 79-86: Updated query with identity flag support
+
+### Admin Suggestions Name Lookup (December 2025)
+- **Profile names for known users** - Suggestions table now looks up submitter names from profiles by email
+- **No more "Anonymous" for registered users** - Email-based profile lookup enriches suggestion data
+- Key file:
+  - `web/src/app/(protected)/dashboard/admin/event-update-suggestions/page.tsx` - Lines 39-60: Email → name lookup
+
 ### Email Confirmation & Newsletter Improvements (December 2025)
 - **Junk mail warning on signup confirmation** - Prominent amber box warning users to check spam folder
 - **Mark as trusted sender reminder** - Encourages users to whitelist DSC for future notifications
