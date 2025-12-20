@@ -322,6 +322,37 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Login Form Theme-Aware Colors (December 2025)
+- **Fixed gray inputs on white background** - Login form inputs now use proper CSS variables
+- **Replaced hardcoded colors** - Changed `bg-black/40 border-white/10` to `bg-[var(--color-bg-input)] border-[var(--color-border-input)]`
+- **Magic link page restyled** - Now matches other auth pages with `card-base` container and `Button` component
+- **Link colors updated** - "Forgot password" and "Magic link" links now use `--color-link` variables
+- Key files:
+  - `web/src/app/login/page.tsx` - Updated email/password input styling
+  - `web/src/app/login/magic/page.tsx` - Complete restyle with PageContainer, Button, and theme variables
+
+### Super Admin System (December 2025)
+- **Added super admin role** - Only `sami.serrag@gmail.com` can promote/demote admins
+- **Admin toggle UI** in User Directory (`/dashboard/admin/users`)
+- **"Make Admin" button** - Promotes user to admin role (emerald link)
+- **"Remove Admin" button** - Demotes admin to performer role (orange link)
+- **Security:** Super admin email is hardcoded in `adminAuth.ts`, not configurable via database
+- **Self-demotion prevented** - Super admin cannot remove their own admin role
+- Key files:
+  - `web/src/lib/auth/adminAuth.ts` - `isSuperAdmin()` function, `SUPER_ADMIN_EMAIL` constant
+  - `web/src/app/(protected)/dashboard/admin/users/actions.ts` - `toggleAdminRole()` server action
+  - `web/src/components/admin/UserDirectoryTable.tsx` - Admin toggle UI with `isSuperAdmin` and `currentUserId` props
+
+### Members Page Visibility Fix (December 2025)
+- **Root cause:** New Google OAuth users had `role = NULL`, blocked by RLS policy
+- **Fix 1:** Updated `role = 'performer'` for existing users with `is_songwriter = true`
+- **Fix 2:** Updated RLS policy to also check identity flags (`is_songwriter`, `is_studio`, `is_fan`, `is_host`)
+- **Database access configured:** `DATABASE_URL` added to `.env.local` for direct psql access
+- **Claude can now run all SQL directly** - CRUD via Supabase JS client, DDL via psql
+- Key files:
+  - `supabase/migrations/20251220014630_update_profiles_rls_for_identity_flags.sql` - Migration file (applied manually)
+  - `web/.env.local` - Added DATABASE_URL for psql access
+
 ### Image System Standardization (December 2025)
 - **Standardized 4:3 aspect ratio** across all image uploads and card displays
 - **Removed visual effects** - no more gradient overlays or hover scale effects on cards
@@ -494,27 +525,6 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 - **Footer adapts to all theme presets** with inverse text colors
 - **CLS: 0.639 → 0.000** - eliminated all layout shifts
 - **Performer → Songwriter rename** throughout the webapp
-
-### Members Page Visibility Fix (December 2025)
-- **Root cause:** New Google OAuth users had `role = NULL`, blocked by RLS policy
-- **Fix 1:** Updated `role = 'performer'` for existing users with `is_songwriter = true`
-- **Fix 2:** Updated RLS policy to also check identity flags (`is_songwriter`, `is_studio`, `is_fan`, `is_host`)
-- **Database access configured:** `DATABASE_URL` added to `.env.local` for direct psql access
-- **Claude can now run all SQL directly** - CRUD via Supabase JS client, DDL via psql
-- Key files:
-  - `supabase/migrations/20251220014630_update_profiles_rls_for_identity_flags.sql` - Migration file (applied manually)
-  - `web/.env.local` - Added DATABASE_URL for psql access
-
-### Super Admin System (December 2025)
-- **Added super admin role** - Only `sami.serrag@gmail.com` can promote/demote admins
-- **Admin toggle UI** in User Directory (`/dashboard/admin/users`)
-- **"Make Admin" button** - Promotes user to admin role (green link)
-- **"Remove Admin" button** - Demotes admin to performer role (orange link)
-- **Security:** Super admin email is hardcoded, not configurable via database
-- Key files:
-  - `web/src/lib/auth/adminAuth.ts` - `isSuperAdmin()`, `SUPER_ADMIN_EMAIL`
-  - `web/src/app/(protected)/dashboard/admin/users/actions.ts` - `toggleAdminRole()` server action
-  - `web/src/components/admin/UserDirectoryTable.tsx` - Admin toggle buttons
 
 ---
 
