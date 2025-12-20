@@ -213,6 +213,8 @@ Users can select multiple identity flags during onboarding:
 - `/dashboard/admin/host-requests` - Approve host applications
 - `/dashboard/admin/verifications` - Review community change reports
 - `/dashboard/admin/event-update-suggestions` - Review community corrections
+- `/dashboard/admin/newsletter` - View newsletter subscribers and export emails
+- `/dashboard/admin/logs` - Application error logs and debugging
 
 ---
 
@@ -321,6 +323,39 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 ---
 
 ## Recent Changes (December 2025)
+
+### Email Confirmation & Newsletter Improvements (December 2025)
+- **Junk mail warning on signup confirmation** - Prominent amber box warning users to check spam folder
+- **Mark as trusted sender reminder** - Encourages users to whitelist DSC for future notifications
+- **Newsletter signup on homepage** - Humorous copy: "open mics, gatherings, and the occasional terrible pun"
+- **Newsletter signup on about page** - Same component with source tracking
+- **Source tracking for analytics** - Newsletter signups track where they came from (homepage, about, footer)
+- **Admin newsletter page** - View all subscribers, stats by source, export emails for bulk sending
+- Key files:
+  - `web/src/app/auth/confirm-sent/page.tsx` - Added junk mail warning
+  - `web/src/components/navigation/NewsletterSection.tsx` - New component with humorous copy
+  - `web/src/app/page.tsx` - Added NewsletterSection
+  - `web/src/app/about/page.tsx` - Added NewsletterSection with source="about"
+  - `web/src/app/api/newsletter/route.ts` - Accepts source parameter
+  - `web/src/app/(protected)/dashboard/admin/newsletter/page.tsx` - Admin subscriber list
+
+### Application Logging System (December 2025)
+- **app_logs table** - Database table for error/debug logging with RLS (admins read, anyone insert)
+- **appLogger utility** - Client/server logging: `appLogger.error()`, `appLogger.info()`, `appLogger.logError()`
+- **Admin logs page** - View application logs with level/source filtering, search, expandable details
+- **Auto-cleanup function** - `cleanup_old_logs()` removes logs older than 30 days
+- Key files:
+  - `supabase/migrations/20251220050000_create_app_logs_table.sql` - Table and RLS
+  - `web/src/lib/appLogger.ts` - Logging utility
+  - `web/src/app/(protected)/dashboard/admin/logs/page.tsx` - Admin logs viewer
+  - `web/src/app/(protected)/dashboard/admin/logs/_components/LogsTable.tsx` - Filterable log table
+
+### Email Column in Profiles (December 2025)
+- **Added email column** to profiles table for easier admin debugging
+- **Backfill migration** - Copied emails from auth.users to profiles
+- **Trigger updated** - `handle_new_user()` now copies email on user creation
+- Key file:
+  - `supabase/migrations/20251220040000_add_email_to_profiles.sql`
 
 ### Login Form Theme-Aware Colors (December 2025)
 - **Fixed gray inputs on white background** - Login form inputs now use proper CSS variables
