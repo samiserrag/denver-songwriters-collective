@@ -201,6 +201,39 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             {event.title}
           </h1>
 
+          {/* Prominent Date Display */}
+          {event.event_date && (
+            <div className="mb-6 p-5 rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)]/20 to-transparent border border-[var(--color-accent-primary)]/30">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-[var(--color-accent-primary)] rounded-lg flex flex-col items-center justify-center text-black">
+                  <span className="text-xs md:text-sm font-semibold uppercase">
+                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+                  </span>
+                  <span className="text-2xl md:text-3xl font-bold leading-none">
+                    {new Date(event.event_date + "T00:00:00").getDate()}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xl md:text-2xl font-semibold text-[var(--color-text-primary)]">
+                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })}
+                  </p>
+                  <p className="text-[var(--color-text-secondary)]">
+                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric"
+                    })}
+                    {event.start_time && (
+                      <span className="ml-2 text-[var(--color-text-accent)]">
+                        at {formatTime(event.start_time)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
               <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">

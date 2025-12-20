@@ -32,6 +32,7 @@ interface EventInfo {
   title: string;
   venue_name: string | null;
   start_time: string | null;
+  event_date: string | null;
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
@@ -77,7 +78,7 @@ export default function EventDisplayPage() {
     // Fetch event info
     const { data: eventData } = await supabase
       .from("events")
-      .select("title, venue_name, start_time")
+      .select("title, venue_name, start_time, event_date")
       .eq("id", eventId)
       .single();
 
@@ -190,13 +191,39 @@ export default function EventDisplayPage() {
     <div className="min-h-screen bg-black text-white p-8 overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
-        <div>
-          <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">
-            {event?.title || "Event"}
-          </h1>
-          {event?.venue_name && (
-            <p className="text-xl text-gray-400 mt-1">{event.venue_name}</p>
+        <div className="flex items-center gap-6">
+          {/* Date Box */}
+          {event?.event_date && (
+            <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black">
+              <span className="text-sm font-semibold uppercase tracking-wide">
+                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+              </span>
+              <span className="text-4xl font-bold leading-none">
+                {new Date(event.event_date + "T00:00:00").getDate()}
+              </span>
+              <span className="text-xs font-medium uppercase">
+                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" })}
+              </span>
+            </div>
           )}
+          <div>
+            <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">
+              {event?.title || "Event"}
+            </h1>
+            {event?.venue_name && (
+              <p className="text-xl text-gray-400 mt-1">{event.venue_name}</p>
+            )}
+            {event?.event_date && (
+              <p className="text-sm text-gray-500 mt-1">
+                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric"
+                })}
+              </p>
+            )}
+          </div>
         </div>
         <div className="text-right">
           <p className="text-5xl font-mono text-white">

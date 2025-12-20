@@ -9,6 +9,7 @@ import type { Database } from "@/lib/supabase/database.types";
 type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
   venues?: { id: string; name: string } | null;
   is_published?: boolean | null;
+  has_timeslots?: boolean | null;
 };
 
  interface Props {
@@ -91,6 +92,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
             <th className="py-2 px-3">Status</th>
             <th className="py-2 px-3">Date</th>
             <th className="py-2 px-3">Venue</th>
+            <th className="py-2 px-3">Type</th>
             <th className="py-2 px-3">Spotlight</th>
             <th className="py-2 px-3">Actions</th>
           </tr>
@@ -122,6 +124,18 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
               <td className="py-2 px-3">{ev.venues?.name ?? ev.venue_name ?? "—"}</td>
 
               <td className="py-2 px-3">
+                {ev.has_timeslots ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
+                    Timeslots
+                  </span>
+                ) : (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)]">
+                    RSVP
+                  </span>
+                )}
+              </td>
+
+              <td className="py-2 px-3">
                 <input
                   type="checkbox"
                   checked={ev.is_spotlight ?? false}
@@ -136,13 +150,32 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                 {loadingId === ev.id ? (
                   <span className="text-gold-400">Saving…</span>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Link
                       href={`/dashboard/admin/events/${ev.id}/edit`}
                       className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-[var(--color-text-primary)] text-xs"
                     >
                       Edit
                     </Link>
+                    {ev.has_timeslots && (
+                      <>
+                        <Link
+                          href={`/events/${ev.id}/display`}
+                          target="_blank"
+                          className="px-2 py-1 bg-purple-600 hover:bg-purple-500 rounded text-[var(--color-text-primary)] text-xs"
+                          title="TV Display for venue screens"
+                        >
+                          📺 TV
+                        </Link>
+                        <Link
+                          href={`/events/${ev.id}/lineup`}
+                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-[var(--color-text-primary)] text-xs"
+                          title="Control lineup during event"
+                        >
+                          🎤 Control
+                        </Link>
+                      </>
+                    )}
                     <button
                       onClick={() => setDeleteModal({ id: ev.id, title: ev.title })}
                       className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[var(--color-text-primary)] text-xs"
