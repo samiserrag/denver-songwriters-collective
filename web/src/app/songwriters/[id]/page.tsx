@@ -76,11 +76,13 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
+  // First try to find a profile with is_songwriter or legacy performer/host role
+  // This accommodates both the new identity flags and old role system
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", id)
-    .in("role", ["performer", "host"])
+    .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
     .single();
 
   if (error || !profile) {

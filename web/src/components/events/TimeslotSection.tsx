@@ -316,13 +316,13 @@ export function TimeslotSection({
                 </p>
 
                 {isClaimed && slot.claim?.member?.full_name && (
-                  <p className="text-xs text-[var(--color-text-secondary)]">
+                  <p className="text-sm text-[var(--color-text-primary)] font-medium mt-1">
                     {isMine ? (
                       "You"
                     ) : slot.claim.member.id ? (
                       <Link
                         href={`/songwriters/${slot.claim.member.id}`}
-                        className="hover:text-[var(--color-text-accent)] hover:underline transition-colors"
+                        className="text-[var(--color-text-accent)] hover:underline transition-colors"
                       >
                         {slot.claim.member.full_name}
                       </Link>
