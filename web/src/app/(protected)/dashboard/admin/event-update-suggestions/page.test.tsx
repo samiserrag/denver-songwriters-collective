@@ -19,7 +19,7 @@ const mockSuggestion = {
   submitter_name: "Test User",
 };
 
-// Updated Supabase mock to match the page query pattern (auth.getUser + from().select().eq().single() + from().select().order())
+// Updated Supabase mock to match the page query pattern
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(() => ({
     auth: {
@@ -36,6 +36,8 @@ vi.mock("@/lib/supabase/server", () => ({
         eq: vi.fn(() => ({
           single: vi.fn(() => ({ data: { role: "admin" }, error: null })),
         })),
+        // Support profiles lookup: .in()
+        in: vi.fn(() => ({ data: [], error: null })),
         // Support listing suggestions: .order()
         order: vi.fn(() => ({ data: [mockSuggestion], error: null })),
       })),
