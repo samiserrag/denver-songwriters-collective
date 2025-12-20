@@ -6,20 +6,23 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 **Live Site:** https://denver-songwriters-collective.vercel.app
 
-> **Architecture Evolution (December 2025):** This project is being transformed into a **white-label community platform template**. See [ARCHITECTURE_PLAN.md](./ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
+> **Architecture Evolution (December 2025):** This project is being transformed into a **white-label community platform template**. See [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
 
 ## Documentation
 
-Comprehensive documentation is available in the `docs/` folder:
+The `docs/` folder contains reference documentation for implemented features:
 
 | Document | Purpose |
 |----------|---------|
-| [docs/releases/v0.3.0.md](./docs/releases/v0.3.0.md) | v0.3.0 release notes (Verification System) |
-| [docs/streams/stream-3-rsvp-flow.md](./docs/streams/stream-3-rsvp-flow.md) | Stream 3: RSVP & Booking System documentation |
+| [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) | White-label platform roadmap (future work) |
 | [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
+| [docs/stream-3-rsvp-flow.md](./docs/stream-3-rsvp-flow.md) | RSVP & Waitlist System documentation |
+| [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
 | [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
 | [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
-| [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
+| [docs/v0.3.0.md](./docs/v0.3.0.md) | v0.3.0 release notes (Verification System) |
+
+**Archived specs** (unimplemented future plans) are in `docs/_archive/`.
 
 ## Project Structure
 
@@ -270,11 +273,19 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 ### High Priority
 - [ ] Email notifications not implemented (RSVP confirmations, host approvals)
 - [ ] Image optimization/CDN for gallery (currently direct Supabase storage)
+- [ ] Progressive Identity System (guest email verification for slot claims without account)
+  - Guest claim flow: name + email → 6-digit code → verified claim
+  - Magic links for offer confirmation / cancellation
+  - See [archived spec](./docs/_archive/progressive-identity.md) for full details
 
 ### Medium Priority
 - [ ] Search functionality across events/profiles
 - [ ] Event recurrence handling (RRULE parsing for recurring events)
-- [ ] Mobile app (React Native/Expo) - see ARCHITECTURE_PLAN.md
+- [ ] Mobile app (React Native/Expo) - see docs/ARCHITECTURE_PLAN.md
+- [ ] White-Label MVP ("Open Mic Manager" product) - host-focused lineup tool
+  - Extract shared core from DSC (timeslots, claims, display)
+  - Minimal UI, no profiles/blog/gallery
+  - See docs/ARCHITECTURE_PLAN.md for full roadmap
 
 ### Pre-Launch Optimization (Completed December 2025)
 - [x] Image optimization with `next/image` component on homepage (highlights, blog images, author avatars)
@@ -305,7 +316,7 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 3. Extended without forking
 
 **Key Documents:**
-- `ARCHITECTURE_PLAN.md` - Full technical roadmap (ready for review)
+- `docs/ARCHITECTURE_PLAN.md` - Full technical roadmap (ready for review)
 
 **Planned Phases:**
 1. **Theme System Foundation** - Centralize all colors, fonts, shadows into CSS variables
