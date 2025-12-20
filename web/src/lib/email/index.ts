@@ -102,3 +102,10 @@ export {
   getEventCancelledEmail,
   type EventCancelledEmailParams,
 } from "./templates/eventCancelled";
+
+// Suggestion response template
+export {
+  getSuggestionResponseEmail,
+  type SuggestionResponseEmailParams,
+  type SuggestionStatus,
+} from "./templates/suggestionResponse";
