@@ -20,8 +20,11 @@ The `docs/` folder contains reference documentation:
 | [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
 | [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
 | [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
+| [docs/emails/EMAIL_INVENTORY.md](./docs/emails/EMAIL_INVENTORY.md) | Email template inventory and status |
+| [docs/emails/EMAIL_STYLE_GUIDE.md](./docs/emails/EMAIL_STYLE_GUIDE.md) | Email voice, tone, and formatting |
 
 **Subfolders:**
+- `docs/emails/` — Email system documentation (inventory, style guide)
 - `docs/future-specs/` — Unimplemented feature specs (Progressive Identity, White-Label MVP, etc.)
 - `docs/completed/` — Old release notes and completed planning docs
 
@@ -729,3 +732,22 @@ git add . && git commit -m "your message" && git push
 - Key files: `path/to/file.tsx`
 - New component: `ComponentName` - what it does
 ```
+
+### IMPORTANT: Keep Documentation Consolidated
+
+**When making changes that affect documented systems, you MUST:**
+
+1. **Update existing docs** - Don't create new docs if one already exists for that topic
+2. **Consolidate duplicates** - If you find duplicate docs, merge them into one canonical location
+3. **Remove outdated docs** - Delete docs that are superseded or no longer accurate
+4. **Use canonical locations:**
+   - `docs/emails/` — All email-related documentation
+   - `docs/future-specs/` — Specs for unimplemented features only
+   - `docs/completed/` — Old release notes and completed planning docs
+   - Root `docs/` — Active feature documentation
+
+**Key documentation to keep updated:**
+- `docs/emails/EMAIL_INVENTORY.md` — Update when adding/modifying email templates
+- `docs/emails/EMAIL_STYLE_GUIDE.md` — Update when changing email voice/tone/formatting
+- `docs/known-issues.md` — Update when discovering or fixing issues
+- `CLAUDE.md` — Update after every push (see above)
