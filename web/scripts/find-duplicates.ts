@@ -77,7 +77,7 @@ async function findDuplicates() {
     titleGroups[title].push(event as Event);
   }
 
-  const titleDuplicates = Object.entries(titleGroups).filter(([_, events]) => events.length > 1);
+  const titleDuplicates = Object.entries(titleGroups).filter(([, events]) => events.length > 1);
   if (titleDuplicates.length > 0) {
     console.log(`\n⚠️  Found ${titleDuplicates.length} groups with IDENTICAL TITLES:\n`);
     for (const [title, events] of titleDuplicates) {
@@ -90,7 +90,7 @@ async function findDuplicates() {
   }
 
   // Find groups with more than one event (potential duplicates)
-  const duplicateGroups = Object.entries(groups).filter(([_, events]) => events.length > 1);
+  const duplicateGroups = Object.entries(groups).filter(([, events]) => events.length > 1);
 
   if (duplicateGroups.length === 0) {
     console.log("No duplicate events found!");
@@ -158,7 +158,7 @@ async function findDuplicates() {
   console.log("\n\n📊 SUMMARY");
   console.log("-".repeat(40));
   console.log(`Total duplicate groups: ${duplicateGroups.length}`);
-  const totalDuplicateEvents = duplicateGroups.reduce((sum, [_, events]) => sum + events.length, 0);
+  const totalDuplicateEvents = duplicateGroups.reduce((sum, [, events]) => sum + events.length, 0);
   console.log(`Total events in duplicate groups: ${totalDuplicateEvents}`);
   console.log(`Events to potentially remove: ${totalDuplicateEvents - duplicateGroups.length}`);
 }

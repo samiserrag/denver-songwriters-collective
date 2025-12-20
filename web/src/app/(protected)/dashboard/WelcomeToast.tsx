@@ -17,7 +17,7 @@ export function WelcomeToast() {
     if (google === "1") {
       toast.success("Logged in with Google!");
     }
-  }, [welcome]);
+  }, [welcome, searchParams]);
 
   // Magic-link login success toast
   const magic = searchParams.get("magic");

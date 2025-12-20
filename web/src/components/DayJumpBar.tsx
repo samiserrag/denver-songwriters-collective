@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+// Link removed - using anchor tags for in-page navigation
 import React from "react";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];

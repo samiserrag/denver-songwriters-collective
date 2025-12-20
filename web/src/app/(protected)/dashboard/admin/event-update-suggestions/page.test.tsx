@@ -30,7 +30,7 @@ vi.mock("@/lib/supabase/server", () => ({
         })
       ),
     },
-    from: vi.fn((tableName?: string) => ({
+    from: vi.fn(() => ({
       select: vi.fn(() => ({
         // Support profile role check: .eq(...).single()
         eq: vi.fn(() => ({

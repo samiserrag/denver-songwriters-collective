@@ -23,10 +23,8 @@ const navLinks = [
   { href: "/tip-jar", label: "Tip Jar" },
 ];
 
-// Secondary links (shown in mobile menu and footer)
-const secondaryLinks = [
-  { href: "/privacy", label: "Privacy" },
-];
+// Secondary links removed - currently not used in header
+// const secondaryLinks = [{ href: "/privacy", label: "Privacy" }];
 
 interface HeaderProps {
   className?: string;

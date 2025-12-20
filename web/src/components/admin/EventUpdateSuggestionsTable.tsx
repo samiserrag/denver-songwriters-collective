@@ -56,7 +56,6 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
   } | null>(null);
   const [responseText, setResponseText] = useState("");
   const [sending, setSending] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!suggestions || suggestions.length === 0) {
     return <p className="text-[var(--color-text-tertiary)]">No suggestions to review.</p>;
@@ -100,7 +99,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
       } else {
         alert("Failed to update suggestion");
       }
-    } catch (err) {
+    } catch {
       alert("Error updating suggestion");
     } finally {
       setSending(false);

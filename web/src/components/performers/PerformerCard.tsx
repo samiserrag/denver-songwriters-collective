@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Performer } from "@/types";
-import { PerformerAvatar } from "./PerformerAvatar";
+// PerformerAvatar removed - using next/image directly
 import { PerformerTag } from "./PerformerTag";
 import { SpotlightBadge } from "@/components/special/spotlight-badge";
 import { SocialLinks } from "@/components/special/social-links";

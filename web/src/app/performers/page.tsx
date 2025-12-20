@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PerformerGrid } from "@/components/performers";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Performer } from "@/types";
 

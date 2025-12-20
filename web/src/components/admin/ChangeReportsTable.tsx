@@ -90,7 +90,7 @@ export default function ChangeReportsTable({ reports }: Props) {
       } else {
         alert("Failed to delete");
       }
-    } catch (err) {
+    } catch {
       alert("Error deleting report");
     } finally {
       setProcessingId(null);

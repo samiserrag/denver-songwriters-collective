@@ -35,7 +35,7 @@ export default function MagicLoginPage() {
             Magic Link
           </h1>
           <p className="text-center text-sm text-[var(--color-text-secondary)] mb-6">
-            Password-free login — we'll email you a one-click sign-in link.
+            Password-free login — we&apos;ll email you a one-click sign-in link.
           </p>
 
           <form onSubmit={submit} className="space-y-5">

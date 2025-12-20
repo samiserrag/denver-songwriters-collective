@@ -1,11 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { HeroSection, PageContainer } from "@/components/layout";
+import { HeroSection } from "@/components/layout";
 import { EventGrid } from "@/components/events";
 import { MemberCard } from "@/components/members/MemberCard";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
-import { Button } from "@/components/ui";
+// Button removed - not currently used on homepage
 import { LazyIframe, CLSLogger } from "@/components/home";
 import { NewsletterSection } from "@/components/navigation/NewsletterSection";
 import type { Database } from "@/lib/supabase/database.types";
@@ -59,8 +59,8 @@ export default async function HomePage() {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const user = session?.user ?? null;
-  const userName = user?.email ?? null;
+  // Session used only to check if user is logged in
+  const _user = session?.user ?? null;
 
   const [upcomingEventsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)

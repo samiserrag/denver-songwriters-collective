@@ -28,7 +28,7 @@ export default function OpenMicReportForm({ eventId }: { eventId?: string | null
         const json = await res.json();
         setStatus(json?.error ?? 'Submission failed');
       }
-    } catch (err) {
+    } catch {
       setStatus('Submission failed');
     } finally {
       setLoading(false);

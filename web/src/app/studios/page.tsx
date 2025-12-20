@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { StudioGrid } from "@/components/studios";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Studio } from "@/types";
 

@@ -77,7 +77,7 @@ vi.mock("@/lib/supabase/server", () => {
           let isDSCQuery = false;
 
           // Create a chain that tracks whether this is a DSC query
-          const chain: Record<string, unknown> = {
+          const _chain: Record<string, unknown> = {
             data: mockNonOpenEvents,
             error: null,
             count: 0,

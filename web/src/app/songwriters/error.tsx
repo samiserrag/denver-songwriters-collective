@@ -1,7 +1,6 @@
 "use client";
 
 export default function SongwritersError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };

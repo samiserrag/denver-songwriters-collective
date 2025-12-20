@@ -251,7 +251,7 @@ export default async function OpenMicsPage({
   }
 
 
-  const { data: dbEvents, error, count } = await query;
+  const { data: dbEvents } = await query;
 
   // If we have venue search matches, we need to include events at those venues too
   let allDbEvents = dbEvents ?? [];

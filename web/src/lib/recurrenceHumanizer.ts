@@ -197,7 +197,6 @@ export function getNextOccurrence(rrule: string | null, startDate: Date | string
 function getNthWeekdayOfMonth(year: number, month: number, dayOfWeek: number, n: number): Date | null {
   if (n > 0) {
     // Find nth occurrence from start of month
-    const firstDay = new Date(year, month, 1);
     let count = 0;
     for (let day = 1; day <= 31; day++) {
       const date = new Date(year, month, day);
@@ -357,10 +356,13 @@ function humanizeParsedRRule(parsed: ParsedRRule, fallbackDay: string | null): s
   }
 }
 
-export default {
+// Named export for module consumers
+export const recurrenceHumanizer = {
   humanizeRecurrence,
   formatTimeToAMPM,
   parseRRule,
   getNextOccurrence,
   dayOrder,
 };
+
+export default recurrenceHumanizer;

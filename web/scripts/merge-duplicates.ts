@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import * as path from "path";
-import * as readline from "readline";
+// import * as readline from "readline"; // Not used currently
 
 // Load .env.local
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });

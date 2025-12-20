@@ -94,6 +94,7 @@ export function ImageUpload({
       setShowCropper(true);
     };
     reader.readAsDataURL(file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxSizeMB]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {

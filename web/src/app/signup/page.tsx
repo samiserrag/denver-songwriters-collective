@@ -14,13 +14,13 @@ import { sendMagicLink } from "@/lib/auth/magic";
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const _redirectTo = searchParams.get("redirectTo") ?? "/"; // Reserved for future use
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [submitted, setSubmitted] = React.useState(false);
+  const [submitted] = React.useState(false); // Submit state (redirect handles success)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

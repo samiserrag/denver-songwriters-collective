@@ -16,7 +16,6 @@ import {
   getAllTemplateKeys,
   getTemplateMetadata,
   TEMPLATE_REGISTRY,
-  type EmailTemplateKey,
 } from "./registry";
 
 // Guest templates

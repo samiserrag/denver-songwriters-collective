@@ -26,6 +26,7 @@ export default function SlotConfigSection({
   disabled = false,
 }: SlotConfigSectionProps) {
   // Auto-enable timeslots for open_mic and showcase
+  // Note: We intentionally only depend on eventType to avoid loops when onChange updates config
   useEffect(() => {
     const shouldEnableTimeslots = TIMESLOT_EVENT_TYPES.includes(eventType);
     if (shouldEnableTimeslots && !config.has_timeslots) {
@@ -42,6 +43,7 @@ export default function SlotConfigSection({
         has_timeslots: false,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventType]);
 
   const handleToggle = () => {
