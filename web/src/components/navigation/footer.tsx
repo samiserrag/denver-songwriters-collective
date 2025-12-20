@@ -27,9 +27,6 @@ export function Footer({ className }: FooterProps) {
           {/* Brand */}
           <div className="md:col-span-1">
             <Logo variant="full" inverse />
-            <p className="text-[var(--color-text-on-inverse-secondary)] text-sm mt-4">
-              Find your people. Find your stage. Find your songs.
-            </p>
             {/* Social Links */}
             <div className="flex gap-4 mt-6">
               <a href="https://www.instagram.com/denver_songwriters_collective" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors" aria-label="Instagram">
@@ -70,7 +67,7 @@ export function Footer({ className }: FooterProps) {
           <div>
             <h4 className="text-[var(--color-text-on-inverse-primary)] font-semibold mb-4">Stay Connected</h4>
             <p className="text-[var(--color-text-on-inverse-secondary)] text-sm mb-4">
-              Get weekly updates on Denver&apos;s songwriter scene.
+              Occasional updates on Denver&apos;s songwriter scene.
             </p>
             <NewsletterSignup />
           </div>
