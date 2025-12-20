@@ -336,6 +336,34 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Celebratory Performer Display & Host Controls (December 2025)
+- **Performer names now CELEBRATORY** - 2xl serif italic font with accent color, gradient backgrounds
+- **Spotlight treatment for claimed slots** - Each performer gets a mini-spotlight card with decorative music note
+- **"This could be you!" for open slots** - Inviting language encouraging signups
+- **"You're performing!" message** - Personal celebration when viewing your own slot
+- **Host Controls component** - Purple gradient panel with "Control Lineup" and "Open TV Display" buttons
+- **Only visible to hosts/admins** - HostControls checks authorization before rendering
+- Key files:
+  - `web/src/components/events/TimeslotSection.tsx` - Complete celebratory redesign
+  - `web/src/components/events/HostControls.tsx` - New host tools component
+  - `web/src/app/events/[id]/page.tsx` - Added HostControls to event detail
+
+### Recurring Event System (December 2025)
+- **Option A implemented** - Generate individual event instances as separate rows
+- **New columns on events** - `parent_event_id`, `is_recurring`, `recurrence_pattern`, `recurrence_end_date`
+- **generate_recurring_event_instances() RPC** - Creates future instances (weekly, biweekly, monthly)
+- **Auto-generates timeslots** - Each instance gets its own timeslots via `generate_event_timeslots()`
+- **8 weeks ahead by default** - Configurable via function parameter
+- Key file:
+  - `supabase/migrations/20251220222457_recurring_event_instances.sql`
+
+### Lineup Control Page Improvements (December 2025)
+- **Fixed host authorization** - Now checks `host_id` on events table, not just `event_hosts` table
+- **Supports event hosts AND co-hosts** - Checks both patterns
+- **Admin bypass** - Admins always have access
+- Key file:
+  - `web/src/app/events/[id]/lineup/page.tsx` - Updated auth check
+
 ### Timeslot Performer Name & Profile Page Fixes (December 2025)
 - **Performer name now prominent** - Changed from `text-xs` to `text-sm font-medium` with accent color
 - **Profile link always visible** - Name displays in accent color so it's obviously clickable
