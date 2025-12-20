@@ -89,7 +89,19 @@ export default function LineupControlPage() {
         return;
       }
 
-      // Check if event host
+      // Check if event host via host_id on event
+      const { data: eventData } = await supabase
+        .from("events")
+        .select("host_id")
+        .eq("id", eventId)
+        .single();
+
+      if (eventData?.host_id === user.id) {
+        setIsAuthorized(true);
+        return;
+      }
+
+      // Also check event_hosts table for co-hosts
       const { data: hostEntry } = await supabase
         .from("event_hosts")
         .select("id")

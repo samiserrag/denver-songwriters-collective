@@ -8,6 +8,7 @@ import type { EventType } from "@/types/events";
 import { RSVPSection } from "@/components/events/RSVPSection";
 import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 import { TimeslotSection } from "@/components/events/TimeslotSection";
+import { HostControls } from "@/components/events/HostControls";
 
 export const dynamic = "force-dynamic";
 
@@ -319,6 +320,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </a>
             )}
           </div>
+
+          {/* Host Controls - only visible to hosts/admins */}
+          {event.is_dsc_event && (
+            <HostControls
+              eventId={event.id}
+              hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
+            />
+          )}
 
           {/* Timeslot claiming section for timeslot-enabled events */}
           {event.is_dsc_event && (event as { has_timeslots?: boolean }).has_timeslots && (
