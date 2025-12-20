@@ -228,6 +228,31 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ## Recent Changes (December 2025)
 
+### Image System Standardization (December 2025)
+- **Standardized 4:3 aspect ratio** across all image uploads and card displays
+- **Removed visual effects** - no more gradient overlays or hover scale effects on cards
+- **Upload forms updated** - ImageUpload default changed from 1:1 to 4:3
+- **Card components updated** - EventCard, MemberCard, SongwriterCard, PerformerCard, HostCard, StudioCard all use 4:3
+- **Detail pages updated** - Event and blog detail pages use aspect-[4/3] instead of fixed heights
+- **Gallery preserves original ratios** - GalleryGrid and GalleryAdminTabs no longer force aspect ratios
+- **Profile avatars unchanged** - Still use 1:1 circular styling
+- Key files modified:
+  - `web/src/components/ui/ImageUpload.tsx` - Default aspectRatio now 4/3
+  - `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - aspectRatio={4/3}
+  - `web/src/app/(protected)/dashboard/admin/blog/BlogPostForm.tsx` - aspectRatio={4/3}
+  - `web/src/components/events/EventCard.tsx` - aspect-[4/3], no gradient/hover
+  - `web/src/components/members/MemberCard.tsx` - No gradient/hover
+  - `web/src/components/songwriters/SongwriterCard.tsx` - No gradient/hover
+  - `web/src/components/performers/PerformerCard.tsx` - No gradient/hover
+  - `web/src/components/hosts/HostCard.tsx` - No gradient/hover
+  - `web/src/components/studios/StudioCard.tsx` - No gradient/hover
+  - `web/src/app/events/[id]/page.tsx` - aspect-[4/3] for hero image
+  - `web/src/app/blog/[slug]/page.tsx` - aspect-[4/3], no gradient
+  - `web/src/components/gallery/GalleryGrid.tsx` - Preserves original ratios
+  - `web/src/app/gallery/page.tsx` - Album covers use 4:3
+  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Preserves original ratios
+- **Note:** Existing images uploaded at 1:1 or 16:9 will display in 4:3 containers with object-cover cropping
+
 ### Unified Onboarding Page (December 2025)
 - **Single-page onboarding:** Replaced multi-step flow with one welcoming page
 - **Collapsible sections:** Identity, bio, social links, tipping, collaboration preferences
