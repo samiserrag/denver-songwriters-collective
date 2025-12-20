@@ -89,7 +89,7 @@ function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="email"
           />
         </div>
@@ -101,7 +101,7 @@ function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
+            className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
             autoComplete="current-password"
           />
         </div>
@@ -142,14 +142,14 @@ function LoginForm() {
       <div className="mt-4 space-y-2 text-center">
         <Link
           href="/auth/reset-request"
-          className="text-sm text-blue-400 hover:underline"
+          className="text-sm text-[var(--color-link)] hover:text-[var(--color-link-hover)] hover:underline"
         >
           Forgot your password?
         </Link>
         <br />
         <Link
           href="/login/magic"
-          className="text-sm text-blue-400 hover:underline"
+          className="text-sm text-[var(--color-link)] hover:text-[var(--color-link-hover)] hover:underline"
         >
           Log in with a magic link
         </Link>
