@@ -17,18 +17,29 @@ export default function AboutPage() {
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
-              About The Denver Songwriters Collective
+              A shared space for Denver songwriters
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              A grassroots community built around a simple idea: when people share their music, they share themselves — and something powerful happens.
+              Denver Songwriters Collective is a community-run hub for songwriting events across the Denver area. Songwriters, venues, hosts, and other groups use it to help people show up, play live, and discover local music. If it&apos;s useful to you, it&apos;s yours to use.
             </p>
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] italic">
+              No algorithms. No gatekeeping. Just people and songs.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Button asChild variant="primary" size="lg">
+                <Link href="/events">See events</Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/submit-open-mic">Host an event</Link>
+              </Button>
+            </div>
           </div>
         </PageContainer>
       </HeroSection>
 
       {/* Main Content */}
       <PageContainer>
-        <div className="py-16 space-y-16 max-w-4xl mx-auto">
+        <div className="py-10 space-y-10 max-w-4xl mx-auto">
 
           {/* Our Story */}
           <section className="space-y-6">
@@ -36,7 +47,7 @@ export default function AboutPage() {
               In an era where everyone feels spread thin and disconnected, the act of gathering in a creative space helps restore meaning, friendship, and belonging. DSC is not an industry platform. It is a people platform. It is a space where neighbors, co-workers, strangers, out-of-towners, hobbyists, professionals, students, parents, and long-time musicians can all come together, get to know each other, and build genuine relationships through the art of original songwriting.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Many communities focus on perfect performances or competition. DSC focuses on connection. At our gatherings, you&apos;ll meet people who root for you even if they just met you five minutes ago. You&apos;ll hear songs that surprise you, encourage you, make you laugh, or make you feel less alone. You&apos;ll see performers cheer for each other, swap ideas, collaborate, lend gear, share writing prompts, trade tips, and form friendships that carry far beyond a single event.
+              Many communities focus on perfect performances or competition. DSC focuses on connection. At these gatherings, you&apos;ll meet people who root for you even if they just met you five minutes ago. You&apos;ll hear songs that surprise you, encourage you, make you laugh, or make you feel less alone. You&apos;ll see performers cheer for each other, swap ideas, collaborate, lend gear, share writing prompts, trade tips, and form friendships that carry far beyond a single event.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-accent)]/90 italic leading-[var(--line-height-relaxed)]">
               The music is important — but the people are everything.
@@ -67,7 +78,7 @@ export default function AboutPage() {
           </section>
 
           {/* Inclusion Statement */}
-          <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-8 space-y-4">
+          <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-4">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Everyone Is Welcome Here
             </h2>
@@ -194,25 +205,22 @@ export default function AboutPage() {
           </section>
 
           {/* Final Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 text-center space-y-4">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Join the Collective
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              If you love songwriting, love local music, love community, or simply want to support a creative movement that brings people together in meaningful ways, The Denver Songwriters Collective welcomes you.
+              If you love songwriting, love local music, love community, or simply want to support a creative movement that brings people together in meaningful ways, the Denver Songwriters Collective welcomes you.
             </p>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              Come help us shape the story, one song, one friendship, and one happening at a time.
+              Come help shape the story, one song, one friendship, and one event at a time.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
-                <Link href="/events">Explore Happenings</Link>
+                <Link href="/events">See events</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/open-mics">Find Open Mics</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/tip-jar">Support Us</Link>
+                <Link href="/submit-open-mic">Host an event</Link>
               </Button>
             </div>
           </section>

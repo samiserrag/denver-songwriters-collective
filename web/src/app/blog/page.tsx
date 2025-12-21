@@ -50,19 +50,32 @@ export default async function BlogPage() {
     <>
       {/* Page Header */}
       <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+        <div className="max-w-6xl mx-auto px-6 py-10 text-center">
           <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
             Community Blog
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] mt-3">
-            Stories, tips, and insights from the Denver songwriting community.{" "}
-            <Link href="/dashboard/blog" className="underline hover:text-[var(--color-text-accent)] transition-colors">Share your own!</Link>
+            Stories from the local songwriting scene.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+            <Link
+              href="/events"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              See events
+            </Link>
+            <Link
+              href="/dashboard/blog"
+              className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+            >
+              Share your story
+            </Link>
+          </div>
         </div>
       </div>
 
       <PageContainer>
-        <div className="py-12">
+        <div className="py-10">
           {posts && posts.length > 0 ? (
             <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {posts.map((post) => (

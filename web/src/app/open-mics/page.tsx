@@ -363,6 +363,9 @@ function parseTimeToMinutes(t?: string | null) {
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
               Denver Open Mic Directory
             </h1>
+            <p className="text-lg text-[var(--color-text-secondary)] mt-2 drop-shadow">
+              Looking for a stage tonight? Start here.
+            </p>
             <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
               {totalActiveEvents} verified open mics across the Front Range
             </p>
@@ -376,6 +379,19 @@ function parseTimeToMinutes(t?: string | null) {
       </div>
 
       <PageContainer>
+        {/* Host-focused callout */}
+        <div className="py-4 px-4 my-4 rounded-lg border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/5">
+          <p className="text-sm text-[var(--color-text-primary)]">
+            <strong>Hosts &amp; venues:</strong> Add your open mic here to reach more performers and keep details up to date.
+          </p>
+          <Link
+            href="/submit-open-mic"
+            className="inline-block mt-2 text-sm font-medium text-[var(--color-text-accent)] hover:underline"
+          >
+            Submit an open mic →
+          </Link>
+        </div>
+
         {/* Subheader info */}
         <div className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[var(--color-border-default)] mb-4">
           <p className="text-sm text-[var(--color-text-secondary)]">
@@ -439,7 +455,7 @@ function parseTimeToMinutes(t?: string | null) {
                 href="/submit-open-mic"
                 className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)] px-5 py-2 text-sm font-semibold text-[var(--color-text-accent)] ring-1 ring-[var(--color-border-accent)] hover:shadow-[var(--shadow-glow-gold-sm)] transition"
               >
-                Submit, claim, or update an Open Mic
+                Submit an open mic
               </Link>
             </div>
           </div>
@@ -494,8 +510,8 @@ function parseTimeToMinutes(t?: string | null) {
           )}
 
         {/* Contribution Section */}
-        <div className="py-10">
-          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 space-y-8">
+        <div className="py-8">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 space-y-6">
             <div className="text-center space-y-4">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
                 Help Keep This Directory Accurate
@@ -548,7 +564,7 @@ function parseTimeToMinutes(t?: string | null) {
                 href="/submit-open-mic"
                 className="inline-block rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)] to-[var(--color-accent-hover)] px-8 py-4 text-lg font-semibold text-[var(--color-background)] hover:shadow-[0_0_20px_rgba(255,216,106,0.35)] transition"
               >
-                Submit, Claim, or Update an Open Mic
+                Submit an open mic
               </Link>
             </div>
           </section>

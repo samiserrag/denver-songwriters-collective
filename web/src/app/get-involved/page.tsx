@@ -42,28 +42,33 @@ export default function GetInvolvedPage() {
       <HeroSection minHeight="lg" showVignette showBottomFade>
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-text-accent)]/80 uppercase">
-              Be Part of the Movement
-            </p>
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
-              Help Us Build This Community
+              Get Involved
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              DSC is powered by the people who show up — and we&apos;d love your help growing the platform, improving the directory, expanding our events, and finding the next great Denver venues and studios to partner with.
+              Volunteer, host, test features, or help keep the open mic list accurate.
             </p>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
-              You don&apos;t need experience. You just need enthusiasm and a willingness to be part of something meaningful.
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] italic max-w-2xl mx-auto">
+              Many hands make lighter load-ins.
             </p>
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Button asChild variant="primary" size="lg">
+                <Link href="/submit-open-mic">Submit an open mic</Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/partners">Partner with the community</Link>
+              </Button>
+            </div>
           </div>
         </PageContainer>
       </HeroSection>
 
       <PageContainer>
-        <div className="py-16 space-y-16 max-w-4xl mx-auto">
+        <div className="py-10 space-y-10 max-w-4xl mx-auto">
 
           {/* Ways to Help */}
           <section>
-            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-8 text-center">
+            <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-6 text-center">
               Ways You Can Help
             </h2>
             <div className="grid gap-6 sm:grid-cols-2">
@@ -102,7 +107,7 @@ export default function GetInvolvedPage() {
           </section>
 
           {/* Volunteer Sign-Up */}
-          <section className="space-y-8">
+          <section className="space-y-6">
             <div className="text-center">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
                 Volunteer Sign-Up
@@ -111,7 +116,7 @@ export default function GetInvolvedPage() {
                 Interested in helping out at events, running open mics, or supporting DSC in other ways? Fill out the form below and we will be in touch.
               </p>
             </div>
-            <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 md:p-8">
+            <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-5 md:p-6">
               <VolunteerSignupForm />
             </div>
           </section>
@@ -127,7 +132,7 @@ export default function GetInvolvedPage() {
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Financial contributions or sponsorships would make a meaningful difference in our ability to grow, host more events, and serve more musicians across Denver.
             </p>
-            <div className="rounded-2xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 space-y-6">
+            <div className="rounded-2xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-5 md:p-6 space-y-5">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
@@ -158,7 +163,7 @@ export default function GetInvolvedPage() {
           </section>
 
           {/* Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 text-center space-y-4">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Ready to Get Started?
             </h2>
@@ -167,13 +172,13 @@ export default function GetInvolvedPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
-                <Link href="/submit-open-mic">Submit an Open Mic</Link>
+                <Link href="/submit-open-mic">Submit an open mic</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/open-mics">Browse the Directory</Link>
+                <Link href="/open-mics">See open mics</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/partners">Partner With Us</Link>
+                <Link href="/partners">Partner with the community</Link>
               </Button>
             </div>
           </section>

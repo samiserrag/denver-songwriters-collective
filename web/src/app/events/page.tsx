@@ -144,27 +144,35 @@ export default async function EventsPage() {
     <>
       {/* Page Header */}
       <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+        <div className="max-w-6xl mx-auto px-6 py-10 text-center">
           <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-            Happenings
+            Events
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] mt-3">
-            Showcases, song circles, workshops, and community gatherings
+            Songwriting events hosted by the Denver music community
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+            <Button asChild variant="primary" size="lg">
+              <Link href="#upcoming">See events</Link>
+            </Button>
+            <Button asChild variant="secondary" size="lg">
+              <Link href="/submit-open-mic">Host an event</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
       <PageContainer>
-        <div className="py-12 space-y-16">
+        <div className="py-10 space-y-10">
 
-          {/* Community Happenings - Single consolidated section */}
-          <section>
+          {/* Upcoming Events - Single consolidated section */}
+          <section id="upcoming">
             <div className="mb-6">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
-                Upcoming Happenings
+                Upcoming Events
               </h2>
               <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                Song circles, workshops, showcases, and community gatherings
+                Song circles, showcases, workshops, and community gatherings
               </p>
             </div>
             {dscEvents.length > 0 || upcomingEvents.length > 0 ? (
@@ -172,7 +180,7 @@ export default async function EventsPage() {
             ) : (
               <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-10 text-center">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)]">
-                  No upcoming happenings scheduled. Check back soon!
+                  No upcoming events scheduled. Check back soon!
                 </p>
               </div>
             )}
@@ -186,11 +194,11 @@ export default async function EventsPage() {
                   Looking for Open Mics?
                 </h3>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                  Explore Denver&apos;s full open mic scene in our community-maintained directory.
+                  Explore Denver&apos;s full open mic scene in the community-maintained directory.
                 </p>
               </div>
               <Button asChild variant="primary" size="lg">
-                <Link href="/open-mics">Visit the Open Mic Directory</Link>
+                <Link href="/open-mics">See open mics</Link>
               </Button>
             </div>
           </section>
@@ -230,14 +238,14 @@ export default async function EventsPage() {
             </section>
           )}
 
-          {/* Event Types We Need Help Hosting */}
+          {/* Event Types Section */}
           <section>
             <div className="mb-4">
               <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-1">
-                Types of Events We Need Volunteers &amp; Venues to Help Us Host
+                Types of Events
               </h2>
               <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
-                Have a space or want to help? Reach out to host one of these!
+                If you&apos;ve got a room and a mic, this probably counts.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -262,19 +270,19 @@ export default async function EventsPage() {
           </section>
 
           {/* Get Involved CTA */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-[var(--color-bg-secondary)] p-6 md:p-8 text-center space-y-4">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-              Want to Help Shape Our Happenings?
+              Want to Host an Event?
             </h2>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              We&apos;re always looking for volunteers, venues, and partners to help expand our offerings across the Front Range.
+              Venues, hosts, and groups across the Front Range are welcome to list events here.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-2">
               <Button asChild variant="primary" size="lg">
-                <Link href="/get-involved">Get Involved</Link>
+                <Link href="/submit-open-mic">Host an event</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/partners">Partner With Us</Link>
+                <Link href="/partners">Partner with the community</Link>
               </Button>
             </div>
           </section>

@@ -50,21 +50,26 @@ export default function PartnersPage() {
       <HeroSection minHeight="lg" showVignette showBottomFade>
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-text-accent)]/80 uppercase">
-              Grow Together
-            </p>
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
-              Partner With The Denver Songwriters Collective
+              Partner with the Denver songwriting community
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              We invite venues, promoters, booking coordinators, festivals, studios, and independent organizations to connect with us. Together, we can create more pathways for local musicians to shine.
+              Venues, hosts, promoters, studios, and songwriting groups are welcome.
             </p>
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Button asChild variant="primary" size="lg">
+                <Link href="/submit-open-mic">Submit your venue</Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/get-involved">Get involved</Link>
+              </Button>
+            </div>
           </div>
         </PageContainer>
       </HeroSection>
 
       <PageContainer>
-        <div className="py-16 space-y-16 max-w-4xl mx-auto">
+        <div className="py-10 space-y-10 max-w-4xl mx-auto">
 
           {/* Who We Partner With */}
           <section className="space-y-6">
@@ -84,7 +89,7 @@ export default function PartnersPage() {
           </section>
 
           {/* Partnership Opportunities */}
-          <section className="space-y-8">
+          <section className="space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] text-center">
               Partnership Opportunities
             </h2>
@@ -187,25 +192,22 @@ export default function PartnersPage() {
           </section>
 
           {/* Call to Action */}
-          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-8 md:p-12 text-center space-y-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 text-center space-y-4">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Let&apos;s Build Something Together
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              If you would like to host an event, collaborate on a showcase, support our livestream or web show production, help us find sponsors, provide space, offer resources, or become part of this creative movement in any way, we would love to speak with you.
+              If you would like to host an event, collaborate on a showcase, support livestream or web show production, help find sponsors, provide space, offer resources, or become part of this creative movement in any way, the community would love to connect.
             </p>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-accent)]/90 italic leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              Your partnership directly strengthens the songwriting culture of Denver and helps us continue building a community where musicians feel seen, supported, and inspired.
+              Your partnership directly strengthens the songwriting culture of Denver and helps build a community where musicians feel seen, supported, and inspired.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
-                <Link href="/submit-open-mic">Submit Your Venue</Link>
+                <Link href="/submit-open-mic">Submit your venue</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/get-involved">Get Involved</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/about">Learn More About DSC</Link>
+                <Link href="/get-involved">Get involved</Link>
               </Button>
             </div>
           </section>

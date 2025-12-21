@@ -84,7 +84,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
         </div>
       </div>
       <PageContainer>
-        <div className="py-12">
+        <div className="py-10">
           <MembersPageClient members={members} initialRole={validInitialRole} />
         </div>
       </PageContainer>

@@ -190,7 +190,7 @@ export default function SubmitOpenMicPage() {
                   href="/open-mics"
                   className="px-6 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)]"
                 >
-                  Browse Open Mics
+                  See open mics
                 </Link>
                 <button
                   onClick={() => {
@@ -199,7 +199,7 @@ export default function SubmitOpenMicPage() {
                   }}
                   className="px-6 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded-lg text-[var(--color-text-primary)]"
                 >
-                  Submit Another
+                  Submit another
                 </button>
               </div>
             </div>
@@ -216,16 +216,16 @@ export default function SubmitOpenMicPage() {
         <HeroSection minHeight="md">
           <PageContainer>
             <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-4">
-              Submit or Claim an Open Mic
+              Submit or update an open mic
             </h1>
             <p className="text-[var(--color-text-secondary)] mb-6">
-              Sign in to submit a new open mic or claim one you host.
+              Claim one you host, add a new one, or fix a detail that&apos;s gone stale.
             </p>
             <Link
               href="/login?redirectTo=/submit-open-mic"
               className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold"
             >
-              Sign In to Continue
+              Sign in to continue
             </Link>
           </PageContainer>
         </HeroSection>
@@ -237,7 +237,7 @@ export default function SubmitOpenMicPage() {
               Visit the open mic&apos;s detail page and use the &ldquo;Suggest updates&rdquo; form. No account needed for suggestions!
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
-              Browse Open Mics →
+              See open mics →
             </Link>
           </div>
         </PageContainer>
@@ -252,10 +252,10 @@ export default function SubmitOpenMicPage() {
         <HeroSection minHeight="md">
           <PageContainer>
             <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-2">
-              Submit or Claim an Open Mic
+              Submit or update an open mic
             </h1>
             <p className="text-[var(--color-text-secondary)]">
-              Help keep the Denver open mic community informed and accurate.
+              Claim one you host, add a new one, or fix a detail that&apos;s gone stale.
             </p>
           </PageContainer>
         </HeroSection>
@@ -268,9 +268,9 @@ export default function SubmitOpenMicPage() {
               className="p-6 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-left transition"
             >
               <div className="text-3xl mb-3">🎤</div>
-              <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Submit New Open Mic</h2>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Submit new open mic</h2>
               <p className="text-[var(--color-text-tertiary)] text-sm">
-                Know of an open mic not in our directory? Submit it for review and we&apos;ll add it.
+                Know of an open mic not in the directory? Submit it for review.
               </p>
             </button>
 
@@ -280,7 +280,7 @@ export default function SubmitOpenMicPage() {
               className="p-6 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-left transition"
             >
               <div className="text-3xl mb-3">👑</div>
-              <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Claim as Host</h2>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Claim as host</h2>
               <p className="text-[var(--color-text-tertiary)] text-sm">
                 Are you the host of an open mic? Claim it to manage the listing and keep it updated.
               </p>
@@ -293,7 +293,7 @@ export default function SubmitOpenMicPage() {
               Visit the open mic&apos;s page and use the suggestion form. You can update times, venue info, and more.
             </p>
             <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
-              Browse Open Mics →
+              See open mics →
             </Link>
           </div>
         </PageContainer>
@@ -466,7 +466,7 @@ export default function SubmitOpenMicPage() {
                 disabled={submitting}
                 className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50"
               >
-                {submitting ? "Submitting..." : "Submit Open Mic"}
+                {submitting ? "Submitting..." : "Submit open mic"}
               </button>
             </div>
           </form>
@@ -550,7 +550,7 @@ export default function SubmitOpenMicPage() {
                   disabled={submitting}
                   className="mt-4 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50"
                 >
-                  {submitting ? "Submitting..." : "Submit Claim Request"}
+                  {submitting ? "Submitting..." : "Submit claim request"}
                 </button>
               </div>
             )}

@@ -189,64 +189,84 @@ export default async function HomePage() {
   return (
     <>
       <CLSLogger />
-      <HeroSection minHeight="lg" showVignette={false} showBottomFade={false} backgroundImage="/images/hero.jpg">
-        <div />
+      <HeroSection minHeight="lg" showVignette={true} showBottomFade={true} backgroundImage="/images/hero.jpg">
+        <div className="text-center px-6 max-w-4xl mx-auto">
+          <h1 className="font-[var(--font-family-serif)] text-4xl md:text-5xl lg:text-6xl text-white mb-4 drop-shadow-lg">
+            What&apos;s happening this week for Denver songwriters
+          </h1>
+          <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow">
+            Open mics, critique circles, and showcases — hosted by songwriters, venues, and groups across Denver.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/events"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              See events
+            </Link>
+            <Link
+              href="/open-mics"
+              className="inline-flex items-center justify-center px-6 py-3 bg-white/10 text-white font-semibold rounded-full border border-white/30 hover:bg-white/20 transition-colors backdrop-blur-sm"
+            >
+              See open mics
+            </Link>
+          </div>
+        </div>
       </HeroSection>
 
-      {/* What We Offer Each Other Section */}
-      <section className="py-16 px-6 bg-[var(--color-bg-secondary)]">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-center text-[var(--color-text-primary)] mb-4">
-            What We Offer Each Other
+      {/* This Is For You If... Strip */}
+      <section className="py-8 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="font-[var(--font-family-serif)] text-2xl md:text-3xl text-[var(--color-text-primary)] mb-6">
+            This is for you if you&apos;re…
           </h2>
-          <p className="text-[var(--color-text-secondary)] text-center mb-12 max-w-2xl mx-auto">
-            Built by songwriters, for songwriters. This is our shared space to
-            connect, collaborate, and lift each other up.
-          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="text-[var(--color-text-secondary)]">🎸 a songwriter looking to play, improve, or connect</div>
+            <div className="text-[var(--color-text-secondary)]">🎤 an open mic host or venue</div>
+            <div className="text-[var(--color-text-secondary)]">🎶 a songwriting group or collective</div>
+            <div className="text-[var(--color-text-secondary)]">🎭 a showcase or event promoter</div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/events"
+              className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              See events
+            </Link>
+            <Link
+              href="/submit-open-mic"
+              className="inline-flex items-center justify-center px-5 py-2.5 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+            >
+              Host an event
+            </Link>
+          </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                icon: "🎤",
-                title: "Stages to Share",
-                desc: "Community-maintained open mic listings. Know a spot? Help keep the list updated.",
-                href: "/open-mics",
-                accent: "from-amber-500/10 to-transparent"
-              },
-              {
-                icon: "🤝",
-                title: "Real Connections",
-                desc: "Meet fellow songwriters, find collaborators, and build lasting friendships.",
-                href: "/members",
-                accent: "from-sky-500/10 to-transparent"
-              },
-              {
-                icon: "📖",
-                title: "Stories & Wisdom",
-                desc: "Share your journey, learn from others, and grow together.",
-                href: "/blog",
-                accent: "from-violet-500/10 to-transparent"
-              },
-              {
-                icon: "🎧",
-                title: "Local Resources",
-                desc: "Studios, gear, and services recommended by your fellow musicians.",
-                href: "/studios",
-                accent: "from-rose-500/10 to-transparent"
-              },
-            ].map((item) => (
-              <Link
-                key={item.title}
-                href={item.href}
-                className={`p-6 bg-gradient-to-br ${item.accent} card-base border border-[var(--color-border-default)] rounded-xl hover:border-[var(--color-border-accent)]/50 transition-all group card-hover`}
-              >
-                <div className="text-4xl mb-4">{item.icon}</div>
-                <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2 group-hover:text-[var(--color-text-accent)] transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-[var(--color-text-secondary)] text-sm">{item.desc}</p>
-              </Link>
-            ))}
+      {/* Play Live Section */}
+      <section className="py-10 px-6 bg-[var(--color-bg-secondary)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-6">
+            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+              Play live
+            </h2>
+            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+              Find open mics, see the lineup, and know when you&apos;re up.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/open-mics"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              See open mics
+            </Link>
+            <Link
+              href="/submit-open-mic"
+              className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+            >
+              Submit an open mic
+            </Link>
           </div>
         </div>
       </section>
@@ -312,33 +332,45 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Community Happenings - DSC events */}
-      {hasUpcomingEvents && (
-        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
-                  Community Happenings
-                </h2>
-                <p className="text-[var(--color-text-secondary)]">
-                  Song circles, workshops, and gatherings hosted by DSC members.
-                </p>
-              </div>
+      {/* This Week - DSC events */}
+      <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6 flex items-baseline justify-between gap-4">
+            <div>
+              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                This week
+              </h2>
+              <p className="text-[var(--color-text-secondary)]">
+                Song circles, showcases, and gatherings hosted by the Denver music community.
+              </p>
+            </div>
+            <Link
+              href="/events"
+              className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              See events
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          {hasUpcomingEvents ? (
+            <EventGrid events={upcomingEvents} compact />
+          ) : (
+            <div className="text-center py-12 px-6 card-base rounded-xl border border-[var(--color-border-default)]">
+              <p className="text-[var(--color-text-secondary)] mb-4">
+                Nothing on the calendar yet. That usually means someone&apos;s about to fix that.
+              </p>
               <Link
-                href="/events"
-                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+                href="/submit-open-mic"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
               >
-                View all
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                Host an event
               </Link>
             </div>
-            <EventGrid events={upcomingEvents} compact />
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+      </section>
 
       {/* Featured Playlists */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
@@ -348,7 +380,7 @@ export default async function HomePage() {
               Featured Playlists
             </h2>
             <p className="text-[var(--color-text-secondary)]">
-              Music from the Denver songwriting community.
+              Some folks you might want to listen to.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -385,14 +417,14 @@ export default async function HomePage() {
                   Featured Members
                 </h2>
                 <p className="text-[var(--color-text-secondary)]">
-                  Spotlighted songwriters, hosts, and studios from our community.
+                  Spotlighted songwriters, hosts, and studios from the Denver community.
                 </p>
               </div>
               <Link
                 href="/members"
                 className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
-                View all
+                See members
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -424,7 +456,7 @@ export default async function HomePage() {
                 href="/open-mics"
                 className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
-                View all
+                See open mics
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -445,14 +477,14 @@ export default async function HomePage() {
                   Latest from the Blog
                 </h2>
                 <p className="text-[var(--color-text-secondary)]">
-                  Tips, stories, and insights from the Denver songwriting community. <Link href="/dashboard/blog" className="text-[var(--color-text-accent)] hover:underline">Share your own story!</Link>
+                  Stories from the local songwriting scene. <Link href="/dashboard/blog" className="text-[var(--color-text-accent)] hover:underline">Share your own!</Link>
                 </p>
               </div>
               <Link
                 href="/blog"
                 className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
-                View all posts
+                See blog
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
