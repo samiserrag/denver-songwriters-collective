@@ -379,6 +379,25 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Profile Visibility Control (December 2025)
+- **New `is_public` flag on profiles** - Controls whether profile appears in public listings
+- **Database migration** - Added `is_public` column with index, backfilled all existing profiles to `true`
+- **RLS policy updated** - Profiles SELECT now requires `is_public=true` for public reads; self/admin access preserved
+- **Public queries updated** - Members, songwriters, performers, studios, spotlight, homepage featured, and global search all filter `is_public=true`
+- **Dashboard toggle** - "Public profile" switch in `/dashboard/profile` with helper copy explaining visibility
+- **Onboarding reassurance** - Copy added explaining profiles are public by default and can be changed later
+- **Completeness nudge** - Private profiles get a suggestion to make profile public for discoverability
+- **BlogComments hardened** - Author treated as optional at render time with safe fallbacks
+- Key files:
+  - `supabase/migrations/20251222000001_add_is_public_to_profiles.sql` - Column + index + backfill
+  - `supabase/migrations/20251222000002_update_profiles_select_policy_is_public.sql` - RLS policy update
+  - `web/src/app/(protected)/dashboard/profile/page.tsx` - Toggle UI + state
+  - `web/src/app/onboarding/profile/page.tsx` - Reassurance copy
+  - `web/src/lib/profile/completeness.ts` - Private profile nudge
+  - `web/src/app/members/page.tsx` - `is_public=true` filter
+  - `web/src/app/api/search/route.ts` - `is_public=true` filter on member search
+  - `web/src/components/blog/BlogComments.tsx` - Safe author access
+
 ### Profile Completeness Indicator (December 2025)
 - **New scoring system** - 100-point profile completeness calculation
   - Identity (20 pts): at least one identity flag set
