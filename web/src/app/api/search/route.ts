@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         avatar_url,
         location
       `)
-      .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
+      .eq("is_public", true)
       .or(`full_name.ilike.${like},bio.ilike.${like}`)
       .limit(5),
 

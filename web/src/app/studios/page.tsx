@@ -29,6 +29,7 @@ export default async function StudiosPage() {
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
+    .eq("is_public", true)
     .or("is_studio.eq.true,role.eq.studio")
     .order("full_name", { ascending: true });
 

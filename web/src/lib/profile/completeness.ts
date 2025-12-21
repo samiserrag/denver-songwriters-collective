@@ -7,6 +7,7 @@ export interface ProfileData {
   is_host?: boolean;
   is_studio?: boolean;
   is_fan?: boolean;
+  is_public?: boolean;
   // Basics
   full_name?: string | null;
   bio?: string | null;
@@ -79,6 +80,18 @@ export function calculateCompleteness(profile: ProfileData): CompletenessResult 
     suggestion: "Tell us how you identify in the music community",
     sectionId: "identity-section",
   });
+
+  // Public visibility (0 points) - helpful nudge only
+  const isPublic = profile.is_public !== false;
+  const publicVisibilityItem: CompletionItem = {
+    id: "publicProfile",
+    label: "Public Profile",
+    points: 0,
+    earned: isPublic,
+    suggestion: "Turn on Public profile to appear in search",
+    sectionId: "visibility-section",
+  };
+  items.push(publicVisibilityItem);
 
   // Full name (10 points)
   const hasName = Boolean(profile.full_name?.trim());
@@ -175,10 +188,14 @@ export function calculateCompleteness(profile: ProfileData): CompletenessResult 
   const percentage = Math.round((score / maxScore) * 100);
 
   // Get top 3 missing items (sorted by points descending for highest impact)
-  const suggestions = items
+  let suggestions = items
     .filter((item) => !item.earned)
     .sort((a, b) => b.points - a.points)
     .slice(0, 3);
+
+  if (!isPublic) {
+    suggestions = [publicVisibilityItem, ...suggestions.filter((item) => item.id !== "publicProfile")].slice(0, 3);
+  }
 
   return {
     score,

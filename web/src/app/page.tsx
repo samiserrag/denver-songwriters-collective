@@ -82,6 +82,7 @@ export default async function HomePage() {
       .from("profiles")
       .select("*")
       .eq("is_featured", true)
+      .eq("is_public", true)
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(8),

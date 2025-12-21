@@ -7,11 +7,11 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
-  author: {
+  author?: {
     id: string;
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 interface BlogCommentsProps {
@@ -171,23 +171,23 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
         <div className="space-y-6">
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-3">
-              {comment.author.avatar_url ? (
+              {comment.author?.avatar_url ? (
                 <img
-                  src={comment.author.avatar_url}
-                  alt={comment.author.full_name ?? "User"}
+                  src={comment.author?.avatar_url}
+                  alt={comment.author?.full_name ?? "Member"}
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-[var(--color-text-accent)]">
-                    {comment.author.full_name?.[0] ?? "?"}
+                    {comment.author?.full_name?.[0] ?? "?"}
                   </span>
                 </div>
               )}
               <div className="flex-1">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[var(--color-text-primary)] font-medium">
-                    {comment.author.full_name ?? "Anonymous"}
+                    {comment.author?.full_name ?? "Member"}
                   </span>
                   <span className="text-[var(--color-text-tertiary)] text-sm">
                     {formatDate(comment.created_at)}

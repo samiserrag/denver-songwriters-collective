@@ -50,6 +50,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
+    .eq("is_public", true)
     .neq("role", "admin")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })

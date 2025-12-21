@@ -416,6 +416,9 @@ export default function OnboardingProfile() {
                   <p className="text-sm text-[var(--color-text-tertiary)]">
                     Optional—helps people discover you.
                   </p>
+                  <p className="text-sm text-[var(--color-text-tertiary)]">
+                    Your profile is public by default — you can change this anytime in Profile settings.
+                  </p>
 
                   {/* Instruments */}
                   <div>

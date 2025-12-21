@@ -31,6 +31,7 @@ export default async function PerformersPage() {
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
+    .eq("is_public", true)
     .or("is_songwriter.eq.true,role.eq.performer")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })

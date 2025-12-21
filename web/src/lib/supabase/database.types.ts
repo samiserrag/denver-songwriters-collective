@@ -1612,6 +1612,7 @@ export type Database = {
           is_fan: boolean | null
           is_featured: boolean | null
           is_host: boolean | null
+          is_public: boolean
           is_songwriter: boolean | null
           is_studio: boolean | null
           last_active_at: string | null
@@ -1652,6 +1653,7 @@ export type Database = {
           is_fan?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
+          is_public?: boolean
           is_songwriter?: boolean | null
           is_studio?: boolean | null
           last_active_at?: string | null
@@ -1692,6 +1694,7 @@ export type Database = {
           is_fan?: boolean | null
           is_featured?: boolean | null
           is_host?: boolean | null
+          is_public?: boolean
           is_songwriter?: boolean | null
           is_studio?: boolean | null
           last_active_at?: string | null

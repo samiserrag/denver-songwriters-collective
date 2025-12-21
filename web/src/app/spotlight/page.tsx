@@ -35,6 +35,7 @@ export default async function SpotlightPage() {
     .from("profiles")
     .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
     .eq("is_featured", true)
+    .eq("is_public", true)
     .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
     .order("featured_rank", { ascending: true });
 
@@ -44,6 +45,7 @@ export default async function SpotlightPage() {
     .from("profiles")
     .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
     .eq("is_featured", false)
+    .eq("is_public", true)
     .not("featured_at", "is", null)
     .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
     .order("featured_at", { ascending: false })

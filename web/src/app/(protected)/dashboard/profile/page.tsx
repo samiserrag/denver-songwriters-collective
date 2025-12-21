@@ -19,6 +19,7 @@ type FormData = {
   is_host: boolean;
   is_studio: boolean;
   is_fan: boolean;
+  is_public: boolean;
   // Social links
   instagram_url: string;
   facebook_url: string;
@@ -52,6 +53,7 @@ const initialFormData: FormData = {
   is_host: false,
   is_studio: false,
   is_fan: false,
+  is_public: true,
   // Social links
   instagram_url: "",
   facebook_url: "",
@@ -130,6 +132,7 @@ export default function EditProfilePage() {
           is_host: profile.is_host || false,
           is_studio: profile.is_studio || false,
           is_fan: profile.is_fan || false,
+          is_public: profile.is_public ?? true,
           // Social links
           instagram_url: (profile as any).instagram_url || "",
           facebook_url: (profile as any).facebook_url || "",
@@ -239,6 +242,7 @@ export default function EditProfilePage() {
           is_host: formData.is_host,
           is_studio: formData.is_studio,
           is_fan: formData.is_fan,
+          is_public: formData.is_public,
           // Social links
           instagram_url: formData.instagram_url || null,
           facebook_url: formData.facebook_url || null,
@@ -315,6 +319,28 @@ export default function EditProfilePage() {
           <ProfileCompleteness profile={formData} />
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Public Profile Visibility */}
+            <section id="visibility-section">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-2">
+                Public profile
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                If off, you won&apos;t appear in search or directories. Your profile link won&apos;t be visible to others.
+                Public is on by default.
+              </p>
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.is_public}
+                  onChange={(e) => setFormData(prev => ({ ...prev, is_public: e.target.checked }))}
+                  className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                />
+                <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+                  Public profile
+                </span>
+              </label>
+            </section>
+
             {/* Profile Picture */}
             <section id="avatar-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
