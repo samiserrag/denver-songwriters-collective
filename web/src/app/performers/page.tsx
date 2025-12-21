@@ -27,10 +27,11 @@ function mapDBProfileToPerformer(profile: DBProfile): Performer {
 export default async function PerformersPage() {
   const supabase = await createSupabaseServerClient();
 
+  // Query using identity flags with legacy role fallback
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
-    .eq("role", "performer")
+    .or("is_songwriter.eq.true,role.eq.performer")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })
     .order("full_name", { ascending: true });

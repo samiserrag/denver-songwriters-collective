@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Member, MemberRole } from "@/types";
+import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
 
 interface MemberFiltersProps {
   members: Member[];
@@ -35,19 +36,21 @@ export function MemberFilters({
   const [selectedInstruments, setSelectedInstruments] = React.useState<Set<string>>(new Set());
   const [selectedSpecialties, setSelectedSpecialties] = React.useState<Set<string>>(new Set());
 
-  // Extract unique genres, instruments, and specialties from all members
+  // Use curated options for genres and instruments
+  // Filter to only show options that at least one member has
   const allGenres = React.useMemo(() => {
-    const genres = new Set<string>();
-    members.forEach((m) => m.genres?.forEach((g) => genres.add(g)));
-    return Array.from(genres).sort();
+    const memberGenresLower = new Set<string>();
+    members.forEach((m) => m.genres?.forEach((g) => memberGenresLower.add(g.toLowerCase())));
+    return GENRE_OPTIONS.filter((g) => memberGenresLower.has(g.toLowerCase()));
   }, [members]);
 
   const allInstruments = React.useMemo(() => {
-    const instruments = new Set<string>();
-    members.forEach((m) => m.instruments?.forEach((i) => instruments.add(i)));
-    return Array.from(instruments).sort();
+    const memberInstrumentsLower = new Set<string>();
+    members.forEach((m) => m.instruments?.forEach((i) => memberInstrumentsLower.add(i.toLowerCase())));
+    return INSTRUMENT_OPTIONS.filter((i) => memberInstrumentsLower.has(i.toLowerCase()));
   }, [members]);
 
+  // Extract unique specialties from all members (keep dynamic since no curated list)
   const allSpecialties = React.useMemo(() => {
     const specialties = new Set<string>();
     members.forEach((m) => m.specialties?.forEach((s) => specialties.add(s)));
@@ -85,17 +88,19 @@ export function MemberFilters({
       filtered = filtered.filter((m) => m.openToCollabs);
     }
 
-    // Genre filter
+    // Genre filter (case-insensitive)
     if (selectedGenres.size > 0) {
+      const selectedGenresLower = new Set(Array.from(selectedGenres).map(g => g.toLowerCase()));
       filtered = filtered.filter((m) =>
-        m.genres?.some((g) => selectedGenres.has(g))
+        m.genres?.some((g) => selectedGenresLower.has(g.toLowerCase()))
       );
     }
 
-    // Instrument filter
+    // Instrument filter (case-insensitive)
     if (selectedInstruments.size > 0) {
+      const selectedInstrumentsLower = new Set(Array.from(selectedInstruments).map(i => i.toLowerCase()));
       filtered = filtered.filter((m) =>
-        m.instruments?.some((i) => selectedInstruments.has(i))
+        m.instruments?.some((i) => selectedInstrumentsLower.has(i.toLowerCase()))
       );
     }
 
@@ -343,6 +348,45 @@ export function MemberFilters({
             ))}
           </div>
         </details>
+      )}
+
+      {/* Active filter chips */}
+      {(selectedGenres.size > 0 || selectedInstruments.size > 0) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-[var(--color-text-secondary)]">Active filters:</span>
+          {Array.from(selectedGenres).map((genre) => (
+            <span
+              key={`genre-${genre}`}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm border border-[var(--color-border-accent)]/30"
+            >
+              {genre}
+              <button
+                type="button"
+                onClick={() => toggleGenre(genre)}
+                className="ml-0.5 hover:text-red-400 transition-colors"
+                aria-label={`Remove ${genre} filter`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {Array.from(selectedInstruments).map((instrument) => (
+            <span
+              key={`instrument-${instrument}`}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm border border-[var(--color-border-accent)]/30"
+            >
+              {instrument}
+              <button
+                type="button"
+                onClick={() => toggleInstrument(instrument)}
+                className="ml-0.5 hover:text-red-400 transition-colors"
+                aria-label={`Remove ${instrument} filter`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
       )}
 
       {/* Clear filters */}

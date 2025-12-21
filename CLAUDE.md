@@ -379,6 +379,54 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Profile Completeness Indicator (December 2025)
+- **New scoring system** - 100-point profile completeness calculation
+  - Identity (20 pts): at least one identity flag set
+  - Basics (30 pts): full_name (10), bio ≥50 chars (10), avatar (10)
+  - Music Details (30 pts): instruments (15), genres (15)
+  - Engagement (20 pts): social link (10), tip link (10)
+- **ProfileCompleteness component** - Progress bar with color coding + up to 3 actionable suggestions
+- **DashboardProfileCard** - Compact version on /dashboard home page
+- **Anchor scrolling** - Clicking suggestions scrolls to relevant section with highlight
+- **Section IDs added** to profile edit page for anchor navigation
+- Key files:
+  - `web/src/lib/profile/completeness.ts` - Scoring logic
+  - `web/src/components/profile/ProfileCompleteness.tsx` - Full UI component
+  - `web/src/app/(protected)/dashboard/DashboardProfileCard.tsx` - Compact dashboard card
+  - `web/src/app/(protected)/dashboard/profile/page.tsx` - Added indicator + section IDs
+
+### Member Directory Filters Enhancement (December 2025)
+- **Instruments & Genres filters** on /members page now use curated options
+- **Shared constants file** - `web/src/lib/profile/options.ts` for INSTRUMENT_OPTIONS and GENRE_OPTIONS
+- **Case-insensitive matching** for genre and instrument filters
+- **Active filter chips** - Removable chips showing selected filters
+- **Deduplicated constants** - Profile, onboarding, and member filters all use shared options
+- Key files:
+  - `web/src/lib/profile/options.ts` - Shared INSTRUMENT_OPTIONS (17) and GENRE_OPTIONS (16)
+  - `web/src/components/members/MemberFilters.tsx` - Updated to use curated options
+  - `web/src/app/(protected)/dashboard/profile/page.tsx` - Imports shared constants
+  - `web/src/app/onboarding/profile/page.tsx` - Imports shared constants
+
+### Genres Custom Entry UX (December 2025)
+- **Genres section now matches Instruments UX** - curated options + custom entry
+- **Custom genre input** with Enter key + Add button support
+- **Case-insensitive duplicate prevention** against both curated and custom entries
+- **Removable chips** for custom genre entries
+- Key file: `web/src/app/(protected)/dashboard/profile/page.tsx`
+
+### Shared Profile Display Components (December 2025)
+- **ProfileIcons module** - Extracted shared SocialIcon, TipIcon, buildSocialLinks, buildTipLinks
+- **Aligned public profile pages** - songwriters/[id], performers/[id], studios/[id] all use shared components
+- **Identity badges standardized** - Flag-first logic (is_songwriter, is_host, is_studio, is_fan) with legacy role fallback
+- **Tip button text color fix** - Changed from `text-[var(--color-text-primary)]` to `text-white` for contrast
+- **"Instruments & Skills" rename** - Consistent section naming across profile pages
+- Key files:
+  - `web/src/components/profile/ProfileIcons.tsx` - Shared icon components and link builders
+  - `web/src/components/profile/index.ts` - Barrel exports
+  - `web/src/app/songwriters/[id]/page.tsx` - Updated to use shared components
+  - `web/src/app/performers/[id]/page.tsx` - Updated to use shared components
+  - `web/src/app/studios/[id]/page.tsx` - Updated to use shared components
+
 ### ThemePicker & Gallery Comments (December 2025)
 - **ThemePicker component** - New dropdown theme selector with 9 presets (4 dark, 5 light)
   - Compact mode for header/mobile menu with color swatch showing current theme accent
@@ -755,9 +803,12 @@ Copy `.env.example` to `.env.local` and fill in values from Supabase dashboard.
 | `web/src/lib/supabase/serviceRoleClient.ts` | Admin operations (bypasses RLS) |
 | `web/src/lib/auth/adminAuth.ts` | `checkAdminRole()` utility |
 | `web/src/lib/supabase/database.types.ts` | Generated TypeScript types |
+| `web/src/lib/profile/options.ts` | Shared INSTRUMENT_OPTIONS and GENRE_OPTIONS |
+| `web/src/lib/profile/completeness.ts` | Profile completeness scoring logic |
 | `web/src/lib/waitlistOffer.ts` | Waitlist promotion logic |
 | `web/src/lib/waitlistOfferClient.ts` | Client-safe waitlist utilities |
 | `web/src/types/index.ts` | Custom TypeScript types |
+| `web/src/components/profile/` | Shared profile components (icons, completeness) |
 | `next.config.ts` | Next.js config with redirects |
 | `ARCHITECTURE_PLAN.md` | White-label platform roadmap |
 | `web/src/app/themes/presets.css` | Theme preset CSS variables |

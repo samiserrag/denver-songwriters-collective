@@ -53,17 +53,20 @@ export async function GET(request: NextRequest) {
       .or(`title.ilike.${like},description.ilike.${like}`)
       .limit(5),
 
-    // Members - search name, bio
+    // Members - search name, bio (using identity flags with legacy role fallback)
     supabase
       .from("profiles")
       .select(`
         id,
         full_name,
         role,
+        is_songwriter,
+        is_host,
+        is_studio,
         avatar_url,
         location
       `)
-      .in("role", ["performer", "host", "studio"])
+      .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
       .or(`full_name.ilike.${like},bio.ilike.${like}`)
       .limit(5),
 

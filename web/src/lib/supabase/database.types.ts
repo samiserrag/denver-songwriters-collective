@@ -1941,6 +1941,59 @@ export type Database = {
           },
         ]
       }
+      user_deletion_log: {
+        Row: {
+          actor_is_admin: boolean
+          actor_is_super_admin: boolean
+          actor_user_id: string | null
+          buckets: Json
+          created_at: string
+          failures: Json
+          id: string
+          mode: string
+          notes: string | null
+          status: string
+          target_user_id: string
+          target_was_admin: boolean
+        }
+        Insert: {
+          actor_is_admin?: boolean
+          actor_is_super_admin?: boolean
+          actor_user_id?: string | null
+          buckets?: Json
+          created_at?: string
+          failures?: Json
+          id?: string
+          mode: string
+          notes?: string | null
+          status: string
+          target_user_id: string
+          target_was_admin?: boolean
+        }
+        Update: {
+          actor_is_admin?: boolean
+          actor_is_super_admin?: boolean
+          actor_user_id?: string | null
+          buckets?: Json
+          created_at?: string
+          failures?: Json
+          id?: string
+          mode?: string
+          notes?: string | null
+          status?: string
+          target_user_id?: string
+          target_was_admin?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_deletion_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_canonical: {
         Row: {
           address: string | null
@@ -2302,7 +2355,7 @@ export type Database = {
         | "blog_post_created"
         | "volunteer_signup"
         | "host_claim"
-      user_role: "performer" | "host" | "studio" | "admin" | "fan"
+      user_role: "performer" | "host" | "studio" | "admin" | "fan" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2441,7 +2494,7 @@ export const Constants = {
         "volunteer_signup",
         "host_claim",
       ],
-      user_role: ["performer", "host", "studio", "admin", "fan"],
+      user_role: ["performer", "host", "studio", "admin", "fan", "member"],
     },
   },
 } as const

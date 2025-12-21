@@ -18,7 +18,11 @@ interface SpotlightProfile {
   role: string;
   featured_at: string | null;
   is_featured: boolean;
+  // Identity flags
+  is_songwriter: boolean | null;
   is_host: boolean | null;
+  is_studio: boolean | null;
+  is_fan: boolean | null;
   spotlight_type: string | null;
 }
 
@@ -26,23 +30,29 @@ export default async function SpotlightPage() {
   const supabase = await createSupabaseServerClient();
 
   // Get current spotlighted profiles (is_featured = true)
+  // Include identity flags for proper display/linking
   const { data: currentSpotlights } = await supabase
     .from("profiles")
-    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_host, spotlight_type")
+    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
     .eq("is_featured", true)
-    .in("role", ["performer", "host", "studio"])
+    .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
     .order("featured_rank", { ascending: true });
 
   // Get previously spotlighted profiles (has featured_at but not currently featured)
   // We'll show anyone with a featured_at timestamp who isn't currently featured
   const { data: previousSpotlights } = await supabase
     .from("profiles")
-    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_host, spotlight_type")
+    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
     .eq("is_featured", false)
     .not("featured_at", "is", null)
-    .in("role", ["performer", "host", "studio"])
+    .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
     .order("featured_at", { ascending: false })
     .limit(20);
+
+  // Identity flag helpers with legacy role fallback
+  const isProfileStudio = (p: SpotlightProfile) => p.is_studio || p.role === "studio";
+  const isProfileSongwriter = (p: SpotlightProfile) => p.is_songwriter || p.role === "performer";
+  const isProfileHost = (p: SpotlightProfile) => p.is_host || p.role === "host";
 
   const getRoleLabel = (profile: SpotlightProfile) => {
     // Use spotlight_type if available for current spotlights
@@ -53,21 +63,26 @@ export default async function SpotlightPage() {
         case "studio": return "Studio Spotlight";
       }
     }
-    // Fallback to role-based labels
-    if (profile.role === "performer" && profile.is_host) {
+    // Flag-based labels with role fallback
+    if (isProfileStudio(profile)) {
+      return "Studio";
+    }
+    if (isProfileSongwriter(profile) && isProfileHost(profile)) {
       return "Artist & Host";
     }
-    switch (profile.role) {
-      case "performer": return "Artist";
-      case "host": return "Open Mic Host";
-      case "studio": return "Studio";
-      default: return profile.role;
+    if (isProfileSongwriter(profile)) {
+      return "Artist";
     }
+    if (isProfileHost(profile)) {
+      return "Open Mic Host";
+    }
+    return "Member";
   };
 
   const getProfileLink = (profile: SpotlightProfile) => {
-    if (profile.role === "studio") return `/studios/${profile.id}`;
-    return `/performers/${profile.id}`;
+    // Studios -> /studios/[id], everyone else -> /songwriters/[id]
+    if (isProfileStudio(profile)) return `/studios/${profile.id}`;
+    return `/songwriters/${profile.id}`;
   };
 
   return (

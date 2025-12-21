@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import type { Member, MemberRole } from "@/types";
+import type { Member } from "@/types";
 import { SpotlightBadge } from "@/components/special/spotlight-badge";
 import { SocialLinks } from "@/components/special/social-links";
 import { ImagePlaceholder } from "@/components/ui";
@@ -20,49 +20,82 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function getRoleBadgeStyle(role: MemberRole): string {
-  switch (role) {
-    case "songwriter":
-    case "performer":
-      return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
-    case "studio":
-      return "bg-purple-500/20 text-purple-300 border-purple-500/30";
-    case "host":
-      return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
-    case "fan":
-      return "bg-blue-500/20 text-blue-300 border-blue-500/30";
-    default:
-      return "bg-gray-500/20 text-[var(--color-text-secondary)] border-gray-500/30";
-  }
+/**
+ * Identity flag helpers with legacy role fallback
+ */
+function isMemberSongwriter(member: Member): boolean {
+  return member.isSongwriter || member.role === "performer" || member.role === "songwriter";
 }
 
-function getRoleLabel(role: MemberRole, isHost?: boolean): string {
-  // Map "performer" to "Songwriter" in display
-  const displayRole = role === "performer" ? "songwriter" : role;
-  if ((role === "performer" || role === "songwriter") && isHost) {
+function isMemberHost(member: Member): boolean {
+  return member.isHost || member.role === "host";
+}
+
+function isMemberStudio(member: Member): boolean {
+  return member.isStudio || member.role === "studio";
+}
+
+function isMemberFan(member: Member): boolean {
+  return member.isFan || member.role === "fan";
+}
+
+/**
+ * Get primary badge style based on identity flags (priority: Studio > Host > Songwriter > Fan)
+ */
+function getBadgeStyle(member: Member): string {
+  if (isMemberStudio(member)) {
+    return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+  }
+  if (isMemberHost(member) && !isMemberSongwriter(member)) {
+    return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+  }
+  if (isMemberSongwriter(member)) {
+    return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
+  }
+  if (isMemberFan(member)) {
+    return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+  }
+  return "bg-gray-500/20 text-[var(--color-text-secondary)] border-gray-500/30";
+}
+
+/**
+ * Get primary label based on identity flags
+ * Shows combined labels when appropriate (e.g., "Songwriter & Host")
+ */
+function getLabel(member: Member): string {
+  if (isMemberStudio(member)) {
+    return "Studio";
+  }
+  if (isMemberSongwriter(member) && isMemberHost(member)) {
     return "Songwriter & Host";
   }
-  return displayRole.charAt(0).toUpperCase() + displayRole.slice(1);
+  if (isMemberSongwriter(member)) {
+    return "Songwriter";
+  }
+  if (isMemberHost(member)) {
+    return "Host";
+  }
+  if (isMemberFan(member)) {
+    return "Fan";
+  }
+  return "Member";
 }
 
+/**
+ * Get profile link based on identity flags (Studio -> /studios, others -> /songwriters)
+ */
 function getProfileLink(member: Member): string {
-  switch (member.role) {
-    case "songwriter":
-    case "performer":
-      return `/songwriters/${member.id}`;
-    case "studio":
-      return `/studios/${member.id}`;
-    case "host":
-      return `/songwriters/${member.id}`;
-    default:
-      return `/songwriters/${member.id}`;
+  if (isMemberStudio(member)) {
+    return `/studios/${member.id}`;
   }
+  // All other members (songwriters, hosts, fans) go to /songwriters/[id]
+  return `/songwriters/${member.id}`;
 }
 
 export function MemberCard({ member, className }: MemberCardProps) {
   const profileLink = getProfileLink(member);
-  const roleLabel = getRoleLabel(member.role, member.isHost);
-  const roleBadgeStyle = getRoleBadgeStyle(member.role);
+  const roleLabel = getLabel(member);
+  const roleBadgeStyle = getBadgeStyle(member);
 
   return (
     <Link href={profileLink} className="block h-full group focus-visible:outline-none">

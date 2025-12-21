@@ -163,13 +163,19 @@ export interface StudioOwnedAppointment {
   performer_name?: string | null;
 }
 
-export type MemberRole = "songwriter" | "performer" | "host" | "studio" | "fan";
+// Note: "member" is the normalized role for all non-admin users.
+// Legacy values (performer, host, studio, fan) are kept for backward compatibility.
+export type MemberRole = "member" | "songwriter" | "performer" | "host" | "studio" | "fan";
 
 export interface Member {
   id: string;
   name: string;
   role: MemberRole;
+  // Identity flags (preferred over role for UX)
+  isSongwriter?: boolean;
   isHost?: boolean;
+  isStudio?: boolean;
+  isFan?: boolean;
   bio?: string;
   genres?: string[];
   instruments?: string[];

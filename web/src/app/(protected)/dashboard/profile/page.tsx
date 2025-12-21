@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { PageContainer, HeroSection } from "@/components/layout";
+import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
+import { ProfileCompleteness } from "@/components/profile";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -12,6 +14,12 @@ type FormData = {
   full_name: string;
   bio: string;
   avatar_url: string;
+  // Identity flags
+  is_songwriter: boolean;
+  is_host: boolean;
+  is_studio: boolean;
+  is_fan: boolean;
+  // Social links
   instagram_url: string;
   facebook_url: string;
   twitter_url: string;
@@ -39,6 +47,12 @@ const initialFormData: FormData = {
   full_name: "",
   bio: "",
   avatar_url: "",
+  // Identity flags
+  is_songwriter: false,
+  is_host: false,
+  is_studio: false,
+  is_fan: false,
+  // Social links
   instagram_url: "",
   facebook_url: "",
   twitter_url: "",
@@ -76,47 +90,7 @@ const SPECIALTY_OPTIONS = [
   "Arrangement",
 ];
 
-const GENRE_OPTIONS = [
-  "Folk",
-  "Americana",
-  "Country",
-  "Rock",
-  "Indie",
-  "Pop",
-  "Singer-Songwriter",
-  "Blues",
-  "Jazz",
-  "R&B/Soul",
-  "Hip-Hop",
-  "Electronic",
-  "Classical",
-  "Bluegrass",
-  "Alternative",
-  "Punk",
-  "Metal",
-  "World",
-  "Experimental",
-];
-
-const INSTRUMENT_OPTIONS = [
-  "Acoustic Guitar",
-  "Electric Guitar",
-  "Bass Guitar",
-  "Piano/Keyboard",
-  "Drums/Percussion",
-  "Violin/Fiddle",
-  "Cello",
-  "Banjo",
-  "Mandolin",
-  "Ukulele",
-  "Harmonica",
-  "Saxophone",
-  "Trumpet",
-  "Flute",
-  "Voice",
-  "DJ/Electronic",
-  "Other",
-];
+// INSTRUMENT_OPTIONS and GENRE_OPTIONS are imported from @/lib/profile/options
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -125,7 +99,9 @@ export default function EditProfilePage() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [customInstrument, setCustomInstrument] = useState("");
+  const [customGenre, setCustomGenre] = useState("");
+  // Note: userRole is kept for admin check only. UX is driven by identity flags (formData.is_songwriter, etc.)
 
   useEffect(() => {
     async function loadProfile() {
@@ -145,11 +121,16 @@ export default function EditProfilePage() {
         .single();
 
       if (profile) {
-        setUserRole(profile.role);
         setFormData({
           full_name: profile.full_name || "",
           bio: profile.bio || "",
           avatar_url: profile.avatar_url || "",
+          // Identity flags
+          is_songwriter: profile.is_songwriter || false,
+          is_host: profile.is_host || false,
+          is_studio: profile.is_studio || false,
+          is_fan: profile.is_fan || false,
+          // Social links
           instagram_url: (profile as any).instagram_url || "",
           facebook_url: (profile as any).facebook_url || "",
           twitter_url: (profile as any).twitter_url || "",
@@ -253,6 +234,12 @@ export default function EditProfilePage() {
         .update({
           full_name: formData.full_name || null,
           bio: formData.bio || null,
+          // Identity flags
+          is_songwriter: formData.is_songwriter,
+          is_host: formData.is_host,
+          is_studio: formData.is_studio,
+          is_fan: formData.is_fan,
+          // Social links
           instagram_url: formData.instagram_url || null,
           facebook_url: formData.facebook_url || null,
           twitter_url: formData.twitter_url || null,
@@ -324,9 +311,12 @@ export default function EditProfilePage() {
 
       <PageContainer>
         <div className="py-8 max-w-2xl">
+          {/* Profile Completeness Indicator */}
+          <ProfileCompleteness profile={formData} />
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Profile Picture */}
-            <section>
+            <section id="avatar-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
                 Profile Picture
               </h2>
@@ -355,7 +345,7 @@ export default function EditProfilePage() {
             </section>
 
             {/* Basic Info */}
-            <section>
+            <section id="basic-info-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Basic Info
               </h2>
@@ -391,9 +381,73 @@ export default function EditProfilePage() {
               </div>
             </section>
 
+            {/* Identity */}
+            <section id="identity-section">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-2">
+                How you identify
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                These choices help personalize your experience and how you appear to others.
+                They don&apos;t grant permissions.
+              </p>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_songwriter}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_songwriter: e.target.checked }))}
+                    className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                  />
+                  <div>
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">I&apos;m a songwriter, musician, or singer</span>
+                    <p className="text-xs text-[var(--color-text-secondary)]">I write, perform, or record music</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_host}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_host: e.target.checked }))}
+                    className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                  />
+                  <div>
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">I host open mics</span>
+                    <p className="text-xs text-[var(--color-text-secondary)]">I host or co-host open mic nights</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_studio}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_studio: e.target.checked }))}
+                    className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                  />
+                  <div>
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">I run a recording studio</span>
+                    <p className="text-xs text-[var(--color-text-secondary)]">I offer recording, mixing, or production services</p>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_fan}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_fan: e.target.checked }))}
+                    className="w-5 h-5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-accent)] focus:ring-[var(--color-border-accent)]/50"
+                  />
+                  <div>
+                    <span className="text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">I&apos;m a music fan and supporter</span>
+                    <p className="text-xs text-[var(--color-text-secondary)]">I love live music and supporting local artists</p>
+                  </div>
+                </label>
+              </div>
+            </section>
+
             {/* Music & Skills (Performers only) */}
-            {userRole === "performer" && (
-              <section>
+            {formData.is_songwriter && (
+              <section id="music-skills-section">
                 <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Music & Skills
                 </h2>
@@ -404,10 +458,10 @@ export default function EditProfilePage() {
                   {/* Genres */}
                   <div>
                     <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
-                      Genres
+                      Genres (you can add your own)
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)] mb-3">
-                      Select the genres you play or write
+                      Select genres that fit your music. Add custom entries anytime.
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {GENRE_OPTIONS.map((genre) => (
@@ -435,15 +489,105 @@ export default function EditProfilePage() {
                         </label>
                       ))}
                     </div>
+
+                    {/* Custom genre input */}
+                    <div className="mt-4">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customGenre}
+                          onChange={(e) => setCustomGenre(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const trimmed = customGenre.trim();
+                              if (trimmed) {
+                                // Case-insensitive duplicate check against both curated and custom
+                                const isDuplicate = formData.genres.some(
+                                  (g) => g.toLowerCase() === trimmed.toLowerCase()
+                                ) || GENRE_OPTIONS.some(
+                                  (g) => g.toLowerCase() === trimmed.toLowerCase()
+                                );
+                                if (!isDuplicate) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    genres: [...prev.genres, trimmed]
+                                  }));
+                                }
+                                setCustomGenre("");
+                              }
+                            }
+                          }}
+                          placeholder="Add your own..."
+                          className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-input)] text-[var(--color-text-primary)] placeholder-[var(--color-placeholder)] text-sm focus:outline-none focus:border-[var(--color-border-accent)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const trimmed = customGenre.trim();
+                            if (trimmed) {
+                              // Case-insensitive duplicate check against both curated and custom
+                              const isDuplicate = formData.genres.some(
+                                (g) => g.toLowerCase() === trimmed.toLowerCase()
+                              ) || GENRE_OPTIONS.some(
+                                (g) => g.toLowerCase() === trimmed.toLowerCase()
+                              );
+                              if (!isDuplicate) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  genres: [...prev.genres, trimmed]
+                                }));
+                              }
+                              setCustomGenre("");
+                            }
+                          }}
+                          className="px-4 py-2 rounded-lg border border-[var(--color-border-accent)] text-[var(--color-text-accent)] text-sm hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Custom genres (not in curated list) as removable chips */}
+                    {formData.genres.filter(g => !GENRE_OPTIONS.includes(g)).length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-2">Your custom entries:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.genres
+                            .filter(g => !GENRE_OPTIONS.includes(g))
+                            .map((genre) => (
+                              <span
+                                key={genre}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] text-sm"
+                              >
+                                {genre}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      genres: prev.genres.filter(g => g !== genre)
+                                    }));
+                                  }}
+                                  className="ml-1 hover:text-red-500 transition-colors"
+                                  aria-label={`Remove ${genre}`}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Instruments */}
+                  {/* Instruments & Skills */}
                   <div>
                     <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
-                      Instruments
+                      Instruments & Skills (you can add your own)
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)] mb-3">
-                      Select the instruments you play
+                      Select what you play or do. You can add custom entries if yours isn&apos;t listed.
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {INSTRUMENT_OPTIONS.map((instrument) => (
@@ -471,6 +615,92 @@ export default function EditProfilePage() {
                         </label>
                       ))}
                     </div>
+
+                    {/* Custom instrument input */}
+                    <div className="mt-4">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customInstrument}
+                          onChange={(e) => setCustomInstrument(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const trimmed = customInstrument.trim();
+                              if (trimmed) {
+                                // Case-insensitive duplicate check
+                                const isDuplicate = formData.instruments.some(
+                                  (i) => i.toLowerCase() === trimmed.toLowerCase()
+                                );
+                                if (!isDuplicate) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    instruments: [...prev.instruments, trimmed]
+                                  }));
+                                }
+                                setCustomInstrument("");
+                              }
+                            }
+                          }}
+                          placeholder="Add your own..."
+                          className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-input)] text-[var(--color-text-primary)] placeholder-[var(--color-placeholder)] text-sm focus:outline-none focus:border-[var(--color-border-accent)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const trimmed = customInstrument.trim();
+                            if (trimmed) {
+                              // Case-insensitive duplicate check
+                              const isDuplicate = formData.instruments.some(
+                                (i) => i.toLowerCase() === trimmed.toLowerCase()
+                              );
+                              if (!isDuplicate) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  instruments: [...prev.instruments, trimmed]
+                                }));
+                              }
+                              setCustomInstrument("");
+                            }
+                          }}
+                          className="px-4 py-2 rounded-lg border border-[var(--color-border-accent)] text-[var(--color-text-accent)] text-sm hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Custom instruments (not in curated list) as removable chips */}
+                    {formData.instruments.filter(i => !INSTRUMENT_OPTIONS.includes(i)).length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-2">Your custom entries:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.instruments
+                            .filter(i => !INSTRUMENT_OPTIONS.includes(i))
+                            .map((instrument) => (
+                              <span
+                                key={instrument}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] text-sm"
+                              >
+                                {instrument}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      instruments: prev.instruments.filter(i => i !== instrument)
+                                    }));
+                                  }}
+                                  className="ml-1 hover:text-red-500 transition-colors"
+                                  aria-label={`Remove ${instrument}`}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Specialties */}
@@ -519,7 +749,7 @@ export default function EditProfilePage() {
             )}
 
             {/* Collaboration & Availability (Performers only) */}
-            {userRole === "performer" && (
+            {formData.is_songwriter && (
               <section>
                 <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Collaboration & Availability
@@ -587,7 +817,7 @@ export default function EditProfilePage() {
             )}
 
             {/* Featured Song (Performers only) */}
-            {userRole === "performer" && (
+            {formData.is_songwriter && (
               <section>
                 <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Featured Song
@@ -610,7 +840,7 @@ export default function EditProfilePage() {
             )}
 
             {/* Song Links (Performers only) */}
-            {userRole === "performer" && (
+            {formData.is_songwriter && (
               <section>
                 <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                   Additional Songs
@@ -663,7 +893,7 @@ export default function EditProfilePage() {
             )}
 
             {/* Social Links */}
-            <section>
+            <section id="social-links-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Social Links
               </h2>
@@ -759,7 +989,7 @@ export default function EditProfilePage() {
             </section>
 
             {/* Tip Links */}
-            <section>
+            <section id="tip-links-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Accept Tips
               </h2>
@@ -827,7 +1057,7 @@ export default function EditProfilePage() {
               >
                 Cancel
               </Link>
-              {userRole === "performer" && userId && (
+              {formData.is_songwriter && userId && (
                 <Link
                   href={`/performers/${userId}`}
                   className="px-6 py-3 rounded-lg border border-[var(--color-border-accent)]/30 hover:border-[var(--color-border-accent)]/60 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors text-center"

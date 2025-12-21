@@ -29,10 +29,11 @@ export default async function AdminPerformersPage() {
     return <div className="p-8 text-red-500">Access denied — admin only.</div>;
   }
 
+  // Query using identity flags with legacy role fallback
   const { data: performers } = await supabase
     .from("profiles")
     .select("*")
-    .eq("role", "performer")
+    .or("is_songwriter.eq.true,role.eq.performer")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })
     .order("created_at", { ascending: false });

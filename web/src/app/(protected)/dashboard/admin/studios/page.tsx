@@ -28,10 +28,11 @@ export default async function AdminStudiosPage() {
     return <div className="p-8 text-red-500">Access denied — admin only.</div>;
   }
 
+  // Query using identity flags with legacy role fallback
   const { data: studios } = await supabase
     .from("profiles")
     .select("*")
-    .eq("role", "studio")
+    .or("is_studio.eq.true,role.eq.studio")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })
     .order("created_at", { ascending: false });

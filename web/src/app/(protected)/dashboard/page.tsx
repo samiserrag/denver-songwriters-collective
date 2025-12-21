@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { PerformerAvatar } from "@/components/performers";
 import { WelcomeToast } from "./WelcomeToast";
+import { DashboardProfileCard } from "./DashboardProfileCard";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
@@ -93,6 +94,33 @@ export default async function DashboardPage() {
 
       <PageContainer>
         <div className="py-12 space-y-10">
+          {/* Profile Completeness Card */}
+          {p && (
+            <DashboardProfileCard
+              profile={{
+                is_songwriter: p.is_songwriter ?? false,
+                is_host: p.is_host ?? false,
+                is_studio: p.is_studio ?? false,
+                is_fan: p.is_fan ?? false,
+                full_name: p.full_name,
+                bio: p.bio,
+                avatar_url: p.avatar_url,
+                instruments: p.instruments,
+                genres: p.genres,
+                instagram_url: p.instagram_url,
+                facebook_url: p.facebook_url,
+                twitter_url: p.twitter_url,
+                tiktok_url: p.tiktok_url,
+                youtube_url: p.youtube_url,
+                spotify_url: p.spotify_url,
+                website_url: p.website_url,
+                venmo_handle: p.venmo_handle,
+                cashapp_handle: p.cashapp_handle,
+                paypal_url: p.paypal_url,
+              }}
+            />
+          )}
+
           <section>
             <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">
               Quick Actions
@@ -151,29 +179,33 @@ export default async function DashboardPage() {
                 </Link>
               </li>
 
-              {p?.role === "performer" && (
+              {/* Songwriter/Performer links - flag-based with role fallback */}
+              {(p?.is_songwriter || p?.role === "performer") && (
                 <>
                   <li>
                     <Link href="/events" className="text-[var(--color-accent-primary)] hover:underline">Find Open Mic Slots</Link>
                   </li>
                   <li>
-                    <Link href={`/performers/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Public Profile</Link>
+                    <Link href={`/songwriters/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Public Profile</Link>
                   </li>
                 </>
               )}
 
-              {p?.role === "studio" && (
+              {/* Studio links - flag-based with role fallback */}
+              {(p?.is_studio || p?.role === "studio") && (
                 <li>
-                  <Link href="/studios" className="text-[var(--color-accent-primary)] hover:underline">Manage Your Services (coming soon)</Link>
+                  <Link href={`/studios/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Studio Profile</Link>
                 </li>
               )}
 
-              {p?.role === "host" && (
+              {/* Host links - flag-based with role fallback */}
+              {(p?.is_host || p?.role === "host") && (
                 <li>
-                  <Link href="/events/manage" className="text-[var(--color-accent-primary)] hover:underline">Host Dashboard (coming soon)</Link>
+                  <Link href="/dashboard/my-events" className="text-[var(--color-accent-primary)] hover:underline">Host Dashboard</Link>
                 </li>
               )}
 
+              {/* Admin Panel - role-based only (access control) */}
               {p?.role === "admin" && (
                 <li>
                   <Link href="/dashboard/admin" className="text-[var(--color-accent-primary)] hover:underline">Admin Panel</Link>

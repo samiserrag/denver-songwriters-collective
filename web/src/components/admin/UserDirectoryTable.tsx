@@ -6,7 +6,6 @@ import type { Database } from "@/lib/supabase/database.types";
 import { deleteUser, updateSpotlightType, toggleHostStatus, toggleAdminRole } from "@/app/(protected)/dashboard/admin/users/actions";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type ExtendedProfile = Profile & { is_host?: boolean; spotlight_type?: string | null };
 
 interface Props {
   users: Profile[];
@@ -14,12 +13,47 @@ interface Props {
   currentUserId?: string;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  performer: "Performer",
-  studio: "Studio",
-  host: "Host",
-  admin: "Admin",
-};
+// Identity flag helpers with legacy role fallback
+function isUserSongwriter(u: Profile): boolean {
+  return u.is_songwriter || u.role === "performer";
+}
+
+function isUserHost(u: Profile): boolean {
+  return u.is_host || u.role === "host";
+}
+
+function isUserStudio(u: Profile): boolean {
+  return u.is_studio || u.role === "studio";
+}
+
+function isUserFan(u: Profile): boolean {
+  return u.is_fan || u.role === "fan";
+}
+
+function isUserAdmin(u: Profile): boolean {
+  return u.role === "admin";
+}
+
+// Get display label based on identity flags
+function getUserTypeLabel(u: Profile): string {
+  if (isUserAdmin(u)) return "Admin";
+  if (isUserStudio(u)) return "Studio";
+  if (isUserSongwriter(u) && isUserHost(u)) return "Songwriter & Host";
+  if (isUserSongwriter(u)) return "Songwriter";
+  if (isUserHost(u)) return "Host";
+  if (isUserFan(u)) return "Fan";
+  return "Member";
+}
+
+// Get badge color based on identity
+function getUserTypeBadgeClass(u: Profile): string {
+  if (isUserAdmin(u)) return "bg-red-100 text-red-700 border-red-300";
+  if (isUserStudio(u)) return "bg-purple-100 text-purple-700 border-purple-300";
+  if (isUserHost(u)) return "bg-emerald-100 text-emerald-700 border-emerald-300";
+  if (isUserSongwriter(u)) return "bg-amber-100 text-amber-700 border-amber-300";
+  if (isUserFan(u)) return "bg-blue-100 text-blue-700 border-blue-300";
+  return "bg-gray-100 text-gray-600 border-gray-300";
+}
 
 const SPOTLIGHT_OPTIONS = [
   { value: "", label: "Off" },
@@ -28,10 +62,13 @@ const SPOTLIGHT_OPTIONS = [
   { value: "studio", label: "Studio Spotlight" },
 ];
 
+// Filter types - flag-based with admin using role
+type FilterType = "all" | "songwriters" | "studios" | "hosts" | "fans" | "admin";
+
 export default function UserDirectoryTable({ users, isSuperAdmin = false, currentUserId }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "performer" | "studio" | "host" | "admin">("all");
+  const [filterType, setFilterType] = useState<FilterType>("all");
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; user: Profile | null }>({
     open: false,
     user: null,
@@ -45,23 +82,42 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
-      const matchesRole =
-        roleFilter === "all" ? true : u.role === roleFilter;
+      // Flag-based filtering with role fallback
+      let matchesFilter = true;
+      switch (filterType) {
+        case "songwriters":
+          matchesFilter = isUserSongwriter(u);
+          break;
+        case "studios":
+          matchesFilter = isUserStudio(u);
+          break;
+        case "hosts":
+          matchesFilter = isUserHost(u);
+          break;
+        case "fans":
+          matchesFilter = isUserFan(u);
+          break;
+        case "admin":
+          matchesFilter = isUserAdmin(u);
+          break;
+        default:
+          matchesFilter = true;
+      }
 
       const term = search.trim().toLowerCase();
-      if (!term) return matchesRole;
+      if (!term) return matchesFilter;
 
       const name = (u.full_name ?? "").toLowerCase();
-      const role = (u.role ?? "").toString().toLowerCase();
+      const typeLabel = getUserTypeLabel(u).toLowerCase();
 
       return (
-        matchesRole &&
-        (name.includes(term) || role.includes(term))
+        matchesFilter &&
+        (name.includes(term) || typeLabel.includes(term))
       );
     });
-  }, [users, search, roleFilter]);
+  }, [users, search, filterType]);
 
-  const handleSpotlightChange = async (user: ExtendedProfile, value: string) => {
+  const handleSpotlightChange = async (user: Profile, value: string) => {
     setUpdatingSpotlight(user.id);
     try {
       const spotlightType = value === "" ? null : (value as "performer" | "host" | "studio");
@@ -80,7 +136,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
   const handleToggleHost = async (user: Profile) => {
     setTogglingHost(user.id);
     try {
-      const newHostStatus = !(user as ExtendedProfile).is_host;
+      const newHostStatus = !user.is_host;
       const result = await toggleHostStatus(user.id, newHostStatus);
       if (!result.success) {
         console.error("Toggle host error:", result.error);
@@ -144,7 +200,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
     }
   };
 
-  const getSpotlightValue = (user: ExtendedProfile): string => {
+  const getSpotlightValue = (user: Profile): string => {
     if (!user.is_featured) return "";
     return user.spotlight_type || "";
   };
@@ -177,16 +233,17 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
         </div>
         <div className="flex gap-2">
           <select
-            value={roleFilter}
+            value={filterType}
             onChange={(e) =>
-              setRoleFilter(e.target.value as typeof roleFilter)
+              setFilterType(e.target.value as FilterType)
             }
             className="rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
           >
-            <option value="all">All roles</option>
-            <option value="performer">Performers</option>
-            <option value="studio">Studios</option>
-            <option value="host">Hosts</option>
+            <option value="all">All members</option>
+            <option value="songwriters">Songwriters</option>
+            <option value="studios">Studios</option>
+            <option value="hosts">Hosts</option>
+            <option value="fans">Fans</option>
             <option value="admin">Admins</option>
           </select>
         </div>
@@ -198,8 +255,8 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
           <thead className="border-b border-[var(--color-border-default)] text-[var(--color-text-accent)]">
             <tr>
               <th className="py-2 px-3">Name</th>
-              <th className="py-2 px-3">Role</th>
-              <th className="py-2 px-3">Also Host</th>
+              <th className="py-2 px-3">Type</th>
+              <th className="py-2 px-3">Host</th>
               <th className="py-2 px-3">Spotlight</th>
               <th className="py-2 px-3">Created</th>
               <th className="py-2 px-3">Actions</th>
@@ -207,8 +264,9 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
           </thead>
           <tbody>
             {filtered.map((u) => {
-              const user = u as ExtendedProfile;
-              const spotlightValue = getSpotlightValue(user);
+              const spotlightValue = getSpotlightValue(u);
+              // Spotlight eligibility: songwriters, hosts, or studios (flag-based)
+              const canBeSpotlighted = isUserSongwriter(u) || isUserHost(u) || isUserStudio(u);
               return (
                 <tr key={u.id} className="border-b border-[var(--color-border-default)]/30">
                   <td className="py-2 px-3 text-[var(--color-text-primary)]">
@@ -216,39 +274,41 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
                   </td>
                   <td className="py-2 px-3">
                     <span
-                      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide bg-amber-100 text-amber-700 border-amber-300"
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs uppercase tracking-wide ${getUserTypeBadgeClass(u)}`}
                     >
-                      {ROLE_LABELS[u.role as string] ?? u.role ?? "Unknown"}
+                      {getUserTypeLabel(u)}
                     </span>
                   </td>
                   <td className="py-2 px-3">
-                    {u.role === "performer" ? (
+                    {/* Host toggle for songwriters (flag-based) */}
+                    {isUserSongwriter(u) && !isUserAdmin(u) ? (
                       <button
                         onClick={() => handleToggleHost(u)}
                         disabled={togglingHost === u.id}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                          user.is_host
+                          u.is_host
                             ? "bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200"
                             : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
                         }`}
                       >
                         {togglingHost === u.id
                           ? "..."
-                          : user.is_host
+                          : u.is_host
                           ? "Yes"
                           : "No"}
                       </button>
-                    ) : u.role === "host" ? (
+                    ) : isUserHost(u) && !isUserSongwriter(u) ? (
                       <span className="text-emerald-700 text-xs">Primary Host</span>
                     ) : (
                       <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
                   </td>
                   <td className="py-2 px-3">
-                    {u.role === "performer" || u.role === "host" || u.role === "studio" ? (
+                    {/* Spotlight eligibility: songwriters, hosts, studios (flag-based) */}
+                    {canBeSpotlighted ? (
                       <select
                         value={spotlightValue}
-                        onChange={(e) => handleSpotlightChange(user, e.target.value)}
+                        onChange={(e) => handleSpotlightChange(u, e.target.value)}
                         disabled={updatingSpotlight === u.id}
                         className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors border cursor-pointer ${getSpotlightDisplayClass(spotlightValue)} ${
                           updatingSpotlight === u.id ? "opacity-50" : ""

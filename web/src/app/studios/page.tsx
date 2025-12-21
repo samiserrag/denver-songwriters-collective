@@ -25,10 +25,11 @@ function mapDBProfileToStudio(profile: DBProfile): Studio {
 export default async function StudiosPage() {
   const supabase = await createSupabaseServerClient();
 
+  // Query using identity flags with legacy role fallback
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
-    .eq("role", "studio")
+    .or("is_studio.eq.true,role.eq.studio")
     .order("full_name", { ascending: true });
 
   const studios: Studio[] = (profiles ?? []).map(mapDBProfileToStudio);

@@ -32,6 +32,7 @@ export default async function AdminDashboardPage() {
   }
 
   // Fetch counts and site settings in parallel
+  // Use identity flags with legacy role fallback for performer/studio counts
   const [
     eventsRes,
     performersRes,
@@ -41,8 +42,8 @@ export default async function AdminDashboardPage() {
     siteSettings,
   ] = await Promise.all([
     supabase.from("events").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "performer"),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "studio"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).or("is_songwriter.eq.true,role.eq.performer"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).or("is_studio.eq.true,role.eq.studio"),
     supabase.from("event_update_suggestions").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     getSiteSettings(),
