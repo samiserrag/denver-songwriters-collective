@@ -108,6 +108,7 @@ CREATE INDEX gallery_albums_published_idx ON gallery_albums(is_published);
 - **Metadata Display**: Caption, photographer name, event/venue
 - **Focus Trap**: Body scroll prevented when open
 - **Accessibility**: Focus-visible rings, ARIA labels
+- **Comments Section**: Inline comments for each photo (see Comments below)
 
 ### GalleryGrid Component
 
@@ -166,3 +167,62 @@ Images are stored in Supabase Storage:
 |-----------|---------|
 | `20251206_gallery_and_blog.sql` | Creates `gallery_images` table with RLS |
 | `20251206_gallery_albums.sql` | Creates `gallery_albums` table, adds `album_id` |
+| `20251221044056_gallery_comments.sql` | Creates `gallery_photo_comments` and `gallery_album_comments` tables |
+
+## Comments
+
+### Database Schema
+
+```sql
+-- Photo comments
+CREATE TABLE gallery_photo_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  image_id UUID NOT NULL REFERENCES gallery_images(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (char_length(content) <= 500),
+  is_deleted BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Album comments
+CREATE TABLE gallery_album_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  album_id UUID NOT NULL REFERENCES gallery_albums(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (char_length(content) <= 500),
+  is_deleted BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### RLS Policies
+
+| Policy | Operation | Condition |
+|--------|-----------|-----------|
+| Public read | SELECT | `is_deleted = false` (for approved/published parent) |
+| Insert | INSERT | `auth.uid() = user_id` |
+| Update/Delete | UPDATE/DELETE | `auth.uid() = user_id` OR `is_admin()` |
+
+### Features
+
+- **Anti-spam**: 2-second cooldown between posts
+- **Max length**: 500 characters
+- **Optimistic delete**: Instant UI feedback, reverts on failure
+- **Permission model**: Author, admin, image uploader, or album owner can delete
+- **Guest prompt**: "Sign in to leave a comment" for unauthenticated users
+
+### Component
+
+```typescript
+// GalleryComments props
+interface GalleryCommentsProps {
+  type: "photo" | "album";
+  targetId: string;
+  imageUploaderId?: string;  // For photo comments
+  albumOwnerId?: string;     // For album owner delete permission
+}
+```
+
+Key file: `src/components/gallery/GalleryComments.tsx`

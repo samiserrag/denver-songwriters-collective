@@ -55,6 +55,48 @@ export type Database = {
           },
         ]
       }
+      app_logs: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          level: string
+          message: string
+          source: string | null
+          url: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          level: string
+          message: string
+          source?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          level?: string
+          message?: string
+          source?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       approved_hosts: {
         Row: {
           approved_at: string | null
@@ -725,12 +767,18 @@ export type Database = {
           id: string
           is_dsc_event: boolean | null
           is_published: boolean | null
+          is_recurring: boolean | null
           is_showcase: boolean | null
           is_spotlight: boolean | null
           last_verified_at: string | null
           notes: string | null
+          parent_event_id: string | null
+          recurrence_end_date: string | null
+          recurrence_pattern: string | null
           recurrence_rule: string | null
           region_id: number | null
+          series_id: string | null
+          series_index: number | null
           signup_time: string | null
           slot_duration_minutes: number | null
           slot_offer_window_minutes: number | null
@@ -763,12 +811,18 @@ export type Database = {
           id?: string
           is_dsc_event?: boolean | null
           is_published?: boolean | null
+          is_recurring?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
           last_verified_at?: string | null
           notes?: string | null
+          parent_event_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_pattern?: string | null
           recurrence_rule?: string | null
           region_id?: number | null
+          series_id?: string | null
+          series_index?: number | null
           signup_time?: string | null
           slot_duration_minutes?: number | null
           slot_offer_window_minutes?: number | null
@@ -801,12 +855,18 @@ export type Database = {
           id?: string
           is_dsc_event?: boolean | null
           is_published?: boolean | null
+          is_recurring?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
           last_verified_at?: string | null
           notes?: string | null
+          parent_event_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_pattern?: string | null
           recurrence_rule?: string | null
           region_id?: number | null
+          series_id?: string | null
+          series_index?: number | null
           signup_time?: string | null
           slot_duration_minutes?: number | null
           slot_offer_window_minutes?: number | null
@@ -828,6 +888,20 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
           {
@@ -885,6 +959,48 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_album_comments: {
+        Row: {
+          album_id: string
+          content: string
+          created_at: string
+          id: string
+          is_deleted: boolean
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_album_comments_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_album_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1051,6 +1167,48 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_photo_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_id: string
+          is_deleted: boolean
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          image_id: string
+          is_deleted?: boolean
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_id?: string
+          is_deleted?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_photo_comments_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_photo_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1439,6 +1597,7 @@ export type Database = {
           bio: string | null
           cashapp_handle: string | null
           created_at: string | null
+          email: string | null
           facebook_url: string | null
           favorite_open_mic: string | null
           featured_at: string | null
@@ -1478,6 +1637,7 @@ export type Database = {
           bio?: string | null
           cashapp_handle?: string | null
           created_at?: string | null
+          email?: string | null
           facebook_url?: string | null
           favorite_open_mic?: string | null
           featured_at?: string | null
@@ -1517,6 +1677,7 @@ export type Database = {
           bio?: string | null
           cashapp_handle?: string | null
           created_at?: string | null
+          email?: string | null
           facebook_url?: string | null
           favorite_open_mic?: string | null
           featured_at?: string | null
@@ -1905,6 +2066,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_old_logs: { Args: never; Returns: number }
       create_admin_notification: {
         Args: {
           p_message: string
@@ -1971,6 +2133,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      generate_recurring_event_instances: {
+        Args: { p_parent_event_id: string; p_weeks_ahead?: number }
+        Returns: number
       }
       is_admin: { Args: never; Returns: boolean }
       mark_timeslot_no_show: {

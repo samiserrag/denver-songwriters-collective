@@ -10,6 +10,7 @@ import { NavLink } from "./nav-link";
 import { MobileMenu } from "./mobile-menu";
 import { useAuth } from "@/lib/auth/useAuth";
 import GlobalSearch from "@/components/GlobalSearch";
+import { ThemePicker } from "@/components/ui/ThemePicker";
 
 // Primary nav links (shown in main nav bar)
 const navLinks = [
@@ -35,6 +36,7 @@ export function Header({ className }: HeaderProps) {
   const { user, loading, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const menuTriggerRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
@@ -70,6 +72,9 @@ export function Header({ className }: HeaderProps) {
         <div className="hidden lg:flex items-center gap-3">
           {/* Global Search */}
           <GlobalSearch />
+
+          {/* Theme Picker */}
+          <ThemePicker compact />
 
           {/* Social Links */}
           <div className="flex items-center gap-2">
@@ -107,6 +112,7 @@ export function Header({ className }: HeaderProps) {
         </div>
 
         <button
+          ref={menuTriggerRef}
           className="lg:hidden p-2 text-[var(--color-text-primary)]"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
@@ -127,6 +133,7 @@ export function Header({ className }: HeaderProps) {
         links={navLinks}
         isLoggedIn={!!user}
         onLogout={handleLogout}
+        triggerRef={menuTriggerRef}
       />
     </header>
   );

@@ -8,6 +8,7 @@ import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
 // Button removed - not currently used on homepage
 import { LazyIframe, CLSLogger } from "@/components/home";
 import { NewsletterSection } from "@/components/navigation/NewsletterSection";
+import { ThemePicker } from "@/components/ui/ThemePicker";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 
@@ -627,6 +628,13 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Theme Picker */}
+      <section className="py-8 px-6 border-t border-[var(--color-border-default)]">
+        <div className="max-w-xl mx-auto">
+          <ThemePicker />
+        </div>
+      </section>
 
       {/* Newsletter Signup */}
       <NewsletterSection />

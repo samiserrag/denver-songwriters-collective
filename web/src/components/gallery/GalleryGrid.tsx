@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { GalleryComments } from "./GalleryComments";
 
 interface RawGalleryImage {
   id: string;
@@ -9,9 +10,12 @@ interface RawGalleryImage {
   caption: string | null;
   is_featured: boolean;
   created_at: string;
-  uploader: { full_name: string | null }[] | { full_name: string | null } | null;
+  uploaded_by?: string;
+  album_id?: string | null;
+  uploader: { full_name: string | null; id?: string }[] | { full_name: string | null; id?: string } | null;
   event: { title: string }[] | { title: string } | null;
   venue: { name: string }[] | { name: string } | null;
+  album?: { created_by: string }[] | { created_by: string } | null;
 }
 
 interface NormalizedGalleryImage {
@@ -20,13 +24,17 @@ interface NormalizedGalleryImage {
   caption: string | null;
   is_featured: boolean;
   created_at: string;
-  uploader: { full_name: string | null } | null;
+  uploaded_by?: string;
+  album_id?: string | null;
+  uploader: { full_name: string | null; id?: string } | null;
   event: { title: string } | null;
   venue: { name: string } | null;
+  album?: { created_by: string } | null;
 }
 
 interface Props {
   images: RawGalleryImage[];
+  albumOwnerId?: string;
 }
 
 // Helper to normalize array joins from Supabase
@@ -35,13 +43,14 @@ function normalizeRelation<T>(data: T | T[] | null): T | null {
   return Array.isArray(data) ? data[0] ?? null : data;
 }
 
-export default function GalleryGrid({ images }: Props) {
+export default function GalleryGrid({ images, albumOwnerId }: Props) {
   // Normalize the Supabase array joins
   const normalizedImages: NormalizedGalleryImage[] = images.map((img) => ({
     ...img,
     uploader: normalizeRelation(img.uploader),
     event: normalizeRelation(img.event),
     venue: normalizeRelation(img.venue),
+    album: normalizeRelation(img.album),
   }));
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -195,46 +204,60 @@ export default function GalleryGrid({ images }: Props) {
             </button>
           )}
 
-          {/* Image container */}
+          {/* Image container with comments */}
           <div
-            className="max-w-5xl max-h-[90vh] flex flex-col items-center"
+            className="max-w-5xl max-h-[90vh] flex flex-col lg:flex-row gap-4 items-start"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-full max-w-4xl" style={{ height: "min(80vh, 800px)" }}>
-              <Image
-                src={selectedImage.image_url}
-                alt={selectedImage.caption ?? "Gallery image"}
-                fill
-                sizes="(max-width: 1024px) 100vw, 1024px"
-                className="object-contain rounded-lg"
-                priority
-              />
-            </div>
-            <div className="mt-4 text-center">
-              {selectedImage.caption && (
-                <p className="text-[var(--color-text-primary)] text-lg mb-2">{selectedImage.caption}</p>
-              )}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-[var(--color-text-tertiary)] text-sm">
-                {selectedImage.uploader?.full_name && (
-                  <span>Photo by {selectedImage.uploader.full_name}</span>
-                )}
-                {selectedImage.event?.title && (
-                  <span>@ {selectedImage.event.title}</span>
-                )}
-                {selectedImage.venue?.name && !selectedImage.event && (
-                  <span>@ {selectedImage.venue.name}</span>
-                )}
+            {/* Image section */}
+            <div className="flex-1 flex flex-col items-center">
+              <div className="relative w-full max-w-4xl" style={{ height: "min(60vh, 600px)" }}>
+                <Image
+                  src={selectedImage.image_url}
+                  alt={selectedImage.caption ?? "Gallery image"}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 1024px"
+                  className="object-contain rounded-lg"
+                  priority
+                />
               </div>
-              {/* Image counter */}
-              {normalizedImages.length > 1 && (
-                <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
-                  {selectedIndex + 1} / {normalizedImages.length}
+              <div className="mt-4 text-center">
+                {selectedImage.caption && (
+                  <p className="text-[var(--color-text-primary)] text-lg mb-2">{selectedImage.caption}</p>
+                )}
+                <div className="flex flex-wrap items-center justify-center gap-4 text-[var(--color-text-tertiary)] text-sm">
+                  {selectedImage.uploader?.full_name && (
+                    <span>Photo by {selectedImage.uploader.full_name}</span>
+                  )}
+                  {selectedImage.event?.title && (
+                    <span>@ {selectedImage.event.title}</span>
+                  )}
+                  {selectedImage.venue?.name && !selectedImage.event && (
+                    <span>@ {selectedImage.venue.name}</span>
+                  )}
+                </div>
+                {/* Image counter */}
+                {normalizedImages.length > 1 && (
+                  <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
+                    {selectedIndex + 1} / {normalizedImages.length}
+                  </p>
+                )}
+                {/* Keyboard hint */}
+                <p className="text-neutral-600 text-sm mt-2 hidden sm:block">
+                  Use arrow keys to navigate, Escape to close
                 </p>
-              )}
-              {/* Keyboard hint */}
-              <p className="text-neutral-600 text-sm mt-2 hidden sm:block">
-                Use arrow keys to navigate, Escape to close
-              </p>
+              </div>
+            </div>
+
+            {/* Comments section */}
+            <div className="w-full lg:w-80 bg-[var(--color-bg-secondary)] rounded-xl p-4 max-h-[50vh] lg:max-h-[70vh] overflow-y-auto">
+              <GalleryComments
+                key={selectedImage.id}
+                type="photo"
+                targetId={selectedImage.id}
+                imageUploaderId={selectedImage.uploaded_by || selectedImage.uploader?.id}
+                albumOwnerId={albumOwnerId || selectedImage.album?.created_by}
+              />
             </div>
           </div>
         </div>

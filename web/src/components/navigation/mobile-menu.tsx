@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ThemePicker } from "@/components/ui/ThemePicker";
 
 interface MobileMenuProps {
   open: boolean;
@@ -13,6 +14,8 @@ interface MobileMenuProps {
   links: { href: string; label: string }[];
   isLoggedIn?: boolean;
   onLogout?: () => void;
+  /** Ref to the menu trigger button for focus return after close */
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 export function MobileMenu({
@@ -21,8 +24,18 @@ export function MobileMenu({
   links,
   isLoggedIn = false,
   onLogout,
+  triggerRef,
 }: MobileMenuProps) {
   const pathname = usePathname();
+
+  // Handle theme selection: close menu and return focus
+  const handleThemeSelect = React.useCallback(() => {
+    onClose();
+    // Return focus to menu trigger after close
+    requestAnimationFrame(() => {
+      triggerRef?.current?.focus();
+    });
+  }, [onClose, triggerRef]);
 
   React.useEffect(() => {
     if (open) {
@@ -98,8 +111,15 @@ export function MobileMenu({
           </div>
         </nav>
 
-        {/* Fixed footer with auth buttons */}
-        <div className="p-6 pt-4 border-t border-white/10">
+        {/* Fixed footer with theme picker and auth buttons */}
+        <div className="p-6 pt-4 border-t border-white/10 space-y-4">
+          {/* Theme Picker */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--color-text-secondary)]">Theme</span>
+            <ThemePicker compact onSelect={handleThemeSelect} />
+          </div>
+
+          {/* Auth buttons */}
           {isLoggedIn ? (
             <div className="flex flex-col gap-3">
               <Button variant="primary" className="w-full" asChild>

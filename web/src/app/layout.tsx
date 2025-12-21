@@ -128,6 +128,12 @@ export default async function RootLayout({
       data-font={dataFont}
     >
       <head>
+        {/* Pre-hydration theme script - runs before React to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("dsc-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();`,
+          }}
+        />
         {/* Preconnect to external domains for faster asset loading */}
         <link rel="preconnect" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
         <link rel="dns-prefetch" href="https://oipozdbfxyskoscsgbfq.supabase.co" />

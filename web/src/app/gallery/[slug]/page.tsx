@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
 import GalleryGrid from "@/components/gallery/GalleryGrid";
+import { AlbumCommentsSection } from "./_components/AlbumCommentsSection";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       description,
       cover_image_url,
       created_at,
+      created_by,
       event:events(id, title),
       venue:venues(id, name)
     `)
@@ -78,7 +80,8 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       caption,
       is_featured,
       created_at,
-      uploader:profiles!gallery_images_uploaded_by_fkey(full_name),
+      uploaded_by,
+      uploader:profiles!gallery_images_uploaded_by_fkey(id, full_name),
       event:events(title),
       venue:venues(name)
     `, { count: "exact" })
@@ -156,9 +159,12 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
 
       <PageContainer>
         <div className="py-12">
+          {/* Album Comments */}
+          <AlbumCommentsSection albumId={album.id} albumOwnerId={album.created_by} />
+
           {images && images.length > 0 ? (
             <>
-              <GalleryGrid images={images} />
+              <GalleryGrid images={images} albumOwnerId={album.created_by} />
 
               {/* Pagination */}
               {totalPages > 1 && (

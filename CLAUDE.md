@@ -379,6 +379,31 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### ThemePicker & Gallery Comments (December 2025)
+- **ThemePicker component** - New dropdown theme selector with 9 presets (4 dark, 5 light)
+  - Compact mode for header/mobile menu with color swatch showing current theme accent
+  - Full-size mode with side-by-side dark/light columns for homepage section
+  - ARIA attributes: `aria-expanded`, `aria-haspopup="listbox"`, `role="option"`, `aria-selected`
+  - Keyboard navigation: Escape key closes dropdown, focus-visible rings
+  - `onSelect` callback for parent component coordination (e.g., closing mobile menu)
+- **Pre-hydration theme script** - Inline script in layout.tsx applies localStorage theme before React hydrates (eliminates 50-100ms flash)
+- **ThemePicker placement** - Added to desktop header (compact) and mobile menu footer
+- **Mobile menu focus management** - React ref pattern replaces document.querySelector for focus return after theme selection
+- **Gallery comments system** - Photo and album comment support
+  - Database tables: `gallery_photo_comments`, `gallery_album_comments` with RLS
+  - Anti-spam: 2-second cooldown between posts, 500-char max length
+  - Optimistic delete UI with rollback on failure
+  - Permission model: author, admin, image uploader, album owner can delete
+  - "Sign in to leave a comment" prompt for guests
+- Key files:
+  - `web/src/components/ui/ThemePicker.tsx` - New component
+  - `web/src/components/navigation/header.tsx` - Added ThemePicker compact + menuTriggerRef
+  - `web/src/components/navigation/mobile-menu.tsx` - Added ThemePicker + triggerRef prop
+  - `web/src/app/layout.tsx` - Pre-hydration theme script
+  - `web/src/components/gallery/GalleryComments.tsx` - New component
+  - `web/src/components/gallery/GalleryGrid.tsx` - Lightbox with comments integration
+  - `supabase/migrations/20251221044056_gallery_comments.sql` - DB migration
+
 ### Homepage & UI Polish (December 2025)
 - **New hero image** - Sunset clouds with "Denver Songwriters Collective" text and DSC logo baked into image
 - **Hero image centered** - Changed from `object-top` to `object-center` positioning

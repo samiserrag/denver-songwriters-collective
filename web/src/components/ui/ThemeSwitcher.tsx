@@ -25,17 +25,17 @@ export function ThemeSwitcher() {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
     const next = saved ?? "";
     setTheme(next);
-    if (next) document.documentElement.dataset.theme = next;
-    else delete document.documentElement.dataset.theme;
+    if (next) document.documentElement.setAttribute("data-theme", next);
+    else document.documentElement.removeAttribute("data-theme");
   }, []);
 
   function apply(next: string) {
     setTheme(next);
     if (next) {
-      document.documentElement.dataset.theme = next;
+      document.documentElement.setAttribute("data-theme", next);
       window.localStorage.setItem(STORAGE_KEY, next);
     } else {
-      delete document.documentElement.dataset.theme;
+      document.documentElement.removeAttribute("data-theme");
       window.localStorage.removeItem(STORAGE_KEY);
     }
   }
