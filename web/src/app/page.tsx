@@ -16,7 +16,11 @@ export const dynamic = "force-dynamic";
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 
-function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number }): Event {
+function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number; claimed_slots?: number }): Event {
+  // For timeslot events, use total_slots as capacity and claimed_slots as rsvp_count
+  const effectiveCapacity = dbEvent.has_timeslots ? dbEvent.total_slots : dbEvent.capacity;
+  const effectiveRsvpCount = dbEvent.has_timeslots ? (dbEvent.claimed_slots ?? 0) : (dbEvent.rsvp_count ?? 0);
+
   return {
     id: dbEvent.id,
     title: dbEvent.title,
@@ -28,8 +32,8 @@ function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number }): Event {
     venue: dbEvent.venue_name ?? "TBA",
     venue_address: dbEvent.venue_address ?? undefined,
     location: dbEvent.venue_address ?? undefined,
-    capacity: dbEvent.capacity,
-    rsvp_count: dbEvent.rsvp_count ?? 0,
+    capacity: effectiveCapacity,
+    rsvp_count: effectiveRsvpCount,
     is_dsc_event: dbEvent.is_dsc_event,
     imageUrl: dbEvent.cover_image_url ?? undefined,
   };
@@ -129,20 +133,33 @@ export default async function HomePage() {
       .limit(4),
   ]);
 
-  // Fetch RSVP counts for DSC events
+  // Fetch RSVP counts or claimed slots for DSC events
   const eventsData = upcomingEventsRes.data ?? [];
   const upcomingEvents: Event[] = await Promise.all(
     eventsData.map(async (dbEvent) => {
       let rsvpCount = 0;
+      let claimedSlots = 0;
+
       if (dbEvent.is_dsc_event) {
-        const { count } = await supabase
-          .from("event_rsvps")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", dbEvent.id)
-          .eq("status", "confirmed");
-        rsvpCount = count || 0;
+        if (dbEvent.has_timeslots) {
+          // For timeslot events, count claimed slots via join through event_timeslots
+          const { count } = await supabase
+            .from("timeslot_claims")
+            .select("*, event_timeslots!inner(event_id)", { count: "exact", head: true })
+            .eq("event_timeslots.event_id", dbEvent.id)
+            .eq("status", "confirmed");
+          claimedSlots = count || 0;
+        } else {
+          // For RSVP events, count confirmed RSVPs
+          const { count } = await supabase
+            .from("event_rsvps")
+            .select("*", { count: "exact", head: true })
+            .eq("event_id", dbEvent.id)
+            .eq("status", "confirmed");
+          rsvpCount = count || 0;
+        }
       }
-      return mapDBEventToEvent({ ...dbEvent, rsvp_count: rsvpCount });
+      return mapDBEventToEvent({ ...dbEvent, rsvp_count: rsvpCount, claimed_slots: claimedSlots });
     })
   );
   const featuredMembers: Member[] = (featuredMembersRes.data ?? []).map(mapDBProfileToMember);
@@ -189,13 +206,19 @@ export default async function HomePage() {
   return (
     <>
       <CLSLogger />
-      <HeroSection minHeight="lg" showVignette={true} showBottomFade={true} backgroundImage="/images/hero.jpg">
-        <div className="text-center px-6 max-w-4xl mx-auto">
-          <h1 className="font-[var(--font-family-serif)] text-4xl md:text-5xl lg:text-6xl text-white mb-4 drop-shadow-lg">
-            What&apos;s happening this week for Denver songwriters
+      {/* Hero image - standalone visual block with NO overlay gradients */}
+      <HeroSection minHeight="lg" showVignette={false} showBottomFade={false} backgroundImage="/images/hero.jpg">
+        <div>{/* Empty - hero image only, content renders below */}</div>
+      </HeroSection>
+
+      {/* Main headline section - renders BELOW the hero image */}
+      <section className="py-10 px-6 bg-[var(--color-bg-primary)] border-b border-[var(--color-border-default)]">
+        <div className="text-center max-w-4xl mx-auto">
+          <h1 className="font-[var(--font-family-serif)] text-4xl md:text-5xl lg:text-6xl text-[var(--color-text-primary)] mb-4">
+            A shared space for Denver-area songwriters and music fans
           </h1>
-          <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow">
-            Open mics, critique circles, and showcases — hosted by songwriters, venues, and groups across Denver.
+          <p className="text-lg md:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl mx-auto">
+            Find open mics, connect with other musicians, and discover what&apos;s happening in the local music community.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -206,19 +229,19 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/open-mics"
-              className="inline-flex items-center justify-center px-6 py-3 bg-white/10 text-white font-semibold rounded-full border border-white/30 hover:bg-white/20 transition-colors backdrop-blur-sm"
+              className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
             >
               See open mics
             </Link>
           </div>
         </div>
-      </HeroSection>
+      </section>
 
-      {/* This Is For You If... Strip */}
+      {/* Join Us If... Strip */}
       <section className="py-8 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-[var(--font-family-serif)] text-2xl md:text-3xl text-[var(--color-text-primary)] mb-6">
-            This is for you if you&apos;re…
+            Join us if you&apos;re…
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="text-[var(--color-text-secondary)]">🎸 a songwriter looking to play, improve, or connect</div>
@@ -243,14 +266,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Play Live Section */}
+      {/* Open Mic Directory - Hero Feature */}
       <section className="py-10 px-6 bg-[var(--color-bg-secondary)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-6">
-            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
-              Play live
+            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl lg:text-5xl text-[var(--color-text-primary)] mb-4">
+              Contribute to our dynamic, comprehensive list of local open mics!
             </h2>
-            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+            <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl mx-auto">
               Find open mics, see the lineup, and know when you&apos;re up.
             </p>
           </div>
@@ -300,7 +323,7 @@ export default async function HomePage() {
                       />
                     </div>
                   )}
-                  <span className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mb-3 inline-block">
+                  <span className="text-sm px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mb-3 inline-block">
                     {highlight.highlight_type === "event" && "Featured Event"}
                     {highlight.highlight_type === "performer" && "Featured Songwriter"}
                     {highlight.highlight_type === "venue" && "Featured Venue"}
@@ -310,14 +333,14 @@ export default async function HomePage() {
                     {highlight.title}
                   </h3>
                   {highlight.description && (
-                    <p className="text-[var(--color-text-secondary)] text-sm mb-4 line-clamp-3">
+                    <p className="text-[var(--color-text-secondary)] text-base mb-4 line-clamp-3">
                       {highlight.description}
                     </p>
                   )}
                   {highlight.link_url && (
                     <Link
                       href={highlight.link_url}
-                      className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-sm font-medium"
+                      className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors text-base font-medium"
                     >
                       {highlight.link_text || "Learn More"}
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,13 +355,13 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* This Week - DSC events */}
+      {/* Happenings - DSC events */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
-                This week
+                Happenings
               </h2>
               <p className="text-[var(--color-text-secondary)]">
                 Song circles, showcases, and gatherings hosted by the Denver music community.
@@ -521,13 +544,13 @@ export default async function HomePage() {
                 </div>
 
                 {/* Content Section */}
-                <div className="p-5 space-y-3">
+                <div className="p-5 space-y-3 text-center">
                   {latestBlog.tags && latestBlog.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap justify-center gap-2">
                       {latestBlog.tags.slice(0, 2).map((tag: string) => (
                         <span
                           key={tag}
-                          className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
+                          className="text-sm px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
                         >
                           {tag}
                         </span>
@@ -538,11 +561,11 @@ export default async function HomePage() {
                     {latestBlog.title}
                   </h3>
                   {latestBlog.excerpt && (
-                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
+                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
                       {latestBlog.excerpt}
                     </p>
                   )}
-                  <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center justify-center gap-2 pt-2">
                     {latestBlogAuthor?.avatar_url ? (
                       <Image
                         src={latestBlogAuthor.avatar_url}
@@ -553,12 +576,12 @@ export default async function HomePage() {
                       />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-                        <span className="text-[var(--color-text-accent)] text-xs">
+                        <span className="text-[var(--color-text-accent)] text-sm">
                           {latestBlogAuthor?.full_name?.[0] ?? "?"}
                         </span>
                       </div>
                     )}
-                    <p className="text-xs text-[var(--color-text-tertiary)]">
+                    <p className="text-sm text-[var(--color-text-tertiary)]">
                       {latestBlogAuthor?.full_name ?? "Anonymous"}
                     </p>
                   </div>
@@ -584,14 +607,14 @@ export default async function HomePage() {
                   </div>
 
                   {/* Content Section */}
-                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-center">
+                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-center text-center">
                     <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
                       Share Your Story
                     </h3>
                     <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
                       Got advice, insights, or a journey to share? Add your voice to the community.
                     </p>
-                    <span className="inline-flex items-center gap-1 text-[var(--color-text-accent)] text-sm font-medium">
+                    <span className="inline-flex items-center justify-center gap-1 text-[var(--color-text-accent)] text-sm font-medium">
                       Write a post
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

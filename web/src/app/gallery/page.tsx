@@ -76,13 +76,27 @@ export default async function GalleryPage({ searchParams }: PageProps) {
     <>
       {/* Page Header */}
       <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-6xl mx-auto px-6 py-12 text-center">
+        <div className="max-w-6xl mx-auto px-6 py-10 text-center">
           <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
             Gallery
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] mt-3">
             Moments from open mics, showcases, and community events
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+            <Link
+              href="/events"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              See events
+            </Link>
+            <Link
+              href="/dashboard/admin/gallery"
+              className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+            >
+              Share your photos
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -118,21 +132,47 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                         </div>
                       )}
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 text-center">
                       <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
                         {album.name}
                       </h3>
                       {album.description && (
-                        <p className="text-sm text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                        <p className="text-sm text-[var(--color-text-secondary)] mt-1 line-clamp-2 text-left">
                           {album.description}
                         </p>
                       )}
-                      <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+                      <p className="text-sm text-[var(--color-text-tertiary)] mt-2">
                         {album.imageCount} {album.imageCount === 1 ? "photo" : "photos"}
                       </p>
                     </div>
                   </Link>
                 ))}
+
+                {/* Share Your Photos CTA Card */}
+                <Link
+                  href="/dashboard/admin/gallery"
+                  className="group block rounded-xl overflow-hidden border border-dashed border-[var(--color-border-accent)]/40 bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent hover:border-[var(--color-border-accent)] transition-colors"
+                >
+                  <div className="relative aspect-[4/3] w-full flex items-center justify-center">
+                    <svg className="w-12 h-12 text-[var(--color-text-accent)]/50 group-hover:text-[var(--color-text-accent)] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <div className="p-4 text-center">
+                    <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+                      Share Your Photos
+                    </h3>
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                      Got photos from an open mic or event? Add them to the gallery.
+                    </p>
+                    <span className="inline-flex items-center justify-center gap-1 text-[var(--color-text-accent)] text-sm font-medium mt-2">
+                      Upload photos
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </Link>
               </div>
             </section>
           )}
@@ -183,13 +223,22 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                 )}
               </>
             ) : (
-              <div className="text-center py-16">
-                <p className="text-[var(--color-text-secondary)] text-lg mb-4">
+              <div className="text-center py-16 space-y-6">
+                <p className="text-[var(--color-text-secondary)] text-lg">
                   {albumsWithCount.length > 0 ? "No individual photos yet." : "No photos yet. Be the first to share!"}
                 </p>
                 <p className="text-[var(--color-text-tertiary)] text-sm">
                   Photos from community members will appear here after approval.
                 </p>
+                <Link
+                  href="/dashboard/admin/gallery"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg font-medium transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Upload Photos
+                </Link>
               </div>
             )}
           </section>

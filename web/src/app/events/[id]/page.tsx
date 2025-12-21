@@ -219,118 +219,83 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               alt={event.title}
               className="w-full h-full object-cover rounded-t-2xl"
             />
-            <div className="absolute top-4 left-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-black/70 backdrop-blur rounded-lg text-[var(--color-text-primary)] font-medium text-sm">
-                {config.icon} {config.label}
-              </span>
-              {event.is_dsc_event && (
-                <span className="px-3 py-1 bg-[var(--color-accent-primary)]/90 backdrop-blur rounded-lg text-[var(--color-background)] font-medium text-sm">
-                  DSC Event
-                </span>
-              )}
-            </div>
           </div>
         )}
 
         <div className="p-6 md:p-8">
-          {!event.cover_image_url && (
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-3xl">{config.icon}</span>
-              <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded">
-                {config.label}
+          {/* Event type and DSC badges */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
+              <span>{config.icon}</span> {config.label}
+            </span>
+            {event.is_dsc_event && (
+              <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
+                DSC Event
               </span>
-              {event.is_dsc_event && (
-                <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded">
-                  DSC Event
-                </span>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
-          <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
+          <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-6">
             {event.title}
           </h1>
 
-          {/* Prominent Date Display */}
-          {event.event_date && (
-            <div className="mb-6 p-5 rounded-xl bg-gradient-to-r from-[var(--color-accent-primary)]/20 to-transparent border border-[var(--color-accent-primary)]/30">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-[var(--color-accent-primary)] rounded-lg flex flex-col items-center justify-center text-black">
-                  <span className="text-xs md:text-sm font-semibold uppercase">
-                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
-                  </span>
-                  <span className="text-2xl md:text-3xl font-bold leading-none">
-                    {new Date(event.event_date + "T00:00:00").getDate()}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-xl md:text-2xl font-semibold text-[var(--color-text-primary)]">
-                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long" })}
-                  </p>
-                  <p className="text-[var(--color-text-secondary)]">
+          {/* Compact info row: Date | Time | Venue | Spots */}
+          <div className="mb-6 p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[var(--color-text-primary)]">
+              {/* Date */}
+              {event.event_date && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--color-text-accent)]">📅</span>
+                  <span className="font-medium">
                     {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric"
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric"
                     })}
-                    {event.start_time && (
-                      <span className="ml-2 text-[var(--color-text-accent)]">
-                        at {formatTime(event.start_time)}
-                      </span>
-                    )}
-                  </p>
+                  </span>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <span>When</span>
-              </div>
-              <p className="text-[var(--color-text-primary)] font-medium">
-                {recurrenceLabel || (event.day_of_week ? `${event.day_of_week}s` : "Schedule TBA")}
-              </p>
+              {/* Time */}
               {event.start_time && (
-                <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                  {formatTime(event.start_time)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--color-text-accent)]">🕐</span>
+                  <span>
+                    {formatTime(event.start_time)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
+                  </span>
+                </div>
               )}
-              {recurrenceLabel && (
-                <p className="text-[var(--color-text-accent)] text-xs mt-1 font-medium">
-                  🔄 Recurring
-                </p>
-              )}
-            </div>
 
-            <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <span>Where</span>
-              </div>
-              <p className="text-[var(--color-text-primary)] font-medium">
-                {venueName || "Venue TBA"}
-              </p>
-              {venueAddress && (
-                <p className="text-[var(--color-text-secondary)] text-sm mt-1 line-clamp-2">
-                  {venueAddress}
-                </p>
+              {/* Venue */}
+              {venueName && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--color-text-accent)]">📍</span>
+                  <span>{venueName}</span>
+                </div>
               )}
-            </div>
 
-            <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <span>{event.has_timeslots ? "Performers" : "Attendance"}</span>
-              </div>
-              <p className="text-[var(--color-text-primary)] font-medium">
-                {attendanceCount} {event.has_timeslots ? "signed up" : "going"}
-              </p>
+              {/* Spots remaining */}
               {remaining !== null && (
-                <p className={`text-sm mt-1 ${remaining === 0 ? "text-amber-400" : "text-[var(--color-text-secondary)]"}`}>
-                  {remaining === 0 ? "Event is full" : `${remaining} spots left`}
-                </p>
+                <div className="flex items-center gap-2">
+                  {remaining === 0 ? (
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-sm font-medium">
+                      Full
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-sm">
+                      {remaining} {remaining === 1 ? "spot" : "spots"} left
+                    </span>
+                  )}
+                </div>
               )}
             </div>
+
+            {/* Address on separate line if exists */}
+            {venueAddress && (
+              <p className="mt-2 text-[var(--color-text-secondary)] text-sm pl-6">
+                {venueAddress}
+              </p>
+            )}
           </div>
 
           {/* Action buttons row */}

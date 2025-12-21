@@ -22,7 +22,7 @@ export function Footer({ className }: FooterProps) {
       )}
       role="contentinfo"
     >
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-1">

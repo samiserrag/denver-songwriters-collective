@@ -10,7 +10,7 @@ export function SongwriterTag({ children, className }: SongwriterTagProps) {
   return (
     <span
       className={cn(
-        "px-3 py-1 rounded-full text-xs font-medium",
+        "px-3 py-1 rounded-full text-sm font-medium",
         "bg-white/5 border border-white/10",
         "text-[var(--color-text-secondary)]",
         className

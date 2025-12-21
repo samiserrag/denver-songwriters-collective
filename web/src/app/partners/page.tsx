@@ -47,7 +47,7 @@ const partnerTypes = [
 export default function PartnersPage() {
   return (
     <>
-      <HeroSection minHeight="lg" showVignette showBottomFade>
+      <HeroSection minHeight="xs" showVignette showBottomFade>
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">

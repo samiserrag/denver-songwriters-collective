@@ -11,6 +11,7 @@ vi.mock("@/lib/supabase/server", () => ({
       not: () => chain,
       in: () => chain,
       eq: () => chain,
+      neq: () => chain,
       or: () => chain,
       then: (resolve: any) => resolve(result),
     };

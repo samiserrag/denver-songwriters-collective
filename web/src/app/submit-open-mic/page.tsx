@@ -173,7 +173,7 @@ export default function SubmitOpenMicPage() {
   if (success) {
     return (
       <div>
-        <HeroSection minHeight="md">
+        <HeroSection minHeight="xs">
           <PageContainer>
             <div className="text-center">
               <div className="text-6xl mb-4">✓</div>
@@ -213,7 +213,7 @@ export default function SubmitOpenMicPage() {
   if (!user) {
     return (
       <div>
-        <HeroSection minHeight="md">
+        <HeroSection minHeight="xs">
           <PageContainer>
             <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-4">
               Submit or update an open mic
@@ -249,7 +249,7 @@ export default function SubmitOpenMicPage() {
   if (!mode) {
     return (
       <div>
-        <HeroSection minHeight="md">
+        <HeroSection minHeight="xs">
           <PageContainer>
             <h1 className="text-[var(--color-text-accent)] text-3xl font-serif italic mb-2">
               Submit or update an open mic
@@ -305,7 +305,7 @@ export default function SubmitOpenMicPage() {
   if (mode === "new") {
     return (
       <div>
-        <HeroSection minHeight="sm">
+        <HeroSection minHeight="xs">
           <PageContainer>
             <button onClick={() => setMode(null)} className="text-[var(--color-text-accent)] hover:underline mb-4">
               ← Back
@@ -479,7 +479,7 @@ export default function SubmitOpenMicPage() {
   if (mode === "claim") {
     return (
       <div>
-        <HeroSection minHeight="sm">
+        <HeroSection minHeight="xs">
           <PageContainer>
             <button onClick={() => setMode(null)} className="text-[var(--color-text-accent)] hover:underline mb-4">
               ← Back

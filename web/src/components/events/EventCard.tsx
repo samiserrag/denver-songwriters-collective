@@ -105,18 +105,18 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {/* Date badge */}
           <div className={cn(
             "absolute rounded-full bg-[var(--color-bg-inverse)]/70 font-medium tracking-[0.18em] text-[var(--color-accent-primary)] uppercase backdrop-blur-sm",
-            compact ? "left-2 top-2 px-2 py-0.5 text-[10px]" : "left-4 top-4 px-3 py-1 text-xs"
+            compact ? "left-2 top-2 px-2 py-0.5 text-sm" : "left-4 top-4 px-3 py-1 text-sm"
           )}>
             {dateLabel}
           </div>
         </div>
 
         {/* Content Section */}
-        <div className={cn(compact ? "p-3 space-y-1.5" : "p-5 space-y-3")}>
+        <div className={cn(compact ? "p-3 space-y-1.5" : "p-5 space-y-3", "text-center")}>
           <h3
             className={cn(
               "font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight line-clamp-2",
-              compact ? "text-sm" : "text-[length:var(--font-size-heading-sm)]"
+              compact ? "text-base" : "text-[length:var(--font-size-heading-sm)]"
             )}
           >
             {event.title}
@@ -125,8 +125,8 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {event.category && (
             <span
               className={cn(
-                "px-2 py-0.5 rounded",
-                compact ? "text-[10px]" : "text-xs",
+                "inline-block px-2 py-0.5 rounded",
+                compact ? "text-sm" : "text-base",
                 CATEGORY_COLORS[event.category] || ""
               )}
             >
@@ -138,7 +138,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {(startTimeFormatted || event.time) && (
             <div className={cn(
               "text-[var(--color-text-secondary)]",
-              compact ? "text-[10px]" : "text-xs"
+              compact ? "text-sm" : "text-base"
             )}>
               {startTimeFormatted ? (
                 <>
@@ -155,7 +155,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {venueDisplay && (
             <div className={cn(
               "text-[var(--color-text-primary)] font-medium line-clamp-1",
-              compact ? "text-xs" : "text-sm"
+              compact ? "text-base" : "text-lg"
             )}>
               {venueDisplay}
             </div>
@@ -165,7 +165,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {locationDisplay && (
             <div className={cn(
               "text-[var(--color-text-secondary)] line-clamp-1",
-              compact ? "text-[10px]" : "text-xs"
+              compact ? "text-sm" : "text-base"
             )}>
               {locationDisplay}
             </div>
@@ -174,8 +174,8 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {/* Capacity / Spots remaining - only for DSC events with capacity */}
           {event.is_dsc_event && event.capacity != null && (
             <div className={cn(
-              "flex items-center gap-1.5",
-              compact ? "text-[10px]" : "text-xs"
+              "flex items-center justify-center gap-1.5",
+              compact ? "text-sm" : "text-base"
             )}>
               {spotsRemaining === 0 ? (
                 <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium">
@@ -194,7 +194,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           )}
 
           {!compact && event.description && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
               {event.description}
             </p>
           )}

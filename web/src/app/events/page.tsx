@@ -127,16 +127,38 @@ export default async function EventsPage() {
     .gte("event_date", today)
     .order("event_date", { ascending: true });
 
-  // Convert DSC events to Event type with RSVP counts
+  // Convert DSC events to Event type with RSVP/claim counts
   const dscEvents: Event[] = await Promise.all(
     (dscEventsData || []).map(async (event) => {
-      const { count } = await supabase
-        .from("event_rsvps")
-        .select("*", { count: "exact", head: true })
-        .eq("event_id", event.id)
-        .eq("status", "confirmed");
+      let claimCount = 0;
 
-      return mapDBEventToEvent({ ...event, rsvp_count: count || 0 });
+      if (event.has_timeslots) {
+        // For timeslot events, count confirmed claims
+        const { data: timeslots } = await supabase
+          .from("event_timeslots")
+          .select("id")
+          .eq("event_id", event.id);
+
+        if (timeslots && timeslots.length > 0) {
+          const slotIds = timeslots.map(t => t.id);
+          const { count } = await supabase
+            .from("timeslot_claims")
+            .select("*", { count: "exact", head: true })
+            .in("timeslot_id", slotIds)
+            .eq("status", "confirmed");
+          claimCount = count || 0;
+        }
+      } else {
+        // For regular events, count RSVPs
+        const { count } = await supabase
+          .from("event_rsvps")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", event.id)
+          .eq("status", "confirmed");
+        claimCount = count || 0;
+      }
+
+      return mapDBEventToEvent({ ...event, rsvp_count: claimCount });
     })
   );
 
@@ -163,7 +185,7 @@ export default async function EventsPage() {
       </div>
 
       <PageContainer>
-        <div className="py-10 space-y-10">
+        <div className="py-6 space-y-8">
 
           {/* Upcoming Events - Single consolidated section */}
           <section id="upcoming">
@@ -259,7 +281,7 @@ export default async function EventsPage() {
                   </span>
                   {/* Tooltip */}
                   <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] shadow-lg z-10">
-                    <p className="text-xs text-[var(--color-text-secondary)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       {eventType.description}
                     </p>
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-[var(--color-bg-tertiary)] border-b border-r border-[var(--color-border-default)] transform rotate-45" />

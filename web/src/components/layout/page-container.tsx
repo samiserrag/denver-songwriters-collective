@@ -1,11 +1,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { ContentTypography } from "@/components/typography/ContentTypography";
 
 interface PageContainerProps {
   children: React.ReactNode;
   className?: string;
   as?: "div" | "main" | "section" | "article";
   size?: "default" | "narrow" | "wide";
+  /** Enable enhanced typography for prose content (larger text, relaxed line-height) */
+  typography?: boolean;
 }
 
 const sizeClasses = {
@@ -19,6 +22,7 @@ export function PageContainer({
   className,
   as: Tag = "div",
   size = "default",
+  typography = false,
 }: PageContainerProps) {
   return (
     <Tag
@@ -26,11 +30,11 @@ export function PageContainer({
         "w-full mx-auto",
         sizeClasses[size],
         "px-4 sm:px-6 lg:px-8",
-        "py-8 md:py-12 lg:py-16",
+        "py-4 md:py-6 lg:py-8",
         className
       )}
     >
-      {children}
+      {typography ? <ContentTypography>{children}</ContentTypography> : children}
     </Tag>
   );
 }

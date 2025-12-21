@@ -13,7 +13,7 @@ interface MembersGridProps {
 export function MembersGrid({ members, className }: MembersGridProps) {
   if (members.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-8">
         <p className="text-[var(--color-text-secondary)]">
           No members found matching your filters.
         </p>

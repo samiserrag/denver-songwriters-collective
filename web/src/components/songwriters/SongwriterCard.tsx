@@ -59,7 +59,7 @@ export function SongwriterCard({ songwriter, className }: SongwriterCardProps) {
         </div>
 
         {/* Content Section */}
-        <div className="p-5 space-y-3">
+        <div className="p-5 space-y-3 text-center">
           <h3
             className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
           >
@@ -71,19 +71,19 @@ export function SongwriterCard({ songwriter, className }: SongwriterCardProps) {
           )}
 
           {songwriter.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
               {songwriter.bio}
             </p>
           )}
 
           {songwriter.location && (
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
+            <p className="text-sm uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
               {songwriter.location}
             </p>
           )}
 
           {songwriter.socialLinks && (
-            <SocialLinks links={songwriter.socialLinks} className="mt-3" />
+            <SocialLinks links={songwriter.socialLinks} className="mt-3 justify-center" />
           )}
         </div>
       </article>

@@ -242,7 +242,7 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
       )}
 
-      <PageContainer>
+      <PageContainer typography>
         <div className="max-w-3xl mx-auto py-12">
           {/* Back link */}
           <Link
@@ -261,7 +261,7 @@ export default async function BlogPostPage({ params }: Props) {
               {post.tags.map((tag: string) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
+                  className="text-sm px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
                 >
                   {tag}
                 </span>

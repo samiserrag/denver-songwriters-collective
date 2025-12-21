@@ -93,13 +93,13 @@ export default async function BlogPage() {
                   </svg>
                 </div>
                 <div className="p-4 space-y-2">
-                  <h2 className="text-base font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+                  <h2 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
                     Share Your Story
                   </h2>
-                  <p className="text-[var(--color-text-secondary)] text-xs line-clamp-2">
+                  <p className="text-[var(--color-text-secondary)] text-sm line-clamp-2">
                     Got advice, insights, or a journey to share? Add your voice to the community.
                   </p>
-                  <span className="inline-flex items-center gap-1 text-[var(--color-text-accent)] text-xs font-medium pt-1">
+                  <span className="inline-flex items-center gap-1 text-[var(--color-text-accent)] text-sm font-medium pt-1">
                     Write a post
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -157,7 +157,7 @@ function BlogCard({ post }: { post: BlogPost }) {
             {post.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
+                className="text-sm px-1.5 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
               >
                 {tag}
               </span>
@@ -168,7 +168,7 @@ function BlogCard({ post }: { post: BlogPost }) {
           {post.title}
         </h2>
         {post.excerpt && (
-          <p className="text-[var(--color-text-secondary)] text-xs line-clamp-2">
+          <p className="text-[var(--color-text-secondary)] text-sm line-clamp-2">
             {post.excerpt}
           </p>
         )}
@@ -183,12 +183,12 @@ function BlogCard({ post }: { post: BlogPost }) {
             />
           ) : (
             <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-              <span className="text-[var(--color-text-accent)] text-xs">
+              <span className="text-[var(--color-text-accent)] text-sm">
                 {author?.full_name?.[0] ?? "?"}
               </span>
             </div>
           )}
-          <div className="text-xs">
+          <div className="text-sm">
             <p className="text-[var(--color-text-primary)]">{author?.full_name ?? "Anonymous"}</p>
           </div>
         </div>

@@ -121,7 +121,7 @@ export default function GalleryGrid({ images }: Props) {
                   loading="lazy"
                 />
                 {image.is_featured && (
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs font-medium">
+                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium">
                     Featured
                   </div>
                 )}
@@ -131,7 +131,7 @@ export default function GalleryGrid({ images }: Props) {
                       <p className="text-[var(--color-text-primary)] text-sm mb-1">{image.caption}</p>
                     )}
                     {(image.venue || image.event) && (
-                      <p className="text-[var(--color-text-tertiary)] text-xs">
+                      <p className="text-[var(--color-text-tertiary)] text-sm">
                         {image.event?.title ?? image.venue?.name}
                       </p>
                     )}
@@ -227,12 +227,12 @@ export default function GalleryGrid({ images }: Props) {
               </div>
               {/* Image counter */}
               {normalizedImages.length > 1 && (
-                <p className="text-[var(--color-text-tertiary)] text-xs mt-2">
+                <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
                   {selectedIndex + 1} / {normalizedImages.length}
                 </p>
               )}
               {/* Keyboard hint */}
-              <p className="text-neutral-600 text-xs mt-2 hidden sm:block">
+              <p className="text-neutral-600 text-sm mt-2 hidden sm:block">
                 Use arrow keys to navigate, Escape to close
               </p>
             </div>

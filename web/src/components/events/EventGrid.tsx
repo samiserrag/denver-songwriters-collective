@@ -15,7 +15,7 @@ interface EventGridProps {
 export function EventGrid({ events, onSelect, className, compact = false }: EventGridProps) {
   if (!events.length) {
     return (
-      <div className="text-center text-[var(--color-text-secondary)] py-16">
+      <div className="text-center text-[var(--color-text-secondary)] py-8">
         No upcoming events.
       </div>
     );
@@ -29,7 +29,7 @@ export function EventGrid({ events, onSelect, className, compact = false }: Even
     >
       <div className={compact
         ? "grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-        : "grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+        : "grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
       }>
         {events.map((event) => (
           <EventCard

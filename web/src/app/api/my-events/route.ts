@@ -134,6 +134,25 @@ export async function POST(request: Request) {
     }
   }
 
+  // Lookup venue name and address from venues table
+  let venueName: string | null = null;
+  let venueAddress: string | null = null;
+
+  if (body.venue_id) {
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("name, address, city, state")
+      .eq("id", body.venue_id)
+      .single();
+
+    if (venue) {
+      venueName = venue.name;
+      // Combine address with city/state for full address
+      const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
+      venueAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+    }
+  }
+
   // Determine series configuration
   const occurrenceCount = Math.min(Math.max(body.occurrence_count || 1, 1), 12); // Clamp between 1-12
   const startDate = body.start_date;
@@ -164,6 +183,8 @@ export async function POST(request: Request) {
         capacity: body.has_timeslots ? body.total_slots : (body.capacity || null),
         host_notes: body.host_notes || null,
         venue_id: body.venue_id,
+        venue_name: venueName,
+        venue_address: venueAddress,
         day_of_week: body.day_of_week || null,
         start_time: body.start_time,
         end_time: body.end_time || null,

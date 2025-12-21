@@ -12,7 +12,7 @@ interface StudioGridProps {
 export function StudioGrid({ studios, compact = false }: StudioGridProps) {
   if (studios.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-8">
         <p className="text-[var(--color-text-tertiary)]">No studios available yet.</p>
       </div>
     );

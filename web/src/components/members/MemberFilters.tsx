@@ -222,7 +222,7 @@ export function MemberFilters({
             key={option.value}
             onClick={() => toggleRole(option.value)}
             className={cn(
-              "px-3 py-1.5 text-sm rounded-full border transition-colors",
+              "px-3 py-1.5 text-base rounded-full border transition-colors",
               selectedRoles.has(option.value)
                 ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                 : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -238,7 +238,7 @@ export function MemberFilters({
         <button
           onClick={() => setAvailableForHire(!availableForHire)}
           className={cn(
-            "px-3 py-1.5 text-sm rounded-full border transition-colors",
+            "px-3 py-1.5 text-base rounded-full border transition-colors",
             availableForHire
               ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
               : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -249,7 +249,7 @@ export function MemberFilters({
         <button
           onClick={() => setInterestedInCowriting(!interestedInCowriting)}
           className={cn(
-            "px-3 py-1.5 text-sm rounded-full border transition-colors",
+            "px-3 py-1.5 text-base rounded-full border transition-colors",
             interestedInCowriting
               ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
               : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -260,7 +260,7 @@ export function MemberFilters({
         <button
           onClick={() => setOpenToCollabs(!openToCollabs)}
           className={cn(
-            "px-3 py-1.5 text-sm rounded-full border transition-colors",
+            "px-3 py-1.5 text-base rounded-full border transition-colors",
             openToCollabs
               ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
               : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -273,7 +273,7 @@ export function MemberFilters({
       {/* Genre filters (collapsible) */}
       {allGenres.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+          <summary className="cursor-pointer text-base text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             Genres {selectedGenres.size > 0 && `(${selectedGenres.size})`}
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -282,7 +282,7 @@ export function MemberFilters({
                 key={genre}
                 onClick={() => toggleGenre(genre)}
                 className={cn(
-                  "px-2 py-1 text-xs rounded-full border transition-colors",
+                  "px-2 py-1 text-sm rounded-full border transition-colors",
                   selectedGenres.has(genre)
                     ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                     : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -298,7 +298,7 @@ export function MemberFilters({
       {/* Instrument filters (collapsible) */}
       {allInstruments.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+          <summary className="cursor-pointer text-base text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             Instruments {selectedInstruments.size > 0 && `(${selectedInstruments.size})`}
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -307,7 +307,7 @@ export function MemberFilters({
                 key={instrument}
                 onClick={() => toggleInstrument(instrument)}
                 className={cn(
-                  "px-2 py-1 text-xs rounded-full border transition-colors",
+                  "px-2 py-1 text-sm rounded-full border transition-colors",
                   selectedInstruments.has(instrument)
                     ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                     : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -323,7 +323,7 @@ export function MemberFilters({
       {/* Specialty filters (collapsible) */}
       {allSpecialties.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+          <summary className="cursor-pointer text-base text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
             Specialties {selectedSpecialties.size > 0 && `(${selectedSpecialties.size})`}
           </summary>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -332,7 +332,7 @@ export function MemberFilters({
                 key={specialty}
                 onClick={() => toggleSpecialty(specialty)}
                 className={cn(
-                  "px-2 py-1 text-xs rounded-full border transition-colors",
+                  "px-2 py-1 text-sm rounded-full border transition-colors",
                   selectedSpecialties.has(specialty)
                     ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                     : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
@@ -349,7 +349,7 @@ export function MemberFilters({
       {hasActiveFilters && (
         <button
           onClick={clearFilters}
-          className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline"
+          className="text-base text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline"
         >
           Clear all filters
         </button>

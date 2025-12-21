@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageContainer, HeroSection } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import { Button } from "@/components/ui";
 import { NewsletterSection } from "@/components/navigation/NewsletterSection";
 
@@ -12,33 +12,28 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      {/* Hero Section */}
-      <HeroSection minHeight="lg" showVignette showBottomFade>
-        <PageContainer>
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
-              A shared space for Denver songwriters
-            </h1>
-            <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              Denver Songwriters Collective is a community-run hub for songwriting events across the Denver area. Songwriters, venues, hosts, and other groups use it to help people show up, play live, and discover local music. If it&apos;s useful to you, it&apos;s yours to use.
-            </p>
-            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] italic">
-              No algorithms. No gatekeeping. Just people and songs.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 pt-4">
-              <Button asChild variant="primary" size="lg">
-                <Link href="/events">See events</Link>
-              </Button>
-              <Button asChild variant="secondary" size="lg">
-                <Link href="/submit-open-mic">Host an event</Link>
-              </Button>
-            </div>
+      {/* Page Header */}
+      <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
+        <div className="max-w-4xl mx-auto px-6 py-10 text-center space-y-6">
+          <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
+            A shared space for Denver songwriters
+          </h1>
+          <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
+            Denver Songwriters Collective is a community-run hub for songwriting events across the Denver area. Songwriters, venues, hosts, and other groups use it to help people show up, play live, and discover local music. If it&apos;s useful to you, it&apos;s yours to use.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <Button asChild variant="primary" size="lg">
+              <Link href="/events">See events</Link>
+            </Button>
+            <Button asChild variant="secondary" size="lg">
+              <Link href="/submit-open-mic">Host an event</Link>
+            </Button>
           </div>
-        </PageContainer>
-      </HeroSection>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <PageContainer>
+      <PageContainer typography>
         <div className="py-10 space-y-10 max-w-4xl mx-auto">
 
           {/* Our Story */}

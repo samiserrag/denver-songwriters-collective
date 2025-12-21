@@ -156,13 +156,14 @@ export default async function OpenMicsPage({
   const supabase = await createSupabaseServerClient();
 
   // Run independent queries in parallel for better performance
+  // Note: DSC events are excluded - they appear in /events (Happenings) section
   const [cityResult, activeCountResult, totalCountResult, suggestionsCountResult] = await Promise.all([
     // Fetch distinct cities for the city dropdown
     supabase.from("venues").select("city").not("city", "is", null),
-    // Fetch active events count (verified/active only)
-    supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").eq("status", "active"),
-    // Fetch total events count (all statuses with venue_id)
-    supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").not("venue_id", "is", null),
+    // Fetch active events count (verified/active only, excluding DSC events)
+    supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").eq("status", "active").neq("is_dsc_event", true),
+    // Fetch total events count (all statuses with venue_id, excluding DSC events)
+    supabase.from("events").select("*", { count: "exact", head: true }).eq("event_type", "open_mic").not("venue_id", "is", null).neq("is_dsc_event", true),
     // Fetch approved suggestions count
     supabase.from("event_update_suggestions").select("*", { count: "exact", head: true }).eq("status", "approved"),
   ]);
@@ -177,6 +178,7 @@ export default async function OpenMicsPage({
   ).sort((a: string, b: string) => a.localeCompare(b));
 
   // Build events query - venue_id required, join with venues table, published only
+  // Exclude DSC events - they appear in /events (Happenings) section instead
   let query = supabase
     .from("events")
     .select(
@@ -185,6 +187,7 @@ export default async function OpenMicsPage({
     )
     .eq("event_type", "open_mic")
     .eq("is_published", true)
+    .neq("is_dsc_event", true) // DSC events show in Happenings, not here
     .not("venue_id", "is", null); // Only show events with proper venue records
 
   if (selectedDay) {
@@ -256,7 +259,7 @@ export default async function OpenMicsPage({
   // If we have venue search matches, we need to include events at those venues too
   let allDbEvents = dbEvents ?? [];
   if (safeSearch && searchVenueIds.length > 0) {
-    // Build a separate query for events at matching venues (published only)
+    // Build a separate query for events at matching venues (published only, excluding DSC events)
     let venueQuery = supabase
       .from("events")
       .select(
@@ -264,6 +267,7 @@ export default async function OpenMicsPage({
       )
       .eq("event_type", "open_mic")
       .eq("is_published", true)
+      .neq("is_dsc_event", true) // DSC events show in Happenings, not here
       .in("venue_id", searchVenueIds);
 
     // Apply same filters as main query
@@ -380,7 +384,7 @@ function parseTimeToMinutes(t?: string | null) {
 
       <PageContainer>
         {/* Host-focused callout */}
-        <div className="py-4 px-4 my-4 rounded-lg border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/5">
+        <div className="py-3 px-4 my-3 rounded-lg border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/5">
           <p className="text-sm text-[var(--color-text-primary)]">
             <strong>Hosts &amp; venues:</strong> Add your open mic here to reach more performers and keep details up to date.
           </p>
@@ -393,11 +397,11 @@ function parseTimeToMinutes(t?: string | null) {
         </div>
 
         {/* Subheader info */}
-        <div className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[var(--color-border-default)] mb-4">
+        <div className="py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[var(--color-border-default)] mb-3">
           <p className="text-sm text-[var(--color-text-secondary)]">
             {(approvedSuggestions || 0) > 0 ? `${approvedSuggestions} community updates applied` : "Community-curated directory"}
           </p>
-          <p className="text-xs text-[var(--color-text-tertiary)] max-w-md">
+          <p className="text-sm text-[var(--color-text-tertiary)] max-w-md">
             Contact venues to confirm details.{" "}
             <a href="/submit-open-mic" className="text-[var(--color-text-accent)] hover:underline">Help keep this list updated</a>.
           </p>
@@ -405,8 +409,8 @@ function parseTimeToMinutes(t?: string | null) {
 
         <WorkInProgressBanner />
 
-        <div className="mt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mt-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <OpenMicFilters
               cities={cities}
               selectedCity={selectedCity === "all" ? undefined : selectedCity}
@@ -510,8 +514,8 @@ function parseTimeToMinutes(t?: string | null) {
           )}
 
         {/* Contribution Section */}
-        <div className="py-8">
-          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 md:p-8 space-y-6">
+        <div className="py-6">
+          <section className="rounded-3xl border border-[var(--color-border-accent)] bg-[var(--color-bg-secondary)] p-6 space-y-4">
             <div className="text-center space-y-4">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
                 Help Keep This Directory Accurate

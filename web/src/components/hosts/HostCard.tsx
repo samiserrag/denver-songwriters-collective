@@ -56,14 +56,14 @@ export function HostCard({ host, className }: HostCardProps) {
 
           {/* Host badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-[var(--color-accent-primary)]/80 text-[var(--color-background)]">
+            <span className="px-2 py-1 text-sm font-medium rounded-full bg-[var(--color-accent-primary)]/80 text-[var(--color-background)]">
               Open Mic Host
             </span>
           </div>
         </div>
 
         {/* Content Section */}
-        <div className="p-5 space-y-3">
+        <div className="p-5 space-y-3 text-center">
           <h3
             className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
           >
@@ -71,7 +71,7 @@ export function HostCard({ host, className }: HostCardProps) {
           </h3>
 
           {host.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
+            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
               {host.bio}
             </p>
           )}

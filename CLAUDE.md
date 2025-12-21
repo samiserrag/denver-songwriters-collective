@@ -17,6 +17,7 @@ The `docs/` folder contains reference documentation:
 | [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) | White-label platform roadmap |
 | [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
 | [docs/stream-3-rsvp-flow.md](./docs/stream-3-rsvp-flow.md) | RSVP & Waitlist System documentation |
+| [docs/copy-tone-guide.md](./docs/copy-tone-guide.md) | Site copy tone and voice guidelines |
 | [docs/theme-system.md](./docs/theme-system.md) | Theme system style guide and CSS tokens |
 | [docs/quality-gates.md](./docs/quality-gates.md) | Quality gates and CI/CD standards |
 | [docs/known-issues.md](./docs/known-issues.md) | Known issues (non-blocking) |
@@ -338,6 +339,27 @@ See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 ---
 
 ## Recent Changes (December 2025)
+
+### Homepage & UI Polish (December 2025)
+- **New hero image** - Sunset clouds with "Denver Songwriters Collective" text and DSC logo baked into image
+- **Hero image centered** - Changed from `object-top` to `object-center` positioning
+- **No gradient overlays on hero** - `showVignette={false}` and `showBottomFade={false}` for clean display
+- **Open Mic Directory hero feature** - "Contribute to our dynamic, comprehensive list of local open mics!" as prominent section
+- **"Happenings" section rename** - Changed from "This week" to "Happenings"
+- **"Join us if you're..."** - Changed from "This is for you if you're..."
+- **Spots remaining fix** - Now correctly counts timeslot claims via join through `event_timeslots` table
+- **Gallery CTA buttons** - Added "Share your photos" button and CTA card like blog's "Share your story"
+- **Centered card content** - All card components now center titles, badges, tags, and CTAs (bios stay left-aligned)
+- Key files:
+  - `web/public/images/hero.jpg` - New hero image
+  - `web/src/components/layout/hero-section.tsx` - `object-center` positioning
+  - `web/src/app/page.tsx` - Homepage copy updates, timeslot counting fix, blog card centering
+  - `web/src/app/gallery/page.tsx` - Added CTA buttons and "Share Your Photos" card
+  - `web/src/components/members/MemberCard.tsx` - Centered content
+  - `web/src/components/events/EventCard.tsx` - Centered content
+  - `web/src/components/songwriters/SongwriterCard.tsx` - Centered content
+  - `web/src/components/hosts/HostCard.tsx` - Centered content
+  - `web/src/components/performers/PerformerCard.tsx` - Centered content
 
 ### Celebratory Performer Display & Host Controls (December 2025)
 - **Performer names now CELEBRATORY** - 2xl serif italic font with accent color, gradient backgrounds

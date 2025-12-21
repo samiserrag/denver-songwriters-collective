@@ -204,7 +204,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         {/* Status badge - show prominently for non-active */}
         {showStatusBadge && statusStyle && (
           <div className={`absolute bottom-3 left-3 px-3 py-1 backdrop-blur rounded-full ${statusStyle.bg} border ${statusStyle.border}`}>
-            <span className={`text-xs font-semibold uppercase tracking-wide ${statusStyle.text}`}>{statusStyle.label}</span>
+            <span className={`text-sm font-semibold uppercase tracking-wide ${statusStyle.text}`}>{statusStyle.label}</span>
           </div>
         )}
         {/* Favorite button */}
@@ -226,14 +226,14 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
           />
           {event.category && (
             <span
-              className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${CATEGORY_COLORS[(event.category as string)] ?? "bg-slate-900/60 text-slate-200 border-slate-500/40"}`}
+              className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-sm font-semibold uppercase tracking-wide ${CATEGORY_COLORS[(event.category as string)] ?? "bg-slate-900/60 text-slate-200 border-slate-500/40"}`}
             >
               {event.category}
             </span>
           )}
         </div>
 
-        <div className="text-sm text-[var(--color-text-secondary)] flex items-center gap-2">
+        <div className="text-base text-[var(--color-text-secondary)] flex items-center gap-2">
           <span>📍</span>
           <span
             className="break-words"
@@ -242,12 +242,12 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         </div>
 
         {displayLocation && (
-          <div className="text-sm text-[var(--color-text-secondary)]">
+          <div className="text-base text-[var(--color-text-secondary)]">
             {displayLocation}
           </div>
         )}
 
-        <div className="text-sm text-[var(--color-text-accent)]">
+        <div className="text-base text-[var(--color-text-accent)]">
           {startTime}{endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}
           {recurrenceText && recurrenceText !== "Every week" && (
             <span className="text-[var(--color-text-secondary)] ml-2">• {recurrenceText}</span>
@@ -257,7 +257,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
         <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
           <Link
             href={event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`}
-            className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm font-medium transition-colors"
+            className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-base font-medium transition-colors"
           >
             View Details →
           </Link>
@@ -266,7 +266,7 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
               href={eventMapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm font-medium transition-colors"
+              className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-base font-medium transition-colors"
             >
               Map
             </a>

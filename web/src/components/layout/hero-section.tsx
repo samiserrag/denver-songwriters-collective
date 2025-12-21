@@ -8,15 +8,16 @@ interface HeroSectionProps {
   className?: string;
   showVignette?: boolean;
   showBottomFade?: boolean;
-  minHeight?: "sm" | "md" | "lg" | "xl" | "full";
+  minHeight?: "xs" | "sm" | "md" | "lg" | "xl" | "full";
 }
 
 // Use fixed heights instead of min-h to prevent CLS (Cumulative Layout Shift)
 const heightClasses = {
-  sm: "h-[300px] md:h-[350px]",
-  md: "h-[400px] md:h-[500px]",
-  lg: "h-[500px] md:h-[600px]",
-  xl: "h-[600px] md:h-[750px]",
+  xs: "h-[150px] md:h-[200px]",
+  sm: "h-[200px] md:h-[250px]",
+  md: "h-[250px] md:h-[300px]",
+  lg: "h-[350px] md:h-[400px]",
+  xl: "h-[350px] md:h-[400px]",
   full: "h-screen",
 };
 
@@ -26,7 +27,7 @@ export function HeroSection({
   className,
   showVignette = true,
   showBottomFade = false,
-  minHeight = "md",
+  minHeight = "xs",
 }: HeroSectionProps) {
   return (
     <section
@@ -47,7 +48,7 @@ export function HeroSection({
           priority
           fetchPriority="high"
           sizes="100vw"
-          className="object-cover object-bottom md:object-center"
+          className="object-cover object-center"
           aria-hidden="true"
         />
       )}
