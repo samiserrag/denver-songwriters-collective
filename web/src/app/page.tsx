@@ -214,7 +214,7 @@ export default async function HomePage() {
       {/* Main headline section - renders BELOW the hero image */}
       <section className="py-10 px-6 bg-[var(--color-bg-primary)] border-b border-[var(--color-border-default)]">
         <div className="text-center max-w-4xl mx-auto">
-          <h1 className="font-[var(--font-family-serif)] text-4xl md:text-5xl lg:text-6xl text-[var(--color-text-primary)] mb-4">
+          <h1 className="font-[var(--font-family-serif)] font-bold text-4xl md:text-5xl lg:text-6xl text-[var(--color-text-primary)] tracking-tight mb-4">
             A shared space for Denver-area songwriters and music fans
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl mx-auto">
@@ -240,7 +240,7 @@ export default async function HomePage() {
       {/* Join Us If... Strip */}
       <section className="py-8 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-[var(--font-family-serif)] text-2xl md:text-3xl text-[var(--color-text-primary)] mb-6">
+          <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-6">
             Join us if you&apos;re…
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -270,7 +270,7 @@ export default async function HomePage() {
       <section className="py-10 px-6 bg-[var(--color-bg-secondary)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-6">
-            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl lg:text-5xl text-[var(--color-text-primary)] mb-4">
+            <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl lg:text-5xl text-[var(--color-text-primary)] tracking-tight mb-4">
               Contribute to our dynamic, comprehensive list of local open mics!
             </h2>
             <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl mx-auto">
@@ -299,7 +299,7 @@ export default async function HomePage() {
         <section className="py-10 px-6 border-t border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
           <div className="max-w-6xl mx-auto">
             <div className="mb-6 text-center">
-              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+              <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
                 This Month&apos;s Highlights
               </h2>
               <p className="text-[var(--color-text-secondary)]">
@@ -323,13 +323,13 @@ export default async function HomePage() {
                       />
                     </div>
                   )}
-                  <span className="text-sm px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mb-3 inline-block">
+                  <span className="text-sm tracking-wide px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] mb-3 inline-block">
                     {highlight.highlight_type === "event" && "Featured Event"}
                     {highlight.highlight_type === "performer" && "Featured Songwriter"}
                     {highlight.highlight_type === "venue" && "Featured Venue"}
                     {highlight.highlight_type === "custom" && "Announcement"}
                   </span>
-                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+                  <h3 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight mb-2">
                     {highlight.title}
                   </h3>
                   {highlight.description && (
@@ -360,7 +360,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
-              <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+              <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
                 Happenings
               </h2>
               <p className="text-[var(--color-text-secondary)]">
@@ -399,7 +399,7 @@ export default async function HomePage() {
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 text-center">
-            <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+            <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
               Featured Playlists
             </h2>
             <p className="text-[var(--color-text-secondary)]">
@@ -436,7 +436,7 @@ export default async function HomePage() {
           <div className="max-w-6xl mx-auto">
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
                   Featured Members
                 </h2>
                 <p className="text-[var(--color-text-secondary)]">
@@ -468,7 +468,7 @@ export default async function HomePage() {
           <div className="max-w-6xl mx-auto">
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
                   Featured Open Mics
                 </h2>
                 <p className="text-[var(--color-text-secondary)]">
@@ -496,7 +496,7 @@ export default async function HomePage() {
           <div className="max-w-6xl mx-auto">
             <div className="flex items-baseline justify-between gap-4 mb-6">
               <div>
-                <h2 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-2">
+                <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
                   Latest from the Blog
                 </h2>
                 <p className="text-[var(--color-text-secondary)]">
@@ -519,9 +519,9 @@ export default async function HomePage() {
               {/* Latest Blog Post */}
               <Link
                 href={`/blog/${latestBlog.slug}`}
-                className="block group"
+                className="block group focus-visible:outline-none"
               >
-              <article className="h-full overflow-hidden card-spotlight hover:-translate-y-1">
+              <article className="h-full overflow-hidden card-spotlight transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]">
                 {/* Image Section - aspect-[4/3] */}
                 <div className="relative aspect-[4/3] overflow-hidden">
                   {latestBlog.cover_image_url ? (
@@ -550,18 +550,18 @@ export default async function HomePage() {
                       {latestBlog.tags.slice(0, 2).map((tag: string) => (
                         <span
                           key={tag}
-                          className="text-sm px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
+                          className="text-sm tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
                         >
                           {tag}
                         </span>
                       ))}
                     </div>
                   )}
-                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
+                  <h3 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
                     {latestBlog.title}
                   </h3>
                   {latestBlog.excerpt && (
-                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
+                    <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 text-left mx-auto max-w-prose">
                       {latestBlog.excerpt}
                     </p>
                   )}
@@ -592,9 +592,9 @@ export default async function HomePage() {
               {/* Share Your Story CTA Card */}
               <Link
                 href="/dashboard/blog"
-                className="block group"
+                className="block group focus-visible:outline-none"
               >
-                <article className="h-full overflow-hidden card-spotlight hover:-translate-y-1 flex flex-col">
+                <article className="h-full overflow-hidden card-spotlight transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)] flex flex-col">
                   {/* Icon Section - same aspect ratio as blog image */}
                   <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
                     <div className="text-center">
@@ -608,10 +608,10 @@ export default async function HomePage() {
 
                   {/* Content Section */}
                   <div className="p-5 space-y-3 flex-1 flex flex-col justify-center text-center">
-                    <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
+                    <h3 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
                       Share Your Story
                     </h3>
-                    <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2">
+                    <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
                       Got advice, insights, or a journey to share? Add your voice to the community.
                     </p>
                     <span className="inline-flex items-center justify-center gap-1 text-[var(--color-text-accent)] text-sm font-medium">

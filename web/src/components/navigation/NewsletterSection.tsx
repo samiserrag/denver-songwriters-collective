@@ -73,12 +73,12 @@ export function NewsletterSection({ source = "homepage" }: NewsletterSectionProp
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             disabled={status === "loading" || status === "success"}
-            className="flex-1 px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/30 disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={status === "loading" || status === "success"}
-            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
           >
             {status === "loading" ? "Joining..." : status === "success" ? "You're In!" : "Join the Collective"}
           </button>

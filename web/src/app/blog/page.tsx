@@ -51,7 +51,7 @@ export default async function BlogPage() {
       {/* Page Header */}
       <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto px-6 py-10 text-center">
-          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
+          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] tracking-tight">
             Community Blog
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] mt-3">
@@ -93,7 +93,7 @@ export default async function BlogPage() {
                   </svg>
                 </div>
                 <div className="p-4 space-y-2">
-                  <h2 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors">
+                  <h2 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
                     Share Your Story
                   </h2>
                   <p className="text-[var(--color-text-secondary)] text-sm line-clamp-2">
@@ -138,7 +138,7 @@ function BlogCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] overflow-hidden hover:border-[var(--color-border-accent)] transition-colors"
+      className="group block rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] overflow-hidden transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
     >
       {post.cover_image_url && (
         <div className="relative aspect-[4/3] w-full overflow-hidden">
@@ -151,28 +151,28 @@ function BlogCard({ post }: { post: BlogPost }) {
           />
         </div>
       )}
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-2 text-center">
         {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap justify-center gap-1">
             {post.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="text-sm px-1.5 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
+                className="text-sm tracking-wide px-1.5 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)] border border-[var(--color-border-accent)]/20"
               >
                 {tag}
               </span>
             ))}
           </div>
         )}
-        <h2 className="text-base font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-2">
+        <h2 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-2">
           {post.title}
         </h2>
         {post.excerpt && (
-          <p className="text-[var(--color-text-secondary)] text-sm line-clamp-2">
+          <p className="text-[var(--color-text-secondary)] text-sm line-clamp-2 text-left mx-auto max-w-prose">
             {post.excerpt}
           </p>
         )}
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center justify-center gap-2 pt-1">
           {author?.avatar_url ? (
             <Image
               src={author.avatar_url}

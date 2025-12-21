@@ -23,32 +23,32 @@ export function SectionHeader({
   showUnderline = true,
 }: SectionHeaderProps) {
   return (
-    <div className={cn("mb-8", className)}>
-      <div className="flex items-baseline justify-between gap-4">
+    <div className={cn("mb-8 text-center", className)}>
+      <div className="flex flex-col items-center gap-2">
         <div>
           {label && (
-            <p className="text-xs font-semibold tracking-[0.25em] text-[var(--color-text-accent)]/70 uppercase mb-2">
+            <p className="text-sm font-semibold tracking-widest text-[var(--color-text-accent)]/70 uppercase mb-2">
               {label}
             </p>
           )}
 
-          <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] leading-[var(--line-height-tight)]">
+          <h2 className="text-2xl md:text-3xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] leading-tight tracking-tight">
             {title}
           </h2>
 
           {showUnderline && (
-            <div className="mt-3 h-[2px] w-16 bg-gradient-to-r from-[var(--color-accent-primary)] to-transparent rounded-full" />
+            <div className="mt-3 mx-auto h-[2px] w-16 bg-gradient-to-r from-transparent via-[var(--color-accent-primary)] to-transparent rounded-full" />
           )}
 
           {subtitle && (
-            <p className="mt-3 text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] max-w-lg">
+            <p className="mt-3 text-lg md:text-xl text-[var(--color-text-secondary)] max-w-lg mx-auto">
               {subtitle}
             </p>
           )}
         </div>
 
         {viewAllHref && (
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild variant="ghost" size="sm" className="mt-2">
             <Link href={viewAllHref}>{viewAllText}</Link>
           </Button>
         )}

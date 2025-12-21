@@ -70,3 +70,44 @@ All issues are non-blocking polish items. Address in a dedicated cleanup PR when
 - PWA support becomes a priority
 
 **Current Status**: Not blocking v0.3.0 release or Stream 3 completion.
+
+---
+
+## Future Roadmap
+
+These are broader product initiatives for post-launch development. See CLAUDE.md for detailed tracking.
+
+### Community Growth (Onboarding, Discovery, Retention)
+- Improved onboarding flow with guided tours
+- Member discovery features (search, filters, recommendations)
+- Engagement features (activity feeds, notifications, achievements)
+- Retention mechanics (streaks, milestones, community badges)
+
+### Host / Venue UX Improvements
+- Simplified event creation for recurring open mics
+- Venue dashboard with analytics
+- Host tools for managing regulars and slot preferences
+- Venue claim and verification workflow
+
+### Event Lifecycle Polish (Before / During / After)
+- Pre-event: reminder emails, calendar sync improvements
+- During event: live check-in, real-time lineup updates
+- Post-event: feedback collection, photo uploads, recaps
+
+### Analytics & Feedback Loops
+- Event attendance tracking and trends
+- Community health metrics dashboard
+- User feedback collection and analysis
+- Performance metrics for hosts/venues
+
+### Mobile-First Refinements
+- Touch-optimized interactions
+- Offline support for key features
+- Push notifications
+- Native app (React Native/Expo)
+
+### Content Strategy
+- Editorial calendar for blog/community content
+- User-generated content guidelines
+- Community spotlight automation
+- Newsletter content planning

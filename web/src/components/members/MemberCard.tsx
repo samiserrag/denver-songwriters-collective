@@ -65,11 +65,15 @@ export function MemberCard({ member, className }: MemberCardProps) {
   const roleBadgeStyle = getRoleBadgeStyle(member.role);
 
   return (
-    <Link href={profileLink} className="block h-full group">
+    <Link href={profileLink} className="block h-full group focus-visible:outline-none">
       <article
         className={cn(
           "h-full overflow-hidden card-spotlight",
-          "hover:-translate-y-1",
+          "transition-shadow transition-colors duration-200 ease-out",
+          "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
+          "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
+          // Highlight treatment for spotlight members
+          member.isSpotlight && "border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5",
           className
         )}
       >
@@ -110,7 +114,7 @@ export function MemberCard({ member, className }: MemberCardProps) {
 
         {/* Content Section */}
         <div className="p-5 space-y-3 text-center">
-          <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight">
+          <h3 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight">
             {member.name}
           </h3>
 
@@ -120,7 +124,7 @@ export function MemberCard({ member, className }: MemberCardProps) {
               {(member.genres || member.specialties)?.slice(0, 3).map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 text-sm bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] rounded-full border border-[var(--color-border-default)]"
+                  className="px-2 py-0.5 text-sm tracking-wide bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] rounded-full border border-[var(--color-border-default)]"
                 >
                   {tag}
                 </span>
@@ -131,25 +135,25 @@ export function MemberCard({ member, className }: MemberCardProps) {
           {/* Availability indicators */}
           <div className="flex flex-wrap justify-center gap-2">
             {member.availableForHire && (
-              <span className="px-2 py-0.5 text-sm bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+              <span className="px-2 py-0.5 text-sm tracking-wide bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
                 Available for Hire
               </span>
             )}
             {member.interestedInCowriting && (
-              <span className="px-2 py-0.5 text-sm bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
+              <span className="px-2 py-0.5 text-sm tracking-wide bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
                 Open to Cowriting
               </span>
             )}
           </div>
 
           {member.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
+            <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
               {member.bio}
             </p>
           )}
 
           {member.location && (
-            <p className="text-sm uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
+            <p className="text-base uppercase tracking-widest text-[var(--color-text-tertiary)]">
               {member.location}
             </p>
           )}

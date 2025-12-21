@@ -333,7 +333,7 @@ export default function SubmitOpenMicPage() {
                     required
                     value={formData.title}
                     onChange={(e) => handleChange("title", e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                     placeholder="e.g., Comedy Night at The Venue"
                   />
                 </div>
@@ -346,7 +346,7 @@ export default function SubmitOpenMicPage() {
                     required
                     value={formData.category}
                     onChange={(e) => handleChange("category", e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                   >
                     <option value="">Select category...</option>
                     {CATEGORIES.map((cat) => (
@@ -368,7 +368,7 @@ export default function SubmitOpenMicPage() {
                     required
                     value={formData.venue_name}
                     onChange={(e) => handleChange("venue_name", e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                   />
                 </div>
 
@@ -378,7 +378,7 @@ export default function SubmitOpenMicPage() {
                     type="text"
                     value={formData.venue_address}
                     onChange={(e) => handleChange("venue_address", e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                   />
                 </div>
               </div>
@@ -392,7 +392,7 @@ export default function SubmitOpenMicPage() {
                     required
                     value={formData.day_of_week}
                     onChange={(e) => handleChange("day_of_week", e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                   >
                     <option value="">Select day...</option>
                     {DAYS.map((day) => (
@@ -410,7 +410,7 @@ export default function SubmitOpenMicPage() {
                     value={formData.start_time}
                     onChange={(e) => handleChange("start_time", e.target.value)}
                     placeholder="e.g., 7:00 PM"
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                   />
                 </div>
 
@@ -421,7 +421,7 @@ export default function SubmitOpenMicPage() {
                     value={formData.signup_time}
                     onChange={(e) => handleChange("signup_time", e.target.value)}
                     placeholder="e.g., 6:30 PM"
-                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                    className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                   />
                 </div>
               </div>
@@ -433,7 +433,7 @@ export default function SubmitOpenMicPage() {
                   value={formData.recurrence_rule}
                   onChange={(e) => handleChange("recurrence_rule", e.target.value)}
                   placeholder="e.g., Every Monday, First Tuesday of month"
-                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                 />
               </div>
 
@@ -444,7 +444,7 @@ export default function SubmitOpenMicPage() {
                   onChange={(e) => handleChange("description", e.target.value)}
                   rows={3}
                   placeholder="Tell us about this open mic..."
-                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                 />
               </div>
 
@@ -455,7 +455,7 @@ export default function SubmitOpenMicPage() {
                   onChange={(e) => handleChange("notes", e.target.value)}
                   rows={2}
                   placeholder="Cover charge, equipment provided, etc."
-                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                 />
               </div>
             </div>
@@ -464,7 +464,7 @@ export default function SubmitOpenMicPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50"
+                className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
               >
                 {submitting ? "Submitting..." : "Submit open mic"}
               </button>
@@ -506,7 +506,7 @@ export default function SubmitOpenMicPage() {
                 value={searchExisting}
                 onChange={(e) => setSearchExisting(e.target.value)}
                 placeholder="Search by name or venue..."
-                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
               />
             </div>
 
@@ -542,13 +542,13 @@ export default function SubmitOpenMicPage() {
                   onChange={(e) => setClaimNotes(e.target.value)}
                   rows={3}
                   placeholder="I'm the host / I run this venue / etc."
-                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)]"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                 />
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="mt-4 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50"
+                  className="mt-4 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)] font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
                 >
                   {submitting ? "Submitting..." : "Submit claim request"}
                 </button>

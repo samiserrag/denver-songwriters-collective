@@ -81,7 +81,7 @@ export default function ContactPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
+              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
               placeholder="Jane Doe"
             />
           </div>
@@ -96,7 +96,7 @@ export default function ContactPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)]"
+              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
               placeholder="jane@example.com"
             />
           </div>
@@ -111,7 +111,7 @@ export default function ContactPage() {
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={6}
-              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-border-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-accent)] resize-none"
+              className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] resize-none"
               placeholder="How can we help?"
             />
           </div>
@@ -128,7 +128,7 @@ export default function ContactPage() {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
           >
             {status === "sending" ? "Sending..." : "Send Message"}
           </button>

@@ -56,8 +56,8 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
 
   const CardWrapper = onClick ? "div" : Link;
   const wrapperProps = onClick
-    ? { onClick: handleClick, role: "button", tabIndex: 0 }
-    : { href: `/events/${event.id}` };
+    ? { onClick: handleClick, role: "button", tabIndex: 0, className: "block h-full group cursor-pointer focus-visible:outline-none" }
+    : { href: `/events/${event.id}`, className: "block h-full group focus-visible:outline-none" };
 
   // Ensure venue renders as a simple string (name) for UI components
   const venueDisplay: string = typeof event.venue === "object" && event.venue && "name" in event.venue
@@ -78,12 +78,13 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
   return (
     <CardWrapper
       {...(wrapperProps as any)}
-      className={cn("block h-full group", onClick && "cursor-pointer")}
     >
       <article
         className={cn(
           "h-full overflow-hidden card-spotlight",
-          "hover:-translate-y-1",
+          "transition-shadow transition-colors duration-200 ease-out",
+          "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
+          "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
           className
         )}
       >
@@ -115,8 +116,8 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
         <div className={cn(compact ? "p-3 space-y-1.5" : "p-5 space-y-3", "text-center")}>
           <h3
             className={cn(
-              "font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight line-clamp-2",
-              compact ? "text-base" : "text-[length:var(--font-size-heading-sm)]"
+              "font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight line-clamp-2",
+              compact ? "text-base" : "text-lg md:text-xl"
             )}
           >
             {event.title}
@@ -125,8 +126,8 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {event.category && (
             <span
               className={cn(
-                "inline-block px-2 py-0.5 rounded",
-                compact ? "text-sm" : "text-base",
+                "inline-block px-2 py-0.5 rounded tracking-wide",
+                compact ? "text-sm" : "text-sm",
                 CATEGORY_COLORS[event.category] || ""
               )}
             >
@@ -138,7 +139,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {(startTimeFormatted || event.time) && (
             <div className={cn(
               "text-[var(--color-text-secondary)]",
-              compact ? "text-sm" : "text-base"
+              compact ? "text-base" : "text-base"
             )}>
               {startTimeFormatted ? (
                 <>
@@ -165,7 +166,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {locationDisplay && (
             <div className={cn(
               "text-[var(--color-text-secondary)] line-clamp-1",
-              compact ? "text-sm" : "text-base"
+              compact ? "text-base" : "text-base"
             )}>
               {locationDisplay}
             </div>
@@ -175,14 +176,14 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           {event.is_dsc_event && event.capacity != null && (
             <div className={cn(
               "flex items-center justify-center gap-1.5",
-              compact ? "text-sm" : "text-base"
+              compact ? "text-sm" : "text-sm"
             )}>
               {spotsRemaining === 0 ? (
-                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-medium">
+                <span className="px-2 py-0.5 rounded tracking-wide bg-amber-500/20 text-amber-400 font-medium">
                   Full
                 </span>
               ) : spotsRemaining != null ? (
-                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                <span className="px-2 py-0.5 rounded tracking-wide bg-emerald-500/20 text-emerald-400">
                   {spotsRemaining} {spotsRemaining === 1 ? "spot" : "spots"} left
                 </span>
               ) : (
@@ -194,7 +195,7 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           )}
 
           {!compact && event.description && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
+            <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 text-left mx-auto max-w-prose">
               {event.description}
             </p>
           )}

@@ -22,11 +22,13 @@ function getInitials(name: string): string {
 
 export function HostCard({ host, className }: HostCardProps) {
   return (
-    <Link href={`/performers/${host.id}`} className="block h-full group">
+    <Link href={`/performers/${host.id}`} className="block h-full group focus-visible:outline-none">
       <article
         className={cn(
           "h-full overflow-hidden card-spotlight",
-          "hover:-translate-y-1",
+          "transition-shadow transition-colors duration-200 ease-out",
+          "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
+          "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
           className
         )}
       >
@@ -56,7 +58,7 @@ export function HostCard({ host, className }: HostCardProps) {
 
           {/* Host badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-2 py-1 text-sm font-medium rounded-full bg-[var(--color-accent-primary)]/80 text-[var(--color-background)]">
+            <span className="px-2 py-1 text-sm font-medium tracking-wide rounded-full bg-[var(--color-accent-primary)]/80 text-[var(--color-background)]">
               Open Mic Host
             </span>
           </div>
@@ -65,13 +67,13 @@ export function HostCard({ host, className }: HostCardProps) {
         {/* Content Section */}
         <div className="p-5 space-y-3 text-center">
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
+            className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight"
           >
             {host.name}
           </h3>
 
           {host.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
+            <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 text-left mx-auto max-w-prose">
               {host.bio}
             </p>
           )}

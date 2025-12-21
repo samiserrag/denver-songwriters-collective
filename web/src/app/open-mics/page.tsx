@@ -364,7 +364,7 @@ function parseTimeToMinutes(t?: string | null) {
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] tracking-tight drop-shadow-lg">
               Denver Open Mic Directory
             </h1>
             <p className="text-lg text-[var(--color-text-secondary)] mt-2 drop-shadow">

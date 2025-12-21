@@ -25,11 +25,13 @@ function getInitials(name: string): string {
 
 export function PerformerCard({ performer, className }: PerformerCardProps) {
   return (
-    <Link href={`/performers/${performer.id}`} className="block h-full group">
+    <Link href={`/performers/${performer.id}`} className="block h-full group focus-visible:outline-none">
       <article
         className={cn(
           "h-full overflow-hidden card-spotlight",
-          "hover:-translate-y-1",
+          "transition-shadow transition-colors duration-200 ease-out",
+          "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
+          "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
           className
         )}
       >
@@ -61,7 +63,7 @@ export function PerformerCard({ performer, className }: PerformerCardProps) {
         {/* Content Section */}
         <div className="p-5 space-y-3 text-center">
           <h3
-            className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] tracking-tight"
+            className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight"
           >
             {performer.name}
           </h3>
@@ -71,13 +73,13 @@ export function PerformerCard({ performer, className }: PerformerCardProps) {
           )}
 
           {performer.bio && (
-            <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] line-clamp-2 text-left">
+            <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 text-left mx-auto max-w-prose">
               {performer.bio}
             </p>
           )}
 
           {performer.location && (
-            <p className="text-sm uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
+            <p className="text-base uppercase tracking-widest text-[var(--color-text-tertiary)]">
               {performer.location}
             </p>
           )}
