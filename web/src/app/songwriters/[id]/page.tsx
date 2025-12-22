@@ -38,7 +38,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
   return (
     <>
-      <HeroSection minHeight="lg">
+      <HeroSection minHeight="auto">
         <PageContainer>
           {/* Profile Header - Centered layout with large avatar */}
           <div className="flex flex-col items-center text-center pt-8 pb-4">

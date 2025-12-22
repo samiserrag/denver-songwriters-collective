@@ -57,7 +57,7 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
 
   return (
     <>
-      <HeroSection minHeight="md">
+      <HeroSection minHeight="auto">
         <PageContainer>
           <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
             {studio.full_name ?? "Studio"}

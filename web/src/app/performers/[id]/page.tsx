@@ -37,7 +37,7 @@ export default async function PerformerDetailPage({ params }: PerformerDetailPag
 
   return (
     <>
-      <HeroSection minHeight="md">
+      <HeroSection minHeight="auto">
         <PageContainer>
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <PerformerAvatar

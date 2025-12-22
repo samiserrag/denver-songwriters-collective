@@ -8,10 +8,11 @@ interface HeroSectionProps {
   className?: string;
   showVignette?: boolean;
   showBottomFade?: boolean;
-  minHeight?: "xs" | "sm" | "md" | "lg" | "xl" | "full";
+  minHeight?: "xs" | "sm" | "md" | "lg" | "xl" | "full" | "auto";
 }
 
 // Use fixed heights instead of min-h to prevent CLS (Cumulative Layout Shift)
+// Use "auto" for content that needs to expand (like profile pages with dynamic content)
 const heightClasses = {
   xs: "h-[150px] md:h-[200px]",
   sm: "h-[200px] md:h-[250px]",
@@ -19,6 +20,7 @@ const heightClasses = {
   lg: "h-[350px] md:h-[400px]",
   xl: "h-[350px] md:h-[400px]",
   full: "h-screen",
+  auto: "min-h-[350px] md:min-h-[400px]", // Expands with content
 };
 
 export function HeroSection({

@@ -1,0 +1,35 @@
+fb_row_id,fb_venue_name,fb_city,fb_day_of_week,fb_start_time,fb_signup_time,fb_frequency,classification,matched_event_id,matched_venue_id,match_tier,conflict_fields,notes
+FB-001,Cactus Jack's,Evergreen,Thu,Unknown,~7:30 PM,Weekly,EXACT_MATCH,53adde01-d94d-4625-a842-cf2b37c60fc1,9fe9ff83-b8cf-4881-b36c-d7a27c972c87,3,,Venue+day match; DB has start=20:00 signup=19:30
+FB-002,Node Arts Collective – Comedy,—,—,6 PM,Google Form,Unknown,PROBABLE_MATCH,34f74376-e042-4b10-a7af-ed1a9f128f39,efc7b88e-372e-46ae-a313-ca04b89b99bd,3,day_of_week,DB has Friday; FB has no day specified; Comedy vs general unclear
+FB-003,Joe Willy's on Broadway,Denver,—,8:30 PM,8 PM,Unclear,NET_NEW,,,none,,No matching venue found in DB
+FB-004,Kava Community Tea / Karma,Lakewood,Every other Wed,9 PM,—,Bi-weekly,PROBABLE_MATCH,2b931ee3-935e-4dc3-8e2a-ff466afc65eb,6e5ba2a0-18fb-444b-91c9-76f436355569,3,city,DB Karma House is Denver not Lakewood; multiple Kava venues exist
+FB-005,Atom's Open Mic – Stagecoach,Franktown,Wed,7 PM,6 PM,Weekly,NET_NEW,,,none,,No matching venue found in DB; Franktown not in venue list
+FB-006,Vintage Himalayan Open Mic,Denver,Fri,7 PM,6:30 PM,Weekly,NET_NEW,,,none,,No matching venue found in DB
+FB-007,Mutiny Comedy Open Mic,Englewood,Wed,6 PM,—,Weekly,NET_NEW,,,none,,No matching venue found in DB
+FB-008,Two Moons Music Hall,Denver,1st Wed,6:30 PM,6 PM,Monthly?,EXACT_MATCH,aad664c0-c3b7-4a2c-9e15-95a49e935da4,5dc9671a-fb5a-4d33-a66d-d0fb26cab8e6,3,,Venue+day match; DB start=18:30 matches FB 6:30PM
+FB-009,Long Table Brewhouse,Denver,Mon,6 PM,5:30 PM,Weekly,EXACT_MATCH,30f44c67-5958-4ca7-a1ae-1d230b600e17,56faadb7-a369-412d-9778-0e86b6113746,3,,Venue+day match; times align (18:00/17:30)
+FB-010,Node Arts – Music & Poetry,Westminster,2nd & 4th Fri,—,6 PM,Bi-monthly,EXACT_MATCH,34f74376-e042-4b10-a7af-ed1a9f128f39,efc7b88e-372e-46ae-a313-ca04b89b99bd,3,,Same venue as FB-002; Friday matches DB
+FB-011,Stolly's Café,Golden,2nd Wed,6 PM,In-person / QR,Monthly,EXACT_MATCH,b2c01b7d-d024-4818-98e3-1f249de22859,22cc9b3c-1905-475d-9489-5e5dd091225e,3,,Scully's matches Stolly's (likely typo/alias); day+city match
+FB-012,Lincoln's Roadhouse,Denver,Wed,7 PM,Call 4 PM,Weekly,EXACT_MATCH,a08da896-2673-46cd-9aa3-d69bcfc457c5,ef1bc0ab-1ef9-417f-8a14-fdbdafcfece8,3,,CANONICAL anchor; do not override; FB confirms existing data
+FB-013,Full House Bar & Grill,Englewood,Mon,7 PM,—,Weekly,EXACT_MATCH,d0eef26a-3595-4318-ba97-b839ee17e1a5,58707224-a6a5-4037-8d9c-a25bfe287698,3,,Venue+day match; DB missing start_time - FB can fill
+FB-014,Crazy Mountain Taproom,Denver,Fri,7 PM,6:30 PM,Weekly,EXACT_MATCH,79ffef69-3564-45f9-b9e8-5a8bc436256d,0e66b949-c61f-4dcc-b2b6-726413faea93,3,,Venue+day match; times align (19:00/18:30)
+FB-015,Fellow Traveler,Englewood,Sun,6 PM,—,Weekly,NET_NEW,,,none,,No matching venue found in DB
+FB-016,Eastfax Tap,Denver,Sun,8 PM,Seating 7:30,Weekly,NET_NEW,,,none,,No matching venue found in DB
+FB-017,VR Social Bar – Comic Cents,Edgewater,Thu,7:30 PM,5 PM (DM),Weekly,NET_NEW,,,none,,No matching venue found in DB
+FB-018,City O City,Denver,Tue / Thu (conflict),6 PM,5 PM / —,Unknown,PROBABLE_MATCH,9dc3eedd-821a-44e9-a175-27e016f9cb88,fb7e1f9f-52eb-432f-8789-4eae56613103,3,day_of_week,DB has Thursday only; FB claims Tue/Thu conflict; needs verification
+FB-019,Lion's Lair,Denver,Mon,10:30 PM,10 PM,Weekly,CONFLICT_HOLD,20ddfe40-7873-4929-bbe6-c26048cba6b1,c10e79e6-73d9-4bb9-a98c-832d9e62ba36,3,day_of_week,DB has Wednesday; FB says Monday; material day conflict
+FB-020,Scruffy Murphy's,Denver,Tue,9 PM,8:45 PM,Weekly?,NET_NEW,,,none,,No matching venue found in DB
+FB-021,Pete's Satire Lounge,Denver,Mon,8 PM,7:30 PM,Weekly,CONFLICT_HOLD,03c9f09d-b07b-476d-9bb6-de57a86bef4a,2883ca1c-5df1-4de9-b56e-c855a59daedc,3,day_of_week,DB has Saturday; FB says Monday; material day conflict
+FB-022,Knotted Root – Colfax,Denver,Tue,~6:30 PM,—,Weekly,CONFLICT_HOLD,f8509892-0c43-44b5-9602-b58025441518,c7067e63-6ab8-4284-8834-becb930ecc96,3,address,Hold pending verified address; do not merge Tue/Thu; canonical_event=8aa2f23a-2933-4f49-aa5c-1b6984073f29
+FB-023,Fraco's Bar (Open Stage),Littleton,Wed,7 PM,Online,Weekly,CONFLICT_HOLD,26279db8-3748-4122-9b19-2c760b3b0ead,6b8585a7-9a7e-44ac-ae9f-d5584dfaf694,3,day_of_week;status,DB has Thursday+cancelled; FB says Wed active; needs verification
+FB-024,Second Dawn Brewing,Aurora,1st Fri,6 PM,—,Monthly,PROBABLE_MATCH,2bc54f30-8979-4352-bf54-807db24544ad,cd8b86d9-4334-4210-9cf0-ee255e5a225f,3,,Multiple DB entries (Wed+Fri); FB says 1st Fri monthly; ambiguous which is correct
+FB-025,Goosetown Tavern,Denver,—,—,7 PM,Unknown,EXACT_MATCH,7408c379-ed5a-40d2-bcf0-8e838e579ad3,4c55d297-7a5c-43d0-85d1-91d56f52f61e,3,,Venue match; DB has Tuesday 20:00
+FB-026,Dry Dock Brewing (general),Aurora,—,6–9 PM,Message host,Unknown,EXACT_MATCH,7a0b8daf-8f4f-4d08-9072-a693809dc2f0,cd8b86d9-4334-4210-9cf0-ee255e5a225f,3,,Single DB entry Tuesday 18:00; FB lacks day
+FB-027,Dry Dock Brewing Taproom,Aurora,Monthly,—,5:30 PM,Monthly,PROBABLE_MATCH,7a0b8daf-8f4f-4d08-9072-a693809dc2f0,cd8b86d9-4334-4210-9cf0-ee255e5a225f,3,frequency,FB says monthly; DB is weekly Tuesday; may be different series
+FB-028,Velvet Banjo,Denver,Wed,7:30 PM–1 AM,—,Weekly,EXACT_MATCH,1a6e82a2-ca98-49ac-82c2-e69d7efeb622,9bbfdebf-8534-4cbb-93d0-ce4e4dbbda50,3,,Venue+day match; DB has 19:30 which matches 7:30PM
+FB-029,Wild Sky Brewery – County Line,Broomfield,Last Wed,—,—,Monthly,PROBABLE_MATCH,bdf7374a-55d5-4d71-9221-b95073d5c7c2,7fd37d80-289a-430a-aa83-a5a2e47a9162,3,city,DB venue is Centennial not Broomfield; address says County Line Rd
+FB-030,Wild Sky Brewery – Littleton,Littleton,3rd Thu,—,—,Monthly,NET_NEW,,,none,,No Wild Sky in Littleton found; may be different location
+FB-031,Lone Tree Brewing Co.,Lone Tree,4th Sat,—,—,Monthly,EXACT_MATCH,969c6759-47f8-45e3-9540-d51484cdf4aa,163eacb1-2c79-4a57-ba68-6ba9dafe8bcf,3,,Venue+day match; DB has Saturday 18:00; DB status=inactive
+FB-032,Fellow Traveler (update),Englewood,Sun,~6 PM,5:30 PM,Weekly,NET_NEW,,,none,,No matching venue found in DB; duplicate of FB-015 with more detail
+FB-033,Second Dawn – Central Park,Denver,Fri,—,5:30 PM,Monthly?,NET_NEW,,,none,,No Second Dawn in Denver found; Aurora location exists
+FB-034,Velvet Banjo (alt listing),Denver,Thu,—,7:30 PM,Weekly,CONFLICT_HOLD,1a6e82a2-ca98-49ac-82c2-e69d7efeb622,9bbfdebf-8534-4cbb-93d0-ce4e4dbbda50,3,day_of_week,DB has Wednesday; FB-034 says Thursday; may be different night or error
