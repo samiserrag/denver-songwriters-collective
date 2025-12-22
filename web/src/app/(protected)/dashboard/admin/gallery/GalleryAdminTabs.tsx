@@ -190,7 +190,8 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
   const handleAlbumCoverUpload = useCallback(async (file: File): Promise<string | null> => {
     const supabase = createClient();
     const fileExt = file.name.split('.').pop() || 'jpg';
-    const fileName = `albums/cover-${Date.now()}.${fileExt}`;
+    // Use userId folder to satisfy RLS policy
+    const fileName = `${userId}/album-cover-${Date.now()}.${fileExt}`;
 
     const { error } = await supabase.storage
       .from('gallery-images')
@@ -208,7 +209,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
 
     toast.success('Cover image uploaded!');
     return publicUrl;
-  }, []);
+  }, [userId]);
 
   return (
     <div>
