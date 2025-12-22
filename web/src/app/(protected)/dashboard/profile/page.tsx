@@ -103,6 +103,13 @@ export default function EditProfilePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [customInstrument, setCustomInstrument] = useState("");
   const [customGenre, setCustomGenre] = useState("");
+  // Track original identity flags from database to detect accidental clearing
+  const [originalIdentity, setOriginalIdentity] = useState<{
+    is_songwriter: boolean;
+    is_host: boolean;
+    is_studio: boolean;
+    is_fan: boolean;
+  } | null>(null);
   // Note: userRole is kept for admin check only. UX is driven by identity flags (formData.is_songwriter, etc.)
 
   useEffect(() => {
@@ -123,6 +130,13 @@ export default function EditProfilePage() {
         .single();
 
       if (profile) {
+        // Store original identity flags to detect accidental clearing
+        setOriginalIdentity({
+          is_songwriter: profile.is_songwriter || false,
+          is_host: profile.is_host || false,
+          is_studio: profile.is_studio || false,
+          is_fan: profile.is_fan || false,
+        });
         setFormData({
           full_name: profile.full_name || "",
           bio: profile.bio || "",
@@ -222,6 +236,32 @@ export default function EditProfilePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Prevent submission if profile hasn't loaded yet (race condition protection)
+    if (!originalIdentity) {
+      toast.error("Please wait for your profile to load before saving.");
+      return;
+    }
+
+    // Safety check: if user had identity flags set and now all are false, warn them
+    const hadAnyIdentity = originalIdentity && (
+      originalIdentity.is_songwriter ||
+      originalIdentity.is_host ||
+      originalIdentity.is_studio ||
+      originalIdentity.is_fan
+    );
+    const hasNoIdentityNow = !formData.is_songwriter && !formData.is_host && !formData.is_studio && !formData.is_fan;
+
+    if (hadAnyIdentity && hasNoIdentityNow) {
+      const confirmed = window.confirm(
+        "You're about to uncheck all identity options. This will remove you from the Members directory.\n\n" +
+        "Are you sure you want to continue?"
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
