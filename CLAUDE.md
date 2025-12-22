@@ -380,6 +380,13 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Admin User Deletion Fix (December 2025)
+- **Optimistic UI update** - Deleted users now immediately disappear from the list
+- **Fixed stale data bug** - Previously, `router.refresh()` alone wasn't reliably updating the UI after deletion
+- **Local state tracking** - `deletedUserIds` Set tracks deleted users client-side
+- **State reset on refresh** - Deleted IDs are cleared when users prop updates from server
+- Key file: `web/src/components/admin/UserDirectoryTable.tsx`
+
 ### Admin Open Mic Status Management (December 2025)
 - **New admin page** - `/dashboard/admin/open-mics` for managing open mic event status
 - **Admin API endpoint** - `POST /api/admin/open-mics/:id/status` to update event status with audit trail
