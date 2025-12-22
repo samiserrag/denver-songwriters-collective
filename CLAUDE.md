@@ -401,6 +401,13 @@ These are broader product initiatives for post-launch development:
 - **Title change** - "Denver Open Mic Directory" → "Denver Area Open Mic Directory"
 - Key file: `web/src/app/open-mics/page.tsx:371`
 
+### Profile Form Identity Flag Safeguards (December 2025)
+- **Race condition protection** - Form blocks submission if profile data hasn't fully loaded
+- **Confirmation dialog** - Warning shown if user is about to clear all identity flags
+- **Original state tracking** - Form remembers initial identity flags to detect accidental changes
+- **Prevents accidental removal from Members directory** - Users warned before unchecking all identity options
+- Key file: `web/src/app/(protected)/dashboard/profile/page.tsx` - Added `originalIdentity` state and validation
+
 ### Profile Page Redesign (December 2025)
 - **Much larger avatars** - Added `xl` (192px) and `2xl` (256px) sizes to SongwriterAvatar component
 - **Centered hero layout** - Profile pages now center-align the avatar and name in hero section
