@@ -381,11 +381,16 @@ These are broader product initiatives for post-launch development:
 ## Recent Changes (December 2025)
 
 ### Admin User Deletion Fix (December 2025)
-- **Optimistic UI update** - Deleted users now immediately disappear from the list
-- **Fixed stale data bug** - Previously, `router.refresh()` alone wasn't reliably updating the UI after deletion
-- **Local state tracking** - `deletedUserIds` Set tracks deleted users client-side
-- **State reset on refresh** - Deleted IDs are cleared when users prop updates from server
-- Key file: `web/src/components/admin/UserDirectoryTable.tsx`
+- **Root cause found** - Supabase `auth.admin.deleteUser()` does NOT cascade to profiles table
+- **Explicit profile deletion** - Now deletes profile record explicitly before auth user
+- **Optimistic UI update** - Deleted users immediately disappear from list client-side
+- **Cache-busting** - Added `revalidate=0` and `fetchCache="force-no-store"` to admin users and members pages
+- **Fixed orphaned profiles** - Manually cleaned up existing orphaned profile records
+- Key files:
+  - `web/src/app/(protected)/dashboard/admin/users/actions.ts` - Added explicit profile delete step
+  - `web/src/components/admin/UserDirectoryTable.tsx` - Optimistic UI with deletedUserIds state
+  - `web/src/app/(protected)/dashboard/admin/users/page.tsx` - Cache-busting exports
+  - `web/src/app/members/page.tsx` - Cache-busting exports
 
 ### Admin Open Mic Status Management (December 2025)
 - **New admin page** - `/dashboard/admin/open-mics` for managing open mic event status
