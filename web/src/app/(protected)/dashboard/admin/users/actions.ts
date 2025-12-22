@@ -258,7 +258,7 @@ export async function toggleAdminRole(
 
 /**
  * Deletes a user and ALL their associated data including:
- * - All database records (via FK CASCADE)
+ * - Profile record (must be deleted explicitly - no cascade)
  * - Storage objects (avatars, gallery images, blog images, event images)
  * - Auth account (auth.users)
  *
@@ -339,12 +339,27 @@ export async function deleteUser(
   }
 
   // ============================================
-  // STEP 2: Delete auth user (cascades to profile)
+  // STEP 2: Delete profile record explicitly
+  // ============================================
+  // Note: Supabase auth.admin.deleteUser() does NOT cascade to profiles table
+  // We must delete the profile record explicitly
+  const { error: profileDeleteError } = await serviceClient
+    .from("profiles")
+    .delete()
+    .eq("id", userId);
+
+  if (profileDeleteError) {
+    console.error("Profile delete error:", profileDeleteError);
+    // Continue anyway - we still want to delete the auth user
+  }
+
+  // ============================================
+  // STEP 3: Delete auth user
   // ============================================
   const { error: authError } = await serviceClient.auth.admin.deleteUser(userId);
 
   // ============================================
-  // STEP 3: Determine status and log
+  // STEP 4: Determine status and log
   // ============================================
   let status: "success" | "partial_success" | "failed";
   let notes: string | null = null;
@@ -352,6 +367,9 @@ export async function deleteUser(
   if (authError) {
     status = "failed";
     notes = `Auth delete failed: ${authError.message}`;
+  } else if (profileDeleteError) {
+    status = "partial_success";
+    notes = `Profile delete failed: ${profileDeleteError.message}`;
   } else if (allFailures.length > 0) {
     status = "partial_success";
   } else {
@@ -484,7 +502,7 @@ export async function toggleHostStatus(
  * SAFETY CHECKS:
  * - Super admin cannot self-delete (must be demoted first)
  * - All storage objects are cleaned up
- * - All database records cascade-deleted
+ * - Profile record explicitly deleted (no cascade from auth)
  */
 export async function deleteOwnAccount(): Promise<{
   success: boolean;
@@ -536,12 +554,27 @@ export async function deleteOwnAccount(): Promise<{
   }
 
   // ============================================
-  // STEP 2: Delete auth user (cascades to profile)
+  // STEP 2: Delete profile record explicitly
+  // ============================================
+  // Note: Supabase auth.admin.deleteUser() does NOT cascade to profiles table
+  // We must delete the profile record explicitly
+  const { error: profileDeleteError } = await serviceClient
+    .from("profiles")
+    .delete()
+    .eq("id", userId);
+
+  if (profileDeleteError) {
+    console.error("Profile delete error:", profileDeleteError);
+    // Continue anyway - we still want to delete the auth user
+  }
+
+  // ============================================
+  // STEP 3: Delete auth user
   // ============================================
   const { error: authError } = await serviceClient.auth.admin.deleteUser(userId);
 
   // ============================================
-  // STEP 3: Determine status and log
+  // STEP 4: Determine status and log
   // ============================================
   let status: "success" | "partial_success" | "failed";
   let notes: string | null = null;
@@ -549,6 +582,9 @@ export async function deleteOwnAccount(): Promise<{
   if (authError) {
     status = "failed";
     notes = `Auth delete failed: ${authError.message}`;
+  } else if (profileDeleteError) {
+    status = "partial_success";
+    notes = `Profile delete failed: ${profileDeleteError.message}`;
   } else if (allFailures.length > 0) {
     status = "partial_success";
   } else {
