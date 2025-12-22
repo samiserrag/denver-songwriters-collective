@@ -123,8 +123,9 @@ export default async function OpenMicsPage({
   const view = params?.view ?? "list";
 
   // Status filter: "all", "active", "unverified", "inactive"
+  // Default to "active" - users must explicitly choose "all" to see unverified/inactive
   const allowedStatuses = ["all", "active", "unverified", "inactive"];
-  const selectedStatus = params?.status && allowedStatuses.includes(params.status) ? params.status : "all";
+  const selectedStatus = params?.status && allowedStatuses.includes(params.status) ? params.status : "active";
 
   const allowedDays = [
     "Sunday",
@@ -179,6 +180,7 @@ export default async function OpenMicsPage({
 
   // Build events query - venue_id required, join with venues table, published only
   // Exclude DSC events - they appear in /events (Happenings) section instead
+  // Default to active status only - users can filter to see unverified/inactive
   let query = supabase
     .from("events")
     .select(
@@ -194,14 +196,15 @@ export default async function OpenMicsPage({
     query = query.eq("day_of_week", selectedDay);
   }
 
-  // Status filtering
-  if (selectedStatus && selectedStatus !== "all") {
-    if (selectedStatus === "unverified") {
-      // Include both "unverified" and "needs_verification"
-      query = query.in("status", ["unverified", "needs_verification"]);
-    } else {
-      query = query.eq("status", selectedStatus);
-    }
+  // Status filtering - "all" shows everything, otherwise filter by selected status
+  if (selectedStatus === "all") {
+    // Show all statuses when explicitly selected
+  } else if (selectedStatus === "unverified") {
+    // Include both "unverified" and "needs_verification"
+    query = query.in("status", ["unverified", "needs_verification"]);
+  } else {
+    // Filter by specific status (default is "active")
+    query = query.eq("status", selectedStatus);
   }
 
   // City filtering: resolve venue IDs for the selected city, then filter by venue_id
@@ -365,7 +368,7 @@ function parseTimeToMinutes(t?: string | null) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center px-4">
             <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] tracking-tight drop-shadow-lg">
-              Denver Open Mic Directory
+              Denver Area Open Mic Directory
             </h1>
             <p className="text-lg text-[var(--color-text-secondary)] mt-2 drop-shadow">
               Looking for a stage tonight? Start here.

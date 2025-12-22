@@ -213,6 +213,7 @@ Users can select multiple identity flags during onboarding:
 ### Admin Pages
 - `/dashboard/admin` - Admin overview
 - `/dashboard/admin/events` - Manage all events
+- `/dashboard/admin/open-mics` - Open mic status review queue (active/needs_verification/inactive)
 - `/dashboard/admin/venues` - Manage venues
 - `/dashboard/admin/users` - User management
 - `/dashboard/admin/blog` - Approve/manage blog posts
@@ -378,6 +379,27 @@ These are broader product initiatives for post-launch development:
 ---
 
 ## Recent Changes (December 2025)
+
+### Admin Open Mic Status Management (December 2025)
+- **New admin page** - `/dashboard/admin/open-mics` for managing open mic event status
+- **Admin API endpoint** - `POST /api/admin/open-mics/:id/status` to update event status with audit trail
+- **Status values whitelist** - `active`, `needs_verification`, `unverified`, `inactive`, `cancelled`
+- **Audit notes** - All status changes append `[ADMIN_STATUS: set_to=<status> | at=<timestamp> | by=<admin_id>]` to event notes
+- **Verification tracking** - Setting status to "active" updates `last_verified_at` and `verified_by`
+- **Filter tabs** - All | Active | Needs Review | Inactive/Cancelled with count badges
+- **Quick actions** - "Mark Active" and "Needs Review" buttons for fast status changes
+- **Search** - Filter by venue name or title
+- **Status legend** - Explains what each status means
+- **Public page default filter** - Open Mic page now defaults to `status='active'` (was showing all)
+- Key files:
+  - `web/src/app/api/admin/open-mics/[id]/status/route.ts` - Admin API endpoint
+  - `web/src/components/admin/OpenMicStatusTable.tsx` - Status management table component
+  - `web/src/app/(protected)/dashboard/admin/open-mics/page.tsx` - Admin review queue page
+  - `web/src/app/open-mics/page.tsx` - Default status filter changed to "active"
+
+### Open Mic Page Title Update (December 2025)
+- **Title change** - "Denver Open Mic Directory" → "Denver Area Open Mic Directory"
+- Key file: `web/src/app/open-mics/page.tsx:371`
 
 ### Profile Visibility Control (December 2025)
 - **New `is_public` flag on profiles** - Controls whether profile appears in public listings
