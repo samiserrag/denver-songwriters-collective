@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -59,6 +59,14 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
   const [uploadAlbum, setUploadAlbum] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
+  // Multi-file batch upload state
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const multiFileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentFile = pendingFiles[currentFileIndex] ?? null;
+  const hasMoreFiles = currentFileIndex < pendingFiles.length - 1;
+
   // Album form state
   const [albumName, setAlbumName] = useState("");
   const [albumSlug, setAlbumSlug] = useState("");
@@ -113,14 +121,28 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
       return;
     }
 
-    toast.success('Photo added to gallery!');
-    setUploadUrl("");
-    setUploadCaption("");
-    setUploadVenue("");
-    setUploadEvent("");
-    setUploadAlbum("");
-    setIsUploading(false);
-    router.refresh();
+    // Handle batch upload queue advancement
+    if (hasMoreFiles) {
+      // Advance to next image
+      setCurrentFileIndex((i) => i + 1);
+      setUploadUrl("");
+      setUploadCaption("");
+      // Keep venue/event/album selections for convenience
+      toast.success(`Photo ${currentFileIndex + 1} saved. ${pendingFiles.length - currentFileIndex - 1} remaining.`);
+      setIsUploading(false);
+    } else {
+      // Reset everything after final image (or single image)
+      setPendingFiles([]);
+      setCurrentFileIndex(0);
+      setUploadUrl("");
+      setUploadCaption("");
+      setUploadVenue("");
+      setUploadEvent("");
+      setUploadAlbum("");
+      toast.success(pendingFiles.length > 1 ? "All photos uploaded!" : "Photo added to gallery!");
+      setIsUploading(false);
+      router.refresh();
+    }
   };
 
   const handleCreateAlbum = async (e: React.FormEvent) => {
@@ -500,14 +522,50 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
       {/* Upload Tab */}
       {activeTab === "upload" && (
         <div className="max-w-xl space-y-6">
+          {/* Hidden multi-file input */}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            hidden
+            ref={multiFileInputRef}
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (files.length > 0) {
+                setPendingFiles(files);
+                setCurrentFileIndex(0);
+                setUploadUrl("");
+              }
+              e.target.value = ""; // Reset so same files can be selected again
+            }}
+          />
+
           {/* Image Upload */}
           <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
-              Photo <span className="text-red-600">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                Photo <span className="text-red-600">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => multiFileInputRef.current?.click()}
+                className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-border-default)] transition-colors"
+              >
+                Select Multiple Photos
+              </button>
+            </div>
+
+            {pendingFiles.length > 0 && (
+              <p className="text-sm text-[var(--color-text-accent)] mb-3">
+                Photo {currentFileIndex + 1} of {pendingFiles.length}
+              </p>
+            )}
+
             <div className="w-48">
               <ImageUpload
+                key={currentFile?.name ?? "single"}
                 currentImageUrl={uploadUrl || null}
+                initialFile={currentFile}
                 onUpload={async (file) => {
                   const url = await handleGalleryPhotoUpload(file);
                   if (url) {
@@ -521,11 +579,15 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 aspectRatio={3/4}
                 maxSizeMB={10}
                 shape="square"
-                placeholderText="Upload Photo"
+                placeholderText={
+                  pendingFiles.length > 0
+                    ? `Crop photo ${currentFileIndex + 1} of ${pendingFiles.length}`
+                    : "Upload Photo"
+                }
               />
             </div>
             <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
-              Drag and drop or click to upload. Max 10MB. JPG, PNG, WebP, or GIF.
+              Drag and drop, click to upload, or select multiple photos at once.
             </p>
           </div>
 
@@ -593,15 +655,31 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             </select>
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="button"
-            onClick={handleUpload}
-            disabled={isUploading || !uploadUrl}
-            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
-          >
-            {isUploading ? "Saving..." : "Save Photo"}
-          </button>
+          {/* Submit and Cancel Buttons */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleUpload}
+              disabled={isUploading || !uploadUrl}
+              className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
+            >
+              {isUploading ? "Saving..." : hasMoreFiles ? "Save & Next Photo" : "Save Photo"}
+            </button>
+
+            {pendingFiles.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingFiles([]);
+                  setCurrentFileIndex(0);
+                  setUploadUrl("");
+                }}
+                className="px-4 py-3 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-border-default)] transition-colors"
+              >
+                Cancel Batch
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

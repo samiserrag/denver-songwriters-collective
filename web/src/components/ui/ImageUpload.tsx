@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Upload, X, Camera, Loader2 } from 'lucide-react';
@@ -14,6 +14,8 @@ type ImageUploadProps = {
   className?: string;
   shape?: 'circle' | 'square';
   placeholderText?: string;
+  /** Pre-load a file for cropping (used for multi-file batch uploads) */
+  initialFile?: File | null;
 };
 
 function centerAspectCrop(
@@ -45,6 +47,7 @@ export function ImageUpload({
   className = '',
   shape = 'circle',
   placeholderText = 'Upload Image',
+  initialFile,
 }: ImageUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -114,6 +117,13 @@ export function ImageUpload({
       handleFile(files[0]);
     }
   }, [handleFile]);
+
+  // Handle initialFile prop for batch uploads
+  useEffect(() => {
+    if (initialFile) {
+      handleFile(initialFile);
+    }
+  }, [initialFile, handleFile]);
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
