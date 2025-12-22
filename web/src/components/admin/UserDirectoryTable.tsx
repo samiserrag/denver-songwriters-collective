@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Database } from "@/lib/supabase/database.types";
 import { deleteUser, updateSpotlightType, toggleHostStatus, toggleAdminRole } from "@/app/(protected)/dashboard/admin/users/actions";
@@ -80,8 +80,19 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
   const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
 
+  // Local state for optimistic UI updates - deleted users are removed immediately
+  const [deletedUserIds, setDeletedUserIds] = useState<Set<string>>(new Set());
+
+  // Reset deleted IDs when users prop changes (e.g., after router.refresh())
+  useEffect(() => {
+    setDeletedUserIds(new Set());
+  }, [users]);
+
   const filtered = useMemo(() => {
     return users.filter((u) => {
+      // Exclude optimistically deleted users
+      if (deletedUserIds.has(u.id)) return false;
+
       // Flag-based filtering with role fallback
       let matchesFilter = true;
       switch (filterType) {
@@ -115,7 +126,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
         (name.includes(term) || typeLabel.includes(term))
       );
     });
-  }, [users, search, filterType]);
+  }, [users, search, filterType, deletedUserIds]);
 
   const handleSpotlightChange = async (user: Profile, value: string) => {
     setUpdatingSpotlight(user.id);
@@ -181,13 +192,18 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
     setIsDeleting(true);
     setError("");
 
+    const userToDelete = deleteModal.user;
+
     try {
-      const result = await deleteUser(deleteModal.user.id);
+      const result = await deleteUser(userToDelete.id);
 
       if (!result.success) {
         setError(result.error || "Failed to delete user");
         return;
       }
+
+      // Optimistically remove user from UI immediately
+      setDeletedUserIds((prev) => new Set([...prev, userToDelete.id]));
 
       setDeleteModal({ open: false, user: null });
       setConfirmText("");
