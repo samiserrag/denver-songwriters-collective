@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { ImageUpload } from "@/components/ui";
+import { toast } from "sonner";
 
 interface GalleryImage {
   id: string;
@@ -88,14 +90,13 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     router.refresh();
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpload = async () => {
     if (!uploadUrl) return;
 
     setIsUploading(true);
     const supabase = createClient();
 
-    await supabase.from("gallery_images").insert({
+    const { error } = await supabase.from("gallery_images").insert({
       uploaded_by: userId,
       image_url: uploadUrl,
       caption: uploadCaption || null,
@@ -105,6 +106,14 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
       is_approved: true, // Admin uploads are auto-approved
     });
 
+    if (error) {
+      console.error('Insert error:', error);
+      toast.error('Failed to save photo');
+      setIsUploading(false);
+      return;
+    }
+
+    toast.success('Photo added to gallery!');
     setUploadUrl("");
     setUploadCaption("");
     setUploadVenue("");
@@ -152,6 +161,54 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     await supabase.from("gallery_albums").update({ is_published: !currentValue }).eq("id", albumId);
     router.refresh();
   };
+
+  // Gallery photo upload handler
+  const handleGalleryPhotoUpload = useCallback(async (file: File): Promise<string | null> => {
+    const supabase = createClient();
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${userId}/photo-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('gallery-images')
+      .upload(fileName, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('gallery-images')
+      .getPublicUrl(fileName);
+
+    toast.success('Image uploaded!');
+    return publicUrl;
+  }, [userId]);
+
+  // Album cover upload handler
+  const handleAlbumCoverUpload = useCallback(async (file: File): Promise<string | null> => {
+    const supabase = createClient();
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `albums/cover-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('gallery-images')
+      .upload(fileName, file);
+
+    if (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload cover image');
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('gallery-images')
+      .getPublicUrl(fileName);
+
+    toast.success('Cover image uploaded!');
+    return publicUrl;
+  }, []);
 
   return (
     <div>
@@ -304,40 +361,62 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
           {/* Create Album Form */}
           <form onSubmit={handleCreateAlbum} className="mb-8 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
             <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-4">Create New Album</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                value={albumName}
-                onChange={(e) => {
-                  setAlbumName(e.target.value);
-                  if (!albumSlug) setAlbumSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
-                }}
-                placeholder="Album name"
-                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
-                required
-              />
-              <input
-                type="text"
-                value={albumSlug}
-                onChange={(e) => setAlbumSlug(e.target.value)}
-                placeholder="URL slug"
-                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
-              />
-              <input
-                type="text"
-                value={albumDescription}
-                onChange={(e) => setAlbumDescription(e.target.value)}
-                placeholder="Description (optional)"
-                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
-              />
-              <input
-                type="url"
-                value={albumCover}
-                onChange={(e) => setAlbumCover(e.target.value)}
-                placeholder="Cover image URL (optional)"
-                className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
-              />
+
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Cover Image Upload */}
+              <div className="w-40 flex-shrink-0">
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Cover Image</label>
+                <ImageUpload
+                  currentImageUrl={albumCover || null}
+                  onUpload={async (file) => {
+                    const url = await handleAlbumCoverUpload(file);
+                    if (url) {
+                      setAlbumCover(url);
+                    }
+                    return url;
+                  }}
+                  onRemove={async () => {
+                    setAlbumCover("");
+                  }}
+                  aspectRatio={3/2}
+                  maxSizeMB={10}
+                  shape="square"
+                  placeholderText="Cover"
+                />
+              </div>
+
+              {/* Album Details */}
+              <div className="flex-1 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    value={albumName}
+                    onChange={(e) => {
+                      setAlbumName(e.target.value);
+                      if (!albumSlug) setAlbumSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
+                    }}
+                    placeholder="Album name"
+                    className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+                    required
+                  />
+                  <input
+                    type="text"
+                    value={albumSlug}
+                    onChange={(e) => setAlbumSlug(e.target.value)}
+                    placeholder="URL slug"
+                    className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={albumDescription}
+                  onChange={(e) => setAlbumDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+                />
+              </div>
             </div>
+
             <button
               type="submit"
               disabled={isCreatingAlbum || !albumName}
@@ -419,31 +498,37 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
 
       {/* Upload Tab */}
       {activeTab === "upload" && (
-        <form onSubmit={handleUpload} className="max-w-xl space-y-4">
-          <div>
-            <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
-              Image URL <span className="text-red-600">*</span>
+        <div className="max-w-xl space-y-6">
+          {/* Image Upload */}
+          <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+              Photo <span className="text-red-600">*</span>
             </label>
-            <input
-              type="url"
-              value={uploadUrl}
-              onChange={(e) => setUploadUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              required
-            />
-            {uploadUrl && (
-              <img
-                src={uploadUrl}
-                alt="Preview"
-                className="mt-2 max-h-40 rounded-lg object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
+            <div className="w-48">
+              <ImageUpload
+                currentImageUrl={uploadUrl || null}
+                onUpload={async (file) => {
+                  const url = await handleGalleryPhotoUpload(file);
+                  if (url) {
+                    setUploadUrl(url);
+                  }
+                  return url;
                 }}
+                onRemove={async () => {
+                  setUploadUrl("");
+                }}
+                aspectRatio={3/4}
+                maxSizeMB={10}
+                shape="square"
+                placeholderText="Upload Photo"
               />
-            )}
+            </div>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+              Drag and drop or click to upload. Max 10MB. JPG, PNG, WebP, or GIF.
+            </p>
           </div>
 
+          {/* Caption */}
           <div>
             <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Caption</label>
             <input
@@ -455,6 +540,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             />
           </div>
 
+          {/* Venue & Event */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Venue</label>
@@ -480,15 +566,16 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
               >
                 <option value="">Select event...</option>
-                {events.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.title}
+                {events.map((evt) => (
+                  <option key={evt.id} value={evt.id}>
+                    {evt.title}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
+          {/* Album */}
           <div>
             <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Album</label>
             <select
@@ -505,14 +592,16 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             </select>
           </div>
 
+          {/* Submit Button */}
           <button
-            type="submit"
+            type="button"
+            onClick={handleUpload}
             disabled={isUploading || !uploadUrl}
             className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
           >
-            {isUploading ? "Uploading..." : "Upload Photo"}
+            {isUploading ? "Saving..." : "Save Photo"}
           </button>
-        </form>
+        </div>
       )}
     </div>
   );
