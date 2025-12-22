@@ -47,11 +47,14 @@ export default async function MembersPage({ searchParams }: PageProps) {
   const supabase = await createSupabaseServerClient();
   const params = await searchParams;
 
+  // Fetch public profiles with at least one identity flag set
+  // Note: We no longer filter out admins - admins who are also songwriters should appear
+  // The is_public flag controls visibility, not the role
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
     .eq("is_public", true)
-    .neq("role", "admin")
+    .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,is_fan.eq.true")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })
     .order("full_name", { ascending: true });
