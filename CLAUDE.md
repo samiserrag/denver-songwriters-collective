@@ -401,6 +401,18 @@ These are broader product initiatives for post-launch development:
 - **Title change** - "Denver Open Mic Directory" → "Denver Area Open Mic Directory"
 - Key file: `web/src/app/open-mics/page.tsx:371`
 
+### Profile Page Redesign (December 2025)
+- **Much larger avatars** - Added `xl` (192px) and `2xl` (256px) sizes to SongwriterAvatar component
+- **Centered hero layout** - Profile pages now center-align the avatar and name in hero section
+- **Hero height increased** - Changed from `minHeight="md"` to `minHeight="lg"` for more presence
+- **Prominent avatar styling** - `ring-4 ring-[var(--color-accent-primary)]/30 shadow-2xl` for emphasis
+- **Responsive name sizing** - `text-4xl md:text-5xl lg:text-6xl` with serif italic styling
+- **Two-column grid** - Genres and Instruments sections display side-by-side on desktop
+- **Content width constrained** - `max-w-4xl mx-auto` for better readability
+- Key files:
+  - `web/src/components/songwriters/SongwriterAvatar.tsx` - Added xl/2xl sizes
+  - `web/src/app/songwriters/[id]/page.tsx` - Complete layout redesign
+
 ### Profile Visibility Control (December 2025)
 - **New `is_public` flag on profiles** - Controls whether profile appears in public listings
 - **Database migration** - Added `is_public` column with index, backfilled all existing profiles to `true`
@@ -886,6 +898,30 @@ git add . && git commit -m "your message" && git push
 
 - All protected pages using `supabase.auth.getSession()` require `export const dynamic = "force-dynamic"` to prevent Next.js 16 prerender errors
 - Vercel auto-deploys from `main` branch
+
+---
+
+## Deploy Rule: Supabase Migrations Before Main
+
+**Why:** Vercel auto-deploys immediately when code is pushed to `main`. If new code references database columns/tables that don't exist yet, the deploy will fail or cause runtime errors. This happened with the `is_public` column - code was deployed before the migration was applied.
+
+**Pre-push checklist when migrations exist:**
+
+```bash
+# 1. Check for pending migrations
+npx supabase migration list
+
+# 2. Apply any new migrations to remote database
+npx supabase db push
+
+# 3. Verify migration applied (check column/table exists)
+cd web && source .env.local && psql "$DATABASE_URL" -c "\d profiles"
+
+# 4. Only THEN push to main
+git push origin main
+```
+
+**Rule:** If any migration files were added or modified, do NOT push to `main` until `npx supabase db push` succeeds and the schema changes are verified in production.
 
 ---
 

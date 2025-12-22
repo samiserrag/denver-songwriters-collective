@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface SongwriterAvatarProps {
   src?: string;
   alt?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
   className?: string;
 }
 
@@ -13,12 +13,16 @@ const sizeClasses = {
   sm: "h-12 w-12",
   md: "h-20 w-20",
   lg: "h-28 w-28",
+  xl: "h-48 w-48",
+  "2xl": "h-64 w-64",
 };
 
 const sizePixels = {
   sm: 48,
   md: 80,
   lg: 112,
+  xl: 192,
+  "2xl": 256,
 };
 
 export function SongwriterAvatar({
