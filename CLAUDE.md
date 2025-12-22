@@ -404,14 +404,18 @@ These are broader product initiatives for post-launch development:
 ### Profile Page Redesign (December 2025)
 - **Much larger avatars** - Added `xl` (192px) and `2xl` (256px) sizes to SongwriterAvatar component
 - **Centered hero layout** - Profile pages now center-align the avatar and name in hero section
-- **Hero height increased** - Changed from `minHeight="md"` to `minHeight="lg"` for more presence
+- **Auto-expanding hero** - Added `minHeight="auto"` option to HeroSection using `min-h-*` instead of fixed `h-*`
+- **Fixed content clipping** - Profile pages with large avatars + badges + social links no longer cut off
 - **Prominent avatar styling** - `ring-4 ring-[var(--color-accent-primary)]/30 shadow-2xl` for emphasis
 - **Responsive name sizing** - `text-4xl md:text-5xl lg:text-6xl` with serif italic styling
 - **Two-column grid** - Genres and Instruments sections display side-by-side on desktop
 - **Content width constrained** - `max-w-4xl mx-auto` for better readability
 - Key files:
+  - `web/src/components/layout/hero-section.tsx` - Added `auto` minHeight option
   - `web/src/components/songwriters/SongwriterAvatar.tsx` - Added xl/2xl sizes
-  - `web/src/app/songwriters/[id]/page.tsx` - Complete layout redesign
+  - `web/src/app/songwriters/[id]/page.tsx` - Complete layout redesign with `minHeight="auto"`
+  - `web/src/app/performers/[id]/page.tsx` - Updated to `minHeight="auto"`
+  - `web/src/app/studios/[id]/page.tsx` - Updated to `minHeight="auto"`
 
 ### Profile Visibility Control (December 2025)
 - **New `is_public` flag on profiles** - Controls whether profile appears in public listings
