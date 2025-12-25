@@ -88,6 +88,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     .eq("album_id", album.id)
     .eq("is_approved", true)
     .order("is_featured", { ascending: false })
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
     .range(offset, offset + IMAGES_PER_PAGE - 1);
 

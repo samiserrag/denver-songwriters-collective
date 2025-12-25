@@ -1096,6 +1096,7 @@ export type Database = {
           image_url: string
           is_approved: boolean | null
           is_featured: boolean | null
+          sort_order: number | null
           updated_at: string | null
           uploaded_by: string
           venue_id: string | null
@@ -1109,6 +1110,7 @@ export type Database = {
           image_url: string
           is_approved?: boolean | null
           is_featured?: boolean | null
+          sort_order?: number | null
           updated_at?: string | null
           uploaded_by: string
           venue_id?: string | null
@@ -1122,6 +1124,7 @@ export type Database = {
           image_url?: string
           is_approved?: boolean | null
           is_featured?: boolean | null
+          sort_order?: number | null
           updated_at?: string | null
           uploaded_by?: string
           venue_id?: string | null
@@ -2344,8 +2347,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       appointment_status: "pending" | "confirmed" | "completed" | "cancelled"

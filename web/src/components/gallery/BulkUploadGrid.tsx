@@ -3,20 +3,31 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { CropModal } from "./CropModal";
+import { GripVertical, Crop, X } from "lucide-react";
 
 // Icons
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
     </svg>
   );
 }
@@ -65,6 +76,134 @@ interface BulkUploadGridProps {
   onUploadComplete: () => void;
 }
 
+// Sortable Thumbnail Component
+function SortableThumbnail({
+  file,
+  onCrop,
+  onRemove,
+  onRetry,
+}: {
+  file: QueuedFile;
+  onCrop: () => void;
+  onRemove: () => void;
+  onRetry: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: file.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  const isPending = file.status === 'pending';
+  const isUploading = file.status === 'uploading';
+  const isUploaded = file.status === 'uploaded';
+  const isError = file.status === 'error';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] group"
+    >
+      {/* Image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={file.previewUrl}
+        alt=""
+        className="w-full h-full object-cover"
+      />
+
+      {/* Drag Handle - only for pending files */}
+      {isPending && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 p-1.5 bg-black/60 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-4 h-4 text-white" />
+        </div>
+      )}
+
+      {/* Status overlay - uploading */}
+      {isUploading && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <Spinner className="w-8 h-8 text-white" />
+        </div>
+      )}
+
+      {/* Status overlay - uploaded */}
+      {isUploaded && (
+        <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1 shadow-lg">
+          <CheckIcon className="w-4 h-4 text-white" />
+        </div>
+      )}
+
+      {/* Status overlay - error */}
+      {isError && (
+        <div className="absolute inset-0 bg-red-500/60 flex flex-col items-center justify-center p-2">
+          <p className="text-white text-xs text-center mb-2 line-clamp-2">
+            {file.error || 'Upload failed'}
+          </p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRetry();
+            }}
+            className="flex items-center gap-1 px-2 py-1 bg-white text-red-600 text-xs font-medium rounded hover:bg-gray-100"
+          >
+            <RefreshIcon className="w-3 h-3" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* File name tooltip */}
+      <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+        <p className="text-white text-xs truncate">
+          {file.file.name}
+        </p>
+      </div>
+
+      {/* Action buttons - visible on hover for pending files */}
+      {isPending && (
+        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCrop();
+            }}
+            className="p-1.5 bg-black/60 rounded hover:bg-black/80 transition-colors"
+            title="Crop image"
+          >
+            <Crop className="w-4 h-4 text-white" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="p-1.5 bg-black/60 rounded hover:bg-red-600 transition-colors"
+            title="Remove"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BulkUploadGrid({
   userId,
   albums,
@@ -75,12 +214,25 @@ export default function BulkUploadGrid({
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [cropTarget, setCropTarget] = useState<QueuedFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Metadata state
   const [selectedAlbum, setSelectedAlbum] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("");
   const [selectedEvent, setSelectedEvent] = useState("");
+
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Prevent accidental drags
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -134,9 +286,9 @@ export default function BulkUploadGrid({
     []
   );
 
-  // Upload single file
+  // Upload single file with sort_order
   const uploadFile = useCallback(
-    async (queuedFile: QueuedFile): Promise<void> => {
+    async (queuedFile: QueuedFile, sortOrder: number): Promise<void> => {
       const supabase = createClient();
       const fileExt = queuedFile.file.name.split('.').pop() || 'jpg';
       const fileName = `${userId}/photo-${Date.now()}-${queuedFile.id.slice(0, 8)}.${fileExt}`;
@@ -156,13 +308,14 @@ export default function BulkUploadGrid({
         data: { publicUrl },
       } = supabase.storage.from('gallery-images').getPublicUrl(fileName);
 
-      // Insert database record
+      // Insert database record with sort_order
       const { data: dbRecord, error: dbError } = await supabase
         .from('gallery_images')
         .insert({
           uploaded_by: userId,
           image_url: publicUrl,
           is_approved: true, // Admin uploads are auto-approved
+          sort_order: sortOrder,
         })
         .select('id')
         .single();
@@ -191,11 +344,27 @@ export default function BulkUploadGrid({
 
     setIsUploading(true);
 
-    // Upload 3 at a time for speed
+    // Get max sort_order from database to continue sequence
+    const supabase = createClient();
+    const { data: maxOrderData } = await supabase
+      .from('gallery_images')
+      .select('sort_order')
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .single();
+
+    const startSortOrder = (maxOrderData?.sort_order ?? 0) + 1;
+
+    // Upload 3 at a time for speed, preserving order
     const concurrency = 3;
     for (let i = 0; i < pendingFiles.length; i += concurrency) {
       const batch = pendingFiles.slice(i, i + concurrency);
-      await Promise.all(batch.map(uploadFile));
+      await Promise.all(
+        batch.map((file, batchIndex) => {
+          const globalIndex = queuedFiles.findIndex((f) => f.id === file.id);
+          return uploadFile(file, startSortOrder + globalIndex);
+        })
+      );
     }
 
     setIsUploading(false);
@@ -215,7 +384,8 @@ export default function BulkUploadGrid({
     async (id: string) => {
       const file = queuedFiles.find((f) => f.id === id);
       if (!file) return;
-      await uploadFile(file);
+      const index = queuedFiles.findIndex((f) => f.id === id);
+      await uploadFile(file, index);
     },
     [queuedFiles, uploadFile]
   );
@@ -280,7 +450,7 @@ export default function BulkUploadGrid({
     onUploadComplete();
   }, [clearAll, onUploadComplete]);
 
-  // Drag and drop handlers
+  // Drag and drop handlers for file input
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -301,6 +471,48 @@ export default function BulkUploadGrid({
     },
     [handleFilesSelected]
   );
+
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setQueuedFiles((files) => {
+        const oldIndex = files.findIndex((f) => f.id === active.id);
+        const newIndex = files.findIndex((f) => f.id === over.id);
+        return arrayMove(files, oldIndex, newIndex);
+      });
+    }
+  }, []);
+
+  // Crop handlers
+  const openCropModal = useCallback((file: QueuedFile) => {
+    setCropTarget(file);
+  }, []);
+
+  const handleCropComplete = useCallback((croppedFile: File) => {
+    if (!cropTarget) return;
+
+    // Revoke old preview URL
+    URL.revokeObjectURL(cropTarget.previewUrl);
+
+    // Create new preview URL for cropped file
+    const newPreviewUrl = URL.createObjectURL(croppedFile);
+
+    // Update the file in queue
+    setQueuedFiles((files) =>
+      files.map((f) =>
+        f.id === cropTarget.id
+          ? { ...f, file: croppedFile, previewUrl: newPreviewUrl }
+          : f
+      )
+    );
+
+    setCropTarget(null);
+  }, [cropTarget]);
+
+  const handleCropCancel = useCallback(() => {
+    setCropTarget(null);
+  }, []);
 
   // Calculate progress
   const totalFiles = queuedFiles.length;
@@ -374,76 +586,37 @@ export default function BulkUploadGrid({
         </div>
       )}
 
-      {/* Thumbnail Grid */}
+      {/* Reorder hint */}
+      {pendingCount > 1 && (
+        <p className="text-xs text-[var(--color-text-tertiary)] text-center">
+          Drag thumbnails to reorder before uploading. Click the crop icon to adjust framing.
+        </p>
+      )}
+
+      {/* Thumbnail Grid with Drag-and-Drop */}
       {totalFiles > 0 && (
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {queuedFiles.map((file) => (
-            <div
-              key={file.id}
-              className="relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] group"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={file.previewUrl}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-
-              {/* Status overlay - uploading */}
-              {file.status === 'uploading' && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <Spinner className="w-8 h-8 text-white" />
-                </div>
-              )}
-
-              {/* Status overlay - uploaded */}
-              {file.status === 'uploaded' && (
-                <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1 shadow-lg">
-                  <CheckIcon className="w-4 h-4 text-white" />
-                </div>
-              )}
-
-              {/* Status overlay - error */}
-              {file.status === 'error' && (
-                <div className="absolute inset-0 bg-red-500/60 flex flex-col items-center justify-center p-2">
-                  <p className="text-white text-xs text-center mb-2 line-clamp-2">
-                    {file.error || 'Upload failed'}
-                  </p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      retryUpload(file.id);
-                    }}
-                    className="flex items-center gap-1 px-2 py-1 bg-white text-red-600 text-xs font-medium rounded hover:bg-gray-100"
-                  >
-                    <RefreshIcon className="w-3 h-3" />
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              {/* File name tooltip */}
-              <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-white text-xs truncate">
-                  {file.file.name}
-                </p>
-              </div>
-
-              {/* Remove button - visible on hover for pending/error */}
-              {(file.status === 'pending' || file.status === 'error') && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeFile(file.id);
-                  }}
-                  className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
-                >
-                  <TrashIcon className="w-4 h-4 text-white" />
-                </button>
-              )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={queuedFiles.map((f) => f.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {queuedFiles.map((file) => (
+                <SortableThumbnail
+                  key={file.id}
+                  file={file}
+                  onCrop={() => openCropModal(file)}
+                  onRemove={() => removeFile(file.id)}
+                  onRetry={() => retryUpload(file.id)}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Metadata Section */}
@@ -545,6 +718,16 @@ export default function BulkUploadGrid({
             )}
           </div>
         </div>
+      )}
+
+      {/* Crop Modal */}
+      {cropTarget && (
+        <CropModal
+          file={cropTarget.file}
+          aspectRatio={undefined} // Free crop - user decides
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
       )}
     </div>
   );

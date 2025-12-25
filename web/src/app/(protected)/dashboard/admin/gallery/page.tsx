@@ -44,6 +44,7 @@ export default async function AdminGalleryPage() {
       event:events(id, title),
       venue:venues(id, name)
     `)
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
   // Fetch all albums
