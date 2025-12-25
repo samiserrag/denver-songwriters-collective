@@ -380,6 +380,20 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Gallery Bulk Upload UX (December 2025)
+- **New BulkUploadGrid component** - Modern bulk upload experience for gallery photos
+- **Drop zone with drag & drop** - Large inviting area to drag/drop or click to select multiple photos
+- **Instant preview thumbnails** - Uses `URL.createObjectURL` for immediate local preview without uploading
+- **Parallel uploads** - Uploads 3 files concurrently for speed
+- **Progress tracking** - Overall progress bar + per-file status indicators (pending/uploading/uploaded/error)
+- **Error handling** - Failed uploads show error message with Retry button
+- **Batch metadata** - After uploads complete, apply Album/Venue/Event to all photos at once
+- **Memory cleanup** - Revokes object URLs on unmount to prevent memory leaks
+- **Removed old sequential crop flow** - No longer requires cropping each photo one-by-one
+- Key files:
+  - `web/src/components/gallery/BulkUploadGrid.tsx` - New component (created)
+  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Integrated new component, removed old upload code
+
 ### Admin User Deletion Fix (December 2025)
 - **Root cause found** - Supabase `auth.admin.deleteUser()` does NOT cascade to profiles table
 - **Explicit profile deletion** - Now deletes profile record explicitly before auth user
