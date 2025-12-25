@@ -380,6 +380,17 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Gallery QA Bug Fixes (December 2025)
+- **File size validation** - 10MB limit enforced during upload with clear error messages
+- **Duplicate slug handling** - Album creation auto-increments slug if already exists (e.g., `test-album-1`)
+- **Assign unassigned photos to albums** - Click to select photos, choose album from dropdown, add
+- **Hide empty albums from public gallery** - Albums with 0 approved photos filtered from `/gallery`
+- **New albums start as draft** - Changed from `is_published: true` to `is_published: false` on create
+- Key files:
+  - `web/src/components/gallery/BulkUploadGrid.tsx` - File size validation
+  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Slug handling, photo assignment
+  - `web/src/app/gallery/page.tsx` - Empty album filtering
+
 ### Gallery Album Management & Upload Fix (December 2025)
 - **CRITICAL FIX: Album assignment during upload** - Photos now assigned to album immediately during upload, not as separate step
   - Root cause: `uploadFile()` was inserting with `album_id: null`, requiring post-upload metadata step users missed
@@ -390,7 +401,7 @@ These are broader product initiatives for post-launch development:
   - Remove from album (keeps photo) vs Delete photo (permanent)
   - Photo count badges on album cards
 - **Unassigned photos section** - Bottom of Albums tab shows photos not in any album
-  - Quick view of "orphaned" photos that need organization
+  - Click to select, then assign to album via dropdown
 - **Inline album editing** - Edit album name/description directly in album list
 - **Tab reorder** - Albums tab now first (primary workflow), then All Photos, then Upload
 - **Upload destination UI** - Clear visual showing which album photos will be uploaded to

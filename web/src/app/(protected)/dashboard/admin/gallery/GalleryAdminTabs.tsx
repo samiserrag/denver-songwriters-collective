@@ -68,6 +68,11 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
   const [editAlbumName, setEditAlbumName] = useState("");
   const [editAlbumDescription, setEditAlbumDescription] = useState("");
 
+  // Unassigned photo assignment state
+  const [selectedUnassignedPhotos, setSelectedUnassignedPhotos] = useState<Set<string>>(new Set());
+  const [assignToAlbumId, setAssignToAlbumId] = useState<string>("");
+  const [isAssigning, setIsAssigning] = useState(false);
+
   // Calculate counts
   const unassignedImages = images.filter((img) => !img.album_id);
   const getAlbumPhotoCount = (albumId: string) =>
@@ -100,28 +105,58 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
 
   const handleCreateAlbum = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!albumName) return;
+    if (!albumName.trim()) {
+      toast.error("Album name is required");
+      return;
+    }
 
     setIsCreatingAlbum(true);
     const supabase = createClient();
 
-    const slug = albumSlug || albumName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    // Generate base slug from input or name
+    const baseSlug = (albumSlug.trim() || albumName)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
 
-    await supabase.from("gallery_albums").insert({
-      name: albumName,
-      slug,
-      description: albumDescription || null,
+    // Check for existing slugs and auto-increment if needed
+    let finalSlug = baseSlug;
+    const { data: existingSlugs } = await supabase
+      .from("gallery_albums")
+      .select("slug")
+      .like("slug", `${baseSlug}%`);
+
+    if (existingSlugs && existingSlugs.length > 0) {
+      const slugSet = new Set(existingSlugs.map((a: { slug: string }) => a.slug));
+      let counter = 1;
+      while (slugSet.has(finalSlug)) {
+        finalSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
+
+    const { error } = await supabase.from("gallery_albums").insert({
+      name: albumName.trim(),
+      slug: finalSlug,
+      description: albumDescription.trim() || null,
       cover_image_url: albumCover || null,
       created_by: userId,
-      is_published: true,
+      is_published: false, // Start as draft
     });
+
+    if (error) {
+      toast.error("Failed to create album");
+      console.error(error);
+    } else {
+      const slugNote = finalSlug !== baseSlug ? ` (slug: ${finalSlug})` : "";
+      toast.success(`Album created!${slugNote}`);
+    }
 
     setAlbumName("");
     setAlbumSlug("");
     setAlbumDescription("");
     setAlbumCover("");
     setIsCreatingAlbum(false);
-    toast.success("Album created!");
     router.refresh();
   };
 
@@ -203,6 +238,56 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     const album = albums.find((a) => a.id === albumId);
     return album?.name || "Unknown Album";
   };
+
+  // Toggle photo selection for assignment
+  const togglePhotoSelection = useCallback((photoId: string) => {
+    setSelectedUnassignedPhotos((prev) => {
+      const next = new Set(prev);
+      if (next.has(photoId)) {
+        next.delete(photoId);
+      } else {
+        next.add(photoId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Assign selected photos to an album
+  const assignPhotosToAlbum = useCallback(async () => {
+    if (!assignToAlbumId || selectedUnassignedPhotos.size === 0) return;
+
+    setIsAssigning(true);
+    const supabase = createClient();
+    const photoIds = Array.from(selectedUnassignedPhotos);
+
+    // Get current max sort_order for the target album
+    const { data: maxSort } = await supabase
+      .from("gallery_images")
+      .select("sort_order")
+      .eq("album_id", assignToAlbumId)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .single();
+
+    let nextSortOrder = (maxSort?.sort_order ?? -1) + 1;
+
+    // Update each photo
+    for (const photoId of photoIds) {
+      await supabase
+        .from("gallery_images")
+        .update({
+          album_id: assignToAlbumId,
+          sort_order: nextSortOrder++,
+        })
+        .eq("id", photoId);
+    }
+
+    toast.success(`${photoIds.length} photo(s) added to album`);
+    setSelectedUnassignedPhotos(new Set());
+    setAssignToAlbumId("");
+    setIsAssigning(false);
+    router.refresh();
+  }, [assignToAlbumId, selectedUnassignedPhotos, router]);
 
   return (
     <div>
@@ -458,34 +543,82 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
           {/* Unassigned Photos Section */}
           {unassignedImages.length > 0 && (
             <div className="mt-8 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
-                Unassigned Photos ({unassignedImages.length})
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                These photos aren&apos;t in any album. Upload new photos and select an album to organize them.
-              </p>
-              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                {unassignedImages.slice(0, 16).map((image) => (
-                  <div
-                    key={image.id}
-                    className="relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border-default)]"
-                  >
-                    <Image
-                      src={image.image_url}
-                      alt={image.caption || "Unassigned photo"}
-                      fill
-                      sizes="100px"
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-                {unassignedImages.length > 16 && (
-                  <div className="aspect-square rounded-lg bg-[var(--color-bg-tertiary)] flex items-center justify-center">
-                    <span className="text-sm text-[var(--color-text-secondary)]">
-                      +{unassignedImages.length - 16} more
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
+                    Unassigned Photos ({unassignedImages.length})
+                  </h3>
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Click photos to select, then add them to an album.
+                  </p>
+                </div>
+
+                {/* Assignment controls */}
+                {selectedUnassignedPhotos.size > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-[var(--color-text-accent)] font-medium">
+                      {selectedUnassignedPhotos.size} selected
                     </span>
+                    <select
+                      value={assignToAlbumId}
+                      onChange={(e) => setAssignToAlbumId(e.target.value)}
+                      disabled={isAssigning}
+                      className="px-2 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+                    >
+                      <option value="">Add to album...</option>
+                      {albums.map((album) => (
+                        <option key={album.id} value={album.id}>
+                          {album.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={assignPhotosToAlbum}
+                      disabled={!assignToAlbumId || isAssigning}
+                      className="px-3 py-1.5 text-sm bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg disabled:opacity-50 transition-colors"
+                    >
+                      {isAssigning ? "Adding..." : "Add"}
+                    </button>
+                    <button
+                      onClick={() => setSelectedUnassignedPhotos(new Set())}
+                      disabled={isAssigning}
+                      className="px-3 py-1.5 text-sm border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg transition-colors"
+                    >
+                      Clear
+                    </button>
                   </div>
                 )}
+              </div>
+
+              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                {unassignedImages.map((image) => {
+                  const isSelected = selectedUnassignedPhotos.has(image.id);
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => togglePhotoSelection(image.id)}
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                        isSelected
+                          ? "border-[var(--color-accent-primary)] ring-2 ring-[var(--color-accent-primary)]/30"
+                          : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
+                      }`}
+                    >
+                      <Image
+                        src={image.image_url}
+                        alt={image.caption || "Unassigned photo"}
+                        fill
+                        sizes="100px"
+                        className="object-cover"
+                      />
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 w-5 h-5 bg-[var(--color-accent-primary)] rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-[var(--color-text-on-accent)]" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

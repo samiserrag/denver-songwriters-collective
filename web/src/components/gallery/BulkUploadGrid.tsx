@@ -241,6 +241,10 @@ export default function BulkUploadGrid({
     };
   }, [queuedFiles]);
 
+  // File size limit
+  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
   // Handle file selection
   const handleFilesSelected = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -254,7 +258,27 @@ export default function BulkUploadGrid({
       toast.error('Some files were skipped (only images allowed)');
     }
 
-    const newFiles: QueuedFile[] = imageFiles.map((file) => ({
+    // Check file size and separate valid from oversized
+    const validFiles: File[] = [];
+    const oversizedFiles: string[] = [];
+
+    imageFiles.forEach((file) => {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        oversizedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (oversizedFiles.length > 0) {
+      const displayFiles = oversizedFiles.slice(0, 3).join(', ');
+      const moreCount = oversizedFiles.length > 3 ? ` and ${oversizedFiles.length - 3} more` : '';
+      toast.error(`${oversizedFiles.length} file(s) exceed ${MAX_FILE_SIZE_MB}MB limit: ${displayFiles}${moreCount}`);
+    }
+
+    if (validFiles.length === 0) return;
+
+    const newFiles: QueuedFile[] = validFiles.map((file) => ({
       id: crypto.randomUUID(),
       file,
       previewUrl: URL.createObjectURL(file),

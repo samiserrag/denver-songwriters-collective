@@ -39,8 +39,8 @@ export default async function GalleryPage({ searchParams }: PageProps) {
     .order("created_at", { ascending: false })
     .limit(6);
 
-  // Count images in each album
-  const albumsWithCount = albums ? await Promise.all(
+  // Count images in each album and filter out empty albums
+  const albumsWithCount = albums ? (await Promise.all(
     albums.map(async (album) => {
       const { count } = await supabase
         .from("gallery_images")
@@ -49,7 +49,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
         .eq("is_approved", true);
       return { ...album, imageCount: count ?? 0 };
     })
-  ) : [];
+  )).filter((album) => album.imageCount > 0) : [];
 
   // Fetch paginated images (excluding those in albums for the main grid)
   const { data: images, count: totalCount } = await supabase
