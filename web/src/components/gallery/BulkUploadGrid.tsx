@@ -21,7 +21,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CropModal } from "./CropModal";
-import { GripVertical, Crop, X } from "lucide-react";
+import { GripVertical, Crop, X, FolderOpen } from "lucide-react";
 
 // Icons
 function CheckIcon({ className }: { className?: string }) {
@@ -217,7 +217,7 @@ export default function BulkUploadGrid({
   const [cropTarget, setCropTarget] = useState<QueuedFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Metadata state
+  // Metadata state - NOW SELECTED BEFORE UPLOAD
   const [selectedAlbum, setSelectedAlbum] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("");
   const [selectedEvent, setSelectedEvent] = useState("");
@@ -286,9 +286,9 @@ export default function BulkUploadGrid({
     []
   );
 
-  // Upload single file with sort_order
+  // Upload single file with sort_order AND metadata (album_id, venue_id, event_id)
   const uploadFile = useCallback(
-    async (queuedFile: QueuedFile, sortOrder: number): Promise<void> => {
+    async (queuedFile: QueuedFile, sortOrder: number, albumId: string, venueId: string, eventId: string): Promise<void> => {
       const supabase = createClient();
       const fileExt = queuedFile.file.name.split('.').pop() || 'jpg';
       const fileName = `${userId}/photo-${Date.now()}-${queuedFile.id.slice(0, 8)}.${fileExt}`;
@@ -308,7 +308,7 @@ export default function BulkUploadGrid({
         data: { publicUrl },
       } = supabase.storage.from('gallery-images').getPublicUrl(fileName);
 
-      // Insert database record with sort_order
+      // Insert database record with ALL metadata included
       const { data: dbRecord, error: dbError } = await supabase
         .from('gallery_images')
         .insert({
@@ -316,6 +316,9 @@ export default function BulkUploadGrid({
           image_url: publicUrl,
           is_approved: true, // Admin uploads are auto-approved
           sort_order: sortOrder,
+          album_id: albumId || null,      // FIXED: Now included during upload
+          venue_id: venueId || null,      // FIXED: Now included during upload
+          event_id: eventId || null,      // FIXED: Now included during upload
         })
         .select('id')
         .single();
@@ -337,7 +340,7 @@ export default function BulkUploadGrid({
     [userId, updateFileStatus]
   );
 
-  // Upload all pending files
+  // Upload all pending files with metadata
   const uploadAll = useCallback(async () => {
     const pendingFiles = queuedFiles.filter((f) => f.status === 'pending');
     if (pendingFiles.length === 0) return;
@@ -346,14 +349,29 @@ export default function BulkUploadGrid({
 
     // Get max sort_order from database to continue sequence
     const supabase = createClient();
-    const { data: maxOrderData } = await supabase
-      .from('gallery_images')
-      .select('sort_order')
-      .order('sort_order', { ascending: false })
-      .limit(1)
-      .single();
 
-    const startSortOrder = (maxOrderData?.sort_order ?? 0) + 1;
+    // If uploading to an album, get max sort_order for that album
+    // Otherwise, get global max sort_order
+    let startSortOrder = 1;
+    if (selectedAlbum) {
+      const { data: maxOrderData } = await supabase
+        .from('gallery_images')
+        .select('sort_order')
+        .eq('album_id', selectedAlbum)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .single();
+      startSortOrder = (maxOrderData?.sort_order ?? 0) + 1;
+    } else {
+      const { data: maxOrderData } = await supabase
+        .from('gallery_images')
+        .select('sort_order')
+        .is('album_id', null)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .single();
+      startSortOrder = (maxOrderData?.sort_order ?? 0) + 1;
+    }
 
     // Upload 3 at a time for speed, preserving order
     const concurrency = 3;
@@ -361,8 +379,14 @@ export default function BulkUploadGrid({
       const batch = pendingFiles.slice(i, i + concurrency);
       await Promise.all(
         batch.map((file, batchIndex) => {
-          const globalIndex = queuedFiles.findIndex((f) => f.id === file.id);
-          return uploadFile(file, startSortOrder + globalIndex);
+          const globalIndex = i + batchIndex;
+          return uploadFile(
+            file,
+            startSortOrder + globalIndex,
+            selectedAlbum,
+            selectedVenue,
+            selectedEvent
+          );
         })
       );
     }
@@ -375,9 +399,13 @@ export default function BulkUploadGrid({
     if (errorCount > 0) {
       toast.warning(`${uploadedCount - errorCount} photos uploaded, ${errorCount} failed`);
     } else {
-      toast.success(`${pendingFiles.length} photos uploaded!`);
+      const albumName = albums.find(a => a.id === selectedAlbum)?.name;
+      const message = albumName
+        ? `${pendingFiles.length} photos uploaded to "${albumName}"!`
+        : `${pendingFiles.length} photos uploaded to library!`;
+      toast.success(message);
     }
-  }, [queuedFiles, uploadFile]);
+  }, [queuedFiles, uploadFile, selectedAlbum, selectedVenue, selectedEvent, albums]);
 
   // Retry failed upload
   const retryUpload = useCallback(
@@ -385,9 +413,9 @@ export default function BulkUploadGrid({
       const file = queuedFiles.find((f) => f.id === id);
       if (!file) return;
       const index = queuedFiles.findIndex((f) => f.id === id);
-      await uploadFile(file, index);
+      await uploadFile(file, index, selectedAlbum, selectedVenue, selectedEvent);
     },
-    [queuedFiles, uploadFile]
+    [queuedFiles, uploadFile, selectedAlbum, selectedVenue, selectedEvent]
   );
 
   // Remove file from queue
@@ -405,48 +433,14 @@ export default function BulkUploadGrid({
   const clearAll = useCallback(() => {
     queuedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
     setQueuedFiles([]);
-    setSelectedAlbum("");
-    setSelectedVenue("");
-    setSelectedEvent("");
   }, [queuedFiles]);
-
-  // Apply metadata to all uploaded photos
-  const applyMetadataToAll = useCallback(async () => {
-    const uploadedIds = queuedFiles
-      .filter((f) => f.status === 'uploaded' && f.dbRecordId)
-      .map((f) => f.dbRecordId!);
-
-    if (uploadedIds.length === 0) {
-      toast.error('No uploaded photos to update');
-      return;
-    }
-
-    const updates: Record<string, string | null> = {};
-    if (selectedAlbum) updates.album_id = selectedAlbum;
-    if (selectedVenue) updates.venue_id = selectedVenue;
-    if (selectedEvent) updates.event_id = selectedEvent;
-
-    if (Object.keys(updates).length === 0) {
-      toast.error('Select at least one metadata option');
-      return;
-    }
-
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('gallery_images')
-      .update(updates)
-      .in('id', uploadedIds);
-
-    if (error) {
-      toast.error('Failed to update metadata');
-    } else {
-      toast.success(`Metadata applied to ${uploadedIds.length} photos`);
-    }
-  }, [queuedFiles, selectedAlbum, selectedVenue, selectedEvent]);
 
   // Handle complete - clear queue and refresh
   const handleComplete = useCallback(() => {
     clearAll();
+    setSelectedAlbum("");
+    setSelectedVenue("");
+    setSelectedEvent("");
     onUploadComplete();
   }, [clearAll, onUploadComplete]);
 
@@ -522,7 +516,9 @@ export default function BulkUploadGrid({
   const errorCount = queuedFiles.filter((f) => f.status === 'error').length;
   const progressPercent = totalFiles > 0 ? Math.round((uploadedCount / totalFiles) * 100) : 0;
   const allUploaded = totalFiles > 0 && uploadedCount === totalFiles;
-  const hasUploaded = uploadedCount > 0;
+
+  // Get selected album name for display
+  const selectedAlbumName = albums.find(a => a.id === selectedAlbum)?.name;
 
   return (
     <div className="space-y-6">
@@ -540,6 +536,77 @@ export default function BulkUploadGrid({
           e.target.value = '';
         }}
       />
+
+      {/* Upload Destination - NOW AT TOP, BEFORE DROP ZONE */}
+      <div className="p-4 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border-default)]">
+        <div className="flex items-center gap-2 mb-4">
+          <FolderOpen className="w-5 h-5 text-[var(--color-text-accent)]" />
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
+            Upload Destination
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs text-[var(--color-text-secondary)] mb-1.5">
+              Album <span className="text-[var(--color-text-tertiary)]">(recommended)</span>
+            </label>
+            <select
+              value={selectedAlbum}
+              onChange={(e) => setSelectedAlbum(e.target.value)}
+              disabled={isUploading}
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+            >
+              <option value="">No album (add to library)</option>
+              {albums.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--color-text-secondary)] mb-1.5">
+              Venue <span className="text-[var(--color-text-tertiary)]">(optional)</span>
+            </label>
+            <select
+              value={selectedVenue}
+              onChange={(e) => setSelectedVenue(e.target.value)}
+              disabled={isUploading}
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Select venue...</option>
+              {venues.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--color-text-secondary)] mb-1.5">
+              Event <span className="text-[var(--color-text-tertiary)]">(optional)</span>
+            </label>
+            <select
+              value={selectedEvent}
+              onChange={(e) => setSelectedEvent(e.target.value)}
+              disabled={isUploading}
+              className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Select event...</option>
+              {events.map((evt) => (
+                <option key={evt.id} value={evt.id}>
+                  {evt.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {selectedAlbum && (
+          <p className="mt-3 text-xs text-[var(--color-text-accent)]">
+            Photos will be added to &quot;{selectedAlbumName}&quot;
+          </p>
+        )}
+      </div>
 
       {/* Drop Zone */}
       <div
@@ -560,6 +627,11 @@ export default function BulkUploadGrid({
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           Supports JPEG, PNG, WebP, GIF
         </p>
+        {selectedAlbum && (
+          <p className="text-sm text-[var(--color-text-accent)] mt-2">
+            Uploading to: {selectedAlbumName}
+          </p>
+        )}
       </div>
 
       {/* Progress Bar */}
@@ -619,81 +691,13 @@ export default function BulkUploadGrid({
         </DndContext>
       )}
 
-      {/* Metadata Section */}
-      {hasUploaded && (
-        <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)] space-y-4">
-          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
-            Apply to all uploaded photos
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
-                Album
-              </label>
-              <select
-                value={selectedAlbum}
-                onChange={(e) => setSelectedAlbum(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                <option value="">Select album...</option>
-                {albums.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
-                Venue
-              </label>
-              <select
-                value={selectedVenue}
-                onChange={(e) => setSelectedVenue(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                <option value="">Select venue...</option>
-                {venues.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
-                Event
-              </label>
-              <select
-                value={selectedEvent}
-                onChange={(e) => setSelectedEvent(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                <option value="">Select event...</option>
-                {events.map((evt) => (
-                  <option key={evt.id} value={evt.id}>
-                    {evt.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <button
-            onClick={applyMetadataToAll}
-            disabled={!selectedAlbum && !selectedVenue && !selectedEvent}
-            className="px-4 py-2 bg-[var(--color-accent-muted)] hover:bg-[var(--color-accent-primary)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--color-text-primary)] hover:text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors"
-          >
-            Apply Metadata
-          </button>
-        </div>
-      )}
-
       {/* Action Buttons */}
       {totalFiles > 0 && (
         <div className="flex items-center justify-between gap-3 pt-2">
           <button
             onClick={clearAll}
-            className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm font-medium rounded-lg border border-[var(--color-border-default)] transition-colors"
+            disabled={isUploading}
+            className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm font-medium rounded-lg border border-[var(--color-border-default)] transition-colors disabled:opacity-50"
           >
             Clear All
           </button>
@@ -713,7 +717,7 @@ export default function BulkUploadGrid({
                 className="px-6 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50 text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
               >
                 {isUploading && <Spinner className="w-4 h-4" />}
-                {isUploading ? 'Uploading...' : `Upload All (${pendingCount})`}
+                {isUploading ? 'Uploading...' : `Upload ${pendingCount} Photo${pendingCount !== 1 ? 's' : ''}`}
               </button>
             )}
           </div>

@@ -380,14 +380,33 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Gallery Album Management & Upload Fix (December 2025)
+- **CRITICAL FIX: Album assignment during upload** - Photos now assigned to album immediately during upload, not as separate step
+  - Root cause: `uploadFile()` was inserting with `album_id: null`, requiring post-upload metadata step users missed
+  - Solution: Moved metadata selection before drop zone, pass album_id/venue_id/event_id to INSERT
+- **Album photo management** - New "Manage Photos" expandable section in Albums tab
+  - Drag-to-reorder photos within albums using @dnd-kit
+  - Inline caption editing with Enter to save, Escape to cancel
+  - Remove from album (keeps photo) vs Delete photo (permanent)
+  - Photo count badges on album cards
+- **Unassigned photos section** - Bottom of Albums tab shows photos not in any album
+  - Quick view of "orphaned" photos that need organization
+- **Inline album editing** - Edit album name/description directly in album list
+- **Tab reorder** - Albums tab now first (primary workflow), then All Photos, then Upload
+- **Upload destination UI** - Clear visual showing which album photos will be uploaded to
+- Key files:
+  - `web/src/components/gallery/BulkUploadGrid.tsx` - Critical fix for album_id during upload
+  - `web/src/components/gallery/AlbumPhotoManager.tsx` - New component for album photo management
+  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Album management features
+- Dependencies: Uses existing `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+
 ### Gallery Bulk Upload UX (December 2025)
-- **New BulkUploadGrid component** - Modern bulk upload experience for gallery photos
+- **BulkUploadGrid component** - Modern bulk upload experience for gallery photos
 - **Drop zone with drag & drop** - Large inviting area to drag/drop or click to select multiple photos
 - **Instant preview thumbnails** - Uses `URL.createObjectURL` for immediate local preview without uploading
 - **Parallel uploads** - Uploads 3 files concurrently for speed
 - **Progress tracking** - Overall progress bar + per-file status indicators (pending/uploading/uploaded/error)
 - **Error handling** - Failed uploads show error message with Retry button
-- **Batch metadata** - After uploads complete, apply Album/Venue/Event to all photos at once
 - **Memory cleanup** - Revokes object URLs on unmount to prevent memory leaks
 - **Removed old sequential crop flow** - No longer requires cropping each photo one-by-one
 - **Optional cropping** - Click crop icon on any pending thumbnail to adjust framing before upload
@@ -396,7 +415,6 @@ These are broader product initiatives for post-launch development:
 - Key files:
   - `web/src/components/gallery/BulkUploadGrid.tsx` - Bulk upload with dnd-kit reordering
   - `web/src/components/gallery/CropModal.tsx` - Standalone crop modal component
-  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Integrated new component
   - `supabase/migrations/20251225022307_gallery_images_sort_order.sql` - Adds sort_order column
 - Dependencies added: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
 
