@@ -390,9 +390,15 @@ These are broader product initiatives for post-launch development:
 - **Batch metadata** - After uploads complete, apply Album/Venue/Event to all photos at once
 - **Memory cleanup** - Revokes object URLs on unmount to prevent memory leaks
 - **Removed old sequential crop flow** - No longer requires cropping each photo one-by-one
+- **Optional cropping** - Click crop icon on any pending thumbnail to adjust framing before upload
+- **Drag-to-reorder** - Drag thumbnails by grip handle to reorder before uploading
+- **Sort order persistence** - `sort_order` column added to `gallery_images` table, preserved during upload
 - Key files:
-  - `web/src/components/gallery/BulkUploadGrid.tsx` - New component (created)
-  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Integrated new component, removed old upload code
+  - `web/src/components/gallery/BulkUploadGrid.tsx` - Bulk upload with dnd-kit reordering
+  - `web/src/components/gallery/CropModal.tsx` - Standalone crop modal component
+  - `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` - Integrated new component
+  - `supabase/migrations/20251225022307_gallery_images_sort_order.sql` - Adds sort_order column
+- Dependencies added: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
 
 ### Admin User Deletion Fix (December 2025)
 - **Root cause found** - Supabase `auth.admin.deleteUser()` does NOT cascade to profiles table
