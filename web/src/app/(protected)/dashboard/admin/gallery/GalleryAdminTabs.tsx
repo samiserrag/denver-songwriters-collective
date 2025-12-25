@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
+import BulkUploadGrid from "@/components/gallery/BulkUploadGrid";
 
 interface GalleryImage {
   id: string;
@@ -51,22 +52,6 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
   const [activeTab, setActiveTab] = useState<Tab>("photos");
   const [filter, setFilter] = useState<"all" | "pending" | "approved">("all");
 
-  // Upload state
-  const [uploadUrl, setUploadUrl] = useState("");
-  const [uploadCaption, setUploadCaption] = useState("");
-  const [uploadVenue, setUploadVenue] = useState("");
-  const [uploadEvent, setUploadEvent] = useState("");
-  const [uploadAlbum, setUploadAlbum] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-
-  // Multi-file batch upload state
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [currentFileIndex, setCurrentFileIndex] = useState(0);
-  const multiFileInputRef = useRef<HTMLInputElement>(null);
-
-  const currentFile = pendingFiles[currentFileIndex] ?? null;
-  const hasMoreFiles = currentFileIndex < pendingFiles.length - 1;
-
   // Album form state
   const [albumName, setAlbumName] = useState("");
   const [albumSlug, setAlbumSlug] = useState("");
@@ -96,53 +81,6 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     const supabase = createClient();
     await supabase.from("gallery_images").update({ is_featured: !currentValue }).eq("id", imageId);
     router.refresh();
-  };
-
-  const handleUpload = async () => {
-    if (!uploadUrl) return;
-
-    setIsUploading(true);
-    const supabase = createClient();
-
-    const { error } = await supabase.from("gallery_images").insert({
-      uploaded_by: userId,
-      image_url: uploadUrl,
-      caption: uploadCaption || null,
-      venue_id: uploadVenue || null,
-      event_id: uploadEvent || null,
-      album_id: uploadAlbum || null,
-      is_approved: true, // Admin uploads are auto-approved
-    });
-
-    if (error) {
-      console.error('Insert error:', error);
-      toast.error('Failed to save photo');
-      setIsUploading(false);
-      return;
-    }
-
-    // Handle batch upload queue advancement
-    if (hasMoreFiles) {
-      // Advance to next image
-      setCurrentFileIndex((i) => i + 1);
-      setUploadUrl("");
-      setUploadCaption("");
-      // Keep venue/event/album selections for convenience
-      toast.success(`Photo ${currentFileIndex + 1} saved. ${pendingFiles.length - currentFileIndex - 1} remaining.`);
-      setIsUploading(false);
-    } else {
-      // Reset everything after final image (or single image)
-      setPendingFiles([]);
-      setCurrentFileIndex(0);
-      setUploadUrl("");
-      setUploadCaption("");
-      setUploadVenue("");
-      setUploadEvent("");
-      setUploadAlbum("");
-      toast.success(pendingFiles.length > 1 ? "All photos uploaded!" : "Photo added to gallery!");
-      setIsUploading(false);
-      router.refresh();
-    }
   };
 
   const handleCreateAlbum = async (e: React.FormEvent) => {
@@ -184,30 +122,6 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     router.refresh();
   };
 
-  // Gallery photo upload handler
-  const handleGalleryPhotoUpload = useCallback(async (file: File): Promise<string | null> => {
-    const supabase = createClient();
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    const fileName = `${userId}/photo-${Date.now()}.${fileExt}`;
-
-    const { error } = await supabase.storage
-      .from('gallery-images')
-      .upload(fileName, file);
-
-    if (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload image');
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('gallery-images')
-      .getPublicUrl(fileName);
-
-    toast.success('Image uploaded!');
-    return publicUrl;
-  }, [userId]);
-
   // Album cover upload handler
   const handleAlbumCoverUpload = useCallback(async (file: File): Promise<string | null> => {
     const supabase = createClient();
@@ -233,6 +147,12 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     return publicUrl;
   }, [userId]);
 
+  // Handle upload complete - refresh the photos list
+  const handleUploadComplete = useCallback(() => {
+    router.refresh();
+    setActiveTab("photos");
+  }, [router]);
+
   return (
     <div>
       {/* Tabs */}
@@ -249,7 +169,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
           >
             {tab === "photos" && `Photos (${images.length})`}
             {tab === "albums" && `Albums (${albums.length})`}
-            {tab === "upload" && "Upload Photo"}
+            {tab === "upload" && "Upload Photos"}
           </button>
         ))}
       </div>
@@ -519,168 +439,15 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
         </div>
       )}
 
-      {/* Upload Tab */}
+      {/* Upload Tab - New Bulk Upload UX */}
       {activeTab === "upload" && (
-        <div className="max-w-xl space-y-6">
-          {/* Hidden multi-file input */}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            hidden
-            ref={multiFileInputRef}
-            onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              if (files.length > 0) {
-                setPendingFiles(files);
-                setCurrentFileIndex(0);
-                setUploadUrl("");
-              }
-              e.target.value = ""; // Reset so same files can be selected again
-            }}
-          />
-
-          {/* Image Upload */}
-          <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-                Photo <span className="text-red-600">*</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => multiFileInputRef.current?.click()}
-                className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-border-default)] transition-colors"
-              >
-                Select Multiple Photos
-              </button>
-            </div>
-
-            {pendingFiles.length > 0 && (
-              <p className="text-sm text-[var(--color-text-accent)] mb-3">
-                Photo {currentFileIndex + 1} of {pendingFiles.length}
-              </p>
-            )}
-
-            <div className="w-48">
-              <ImageUpload
-                key={currentFile?.name ?? "single"}
-                currentImageUrl={uploadUrl || null}
-                initialFile={currentFile}
-                onUpload={async (file) => {
-                  const url = await handleGalleryPhotoUpload(file);
-                  if (url) {
-                    setUploadUrl(url);
-                  }
-                  return url;
-                }}
-                onRemove={async () => {
-                  setUploadUrl("");
-                }}
-                aspectRatio={3/4}
-                maxSizeMB={10}
-                shape="square"
-                placeholderText={
-                  pendingFiles.length > 0
-                    ? `Crop photo ${currentFileIndex + 1} of ${pendingFiles.length}`
-                    : "Upload Photo"
-                }
-              />
-            </div>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
-              Drag and drop, click to upload, or select multiple photos at once.
-            </p>
-          </div>
-
-          {/* Caption */}
-          <div>
-            <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Caption</label>
-            <input
-              type="text"
-              value={uploadCaption}
-              onChange={(e) => setUploadCaption(e.target.value)}
-              placeholder="Describe the photo..."
-              className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            />
-          </div>
-
-          {/* Venue & Event */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Venue</label>
-              <select
-                value={uploadVenue}
-                onChange={(e) => setUploadVenue(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                <option value="">Select venue...</option>
-                {venues.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Event</label>
-              <select
-                value={uploadEvent}
-                onChange={(e) => setUploadEvent(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                <option value="">Select event...</option>
-                {events.map((evt) => (
-                  <option key={evt.id} value={evt.id}>
-                    {evt.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Album */}
-          <div>
-            <label className="block text-sm text-[var(--color-text-secondary)] mb-2">Album</label>
-            <select
-              value={uploadAlbum}
-              onChange={(e) => setUploadAlbum(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            >
-              <option value="">No album</option>
-              {albums.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Submit and Cancel Buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={isUploading || !uploadUrl}
-              className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-primary)]/50 text-[var(--color-background)] rounded-lg transition-colors"
-            >
-              {isUploading ? "Saving..." : hasMoreFiles ? "Save & Next Photo" : "Save Photo"}
-            </button>
-
-            {pendingFiles.length > 1 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setPendingFiles([]);
-                  setCurrentFileIndex(0);
-                  setUploadUrl("");
-                }}
-                className="px-4 py-3 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-border-default)] transition-colors"
-              >
-                Cancel Batch
-              </button>
-            )}
-          </div>
-        </div>
+        <BulkUploadGrid
+          userId={userId}
+          albums={albums.map((a) => ({ id: a.id, name: a.name }))}
+          venues={venues}
+          events={events}
+          onUploadComplete={handleUploadComplete}
+        />
       )}
     </div>
   );
