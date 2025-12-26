@@ -176,23 +176,55 @@ export default function OnboardingProfile() {
 
   const handleSkip = async () => {
     setSaving(true);
+    setError(null);
+
     try {
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({
-            onboarding_complete: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id);
+
+      if (authError || !user) {
+        console.error("Auth error:", authError);
+        setError("Session expired. Please log in again.");
+        setSaving(false);
+        window.location.href = "/login";
+        return;
       }
-      // Use window.location for a hard redirect
+
+      // Save name (if provided) and mark onboarding complete
+      const updates: Record<string, unknown> = {
+        onboarding_complete: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Include name if user entered one
+      if (name.trim()) {
+        updates.full_name = name.trim();
+      }
+
+      console.log("[Onboarding] Skipping with updates:", updates);
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        setError(`Failed to save: ${updateError.message}`);
+        setSaving(false);
+        return;
+      }
+
+      console.log("[Onboarding] Profile updated, redirecting to dashboard");
+
+      // Use window.location for a hard redirect to ensure proxy re-runs with fresh state
       window.location.href = "/dashboard";
-    } catch {
-      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("Something went wrong. Please try again.");
+      setSaving(false);
     }
   };
 

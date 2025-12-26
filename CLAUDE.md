@@ -380,6 +380,23 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Members Page Filters & Onboarding Fix (December 2025)
+- **Members page filters now use identity flags** - Category tabs filter by `isSongwriter`, `isHost`, `isStudio`, `isFan` instead of legacy `role` field
+- **Expanded search** - Search now covers name, bio, instruments[], genres[], specialties[] (all case-insensitive)
+- **Identity flag mapping** - `mapDBProfileToMember()` now includes all identity flags from database
+- **Onboarding "I'll finish this later" fix** - Button now saves name (if provided) and sets `onboarding_complete = true`
+  - Root cause: Original `handleSkip` only set `onboarding_complete` but ignored name field
+  - Added proper error handling and logging
+- Key files:
+  - `web/src/components/members/MemberFilters.tsx` - Identity-based filtering, expanded search
+  - `web/src/app/members/page.tsx` - Added identity flag mapping
+  - `web/src/app/onboarding/profile/page.tsx` - Fixed `handleSkip` to save name
+
+### Signup Database Error Fix (December 2025)
+- **Root cause** - `handle_new_user()` trigger used `'member'::user_role` but function has `search_path = ''` for security
+- **Fix** - Changed to `'member'::public.user_role` with fully-qualified schema prefix
+- Key file: `supabase/migrations/20251226233805_fix_handle_new_user_type_resolution.sql`
+
 ### Gallery QA Bug Fixes (December 2025)
 - **File size validation** - 10MB limit enforced during upload with clear error messages
 - **Duplicate slug handling** - Album creation auto-increments slug if already exists (e.g., `test-album-1`)

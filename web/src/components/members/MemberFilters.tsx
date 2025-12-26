@@ -12,8 +12,10 @@ interface MemberFiltersProps {
   className?: string;
 }
 
-const ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
-  { value: "performer", label: "Songwriters" },
+type IdentityFlag = "songwriter" | "studio" | "host" | "fan";
+
+const IDENTITY_OPTIONS: { value: IdentityFlag; label: string }[] = [
+  { value: "songwriter", label: "Songwriters" },
   { value: "studio", label: "Studios" },
   { value: "host", label: "Hosts" },
   { value: "fan", label: "Fans" },
@@ -26,8 +28,16 @@ export function MemberFilters({
   className,
 }: MemberFiltersProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedRoles, setSelectedRoles] = React.useState<Set<MemberRole>>(
-    initialRole ? new Set([initialRole]) : new Set()
+  // Map legacy role to identity flag for initial state
+  const mapRoleToIdentity = (role?: MemberRole): IdentityFlag | undefined => {
+    if (!role) return undefined;
+    if (role === "performer" || role === "songwriter") return "songwriter";
+    if (role === "host" || role === "studio" || role === "fan") return role;
+    return undefined;
+  };
+  const initialIdentity = mapRoleToIdentity(initialRole);
+  const [selectedIdentities, setSelectedIdentities] = React.useState<Set<IdentityFlag>>(
+    initialIdentity ? new Set([initialIdentity]) : new Set()
   );
   const [availableForHire, setAvailableForHire] = React.useState(false);
   const [interestedInCowriting, setInterestedInCowriting] = React.useState(false);
@@ -61,20 +71,35 @@ export function MemberFilters({
   React.useEffect(() => {
     let filtered = members;
 
-    // Search filter
+    // Search filter - covers name, bio, location, instruments, genres, specialties
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (m) =>
-          m.name.toLowerCase().includes(query) ||
-          m.bio?.toLowerCase().includes(query) ||
-          m.location?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter((m) => {
+        // Check name
+        if (m.name.toLowerCase().includes(query)) return true;
+        // Check bio
+        if (m.bio?.toLowerCase().includes(query)) return true;
+        // Check location/city
+        if (m.location?.toLowerCase().includes(query)) return true;
+        // Check instruments array
+        if (m.instruments?.some((i) => i.toLowerCase().includes(query))) return true;
+        // Check genres array
+        if (m.genres?.some((g) => g.toLowerCase().includes(query))) return true;
+        // Check specialties array
+        if (m.specialties?.some((s) => s.toLowerCase().includes(query))) return true;
+        return false;
+      });
     }
 
-    // Role filter
-    if (selectedRoles.size > 0) {
-      filtered = filtered.filter((m) => selectedRoles.has(m.role));
+    // Identity flag filter (uses boolean flags instead of legacy role)
+    if (selectedIdentities.size > 0) {
+      filtered = filtered.filter((m) => {
+        if (selectedIdentities.has("songwriter") && m.isSongwriter) return true;
+        if (selectedIdentities.has("host") && m.isHost) return true;
+        if (selectedIdentities.has("studio") && m.isStudio) return true;
+        if (selectedIdentities.has("fan") && m.isFan) return true;
+        return false;
+      });
     }
 
     // Availability filters
@@ -115,7 +140,7 @@ export function MemberFilters({
   }, [
     members,
     searchQuery,
-    selectedRoles,
+    selectedIdentities,
     availableForHire,
     interestedInCowriting,
     openToCollabs,
@@ -125,13 +150,13 @@ export function MemberFilters({
     onFilteredMembersChange,
   ]);
 
-  const toggleRole = (role: MemberRole) => {
-    setSelectedRoles((prev) => {
+  const toggleIdentity = (identity: IdentityFlag) => {
+    setSelectedIdentities((prev) => {
       const next = new Set(prev);
-      if (next.has(role)) {
-        next.delete(role);
+      if (next.has(identity)) {
+        next.delete(identity);
       } else {
-        next.add(role);
+        next.add(identity);
       }
       return next;
     });
@@ -175,7 +200,7 @@ export function MemberFilters({
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedRoles(new Set());
+    setSelectedIdentities(new Set());
     setAvailableForHire(false);
     setInterestedInCowriting(false);
     setOpenToCollabs(false);
@@ -186,7 +211,7 @@ export function MemberFilters({
 
   const hasActiveFilters =
     searchQuery ||
-    selectedRoles.size > 0 ||
+    selectedIdentities.size > 0 ||
     availableForHire ||
     interestedInCowriting ||
     openToCollabs ||
@@ -220,15 +245,15 @@ export function MemberFilters({
         </svg>
       </div>
 
-      {/* Role filters */}
+      {/* Identity filters */}
       <div className="flex flex-wrap gap-2">
-        {ROLE_OPTIONS.map((option) => (
+        {IDENTITY_OPTIONS.map((option) => (
           <button
             key={option.value}
-            onClick={() => toggleRole(option.value)}
+            onClick={() => toggleIdentity(option.value)}
             className={cn(
               "px-3 py-1.5 text-base rounded-full border transition-colors",
-              selectedRoles.has(option.value)
+              selectedIdentities.has(option.value)
                 ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
                 : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
             )}

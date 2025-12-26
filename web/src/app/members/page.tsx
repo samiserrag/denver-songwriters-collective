@@ -26,7 +26,11 @@ function mapDBProfileToMember(profile: DBProfile): Member {
     id: profile.id,
     name: profile.full_name ?? "Anonymous Member",
     role: (profile.role ?? "fan") as MemberRole,
+    // Identity flags
+    isSongwriter: profile.is_songwriter ?? false,
     isHost: profile.is_host ?? false,
+    isStudio: profile.is_studio ?? false,
+    isFan: profile.is_fan ?? false,
     bio: profile.bio ?? undefined,
     genres: profile.genres ?? undefined,
     instruments: profile.instruments ?? undefined,
