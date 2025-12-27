@@ -25,7 +25,7 @@ function groupByDate(events: any[]): Map<string, any[]> {
   return new Map([...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])));
 }
 
-function groupByDayOfWeek(events: any[]): Map<string, any[]> {
+export function groupByDayOfWeek(events: any[]): Map<string, any[]> {
   const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const groups = new Map<string, any[]>();
 
@@ -34,7 +34,7 @@ function groupByDayOfWeek(events: any[]): Map<string, any[]> {
   }
 
   for (const event of events) {
-    const day = event.day_of_week;
+    const day = event.day_of_week?.trim();
     if (day && groups.has(day)) {
       groups.get(day)!.push(event);
     }
