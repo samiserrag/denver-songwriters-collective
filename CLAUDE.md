@@ -273,6 +273,29 @@ If typography behaves unexpectedly, **check for a token violation first**.
 
 ---
 
+## Theme Hydration Exception (Intentional)
+
+The `<html>` element uses `suppressHydrationWarning`.
+
+**Why:**
+- Theme (`data-theme`) is set from the database on the server
+- Client may immediately override from localStorage before hydration
+- This causes a known React hydration mismatch
+- **This is intentional and correct.**
+
+```tsx
+<html suppressHydrationWarning>
+```
+
+**Rules:**
+- Do NOT remove `suppressHydrationWarning` from `<html>`
+- Do NOT attempt to "fix" this by syncing server/client theme
+- This is a documented and accepted exception to hydration strictness
+
+Typography tokens and font contracts are unrelated to this behavior.
+
+---
+
 ## Documentation
 
 The `docs/` folder contains reference documentation:

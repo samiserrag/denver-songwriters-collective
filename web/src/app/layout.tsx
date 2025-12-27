@@ -133,6 +133,7 @@ export default async function RootLayout({
       lang="en"
       data-theme={dataTheme}
       data-font={dataFont}
+      suppressHydrationWarning
     >
       <head>
         {/* Pre-hydration theme script - runs before React to prevent flash */}
