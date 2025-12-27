@@ -61,7 +61,7 @@ export function Header({ className }: HeaderProps) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Logo variant="full" className="hover:opacity-90 transition-opacity" />
 
-        <nav className="hidden lg:flex items-center gap-1 font-display font-medium tracking-tight">
+        <nav className="hidden lg:flex items-center gap-1 font-medium tracking-tight font-[var(--font-family-display)]">
           {navLinks.map((link) => (
             <NavLink key={link.href} href={link.href}>
               {link.label}
