@@ -398,9 +398,16 @@ These are broader product initiatives for post-launch development:
   - Footer, MapViewButton, dashboard links all point to `/happenings`
 - **1,294 lines removed** - Legacy listing page implementations replaced with simple redirect functions
 - **Obsolete tests removed** - `events/page.test.tsx` and `open-mics/page.test.tsx` deleted
+- **Phase 2.6: UX Polish (December 2025)**
+  - **List layout** - Changed from grid (`md:grid-cols-2 lg:grid-cols-3`) to vertical list (`flex flex-col gap-3`)
+  - **DSC events grouped by date** - Events with `event_date` show date headers (e.g., "Sat, Jan 4, 2025")
+  - **Open mics grouped by day** - Recurring events grouped by `day_of_week` with headers (e.g., "Thursdays")
+  - **SSR-only implementation** - Grouping done server-side with pure functions, no client state needed
+  - **Grouping helpers added**: `groupByDate()`, `groupByDayOfWeek()`, `formatDateHeader()`
 - PRs merged: #28, #29, #30, #31
 - Key files:
-  - `web/src/app/happenings/page.tsx` - New unified happenings page with filter tabs
+  - `web/src/app/happenings/page.tsx` - Unified happenings page with filter tabs, list layout, and grouping
+  - `web/src/components/happenings/HappeningsCard.tsx` - Delegating wrapper for event cards
   - `web/src/app/events/page.tsx` - Now redirects to `/happenings?type=dsc`
   - `web/src/app/open-mics/page.tsx` - Now redirects to `/happenings?type=open_mic`
   - `web/src/app/open-mics/map/page.tsx` - Now redirects to `/happenings?type=open_mic`
