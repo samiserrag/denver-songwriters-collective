@@ -381,6 +381,14 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Header Navigation Typography (December 2025)
+- **Fraunces applied to header nav** - Desktop nav links now use `font-display font-medium tracking-tight`
+- **Mobile menu typography** - Wordmark and nav links use Fraunces (`font-display`)
+- **Scoped change** - Body text, buttons, form inputs remain unchanged
+- Key files:
+  - `web/src/components/navigation/header.tsx` - Desktop nav styling
+  - `web/src/components/navigation/mobile-menu.tsx` - Mobile menu styling
+
 ### UI Overhaul - Fraunces Font & Happenings Terminology (December 2025)
 - **Fraunces display font added** - Playful, quirky Google Font for hero headlines replacing corporate-looking serif
 - **Site name on homepage hero** - "Denver Songwriters Collective" now prominent on hero image

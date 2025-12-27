@@ -80,7 +80,7 @@ export function MobileMenu({
       >
         {/* Fixed header */}
         <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
-          <span className="font-[var(--font-family-serif)] text-xl">
+          <span className="font-display text-xl">
             <span className="text-[var(--color-text-accent)] italic">Denver</span>{" "}
             <span className="text-[var(--color-text-primary)]">Songwriters</span>
           </span>
@@ -96,14 +96,14 @@ export function MobileMenu({
         </div>
 
         {/* Scrollable nav content */}
-        <nav className="flex-1 overflow-y-auto p-6 pt-4" role="navigation">
+        <nav className="flex-1 overflow-y-auto p-6 pt-4 font-display" role="navigation">
           <div className="flex flex-col gap-2">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => onClose()}
-                className="text-lg py-3 px-2 rounded-lg hover:bg-white/5 text-[var(--color-text-primary)]"
+                className="text-lg py-3 px-2 rounded-lg hover:bg-white/5 text-[var(--color-text-primary)] font-medium"
               >
                 {link.label}
               </Link>
