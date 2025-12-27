@@ -175,7 +175,7 @@ export default function GetInvolvedPage() {
                 <Link href="/submit-open-mic">Submit an open mic</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/open-mics">See open mics</Link>
+                <Link href="/happenings?type=open_mic">See open mics</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link href="/partners">Partner with the community</Link>

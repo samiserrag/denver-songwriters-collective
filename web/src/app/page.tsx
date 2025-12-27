@@ -222,13 +222,13 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/events"
+              href="/happenings"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors shadow-lg"
             >
               See happenings
             </Link>
             <Link
-              href="/open-mics"
+              href="/happenings?type=open_mic"
               className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
             >
               See open mics
@@ -251,7 +251,7 @@ export default async function HomePage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/events"
+              href="/happenings"
               className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               See happenings
@@ -279,7 +279,7 @@ export default async function HomePage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/open-mics"
+              href="/happenings?type=open_mic"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               See open mics
@@ -368,7 +368,7 @@ export default async function HomePage() {
               </p>
             </div>
             <Link
-              href="/events"
+              href="/happenings?type=dsc"
               className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
             >
               See all
@@ -476,7 +476,7 @@ export default async function HomePage() {
                 </p>
               </div>
               <Link
-                href="/open-mics"
+                href="/happenings?type=open_mic"
                 className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 See open mics
