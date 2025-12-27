@@ -14,7 +14,7 @@ import { ThemePicker } from "@/components/ui/ThemePicker";
 
 // Primary nav links (shown in main nav bar)
 const navLinks = [
-  { href: "/events", label: "Happenings" },
+  { href: "/happenings", label: "Happenings" },
   { href: "/open-mics", label: "Open Mics" },
   { href: "/members", label: "Members" },
   { href: "/gallery", label: "Gallery" },
