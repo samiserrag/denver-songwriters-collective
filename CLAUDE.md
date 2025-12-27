@@ -483,7 +483,12 @@ These are broader product initiatives for post-launch development:
   - **Open mics grouped by day** - Recurring events grouped by `day_of_week` with headers (e.g., "Thursdays")
   - **SSR-only implementation** - Grouping done server-side with pure functions, no client state needed
   - **Grouping helpers added**: `groupByDate()`, `groupByDayOfWeek()`, `formatDateHeader()`
-- PRs merged: #28, #29, #30, #31, #32
+- PRs merged: #28, #29, #30, #31, #32, #33
+- **Phase 2.8: Density Tuning (December 2025)** - PR #33
+  - **Tighter list cards** - `p-4 space-y-2` → `p-3 space-y-1` in list variant only
+  - **Tighter grouping** - `gap-6` → `gap-4`, `mb-2` → `mb-1`, `gap-3` → `gap-2`
+  - **Density regression tests** - 3 new tests enforcing list density baseline (p-3 space-y-1) + grid invariant
+  - **data-testid attributes** - Added to card content divs for stable test selectors
 - **Phase 2.7: Migration Hardening (December 2025)** - PR #32
   - **Card list variant** - Added `variant="list"` prop to EventCard and events/EventCard for compact row display
   - **List mode hides media** - No aspect-ratio image container in list variant, badges moved inline
