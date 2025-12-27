@@ -8,12 +8,91 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 > **Architecture Evolution (December 2025):** This project is being transformed into a **white-label community platform template**. See [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) for the full roadmap covering theme system, brand configuration, and mobile app strategy.
 
+---
+
+## Engineering Standard: Completion Gate (Non-Negotiable)
+
+**Any migration / cross-cutting UI change is not "done" until ALL of the following are true:**
+
+### 1. Surface Inventory Completed
+
+Before any UI/routing change is considered complete, verify ALL surfaces:
+
+- [ ] Header nav
+- [ ] Footer nav
+- [ ] Mobile nav
+- [ ] Any CTAs/buttons linking to affected routes
+- [ ] Filters (if applicable)
+- [ ] Search results
+- [ ] Email templates
+- [ ] PWA shortcuts/manifest (`web/public/manifest.json`)
+- [ ] Redirect behavior confirmed
+
+### 2. Contract-First Components
+
+- List pages **must use explicit variant/props** (e.g., `variant="list"`) rather than relying on container CSS hacks
+- Component defaults **must preserve existing behavior** (variant defaults to current layout)
+- See [docs/CONTRACTS.md](./docs/CONTRACTS.md) for documented component contracts
+
+### 3. Data Contract Verified
+
+- UI must **not show placeholders due to schema mismatch** (e.g., "LIVE"/"TBA" caused by wrong field usage)
+- For every derived label, **identify the source field(s)** and verify with real records
+- Test with actual database records, not just mock data
+
+### 4. Regression Guardrails Added
+
+- At least **one automated test** that fails if the same class of regression reappears
+- Examples: legacy listing hrefs, forbidden classes in list variant, hero rules, etc.
+- Tests live in `src/__tests__/` or `src/components/__tests__/`
+
+### 5. Quality Gate
+
+All must pass before merge:
+
+```bash
+npm run lint   # PASS (0 errors)
+npm run test   # PASS (all tests green)
+npm run build  # PASS (successful build)
+```
+
+### 6. Acceptance Routes
+
+Required route checks (manual or Playwright):
+
+- `/happenings`
+- `/happenings?type=open_mic`
+- `/happenings?type=dsc`
+- One example detail page for each type (`/open-mics/[slug]`, `/events/[id]`)
+
+### 7. Routing Canonicalization Rule
+
+**Only allowed listing pages:**
+- `/happenings`
+- `/happenings?type=open_mic`
+- `/happenings?type=dsc`
+
+**Legacy listing routes must NOT be linked anywhere:**
+- `/open-mics` (listing) – **forbidden in UI hrefs**
+- `/events` (listing) – **forbidden in UI hrefs**
+
+> Detail routes remain valid: `/open-mics/[slug]`, `/events/[id]`
+
+### 8. Change Management Rule
+
+- Migrations **must be done in a PR** (no direct-to-main)
+- **One PR = one coherent contract.** No mixed unrelated refactors.
+- If a change touches UX + routing + components, it **must include guardrail tests**
+
+---
+
 ## Documentation
 
 The `docs/` folder contains reference documentation:
 
 | Document | Purpose |
 |----------|---------|
+| [docs/CONTRACTS.md](./docs/CONTRACTS.md) | **Component contracts and canonical rules** |
 | [docs/ARCHITECTURE_PLAN.md](./docs/ARCHITECTURE_PLAN.md) | White-label platform roadmap |
 | [docs/gallery.md](./docs/gallery.md) | Gallery feature documentation |
 | [docs/stream-3-rsvp-flow.md](./docs/stream-3-rsvp-flow.md) | RSVP & Waitlist System documentation |
