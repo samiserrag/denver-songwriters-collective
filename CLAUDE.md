@@ -519,6 +519,25 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Phase 2: Happenings Migration — COMPLETE ✅ (December 2025)
+
+| Phase | Description | PR | Status |
+|-------|-------------|-----|--------|
+| 2.1 | `/happenings` scaffolding | #28 | ✅ |
+| 2.2 | Seed DSC events | #28 | ✅ |
+| 2.3 | Preflight investigation | #28 | ✅ |
+| 2.4.1 | Search API + manifest | #29 | ✅ |
+| 2.4.2 | Email templates | #29 | ✅ |
+| 2.4.3 | Listing link rewires | #29 | ✅ |
+| 2.5 | Redirects + cleanup | #30 | ✅ |
+| 2.6 | UX polish (list + grouping) | #31 | ✅ |
+| 2.7 | Hardening (variant + nav + guards + date fix) | #32 | ✅ |
+| 2.8 | Density tuning | #33 | ✅ |
+
+**Next phases available:**
+- **Phase 3** — Member gigs
+- **Phase 4** — Unified detail pages
+
 ### Happenings Page Consolidation (December 2025)
 - **Unified `/happenings` page** - Consolidated `/events` and `/open-mics` listing pages into a single `/happenings` page with filter tabs
 - **Filter tabs** - `?type=open_mic` shows open mic directory, `?type=dsc` shows DSC events, no param shows all
