@@ -79,10 +79,10 @@ export default async function MembersPage({ searchParams }: PageProps) {
       <HeroSection minHeight="sm" showVignette showBottomFade>
         <div className="text-center px-4 py-6">
           <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
-            Our Members
+            Collective Members
           </h1>
           <p className="text-lg text-white/90 mt-2 drop-shadow">
-            Performers, studios, hosts, and fans who make our community thrive
+            Songwriters, event hosts, studios, promoters, and fans who make our community thrive
           </p>
         </div>
       </HeroSection>
