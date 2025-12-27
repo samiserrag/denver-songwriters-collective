@@ -141,6 +141,138 @@ After merge to main and Vercel deployment:
 
 ---
 
+## Typography System — Contract & Usage (LOCKED)
+
+### Canonical Rules (DO NOT VIOLATE)
+
+* **All headings (`h1–h6`) MUST use:**
+  `font-family: var(--font-display)`
+* **Body text MUST use:**
+  `font-family: var(--font-body)`
+* **No component, page, or global CSS may hardcode a font-family on headings.**
+* Any attempt to add a second heading font rule should **fail tests**.
+
+Regression tests enforce this contract.
+
+---
+
+### Typography Tokens (Single Source of Truth)
+
+| Token                   | Purpose                     |
+| ----------------------- | --------------------------- |
+| `--font-display`        | Headings                    |
+| `--font-body`           | Body text                   |
+| `--font-family-display` | Stable display font mapping |
+| `--font-family-sans`    | Stable sans mapping         |
+| `--font-family-serif`   | Stable serif mapping        |
+
+Next.js font loader variables (`--font-fraunces`, `--font-playfair`, etc.)
+are **only consumed via tokens**, never directly in selectors.
+
+---
+
+### How to Change Fonts (Developer / Repo Agent)
+
+#### 1. Change Site-Wide Defaults
+
+Edit body-level tokens **only**:
+
+```css
+body {
+  --font-display: var(--font-family-display);
+  --font-body: var(--font-family-sans);
+}
+```
+
+To swap display fonts:
+
+* Load new font via Next.js font loader
+* Update **one token mapping**
+* No selector changes required
+
+---
+
+#### 2. Change Fonts for a Page or Section (Scoped Override)
+
+Use a wrapper and override tokens:
+
+```tsx
+<section className="scope-happenings">
+  …
+</section>
+```
+
+```css
+.scope-happenings {
+  --font-display: var(--font-playfair);
+}
+```
+
+Safe. Local. Reversible.
+
+---
+
+#### 3. Change Font for a Single Word or Sentence
+
+Use explicit utilities (intentional escape hatch):
+
+```html
+<span class="font-fraunces">editorial emphasis</span>
+<span class="font-playfair">stylistic moment</span>
+```
+
+These bypass presets by design.
+
+---
+
+### How Fonts Work for White-Label / Non-Code Users
+
+#### Font Presets (Primary Mechanism)
+
+Fonts are controlled by a `data-font` attribute:
+
+```html
+<html data-font="fraunces-inter">
+```
+
+Presets override **tokens**, not selectors:
+
+```css
+:root[data-font="fraunces-inter"] {
+  --font-display: …;
+  --font-body: …;
+}
+```
+
+White-label users can:
+
+* Switch presets
+* Restyle headings + body instantly
+* Never touch CSS or components
+
+---
+
+### What Is Explicitly Forbidden
+
+* Adding `font-family` directly to `h1–h6`
+* Adding a second heading font rule
+* Bypassing tokens with raw font variables
+* Mixing serif/display logic in selectors
+
+If typography behaves unexpectedly, **check for a token violation first**.
+
+---
+
+### Typography Status
+
+* Typography contract **ENFORCED**
+* Regression tests **ACTIVE**
+* Safe for experimentation, presets, and white-label use
+
+**Typography issues should not recur unless this contract is violated.**
+
+---
+
 ## Documentation
 
 The `docs/` folder contains reference documentation:
