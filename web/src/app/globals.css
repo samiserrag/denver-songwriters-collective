@@ -93,10 +93,11 @@
      ═══════════════════════════════════════════════════════════════ */
   --font-family-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
   --font-family-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-family-display: var(--font-fraunces), "Fraunces", Georgia, serif;
 
   /* Semantic font aliases (overridable by font presets) */
   --font-body: var(--font-family-sans);
-  --font-display: var(--font-family-serif);
+  --font-display: var(--font-family-display);
 
   /* ═══════════════════════════════════════════════════════════════
      FONT SIZES

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 import { Button } from "@/components/ui";
 import { NewsletterSection } from "@/components/navigation/NewsletterSection";
 
@@ -12,25 +12,25 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-4xl mx-auto px-6 py-10 text-center space-y-6">
-          <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
-            A shared space for Denver songwriters
+      {/* Hero Section */}
+      <HeroSection minHeight="sm" showVignette showBottomFade>
+        <div className="text-center px-6 py-8">
+          <h1 className="font-[var(--font-family-display)] font-bold text-4xl md:text-5xl lg:text-6xl text-white tracking-tight mb-3 drop-shadow-lg">
+            About the Collective
           </h1>
-          <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-            Denver Songwriters Collective is a community-run hub for songwriting events across the Denver area. Songwriters, venues, hosts, and other groups use it to help people show up, play live, and discover local music. If it&apos;s useful to you, it&apos;s yours to use.
+          <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl mx-auto drop-shadow">
+            A shared space for Denver songwriters
           </p>
-          <div className="flex flex-wrap justify-center gap-4 pt-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <Button asChild variant="primary" size="lg">
-              <Link href="/events">See events</Link>
+              <Link href="/events">See happenings</Link>
             </Button>
             <Button asChild variant="secondary" size="lg">
-              <Link href="/submit-open-mic">Host an event</Link>
+              <Link href="/submit-open-mic">Host a happening</Link>
             </Button>
           </div>
         </div>
-      </div>
+      </HeroSection>
 
       {/* Main Content */}
       <PageContainer typography>
@@ -212,10 +212,10 @@ export default function AboutPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
-                <Link href="/events">See events</Link>
+                <Link href="/events">See happenings</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
-                <Link href="/submit-open-mic">Host an event</Link>
+                <Link href="/submit-open-mic">Host a happening</Link>
               </Button>
             </div>
           </section>

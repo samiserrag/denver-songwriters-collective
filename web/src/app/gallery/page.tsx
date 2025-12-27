@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 import GalleryGrid from "@/components/gallery/GalleryGrid";
 
 export const metadata: Metadata = {
@@ -75,31 +75,31 @@ export default async function GalleryPage({ searchParams }: PageProps) {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-6xl mx-auto px-6 py-10 text-center">
-          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-            Gallery
+      {/* Hero Section */}
+      <HeroSection minHeight="sm" showVignette showBottomFade>
+        <div className="text-center px-6 py-8">
+          <h1 className="font-[var(--font-family-display)] font-bold text-4xl md:text-5xl lg:text-6xl text-white tracking-tight mb-3 drop-shadow-lg">
+            Collective Gallery
           </h1>
-          <p className="text-lg text-[var(--color-text-secondary)] mt-3">
-            Moments from open mics, showcases, and community events
+          <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl mx-auto drop-shadow">
+            Moments from open mics, showcases, and community happenings
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/events"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
-              See events
+              See happenings
             </Link>
             <Link
               href="/dashboard/admin/gallery"
-              className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
             >
               Share your photos
             </Link>
           </div>
         </div>
-      </div>
+      </HeroSection>
 
       <PageContainer>
         <div className="py-12">
