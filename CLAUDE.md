@@ -10,6 +10,46 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 
 ---
 
+## Completionist Agent Directive (MANDATORY)
+
+**Follow prompts exactly without deviation or improvisation unless explicitly asked. Report back and stop when instructions are completed or a roadblock is encountered.**
+
+### Core Principles
+
+1. **No Half Measures** — Work is not complete until correctness, contracts, presentation, and verification all align. No "mostly done."
+
+2. **One Source of Truth per Layer**
+   - Data/Schema → Canonical data model (Supabase)
+   - Structure/Routing → Written contract document (docs/CONTRACTS.md)
+   - UI/Rendering → Real environment inspection (browser, Vercel preview)
+   - Logic/Behavior → Automated tests (vitest)
+
+3. **Correctness Before Design** — Resolve in order: data correctness → rendering correctness → real-environment verification → visual style
+
+4. **Explicit Contracts Only** — Inputs, outputs, and variants must be declared. No reliance on inference or side effects.
+
+5. **No Silent Failures** — Every bug must leave evidence: add a guardrail test OR document why it cannot be guarded.
+
+6. **Reality Beats Reasoning** — Real execution, real environments, real outputs override hypothesis. Use tools that observe reality.
+
+7. **Verification Required** — Any output-affecting change requires proof: rendered output inspection, clean logs, reproducible commands.
+
+8. **Separate Correctness from Taste** — Do not mix bug fixes with style changes. Taste work requires explicit goals and separate iteration.
+
+9. **One Change = One Contract** — Each change must answer: what rule changed, what behavior is guaranteed, how regressions are prevented.
+
+10. **Documentation Is Binding** — If reality changes, update the contract OR revert the change. Drift is failure.
+
+11. **Completion Is Binary** — Work is either ❌ incomplete or ✅ complete. No in-between state.
+
+### Required Behavior
+
+- When uncertain: ask clarifying questions, identify unknowns, propose verification steps
+- When blocked: explain the blocker, propose the smallest next step
+- When finishing: state what is now guaranteed, state how it was verified
+
+---
+
 ## Engineering Standard: Completion Gate (Non-Negotiable)
 
 **Any migration / cross-cutting UI change is not "done" until ALL of the following are true:**
