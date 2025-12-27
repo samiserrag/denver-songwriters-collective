@@ -25,7 +25,7 @@ function groupByDate(events: any[]): Map<string, any[]> {
   return new Map([...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])));
 }
 
-function groupByDayOfWeek(events: any[]): Map<string, any[]> {
+export function groupByDayOfWeek(events: any[]): Map<string, any[]> {
   const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const groups = new Map<string, any[]>();
 
@@ -34,7 +34,7 @@ function groupByDayOfWeek(events: any[]): Map<string, any[]> {
   }
 
   for (const event of events) {
-    const day = event.day_of_week;
+    const day = event.day_of_week?.trim();
     if (day && groups.has(day)) {
       groups.get(day)!.push(event);
     }
@@ -97,7 +97,7 @@ export default async function HappeningsPage({
       {showHero && (
         <HeroSection minHeight="sm" showVignette showBottomFade>
           <div className="text-center px-4 py-6">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-display)] font-bold text-white tracking-tight drop-shadow-lg">
               Happenings
             </h1>
             <p className="text-lg text-white/80 mt-2 drop-shadow">
@@ -111,7 +111,7 @@ export default async function HappeningsPage({
         {/* Page header with title + filters */}
         <div className="mb-6">
           {!showHero && (
-            <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] mb-4">
+            <h1 className="text-3xl md:text-4xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-4">
               {typeFilter === "open_mic" ? "Open Mics" : "DSC Happenings"}
             </h1>
           )}
@@ -132,7 +132,7 @@ export default async function HappeningsPage({
 
         {datedEvents.length > 0 && (
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4">Upcoming Happenings</h2>
+            <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">Upcoming Happenings</h2>
             <div className="flex flex-col gap-4">
               {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
                 <div key={date}>
@@ -152,7 +152,7 @@ export default async function HappeningsPage({
 
         {recurringEvents.length > 0 && (
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Weekly Open Mics</h2>
+            <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">Weekly Open Mics</h2>
             <div className="flex flex-col gap-4">
               {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
                 <div key={day}>
