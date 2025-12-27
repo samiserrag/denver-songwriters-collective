@@ -113,54 +113,23 @@ export default function OnboardingProfile() {
     setError(null);
 
     try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      console.log("[Onboarding] Saving profile via API route");
 
-      if (authError || !user) {
-        console.error("Auth error:", authError);
-        setError("Session expired. Please log in again.");
-        setSaving(false);
-        window.location.href = "/login";
-        return;
-      }
+      const response = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: name.trim() || null,
+          is_songwriter: isSongwriter,
+          is_host: isHost,
+          is_studio: isStudio,
+          is_fan: isFan,
+        }),
+      });
 
-      const updates = {
-        full_name: name || null,
-        is_songwriter: isSongwriter,
-        is_studio: isStudio,
-        is_host: isHost,
-        is_fan: isFan,
-        bio: bio || null,
-        instagram_url: instagramUrl || null,
-        spotify_url: spotifyUrl || null,
-        youtube_url: youtubeUrl || null,
-        website_url: websiteUrl || null,
-        tiktok_url: tiktokUrl || null,
-        venmo_handle: venmoHandle || null,
-        cashapp_handle: cashappHandle || null,
-        paypal_url: paypalUrl || null,
-        open_to_collabs: openToCollabs,
-        interested_in_cowriting: interestedInCowriting,
-        instruments: instruments.length > 0 ? instruments : null,
-        genres: genres.length > 0 ? genres : null,
-        onboarding_complete: true,
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log("[Onboarding] Updating profile for user:", user.id);
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", user.id);
-
-      if (updateError) {
-        console.error("Profile update error:", updateError);
-        setError(`Failed to save: ${updateError.message}`);
-        setSaving(false);
-        return;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save profile');
       }
 
       console.log("[Onboarding] Profile updated successfully, redirecting to dashboard");
@@ -169,7 +138,7 @@ export default function OnboardingProfile() {
       window.location.href = "/dashboard?welcome=1";
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("Something went wrong. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setSaving(false);
     }
   };
@@ -179,42 +148,23 @@ export default function OnboardingProfile() {
     setError(null);
 
     try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      console.log("[Onboarding] Skipping via API route, saving name if provided");
 
-      if (authError || !user) {
-        console.error("Auth error:", authError);
-        setError("Session expired. Please log in again.");
-        setSaving(false);
-        window.location.href = "/login";
-        return;
-      }
+      const response = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: name.trim() || null,
+          is_songwriter: isSongwriter,
+          is_host: isHost,
+          is_studio: isStudio,
+          is_fan: isFan,
+        }),
+      });
 
-      // Save name (if provided) and mark onboarding complete
-      const updates: Record<string, unknown> = {
-        onboarding_complete: true,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Include name if user entered one
-      if (name.trim()) {
-        updates.full_name = name.trim();
-      }
-
-      console.log("[Onboarding] Skipping with updates:", updates);
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", user.id);
-
-      if (updateError) {
-        console.error("Profile update error:", updateError);
-        setError(`Failed to save: ${updateError.message}`);
-        setSaving(false);
-        return;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save profile');
       }
 
       console.log("[Onboarding] Profile updated, redirecting to dashboard");
@@ -223,7 +173,7 @@ export default function OnboardingProfile() {
       window.location.href = "/dashboard";
     } catch (err) {
       console.error("Unexpected error:", err);
-      setError("Something went wrong. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setSaving(false);
     }
   };
