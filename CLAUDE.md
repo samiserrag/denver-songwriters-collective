@@ -533,6 +533,9 @@ These are broader product initiatives for post-launch development:
 | 2.6 | UX polish (list + grouping) | #31 | ✅ |
 | 2.7 | Hardening (variant + nav + guards + date fix) | #32 | ✅ |
 | 2.8 | Density tuning | #33 | ✅ |
+| 2.9 | Correctness fixes + completionist standards | #34, #35 | ✅ |
+
+**Phase 2 COMPLETE** — All `/happenings` migration work finished.
 
 **Next phases available:**
 - **Phase 3** — Member gigs
@@ -557,7 +560,15 @@ These are broader product initiatives for post-launch development:
   - **Open mics grouped by day** - Recurring events grouped by `day_of_week` with headers (e.g., "Thursdays")
   - **SSR-only implementation** - Grouping done server-side with pure functions, no client state needed
   - **Grouping helpers added**: `groupByDate()`, `groupByDayOfWeek()`, `formatDateHeader()`
-- PRs merged: #28, #29, #30, #31, #32, #33
+- PRs merged: #28, #29, #30, #31, #32, #33, #34, #35
+- **Phase 2.9: Correctness Fixes + Completionist Standards (December 2025)** - PRs #34, #35
+  - **Day of week normalization** - Added defensive `.trim()` to `groupByDayOfWeek()` to prevent "Monday s" style bugs
+  - **Fraunces display font fix** - Re-defined font-family variables in `body` selector where Next.js font loader vars are accessible
+  - **Hydration mismatch fix** - Added `timeZone: "America/Denver"` to all `toLocaleDateString()` calls on `/happenings`
+  - **Seed marker cleanup** - Removed `[DSC-SEED-P2-2]` markers from 3 production events (DB-only)
+  - **Regression tests** - `happenings-dayofweek.test.ts` (6 tests for day normalization)
+  - **Documentation** - `docs/ops/phase2-9-seed-marker-cleanup.md` records DB cleanup
+  - **Font token chain** - `h1-h6 → --font-display → --font-family-display → --font-fraunces → "Fraunces"`
 - **Phase 2.8: Density Tuning (December 2025)** - PR #33
   - **Tighter list cards** - `p-4 space-y-2` → `p-3 space-y-1` in list variant only
   - **Tighter grouping** - `gap-6` → `gap-4`, `mb-2` → `mb-1`, `gap-3` → `gap-2`
@@ -589,6 +600,8 @@ These are broader product initiatives for post-launch development:
   - `web/src/app/api/search/route.ts` - Search results use `/happenings` URLs
   - `web/public/manifest.json` - PWA shortcuts updated
   - `web/src/lib/email/templates/*.ts` - Email templates use `/happenings` URLs
+  - `web/src/__tests__/happenings-dayofweek.test.ts` - Day normalization regression tests
+  - `docs/ops/phase2-9-seed-marker-cleanup.md` - DB cleanup documentation
 
 ### UI Overhaul - Fraunces Font & Happenings Terminology (December 2025)
 - **Fraunces display font added** - Playful, quirky Google Font for hero headlines replacing corporate-looking serif
