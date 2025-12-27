@@ -45,11 +45,11 @@ export async function GET(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, role")
+      .select("id, onboarding_complete")
       .eq("id", session.user.id)
       .single();
 
-    const needsOnboarding = !profile?.role;
+    const needsOnboarding = !profile?.onboarding_complete;
 
     // Handle Google OAuth
     if (provider === "google" || type === "google") {
