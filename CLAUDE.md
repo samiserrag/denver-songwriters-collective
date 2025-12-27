@@ -234,6 +234,7 @@ Users can select multiple identity flags during onboarding:
 #### Phase 1: RLS Security
 - [x] All 28 tables have RLS enabled
 - [x] `is_admin()` function standardized as SECURITY DEFINER
+- [x] **All functions calling `is_admin()` now use `public.is_admin()`** - Required for functions with `SET search_path = ''`
 - [x] `open_mic_claims` table - Added missing RLS policies
 - [x] `event_update_suggestions` - Tightened UPDATE/DELETE to admin-only
 - [x] Anonymous role granted SELECT on public tables (events, venues, profiles, blog_posts, gallery_images, highlights, spotlights)
@@ -379,6 +380,20 @@ These are broader product initiatives for post-launch development:
 ---
 
 ## Recent Changes (December 2025)
+
+### Onboarding RLS Fix - is_admin() Schema Qualification (December 2025)
+- **Root cause identified** - Functions with `SET search_path = ''` calling unqualified `is_admin()` failed because PostgreSQL couldn't resolve the function
+- **Affected functions fixed** - All 3 functions that called `is_admin()` without schema prefix:
+  - `prevent_role_change()` - Trigger on profiles table
+  - `restrict_studio_service_updates()` - Trigger on studio_services table
+  - `rpc_admin_set_showcase_lineup()` - RPC function for showcase events
+- **Fix applied** - Changed `is_admin()` → `public.is_admin()` in all function bodies
+- **Service role API route added** - `/api/onboarding` bypasses RLS entirely using service role client as belt-and-suspenders fix
+- **PostgREST cache** - `NOTIFY pgrst, 'reload schema'` required after function changes
+- Key files:
+  - `web/src/app/api/onboarding/route.ts` - New API route using service role
+  - `web/src/app/onboarding/profile/page.tsx` - Updated to use API route
+- Database functions updated via psql (not migration files - applied directly to fix production)
 
 ### Profile Location & Member Filters Enhancement (December 2025)
 - **City and state fields added to profiles** - New `city` and `state` columns for location-based member discovery
