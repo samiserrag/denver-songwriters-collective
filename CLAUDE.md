@@ -1388,6 +1388,12 @@ Prioritized list of technical debt and improvements discovered during repo audit
 
 ### Audit Coverage
 
-**Fully scanned:** Static analysis, XSS, secrets, RLS, timers, error boundaries, password fields, dependencies, form validation, CLSLogger guards
+**Fully scanned:** Static analysis, XSS, secrets, RLS, timers, error boundaries, password fields, dependencies, form validation, CLSLogger guards, RPC SQL injection (parameterized - safe), CSRF (JWT auth - sufficient), API input validation (manual but present)
 
-**Remaining (~20%):** CSRF deep verification, SQL injection in RPCs, bundle size analysis, duplicate code detection, test coverage gaps, API response validation schemas
+**Remaining (~10%):** Bundle size analysis, duplicate code detection, comprehensive test coverage analysis
+
+**Additional findings from sweep 3:**
+- Test coverage: Only 12 test files exist - limited automated regression protection
+- No schema validation library (Zod/Yup) - manual validation works but is more error-prone
+- All RPC functions use parameterized queries - no SQL injection risk
+- JWT-based auth provides CSRF protection via same-origin policy
