@@ -278,7 +278,8 @@ export default function EventCard({ event, searchQuery, variant = "grid" }: Even
 
         <div className="text-base text-[var(--color-text-accent)]">
           {startTime}{endTime && endTime !== "TBD" ? ` — ${endTime}` : ""}
-          {recurrenceText && recurrenceText !== "Every week" && (
+          {/* Hide recurrence text in list variant - group headers already show the day */}
+          {variant === "grid" && recurrenceText && recurrenceText !== "Every week" && (
             <span className="text-[var(--color-text-secondary)] ml-2">• {recurrenceText}</span>
           )}
         </div>
