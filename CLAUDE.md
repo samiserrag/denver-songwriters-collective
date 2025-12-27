@@ -43,6 +43,61 @@ The `docs/` folder contains reference documentation:
 - **Auth:** Supabase Auth (email/password, magic links)
 - **Future:** React Native/Expo for mobile app (shared codebase)
 
+### Fonts & Typography (Tailwind CSS v4 + Next.js)
+
+**IMPORTANT:** This project uses `next/font/google` with Tailwind CSS v4. There are specific patterns that MUST be followed for fonts to work correctly.
+
+#### Font Variable Location
+Font CSS variable classes MUST be on the `<html>` element, NOT the `<body>`:
+
+```tsx
+// layout.tsx - CORRECT
+<html className={`${fraunces.variable} ${inter.variable} ${playfair.variable}`}>
+  <body className="antialiased">
+
+// WRONG - fonts won't resolve in @theme
+<html>
+  <body className={`${fraunces.variable} antialiased`}>
+```
+
+#### CSS Variable Chain
+Next.js font variables (like `--font-fraunces`) contain only the generated font name (e.g., `__Fraunces_abc123`). To use them in Tailwind, create a full font-family variable in globals.css:
+
+```css
+@theme {
+  /* Raw Next.js variable → Full font stack */
+  --font-family-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-family-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+
+  /* Utility class aliases */
+  --font-display: var(--font-family-display);
+  --font-body: var(--font-family-sans);
+}
+```
+
+#### Applying Fonts to Elements
+Three ways to apply fonts (all work):
+
+```tsx
+// 1. Arbitrary value with full variable (RECOMMENDED for inline)
+<nav className="font-[var(--font-family-display)]">
+
+// 2. Utility class (if defined in @theme)
+<span className="font-display">
+
+// 3. Inherit from parent
+<Link className="font-[inherit]">
+```
+
+#### Available Fonts
+| Font | Variable | CSS Variable | Use Case |
+|------|----------|--------------|----------|
+| Fraunces | `--font-fraunces` | `--font-family-display` | Headlines, nav, display text |
+| Inter | `--font-inter` | `--font-family-sans` | Body text, UI elements |
+| Playfair Display | `--font-playfair` | `--font-family-serif` | Elegant headings |
+| Geist Sans | `--font-geist-sans` | - | Monospace-adjacent UI |
+| Geist Mono | `--font-geist-mono` | - | Code blocks |
+
 ## Database
 
 - **Supabase Project ID:** `oipozdbfxyskoscsgbfq`
@@ -352,6 +407,29 @@ These are broader product initiatives for post-launch development:
 
 ---
 
+## Planned (Post-Phase 2)
+
+### Location fields + Members filtering (single PR)
+
+**Goal:** Add zip_code migration + regenerate Supabase types + location UI in profile + location filters on Members page.
+
+**Scope:**
+- DB: ensure `profiles.zip_code` exists (text), optional indexes
+- Types: regenerate `database.types.ts` after migration
+- UI: profile page inputs for city/state/zip_code
+- UI: members directory filters for city/state/zip_code
+
+**Out of scope:**
+- No Happenings/Open Mics changes
+- No refactors
+
+**Acceptance:**
+- Profile location saves + persists
+- Members filters work
+- lint/test/build pass
+
+---
+
 ## White-Label Architecture (In Progress)
 
 **Status:** Planning complete, awaiting expert review before implementation
@@ -381,13 +459,17 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
-### Header Navigation Typography (December 2025)
-- **Fraunces applied to header nav** - Desktop nav links now use `font-display font-medium tracking-tight`
-- **Mobile menu typography** - Wordmark and nav links use Fraunces (`font-display`)
-- **Scoped change** - Body text, buttons, form inputs remain unchanged
+### Header Navigation Fraunces Font Fix (December 2025)
+- **Fraunces applied to header nav** - Desktop nav links now use `font-[var(--font-family-display)]`
+- **Mobile menu typography** - Wordmark and nav links use Fraunces via `.font-display` class
+- **Critical fix: Font variables on `<html>` element** - Moved font CSS variable classes from `<body>` to `<html>` for proper Tailwind v4 resolution
+- **Scoped change** - Body text, buttons, form inputs remain unchanged (using Inter/Geist)
+- **Root cause** - `font-[var(--font-fraunces)]` didn't work because `--font-fraunces` contains only the Next.js generated font name (like `__Fraunces_abc123`), not a full font-family value. The correct variable is `--font-family-display` which includes fallbacks.
 - Key files:
-  - `web/src/components/navigation/header.tsx` - Desktop nav styling
-  - `web/src/components/navigation/mobile-menu.tsx` - Mobile menu styling
+  - `web/src/app/layout.tsx` - Font variable classes moved to `<html>` element
+  - `web/src/components/navigation/header.tsx` - Uses `font-[var(--font-family-display)]`
+  - `web/src/components/navigation/nav-link.tsx` - Uses `font-[inherit]` to inherit from parent nav
+  - `web/src/components/navigation/mobile-menu.tsx` - Uses `.font-display` class
 
 ### UI Overhaul - Fraunces Font & Happenings Terminology (December 2025)
 - **Fraunces display font added** - Playful, quirky Google Font for hero headlines replacing corporate-looking serif
