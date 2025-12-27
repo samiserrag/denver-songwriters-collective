@@ -50,11 +50,13 @@ export function groupByDayOfWeek(events: any[]): Map<string, any[]> {
 
 function formatDateHeader(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00");
+  // Use explicit timezone to prevent server/client hydration mismatch
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
-    year: "numeric"
+    year: "numeric",
+    timeZone: "America/Denver",
   });
 }
 

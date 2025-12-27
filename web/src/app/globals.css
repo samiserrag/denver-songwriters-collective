@@ -158,6 +158,14 @@ html {
 }
 
 body {
+  /* Re-define font-family variables here where Next.js font loader vars are available */
+  /* (--font-fraunces, --font-playfair, --font-inter are set via classes on body) */
+  --font-family-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
+  --font-family-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-family-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-body: var(--font-family-sans);
+  --font-display: var(--font-family-display);
+
   font-family: var(--font-body);
   background: linear-gradient(180deg, var(--color-bg-gradient-start) 0%, var(--color-bg-primary) 50%, var(--color-bg-secondary) 100%);
   background-attachment: fixed;
