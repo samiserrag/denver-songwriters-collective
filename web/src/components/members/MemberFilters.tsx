@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { Member, MemberRole } from "@/types";
-import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
+import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, SPECIALTY_OPTIONS } from "@/lib/profile/options";
 
 interface MemberFiltersProps {
   members: Member[];
@@ -60,11 +60,11 @@ export function MemberFilters({
     return INSTRUMENT_OPTIONS.filter((i) => memberInstrumentsLower.has(i.toLowerCase()));
   }, [members]);
 
-  // Extract unique specialties from all members (keep dynamic since no curated list)
+  // Use curated options for specialties, filter to show only options members have
   const allSpecialties = React.useMemo(() => {
-    const specialties = new Set<string>();
-    members.forEach((m) => m.specialties?.forEach((s) => specialties.add(s)));
-    return Array.from(specialties).sort();
+    const memberSpecialtiesLower = new Set<string>();
+    members.forEach((m) => m.specialties?.forEach((s) => memberSpecialtiesLower.add(s.toLowerCase())));
+    return SPECIALTY_OPTIONS.filter((s) => memberSpecialtiesLower.has(s.toLowerCase()));
   }, [members]);
 
   // Filter members based on all criteria
@@ -129,10 +129,11 @@ export function MemberFilters({
       );
     }
 
-    // Specialty filter
+    // Specialty filter (case-insensitive)
     if (selectedSpecialties.size > 0) {
+      const selectedSpecialtiesLower = new Set(Array.from(selectedSpecialties).map(s => s.toLowerCase()));
       filtered = filtered.filter((m) =>
-        m.specialties?.some((s) => selectedSpecialties.has(s))
+        m.specialties?.some((s) => selectedSpecialtiesLower.has(s.toLowerCase()))
       );
     }
 
@@ -376,7 +377,7 @@ export function MemberFilters({
       )}
 
       {/* Active filter chips */}
-      {(selectedGenres.size > 0 || selectedInstruments.size > 0) && (
+      {(selectedGenres.size > 0 || selectedInstruments.size > 0 || selectedSpecialties.size > 0) && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-[var(--color-text-secondary)]">Active filters:</span>
           {Array.from(selectedGenres).map((genre) => (
@@ -406,6 +407,22 @@ export function MemberFilters({
                 onClick={() => toggleInstrument(instrument)}
                 className="ml-0.5 hover:text-red-400 transition-colors"
                 aria-label={`Remove ${instrument} filter`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {Array.from(selectedSpecialties).map((specialty) => (
+            <span
+              key={`specialty-${specialty}`}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm border border-[var(--color-border-accent)]/30"
+            >
+              {specialty}
+              <button
+                type="button"
+                onClick={() => toggleSpecialty(specialty)}
+                className="ml-0.5 hover:text-red-400 transition-colors"
+                aria-label={`Remove ${specialty} filter`}
               >
                 ×
               </button>

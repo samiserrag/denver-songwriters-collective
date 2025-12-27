@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { PageContainer, HeroSection } from "@/components/layout";
-import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
+import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, SPECIALTY_OPTIONS } from "@/lib/profile/options";
 import { ProfileCompleteness } from "@/components/profile";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -13,6 +13,8 @@ import Link from "next/link";
 type FormData = {
   full_name: string;
   bio: string;
+  city: string;
+  state: string;
   avatar_url: string;
   // Identity flags
   is_songwriter: boolean;
@@ -47,6 +49,8 @@ type FormData = {
 const initialFormData: FormData = {
   full_name: "",
   bio: "",
+  city: "",
+  state: "",
   avatar_url: "",
   // Identity flags
   is_songwriter: false,
@@ -77,22 +81,7 @@ const initialFormData: FormData = {
   featured_song_url: "",
 };
 
-const SPECIALTY_OPTIONS = [
-  "Vocals",
-  "Guitar",
-  "Piano/Keys",
-  "Bass",
-  "Drums",
-  "Songwriting",
-  "Production",
-  "Mixing/Mastering",
-  "Session Work",
-  "Live Performance",
-  "Music Theory",
-  "Arrangement",
-];
-
-// INSTRUMENT_OPTIONS and GENRE_OPTIONS are imported from @/lib/profile/options
+// INSTRUMENT_OPTIONS, GENRE_OPTIONS, and SPECIALTY_OPTIONS are imported from @/lib/profile/options
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -140,6 +129,8 @@ export default function EditProfilePage() {
         setFormData({
           full_name: profile.full_name || "",
           bio: profile.bio || "",
+          city: (profile as any).city || "",
+          state: (profile as any).state || "",
           avatar_url: profile.avatar_url || "",
           // Identity flags
           is_songwriter: profile.is_songwriter || false,
@@ -277,6 +268,8 @@ export default function EditProfilePage() {
         .update({
           full_name: formData.full_name || null,
           bio: formData.bio || null,
+          city: formData.city || null,
+          state: formData.state || null,
           // Identity flags
           is_songwriter: formData.is_songwriter,
           is_host: formData.is_host,
@@ -443,6 +436,36 @@ export default function EditProfilePage() {
                     placeholder="Tell us about yourself (instruments, genres, experience...)"
                     className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="city" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      placeholder="e.g., Denver"
+                      className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="state" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleChange}
+                      placeholder="e.g., CO"
+                      className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    />
+                  </div>
                 </div>
               </div>
             </section>

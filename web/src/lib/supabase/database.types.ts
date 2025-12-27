@@ -1599,6 +1599,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           cashapp_handle: string | null
+          city: string | null
           created_at: string | null
           email: string | null
           facebook_url: string | null
@@ -1628,6 +1629,7 @@ export type Database = {
           specialties: string[] | null
           spotify_url: string | null
           spotlight_type: string | null
+          state: string | null
           tiktok_url: string | null
           twitter_url: string | null
           updated_at: string | null
@@ -1640,6 +1642,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           cashapp_handle?: string | null
+          city?: string | null
           created_at?: string | null
           email?: string | null
           facebook_url?: string | null
@@ -1669,6 +1672,7 @@ export type Database = {
           specialties?: string[] | null
           spotify_url?: string | null
           spotlight_type?: string | null
+          state?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string | null
@@ -1681,6 +1685,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           cashapp_handle?: string | null
+          city?: string | null
           created_at?: string | null
           email?: string | null
           facebook_url?: string | null
@@ -1710,6 +1715,7 @@ export type Database = {
           specialties?: string[] | null
           spotify_url?: string | null
           spotlight_type?: string | null
+          state?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string | null

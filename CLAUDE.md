@@ -380,6 +380,20 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Profile Location & Member Filters Enhancement (December 2025)
+- **City and state fields added to profiles** - New `city` and `state` columns for location-based member discovery
+- **Profile edit UI** - Side-by-side city/state inputs in Basic Info section
+- **Specialty filter with curated options** - Members page now filters by specialties using shared SPECIALTY_OPTIONS (16 items)
+- **Active filter chips for all categories** - Genres, instruments, AND specialties now show as removable chips
+- **Consolidated SPECIALTY_OPTIONS** - Profile page now uses shared options from `@/lib/profile/options.ts` instead of local copy
+- **Case-insensitive filtering** - All filter matching (genres, instruments, specialties) is case-insensitive
+- Key files:
+  - `supabase/migrations/20251227002649_add_city_to_profiles.sql` - City column
+  - `supabase/migrations/20251227003302_add_state_to_profiles.sql` - State column
+  - `web/src/app/(protected)/dashboard/profile/page.tsx` - City/state UI, shared SPECIALTY_OPTIONS import
+  - `web/src/components/members/MemberFilters.tsx` - Specialty filter, active chips for all categories
+  - `web/src/lib/profile/options.ts` - Added SPECIALTY_OPTIONS constant
+
 ### Members Page Filters & Onboarding Fix (December 2025)
 - **Members page filters now use identity flags** - Category tabs filter by `isSongwriter`, `isHost`, `isStudio`, `isFan` instead of legacy `role` field
 - **Expanded search** - Search now covers name, bio, instruments[], genres[], specialties[] (all case-insensitive)

@@ -39,3 +39,22 @@ export const GENRE_OPTIONS = [
   "Alternative",
   "Punk",
 ];
+
+export const SPECIALTY_OPTIONS = [
+  "Vocals",
+  "Guitar",
+  "Piano/Keys",
+  "Bass",
+  "Drums",
+  "Songwriting",
+  "Production",
+  "Mixing/Mastering",
+  "Session Work",
+  "Live Performance",
+  "Music Theory",
+  "Arrangement",
+  "Lyrics",
+  "Melody",
+  "Beat Making",
+  "Sound Design",
+];

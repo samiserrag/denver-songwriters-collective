@@ -35,6 +35,7 @@ function mapDBProfileToMember(profile: DBProfile): Member {
     genres: profile.genres ?? undefined,
     instruments: profile.instruments ?? undefined,
     specialties: profile.specialties ?? undefined,
+    location: (profile as any).city ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
     isSpotlight: profile.is_featured ?? false,
     socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
