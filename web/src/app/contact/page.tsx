@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -63,14 +63,22 @@ export default function ContactPage() {
   }
 
   return (
-    <PageContainer className="min-h-screen py-16 px-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-4xl text-[var(--color-text-primary)] mb-4">Contact Us</h1>
-        <p className="text-[var(--color-text-tertiary)] mb-8">
-          Have a question, suggestion, or want to get involved? We&apos;d love to hear from you.
-        </p>
+    <>
+      {/* Hero Section */}
+      <HeroSection minHeight="xs" showVignette showBottomFade>
+        <div className="text-center px-6 py-6">
+          <h1 className="font-[var(--font-family-display)] font-bold text-4xl md:text-5xl text-white tracking-tight mb-2 drop-shadow-lg">
+            Contact Us
+          </h1>
+          <p className="text-lg text-white/90 drop-shadow">
+            Have a question, suggestion, or want to get involved?
+          </p>
+        </div>
+      </HeroSection>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <PageContainer className="py-12 px-6">
+        <div className="max-w-2xl mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
               Your Name
@@ -134,16 +142,17 @@ export default function ContactPage() {
           </button>
         </form>
 
-        <div className="mt-12 pt-8 border-t border-[var(--color-border-subtle)]">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Other Ways to Reach Us</h2>
-          <p className="text-[var(--color-text-tertiary)]">
-            Email:{" "}
-            <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-text-accent)] hover:underline">
-              admin@denversongwriterscollective.org
-            </a>
-          </p>
+          <div className="mt-12 pt-8 border-t border-[var(--color-border-subtle)]">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Other Ways to Reach Us</h2>
+            <p className="text-[var(--color-text-tertiary)]">
+              Email:{" "}
+              <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-text-accent)] hover:underline">
+                admin@denversongwriterscollective.org
+              </a>
+            </p>
+          </div>
         </div>
-      </div>
-    </PageContainer>
+      </PageContainer>
+    </>
   );
 }

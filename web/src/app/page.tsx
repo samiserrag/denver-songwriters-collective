@@ -211,10 +211,13 @@ export default async function HomePage() {
       {/* Hero with background image and main headline */}
       <HeroSection minHeight="lg" showVignette showBottomFade>
         <div className="text-center px-6 py-8">
-          <h1 className="font-[var(--font-family-serif)] font-bold text-4xl md:text-5xl lg:text-6xl text-white tracking-tight mb-4 drop-shadow-lg">
-            A shared space for Denver-area songwriters and music fans
+          <h1 className="font-[var(--font-family-display)] font-bold text-5xl md:text-6xl lg:text-7xl text-white tracking-tight mb-2 drop-shadow-lg">
+            Denver Songwriters Collective
           </h1>
-          <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow">
+          <p className="text-xl md:text-2xl text-white/95 mb-2 font-medium drop-shadow">
+            A shared space for Denver-area songwriters and music fans
+          </p>
+          <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto drop-shadow">
             Find open mics, connect with other musicians, and discover what&apos;s happening in the local music community.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -222,7 +225,7 @@ export default async function HomePage() {
               href="/events"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors shadow-lg"
             >
-              See events
+              See happenings
             </Link>
             <Link
               href="/open-mics"
@@ -251,13 +254,13 @@ export default async function HomePage() {
               href="/events"
               className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
-              See events
+              See happenings
             </Link>
             <Link
               href="/submit-open-mic"
               className="inline-flex items-center justify-center px-5 py-2.5 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
             >
-              Host an event
+              Host a happening
             </Link>
           </div>
         </div>
@@ -368,7 +371,7 @@ export default async function HomePage() {
               href="/events"
               className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              See events
+              See all
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -385,7 +388,7 @@ export default async function HomePage() {
                 href="/submit-open-mic"
                 className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
               >
-                Host an event
+                Host a happening
               </Link>
             </div>
           )}

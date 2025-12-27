@@ -45,6 +45,7 @@ export function MemberFilters({
   const [selectedGenres, setSelectedGenres] = React.useState<Set<string>>(new Set());
   const [selectedInstruments, setSelectedInstruments] = React.useState<Set<string>>(new Set());
   const [selectedSpecialties, setSelectedSpecialties] = React.useState<Set<string>>(new Set());
+  const [selectedLocations, setSelectedLocations] = React.useState<Set<string>>(new Set());
 
   // Use curated options for genres and instruments
   // Filter to only show options that at least one member has
@@ -65,6 +66,20 @@ export function MemberFilters({
     const memberSpecialtiesLower = new Set<string>();
     members.forEach((m) => m.specialties?.forEach((s) => memberSpecialtiesLower.add(s.toLowerCase())));
     return SPECIALTY_OPTIONS.filter((s) => memberSpecialtiesLower.has(s.toLowerCase()));
+  }, [members]);
+
+  // Build location options from member data (city, state combinations)
+  const allLocations = React.useMemo(() => {
+    const locationSet = new Set<string>();
+    members.forEach((m) => {
+      // Add city if present
+      if (m.city) locationSet.add(m.city);
+      // Add state if present
+      if (m.state) locationSet.add(m.state);
+      // Add combined city, state if both present
+      if (m.city && m.state) locationSet.add(`${m.city}, ${m.state}`);
+    });
+    return Array.from(locationSet).sort();
   }, [members]);
 
   // Filter members based on all criteria
@@ -137,6 +152,20 @@ export function MemberFilters({
       );
     }
 
+    // Location filter (matches city, state, or combined "city, state")
+    if (selectedLocations.size > 0) {
+      filtered = filtered.filter((m) => {
+        const memberCity = m.city?.toLowerCase() ?? "";
+        const memberState = m.state?.toLowerCase() ?? "";
+        const memberCombined = m.city && m.state ? `${m.city}, ${m.state}`.toLowerCase() : "";
+
+        return Array.from(selectedLocations).some((loc) => {
+          const locLower = loc.toLowerCase();
+          return memberCity === locLower || memberState === locLower || memberCombined === locLower;
+        });
+      });
+    }
+
     onFilteredMembersChange(filtered);
   }, [
     members,
@@ -148,6 +177,7 @@ export function MemberFilters({
     selectedGenres,
     selectedInstruments,
     selectedSpecialties,
+    selectedLocations,
     onFilteredMembersChange,
   ]);
 
@@ -199,6 +229,18 @@ export function MemberFilters({
     });
   };
 
+  const toggleLocation = (location: string) => {
+    setSelectedLocations((prev) => {
+      const next = new Set(prev);
+      if (next.has(location)) {
+        next.delete(location);
+      } else {
+        next.add(location);
+      }
+      return next;
+    });
+  };
+
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedIdentities(new Set());
@@ -208,6 +250,7 @@ export function MemberFilters({
     setSelectedGenres(new Set());
     setSelectedInstruments(new Set());
     setSelectedSpecialties(new Set());
+    setSelectedLocations(new Set());
   };
 
   const hasActiveFilters =
@@ -218,7 +261,8 @@ export function MemberFilters({
     openToCollabs ||
     selectedGenres.size > 0 ||
     selectedInstruments.size > 0 ||
-    selectedSpecialties.size > 0;
+    selectedSpecialties.size > 0 ||
+    selectedLocations.size > 0;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -376,8 +420,33 @@ export function MemberFilters({
         </details>
       )}
 
+      {/* Location filters (collapsible) */}
+      {allLocations.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer text-base text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+            📍 Location {selectedLocations.size > 0 && `(${selectedLocations.size})`}
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {allLocations.map((location) => (
+              <button
+                key={location}
+                onClick={() => toggleLocation(location)}
+                className={cn(
+                  "px-2 py-1 text-sm rounded-full border transition-colors",
+                  selectedLocations.has(location)
+                    ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30"
+                    : "bg-white/5 text-[var(--color-text-secondary)] border-white/10 hover:border-white/20"
+                )}
+              >
+                {location}
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+
       {/* Active filter chips */}
-      {(selectedGenres.size > 0 || selectedInstruments.size > 0 || selectedSpecialties.size > 0) && (
+      {(selectedGenres.size > 0 || selectedInstruments.size > 0 || selectedSpecialties.size > 0 || selectedLocations.size > 0) && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-[var(--color-text-secondary)]">Active filters:</span>
           {Array.from(selectedGenres).map((genre) => (
@@ -423,6 +492,22 @@ export function MemberFilters({
                 onClick={() => toggleSpecialty(specialty)}
                 className="ml-0.5 hover:text-red-400 transition-colors"
                 aria-label={`Remove ${specialty} filter`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {Array.from(selectedLocations).map((location) => (
+            <span
+              key={`location-${location}`}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm border border-[var(--color-border-accent)]/30"
+            >
+              📍 {location}
+              <button
+                type="button"
+                onClick={() => toggleLocation(location)}
+                className="ml-0.5 hover:text-red-400 transition-colors"
+                aria-label={`Remove ${location} filter`}
               >
                 ×
               </button>

@@ -15,6 +15,7 @@ type FormData = {
   bio: string;
   city: string;
   state: string;
+  zip_code: string;
   avatar_url: string;
   // Identity flags
   is_songwriter: boolean;
@@ -51,6 +52,7 @@ const initialFormData: FormData = {
   bio: "",
   city: "",
   state: "",
+  zip_code: "",
   avatar_url: "",
   // Identity flags
   is_songwriter: false,
@@ -131,6 +133,7 @@ export default function EditProfilePage() {
           bio: profile.bio || "",
           city: (profile as any).city || "",
           state: (profile as any).state || "",
+          zip_code: (profile as any).zip_code || "",
           avatar_url: profile.avatar_url || "",
           // Identity flags
           is_songwriter: profile.is_songwriter || false,
@@ -270,6 +273,7 @@ export default function EditProfilePage() {
           bio: formData.bio || null,
           city: formData.city || null,
           state: formData.state || null,
+          zip_code: formData.zip_code || null,
           // Identity flags
           is_songwriter: formData.is_songwriter,
           is_host: formData.is_host,
@@ -437,7 +441,7 @@ export default function EditProfilePage() {
                     className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-primary)]/40 focus:outline-none focus:border-[var(--color-border-accent)]/50 resize-none"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label htmlFor="city" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       City
@@ -463,6 +467,20 @@ export default function EditProfilePage() {
                       value={formData.state}
                       onChange={handleChange}
                       placeholder="e.g., CO"
+                      className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="zip_code" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                      Zip Code
+                    </label>
+                    <input
+                      type="text"
+                      id="zip_code"
+                      name="zip_code"
+                      value={formData.zip_code}
+                      onChange={handleChange}
+                      placeholder="e.g., 80202"
                       className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                     />
                   </div>

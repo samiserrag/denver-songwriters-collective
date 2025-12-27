@@ -19,7 +19,10 @@ export async function POST(request: Request) {
       is_songwriter = false,
       is_host = false,
       is_studio = false,
-      is_fan = false
+      is_fan = false,
+      city = null,
+      state = null,
+      zip_code = null
     } = body;
 
     // 3. Use SERVICE ROLE to bypass RLS
@@ -37,6 +40,9 @@ export async function POST(request: Request) {
         is_host,
         is_studio,
         is_fan,
+        city: city || null,
+        state: state || null,
+        zip_code: zip_code || null,
         onboarding_complete: true,
         updated_at: new Date().toISOString(),
       })

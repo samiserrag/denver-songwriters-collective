@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventGrid } from "@/components/events";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 import { Button } from "@/components/ui";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
@@ -164,34 +164,34 @@ export default async function EventsPage() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-6xl mx-auto px-6 py-10 text-center">
-          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-            Events
+      {/* Hero Section */}
+      <HeroSection minHeight="sm" showVignette showBottomFade>
+        <div className="text-center px-6 py-8">
+          <h1 className="font-[var(--font-family-display)] font-bold text-4xl md:text-5xl lg:text-6xl text-white tracking-tight mb-3 drop-shadow-lg">
+            Happenings
           </h1>
-          <p className="text-lg text-[var(--color-text-secondary)] mt-3">
+          <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl mx-auto drop-shadow">
             Songwriting events hosted by the Denver music community
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild variant="primary" size="lg">
-              <Link href="#upcoming">See events</Link>
+              <Link href="#upcoming">See happenings</Link>
             </Button>
             <Button asChild variant="secondary" size="lg">
-              <Link href="/submit-open-mic">Host an event</Link>
+              <Link href="/submit-open-mic">Host a happening</Link>
             </Button>
           </div>
         </div>
-      </div>
+      </HeroSection>
 
       <PageContainer>
         <div className="py-6 space-y-8">
 
-          {/* Upcoming Events - Single consolidated section */}
+          {/* Upcoming Happenings - Single consolidated section */}
           <section id="upcoming">
             <div className="mb-6">
               <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
-                Upcoming Events
+                Upcoming Happenings
               </h2>
               <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                 Song circles, showcases, workshops, and community gatherings
@@ -225,12 +225,12 @@ export default async function EventsPage() {
             </div>
           </section>
 
-          {/* Past Events */}
+          {/* Past Happenings */}
           {pastEvents.length > 0 && (
             <section>
               <div className="mb-6">
                 <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-2">
-                  Past Events
+                  Past Happenings
                 </h2>
                 <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                   Recent happenings from the community.
@@ -260,11 +260,11 @@ export default async function EventsPage() {
             </section>
           )}
 
-          {/* Event Types Section */}
+          {/* Types of Happenings Section */}
           <section>
             <div className="mb-4">
               <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-1">
-                Types of Events
+                Types of Happenings
               </h2>
               <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
                 If you&apos;ve got a room and a mic, this probably counts.
@@ -294,14 +294,14 @@ export default async function EventsPage() {
           {/* Get Involved CTA */}
           <section className="rounded-3xl border border-[var(--color-border-accent)]/20 bg-[var(--color-bg-secondary)] p-6 md:p-8 text-center space-y-4">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-              Want to Host an Event?
+              Want to Host a Happening?
             </h2>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] max-w-2xl mx-auto">
-              Venues, hosts, and groups across the Front Range are welcome to list events here.
+              Venues, hosts, and groups across the Front Range are welcome to list happenings here.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-2">
               <Button asChild variant="primary" size="lg">
-                <Link href="/submit-open-mic">Host an event</Link>
+                <Link href="/submit-open-mic">Host a happening</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
                 <Link href="/partners">Partner with the community</Link>

@@ -381,6 +381,34 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### UI Overhaul - Fraunces Font & Happenings Terminology (December 2025)
+- **Fraunces display font added** - Playful, quirky Google Font for hero headlines replacing corporate-looking serif
+- **Site name on homepage hero** - "Denver Songwriters Collective" now prominent on hero image
+- **"Happenings" terminology** - All instances of "events" changed to "happenings" throughout the site
+  - "See events" → "See happenings"
+  - "Host an event" → "Host a happening"
+  - "Upcoming Events" → "Upcoming Happenings"
+  - Events page title → "Happenings"
+- **Members page copy update** - "Our Members" → "Collective Members" with subtitle "Songwriters, event hosts, studios, promoters, and fans who make our community thrive"
+- **Hero sections added** - Gallery, Blog, About, Contact pages now have HeroSection with background image
+- **Page title updates** - "Gallery" → "Collective Gallery", "Blog" → "Collective Blog", "About Us" → "About the Collective"
+- **Location filter on Members page** - Filter by city/state using member profile locations
+- **Zip code field added** - New `zip_code` column on profiles table for future proximity filtering
+- **CropModal lint fix** - Fixed eslint error (setState in useEffect → useMemo pattern)
+- Key files:
+  - `web/src/app/layout.tsx` - Added Fraunces font import
+  - `web/src/app/globals.css` - Added `--font-family-display` CSS variable
+  - `web/src/app/page.tsx` - Homepage hero with site name, happenings terminology
+  - `web/src/app/events/page.tsx` - Happenings page with HeroSection
+  - `web/src/app/gallery/page.tsx` - Collective Gallery with HeroSection
+  - `web/src/app/blog/page.tsx` - Collective Blog with HeroSection
+  - `web/src/app/about/page.tsx` - About the Collective with HeroSection
+  - `web/src/app/contact/page.tsx` - Contact with HeroSection
+  - `web/src/app/members/page.tsx` - Updated hero text
+  - `web/src/components/members/MemberFilters.tsx` - Location filter
+  - `web/src/components/gallery/CropModal.tsx` - Fixed lint error
+  - `supabase/migrations/20251227023449_add_zip_code_to_profiles.sql` - Zip code column
+
 ### HeroSection Standardization & Mobile Overflow Fix (December 2025)
 - **Text-free hero image** - New `/images/hero-bg.jpg` (sunset clouds without DSC text) used as default
 - **HeroSection now defaults to hero image** - No need to specify `backgroundImage` prop; pass `null` for no image

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Inter, Fraunces } from "next/font/google";
 import { Header, Footer } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -30,6 +30,13 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -192,7 +199,7 @@ export default async function RootLayout({
         `}} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} ${fraunces.variable} antialiased`}
       >
         <ThemeInitializer
           defaultTheme={siteSettings.themePreset}

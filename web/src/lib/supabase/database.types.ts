@@ -1636,6 +1636,7 @@ export type Database = {
           venmo_handle: string | null
           website_url: string | null
           youtube_url: string | null
+          zip_code: string | null
         }
         Insert: {
           available_for_hire?: boolean | null
@@ -1679,6 +1680,7 @@ export type Database = {
           venmo_handle?: string | null
           website_url?: string | null
           youtube_url?: string | null
+          zip_code?: string | null
         }
         Update: {
           available_for_hire?: boolean | null
@@ -1722,6 +1724,7 @@ export type Database = {
           venmo_handle?: string | null
           website_url?: string | null
           youtube_url?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }

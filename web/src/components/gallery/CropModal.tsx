@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { X, Loader2 } from 'lucide-react';
@@ -15,16 +15,16 @@ interface CropModalProps {
 export function CropModal({ file, aspectRatio, onComplete, onCancel }: CropModalProps) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
-  const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Load image preview
+  // Create preview URL from file - useMemo ensures proper cleanup via ref tracking
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+
+  // Cleanup object URL when component unmounts or file changes
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   // Initialize crop when image loads
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {

@@ -22,6 +22,11 @@ function mapDBProfileToMember(profile: DBProfile): Member {
   if (profile.twitter_url) socialLinks.twitter = profile.twitter_url;
   if (profile.website_url) socialLinks.website = profile.website_url;
 
+  // Build location string from city/state
+  const city = profile.city ?? undefined;
+  const state = profile.state ?? undefined;
+  const location = city && state ? `${city}, ${state}` : city || state || undefined;
+
   return {
     id: profile.id,
     name: profile.full_name ?? "Anonymous Member",
@@ -35,7 +40,10 @@ function mapDBProfileToMember(profile: DBProfile): Member {
     genres: profile.genres ?? undefined,
     instruments: profile.instruments ?? undefined,
     specialties: profile.specialties ?? undefined,
-    location: (profile as any).city ?? undefined,
+    location,
+    city,
+    state,
+    zipCode: profile.zip_code ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
     isSpotlight: profile.is_featured ?? false,
     socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
@@ -78,11 +86,11 @@ export default async function MembersPage({ searchParams }: PageProps) {
       {/* Hero Header */}
       <HeroSection minHeight="sm" showVignette showBottomFade>
         <div className="text-center px-4 py-6">
-          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
-            Our Members
+          <h1 className="font-[var(--font-family-display)] font-bold text-4xl md:text-5xl lg:text-6xl text-white tracking-tight drop-shadow-lg">
+            Collective Members
           </h1>
-          <p className="text-lg text-white/90 mt-2 drop-shadow">
-            Performers, studios, hosts, and fans who make our community thrive
+          <p className="text-lg md:text-xl text-white/90 mt-3 max-w-2xl mx-auto drop-shadow">
+            Songwriters, event hosts, studios, promoters, and fans who make our community thrive
           </p>
         </div>
       </HeroSection>

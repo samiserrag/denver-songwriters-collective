@@ -26,6 +26,11 @@ export default function OnboardingProfile() {
   // About
   const [bio, setBio] = useState("");
 
+  // Location
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+
   // Social links
   const [instagramUrl, setInstagramUrl] = useState("");
   const [spotifyUrl, setSpotifyUrl] = useState("");
@@ -76,6 +81,9 @@ export default function OnboardingProfile() {
           setIsHost(profile.is_host || false);
           setIsFan(profile.is_fan || false);
           setBio(profile.bio || "");
+          setCity((profile as any).city || "");
+          setState((profile as any).state || "");
+          setZipCode((profile as any).zip_code || "");
           setInstagramUrl(profile.instagram_url || "");
           setSpotifyUrl(profile.spotify_url || "");
           setYoutubeUrl(profile.youtube_url || "");
@@ -124,6 +132,9 @@ export default function OnboardingProfile() {
           is_host: isHost,
           is_studio: isStudio,
           is_fan: isFan,
+          city: city.trim() || null,
+          state: state.trim() || null,
+          zip_code: zipCode.trim() || null,
         }),
       });
 
@@ -159,6 +170,9 @@ export default function OnboardingProfile() {
           is_host: isHost,
           is_studio: isStudio,
           is_fan: isFan,
+          city: city.trim() || null,
+          state: state.trim() || null,
+          zip_code: zipCode.trim() || null,
         }),
       });
 
@@ -643,6 +657,64 @@ export default function OnboardingProfile() {
                     rows={3}
                     className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-accent-primary)] focus:outline-none resize-none"
                   />
+                </div>
+              )}
+            </div>
+
+            {/* Location */}
+            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection("location")}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--color-bg-hover)] transition-colors"
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  Where are you based?
+                </span>
+                <span className="text-[var(--color-text-tertiary)]">
+                  {openSections.has("location") ? (
+                    <ChevronDown size={20} />
+                  ) : (
+                    <ChevronRight size={20} />
+                  )}
+                </span>
+              </button>
+              {openSections.has("location") && (
+                <div className="px-4 pb-4 space-y-3">
+                  <p className="text-sm text-[var(--color-text-tertiary)] mb-2">
+                    Helps connect you with nearby artists and local events.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">City</label>
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="Denver"
+                        className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">State</label>
+                      <input
+                        type="text"
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        placeholder="CO"
+                        className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">Zip Code</label>
+                      <input
+                        type="text"
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
+                        placeholder="80202"
+                        className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

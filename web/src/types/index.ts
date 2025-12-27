@@ -181,6 +181,9 @@ export interface Member {
   instruments?: string[];
   specialties?: string[];
   location?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
   avatarUrl?: string;
   isSpotlight?: boolean;
   socialLinks?: SocialLinks;
