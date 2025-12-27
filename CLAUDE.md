@@ -273,9 +273,11 @@ If typography behaves unexpectedly, **check for a token violation first**.
 
 ---
 
-## Theme Hydration Exception (Intentional)
+## Hydration Warning Exceptions (Intentional)
 
-The `<html>` element uses `suppressHydrationWarning`.
+Both `<html>` and `<body>` elements use `suppressHydrationWarning`.
+
+### `<html>` — Theme Mismatch
 
 **Why:**
 - Theme (`data-theme`) is set from the database on the server
@@ -283,14 +285,23 @@ The `<html>` element uses `suppressHydrationWarning`.
 - This causes a known React hydration mismatch
 - **This is intentional and correct.**
 
+### `<body>` — Browser Extension Compatibility
+
+**Why:**
+- Browser extensions (Grammarly, password managers, etc.) inject `data-*` attributes into `<body>` before React hydrates
+- This causes #418 hydration errors that are not application bugs
+- **This is intentional and correct.**
+
 ```tsx
 <html suppressHydrationWarning>
+  ...
+  <body suppressHydrationWarning>
 ```
 
 **Rules:**
-- Do NOT remove `suppressHydrationWarning` from `<html>`
+- Do NOT remove `suppressHydrationWarning` from `<html>` or `<body>`
 - Do NOT attempt to "fix" this by syncing server/client theme
-- This is a documented and accepted exception to hydration strictness
+- These are documented and accepted exceptions to hydration strictness
 
 Typography tokens and font contracts are unrelated to this behavior.
 

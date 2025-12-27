@@ -200,6 +200,7 @@ export default async function RootLayout({
         `}} />
       </head>
       <body
+        suppressHydrationWarning={true}
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} ${fraunces.variable} antialiased`}
       >
         <ThemeInitializer
