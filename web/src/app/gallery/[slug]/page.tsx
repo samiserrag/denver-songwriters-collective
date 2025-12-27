@@ -105,6 +105,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "America/Denver",
   });
 
   return (

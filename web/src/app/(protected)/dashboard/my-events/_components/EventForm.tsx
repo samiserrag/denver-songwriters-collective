@@ -443,7 +443,7 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
                       key={i}
                       className="px-2 py-1 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-primary)]"
                     >
-                      {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}
                     </span>
                   );
                 })}

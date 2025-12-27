@@ -27,6 +27,7 @@ function formatEventDate(dateStr: string | null): string {
     weekday: "short",
     month: "short",
     day: "numeric",
+    timeZone: "America/Denver",
   });
 }
 
@@ -184,7 +185,7 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
                   {event.event_date && (
                     <div className="flex-shrink-0 w-14 h-14 bg-[var(--color-accent-primary)] rounded-lg flex flex-col items-center justify-center text-[var(--color-text-on-accent)]">
                       <span className="text-xs font-medium uppercase">
-                        {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+                        {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
                       </span>
                       <span className="text-xl font-bold leading-none">
                         {new Date(event.event_date + "T00:00:00").getDate()}

@@ -196,13 +196,13 @@ export default function EventDisplayPage() {
           {event?.event_date && (
             <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black">
               <span className="text-sm font-semibold uppercase tracking-wide">
-                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}
+                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
               </span>
               <span className="text-4xl font-bold leading-none">
                 {new Date(event.event_date + "T00:00:00").getDate()}
               </span>
               <span className="text-xs font-medium uppercase">
-                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" })}
+                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
               </span>
             </div>
           )}
@@ -219,7 +219,8 @@ export default function EventDisplayPage() {
                   weekday: "long",
                   month: "long",
                   day: "numeric",
-                  year: "numeric"
+                  year: "numeric",
+                  timeZone: "America/Denver",
                 })}
               </p>
             )}

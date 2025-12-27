@@ -64,7 +64,7 @@ function formatVerifiedDate(dateStr: string | null | undefined): string | null {
       const months = Math.floor(diffDays / 30);
       return `${months} month${months > 1 ? "s" : ""} ago`;
     }
-    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "America/Denver" });
   } catch {
     return null;
   }

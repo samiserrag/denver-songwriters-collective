@@ -103,6 +103,7 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
       month: "short",
       day: "numeric",
       year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+      timeZone: "America/Denver",
     });
   };
 

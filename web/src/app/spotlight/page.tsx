@@ -181,6 +181,7 @@ function SpotlightCard({
     ? new Date(profile.featured_at).toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
+        timeZone: "America/Denver",
       })
     : null;
 

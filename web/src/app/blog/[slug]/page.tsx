@@ -149,6 +149,7 @@ export default async function BlogPostPage({ params }: Props) {
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: "America/Denver",
       })
     : null;
 

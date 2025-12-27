@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
       type: "event",
       id: event.id,
       title: event.title,
-      subtitle: event.venue_name || (event.event_date ? new Date(event.event_date).toLocaleDateString() : undefined),
+      subtitle: event.venue_name || (event.event_date ? new Date(event.event_date).toLocaleDateString("en-US", { timeZone: "America/Denver" }) : undefined),
       url: `/happenings?type=dsc`,
     });
   }

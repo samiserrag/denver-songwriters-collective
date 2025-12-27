@@ -100,6 +100,7 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: "America/Denver",
     });
   }
 

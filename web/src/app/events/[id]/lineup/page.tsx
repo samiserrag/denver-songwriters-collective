@@ -284,6 +284,7 @@ export default function LineupControlPage() {
                   month: "long",
                   day: "numeric",
                   year: "numeric",
+                  timeZone: "America/Denver",
                 })}
               </p>
             )}

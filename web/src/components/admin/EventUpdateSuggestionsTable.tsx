@@ -221,7 +221,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                   </span>
                 </td>
                 <td className="px-3 py-2 text-[var(--color-text-tertiary)] text-xs">
-                  {new Date(s.created_at).toLocaleDateString()}
+                  {new Date(s.created_at).toLocaleDateString("en-US", { timeZone: "America/Denver" })}
                 </td>
                 <td className="px-3 py-2">
                   {s.status === "pending" && (

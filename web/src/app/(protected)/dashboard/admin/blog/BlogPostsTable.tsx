@@ -230,7 +230,7 @@ export default function BlogPostsTable({ posts }: Props) {
                   </div>
                 </td>
                 <td className="py-3 px-4 text-[var(--color-text-tertiary)] text-xs">
-                  {new Date(post.created_at).toLocaleDateString()}
+                  {new Date(post.created_at).toLocaleDateString("en-US", { timeZone: "America/Denver" })}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">

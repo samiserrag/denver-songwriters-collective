@@ -184,6 +184,7 @@ export default function OpenMicStatusTable({ events: initialEvents }: Props) {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: "America/Denver",
     });
   };
 

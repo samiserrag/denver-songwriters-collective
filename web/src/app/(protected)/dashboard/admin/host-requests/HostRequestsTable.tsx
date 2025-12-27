@@ -51,6 +51,7 @@ export function HostRequestsTable({ requests }: { requests: HostRequest[] }) {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: "America/Denver",
     });
   };
 

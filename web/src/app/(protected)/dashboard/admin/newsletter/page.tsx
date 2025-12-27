@@ -122,6 +122,7 @@ export default async function NewsletterAdminPage() {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
+                        timeZone: "America/Denver",
                       })
                     : "—"}
                 </td>

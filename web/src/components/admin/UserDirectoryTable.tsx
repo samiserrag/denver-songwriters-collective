@@ -342,7 +342,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
                   </td>
                   <td className="py-2 px-3 text-[var(--color-text-secondary)] text-xs">
                     {u.created_at
-                      ? new Date(u.created_at).toLocaleDateString()
+                      ? new Date(u.created_at).toLocaleDateString("en-US", { timeZone: "America/Denver" })
                       : "-"}
                   </td>
                   <td className="py-2 px-3">

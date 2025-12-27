@@ -203,7 +203,7 @@ export default function ChangeReportsTable({ reports }: Props) {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-[var(--color-text-tertiary)] text-xs">
-                    {new Date(r.created_at).toLocaleDateString()}
+                    {new Date(r.created_at).toLocaleDateString("en-US", { timeZone: "America/Denver" })}
                   </td>
                   <td className="px-3 py-2">
                     {r.status === "pending" ? (
