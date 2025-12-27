@@ -186,9 +186,13 @@ Users can select multiple identity flags during onboarding:
 
 ### Public Pages
 - `/` - Homepage with monthly highlights
-- `/open-mics` - Open mic directory with map view
+- `/happenings` - Unified happenings page (open mics + DSC events with filter tabs)
+- `/happenings?type=open_mic` - Open mic directory filter
+- `/happenings?type=dsc` - DSC events filter
+- `/open-mics` - **Redirects to** `/happenings?type=open_mic`
 - `/open-mics/[slug]` - Individual open mic detail page
-- `/events` - All events listing (DSC happenings, upcoming, past)
+- `/open-mics/map` - **Redirects to** `/happenings?type=open_mic`
+- `/events` - **Redirects to** `/happenings?type=dsc`
 - `/events/[id]` - Individual DSC event detail page
 - `/members` - Unified member directory (performers, studios, hosts, fans)
 - `/performers` - Performer profiles (redirects to /members)
@@ -380,6 +384,29 @@ These are broader product initiatives for post-launch development:
 ---
 
 ## Recent Changes (December 2025)
+
+### Happenings Page Consolidation (December 2025)
+- **Unified `/happenings` page** - Consolidated `/events` and `/open-mics` listing pages into a single `/happenings` page with filter tabs
+- **Filter tabs** - `?type=open_mic` shows open mic directory, `?type=dsc` shows DSC events, no param shows all
+- **Legacy routes redirect** - `/events` → `/happenings?type=dsc`, `/open-mics` → `/happenings?type=open_mic`, `/open-mics/map` → `/happenings?type=open_mic`
+- **Detail routes preserved** - `/events/[id]` and `/open-mics/[slug]` still work as individual event/open mic detail pages
+- **URL rewires completed across codebase:**
+  - Search API results now return `/happenings` listing URLs
+  - PWA manifest shortcuts updated
+  - Email templates (4 files) updated
+  - 15+ page/component files with listing links updated
+  - Footer, MapViewButton, dashboard links all point to `/happenings`
+- **1,294 lines removed** - Legacy listing page implementations replaced with simple redirect functions
+- **Obsolete tests removed** - `events/page.test.tsx` and `open-mics/page.test.tsx` deleted
+- PRs merged: #28, #29, #30, #31
+- Key files:
+  - `web/src/app/happenings/page.tsx` - New unified happenings page with filter tabs
+  - `web/src/app/events/page.tsx` - Now redirects to `/happenings?type=dsc`
+  - `web/src/app/open-mics/page.tsx` - Now redirects to `/happenings?type=open_mic`
+  - `web/src/app/open-mics/map/page.tsx` - Now redirects to `/happenings?type=open_mic`
+  - `web/src/app/api/search/route.ts` - Search results use `/happenings` URLs
+  - `web/public/manifest.json` - PWA shortcuts updated
+  - `web/src/lib/email/templates/*.ts` - Email templates use `/happenings` URLs
 
 ### UI Overhaul - Fraunces Font & Happenings Terminology (December 2025)
 - **Fraunces display font added** - Playful, quirky Google Font for hero headlines replacing corporate-looking serif
