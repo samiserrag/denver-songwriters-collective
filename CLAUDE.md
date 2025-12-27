@@ -1347,3 +1347,47 @@ git push origin main
 - `docs/emails/EMAIL_STYLE_GUIDE.md` — Update when changing email voice/tone/formatting
 - `docs/known-issues.md` — Update when discovering or fixing issues
 - `CLAUDE.md` — Update after every push (see above)
+
+---
+
+## Deferred Backlog (Post–Phase 2.9)
+
+**Last audit sweep:** 2025-12-27
+
+Prioritized list of technical debt and improvements discovered during repo audit. Items are READ-ONLY findings—no code changes made.
+
+### P1 — Should fix soon (correctness/security risk)
+
+| ID | Issue | Evidence | Suggested Action |
+|----|-------|----------|------------------|
+| P1-1 | API routes missing rate limiting | All `/api/*` routes have no rate limiting | Add middleware-based rate limiting for auth/contact/newsletter routes |
+| P1-2 | Missing error.tsx on key public routes | `/happenings`, `/members`, `/blog`, `/gallery` lack error boundaries | Add error.tsx files to prevent full-page crashes |
+| P1-3 | 53 unnecessary `as any` casts in profile page | `dashboard/profile/page.tsx:132-161` casts fields now typed in database.types.ts | Remove casts, use proper types |
+| P1-4 | Hardcoded site URL in display page | `events/[id]/display/page.tsx:38` uses `https://denversongwriterscollective.org` | Use `NEXT_PUBLIC_SITE_URL` env var |
+| P1-5 | Empty alt text on user avatars | 8 `<img alt="">` instances include avatars that should have user names | Add `alt={user.full_name || "User avatar"}` |
+| P1-6 | Console.log statements in production | 30 console.log calls (most are dev-guarded, but 10+ are in API routes/onboarding) | Remove or gate with `NODE_ENV` check |
+
+### P2 — Nice to fix (DX, docs drift)
+
+| ID | Issue | Evidence | Suggested Action |
+|----|-------|----------|------------------|
+| P2-1 | Typography token documentation drift | `docs/theme-system.md:86` documents `--font-family-serif` for headings but code uses `--font-family-display` | Update docs to reflect actual token chain |
+| P2-2 | CONTRACTS.md field name mismatch | `docs/CONTRACTS.md:157` documents `event.date` but code uses `event.event_date` | Update contract to match schema |
+| P2-3 | Loading.tsx coverage gaps | `/happenings`, `/members`, `/blog`, `/gallery` lack loading.tsx | Add loading states for better UX |
+| P2-4 | qrcode.react only used in 1 file | `package.json` has both `qrcode` and `qrcode.react` | Audit if both are needed |
+
+### P3 — Verified clean (no action needed)
+
+| ID | Pattern | Verification |
+|----|---------|--------------|
+| P3-1 | XSS via dangerouslySetInnerHTML | All 2 usages properly escape via `escapeHtml()` before rendering |
+| P3-2 | Service role key exposure | Only used in server-side `serviceRoleClient.ts`, never in client bundles |
+| P3-3 | Timer memory leaks | All setInterval/setTimeout properly cleaned up in useEffect returns |
+| P3-4 | Old next/router usage | 0 files use deprecated `next/router` - all use `next/navigation` |
+| P3-5 | Password autocomplete | All password inputs have proper `autoComplete` attributes |
+
+### Audit Coverage
+
+**Fully scanned:** Static analysis, XSS, secrets, RLS, timers, error boundaries, password fields, dependencies, form validation, CLSLogger guards
+
+**Remaining (~20%):** CSRF deep verification, SQL injection in RPCs, bundle size analysis, duplicate code detection, test coverage gaps, API response validation schemas
