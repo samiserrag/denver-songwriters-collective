@@ -157,7 +157,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <Link href="/open-mics" className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors mb-6">
+      <Link href="/happenings?type=open_mic" className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors mb-6">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>

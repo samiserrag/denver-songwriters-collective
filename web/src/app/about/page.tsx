@@ -23,7 +23,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button asChild variant="primary" size="lg">
-              <Link href="/events">See happenings</Link>
+              <Link href="/happenings">See happenings</Link>
             </Button>
             <Button asChild variant="secondary" size="lg">
               <Link href="/submit-open-mic">Host a happening</Link>
@@ -212,7 +212,7 @@ export default function AboutPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Button asChild variant="primary" size="lg">
-                <Link href="/events">See happenings</Link>
+                <Link href="/happenings">See happenings</Link>
               </Button>
               <Button asChild variant="secondary" size="lg">
                 <Link href="/submit-open-mic">Host a happening</Link>

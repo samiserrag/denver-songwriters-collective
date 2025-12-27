@@ -187,7 +187,7 @@ export default function SubmitOpenMicPage() {
               </p>
               <div className="flex gap-4 justify-center">
                 <Link
-                  href="/open-mics"
+                  href="/happenings?type=open_mic"
                   className="px-6 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-lg text-[var(--color-text-on-accent)]"
                 >
                   See open mics
@@ -236,7 +236,7 @@ export default function SubmitOpenMicPage() {
             <p className="text-[var(--color-text-tertiary)] mb-4">
               Visit the open mic&apos;s detail page and use the &ldquo;Suggest updates&rdquo; form. No account needed for suggestions!
             </p>
-            <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
+            <Link href="/happenings?type=open_mic" className="text-[var(--color-text-accent)] hover:underline">
               See open mics →
             </Link>
           </div>
@@ -292,7 +292,7 @@ export default function SubmitOpenMicPage() {
             <p className="text-[var(--color-text-tertiary)] mb-4">
               Visit the open mic&apos;s page and use the suggestion form. You can update times, venue info, and more.
             </p>
-            <Link href="/open-mics" className="text-[var(--color-text-accent)] hover:underline">
+            <Link href="/happenings?type=open_mic" className="text-[var(--color-text-accent)] hover:underline">
               See open mics →
             </Link>
           </div>

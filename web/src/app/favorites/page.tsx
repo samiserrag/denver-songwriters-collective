@@ -69,7 +69,7 @@ export default async function FavoritesPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">My Favorites</h1>
-        <Link href="/open-mics" className="text-[var(--color-link)] hover:text-[var(--color-link-hover)] underline">
+        <Link href="/happenings?type=open_mic" className="text-[var(--color-link)] hover:text-[var(--color-link-hover)] underline">
           Back to Directory
         </Link>
       </div>

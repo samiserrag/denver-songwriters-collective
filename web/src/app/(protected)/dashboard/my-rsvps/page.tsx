@@ -202,7 +202,7 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
           </p>
           {activeTab === "upcoming" && (
             <Link
-              href="/events"
+              href="/happenings"
               className="inline-flex items-center gap-2 mt-6 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-medium rounded-lg transition-colors"
             >
               Browse Events

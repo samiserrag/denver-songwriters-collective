@@ -45,7 +45,7 @@ export function Footer({ className }: FooterProps) {
           <div>
             <h4 className="text-[var(--color-text-on-inverse-primary)] font-semibold mb-4">Discover</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/open-mics" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Open Mics</Link></li>
+              <li><Link href="/happenings?type=open_mic" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Open Mics</Link></li>
               <li><Link href="/happenings" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Happenings</Link></li>
               <li><Link href="/performers" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Artists</Link></li>
               <li><Link href="/studios" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Studios</Link></li>

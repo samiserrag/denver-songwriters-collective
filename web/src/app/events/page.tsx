@@ -220,7 +220,7 @@ export default async function EventsPage() {
                 </p>
               </div>
               <Button asChild variant="primary" size="lg">
-                <Link href="/open-mics">See open mics</Link>
+                <Link href="/happenings?type=open_mic">See open mics</Link>
               </Button>
             </div>
           </section>

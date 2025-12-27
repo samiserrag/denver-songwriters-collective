@@ -222,7 +222,7 @@ function GuestActionContent() {
                   Return to Home
                 </Link>
                 <Link
-                  href="/open-mics"
+                  href="/happenings?type=open_mic"
                   className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                 >
                   Browse Open Mics

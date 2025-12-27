@@ -131,7 +131,7 @@ export default async function DashboardPage() {
                 <Link href="/dashboard/profile" className="text-[var(--color-accent-primary)] hover:underline">Edit My Profile</Link>
               </li>
               <li>
-                <Link href="/events" className="text-[var(--color-accent-primary)] hover:underline">Browse Events</Link>
+                <Link href="/happenings" className="text-[var(--color-accent-primary)] hover:underline">Browse Events</Link>
               </li>
               <li>
                 <Link href="/dashboard/my-rsvps" className="text-[var(--color-accent-primary)] hover:underline">
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
               {(p?.is_songwriter || p?.role === "performer") && (
                 <>
                   <li>
-                    <Link href="/events" className="text-[var(--color-accent-primary)] hover:underline">Find Open Mic Slots</Link>
+                    <Link href="/happenings?type=open_mic" className="text-[var(--color-accent-primary)] hover:underline">Find Open Mic Slots</Link>
                   </li>
                   <li>
                     <Link href={`/songwriters/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Public Profile</Link>
