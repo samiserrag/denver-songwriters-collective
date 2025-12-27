@@ -57,7 +57,14 @@ function getMapUrl(venueName: string, address?: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-export default function EventCard({ event, searchQuery }: { event: EventType; searchQuery?: string | null }) {
+interface EventCardProps {
+  event: EventType;
+  searchQuery?: string | null;
+  /** Display variant: "grid" for card layout, "list" for compact row layout */
+  variant?: "grid" | "list";
+}
+
+export default function EventCard({ event, searchQuery, variant = "grid" }: EventCardProps) {
   const venueObj: MaybeVenue = event.venue ?? undefined;
   const venueName = getVenueName(venueObj) ?? "";
 
@@ -192,36 +199,58 @@ export default function EventCard({ event, searchQuery }: { event: EventType; se
       }`}
       role="article"
     >
-      {/* Image/Placeholder */}
-      <div className="h-32 relative">
-        <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title} />
-        {/* Day badge */}
-        {dayOfWeek && (
-          <div className="absolute top-3 left-3 px-3 py-1 bg-black/70 backdrop-blur rounded-full">
-            <span className="text-[var(--color-text-accent)] text-sm font-medium">{dayOfWeek}</span>
-          </div>
-        )}
-        {/* Status badge - show prominently for non-active */}
-        {showStatusBadge && statusStyle && (
-          <div className={`absolute bottom-3 left-3 px-3 py-1 backdrop-blur rounded-full ${statusStyle.bg} border ${statusStyle.border}`}>
-            <span className={`text-sm font-semibold uppercase tracking-wide ${statusStyle.text}`}>{statusStyle.label}</span>
-          </div>
-        )}
-        {/* Favorite button */}
-        <button
-          onClick={toggleFavorite}
-          aria-label={favorited ? "Remove favorite" : "Add favorite"}
-          className="absolute top-3 right-3 text-xl leading-none px-2 py-1 rounded-full bg-black/50 backdrop-blur hover:bg-black/70 transition text-[var(--color-text-accent)]"
-          disabled={loadingFav}
-        >
-          {favorited ? "★" : "☆"}
-        </button>
-      </div>
+      {/* Image/Placeholder - hidden in list variant for compact display */}
+      {variant === "grid" && (
+        <div className="h-32 relative">
+          <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title} />
+          {/* Day badge */}
+          {dayOfWeek && (
+            <div className="absolute top-3 left-3 px-3 py-1 bg-black/70 backdrop-blur rounded-full">
+              <span className="text-[var(--color-text-accent)] text-sm font-medium">{dayOfWeek}</span>
+            </div>
+          )}
+          {/* Status badge - show prominently for non-active */}
+          {showStatusBadge && statusStyle && (
+            <div className={`absolute bottom-3 left-3 px-3 py-1 backdrop-blur rounded-full ${statusStyle.bg} border ${statusStyle.border}`}>
+              <span className={`text-sm font-semibold uppercase tracking-wide ${statusStyle.text}`}>{statusStyle.label}</span>
+            </div>
+          )}
+          {/* Favorite button */}
+          <button
+            onClick={toggleFavorite}
+            aria-label={favorited ? "Remove favorite" : "Add favorite"}
+            className="absolute top-3 right-3 text-xl leading-none px-2 py-1 rounded-full bg-black/50 backdrop-blur hover:bg-black/70 transition text-[var(--color-text-accent)]"
+            disabled={loadingFav}
+          >
+            {favorited ? "★" : "☆"}
+          </button>
+        </div>
+      )}
 
       {/* Content */}
-      <div className="p-5 space-y-3">
+      <div className={variant === "list" ? "p-4 space-y-2" : "p-5 space-y-3"}>
+        {/* List variant: inline status badge + favorite button */}
+        {variant === "list" && (showStatusBadge || true) && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {showStatusBadge && statusStyle && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text} border ${statusStyle.border}`}>
+                  {statusStyle.label}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={toggleFavorite}
+              aria-label={favorited ? "Remove favorite" : "Add favorite"}
+              className="text-lg leading-none px-1.5 py-0.5 rounded-full hover:bg-black/10 transition text-[var(--color-text-accent)]"
+              disabled={loadingFav}
+            >
+              {favorited ? "★" : "☆"}
+            </button>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-[var(--font-family-serif)] text-lg text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors leading-tight break-words"
+          <h3 className={`font-[var(--font-family-serif)] text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors leading-tight break-words ${variant === "list" ? "text-base" : "text-lg"}`}
             dangerouslySetInnerHTML={{ __html: highlight(event.title, searchQuery ?? "") }}
           />
           {event.category && (

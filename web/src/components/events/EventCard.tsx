@@ -18,6 +18,8 @@ interface EventCardProps {
   className?: string;
   /** Compact mode: smaller card with reduced padding and text */
   compact?: boolean;
+  /** Display variant: "grid" for card layout, "list" for compact row layout */
+  variant?: "grid" | "list";
 }
 
 function getDateInitials(date: string | null | undefined): string {
@@ -42,7 +44,7 @@ function formatTime(time: string | null | undefined): string | null {
   return `${hour12}:${minute} ${ampm}`;
 }
 
-export function EventCard({ event, onClick, className, compact = false }: EventCardProps) {
+export function EventCard({ event, onClick, className, compact = false, variant = "grid" }: EventCardProps) {
   const dateLabel = getDateInitials(event.date);
   const startTimeFormatted = formatTime(event.start_time);
   const endTimeFormatted = formatTime(event.end_time);
@@ -88,32 +90,45 @@ export function EventCard({ event, onClick, className, compact = false }: EventC
           className
         )}
       >
-        {/* Image Section - 4:3 for consistent display */}
-        <div className={cn("relative overflow-hidden", "aspect-[4/3]")}>
-          {event.imageUrl ? (
-            <img
-              src={event.imageUrl}
-              alt={event.title}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <ImagePlaceholder
-              initials={dateLabel}
-              className={cn("w-full h-full", compact ? "text-xl" : "text-3xl")}
-            />
-          )}
+        {/* Image Section - hidden in list variant for compact display */}
+        {variant === "grid" && (
+          <div className={cn("relative overflow-hidden", "aspect-[4/3]")}>
+            {event.imageUrl ? (
+              <img
+                src={event.imageUrl}
+                alt={event.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <ImagePlaceholder
+                initials={dateLabel}
+                className={cn("w-full h-full", compact ? "text-xl" : "text-3xl")}
+              />
+            )}
 
-          {/* Date badge */}
-          <div className={cn(
-            "absolute rounded-full bg-[var(--color-bg-inverse)]/70 font-medium tracking-[0.18em] text-[var(--color-accent-primary)] uppercase backdrop-blur-sm",
-            compact ? "left-2 top-2 px-2 py-0.5 text-sm" : "left-4 top-4 px-3 py-1 text-sm"
-          )}>
-            {dateLabel}
+            {/* Date badge */}
+            <div className={cn(
+              "absolute rounded-full bg-[var(--color-bg-inverse)]/70 font-medium tracking-[0.18em] text-[var(--color-accent-primary)] uppercase backdrop-blur-sm",
+              compact ? "left-2 top-2 px-2 py-0.5 text-sm" : "left-4 top-4 px-3 py-1 text-sm"
+            )}>
+              {dateLabel}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Content Section */}
-        <div className={cn(compact ? "p-3 space-y-1.5" : "p-5 space-y-3", "text-center")}>
+        <div className={cn(
+          variant === "list" ? "p-4 space-y-2" : (compact ? "p-3 space-y-1.5" : "p-5 space-y-3"),
+          variant === "list" ? "text-left" : "text-center"
+        )}>
+          {/* List variant: inline date badge */}
+          {variant === "list" && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-full bg-[var(--color-bg-inverse)]/70 font-medium tracking-[0.18em] text-[var(--color-accent-primary)] uppercase text-xs">
+                {dateLabel}
+              </span>
+            </div>
+          )}
           <h3
             className={cn(
               "font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight line-clamp-2",
