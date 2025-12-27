@@ -12,6 +12,52 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+// Grouping helpers
+function groupByDate(events: any[]): Map<string, any[]> {
+  const groups = new Map<string, any[]>();
+  for (const event of events) {
+    const dateKey = event.event_date!;
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, []);
+    }
+    groups.get(dateKey)!.push(event);
+  }
+  return new Map([...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+}
+
+function groupByDayOfWeek(events: any[]): Map<string, any[]> {
+  const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const groups = new Map<string, any[]>();
+
+  for (const day of dayOrder) {
+    groups.set(day, []);
+  }
+
+  for (const event of events) {
+    const day = event.day_of_week;
+    if (day && groups.has(day)) {
+      groups.get(day)!.push(event);
+    }
+  }
+
+  // Remove empty days
+  for (const [day, items] of groups) {
+    if (items.length === 0) groups.delete(day);
+  }
+
+  return groups;
+}
+
+function formatDateHeader(dateStr: string): string {
+  const date = new Date(dateStr + "T00:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
 export default async function HappeningsPage({
   searchParams,
 }: {
@@ -74,9 +120,18 @@ export default async function HappeningsPage({
         {datedEvents.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Upcoming Happenings</h2>
-            <div className="flex flex-col gap-3">
-              {datedEvents.map((event: any) => (
-                <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
+            <div className="flex flex-col gap-6">
+              {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
+                <div key={date}>
+                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-2">
+                    {formatDateHeader(date)}
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {eventsForDate.map((event: any) => (
+                      <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </section>
@@ -85,9 +140,18 @@ export default async function HappeningsPage({
         {recurringEvents.length > 0 && (
           <section>
             <h2 className="text-2xl font-semibold mb-4">Weekly Open Mics</h2>
-            <div className="flex flex-col gap-3">
-              {recurringEvents.map((event: any) => (
-                <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
+            <div className="flex flex-col gap-6">
+              {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
+                <div key={day}>
+                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-2">
+                    {day}s
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {eventsForDay.map((event: any) => (
+                      <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </section>
