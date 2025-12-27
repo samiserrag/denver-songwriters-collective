@@ -279,12 +279,6 @@ body > footer {
    TYPOGRAPHY ENHANCEMENTS
    ═══════════════════════════════════════════════════════════════ */
 
-h1, h2, h3 {
-  font-family: var(--font-family-serif);
-  letter-spacing: -0.02em;
-  line-height: var(--line-height-tight);
-}
-
 /* Card hover effects */
 .card-hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
