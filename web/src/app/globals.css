@@ -294,9 +294,9 @@ h1, h2, h3 {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Display font class */
+/* Display font class - uses Fraunces (display font), not Playfair (serif) */
 .font-display {
-  font-family: var(--font-family-serif);
+  font-family: var(--font-family-display);
 }
 
 /* ═══════════════════════════════════════════════════════════════
