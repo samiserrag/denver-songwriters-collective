@@ -208,36 +208,31 @@ export default async function HomePage() {
   return (
     <>
       <CLSLogger />
-      {/* Hero image - standalone visual block with NO overlay gradients */}
-      <HeroSection minHeight="lg" showVignette={false} showBottomFade={false} backgroundImage="/images/hero.jpg">
-        <div>{/* Empty - hero image only, content renders below */}</div>
-      </HeroSection>
-
-      {/* Main headline section - renders BELOW the hero image */}
-      <section className="py-10 px-6 bg-[var(--color-bg-primary)] border-b border-[var(--color-border-default)]">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="font-[var(--font-family-serif)] font-bold text-4xl md:text-5xl lg:text-6xl text-[var(--color-text-primary)] tracking-tight mb-4">
+      {/* Hero with background image and main headline */}
+      <HeroSection minHeight="lg" showVignette showBottomFade>
+        <div className="text-center px-6 py-8">
+          <h1 className="font-[var(--font-family-serif)] font-bold text-4xl md:text-5xl lg:text-6xl text-white tracking-tight mb-4 drop-shadow-lg">
             A shared space for Denver-area songwriters and music fans
           </h1>
-          <p className="text-lg md:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow">
             Find open mics, connect with other musicians, and discover what&apos;s happening in the local music community.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/events"
-              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors shadow-lg"
             >
               See events
             </Link>
             <Link
               href="/open-mics"
-              className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
             >
               See open mics
             </Link>
           </div>
         </div>
-      </section>
+      </HeroSection>
 
       {/* Join Us If... Strip */}
       <section className="py-8 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">

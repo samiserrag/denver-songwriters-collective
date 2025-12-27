@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 import { MembersPageClient } from "@/components/members";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Member, MemberRole, SocialLinks } from "@/types";
@@ -75,25 +75,17 @@ export default async function MembersPage({ searchParams }: PageProps) {
 
   return (
     <>
-      {/* Hero Header with Background Image */}
-      <div className="relative h-48 md:h-64 overflow-hidden">
-        <img
-          src="/images/open-mic-placeholder.jpg"
-          alt="Denver Songwriters Community Members"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] tracking-tight drop-shadow-lg">
-              Our Members
-            </h1>
-            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
-              Performers, studios, hosts, and fans who make our community thrive
-            </p>
-          </div>
+      {/* Hero Header */}
+      <HeroSection minHeight="sm" showVignette showBottomFade>
+        <div className="text-center px-4 py-6">
+          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
+            Our Members
+          </h1>
+          <p className="text-lg text-white/90 mt-2 drop-shadow">
+            Performers, studios, hosts, and fans who make our community thrive
+          </p>
         </div>
-      </div>
+      </HeroSection>
       <PageContainer>
         <div className="py-10">
           <MembersPageClient members={members} initialRole={validInitialRole} />

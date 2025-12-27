@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 import type { Event as EventType } from "@/types";
 import EventCard from "@/components/EventCard";
 import OpenMicFilters from "@/components/OpenMicFilters";
@@ -357,33 +357,25 @@ function parseTimeToMinutes(t?: string | null) {
 
   return (
     <>
-      {/* Hero Header with Background Image */}
-      <div className="relative h-48 md:h-64 overflow-hidden">
-        <img
-          src="/images/open-mic-placeholder.jpg"
-          alt="Open Mic Night"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/70 to-transparent" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] tracking-tight drop-shadow-lg">
-              Denver Area Open Mic Directory
-            </h1>
-            <p className="text-lg text-[var(--color-text-secondary)] mt-2 drop-shadow">
-              Looking for a stage tonight? Start here.
+      {/* Hero Header */}
+      <HeroSection minHeight="sm" showVignette showBottomFade>
+        <div className="text-center px-4 py-6">
+          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
+            Denver Area Open Mic Directory
+          </h1>
+          <p className="text-lg text-white/80 mt-2 drop-shadow">
+            Looking for a stage tonight? Start here.
+          </p>
+          <p className="text-lg text-white mt-2 drop-shadow font-medium">
+            {totalActiveEvents} verified open mics across the Front Range
+          </p>
+          {totalEvents > totalActiveEvents && (
+            <p className="text-sm text-white/70 mt-1 drop-shadow">
+              {totalEvents - totalActiveEvents} more pending verification
             </p>
-            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
-              {totalActiveEvents} verified open mics across the Front Range
-            </p>
-            {totalEvents > totalActiveEvents && (
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1 drop-shadow">
-                {totalEvents - totalActiveEvents} more pending verification
-              </p>
-            )}
-          </div>
+          )}
         </div>
-      </div>
+      </HeroSection>
 
       <PageContainer>
         {/* Host-focused callout */}

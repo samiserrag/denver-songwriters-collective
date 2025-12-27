@@ -381,6 +381,24 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### HeroSection Standardization & Mobile Overflow Fix (December 2025)
+- **Text-free hero image** - New `/images/hero-bg.jpg` (sunset clouds without DSC text) used as default
+- **HeroSection now defaults to hero image** - No need to specify `backgroundImage` prop; pass `null` for no image
+- **Fixed mobile overflow** - Changed all fixed heights (`h-[...]`) to minimum heights (`min-h-[...]`) to prevent content clipping
+- **Standardized all page heroes** - Converted 6 pages from custom inline heroes to use the shared `HeroSection` component:
+  - `/` (homepage) - Content now inside hero with vignette
+  - `/open-mics` - Uses `<HeroSection minHeight="sm">`
+  - `/members` - Uses `<HeroSection minHeight="sm">`
+  - `/performers` - Uses `<HeroSection minHeight="sm">`
+  - `/studios` - Uses `<HeroSection minHeight="sm">`
+  - `/spotlight` - Uses `<HeroSection minHeight="sm">`
+- **Consistent styling** - All hero text is white with drop shadows; vignettes provide contrast
+- Key files:
+  - `web/public/images/hero-bg.jpg` - New text-free hero image
+  - `web/src/components/layout/hero-section.tsx` - Default image, min-h fix
+  - `web/src/app/page.tsx` - Homepage hero with content
+  - `web/src/app/open-mics/page.tsx`, `web/src/app/members/page.tsx`, etc. - Converted to HeroSection
+
 ### Onboarding RLS Fix - is_admin() Schema Qualification (December 2025)
 - **Root cause identified** - Functions with `SET search_path = ''` calling unqualified `is_admin()` failed because PostgreSQL couldn't resolve the function
 - **Affected functions fixed** - All 3 functions that called `is_admin()` without schema prefix:

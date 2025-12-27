@@ -2,24 +2,27 @@ import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
+const DEFAULT_HERO_IMAGE = "/images/hero-bg.jpg";
+
 interface HeroSectionProps {
   children: React.ReactNode;
-  backgroundImage?: string;
+  /** Background image path. Defaults to site hero image. Set to null for no image. */
+  backgroundImage?: string | null;
   className?: string;
   showVignette?: boolean;
   showBottomFade?: boolean;
   minHeight?: "xs" | "sm" | "md" | "lg" | "xl" | "full" | "auto";
 }
 
-// Use fixed heights instead of min-h to prevent CLS (Cumulative Layout Shift)
-// Use "auto" for content that needs to expand (like profile pages with dynamic content)
+// Use min-h to allow content to expand on mobile where space is constrained
+// Fixed heights can cause content overflow/clipping issues on small screens
 const heightClasses = {
-  xs: "h-[150px] md:h-[200px]",
-  sm: "h-[200px] md:h-[250px]",
-  md: "h-[250px] md:h-[300px]",
-  lg: "h-[350px] md:h-[400px]",
-  xl: "h-[350px] md:h-[400px]",
-  full: "h-screen",
+  xs: "min-h-[150px] md:min-h-[200px]",
+  sm: "min-h-[200px] md:min-h-[250px]",
+  md: "min-h-[250px] md:min-h-[300px]",
+  lg: "min-h-[350px] md:min-h-[400px]",
+  xl: "min-h-[350px] md:min-h-[400px]",
+  full: "min-h-screen",
   auto: "min-h-[350px] md:min-h-[400px]", // Expands with content
 };
 
@@ -31,6 +34,9 @@ export function HeroSection({
   showBottomFade = false,
   minHeight = "xs",
 }: HeroSectionProps) {
+  // Use default hero image unless explicitly set to null
+  const imageSrc = backgroundImage === null ? null : (backgroundImage ?? DEFAULT_HERO_IMAGE);
+
   return (
     <section
       className={cn(
@@ -42,9 +48,9 @@ export function HeroSection({
       )}
     >
       {/* Background Image - Optimized with Next.js Image for LCP */}
-      {backgroundImage && (
+      {imageSrc && (
         <Image
-          src={backgroundImage}
+          src={imageSrc}
           alt=""
           fill
           priority

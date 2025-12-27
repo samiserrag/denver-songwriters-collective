@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PageContainer } from "@/components/layout";
+import { PageContainer, HeroSection } from "@/components/layout";
 
 export const metadata: Metadata = {
   title: "Spotlight | Denver Songwriters Collective",
@@ -90,18 +90,16 @@ export default async function SpotlightPage() {
   return (
     <>
       {/* Hero Header */}
-      <div className="relative h-48 md:h-64 overflow-hidden bg-gradient-to-b from-[var(--color-accent-primary)]/10 to-transparent">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] drop-shadow-lg">
-              Community Spotlight
-            </h1>
-            <p className="text-lg text-[var(--color-text-accent)] mt-2 drop-shadow">
-              Celebrating the artists, hosts, and studios of our community
-            </p>
-          </div>
+      <HeroSection minHeight="sm" showVignette showBottomFade>
+        <div className="text-center px-4 py-6">
+          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
+            Community Spotlight
+          </h1>
+          <p className="text-lg text-white/90 mt-2 drop-shadow">
+            Celebrating the artists, hosts, and studios of our community
+          </p>
         </div>
-      </div>
+      </HeroSection>
 
       <PageContainer>
         <div className="py-12 space-y-16">
