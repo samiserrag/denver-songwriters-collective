@@ -27,7 +27,7 @@ export function NavLink({
     <Link
       href={href}
       className={cn(
-        "text-[13px] font-medium whitespace-nowrap",
+        "text-[13px] font-medium whitespace-nowrap font-[inherit]",
         "px-2.5 py-1.5 rounded-md text-center",
         "transition-colors duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-accent)]/50",

@@ -133,6 +133,7 @@ export default async function RootLayout({
       lang="en"
       data-theme={dataTheme}
       data-font={dataFont}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} ${fraunces.variable}`}
     >
       <head>
         {/* Pre-hydration theme script - runs before React to prevent flash */}
@@ -198,9 +199,7 @@ export default async function RootLayout({
           footer[role="contentinfo"] { flex-shrink: 0; }
         `}} />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} ${fraunces.variable} antialiased`}
-      >
+      <body className="antialiased">
         <ThemeInitializer
           defaultTheme={siteSettings.themePreset}
           defaultFont={siteSettings.fontPreset}
