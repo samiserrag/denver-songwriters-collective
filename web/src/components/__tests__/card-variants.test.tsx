@@ -130,3 +130,62 @@ describe('DscEventCard list variant', () => {
     expect(container.textContent).toMatch(/1[45]/);
   });
 });
+
+describe('List variant density guards', () => {
+  const mockOpenMicEvent = {
+    id: 'test-open-mic-1',
+    title: 'Monday Night Open Mic',
+    event_type: 'open_mic',
+    day_of_week: 'Monday',
+    status: 'active',
+    slug: 'monday-night-open-mic',
+    venue: { name: 'Test Venue' },
+  };
+
+  const mockDscEvent = {
+    id: 'test-dsc-1',
+    title: 'Songwriter Showcase',
+    event_type: 'showcase',
+    is_dsc_event: true,
+    event_date: '2025-01-15',
+    start_time: '19:00:00',
+    venue: { name: 'Test Venue' },
+    capacity: 50,
+    rsvp_count: 10,
+  };
+
+  it('EventCard list variant uses tight density classes', () => {
+    const { getByTestId } = render(
+      <EventCard event={mockOpenMicEvent as any} variant="list" />
+    );
+    const cls = getByTestId('event-card-content').className;
+
+    expect(cls).toMatch(/\bp-3\b/);
+    expect(cls).not.toMatch(/\bp-4\b/);
+    expect(cls).toMatch(/\bspace-y-1\b/);
+    expect(cls).not.toMatch(/\bspace-y-2\b/);
+  });
+
+  it('DscEventCard list variant uses tight density classes', () => {
+    const { getByTestId } = render(
+      <DscEventCard event={mockDscEvent as any} variant="list" />
+    );
+    const cls = getByTestId('dsc-event-card').className;
+
+    expect(cls).toMatch(/\bp-3\b/);
+    expect(cls).not.toMatch(/\bp-4\b/);
+    expect(cls).toMatch(/\bspace-y-1\b/);
+    expect(cls).not.toMatch(/\bspace-y-2\b/);
+  });
+
+  it('EventCard grid variant keeps standard density classes', () => {
+    const { getByTestId } = render(
+      <EventCard event={mockOpenMicEvent as any} variant="grid" />
+    );
+    const cls = getByTestId('event-card-content').className;
+
+    expect(cls).toMatch(/\bp-5\b/);
+    expect(cls).toMatch(/\bspace-y-3\b/);
+    expect(cls).not.toMatch(/\bp-3\b/);
+  });
+});

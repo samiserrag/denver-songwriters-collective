@@ -117,10 +117,13 @@ export function EventCard({ event, onClick, className, compact = false, variant 
         )}
 
         {/* Content Section */}
-        <div className={cn(
-          variant === "list" ? "p-3 space-y-1" : (compact ? "p-3 space-y-1.5" : "p-5 space-y-3"),
-          variant === "list" ? "text-left" : "text-center"
-        )}>
+        <div
+          data-testid="dsc-event-card"
+          className={cn(
+            variant === "list" ? "p-3 space-y-1" : (compact ? "p-3 space-y-1.5" : "p-5 space-y-3"),
+            variant === "list" ? "text-left" : "text-center"
+          )}
+        >
           {/* List variant: inline date badge */}
           {variant === "list" && (
             <div className="flex items-center gap-2 mb-1">
