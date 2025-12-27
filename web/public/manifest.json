@@ -28,14 +28,14 @@
       "name": "Open Mics",
       "short_name": "Open Mics",
       "description": "Find open mics in Denver",
-      "url": "/open-mics",
+      "url": "/happenings?type=open_mic",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Events",
-      "short_name": "Events",
-      "description": "Browse happenings",
-      "url": "/events",
+      "name": "Happenings",
+      "short_name": "Happenings",
+      "description": "Browse DSC happenings",
+      "url": "/happenings?type=dsc",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {

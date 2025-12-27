@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
       id: om.id,
       title: om.title,
       subtitle: venue ? `${venue.name}${venue.city ? `, ${venue.city}` : ""} • ${om.day_of_week || "Weekly"}` : om.day_of_week || "Weekly",
-      url: `/open-mics/${om.slug || om.id}`,
+      url: `/happenings?type=open_mic`,
     });
   }
 
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       id: event.id,
       title: event.title,
       subtitle: event.venue_name || (event.event_date ? new Date(event.event_date).toLocaleDateString() : undefined),
-      url: `/events/${event.id}`,
+      url: `/happenings?type=dsc`,
     });
   }
 
