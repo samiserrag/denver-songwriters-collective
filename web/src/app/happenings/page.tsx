@@ -133,13 +133,13 @@ export default async function HappeningsPage({
         {datedEvents.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Upcoming Happenings</h2>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
                 <div key={date}>
-                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-2">
+                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-1">
                     {formatDateHeader(date)}
                   </h3>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2">
                     {eventsForDate.map((event: any) => (
                       <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
                     ))}
@@ -153,13 +153,13 @@ export default async function HappeningsPage({
         {recurringEvents.length > 0 && (
           <section>
             <h2 className="text-2xl font-semibold mb-4">Weekly Open Mics</h2>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
                 <div key={day}>
-                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-2">
+                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-1">
                     {day}s
                   </h3>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2">
                     {eventsForDay.map((event: any) => (
                       <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
                     ))}

@@ -198,6 +198,7 @@ export default function EventCard({ event, searchQuery, variant = "grid" }: Even
           : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
       }`}
       role="article"
+      data-testid="event-card"
     >
       {/* Image/Placeholder - hidden in list variant for compact display */}
       {variant === "grid" && (
@@ -228,7 +229,7 @@ export default function EventCard({ event, searchQuery, variant = "grid" }: Even
       )}
 
       {/* Content */}
-      <div className={variant === "list" ? "p-4 space-y-2" : "p-5 space-y-3"}>
+      <div data-testid="event-card-content" className={variant === "list" ? "p-3 space-y-1" : "p-5 space-y-3"}>
         {/* List variant: inline status badge + favorite button */}
         {variant === "list" && (showStatusBadge || true) && (
           <div className="flex items-center justify-between gap-2">
