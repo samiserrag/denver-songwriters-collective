@@ -13,9 +13,10 @@ import GlobalSearch from "@/components/GlobalSearch";
 import { ThemePicker } from "@/components/ui/ThemePicker";
 
 // Primary nav links (shown in main nav bar)
+// Note: Open Mics points to /happenings?type=open_mic (canonical listing route)
 const navLinks = [
   { href: "/happenings", label: "Happenings" },
-  { href: "/open-mics", label: "Open Mics" },
+  { href: "/happenings?type=open_mic", label: "Open Mics" },
   { href: "/members", label: "Members" },
   { href: "/gallery", label: "Gallery" },
   { href: "/blog", label: "Blog" },
