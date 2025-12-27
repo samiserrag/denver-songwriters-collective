@@ -90,7 +90,7 @@ describe('DscEventCard list variant', () => {
     title: 'Songwriter Showcase',
     event_type: 'showcase',
     is_dsc_event: true,
-    date: '2025-01-15',
+    event_date: '2025-01-15',
     start_time: '19:00:00',
     venue: { name: 'Test Venue' },
     capacity: 50,

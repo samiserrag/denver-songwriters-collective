@@ -45,7 +45,7 @@ function formatTime(time: string | null | undefined): string | null {
 }
 
 export function EventCard({ event, onClick, className, compact = false, variant = "grid" }: EventCardProps) {
-  const dateLabel = getDateInitials(event.date);
+  const dateLabel = getDateInitials(event.event_date);
   const startTimeFormatted = formatTime(event.start_time);
   const endTimeFormatted = formatTime(event.end_time);
 
