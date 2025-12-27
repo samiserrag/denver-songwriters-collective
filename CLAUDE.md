@@ -483,10 +483,27 @@ These are broader product initiatives for post-launch development:
   - **Open mics grouped by day** - Recurring events grouped by `day_of_week` with headers (e.g., "Thursdays")
   - **SSR-only implementation** - Grouping done server-side with pure functions, no client state needed
   - **Grouping helpers added**: `groupByDate()`, `groupByDayOfWeek()`, `formatDateHeader()`
-- PRs merged: #28, #29, #30, #31
+- PRs merged: #28, #29, #30, #31, #32
+- **Phase 2.7: Migration Hardening (December 2025)** - PR #32
+  - **Card list variant** - Added `variant="list"` prop to EventCard and events/EventCard for compact row display
+  - **List mode hides media** - No aspect-ratio image container in list variant, badges moved inline
+  - **Hero rules** - Hero only shows on unfiltered `/happenings`; filtered views get inline h1 title
+  - **Day redundancy removed** - Recurrence text hidden in list variant (group headers show day)
+  - **Nav surface fix** - Header "Open Mics" link changed from `/open-mics` to `/happenings?type=open_mic`
+  - **Date field bug fix** - DSC cards read `event.event_date` not `event.date` (was showing "LIVE" fallback)
+  - **Regression tests added** - `navigation-links.test.ts` (6 tests), `card-variants.test.tsx` (6 tests)
+  - **Engineering standards added** - Completion Gate section in CLAUDE.md, CI workflow, PR template, CONTRACTS.md
 - Key files:
   - `web/src/app/happenings/page.tsx` - Unified happenings page with filter tabs, list layout, and grouping
-  - `web/src/components/happenings/HappeningsCard.tsx` - Delegating wrapper for event cards
+  - `web/src/components/happenings/HappeningsCard.tsx` - Delegating wrapper for event cards with `variant="list"`
+  - `web/src/components/EventCard.tsx` - Open mic card with variant prop
+  - `web/src/components/events/EventCard.tsx` - DSC event card with variant prop, fixed `event_date` field
+  - `web/src/components/navigation/header.tsx` - Nav links use canonical `/happenings` routes
+  - `web/src/__tests__/navigation-links.test.ts` - Prevents legacy listing link regression
+  - `web/src/components/__tests__/card-variants.test.tsx` - Enforces list variant contract
+  - `.github/workflows/ci.yml` - CI pipeline for lint/test/build
+  - `.github/pull_request_template.md` - Completion gate checklist
+  - `docs/CONTRACTS.md` - Component contracts documentation
   - `web/src/app/events/page.tsx` - Now redirects to `/happenings?type=dsc`
   - `web/src/app/open-mics/page.tsx` - Now redirects to `/happenings?type=open_mic`
   - `web/src/app/open-mics/map/page.tsx` - Now redirects to `/happenings?type=open_mic`
