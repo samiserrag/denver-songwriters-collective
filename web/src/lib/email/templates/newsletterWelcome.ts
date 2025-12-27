@@ -23,7 +23,7 @@ export function getNewsletterWelcomeEmail(_params?: NewsletterWelcomeEmailParams
   html: string;
   text: string;
 } {
-  const openMicsUrl = `${SITE_URL}/open-mics`;
+  const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
   const privacyUrl = `${SITE_URL}/privacy`;
   const contactUrl = `${SITE_URL}/contact`;
 

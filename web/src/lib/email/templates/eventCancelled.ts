@@ -37,7 +37,7 @@ export function getEventCancelledEmail(params: EventCancelledEmailParams): {
   const safeReason = reason ? escapeHtml(reason) : null;
   const safeHostName = hostName ? escapeHtml(hostName) : null;
 
-  const openMicsUrl = `${SITE_URL}/open-mics`;
+  const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
 
   const subject = `Cancelled: ${eventTitle} on ${eventDate}`;
 

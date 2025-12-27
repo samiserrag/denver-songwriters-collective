@@ -28,7 +28,7 @@ export function getHostRejectionEmail(params: HostRejectionEmailParams): {
   const { userName, reason } = params;
   const safeName = escapeHtml(userName);
   const safeReason = reason ? escapeHtml(reason) : null;
-  const openMicsUrl = `${SITE_URL}/open-mics`;
+  const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
 
   const subject = "Update on your host application";
 

@@ -507,7 +507,7 @@ describe("New Email Templates", () => {
 
       expect(result.subject).toBe("Welcome to the Denver Songwriters Collective!");
       expect(result.html).toContain("Open mics and songwriter events");
-      expect(result.html).toContain("open-mics");
+      expect(result.html).toContain("happenings?type=open_mic");
       expect(result.text).toContain("Tips and resources");
     });
   });
@@ -613,7 +613,7 @@ describe("New Email Templates", () => {
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("Monday Night Mic");
       expect(result.html).toContain("This is a great addition!");
-      expect(result.text).toContain("open-mics");
+      expect(result.text).toContain("happenings?type=open_mic");
     });
 
     it("generates needs_info email", () => {
