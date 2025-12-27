@@ -84,6 +84,21 @@ Required route checks (manual or Playwright):
 - **One PR = one coherent contract.** No mixed unrelated refactors.
 - If a change touches UX + routing + components, it **must include guardrail tests**
 
+### 9. Post-Deploy Verification
+
+After merge to main and Vercel deployment:
+
+- [ ] **Production smoke test** - Verify key routes render correctly on live site
+- [ ] **Legacy redirects work** - `/open-mics` → `/happenings?type=open_mic`, `/events` → `/happenings?type=dsc`
+- [ ] **No console errors** - Check browser DevTools for JS errors
+- [ ] **Theme tokens applied** - Correct font family (`--font-family-serif`, `--font-family-display`) and accent colors render
+
+### 10. Brand Contracts
+
+- **Font tokens** - Display headings use `font-[var(--font-family-display)]` (Fraunces), body uses serif
+- **Theme tokens** - All colors reference CSS variables (no hardcoded hex values in components)
+- **Hero consistency** - `/happenings` has hero; filtered views (`?type=`) have inline h1 only
+
 ---
 
 ## Documentation
