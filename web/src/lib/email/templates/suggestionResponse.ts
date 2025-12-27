@@ -117,8 +117,8 @@ ${escapeHtml(adminMessage)}
 
 ${paragraph(closing)}
 
-${status === "approved" && isNewEvent ? createButton("Check it out", `${SITE_URL}/open-mics`, "green") : ""}
-${status === "approved" && !isNewEvent ? createButton("View open mics", `${SITE_URL}/open-mics`) : ""}
+${status === "approved" && isNewEvent ? createButton("Check it out", `${SITE_URL}/happenings?type=open_mic`, "green") : ""}
+${status === "approved" && !isNewEvent ? createButton("View open mics", `${SITE_URL}/happenings?type=open_mic`) : ""}
 ${status === "needs_info" ? createButton("Submit more info", `${SITE_URL}/submit-open-mic`) : ""}
 `;
 
@@ -135,7 +135,7 @@ ${adminMessage ? `From the DSC team:\n${adminMessage}` : ""}
 
 ${closing}
 
-${status === "approved" ? `Check it out: ${SITE_URL}/open-mics` : ""}
+${status === "approved" ? `Check it out: ${SITE_URL}/happenings?type=open_mic` : ""}
 ${status === "needs_info" ? `Submit more info: ${SITE_URL}/submit-open-mic` : ""}`;
 
   const text = wrapEmailText(textContent);
