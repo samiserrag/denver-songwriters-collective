@@ -3,7 +3,7 @@
 import * as React from "react";
 
 const FONTS = [
-  { id: "", label: "Default (Playfair + Geist)" },
+  { id: "", label: "Default (Fraunces + Inter)" },
   { id: "system", label: "System" },
   { id: "playfair-inter", label: "Playfair + Inter" },
   { id: "fraunces-inter", label: "Fraunces + Inter" },
