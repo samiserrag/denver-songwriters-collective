@@ -74,7 +74,7 @@ export default async function HappeningsPage({
         {datedEvents.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-semibold mb-4">Upcoming Happenings</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-3">
               {datedEvents.map((event: any) => (
                 <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
               ))}
@@ -85,7 +85,7 @@ export default async function HappeningsPage({
         {recurringEvents.length > 0 && (
           <section>
             <h2 className="text-2xl font-semibold mb-4">Weekly Open Mics</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-3">
               {recurringEvents.map((event: any) => (
                 <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
               ))}
