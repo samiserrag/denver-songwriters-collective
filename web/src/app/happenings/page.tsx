@@ -89,32 +89,45 @@ export default async function HappeningsPage({
   const datedEvents = list.filter((e: any) => e.event_date);
   const recurringEvents = list.filter((e: any) => !e.event_date);
 
+  // Hero only shows on unfiltered /happenings (no typeFilter)
+  const showHero = !typeFilter;
+
   return (
     <>
-      <HeroSection minHeight="sm" showVignette showBottomFade>
-        <div className="text-center px-4 py-6">
-          <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
-            Happenings
-          </h1>
-          <p className="text-lg text-white/80 mt-2 drop-shadow">
-            Open mics, events, and shows in the Denver music community
-          </p>
-        </div>
-      </HeroSection>
+      {showHero && (
+        <HeroSection minHeight="sm" showVignette showBottomFade>
+          <div className="text-center px-4 py-6">
+            <h1 className="text-4xl md:text-5xl font-[var(--font-family-serif)] font-bold text-white tracking-tight drop-shadow-lg">
+              Happenings
+            </h1>
+            <p className="text-lg text-white/80 mt-2 drop-shadow">
+              Open mics, events, and shows in the Denver music community
+            </p>
+          </div>
+        </HeroSection>
+      )}
 
-      <PageContainer>
-        <div className="flex gap-2 mb-6 flex-wrap">
-          <FilterTab href="/happenings" label="All" active={!typeFilter} />
-          <FilterTab
-            href="/happenings?type=open_mic"
-            label="Open Mics"
-            active={typeFilter === "open_mic"}
-          />
-          <FilterTab
-            href="/happenings?type=dsc"
-            label="DSC Happenings"
-            active={typeFilter === "dsc"}
-          />
+      <PageContainer className={showHero ? "" : "pt-8"}>
+        {/* Page header with title + filters */}
+        <div className="mb-6">
+          {!showHero && (
+            <h1 className="text-3xl md:text-4xl font-[var(--font-family-serif)] font-bold text-[var(--color-text-primary)] mb-4">
+              {typeFilter === "open_mic" ? "Open Mics" : "DSC Happenings"}
+            </h1>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            <FilterTab href="/happenings" label="All" active={!typeFilter} />
+            <FilterTab
+              href="/happenings?type=open_mic"
+              label="Open Mics"
+              active={typeFilter === "open_mic"}
+            />
+            <FilterTab
+              href="/happenings?type=dsc"
+              label="DSC Happenings"
+              active={typeFilter === "dsc"}
+            />
+          </div>
         </div>
 
         {datedEvents.length > 0 && (

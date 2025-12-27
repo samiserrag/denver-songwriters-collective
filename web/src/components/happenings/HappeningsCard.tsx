@@ -5,6 +5,8 @@
  *
  * Renders the appropriate existing card based on event type.
  * Does NOT merge card logic - delegates to existing components.
+ *
+ * Always passes variant="list" for compact happenings page display.
  */
 
 import type { Event } from "@/types";
@@ -18,8 +20,8 @@ type Props = {
 
 export function HappeningsCard({ event, searchQuery }: Props) {
   if (event.event_type === "open_mic") {
-    return <RootEventCard event={event as any} searchQuery={searchQuery} />;
+    return <RootEventCard event={event as any} searchQuery={searchQuery} variant="list" />;
   }
 
-  return <DscEventCard event={event as any} />;
+  return <DscEventCard event={event as any} variant="list" />;
 }
