@@ -92,7 +92,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
               See happenings
             </Link>
             <Link
-              href="/dashboard/admin/gallery"
+              href="/dashboard/gallery"
               className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
             >
               Share your photos
@@ -151,7 +151,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
 
                 {/* Share Your Photos CTA Card */}
                 <Link
-                  href="/dashboard/admin/gallery"
+                  href="/dashboard/gallery"
                   className="group block rounded-xl overflow-hidden border border-dashed border-[var(--color-border-accent)]/40 bg-gradient-to-br from-[var(--color-accent-primary)]/10 to-transparent hover:border-[var(--color-border-accent)] transition-colors"
                 >
                   <div className="relative aspect-[4/3] w-full flex items-center justify-center">
@@ -232,7 +232,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                   Photos from community members will appear here after approval.
                 </p>
                 <Link
-                  href="/dashboard/admin/gallery"
+                  href="/dashboard/gallery"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg font-medium transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

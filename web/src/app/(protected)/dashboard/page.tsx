@@ -141,7 +141,7 @@ export default async function DashboardPage() {
 
           {/* Quick Actions Grid */}
           <section>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               <Link
                 href="/dashboard/profile"
                 className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center"
@@ -182,6 +182,14 @@ export default async function DashboardPage() {
               >
                 <span className="block text-2xl mb-2">✍️</span>
                 <span className="text-sm font-medium text-[var(--color-text-primary)]">My Blog</span>
+              </Link>
+
+              <Link
+                href="/dashboard/gallery"
+                className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center"
+              >
+                <span className="block text-2xl mb-2">📷</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">My Photos</span>
               </Link>
             </div>
           </section>
