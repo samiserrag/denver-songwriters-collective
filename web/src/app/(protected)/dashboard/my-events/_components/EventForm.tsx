@@ -131,6 +131,26 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
+  // Calculate event duration in minutes (if both start and end times are set)
+  const calculateEventDurationMinutes = (): number | null => {
+    if (!formData.start_time || !formData.end_time) return null;
+    const [startHour, startMin] = formData.start_time.split(":").map(Number);
+    const [endHour, endMin] = formData.end_time.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    // Handle overnight events (end time < start time)
+    if (endMinutes < startMinutes) {
+      return (24 * 60 - startMinutes) + endMinutes;
+    }
+    return endMinutes - startMinutes;
+  };
+
+  const eventDurationMinutes = calculateEventDurationMinutes();
+  const totalSlotDuration = slotConfig.total_slots * slotConfig.slot_duration_minutes;
+  const slotDurationExceedsEvent = eventDurationMinutes !== null &&
+    slotConfig.has_timeslots &&
+    totalSlotDuration > eventDurationMinutes;
+
   const handleImageUpload = async (file: File): Promise<string | null> => {
     const supabase = createSupabaseBrowserClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -339,6 +359,20 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         onChange={setSlotConfig}
         disabled={loading}
       />
+
+      {/* Warning: Timeslot duration exceeds event duration */}
+      {slotDurationExceedsEvent && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <p className="text-sm text-amber-600">
+            <strong>Warning:</strong> Total slot time ({totalSlotDuration} min) exceeds event duration ({eventDurationMinutes} min).
+            {totalSlotDuration > eventDurationMinutes! && (
+              <span className="block mt-1 text-xs text-[var(--color-text-secondary)]">
+                Consider reducing slots to {Math.floor(eventDurationMinutes! / slotConfig.slot_duration_minutes)} or shortening slot duration.
+              </span>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Venue */}
       <VenueSelector

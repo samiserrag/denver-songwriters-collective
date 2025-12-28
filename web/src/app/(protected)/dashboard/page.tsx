@@ -6,6 +6,8 @@ import { DashboardProfileCard } from "./DashboardProfileCard";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
+import NotificationsList from "./notifications/NotificationsList";
+import InvitationsList from "./invitations/InvitationsList";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +38,7 @@ export default async function DashboardPage() {
 
   const p = profile as DBProfile | null;
 
-  // Check host status and pending invitations
+  // Check host status
   const { data: hostStatus } = await supabase
     .from("approved_hosts")
     .select("status")
@@ -46,46 +48,62 @@ export default async function DashboardPage() {
 
   const isApprovedHost = !!hostStatus || p?.role === "admin";
 
-  // Get pending invitation count
-  const { count: pendingInvitations } = await supabase
+  // Get pending invitations with event details
+  const { data: pendingInvitations } = await supabase
     .from("event_hosts")
-    .select("*", { count: "exact", head: true })
+    .select(`
+      *,
+      event:events(id, title, event_type, venue_name, start_time),
+      inviter:profiles!event_hosts_invited_by_fkey(id, full_name)
+    `)
     .eq("user_id", user.id)
-    .eq("invitation_status", "pending");
+    .eq("invitation_status", "pending")
+    .order("invited_at", { ascending: false });
+
+  // Get recent notifications (last 10)
+  const { data: notifications } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   // Get unread notification count
-  const { count: unreadNotifications } = await supabase
-    .from("notifications")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("is_read", false);
+  const unreadCount = notifications?.filter(n => !n.is_read).length ?? 0;
 
-  // Get upcoming RSVP count (confirmed or waitlisted)
+  // Get upcoming RSVP count
   const { count: upcomingRsvps } = await supabase
     .from("event_rsvps")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id)
     .in("status", ["confirmed", "waitlist"]);
 
+  // Get user's events count (if host)
+  const { count: myEventsCount } = await supabase
+    .from("event_hosts")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("invitation_status", "accepted");
+
   return (
     <>
       <Suspense fallback={null}>
         <WelcomeToast />
       </Suspense>
-      <HeroSection minHeight="md">
+      <HeroSection minHeight="sm">
         <PageContainer>
-          <div className="flex flex-col md:flex-row items-center gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-6">
             <PerformerAvatar
               src={p?.avatar_url ?? undefined}
               alt={p?.full_name ?? "User"}
               size="lg"
             />
-            <div>
-              <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-3">
-                Welcome, {p?.full_name ?? "User"}
+            <div className="text-center md:text-left">
+              <h1 className="text-[var(--color-text-accent)] text-3xl md:text-4xl font-[var(--font-family-serif)] italic mb-2">
+                {p?.full_name ?? "Welcome"}
               </h1>
-              <p className="text-[var(--color-text-secondary)] text-lg">
-                Role: <span className="text-[var(--color-accent-primary)]">{p?.role}</span>
+              <p className="text-[var(--color-text-secondary)]">
+                {p?.role === "admin" ? "Administrator" : "Member"}
               </p>
             </div>
           </div>
@@ -93,8 +111,8 @@ export default async function DashboardPage() {
       </HeroSection>
 
       <PageContainer>
-        <div className="py-12 space-y-10">
-          {/* Profile Completeness Card */}
+        <div className="py-8 space-y-8">
+          {/* Profile Completeness */}
           {p && (
             <DashboardProfileCard
               profile={{
@@ -121,101 +139,127 @@ export default async function DashboardPage() {
             />
           )}
 
+          {/* Quick Actions Grid */}
           <section>
-            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">
-              Quick Actions
-            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Link
+                href="/dashboard/profile"
+                className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center"
+              >
+                <span className="block text-2xl mb-2">👤</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">Edit Profile</span>
+              </Link>
 
-            <ul className="space-y-3 text-[var(--color-text-secondary)] text-lg">
-              <li>
-                <Link href="/dashboard/profile" className="text-[var(--color-accent-primary)] hover:underline">Edit My Profile</Link>
-              </li>
-              <li>
-                <Link href="/happenings" className="text-[var(--color-accent-primary)] hover:underline">Browse Events</Link>
-              </li>
-              <li>
-                <Link href="/dashboard/my-rsvps" className="text-[var(--color-accent-primary)] hover:underline">
-                  My RSVPs
-                  {(upcomingRsvps ?? 0) > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
-                      {upcomingRsvps} upcoming
-                    </span>
-                  )}
-                </Link>
-              </li>
-              <li>
-                <Link href="/performers" className="text-[var(--color-accent-primary)] hover:underline">Explore Performers</Link>
-              </li>
-              <li>
-                <Link href="/studios" className="text-[var(--color-accent-primary)] hover:underline">Find Studios</Link>
-              </li>
-              <li>
-                <Link href="/dashboard/blog" className="text-[var(--color-accent-primary)] hover:underline">My Blog Posts</Link>
-              </li>
-              <li>
-                <Link href="/dashboard/my-events" className="text-[var(--color-accent-primary)] hover:underline">
-                  My Events
-                  {isApprovedHost && " (Host Dashboard)"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard/invitations" className="text-[var(--color-accent-primary)] hover:underline">
-                  Co-host Invitations
-                  {(pendingInvitations ?? 0) > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
-                      {pendingInvitations} pending
-                    </span>
-                  )}
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard/notifications" className="text-[var(--color-accent-primary)] hover:underline">
-                  Notifications
-                  {(unreadNotifications ?? 0) > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded-full">
-                      {unreadNotifications} new
-                    </span>
-                  )}
-                </Link>
-              </li>
+              <Link
+                href="/dashboard/my-rsvps"
+                className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center relative"
+              >
+                <span className="block text-2xl mb-2">🎟️</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">My RSVPs</span>
+                {(upcomingRsvps ?? 0) > 0 && (
+                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full">
+                    {upcomingRsvps}
+                  </span>
+                )}
+              </Link>
 
-              {/* Songwriter/Performer links - flag-based with role fallback */}
+              <Link
+                href="/dashboard/my-events"
+                className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center relative"
+              >
+                <span className="block text-2xl mb-2">📅</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">My Events</span>
+                {(myEventsCount ?? 0) > 0 && (
+                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--color-accent-primary)] text-white text-xs rounded-full">
+                    {myEventsCount}
+                  </span>
+                )}
+              </Link>
+
+              <Link
+                href="/dashboard/blog"
+                className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center"
+              >
+                <span className="block text-2xl mb-2">✍️</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">My Blog</span>
+              </Link>
+            </div>
+          </section>
+
+          {/* Invitations Section (if any pending) */}
+          {(pendingInvitations?.length ?? 0) > 0 && (
+            <section className="p-6 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+                <span>📬</span>
+                <span>Co-host Invitations</span>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 text-xs rounded-full">
+                  {pendingInvitations?.length}
+                </span>
+              </h2>
+              <InvitationsList invitations={pendingInvitations || []} />
+            </section>
+          )}
+
+          {/* Notifications Section */}
+          <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+                <span>🔔</span>
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded-full">
+                    {unreadCount} new
+                  </span>
+                )}
+              </h2>
+              {(notifications?.length ?? 0) > 5 && (
+                <Link
+                  href="/dashboard/notifications"
+                  className="text-sm text-[var(--color-accent-primary)] hover:underline"
+                >
+                  View all →
+                </Link>
+              )}
+            </div>
+            {notifications && notifications.length > 0 ? (
+              <NotificationsList notifications={notifications.slice(0, 5)} compact />
+            ) : (
+              <p className="text-[var(--color-text-secondary)] text-sm">No notifications yet.</p>
+            )}
+          </section>
+
+          {/* Secondary Links */}
+          <section className="pt-4 border-t border-[var(--color-border-default)]">
+            <div className="flex flex-wrap gap-4 text-sm">
+              {/* Profile-specific links */}
               {(p?.is_songwriter || p?.role === "performer") && (
+                <Link href={`/songwriters/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">
+                  View Public Profile
+                </Link>
+              )}
+              {(p?.is_studio || p?.role === "studio") && (
                 <>
-                  <li>
-                    <Link href="/happenings?type=open_mic" className="text-[var(--color-accent-primary)] hover:underline">Find Open Mic Slots</Link>
-                  </li>
-                  <li>
-                    <Link href={`/songwriters/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Public Profile</Link>
-                  </li>
+                  <Link href={`/studios/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">
+                    View Studio Profile
+                  </Link>
+                  <Link href="/dashboard/studio-appointments" className="text-[var(--color-accent-primary)] hover:underline">
+                    Studio Bookings
+                  </Link>
                 </>
               )}
 
-              {/* Studio links - flag-based with role fallback */}
-              {(p?.is_studio || p?.role === "studio") && (
-                <li>
-                  <Link href={`/studios/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">View My Studio Profile</Link>
-                </li>
-              )}
-
-              {/* Host links - flag-based with role fallback */}
-              {(p?.is_host || p?.role === "host") && (
-                <li>
-                  <Link href="/dashboard/my-events" className="text-[var(--color-accent-primary)] hover:underline">Host Dashboard</Link>
-                </li>
-              )}
-
-              {/* Admin Panel - role-based only (access control) */}
+              {/* Admin link */}
               {p?.role === "admin" && (
-                <li>
-                  <Link href="/dashboard/admin" className="text-[var(--color-accent-primary)] hover:underline">Admin Panel</Link>
-                </li>
+                <Link href="/dashboard/admin" className="text-[var(--color-accent-primary)] hover:underline font-medium">
+                  Admin Panel →
+                </Link>
               )}
 
-              <li className="pt-4 mt-4 border-t border-[var(--color-border-default)]">
-                <Link href="/dashboard/settings" className="text-[var(--color-accent-primary)] hover:underline">Account Settings</Link>
-              </li>
-            </ul>
+              {/* Settings always available */}
+              <Link href="/dashboard/settings" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+                Account Settings
+              </Link>
+            </div>
           </section>
         </div>
       </PageContainer>

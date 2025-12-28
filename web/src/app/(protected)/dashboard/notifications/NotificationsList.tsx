@@ -13,7 +13,12 @@ interface Notification {
   created_at: string;
 }
 
-export default function NotificationsList({ notifications }: { notifications: Notification[] }) {
+interface NotificationsListProps {
+  notifications: Notification[];
+  compact?: boolean; // For embedding in dashboard
+}
+
+export default function NotificationsList({ notifications, compact = false }: NotificationsListProps) {
   const [items, setItems] = useState(notifications);
 
   // Mark all as read on mount
@@ -56,6 +61,9 @@ export default function NotificationsList({ notifications }: { notifications: No
   };
 
   if (items.length === 0) {
+    if (compact) {
+      return null; // Parent handles empty state in compact mode
+    }
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">🔔</div>
@@ -66,29 +74,31 @@ export default function NotificationsList({ notifications }: { notifications: No
   }
 
   return (
-    <div className="space-y-2">
+    <div className={compact ? "space-y-1" : "space-y-2"}>
       {items.map((notification) => (
         <div
           key={notification.id}
-          className={`p-4 rounded-lg border transition-colors ${
+          className={`${compact ? "p-3" : "p-4"} rounded-lg border transition-colors ${
             notification.is_read
-              ? "bg-[var(--color-bg-secondary)]/50 border-[var(--color-border-subtle)]"
-              : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)]"
+              ? "bg-[var(--color-bg-tertiary)]/50 border-transparent"
+              : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"
           }`}
         >
           <div className="flex items-start gap-3">
-            <div className="text-2xl">{getIcon(notification.type)}</div>
-            <div className="flex-1">
-              <h3 className="text-[var(--color-text-primary)] font-medium">{notification.title}</h3>
-              {notification.message && (
+            <div className={compact ? "text-lg" : "text-2xl"}>{getIcon(notification.type)}</div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`text-[var(--color-text-primary)] font-medium ${compact ? "text-sm truncate" : ""}`}>
+                {notification.title}
+              </h3>
+              {notification.message && !compact && (
                 <p className="text-[var(--color-text-secondary)] text-sm mt-1">{notification.message}</p>
               )}
-              <p className="text-[var(--color-text-secondary)] text-xs mt-2">{formatDate(notification.created_at)}</p>
+              <p className="text-[var(--color-text-secondary)] text-xs mt-1">{formatDate(notification.created_at)}</p>
             </div>
             {notification.link && (
               <Link
                 href={notification.link}
-                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm shrink-0"
               >
                 View →
               </Link>
