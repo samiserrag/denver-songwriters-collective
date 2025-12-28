@@ -27,9 +27,19 @@ export default function PublishButton({ eventId, isPublished, status }: Props) {
     setIsLoading(true);
     const supabase = createClient();
 
+    // When publishing, also set status to active
+    // When unpublishing, keep status as-is (don't reset to draft)
+    const updates: { is_published: boolean; status?: string } = {
+      is_published: !isPublished,
+    };
+    if (!isPublished) {
+      // Publishing: ensure status is active so it appears on /happenings
+      updates.status = "active";
+    }
+
     const { error } = await supabase
       .from("events")
-      .update({ is_published: !isPublished })
+      .update(updates)
       .eq("id", eventId);
 
     if (error) {
