@@ -703,9 +703,43 @@ These are broader product initiatives for post-launch development:
 
 **Phase 2 COMPLETE** — All `/happenings` migration work finished.
 
+### Phase 3: Scan-First Schema — COMPLETE ✅ (December 2025)
+
+**Migration:** `20251227000001_phase3_scan_first_fields.sql`
+
+#### Events Table - New Columns
+| Column | Type | Default | Purpose |
+|--------|------|---------|---------|
+| timezone | text | 'America/Denver' | Event timezone |
+| location_mode | text | 'venue' | venue/online/hybrid |
+| online_url | text | NULL | Virtual event URL |
+| is_free | boolean | NULL | Cost indicator (NULL=unknown) |
+| cost_label | text | NULL | Display cost string |
+| signup_mode | text | NULL | in_person/online/both/walk_in |
+| signup_url | text | NULL | Online signup URL |
+| signup_deadline | timestamptz | NULL | When online signup closes |
+| age_policy | text | NULL | Free text age restriction |
+| source | text | 'community' | Data origin |
+
+#### Venues Table - New Columns
+| Column | Type | Purpose |
+|--------|------|---------|
+| neighborhood | text | Denver neighborhood (RiNo, Cap Hill, etc.) |
+| parking_notes | text | Parking instructions |
+| accessibility_notes | text | Accessibility info |
+
+#### CHECK Constraints Added
+- `events_location_mode_check`: venue/online/hybrid
+- `events_signup_mode_check`: in_person/online/both/walk_in
+- `events_source_check`: community/venue/admin/import
+
+#### P1 Fixes Included
+- P1-2: Added `web/src/app/happenings/error.tsx` error boundary
+- P1-4: Fixed hardcoded URLs in `layout.tsx`, `blog/[slug]/page.tsx`, `open-mics/[slug]/page.tsx`
+
 **Next phases available:**
-- **Phase 3** — Member gigs
-- **Phase 4** — Unified detail pages
+- **Phase 4** — Member gigs
+- **Phase 5** — Unified detail pages
 
 ### Happenings Page Consolidation (December 2025)
 - **Unified `/happenings` page** - Consolidated `/events` and `/open-mics` listing pages into a single `/happenings` page with filter tabs
@@ -1524,14 +1558,14 @@ Prioritized list of technical debt and improvements discovered during repo audit
 
 ### P1 — Should fix soon (correctness/security risk)
 
-| ID | Issue | Evidence | Suggested Action |
-|----|-------|----------|------------------|
-| P1-1 | API routes missing rate limiting | All `/api/*` routes have no rate limiting | Add middleware-based rate limiting for auth/contact/newsletter routes |
-| P1-2 | Missing error.tsx on key public routes | `/happenings`, `/members`, `/blog`, `/gallery` lack error boundaries | Add error.tsx files to prevent full-page crashes |
-| P1-3 | 53 unnecessary `as any` casts in profile page | `dashboard/profile/page.tsx:132-161` casts fields now typed in database.types.ts | Remove casts, use proper types |
-| P1-4 | Hardcoded site URL in display page | `events/[id]/display/page.tsx:38` uses `https://denversongwriterscollective.org` | Use `NEXT_PUBLIC_SITE_URL` env var |
-| P1-5 | Empty alt text on user avatars | 8 `<img alt="">` instances include avatars that should have user names | Add `alt={user.full_name || "User avatar"}` |
-| P1-6 | Console.log statements in production | 30 console.log calls (most are dev-guarded, but 10+ are in API routes/onboarding) | Remove or gate with `NODE_ENV` check |
+| ID | Issue | Evidence | Status |
+|----|-------|----------|--------|
+| P1-1 | API routes missing rate limiting | All `/api/*` routes have no rate limiting | Open - Add middleware-based rate limiting |
+| P1-2 | Missing error.tsx on key public routes | `/happenings`, `/members`, `/blog`, `/gallery` lack error boundaries | ✅ FIXED - `web/src/app/happenings/error.tsx` added |
+| P1-3 | 53 unnecessary `as any` casts in profile page | `dashboard/profile/page.tsx:132-161` casts fields now typed in database.types.ts | Open - Remove casts, use proper types |
+| P1-4 | Hardcoded site URL in metadata pages | `layout.tsx`, `blog/[slug]`, `open-mics/[slug]` used hardcoded URLs | ✅ FIXED - Now use `NEXT_PUBLIC_SITE_URL` env var |
+| P1-5 | Empty alt text on user avatars | 8 `<img alt="">` instances include avatars that should have user names | Open - Add `alt={user.full_name}` |
+| P1-6 | Console.log statements in production | 30 console.log calls (most are dev-guarded, but 10+ are in API routes/onboarding) | Open - Remove or gate with `NODE_ENV` check |
 
 ### P2 — Nice to fix (DX, docs drift)
 

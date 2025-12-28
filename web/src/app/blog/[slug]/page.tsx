@@ -37,7 +37,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? post.excerpt.slice(0, 155) + (post.excerpt.length > 155 ? "..." : "")
     : `Read "${post.title}" by ${authorName} on the Denver Songwriters Collective blog.`;
 
-  const canonicalUrl = `https://denver-songwriters-collective.vercel.app/blog/${slug}`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+  const canonicalUrl = `${siteUrl}/blog/${slug}`;
 
   return {
     title,

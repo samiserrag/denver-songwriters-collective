@@ -751,9 +751,11 @@ export type Database = {
       }
       events: {
         Row: {
+          age_policy: string | null
           allow_guest_slots: boolean | null
           capacity: number | null
           category: string | null
+          cost_label: string | null
           cover_image_url: string | null
           created_at: string | null
           day_of_week: string | null
@@ -766,12 +768,15 @@ export type Database = {
           host_notes: string | null
           id: string
           is_dsc_event: boolean | null
+          is_free: boolean | null
           is_published: boolean | null
           is_recurring: boolean | null
           is_showcase: boolean | null
           is_spotlight: boolean | null
           last_verified_at: string | null
+          location_mode: string | null
           notes: string | null
+          online_url: string | null
           parent_event_id: string | null
           recurrence_end_date: string | null
           recurrence_pattern: string | null
@@ -779,13 +784,18 @@ export type Database = {
           region_id: number | null
           series_id: string | null
           series_index: number | null
+          signup_deadline: string | null
+          signup_mode: string | null
           signup_time: string | null
+          signup_url: string | null
           slot_duration_minutes: number | null
           slot_offer_window_minutes: number | null
           slug: string | null
+          source: string | null
           spotlight_reason: string | null
           start_time: string | null
           status: string | null
+          timezone: string | null
           title: string
           total_slots: number | null
           updated_at: string | null
@@ -795,9 +805,11 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          age_policy?: string | null
           allow_guest_slots?: boolean | null
           capacity?: number | null
           category?: string | null
+          cost_label?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           day_of_week?: string | null
@@ -810,12 +822,15 @@ export type Database = {
           host_notes?: string | null
           id?: string
           is_dsc_event?: boolean | null
+          is_free?: boolean | null
           is_published?: boolean | null
           is_recurring?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
           last_verified_at?: string | null
+          location_mode?: string | null
           notes?: string | null
+          online_url?: string | null
           parent_event_id?: string | null
           recurrence_end_date?: string | null
           recurrence_pattern?: string | null
@@ -823,13 +838,18 @@ export type Database = {
           region_id?: number | null
           series_id?: string | null
           series_index?: number | null
+          signup_deadline?: string | null
+          signup_mode?: string | null
           signup_time?: string | null
+          signup_url?: string | null
           slot_duration_minutes?: number | null
           slot_offer_window_minutes?: number | null
           slug?: string | null
+          source?: string | null
           spotlight_reason?: string | null
           start_time?: string | null
           status?: string | null
+          timezone?: string | null
           title: string
           total_slots?: number | null
           updated_at?: string | null
@@ -839,9 +859,11 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          age_policy?: string | null
           allow_guest_slots?: boolean | null
           capacity?: number | null
           category?: string | null
+          cost_label?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           day_of_week?: string | null
@@ -854,12 +876,15 @@ export type Database = {
           host_notes?: string | null
           id?: string
           is_dsc_event?: boolean | null
+          is_free?: boolean | null
           is_published?: boolean | null
           is_recurring?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
           last_verified_at?: string | null
+          location_mode?: string | null
           notes?: string | null
+          online_url?: string | null
           parent_event_id?: string | null
           recurrence_end_date?: string | null
           recurrence_pattern?: string | null
@@ -867,13 +892,18 @@ export type Database = {
           region_id?: number | null
           series_id?: string | null
           series_index?: number | null
+          signup_deadline?: string | null
+          signup_mode?: string | null
           signup_time?: string | null
+          signup_url?: string | null
           slot_duration_minutes?: number | null
           slot_offer_window_minutes?: number | null
           slug?: string | null
+          source?: string | null
           spotlight_reason?: string | null
           start_time?: string | null
           status?: string | null
+          timezone?: string | null
           title?: string
           total_slots?: number | null
           updated_at?: string | null
@@ -1636,6 +1666,7 @@ export type Database = {
           venmo_handle: string | null
           website_url: string | null
           youtube_url: string | null
+          zip_code: string | null
         }
         Insert: {
           available_for_hire?: boolean | null
@@ -1679,6 +1710,7 @@ export type Database = {
           venmo_handle?: string | null
           website_url?: string | null
           youtube_url?: string | null
+          zip_code?: string | null
         }
         Update: {
           available_for_hire?: boolean | null
@@ -1722,6 +1754,7 @@ export type Database = {
           venmo_handle?: string | null
           website_url?: string | null
           youtube_url?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }
@@ -2029,6 +2062,7 @@ export type Database = {
       }
       venues: {
         Row: {
+          accessibility_notes: string | null
           address: string
           city: string
           contact_link: string | null
@@ -2037,7 +2071,9 @@ export type Database = {
           id: string
           map_link: string | null
           name: string
+          neighborhood: string | null
           notes: string | null
+          parking_notes: string | null
           phone: string | null
           state: string
           updated_at: string | null
@@ -2045,6 +2081,7 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          accessibility_notes?: string | null
           address: string
           city: string
           contact_link?: string | null
@@ -2053,7 +2090,9 @@ export type Database = {
           id?: string
           map_link?: string | null
           name: string
+          neighborhood?: string | null
           notes?: string | null
+          parking_notes?: string | null
           phone?: string | null
           state: string
           updated_at?: string | null
@@ -2061,6 +2100,7 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          accessibility_notes?: string | null
           address?: string
           city?: string
           contact_link?: string | null
@@ -2069,7 +2109,9 @@ export type Database = {
           id?: string
           map_link?: string | null
           name?: string
+          neighborhood?: string | null
           notes?: string | null
+          parking_notes?: string | null
           phone?: string | null
           state?: string
           updated_at?: string | null

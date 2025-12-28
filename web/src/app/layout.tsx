@@ -40,7 +40,7 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-const siteUrl = "https://denver-songwriters-collective.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
 
 export const viewport: Viewport = {
   themeColor: "#d4a853",

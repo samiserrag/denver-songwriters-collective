@@ -39,7 +39,8 @@ export async function generateMetadata({
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
     : `Join ${event.title} at ${venueName}${dayText ? ` every ${dayText}` : ""}${timeText ? ` at ${timeText}` : ""}. Find open mics in Denver with the Denver Songwriters Collective.`;
 
-  const canonicalUrl = `https://denver-songwriters-collective.vercel.app/open-mics/${event.slug || slug}`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+  const canonicalUrl = `${siteUrl}/open-mics/${event.slug || slug}`;
 
   return {
     title,
