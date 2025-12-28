@@ -221,6 +221,33 @@ export function ImageUpload({
     }
   }, [getCroppedImage, onUpload]);
 
+  // Upload original file without cropping - preserves original bytes
+  const handleUseOriginal = useCallback(async () => {
+    if (!originalFileRef.current) {
+      setError('No original file available.');
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const uploadedUrl = await onUpload(originalFileRef.current);
+      if (uploadedUrl) {
+        setShowCropper(false);
+        setPreviewUrl(null);
+        originalFileRef.current = null;
+      } else {
+        setError('Failed to upload image. Please try again.');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [onUpload]);
+
   const handleCancel = useCallback(() => {
     setShowCropper(false);
     setPreviewUrl(null);
@@ -339,29 +366,41 @@ export function ImageUpload({
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
+            {/* Primary actions: Cancel and Save Cropped */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isUploading}
+                className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCropComplete}
+                disabled={isUploading || !completedCrop}
+                className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Save Cropped'
+                )}
+              </button>
+            </div>
+            {/* Skip crop option - uploads original file bytes */}
             <button
               type="button"
-              onClick={handleCancel}
+              onClick={handleUseOriginal}
               disabled={isUploading}
-              className="flex-1 px-4 py-3 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-50"
+              className="w-full px-4 py-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-white/5 transition-colors disabled:opacity-50 text-sm"
             >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleCropComplete}
-              disabled={isUploading || !completedCrop}
-              className="flex-1 px-4 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Save'
-              )}
+              Skip cropping — use original image
             </button>
           </div>
         </div>
