@@ -113,6 +113,36 @@ Silence is better than lying.
 
 ---
 
+## 4.6 Minimal User Events (CRITICAL)
+
+The platform must fully support events created with only:
+- **title** (required)
+- **event_date** (required)
+- **start_time** (required)
+
+Everything else is optional: images, descriptions, venues, RSVP, timeslots, cost, signup.
+
+### Card Behavior with Missing Fields
+- No image → no image container (text rises naturally)
+- No venue → omit venue line entirely
+- No cost → omit cost line
+- No signup → omit signup line
+- No description → not needed on cards anyway
+
+### Detail Page Behavior with Missing Fields
+- No poster → no poster section
+- No description → no description block
+- No venue → no map/address section
+- No signup/RSVP → no CTA button
+
+### Core Principle
+**Minimal events should feel intentional and complete, not "unfinished."**
+
+No placeholder text ("Not provided", "TBD", "N/A").
+Absence is better than noise.
+
+---
+
 ## 5. Age Policy Rules (LOCKED)
 
 * **DSC events:**
