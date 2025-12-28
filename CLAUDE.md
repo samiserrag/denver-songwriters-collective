@@ -582,6 +582,7 @@ Run `20251212000002_supabase_configuration_audit.sql` in SQL Editor to verify:
 See [docs/known-issues.md](./docs/known-issues.md) for detailed tracking.
 
 ### High Priority
+- [ ] **Age verification at signup** - Add one-time 18+ confirmation checkbox at account creation
 - [ ] Email notifications not implemented (RSVP confirmations, host approvals)
 - [ ] Image optimization/CDN for gallery (currently direct Supabase storage)
 - [ ] Progressive Identity System (guest email verification for slot claims without account)
