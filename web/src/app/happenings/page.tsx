@@ -122,6 +122,47 @@ export default async function HappeningsPage({
       )}
 
       <PageContainer className={showHero ? "" : "pt-8"}>
+        {/* Community CTA - shows on Open Mics and All views */}
+        {(typeFilter === "open_mic" || !typeFilter) && (
+          <div className="mb-8 p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]">
+            <p className="text-[var(--color-text-secondary)] text-sm mb-3">
+              This directory is maintained by our community. Help us keep it accurate and complete!
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/submit-open-mic"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition"
+              >
+                + Add an Open Mic
+              </Link>
+              <Link
+                href="/submit-open-mic"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
+              >
+                Submit a Correction
+              </Link>
+            </div>
+            <p className="text-[var(--color-text-tertiary)] text-xs mt-3">
+              Are you a host? <Link href="/dashboard/my-events" className="text-[var(--color-link)] hover:underline">Claim your listing</Link> to manage it directly.
+            </p>
+          </div>
+        )}
+
+        {/* DSC Events CTA */}
+        {typeFilter === "dsc" && (
+          <div className="mb-8 p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]">
+            <p className="text-[var(--color-text-secondary)] text-sm mb-3">
+              DSC Happenings are official Denver Songwriters Collective events — showcases, workshops, and community gatherings.
+            </p>
+            <Link
+              href="/dashboard/my-events/new"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition"
+            >
+              + Create a Happening
+            </Link>
+          </div>
+        )}
+
         {/* Page header with title + filters */}
         <div className="mb-6">
           {!showHero && (
@@ -160,10 +201,10 @@ export default async function HappeningsPage({
         {datedEvents.length > 0 && (
           <section className="mb-12">
             <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">Upcoming Happenings</h2>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
                 <div key={date}>
-                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-1">
+                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2 pb-1 border-b border-[var(--color-border-default)]">
                     {formatDateHeader(date)}
                   </h3>
                   <div className="flex flex-col gap-2">
@@ -180,10 +221,10 @@ export default async function HappeningsPage({
         {recurringEvents.length > 0 && (
           <section>
             <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">Weekly Open Mics</h2>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
                 <div key={day}>
-                  <h3 className="text-lg font-medium text-[var(--color-text-secondary)] mb-1">
+                  <h3 className="text-2xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-2 pb-1 border-b-2 border-[var(--color-accent-primary)]">
                     {day}s
                   </h3>
                   <div className="flex flex-col gap-2">
