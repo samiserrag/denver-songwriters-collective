@@ -824,6 +824,31 @@ After deployment, verify these scenarios:
 - **Phase 4** — Member gigs
 - **Phase 5** — Unified detail pages
 
+### Phase 3.1 Continued: Dashboard & UX Polish (December 2025)
+
+#### Admin Dashboard Redesign
+- **Redesigned `/dashboard/admin`** to match account settings page style
+- **Platform Overview section** - 4 clickable stat cards (Events, Songwriters, Studios, Members)
+- **Pending Review section** - Amber-highlighted, only shows when items need attention
+- **Organized link groups** - Content Management, Community & Users, Moderation, Site Configuration, System
+- **Inline theme controls** - Theme picker and font preset selector in Site Configuration
+- Key file: `web/src/app/(protected)/dashboard/admin/page.tsx`
+
+#### User Dashboard Consolidation
+- **Quick actions grid** - 6-card grid with common tasks (Edit Profile, My Events, My RSVPs, etc.)
+- **User gallery page** - `/dashboard/gallery` for photo uploads with approval status badges
+- Key files: `web/src/app/(protected)/dashboard/page.tsx`, `web/src/app/(protected)/dashboard/gallery/page.tsx`
+
+#### Gig/Performance Event Type
+- **New event type: "gig"** - For scheduled performances/concerts by artists or bands
+- **RSVP mode by default** - Gigs use capacity-based RSVP, not timeslots
+- Key file: `web/src/types/events.ts`
+
+#### Get Directions 404 Bug Fix
+- **Root cause:** `map_link` was "UNKNOWN" or null for venues without addresses
+- **Fix:** Added defensive null checks before rendering Google Maps link
+- **Affected files:** `web/src/app/open-mics/[slug]/page.tsx`, `web/src/components/happenings/HappeningCard.tsx`
+
 ### Happenings Page Consolidation (December 2025)
 - **Unified `/happenings` page** - Consolidated `/events` and `/open-mics` listing pages into a single `/happenings` page with filter tabs
 - **Filter tabs** - `?type=open_mic` shows open mic directory, `?type=dsc` shows DSC events, no param shows all
