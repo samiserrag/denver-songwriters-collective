@@ -9,6 +9,7 @@ import { RSVPSection } from "@/components/events/RSVPSection";
 import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 import { TimeslotSection } from "@/components/events/TimeslotSection";
 import { HostControls } from "@/components/events/HostControls";
+import { PosterMedia } from "@/components/media";
 
 export const dynamic = "force-dynamic";
 
@@ -212,15 +213,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       </Link>
 
       <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
-        {event.cover_image_url && (
-          <div className="aspect-[4/3] w-full max-w-md mx-auto relative">
-            <img
-              src={event.cover_image_url}
-              alt={event.title}
-              className="w-full h-full object-cover rounded-t-2xl"
-            />
-          </div>
-        )}
+        {/* Poster - Phase 3.1: full width, natural height, no cropping */}
+        <PosterMedia
+          src={event.cover_image_url}
+          alt={event.title}
+          variant="detail"
+          priority={true}
+        />
 
         <div className="p-6 md:p-8">
           {/* Event type and DSC badges */}

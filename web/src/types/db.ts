@@ -595,4 +595,7 @@ export type EventWithVenue = {
   venue_id?: string | null
   venue_name?: string | null
   venue_address?: string | null
+
+  // Display
+  cover_image_url?: string | null
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { EventCard } from "./EventCard";
+import { HappeningCard } from "@/components/happenings/HappeningCard";
+import type { HappeningEvent } from "@/components/happenings/HappeningCard";
 import type { Event } from "@/types";
 
 interface EventGridProps {
@@ -32,11 +33,11 @@ export function EventGrid({ events, onSelect, className, compact = false }: Even
         : "grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
       }>
         {events.map((event) => (
-          <EventCard
+          <HappeningCard
             key={event.id}
-            event={event}
+            event={event as unknown as HappeningEvent}
             onClick={onSelect ? () => onSelect(event) : undefined}
-            compact={compact}
+            variant="grid"
           />
         ))}
       </div>

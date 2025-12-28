@@ -1,13 +1,15 @@
 /**
  * Regression test: Ensure list variant cards don't use grid-only sizing
  *
- * These tests verify that when cards are rendered in "list" variant,
- * they don't have the large media containers that cause layout issues.
+ * These tests verify that when the unified HappeningCard is rendered in "list" variant,
+ * it doesn't have the large media containers that cause layout issues.
+ *
+ * Phase 3.1: All event types now use the unified HappeningCard component.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
-import EventCard from '../EventCard';
-import { EventCard as DscEventCard } from '../events/EventCard';
+import { HappeningCard } from '../happenings/HappeningCard';
+import type { HappeningEvent } from '../happenings/HappeningCard';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -34,8 +36,8 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
-describe('EventCard (Open Mic) list variant', () => {
-  const mockOpenMicEvent = {
+describe('HappeningCard (Open Mic) list variant', () => {
+  const mockOpenMicEvent: HappeningEvent = {
     id: 'test-open-mic-1',
     title: 'Monday Night Open Mic',
     event_type: 'open_mic',
@@ -45,37 +47,35 @@ describe('EventCard (Open Mic) list variant', () => {
     venue: { name: 'Test Venue' },
   };
 
-  it('should not render media section in list variant', () => {
+  it('should not render image section in list variant', () => {
     const { container } = render(
-      <EventCard event={mockOpenMicEvent as any} variant="list" />
+      <HappeningCard event={mockOpenMicEvent} variant="list" />
     );
-    const html = container.innerHTML;
 
-    // Should not have the h-32 media container class
-    expect(html).not.toMatch(/class="[^"]*h-32[^"]*"/);
+    // List variant should not have any img tags
+    expect(container.querySelectorAll('img').length).toBe(0);
   });
 
-  it('should render media section in grid variant', () => {
+  it('should render image section in grid variant when image exists', () => {
+    const eventWithImage = { ...mockOpenMicEvent, cover_image_url: 'https://example.com/image.jpg' };
     const { container } = render(
-      <EventCard event={mockOpenMicEvent as any} variant="grid" />
+      <HappeningCard event={eventWithImage} variant="grid" />
     );
-    const html = container.innerHTML;
 
-    // Should have the h-32 media container class
-    expect(html).toMatch(/h-32/);
+    // Should have an img tag in grid variant with image
+    expect(container.querySelectorAll('img').length).toBe(1);
   });
 
-  it('should not render day badge in list variant (since grouping shows day)', () => {
+  it('should not render day badge overlay in list variant (date shown inline)', () => {
     const { container } = render(
-      <EventCard event={mockOpenMicEvent as any} variant="list" />
+      <HappeningCard event={mockOpenMicEvent} variant="list" />
     );
 
-    // The day badge has specific styling with "Monday" text in a backdrop-blur element
-    // In list variant, this should not be present in the media section
+    // The day badge overlay uses backdrop-blur and is inside the image section
+    // In list variant, image section doesn't render, so no backdrop-blur day badges
     const backdropElements = container.querySelectorAll('.backdrop-blur');
 
     // None of the backdrop elements should contain "Monday" as the day badge
-    // (status badges might still exist but day badge should be hidden)
     const dayBadgeTexts = Array.from(backdropElements)
       .map(el => el.textContent)
       .filter(text => text === 'Monday');
@@ -84,8 +84,8 @@ describe('EventCard (Open Mic) list variant', () => {
   });
 });
 
-describe('DscEventCard list variant', () => {
-  const mockDscEvent = {
+describe('HappeningCard (DSC Event) list variant', () => {
+  const mockDscEvent: HappeningEvent = {
     id: 'test-dsc-1',
     title: 'Songwriter Showcase',
     event_type: 'showcase',
@@ -97,31 +97,18 @@ describe('DscEventCard list variant', () => {
     rsvp_count: 10,
   };
 
-  it('should not have aspect-ratio classes in list variant', () => {
+  it('should not have image section in list variant', () => {
     const { container } = render(
-      <DscEventCard event={mockDscEvent as any} variant="list" />
+      <HappeningCard event={mockDscEvent} variant="list" />
     );
-    const html = container.innerHTML;
 
-    // Should not have aspect-[4/3] class
-    expect(html).not.toMatch(/aspect-\[4\/3\]/);
-    expect(html).not.toMatch(/aspect-video/);
-    expect(html).not.toMatch(/aspect-square/);
-  });
-
-  it('should have aspect-ratio in grid variant', () => {
-    const { container } = render(
-      <DscEventCard event={mockDscEvent as any} variant="grid" />
-    );
-    const html = container.innerHTML;
-
-    // Should have aspect-[4/3] class
-    expect(html).toMatch(/aspect-\[4\/3\]/);
+    // List variant should not have any img tags
+    expect(container.querySelectorAll('img').length).toBe(0);
   });
 
   it('should render date badge inline in list variant', () => {
     const { container } = render(
-      <DscEventCard event={mockDscEvent as any} variant="list" />
+      <HappeningCard event={mockDscEvent} variant="list" />
     );
 
     // Should have date label visible (JAN 14 or 15 depending on timezone)
@@ -131,8 +118,8 @@ describe('DscEventCard list variant', () => {
   });
 });
 
-describe('List variant density guards', () => {
-  const mockOpenMicEvent = {
+describe('HappeningCard list variant density guards', () => {
+  const mockOpenMicEvent: HappeningEvent = {
     id: 'test-open-mic-1',
     title: 'Monday Night Open Mic',
     event_type: 'open_mic',
@@ -142,7 +129,7 @@ describe('List variant density guards', () => {
     venue: { name: 'Test Venue' },
   };
 
-  const mockDscEvent = {
+  const mockDscEvent: HappeningEvent = {
     id: 'test-dsc-1',
     title: 'Songwriter Showcase',
     event_type: 'showcase',
@@ -154,11 +141,11 @@ describe('List variant density guards', () => {
     rsvp_count: 10,
   };
 
-  it('EventCard list variant uses tight density classes', () => {
+  it('HappeningCard list variant uses tight density classes (open mic)', () => {
     const { getByTestId } = render(
-      <EventCard event={mockOpenMicEvent as any} variant="list" />
+      <HappeningCard event={mockOpenMicEvent} variant="list" />
     );
-    const cls = getByTestId('event-card-content').className;
+    const cls = getByTestId('happening-card-content').className;
 
     expect(cls).toMatch(/\bp-3\b/);
     expect(cls).not.toMatch(/\bp-4\b/);
@@ -166,11 +153,11 @@ describe('List variant density guards', () => {
     expect(cls).not.toMatch(/\bspace-y-2\b/);
   });
 
-  it('DscEventCard list variant uses tight density classes', () => {
+  it('HappeningCard list variant uses tight density classes (dsc event)', () => {
     const { getByTestId } = render(
-      <DscEventCard event={mockDscEvent as any} variant="list" />
+      <HappeningCard event={mockDscEvent} variant="list" />
     );
-    const cls = getByTestId('dsc-event-card').className;
+    const cls = getByTestId('happening-card-content').className;
 
     expect(cls).toMatch(/\bp-3\b/);
     expect(cls).not.toMatch(/\bp-4\b/);
@@ -178,11 +165,11 @@ describe('List variant density guards', () => {
     expect(cls).not.toMatch(/\bspace-y-2\b/);
   });
 
-  it('EventCard grid variant keeps standard density classes', () => {
+  it('HappeningCard grid variant keeps standard density classes', () => {
     const { getByTestId } = render(
-      <EventCard event={mockOpenMicEvent as any} variant="grid" />
+      <HappeningCard event={mockOpenMicEvent} variant="grid" />
     );
-    const cls = getByTestId('event-card-content').className;
+    const cls = getByTestId('happening-card-content').className;
 
     expect(cls).toMatch(/\bp-5\b/);
     expect(cls).toMatch(/\bspace-y-3\b/);

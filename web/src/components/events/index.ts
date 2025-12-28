@@ -1,3 +1,4 @@
+/** @deprecated Use HappeningCard from @/components/happenings/HappeningCard instead */
 export { EventCard } from "./EventCard";
 export { EventComments } from "./EventComments";
 export { EventGrid } from "./EventGrid";

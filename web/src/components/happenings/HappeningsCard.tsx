@@ -1,17 +1,15 @@
 "use client";
 
 /**
- * HappeningsCard - Delegating wrapper for event cards
+ * HappeningsCard - Wrapper for the unified HappeningCard component
  *
- * Renders the appropriate existing card based on event type.
- * Does NOT merge card logic - delegates to existing components.
- *
- * Always passes variant="list" for compact happenings page display.
+ * This is a thin wrapper that always passes variant="list" for compact
+ * happenings page display. All event types use the same unified card.
  */
 
 import type { Event } from "@/types";
-import RootEventCard from "@/components/EventCard";
-import { EventCard as DscEventCard } from "@/components/events/EventCard";
+import { HappeningCard } from "./HappeningCard";
+import type { HappeningEvent } from "./HappeningCard";
 
 type Props = {
   event: Event;
@@ -19,9 +17,11 @@ type Props = {
 };
 
 export function HappeningsCard({ event, searchQuery }: Props) {
-  if (event.event_type === "open_mic") {
-    return <RootEventCard event={event as any} searchQuery={searchQuery} variant="list" />;
-  }
-
-  return <DscEventCard event={event as any} variant="list" />;
+  return (
+    <HappeningCard
+      event={event as unknown as HappeningEvent}
+      searchQuery={searchQuery}
+      variant="list"
+    />
+  );
 }

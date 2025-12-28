@@ -26,59 +26,36 @@ This document defines the contracts for key components in the codebase. These co
 
 ## Card Components
 
-### EventCard (Open Mic Cards)
+### HappeningCard (Unified Card — Phase 3.1)
 
-**File:** `web/src/components/EventCard.tsx`
+**File:** `web/src/components/happenings/HappeningCard.tsx`
+
+> **Phase 3.1 Migration:** This is the single unified card component for ALL event types.
+> The old `EventCard.tsx` (open mics) and `events/EventCard.tsx` (DSC events) are deprecated.
 
 **Props:**
 ```typescript
-interface EventCardProps {
-  event: EventType;
+interface HappeningCardProps {
+  event: HappeningEvent;
   searchQuery?: string | null;
   variant?: "grid" | "list";  // default: "grid"
-}
-```
-
-**Variant Behavior:**
-
-| Variant | Media Section | Day Badge | Recurrence Text | Padding |
-|---------|---------------|-----------|-----------------|---------|
-| `"grid"` | Visible (`h-32`) | Visible (overlay) | Visible | `p-5` |
-| `"list"` | **Hidden** | **Hidden** (group header shows day) | **Hidden** | `p-4` |
-
-**Rationale:**
-- In list mode, the group header (e.g., "Mondays") already shows the day, so day badge and recurrence text are redundant
-- Media section is hidden to create compact rows
-
-**Test:** `src/components/__tests__/card-variants.test.tsx`
-
----
-
-### DscEventCard (DSC Event Cards)
-
-**File:** `web/src/components/events/EventCard.tsx`
-
-**Props:**
-```typescript
-interface EventCardProps {
-  event: Event;
   onClick?: () => void;
   className?: string;
-  compact?: boolean;        // default: false
-  variant?: "grid" | "list"; // default: "grid"
 }
 ```
 
 **Variant Behavior:**
 
-| Variant | Media Section | Date Badge Location | Text Alignment |
-|---------|---------------|---------------------|----------------|
-| `"grid"` | Visible (`aspect-[4/3]`) | Overlay on media | Center |
-| `"list"` | **Hidden** | Inline in content header | Left |
+| Variant | Image Section | Badge Location | Recurrence Text | Padding |
+|---------|---------------|----------------|-----------------|---------|
+| `"grid"` | Visible (if `cover_image_url` exists) | Overlay on image | Visible | `p-5` |
+| `"list"` | **Hidden** | Inline in content header | **Hidden** | `p-3` |
 
-**Date Badge Values:**
-- Valid date: `"JAN 15"` (month + day)
-- No date or invalid: `"LIVE"`
+**Phase 3.1 Display Rules:**
+- Image section only renders if `cover_image_url` or `imageUrl` exists (no placeholders)
+- Images use `object-fit: contain` with bounded max-height (no cropping)
+- Missing fields are omitted, never shown as placeholders (NULL = show nothing)
+- Location mode badges: "Online" (blue) or "Hybrid" (purple) for non-venue events
 
 **Test:** `src/components/__tests__/card-variants.test.tsx`
 
@@ -89,9 +66,20 @@ interface EventCardProps {
 **File:** `web/src/components/happenings/HappeningsCard.tsx`
 
 **Behavior:**
-- Delegates to `EventCard` for `event_type === "open_mic"`
-- Delegates to `DscEventCard` for all other types
+- Thin wrapper around `HappeningCard`
 - **Always passes `variant="list"`** for compact happenings page display
+- Used by `/happenings` page grouping logic
+
+---
+
+### Legacy Components (Deprecated)
+
+> **⚠️ DEPRECATED:** These components are kept for backward compatibility but should not be used in new code.
+
+| Old Component | File | Replacement |
+|---------------|------|-------------|
+| `EventCard` (open mics) | `web/src/components/EventCard.tsx` | `HappeningCard` |
+| `EventCard` (DSC events) | `web/src/components/events/EventCard.tsx` | `HappeningCard` |
 
 ---
 

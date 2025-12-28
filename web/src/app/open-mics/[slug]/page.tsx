@@ -6,6 +6,7 @@ import Link from "next/link";
 import { highlight, escapeHtml, linkifyUrls } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
+import { PosterMedia } from "@/components/media";
 
 // Generate dynamic metadata for SEO and social sharing
 export async function generateMetadata({
@@ -165,25 +166,52 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
         Back to Directory
       </Link>
 
-      {/* Hero section with placeholder image */}
+      {/* Hero section - Phase 3.1: poster first if exists, else placeholder */}
       <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
-        <div className="h-48 md:h-64 relative">
-          <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title ?? "Open Mic"} />
-          {/* Day badge */}
-          {event.day_of_week && (
-            <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
-              <span className="text-[var(--color-text-accent)] font-semibold">{event.day_of_week}s</span>
-            </div>
-          )}
-          {/* Category badge */}
-          {event.category && (
-            <div className="absolute top-4 right-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[(event.category as string)] || "bg-slate-900/60 text-slate-300"}`}>
-                {event.category}
-              </span>
-            </div>
-          )}
-        </div>
+        {event.cover_image_url ? (
+          /* Poster - Phase 3.1: full width, natural height, no cropping */
+          <div className="relative">
+            <PosterMedia
+              src={event.cover_image_url}
+              alt={event.title ?? "Open Mic"}
+              variant="detail"
+              priority={true}
+            />
+            {/* Day badge */}
+            {event.day_of_week && (
+              <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
+                <span className="text-[var(--color-text-accent)] font-semibold">{event.day_of_week}s</span>
+              </div>
+            )}
+            {/* Category badge */}
+            {event.category && (
+              <div className="absolute top-4 right-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[(event.category as string)] || "bg-slate-900/60 text-slate-300"}`}>
+                  {event.category}
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Fallback placeholder when no poster exists */
+          <div className="h-48 md:h-64 relative">
+            <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title ?? "Open Mic"} />
+            {/* Day badge */}
+            {event.day_of_week && (
+              <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
+                <span className="text-[var(--color-text-accent)] font-semibold">{event.day_of_week}s</span>
+              </div>
+            )}
+            {/* Category badge */}
+            {event.category && (
+              <div className="absolute top-4 right-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[(event.category as string)] || "bg-slate-900/60 text-slate-300"}`}>
+                  {event.category}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="p-6 md:p-8">
           <h1

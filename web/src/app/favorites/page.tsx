@@ -1,6 +1,7 @@
 import React from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import EventCard from "@/components/EventCard";
+import { HappeningCard } from "@/components/happenings/HappeningCard";
+import type { HappeningEvent } from "@/components/happenings/HappeningCard";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
@@ -81,7 +82,7 @@ export default async function FavoritesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {events.map((ev: any) => (
-            <EventCard key={ev.id} event={ev} />
+            <HappeningCard key={ev.id} event={ev as HappeningEvent} variant="grid" />
           ))}
         </div>
       )}

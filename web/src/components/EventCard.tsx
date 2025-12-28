@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * @deprecated This component is deprecated. Use HappeningCard from @/components/happenings/HappeningCard instead.
+ * Kept for backward compatibility during migration. Will be removed in a future version.
+ */
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";

@@ -738,6 +738,33 @@ These are broader product initiatives for post-launch development:
 - P1-2: Added `web/src/app/happenings/error.tsx` error boundary
 - P1-4: Fixed hardcoded URLs in `layout.tsx`, `blog/[slug]/page.tsx`, `open-mics/[slug]/page.tsx`
 
+### Phase 3.1: Unified Card Component — COMPLETE ✅ (December 2025)
+
+**Goal:** Single card component for ALL event types following Phase 3.1 display spec.
+
+#### Changes
+- **Created `HappeningCard`** - Unified card in `web/src/components/happenings/HappeningCard.tsx`
+- **Deprecated old cards** - `EventCard.tsx` and `events/EventCard.tsx` marked with `@deprecated`
+- **Updated call sites**:
+  - `HappeningsCard.tsx` - Now wraps unified `HappeningCard`
+  - `EventGrid.tsx` - Uses `HappeningCard` instead of `events/EventCard`
+  - `favorites/page.tsx` - Uses `HappeningCard` instead of root `EventCard`
+- **Tests updated** - `card-variants.test.tsx` now tests unified component (8 tests)
+- **Fixed nested `<a>` warning** - Map link uses `<button>` with `window.open()` instead
+
+#### Phase 3.1 Display Spec Implemented
+- Image section only renders if `cover_image_url` exists (no placeholders)
+- `object-fit: contain` for images (no forced cropping)
+- NULL fields are omitted, not shown as placeholders
+- Location mode badges: "Online" (blue) or "Hybrid" (purple)
+
+#### Key Files
+- `web/src/components/happenings/HappeningCard.tsx` - Unified card (~510 lines)
+- `web/src/components/happenings/HappeningsCard.tsx` - Wrapper for happenings page
+- `web/src/components/happenings/index.ts` - Barrel exports
+- `docs/phase-3.1-display-spec.md` - Authoritative design contract
+- `docs/CONTRACTS.md` - Updated component contracts
+
 **Next phases available:**
 - **Phase 4** — Member gigs
 - **Phase 5** — Unified detail pages
@@ -1565,7 +1592,7 @@ Prioritized list of technical debt and improvements discovered during repo audit
 | P2-2 | CONTRACTS.md field name mismatch | `docs/CONTRACTS.md:157` documents `event.date` but code uses `event.event_date` | Update contract to match schema |
 | P2-3 | Loading.tsx coverage gaps | `/happenings`, `/members`, `/blog`, `/gallery` lack loading.tsx | Add loading states for better UX |
 | P2-4 | qrcode.react only used in 1 file | `package.json` has both `qrcode` and `qrcode.react` | Audit if both are needed |
-| P2-5 | Duplicate EventCard components | `components/EventCard.tsx` (open mics) + `components/events/EventCard.tsx` (DSC) | Consider unifying with props/variants |
+| P2-5 | Duplicate EventCard components | `components/EventCard.tsx` (open mics) + `components/events/EventCard.tsx` (DSC) | ✅ FIXED - Unified as `HappeningCard` in Phase 3.1 |
 | P2-6 | Duplicate VenueSelector components | `components/ui/VenueSelector.tsx` + `components/admin/VenueSelector.tsx` | Merge or document distinction |
 | P2-7 | Unused fonts.ts file | `lib/fonts.ts` exports not imported anywhere | Delete or migrate font config to it |
 | P2-8 | Stale TODO comment | `EventUpdateSuggestionsTable.tsx:96` - "TODO: Send email to submitter" | Complete or remove if already done elsewhere |
