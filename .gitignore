@@ -29,8 +29,8 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Logs
-logs/
+# Logs (root level only, not app routes like /dashboard/admin/logs)
+/logs/
 *.log
 
 .vercel/
