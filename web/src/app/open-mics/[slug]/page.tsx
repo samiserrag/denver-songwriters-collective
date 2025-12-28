@@ -153,11 +153,9 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
   const descriptionHtml = event.description ? linkifyUrls(searchQuery ? highlight(event.description, searchQuery) : escapeHtml(event.description)) : "";
   const venueNameHtml = venue?.name ? (searchQuery ? highlight(venue.name, searchQuery) : escapeHtml(venue.name)) : "";
   const venueAddressHtml = venue?.address ? (searchQuery ? highlight(venue.address, searchQuery) : escapeHtml(venue.address)) : "";
-  const notesHtml = event.notes ? linkifyUrls(searchQuery ? highlight(event.notes, searchQuery) : escapeHtml(event.notes)) : "";
+  // NOTE: event.notes is internal admin metadata (sources, verification dates, etc.) - never render on public pages
 
-  // Combine description and notes for unified "About" section
   const hasDescription = Boolean(event.description?.trim());
-  const hasNotes = Boolean(event.notes?.trim());
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -296,24 +294,14 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             )}
           </div>
 
-          {/* About This Open Mic - merged description and notes */}
-          {(hasDescription || hasNotes) && (
+          {/* About This Open Mic - description only (notes are internal admin metadata) */}
+          {hasDescription && (
             <div className="mb-8">
               <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Open Mic</h2>
-              <div className="space-y-4">
-                {descriptionHtml && (
-                  <div
-                    className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                  />
-                )}
-                {notesHtml && (
-                  <div
-                    className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed text-sm"
-                    dangerouslySetInnerHTML={{ __html: notesHtml }}
-                  />
-                )}
-              </div>
+              <div
+                className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+              />
             </div>
           )}
 
