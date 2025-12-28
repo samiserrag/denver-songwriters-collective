@@ -2,6 +2,26 @@
 
 This document defines the contracts for key components in the codebase. These contracts ensure consistent behavior and prevent regressions.
 
+> **See also:** [Phase 3.1 Display Spec](./phase-3.1-display-spec.md) — the authoritative design contract for event cards and detail pages.
+
+---
+
+## Image Rendering Contract (Phase 3.1)
+
+**Global Rule:** Users are never required to crop, resize, or redesign images. Ever.
+
+### Cards (List View)
+- Poster is **decorative**
+- Bounded container with `object-fit: contain`
+- Letterboxing allowed
+- Card height controlled by text, not image
+
+### Detail Pages
+- Poster is **primary**
+- Rendered full width with natural height (`height: auto`)
+- No cropping, no overlays, no forced aspect ratio
+- All text content renders **below** the poster
+
 ---
 
 ## Card Components
@@ -154,8 +174,8 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 
 | Field | Source | Usage |
 |-------|--------|-------|
-| Date label | `event.date` | "JAN 15" badge |
-| Fallback | When `date` is null/invalid | "LIVE" |
+| Date label | `event.event_date` | "JAN 15" badge |
+| Fallback | When `event_date` is null/invalid | "LIVE" |
 | Start time | `event.start_time` | "7:00 PM" display |
 
 ---
