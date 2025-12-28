@@ -3,17 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const THEMES = [
-  // Dark themes
-  { id: "", label: "Gold Night", description: "Dark with warm gold accents", category: "dark" },
-  { id: "night", label: "Night", description: "Dark with amber tones", category: "dark" },
-  { id: "night-neon", label: "Night Neon", description: "Dark with purple glow", category: "dark" },
-  { id: "teal-night", label: "Teal Night", description: "Dark with cyan accents", category: "dark" },
-  // Light themes
+  // Auto - follows system preference
+  { id: "auto", label: "Auto", description: "Follows your device settings", category: "auto" },
+  // Dark theme
+  { id: "night", label: "Night", description: "Dark with warm gold accents", category: "dark" },
+  // Light theme
   { id: "sunrise", label: "Sunrise", description: "Warm and bright", category: "light" },
-  { id: "sunset", label: "Sunset", description: "Orange sunset vibes", category: "light" },
-  { id: "colorado-sky", label: "Colorado Sky", description: "Blue sky clarity", category: "light" },
-  { id: "aspen-pop", label: "Aspen Pop", description: "Fresh green energy", category: "light" },
-  { id: "red-rocks", label: "Red Rocks", description: "Sandstone warmth", category: "light" },
 ];
 
 const STORAGE_KEY = "dsc-theme";
@@ -47,20 +42,19 @@ export function ThemePicker({ compact = false, onSelect }: ThemePickerProps) {
 
   function apply(next: string) {
     setTheme(next);
-    if (next) {
+    if (next && next !== "auto") {
       document.documentElement.setAttribute("data-theme", next);
       window.localStorage.setItem(STORAGE_KEY, next);
     } else {
+      // Auto mode - remove explicit theme, let CSS media query handle it
       document.documentElement.removeAttribute("data-theme");
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.setItem(STORAGE_KEY, "auto");
     }
     setIsOpen(false);
     onSelect?.();
   }
 
   const currentTheme = THEMES.find((t) => t.id === theme) || THEMES[0];
-  const darkThemes = THEMES.filter((t) => t.category === "dark");
-  const lightThemes = THEMES.filter((t) => t.category === "light");
 
   if (compact) {
     return (
@@ -91,30 +85,10 @@ export function ThemePicker({ compact = false, onSelect }: ThemePickerProps) {
               ref={dropdownRef}
               role="listbox"
               aria-label="Theme options"
-              className="absolute right-0 mt-2 w-64 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] shadow-lg z-50 overflow-hidden"
+              className="absolute right-0 mt-2 w-56 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] shadow-lg z-50 overflow-hidden"
             >
               <div className="p-2">
-                <p className="px-2 py-1 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wide" id="dark-themes-label">Dark Themes</p>
-                {darkThemes.map((t) => (
-                  <button
-                    key={t.id || "default"}
-                    role="option"
-                    aria-selected={theme === t.id}
-                    onClick={() => apply(t.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent-primary)]/50 ${
-                      theme === t.id
-                        ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)]"
-                        : "hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)]"
-                    }`}
-                  >
-                    <span className="block text-sm font-medium">{t.label}</span>
-                    <span className="block text-xs text-[var(--color-text-tertiary)]">{t.description}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="border-t border-[var(--color-border-default)] p-2">
-                <p className="px-2 py-1 text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wide" id="light-themes-label">Light Themes</p>
-                {lightThemes.map((t) => (
+                {THEMES.map((t) => (
                   <button
                     key={t.id}
                     role="option"
@@ -130,11 +104,6 @@ export function ThemePicker({ compact = false, onSelect }: ThemePickerProps) {
                     <span className="block text-xs text-[var(--color-text-tertiary)]">{t.description}</span>
                   </button>
                 ))}
-              </div>
-              <div className="border-t border-[var(--color-border-default)] p-2">
-                <p className="px-2 text-xs text-[var(--color-text-tertiary)]">
-                  Your choice is saved locally and won&apos;t affect other visitors.
-                </p>
               </div>
             </div>
           </>
@@ -156,56 +125,25 @@ export function ThemePicker({ compact = false, onSelect }: ThemePickerProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4" role="listbox" aria-label="Theme options">
-        {/* Dark Themes */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wide">Dark</p>
-          <div className="space-y-1">
-            {darkThemes.map((t) => (
-              <button
-                key={t.id || "default"}
-                role="option"
-                aria-selected={theme === t.id}
-                onClick={() => apply(t.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
-                  theme === t.id
-                    ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10"
-                    : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/50 bg-[var(--color-bg-secondary)]"
-                }`}
-              >
-                <span className={`block text-sm font-medium ${theme === t.id ? "text-[var(--color-text-accent)]" : "text-[var(--color-text-primary)]"}`}>
-                  {t.label}
-                </span>
-                <span className="block text-xs text-[var(--color-text-tertiary)]">{t.description}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Light Themes */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wide">Light</p>
-          <div className="space-y-1">
-            {lightThemes.map((t) => (
-              <button
-                key={t.id}
-                role="option"
-                aria-selected={theme === t.id}
-                onClick={() => apply(t.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
-                  theme === t.id
-                    ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10"
-                    : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/50 bg-[var(--color-bg-secondary)]"
-                }`}
-              >
-                <span className={`block text-sm font-medium ${theme === t.id ? "text-[var(--color-text-accent)]" : "text-[var(--color-text-primary)]"}`}>
-                  {t.label}
-                </span>
-                <span className="block text-xs text-[var(--color-text-tertiary)]">{t.description}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="flex gap-3" role="listbox" aria-label="Theme options">
+        {THEMES.map((t) => (
+          <button
+            key={t.id}
+            role="option"
+            aria-selected={theme === t.id}
+            onClick={() => apply(t.id)}
+            className={`flex-1 text-center px-4 py-3 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
+              theme === t.id
+                ? "border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10"
+                : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]/50 bg-[var(--color-bg-secondary)]"
+            }`}
+          >
+            <span className={`block text-sm font-medium ${theme === t.id ? "text-[var(--color-text-accent)]" : "text-[var(--color-text-primary)]"}`}>
+              {t.label}
+            </span>
+            <span className="block text-xs text-[var(--color-text-tertiary)]">{t.description}</span>
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -122,46 +122,38 @@ export default async function HappeningsPage({
       )}
 
       <PageContainer className={showHero ? "" : "pt-8"}>
-        {/* Community CTA - shows on Open Mics and All views */}
-        {(typeFilter === "open_mic" || !typeFilter) && (
-          <div className="mb-8 p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]">
-            <p className="text-[var(--color-text-secondary)] text-sm mb-3">
-              This directory is maintained by our community. Help us keep it accurate and complete!
-            </p>
-            <div className="flex flex-wrap gap-3">
+        {/* Community CTA - shows on all views */}
+        <div className="mb-8 p-6 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
+          <p className="text-[var(--color-text-secondary)] text-base mb-4">
+            This directory is maintained by our community. Help us keep it accurate and complete!
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center mb-4">
+            {typeFilter === "open_mic" ? (
               <Link
                 href="/submit-open-mic"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium hover:opacity-90 transition"
               >
                 + Add an Open Mic
               </Link>
+            ) : (
               <Link
-                href="/submit-open-mic"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
+                href="/dashboard/my-events/new"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium hover:opacity-90 transition"
               >
-                Submit a Correction
+                + Create a Happening
               </Link>
-            </div>
-            <p className="text-[var(--color-text-tertiary)] text-xs mt-3">
-              Are you a host? <Link href="/dashboard/my-events" className="text-[var(--color-link)] hover:underline">Claim your listing</Link> to manage it directly.
-            </p>
-          </div>
-        )}
-
-        {/* DSC Events CTA */}
-        {typeFilter === "dsc" && (
-          <div className="mb-8 p-4 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]">
-            <p className="text-[var(--color-text-secondary)] text-sm mb-3">
-              DSC Happenings are official Denver Songwriters Collective events — showcases, workshops, and community gatherings.
-            </p>
+            )}
             <Link
-              href="/dashboard/my-events/new"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-white text-sm font-medium hover:opacity-90 transition"
+              href="/submit-open-mic"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
             >
-              + Create a Happening
+              Submit a Correction
             </Link>
           </div>
-        )}
+          <p className="text-[var(--color-text-tertiary)] text-sm">
+            Are you a host? <Link href="/dashboard/my-events" className="text-[var(--color-link)] hover:underline">Claim your listing</Link> to manage it directly.
+          </p>
+        </div>
 
         {/* Page header with title + filters */}
         <div className="mb-6">
