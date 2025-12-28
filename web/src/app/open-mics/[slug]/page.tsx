@@ -75,6 +75,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 function isValidMapUrl(url?: string | null): boolean {
   if (!url) return false;
+  // Must be a proper HTTP(S) URL
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
   // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
   if (url.includes("goo.gl")) return false;
   return true;

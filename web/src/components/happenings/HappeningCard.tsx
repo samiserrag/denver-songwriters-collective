@@ -132,13 +132,22 @@ function getLocationDisplay(event: HappeningEvent): string | null {
   return null;
 }
 
+function isValidMapUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  // Must be a proper HTTP(S) URL
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
+  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
+  if (url.includes("goo.gl")) return false;
+  return true;
+}
+
 function getMapUrl(event: HappeningEvent): string | null {
   if (typeof event.venue === "object" && event.venue) {
-    if (event.venue.google_maps_url && !event.venue.google_maps_url.includes("goo.gl")) {
-      return event.venue.google_maps_url;
+    if (isValidMapUrl(event.venue.google_maps_url)) {
+      return event.venue.google_maps_url!;
     }
-    if (event.venue.map_link && !event.venue.map_link.includes("goo.gl")) {
-      return event.venue.map_link;
+    if (isValidMapUrl(event.venue.map_link)) {
+      return event.venue.map_link!;
     }
   }
   // Fallback: generate search URL
