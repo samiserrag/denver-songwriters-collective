@@ -6,6 +6,7 @@ export type EventType =
   | "meetup"
   | "showcase"
   | "open_mic"
+  | "gig"
   | "other";
 
 export type RSVPStatus = "confirmed" | "waitlist" | "cancelled";
@@ -182,6 +183,12 @@ export const EVENT_TYPE_CONFIG: Record<EventType, {
     label: "Open Mic",
     description: "Open performance slots for all skill levels",
     icon: "🎵",
+    defaultCapacity: null
+  },
+  gig: {
+    label: "Gig / Performance",
+    description: "A scheduled performance or concert by an artist or band",
+    icon: "🎸",
     defaultCapacity: null
   },
   other: {
