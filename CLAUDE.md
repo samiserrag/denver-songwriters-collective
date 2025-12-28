@@ -765,6 +765,61 @@ These are broader product initiatives for post-launch development:
 - `docs/phase-3.1-display-spec.md` - Authoritative design contract
 - `docs/CONTRACTS.md` - Updated component contracts
 
+### Phase 3.1: Event Creation & Lifecycle — COMPLETE ✅ (December 2025)
+
+**North Star Principle:** "Creation is open to all; DSC branding is permissioned."
+
+#### Event Lifecycle Audit Columns
+- **Migration:** `20251228_event_lifecycle_audit.sql`
+- Added: `cancelled_at`, `cancel_reason`, `published_at`, `last_major_update_at`
+- Tracks lifecycle state changes with timestamps
+
+#### Event Creation Semantics (Unlocked for All Users)
+- Any authenticated user can now create events via `/dashboard/my-events/new`
+- `is_dsc_event` toggle only appears for approved hosts and admins
+- Online/hybrid events require `online_url` (validated on client and server)
+- Default status is `'draft'` (not published)
+- Phase 3 fields auto-include in create/update: timezone, location_mode, online_url, is_free, cost_label, signup_mode, signup_url, signup_deadline, age_policy
+
+#### Happenings Query Updates
+- **Time filter added:** `?time=upcoming` (default), `?time=past`, no param = all
+- Query now includes `status IN ('active', 'needs_verification')` for public listing
+- Date filtering: `event_date >= today OR event_date IS NULL` for upcoming
+
+#### Status Badges on HappeningCard
+- `needs_verification` → amber "Schedule TBD" badge
+- Past dated events → slate "Ended" badge (computed from `event_date`)
+- Both grid and list variants display badges consistently
+
+#### Deep-link Protection by Status
+- **Draft events:** Only accessible to hosts/admins (redirect non-authorized to `/happenings`)
+- **Status banners:** Cancelled (red), needs_verification (amber), ended (slate), draft (amber preview)
+- **RSVP/claim disabled:** `canRSVP = !isCancelled && !isPastEvent && event.is_published`
+- **TimeslotSection:** Added `disabled` prop to prevent claims on past/cancelled/draft events
+
+#### Conservative Backfills
+- DSC events: `age_policy = '18+ only'` where NULL (3 updated)
+- Open mics: `is_free = true` where NULL (97 updated)
+
+#### Key Files Modified
+- `web/src/app/api/my-events/route.ts` - Removed host blocker, added canCreateDSC
+- `web/src/app/api/my-events/[id]/route.ts` - Added Phase 3 fields, lifecycle tracking
+- `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - Phase 3 UI
+- `web/src/app/happenings/page.tsx` - Time filter, status query
+- `web/src/components/happenings/HappeningCard.tsx` - Status badges, isPastEvent
+- `web/src/app/events/[id]/page.tsx` - Draft protection, status banners, canRSVP
+- `web/src/components/events/TimeslotSection.tsx` - Added disabled prop
+
+#### Manual Verification Checklist
+After deployment, verify these scenarios:
+- [ ] **Guest user** - Visit `/happenings`, see "Upcoming" as default, "Ended" badges on past events
+- [ ] **Non-host user** - Can access `/dashboard/my-events/new`, sees NO DSC toggle
+- [ ] **Approved host** - Can access `/dashboard/my-events/new`, sees DSC toggle
+- [ ] **Draft event** - Non-authorized users redirected from `/events/[draft-id]` to `/happenings`
+- [ ] **Cancelled event** - Shows red banner, RSVP disabled, "Cancelled" badge on card
+- [ ] **Past event** - Shows slate banner, RSVP disabled, "Ended" badge on card
+- [ ] **Past filter** - `/happenings?time=past` shows only past dated events
+
 **Next phases available:**
 - **Phase 4** — Member gigs
 - **Phase 5** — Unified detail pages

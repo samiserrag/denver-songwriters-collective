@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -10,6 +10,7 @@ import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 import { TimeslotSection } from "@/components/events/TimeslotSection";
 import { HostControls } from "@/components/events/HostControls";
 import { PosterMedia } from "@/components/media";
+import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,38 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     notFound();
   }
 
+  // Draft protection: only hosts/admins can view unpublished events
+  if (!event.is_published) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      redirect("/happenings");
+    }
+
+    // Check if user is admin
+    const isAdmin = await checkAdminRole(supabase, session.user.id);
+
+    // Check if user is an event host
+    const { data: hostEntry } = await supabase
+      .from("event_hosts")
+      .select("id")
+      .eq("event_id", id)
+      .eq("user_id", session.user.id)
+      .eq("invitation_status", "accepted")
+      .maybeSingle();
+
+    if (!isAdmin && !hostEntry) {
+      redirect("/happenings");
+    }
+  }
+
+  // Compute derived states
+  const isPastEvent = event.event_date
+    ? new Date(event.event_date + "T23:59:59") < new Date()
+    : false;
+  const isCancelled = event.status === "cancelled";
+  const needsVerification = event.status === "needs_verification";
+  const canRSVP = !isCancelled && !isPastEvent && event.is_published;
+
   // If venue_name is null but venue_id exists, fetch from venues table
   let venueName = event.venue_name;
   let venueAddress = event.venue_address;
@@ -170,7 +203,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       default: return null;
     }
   };
-  const recurrenceLabel = getRecurrenceLabel();
+  const _recurrenceLabel = getRecurrenceLabel(); // Available for future use
 
   // Build calendar date from event_date + start_time
   let calendarStartDate: Date | null = null;
@@ -202,6 +235,52 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Status Banners */}
+      {isCancelled && (
+        <div className="mb-4 p-4 rounded-lg bg-red-900/30 border border-red-500/40 text-red-300">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🚫</span>
+            <div>
+              <p className="font-semibold">This event has been cancelled</p>
+              <p className="text-sm text-red-300/80">RSVP and signups are no longer available.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {needsVerification && !isCancelled && (
+        <div className="mb-4 p-4 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-300">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <div>
+              <p className="font-semibold">Schedule may have changed</p>
+              <p className="text-sm text-amber-300/80">We&apos;re confirming details with the venue. Check back soon!</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {isPastEvent && !isCancelled && (
+        <div className="mb-4 p-4 rounded-lg bg-slate-900/30 border border-slate-500/40 text-slate-300">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📅</span>
+            <div>
+              <p className="font-semibold">This event has ended</p>
+              <p className="text-sm text-slate-300/80">Check out upcoming happenings for future events.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {!event.is_published && (
+        <div className="mb-4 p-4 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-300">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📝</span>
+            <div>
+              <p className="font-semibold">Draft Preview</p>
+              <p className="text-sm text-amber-300/80">This event is not published yet. Only you and admins can see it.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Link
         href="/happenings"
         className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors mb-6"
@@ -300,8 +379,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
           {/* Action buttons row */}
           <div className="flex flex-wrap items-start gap-4 mb-8">
-            {/* Show RSVP button only for non-timeslot DSC events */}
-            {event.is_dsc_event && !(event as { has_timeslots?: boolean }).has_timeslots && (
+            {/* Show RSVP button only for non-timeslot DSC events that can still accept RSVPs */}
+            {canRSVP && event.is_dsc_event && !(event as { has_timeslots?: boolean }).has_timeslots && (
               <Suspense fallback={
                 <div className="animate-pulse">
                   <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
@@ -366,6 +445,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 eventStartTime={event.start_time}
                 totalSlots={(event as { total_slots?: number }).total_slots || 10}
                 slotDuration={(event as { slot_duration_minutes?: number }).slot_duration_minutes || 15}
+                disabled={!canRSVP}
               />
             </div>
           )}

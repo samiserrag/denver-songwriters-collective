@@ -115,23 +115,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if user is approved host or admin (admins are automatically hosts)
+  // Check host/admin status for DSC branding permission (not creation blocking)
   const isApprovedHost = await checkHostStatus(supabase, session.user.id);
 
-  if (!isApprovedHost) {
-    return NextResponse.json({
-      error: "You must be an approved host to create events"
-    }, { status: 403 });
-  }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .single();
+
+  const isAdmin = profile?.role === "admin";
+  const canCreateDSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
 
   // Validate required fields
-  const required = ["title", "event_type", "venue_id", "start_time", "day_of_week"];
+  const required = ["title", "event_type", "start_time"];
   for (const field of required) {
     if (!body[field]) {
       return NextResponse.json({ error: `${field} is required` }, { status: 400 });
     }
+  }
+
+  // Validate online_url required for online/hybrid events
+  if ((body.location_mode === "online" || body.location_mode === "hybrid") && !body.online_url) {
+    return NextResponse.json(
+      { error: "Online URL is required for online or hybrid events" },
+      { status: 400 }
+    );
+  }
+
+  // Validate venue_id required for venue/hybrid events
+  if ((body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode) && !body.venue_id) {
+    return NextResponse.json({ error: "venue_id is required for in-person events" }, { status: 400 });
   }
 
   // Lookup venue name and address from venues table
@@ -173,16 +189,24 @@ export async function POST(request: Request) {
   for (let i = 0; i < eventDates.length; i++) {
     const eventDate = eventDates[i];
 
+    // Determine if this should be a DSC event
+    const isDSCEvent = canCreateDSC && body.is_dsc_event === true;
+
+    // Determine status: draft by default, active if explicitly publishing
+    const eventStatus = body.is_published === true ? "active" : "draft";
+    const publishedAt = body.is_published === true ? new Date().toISOString() : null;
+
     const { data: event, error: eventError } = await supabase
       .from("events")
       .insert({
         title: body.title,
         description: body.description || null,
         event_type: body.event_type,
-        is_dsc_event: true,
+        // Only approved hosts/admins can create DSC events
+        is_dsc_event: isDSCEvent,
         capacity: body.has_timeslots ? body.total_slots : (body.capacity || null),
         host_notes: body.host_notes || null,
-        venue_id: body.venue_id,
+        venue_id: body.venue_id || null,
         venue_name: venueName,
         venue_address: venueAddress,
         day_of_week: body.day_of_week || null,
@@ -190,8 +214,10 @@ export async function POST(request: Request) {
         end_time: body.end_time || null,
         recurrence_rule: body.recurrence_rule || null,
         cover_image_url: body.cover_image_url || null,
-        status: "active",
+        // Status defaults to draft; publish is explicit action
+        status: eventStatus,
         is_published: body.is_published ?? false,
+        published_at: publishedAt,
         has_timeslots: body.has_timeslots ?? false,
         total_slots: body.has_timeslots ? body.total_slots : null,
         slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
@@ -200,6 +226,17 @@ export async function POST(request: Request) {
         event_date: eventDate,
         series_id: seriesId,
         series_index: seriesId ? i : null,
+        // Phase 3 scan-first fields
+        timezone: body.timezone || "America/Denver",
+        location_mode: body.location_mode || "venue",
+        online_url: body.online_url || null,
+        is_free: body.is_free ?? null,
+        cost_label: body.cost_label || null,
+        signup_mode: body.signup_mode || null,
+        signup_url: body.signup_url || null,
+        signup_deadline: body.signup_deadline || null,
+        age_policy: body.age_policy || (isDSCEvent ? "18+ only" : null),
+        source: "community",
       })
       .select()
       .single();

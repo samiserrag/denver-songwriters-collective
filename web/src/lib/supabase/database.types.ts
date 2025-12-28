@@ -753,6 +753,8 @@ export type Database = {
         Row: {
           age_policy: string | null
           allow_guest_slots: boolean | null
+          cancel_reason: string | null
+          cancelled_at: string | null
           capacity: number | null
           category: string | null
           cost_label: string | null
@@ -773,11 +775,13 @@ export type Database = {
           is_recurring: boolean | null
           is_showcase: boolean | null
           is_spotlight: boolean | null
+          last_major_update_at: string | null
           last_verified_at: string | null
           location_mode: string | null
           notes: string | null
           online_url: string | null
           parent_event_id: string | null
+          published_at: string | null
           recurrence_end_date: string | null
           recurrence_pattern: string | null
           recurrence_rule: string | null
@@ -807,6 +811,8 @@ export type Database = {
         Insert: {
           age_policy?: string | null
           allow_guest_slots?: boolean | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           capacity?: number | null
           category?: string | null
           cost_label?: string | null
@@ -827,11 +833,13 @@ export type Database = {
           is_recurring?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
+          last_major_update_at?: string | null
           last_verified_at?: string | null
           location_mode?: string | null
           notes?: string | null
           online_url?: string | null
           parent_event_id?: string | null
+          published_at?: string | null
           recurrence_end_date?: string | null
           recurrence_pattern?: string | null
           recurrence_rule?: string | null
@@ -861,6 +869,8 @@ export type Database = {
         Update: {
           age_policy?: string | null
           allow_guest_slots?: boolean | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           capacity?: number | null
           category?: string | null
           cost_label?: string | null
@@ -881,11 +891,13 @@ export type Database = {
           is_recurring?: boolean | null
           is_showcase?: boolean | null
           is_spotlight?: boolean | null
+          last_major_update_at?: string | null
           last_verified_at?: string | null
           location_mode?: string | null
           notes?: string | null
           online_url?: string | null
           parent_event_id?: string | null
+          published_at?: string | null
           recurrence_end_date?: string | null
           recurrence_pattern?: string | null
           recurrence_rule?: string | null

@@ -7,7 +7,7 @@ import CoHostManager from "../_components/CoHostManager";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
 import PublishButton from "./_components/PublishButton";
-import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 
 export const metadata = {
@@ -42,6 +42,10 @@ export default async function EditEventPage({
 
   // Check if user can manage this event (admins have full access)
   const isAdmin = await checkAdminRole(supabase, session.user.id);
+
+  // Check if user can create DSC-branded events
+  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const canCreateDSC = isApprovedHost || isAdmin;
 
   // Fetch event with venue
   // Note: event_hosts.user_id references auth.users, not profiles
@@ -175,7 +179,7 @@ export default async function EditEventPage({
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Event Details</h2>
-              <EventForm mode="edit" venues={venues ?? []} event={event} />
+              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} />
             </section>
 
             {/* Co-hosts (only for primary host) */}

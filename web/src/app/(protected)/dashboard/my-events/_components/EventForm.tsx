@@ -39,6 +39,7 @@ interface Venue {
 interface EventFormProps {
   mode: "create" | "edit";
   venues: Venue[];
+  canCreateDSC?: boolean; // Whether user can create DSC-branded events
   event?: {
     id: string;
     title: string;
@@ -53,10 +54,21 @@ interface EventFormProps {
     host_notes: string | null;
     cover_image_url: string | null;
     is_published?: boolean;
+    // Phase 3 fields
+    timezone?: string | null;
+    location_mode?: string | null;
+    online_url?: string | null;
+    is_free?: boolean | null;
+    cost_label?: string | null;
+    signup_mode?: string | null;
+    signup_url?: string | null;
+    signup_deadline?: string | null;
+    age_policy?: string | null;
+    is_dsc_event?: boolean;
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -95,6 +107,17 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
     // Recurring series fields (only for create mode)
     start_date: "",
     occurrence_count: "4", // Default to 4 events in series
+    // Phase 3 scan-first fields
+    timezone: event?.timezone || "America/Denver",
+    location_mode: event?.location_mode || "venue",
+    online_url: event?.online_url || "",
+    is_free: event?.is_free ?? null,
+    cost_label: event?.cost_label || "",
+    signup_mode: event?.signup_mode || "",
+    signup_url: event?.signup_url || "",
+    signup_deadline: event?.signup_deadline || "",
+    age_policy: event?.age_policy || "",
+    is_dsc_event: event?.is_dsc_event ?? false,
   });
 
   // Slot configuration state - defaults based on event type
@@ -143,6 +166,13 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
     setError("");
     setSuccess("");
 
+    // Client-side validation
+    if ((formData.location_mode === "online" || formData.location_mode === "hybrid") && !formData.online_url) {
+      setError("Online URL is required for online or hybrid events");
+      setLoading(false);
+      return;
+    }
+
     try {
       const url = mode === "create"
         ? "/api/my-events"
@@ -163,6 +193,17 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
         // Series configuration (for create mode)
         start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeek(formData.day_of_week) : null),
         occurrence_count: parseInt(formData.occurrence_count) || 1,
+        // Phase 3 fields
+        timezone: formData.timezone,
+        location_mode: formData.location_mode,
+        online_url: formData.online_url || null,
+        is_free: formData.is_free,
+        cost_label: formData.cost_label || null,
+        signup_mode: formData.signup_mode || null,
+        signup_url: formData.signup_url || null,
+        signup_deadline: formData.signup_deadline || null,
+        age_policy: formData.age_policy || null,
+        is_dsc_event: canCreateDSC ? formData.is_dsc_event : false,
       };
 
       const res = await fetch(url, {
@@ -365,6 +406,191 @@ export default function EventForm({ mode, venues: initialVenues, event }: EventF
           </select>
         </div>
       </div>
+
+      {/* ============ TIMEZONE SECTION ============ */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Timezone
+        </label>
+        <select
+          value={formData.timezone}
+          onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+        >
+          <option value="America/Denver">Mountain Time (Denver)</option>
+          <option value="America/Los_Angeles">Pacific Time</option>
+          <option value="America/Chicago">Central Time</option>
+          <option value="America/New_York">Eastern Time</option>
+        </select>
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Times will be displayed in this timezone</p>
+      </div>
+
+      {/* ============ LOCATION MODE SECTION ============ */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            Event Location
+          </label>
+          <select
+            value={formData.location_mode}
+            onChange={(e) => setFormData(prev => ({ ...prev, location_mode: e.target.value }))}
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          >
+            <option value="venue">In-person venue</option>
+            <option value="online">Online only</option>
+            <option value="hybrid">Hybrid (venue + online option)</option>
+          </select>
+        </div>
+
+        {(formData.location_mode === "online" || formData.location_mode === "hybrid") && (
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Online URL *
+            </label>
+            <input
+              type="url"
+              placeholder="https://zoom.us/j/... or YouTube link"
+              value={formData.online_url}
+              onChange={(e) => setFormData(prev => ({ ...prev, online_url: e.target.value }))}
+              required
+              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ============ COST SECTION ============ */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            Cost
+          </label>
+          <select
+            value={formData.is_free === null ? "unknown" : formData.is_free ? "free" : "paid"}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData(prev => ({
+                ...prev,
+                is_free: val === "unknown" ? null : val === "free",
+                cost_label: val === "free" ? "Free" : prev.cost_label
+              }));
+            }}
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          >
+            <option value="unknown">Not specified</option>
+            <option value="free">Free</option>
+            <option value="paid">Paid / Donation</option>
+          </select>
+        </div>
+
+        {formData.is_free === false && (
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Cost Details
+            </label>
+            <input
+              type="text"
+              placeholder="$10, Donation, $5-15, etc."
+              value={formData.cost_label}
+              onChange={(e) => setFormData(prev => ({ ...prev, cost_label: e.target.value }))}
+              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ============ SIGNUP SECTION ============ */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            Signup Method
+          </label>
+          <select
+            value={formData.signup_mode}
+            onChange={(e) => setFormData(prev => ({ ...prev, signup_mode: e.target.value }))}
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          >
+            <option value="">Not specified</option>
+            <option value="walk_in">Walk-in only (no signup)</option>
+            <option value="in_person">Sign up in person at venue</option>
+            <option value="online">Online signup</option>
+            <option value="both">Both (in person + online)</option>
+          </select>
+        </div>
+
+        {(formData.signup_mode === "online" || formData.signup_mode === "both") && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Signup URL
+              </label>
+              <input
+                type="url"
+                placeholder="https://..."
+                value={formData.signup_url}
+                onChange={(e) => setFormData(prev => ({ ...prev, signup_url: e.target.value }))}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Signup Deadline
+                <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.signup_deadline}
+                onChange={(e) => setFormData(prev => ({ ...prev, signup_deadline: e.target.value }))}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ============ AGE POLICY SECTION ============ */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Age Policy
+        </label>
+        <input
+          type="text"
+          placeholder="21+, All ages, 18+ only, etc."
+          value={formData.age_policy}
+          onChange={(e) => setFormData(prev => ({ ...prev, age_policy: e.target.value }))}
+          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Leave blank if unknown</p>
+      </div>
+
+      {/* ============ DSC TOGGLE (ONLY IF PERMITTED) ============ */}
+      {canCreateDSC && (
+        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.is_dsc_event}
+              onChange={(e) => {
+                const isDSC = e.target.checked;
+                setFormData(prev => ({
+                  ...prev,
+                  is_dsc_event: isDSC,
+                  age_policy: isDSC && !prev.age_policy ? "18+ only" : prev.age_policy
+                }));
+              }}
+              className="w-5 h-5 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+            />
+            <div>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                This is an official DSC event
+              </span>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                DSC events are curated and represent the Denver Songwriters Collective brand
+              </p>
+            </div>
+          </label>
+        </div>
+      )}
 
       {/* Only show capacity when NOT using timeslots (timeslots have their own slot count) */}
       {!slotConfig.has_timeslots && (

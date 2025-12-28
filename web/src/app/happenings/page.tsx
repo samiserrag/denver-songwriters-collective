@@ -63,21 +63,33 @@ function formatDateHeader(dateStr: string): string {
 export default async function HappeningsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; search?: string }>;
+  searchParams: Promise<{ type?: string; search?: string; time?: string }>;
 }) {
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
   const typeFilter = params.type;
   const searchQuery = params.search || "";
+  const timeFilter = params.time || "upcoming"; // 'upcoming' | 'past' | 'all'
+
+  const today = new Date().toISOString().split("T")[0];
 
   let query = supabase
     .from("events")
     .select("*")
     .eq("is_published", true)
-    .eq("status", "active");
+    .in("status", ["active", "needs_verification"]);
 
   if (typeFilter === "open_mic") query = query.eq("event_type", "open_mic");
   if (typeFilter === "dsc") query = query.eq("is_dsc_event", true);
+
+  // Date filter logic
+  if (timeFilter === "upcoming") {
+    // Events today or future, OR recurring events (no specific date)
+    query = query.or(`event_date.gte.${today},event_date.is.null`);
+  } else if (timeFilter === "past") {
+    query = query.lt("event_date", today);
+  }
+  // 'all' = no date filter
 
   query = query.order("day_of_week", { ascending: true });
 
@@ -128,6 +140,19 @@ export default async function HappeningsPage({
               href="/happenings?type=dsc"
               label="DSC Happenings"
               active={typeFilter === "dsc"}
+            />
+          </div>
+          {/* Time filter */}
+          <div className="flex gap-2 mt-3">
+            <TimeFilterTab
+              href={typeFilter ? `/happenings?type=${typeFilter}&time=upcoming` : "/happenings?time=upcoming"}
+              label="Upcoming"
+              active={timeFilter === "upcoming"}
+            />
+            <TimeFilterTab
+              href={typeFilter ? `/happenings?type=${typeFilter}&time=past` : "/happenings?time=past"}
+              label="Past"
+              active={timeFilter === "past"}
             />
           </div>
         </div>
@@ -200,6 +225,29 @@ function FilterTab({
         active
           ? "bg-[var(--color-accent-primary)] text-white"
           : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function TimeFilterTab({
+  href,
+  label,
+  active,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`px-3 py-1 rounded text-sm transition-colors ${
+        active
+          ? "text-[var(--color-text-accent)] border-b-2 border-[var(--color-accent-primary)]"
+          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
       }`}
     >
       {label}

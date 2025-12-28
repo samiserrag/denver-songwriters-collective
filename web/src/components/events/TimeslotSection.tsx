@@ -29,6 +29,8 @@ interface TimeslotSectionProps {
   eventStartTime: string | null;
   totalSlots: number;
   slotDuration: number;
+  /** When true, prevents claiming (for cancelled/past/draft events) */
+  disabled?: boolean;
 }
 
 export function TimeslotSection({
@@ -36,6 +38,7 @@ export function TimeslotSection({
   eventStartTime,
   totalSlots,
   slotDuration,
+  disabled = false,
 }: TimeslotSectionProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -372,11 +375,11 @@ export function TimeslotSection({
                 type="button"
                 variant="primary"
                 size="sm"
-                disabled={isPending || userHasSlot || !user}
+                disabled={disabled || isPending || userHasSlot || !user}
                 onClick={() => user ? handleClaim(slot.id) : handleRequireAuth()}
                 className="w-full text-xs"
               >
-                {isPending ? "..." : "Claim"}
+                {isPending ? "..." : disabled ? "Unavailable" : "Claim"}
               </Button>
             </div>
           );

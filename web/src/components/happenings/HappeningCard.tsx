@@ -186,6 +186,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; 
   cancelled: { bg: "bg-red-900/60", text: "text-red-300", border: "border-red-500/40", label: "Cancelled" },
   unverified: { bg: "bg-amber-900/60", text: "text-amber-300", border: "border-amber-500/40", label: "Schedule TBD" },
   needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", border: "border-amber-500/40", label: "Schedule TBD" },
+  ended: { bg: "bg-slate-900/60", text: "text-slate-300", border: "border-slate-500/40", label: "Ended" },
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -225,6 +226,11 @@ export function HappeningCard({
   const eventStatus = event.status;
   const statusStyle = eventStatus ? STATUS_STYLES[eventStatus] : null;
   const showStatusBadge = eventStatus && eventStatus !== "active";
+
+  // Check if event is in the past (for dated events only)
+  const isPastEvent = event.event_date
+    ? new Date(event.event_date + "T23:59:59") < new Date()
+    : false;
 
   // Location mode display
   const isOnlineOnly = event.location_mode === "online";
@@ -347,6 +353,12 @@ export function HappeningCard({
                 <span className={`text-sm font-semibold uppercase tracking-wide ${statusStyle.text}`}>{statusStyle.label}</span>
               </div>
             )}
+            {/* Ended badge (for past dated events) */}
+            {!showStatusBadge && isPastEvent && (
+              <div className={`absolute bottom-3 left-3 px-3 py-1 backdrop-blur rounded-full ${STATUS_STYLES.ended.bg} border ${STATUS_STYLES.ended.border}`}>
+                <span className={`text-sm font-semibold uppercase tracking-wide ${STATUS_STYLES.ended.text}`}>{STATUS_STYLES.ended.label}</span>
+              </div>
+            )}
             {/* Favorite button */}
             <button
               onClick={toggleFavorite}
@@ -374,6 +386,11 @@ export function HappeningCard({
                 {showStatusBadge && statusStyle && (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text} border ${statusStyle.border}`}>
                     {statusStyle.label}
+                  </span>
+                )}
+                {!showStatusBadge && isPastEvent && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES.ended.bg} ${STATUS_STYLES.ended.text} border ${STATUS_STYLES.ended.border}`}>
+                    {STATUS_STYLES.ended.label}
                   </span>
                 )}
                 {dateLabel && !dayOfWeek && (

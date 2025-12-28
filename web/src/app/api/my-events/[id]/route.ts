@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -111,19 +111,86 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Check host/admin status for DSC branding permission
+  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", session.user.id)
+    .single();
+  const isAdmin = profile?.role === "admin";
+  const canCreateDSC = isApprovedHost || isAdmin;
+
   const body = await request.json();
+
+  // Validate online_url required for online/hybrid events
+  if ((body.location_mode === "online" || body.location_mode === "hybrid") && !body.online_url) {
+    return NextResponse.json(
+      { error: "Online URL is required for online or hybrid events" },
+      { status: 400 }
+    );
+  }
 
   // Only allow updating specific fields
   const allowedFields = [
     "title", "description", "event_type", "capacity", "host_notes",
-    "venue_id", "day_of_week", "start_time",
-    "end_time", "status", "recurrence_rule", "cover_image_url", "is_published"
+    "venue_id", "day_of_week", "start_time", "event_date",
+    "end_time", "status", "recurrence_rule", "cover_image_url", "is_published",
+    // Phase 3 fields
+    "timezone", "location_mode", "online_url", "is_free", "cost_label",
+    "signup_mode", "signup_url", "signup_deadline", "age_policy"
   ];
 
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const now = new Date().toISOString();
+  const updates: Record<string, unknown> = { updated_at: now };
+
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
       updates[field] = body[field];
+    }
+  }
+
+  // Handle is_dsc_event separately - only allow if canCreateDSC
+  if (body.is_dsc_event !== undefined) {
+    if (body.is_dsc_event === true && !canCreateDSC) {
+      return NextResponse.json(
+        { error: "Only approved hosts and admins can create DSC events" },
+        { status: 403 }
+      );
+    }
+    updates.is_dsc_event = body.is_dsc_event;
+  }
+
+  // Track major updates (date/time/venue/location_mode changes)
+  const majorFields = ["event_date", "start_time", "end_time", "venue_id", "location_mode", "day_of_week"];
+  const hasMajorChange = majorFields.some(field => body[field] !== undefined);
+  if (hasMajorChange) {
+    updates.last_major_update_at = now;
+  }
+
+  // Track cancellation with timestamp and reason
+  if (body.status === "cancelled") {
+    updates.cancelled_at = now;
+    if (body.cancel_reason) {
+      updates.cancel_reason = body.cancel_reason;
+    }
+  }
+
+  // Track first publish
+  if (body.is_published === true) {
+    // Only set published_at if not already published
+    const { data: existingEvent } = await supabase
+      .from("events")
+      .select("published_at")
+      .eq("id", eventId)
+      .single();
+
+    if (!existingEvent?.published_at) {
+      updates.published_at = now;
+    }
+    // Also set status to active when publishing
+    if (!updates.status) {
+      updates.status = "active";
     }
   }
 
@@ -131,7 +198,6 @@ export async function PATCH(
     .from("events")
     .update(updates)
     .eq("id", eventId)
-    .eq("is_dsc_event", true)
     .select()
     .single();
 
@@ -173,15 +239,27 @@ export async function DELETE(
     .eq("event_id", eventId)
     .in("status", ["confirmed", "waitlist"]);
 
-  // Soft delete - set status to cancelled
+  // Parse optional cancel_reason from request body
+  let cancelReason: string | null = null;
+  try {
+    const body = await request.json();
+    cancelReason = body.cancel_reason || null;
+  } catch {
+    // No body provided, that's fine
+  }
+
+  const now = new Date().toISOString();
+
+  // Soft delete - set status to cancelled with timestamp
   const { error } = await supabase
     .from("events")
     .update({
       status: "cancelled",
-      updated_at: new Date().toISOString()
+      cancelled_at: now,
+      cancel_reason: cancelReason,
+      updated_at: now
     })
-    .eq("id", eventId)
-    .eq("is_dsc_event", true);
+    .eq("id", eventId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
