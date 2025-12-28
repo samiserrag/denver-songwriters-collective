@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, ADMIN_EMAIL, getContactNotificationEmail } from "@/lib/email";
+import { appLogger } from "@/lib/appLogger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Contact form error:", error);
+    await appLogger.logError(error instanceof Error ? error : new Error(String(error)), "ContactFormAPI");
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }

@@ -6,6 +6,7 @@
  */
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -22,6 +23,28 @@ interface LogOptions {
 }
 
 /**
+ * Get a Supabase client that works in both browser and server environments
+ */
+function getSupabaseClient() {
+  // Check if we're in the browser
+  if (typeof window !== "undefined") {
+    return createSupabaseBrowserClient();
+  }
+
+  // Server-side: use service role to bypass RLS for logging
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase environment variables for server-side logging");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+}
+
+/**
  * Log an event to the app_logs table
  */
 export async function logToDatabase(
@@ -31,13 +54,13 @@ export async function logToDatabase(
   options: LogOptions = {}
 ): Promise<void> {
   try {
-    const supabase = createSupabaseBrowserClient();
+    const supabase = getSupabaseClient();
 
-    // Get current user if not provided
+    // Get current user if not provided (browser only)
     let userId = options.userId;
     let userEmail = options.userEmail;
 
-    if (!userId) {
+    if (!userId && typeof window !== "undefined") {
       const {
         data: { user },
       } = await supabase.auth.getUser();

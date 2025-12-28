@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { appLogger } from '@/lib/appLogger';
 
 export default function HappeningsError({
   error,
@@ -10,6 +11,7 @@ export default function HappeningsError({
   reset: () => void;
 }) {
   useEffect(() => {
+    appLogger.logError(error, 'HappeningsPage', { digest: error.digest });
     console.error('Happenings error:', error);
   }, [error]);
 

@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { appLogger } from "@/lib/appLogger";
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +10,14 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Log to database for admin debugging
+    appLogger.logError(error, "GlobalError", {
+      digest: error.digest,
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+    });
+  }, [error]);
+
   console.error("Global Error:", error);
 
   return (
