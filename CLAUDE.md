@@ -686,6 +686,40 @@ These are broader product initiatives for post-launch development:
 
 ## Recent Changes (December 2025)
 
+### Admin Logs Page Fix & Error Logging System (December 2025)
+
+**Problem:** `/dashboard/admin/logs` was returning 404 in production.
+
+**Root cause:** `.gitignore` had `logs/` which matched ANY folder ending in `/logs/`, including the admin logs page route.
+
+**Fixes applied:**
+1. **Gitignore pattern fix** - Changed `logs/` to `/logs/` (root-level only)
+2. **appLogger updated for server-side** - Now works on both client and server using service role key
+3. **Error boundaries wired up** - Global error boundary and happenings page now log to database
+4. **Contact form API** - Logs errors on failure
+
+**Key files:**
+- `.gitignore` - Fixed pattern
+- `web/src/lib/appLogger.ts` - Added `getSupabaseClient()` for environment detection
+- `web/src/app/error.tsx` - Global error boundary with appLogger
+- `web/src/app/happenings/error.tsx` - Happenings error boundary with appLogger
+- `web/src/app/api/contact/route.ts` - Contact form error logging
+- `web/src/app/(protected)/dashboard/admin/logs/page.tsx` - Now deployed (was gitignored)
+
+**Result:** Errors now appear in `/dashboard/admin/logs` with stack traces, user info, URL, and user agent for debugging.
+
+### Phase 3.1 Raw Dump Leak Fix (December 2025)
+
+**Problem:** Open mic detail pages were exposing raw admin metadata from `events.notes` field (e.g., "signup_time: 18:00; backline: False; last_verified_date: 2025-11-30").
+
+**Fix:** Removed all rendering of `notes` field from public pages. Added comment clarifying notes is internal admin metadata.
+
+**Key files:**
+- `web/src/app/open-mics/[slug]/page.tsx` - Removed `notesHtml` rendering
+- `web/src/components/__tests__/open-mic-no-notes-leak.test.tsx` - 9 regression tests
+
+**67 events affected** - All had metadata in notes field, none had user-facing descriptions.
+
 ### Phase 2: Happenings Migration — COMPLETE ✅ (December 2025)
 
 | Phase | Description | PR | Status |
