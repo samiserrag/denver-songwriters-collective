@@ -858,6 +858,36 @@ After deployment, verify these scenarios:
 - **Phase 4** — Member gigs
 - **Phase 5** — Unified detail pages
 
+### Phase 4.3-4.4: HappeningCard Visual Redesign & Readability (December 2025)
+
+#### Phase 4.3: Card Visual Redesign
+- **3-line layout spec** - Compact, scannable card format:
+  - LINE 1: Date (dominant, 16px) + Title + Details →
+  - LINE 2: Time · Sign-up · Venue/Online · Cost · Age · ☆
+  - LINE 3: Event Type · DSC Presents · Availability
+- **TONIGHT/TOMORROW treatment** - Gold/amber color for urgency on same-day/next-day events
+- **Left border accent** - 3px colored left border based on event type
+- **Hover state** - Subtle background change + border color shift + translate-x
+
+#### Phase 4.4-B: Readability & Clarity Corrections
+- **Typography minimum enforced** - All informational text ≥14px (`text-sm` or larger)
+- **Date dominance** - Changed from `text-sm` to `text-base` (16px) for visual anchor
+- **Sunrise theme contrast** - Changed all `text-stone-400` body text to `text-stone-600` for WCAG compliance
+- **DSC Presents** - Changed from `text-amber-600/70` (opacity) to solid `text-amber-700`
+- **Helper text standardized** - All EventForm and SlotConfigSection helper text now `text-sm`
+- **Field markers** - Added `(optional)` labels to non-required fields in EventForm
+- **Live preview section** - Added to event creation showing HappeningCard + detail header preview
+
+#### Key Files Modified
+- `web/src/components/happenings/HappeningCard.tsx` - Typography and contrast fixes
+- `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` - Preview section, field markers
+- `web/src/app/(protected)/dashboard/my-events/_components/SlotConfigSection.tsx` - Helper text sizes
+
+#### Quality Gates Verified
+- Lint: 0 errors
+- Tests: 267 passed
+- Build: Success
+
 ### Phase 3.1 Continued: Dashboard & UX Polish (December 2025)
 
 #### Admin Dashboard Redesign

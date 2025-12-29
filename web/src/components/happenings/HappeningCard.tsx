@@ -377,8 +377,8 @@ export function HappeningCard({
     return "text-stone-700 dark:text-stone-300";
   };
 
-  // Separator dot
-  const Dot = () => <span className="text-stone-400 dark:text-stone-500 mx-1.5">·</span>;
+  // Separator dot - stone-600 for Sunrise contrast compliance
+  const Dot = () => <span className="text-stone-600 dark:text-stone-500 mx-1.5">·</span>;
 
   // Age display value
   const ageDisplay = getAgeDisplay();
@@ -408,23 +408,23 @@ export function HappeningCard({
         {/* LINE 1: Date + Title + Details → */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Date - bold, uppercase, dominant */}
+            {/* Date - bold, uppercase, DOMINANT (16px base, larger than title) */}
             {dateInfo.label && (
               <span
                 className={cn(
-                  "font-bold text-sm uppercase tracking-wide whitespace-nowrap",
-                  "min-w-[5rem]",
+                  "font-bold text-base uppercase tracking-wide whitespace-nowrap",
+                  "min-w-[5.5rem]",
                   getDateColor()
                 )}
               >
                 {dateInfo.label}
               </span>
             )}
-            {/* Title */}
+            {/* Title - slightly smaller than date for hierarchy */}
             <h3
               className={cn(
-                "font-semibold text-stone-800 dark:text-stone-100 truncate",
-                "text-[0.95rem] leading-tight"
+                "font-medium text-stone-800 dark:text-stone-100 truncate",
+                "text-[0.9rem] leading-tight"
               )}
             >
               {event.title}
@@ -436,18 +436,19 @@ export function HappeningCard({
               Schedule TBD
             </span>
           ) : showEnded ? (
-            <span className="text-stone-400 text-sm whitespace-nowrap">
+            <span className="text-stone-600 dark:text-stone-400 text-sm whitespace-nowrap">
               Ended
             </span>
           ) : (
-            <span className="text-stone-400 dark:text-stone-500 text-sm whitespace-nowrap group-hover:underline">
+            <span className="text-stone-600 dark:text-stone-400 text-sm whitespace-nowrap group-hover:underline">
               Details →
             </span>
           )}
         </div>
 
         {/* LINE 2: Time · Signup · Venue/Online · Cost · Age · ☆ */}
-        <div className="flex items-center text-[0.85rem] text-stone-500 dark:text-stone-400 mt-1 flex-wrap gap-y-0.5">
+        {/* Fixed: text-sm (14px) for readability, stone-600 for Sunrise contrast */}
+        <div className="flex items-center text-sm text-stone-600 dark:text-stone-400 mt-1 flex-wrap gap-y-0.5">
           {/* Time */}
           <span>{startTime || "TBD"}</span>
           <Dot />
@@ -466,7 +467,7 @@ export function HappeningCard({
               <span>{ageDisplay}</span>
             </>
           )}
-          {/* Favorite star - always shown */}
+          {/* Favorite star - always shown, stone-400 minimum for visibility */}
           <button
             onClick={toggleFavorite}
             aria-label={favorited ? "Remove favorite" : "Add favorite"}
@@ -474,7 +475,7 @@ export function HappeningCard({
               "ml-2 text-lg leading-none transition-colors",
               favorited
                 ? "text-amber-500"
-                : "text-stone-300 dark:text-stone-600 hover:text-amber-400"
+                : "text-stone-400 dark:text-stone-500 hover:text-amber-400"
             )}
             disabled={loadingFav}
           >
@@ -483,14 +484,15 @@ export function HappeningCard({
         </div>
 
         {/* LINE 3: Event Type · DSC Presents · Availability · Missing details */}
-        <div className="flex items-center text-[0.8rem] text-stone-400 dark:text-stone-500 mt-1 flex-wrap gap-y-0.5">
+        {/* Fixed: text-sm (14px) for readability, stone-600 for Sunrise contrast */}
+        <div className="flex items-center text-sm text-stone-600 dark:text-stone-400 mt-1 flex-wrap gap-y-0.5">
           {/* Event Type - italic */}
           <span className="italic">{eventTypeLabel}</span>
-          {/* DSC Presents */}
+          {/* DSC Presents - solid color, no opacity for WCAG compliance */}
           {event.is_dsc_event && (
             <>
               <Dot />
-              <span className="italic text-amber-600/70 dark:text-amber-500/70">DSC Presents</span>
+              <span className="italic text-amber-700 dark:text-amber-400">DSC Presents</span>
             </>
           )}
           {/* Availability (only if known) */}
@@ -504,7 +506,7 @@ export function HappeningCard({
           {hasMissing && (
             <>
               <Dot />
-              <span className="text-stone-400 dark:text-stone-500 underline decoration-dotted">
+              <span className="text-stone-600 dark:text-stone-400 underline decoration-dotted">
                 Missing details
               </span>
             </>

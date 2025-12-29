@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
@@ -14,6 +14,8 @@ import {
   DAYS_OF_WEEK,
   type EventType
 } from "@/types/events";
+import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
+import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 
 // Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
 const TIME_OPTIONS: { value: string; label: string }[] = [];
@@ -183,6 +185,72 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     slotConfig.has_timeslots &&
     totalSlotDuration > eventDurationMinutes;
 
+  // ============ PREVIEW HELPERS ============
+
+  // Get location name for preview
+  const getPreviewLocation = (): string => {
+    if (locationSelectionMode === "custom" && formData.custom_location_name) {
+      return formData.custom_location_name;
+    }
+    if (locationSelectionMode === "venue" && formData.venue_id) {
+      const venue = venues.find(v => v.id === formData.venue_id);
+      return venue?.name || "";
+    }
+    if (formData.location_mode === "online") {
+      return "Online";
+    }
+    return "";
+  };
+
+  // Build preview event object for HappeningCard
+  const previewEvent: HappeningEvent = useMemo(() => {
+    const selectedVenue = venues.find(v => v.id === formData.venue_id);
+    return {
+      id: event?.id || "preview",
+      title: formData.title || "Event Title",
+      event_type: formData.event_type,
+      is_dsc_event: formData.is_dsc_event,
+      day_of_week: formData.day_of_week || undefined,
+      start_time: formData.start_time || undefined,
+      end_time: formData.end_time || undefined,
+      venue_id: locationSelectionMode === "venue" ? formData.venue_id || undefined : undefined,
+      venue_name: locationSelectionMode === "venue" ? selectedVenue?.name || undefined : undefined,
+      location_mode: formData.location_mode as "venue" | "online" | "hybrid" | undefined,
+      online_url: formData.online_url || undefined,
+      custom_location_name: locationSelectionMode === "custom" ? formData.custom_location_name || undefined : undefined,
+      is_free: formData.is_free,
+      cost_label: formData.cost_label || undefined,
+      age_policy: formData.age_policy || undefined,
+      cover_image_url: coverImageUrl || undefined,
+      status: formData.is_published ? "active" : "draft",
+      capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+      has_timeslots: slotConfig.has_timeslots,
+      total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : undefined,
+    };
+  }, [
+    event?.id,
+    formData.title,
+    formData.event_type,
+    formData.is_dsc_event,
+    formData.day_of_week,
+    formData.start_time,
+    formData.end_time,
+    formData.venue_id,
+    formData.location_mode,
+    formData.online_url,
+    formData.custom_location_name,
+    formData.is_free,
+    formData.cost_label,
+    formData.age_policy,
+    formData.is_published,
+    formData.capacity,
+    locationSelectionMode,
+    venues,
+    coverImageUrl,
+    slotConfig.has_timeslots,
+    slotConfig.total_slots,
+  ]);
+
   const handleImageUpload = async (file: File): Promise<string | null> => {
     const supabase = createSupabaseBrowserClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -337,7 +405,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             maxSizeMB={5}
           />
         </div>
-        <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
           Recommended: 1200×900px (4:3). Most phone photos are already 4:3.
         </p>
       </div>
@@ -369,7 +437,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
       </div>
 
       {/* Title */}
@@ -390,7 +458,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Description
+          Description <span className="font-normal">(optional)</span>
         </label>
         <textarea
           value={formData.description}
@@ -415,7 +483,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           <p className="text-sm text-amber-600">
             <strong>Warning:</strong> Total slot time ({totalSlotDuration} min) exceeds event duration ({eventDurationMinutes} min).
             {totalSlotDuration > eventDurationMinutes! && (
-              <span className="block mt-1 text-xs text-[var(--color-text-secondary)]">
+              <span className="block mt-1 text-sm text-[var(--color-text-secondary)]">
                 Consider reducing slots to {Math.floor(eventDurationMinutes! / slotConfig.slot_duration_minutes)} or shortening slot duration.
               </span>
             )}
@@ -518,7 +586,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                       )}
                     </dl>
                     {hasAnyUnknown && (
-                      <p className="mt-3 text-xs text-amber-400">
+                      <p className="mt-3 text-sm text-amber-400">
                         This venue record is incomplete. Consider using a custom location or updating the venue details.
                       </p>
                     )}
@@ -627,7 +695,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   onChange={(e) => updateField("location_notes", e.target.value)}
                   className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
                 />
-                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                   Additional instructions for finding the location
                 </p>
               </div>
@@ -678,7 +746,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            End Time
+            End Time <span className="font-normal">(optional)</span>
           </label>
           <select
             value={formData.end_time}
@@ -696,7 +764,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ TIMEZONE SECTION ============ */}
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Timezone
+          Timezone <span className="font-normal">(optional)</span>
         </label>
         <select
           value={formData.timezone}
@@ -708,7 +776,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           <option value="America/Chicago">Central Time</option>
           <option value="America/New_York">Eastern Time</option>
         </select>
-        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Times will be displayed in this timezone</p>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Times will be displayed in this timezone</p>
       </div>
 
       {/* ============ LOCATION MODE SECTION ============ */}
@@ -749,7 +817,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Cost
+            Cost <span className="font-normal">(optional)</span>
           </label>
           <select
             value={formData.is_free === null ? "unknown" : formData.is_free ? "free" : "paid"}
@@ -772,7 +840,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         {formData.is_free === false && (
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Cost Details
+              Cost Details <span className="font-normal">(optional)</span>
             </label>
             <input
               type="text"
@@ -789,7 +857,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Signup Method
+            Signup Method <span className="font-normal">(optional)</span>
           </label>
           <select
             value={formData.signup_mode}
@@ -808,7 +876,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           <>
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Signup URL
+                Signup URL <span className="font-normal">(optional)</span>
               </label>
               <input
                 type="url"
@@ -837,7 +905,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ AGE POLICY SECTION ============ */}
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Age Policy
+          Age Policy <span className="font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -846,7 +914,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           onChange={(e) => setFormData(prev => ({ ...prev, age_policy: e.target.value }))}
           className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
         />
-        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Leave blank if unknown</p>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Leave blank if unknown</p>
       </div>
 
       {/* ============ DSC TOGGLE (ONLY IF PERMITTED) ============ */}
@@ -870,7 +938,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               <span className="text-sm font-medium text-[var(--color-text-primary)]">
                 This is an official DSC event
               </span>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
                 DSC events are curated and represent the Denver Songwriters Collective brand
               </p>
             </div>
@@ -903,7 +971,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
               Create Event Series
             </h3>
-            <p className="text-xs text-[var(--color-text-secondary)]">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Create multiple events for a recurring series. Each event will have its own page and signups.
             </p>
           </div>
@@ -942,7 +1010,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {/* Preview of dates */}
           {formData.start_date && parseInt(formData.occurrence_count) > 1 && (
             <div className="pt-2 border-t border-[var(--color-border-default)]">
-              <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                 Events will be created for:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -987,7 +1055,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
               {formData.is_published ? "Published" : "Draft"}
             </h3>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               {formData.is_published
                 ? "This event is visible to the public and accepting signups."
                 : "This event is hidden from the public. Publish when ready."}
@@ -1010,6 +1078,49 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               }`}
             />
           </button>
+        </div>
+      </div>
+
+      {/* ============ LIVE PREVIEW SECTION ============ */}
+      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+        <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
+          Preview
+        </h3>
+
+        {/* Card Preview */}
+        <div className="mb-6">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+            How your event will appear in listings:
+          </p>
+          <div className="pointer-events-none select-none" aria-hidden="true">
+            <HappeningCard
+              event={previewEvent}
+              variant="list"
+            />
+          </div>
+        </div>
+
+        {/* Detail Header Preview */}
+        <div>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+            Event detail page header:
+          </p>
+          <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+              {formData.title || "Event Title"}
+            </h2>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
+              {formData.day_of_week && (
+                <span>{formData.day_of_week}s</span>
+              )}
+              {formData.start_time && (
+                <span>{formatTimeToAMPM(formData.start_time)}</span>
+              )}
+              {getPreviewLocation() && (
+                <span>{getPreviewLocation()}</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

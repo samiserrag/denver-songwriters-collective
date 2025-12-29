@@ -71,13 +71,13 @@ export default function SlotConfigSection({
             <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
               {config.has_timeslots ? "Performance Slots" : "RSVP Mode"}
             </h3>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               {config.has_timeslots
                 ? "Performers claim individual time slots to perform."
                 : "Attendees RSVP for attendance, no performance slots."}
             </p>
             {isTimeslotType && (
-              <p className="text-xs text-[var(--color-accent-primary)] mt-1">
+              <p className="text-sm text-[var(--color-accent-primary)] mt-1">
                 Recommended for {eventType === "open_mic" ? "Open Mic" : "Showcase"} events
               </p>
             )}
@@ -127,7 +127,7 @@ export default function SlotConfigSection({
                 disabled={disabled}
                 className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
               />
-              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                 Total performance slots available
               </p>
             </div>
@@ -151,7 +151,7 @@ export default function SlotConfigSection({
                 <option value="20">20 minutes</option>
                 <option value="30">30 minutes</option>
               </select>
-              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                 Time per performer
               </p>
             </div>
@@ -163,7 +163,7 @@ export default function SlotConfigSection({
               <h5 className="text-sm font-medium text-[var(--color-text-primary)]">
                 Allow Guest Sign-ups
               </h5>
-              <p className="text-xs text-[var(--color-text-secondary)]">
+              <p className="text-sm text-[var(--color-text-secondary)]">
                 Non-members can claim slots via email verification
               </p>
             </div>
@@ -189,7 +189,7 @@ export default function SlotConfigSection({
 
           {/* Info Box */}
           <div className="p-3 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
-            <p className="text-xs text-[var(--color-text-secondary)]">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               <strong className="text-[var(--color-text-primary)]">How it works:</strong>{" "}
               {config.total_slots} slots × {config.slot_duration_minutes} minutes ={" "}
               {config.total_slots * config.slot_duration_minutes} minutes of performances.
