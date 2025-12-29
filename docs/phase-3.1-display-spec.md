@@ -1,3 +1,11 @@
+> ⚠️ **Historical Document**
+>
+> This spec was written during Phase 3.1 development. For current UX rules, see **[PRODUCT_NORTH_STAR.md](./PRODUCT_NORTH_STAR.md)**.
+>
+> Preserved for historical context only.
+
+---
+
 # Phase 3.1 — Event Card & Detail Display Spec (LOCKED)
 
 **Denver Songwriters Collective**

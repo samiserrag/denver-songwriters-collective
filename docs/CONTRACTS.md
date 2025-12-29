@@ -179,3 +179,9 @@ Tests that enforce these contracts:
 | Grid variant shows media | `src/components/__tests__/card-variants.test.tsx` |
 
 **Rule:** Any change to these contracts must update both the implementation AND this documentation.
+
+---
+
+## Canonical UX Rules
+
+Product philosophy and UX laws live in **[PRODUCT_NORTH_STAR.md](./PRODUCT_NORTH_STAR.md)**.
