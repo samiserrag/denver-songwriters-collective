@@ -4,21 +4,41 @@ import { NextResponse } from "next/server";
 import { insertEventUpdateSuggestion, EventUpdateSuggestionInsert } from "@/lib/eventUpdateSuggestions/server";
 
 // Allowed fields that can be suggested for update
+// Phase 4.1: Expanded to include Phase 3/4 event fields
 const ALLOWED_FIELDS = [
+  // Basic info
   'title',
+  'description',
+  'category',
+  'status',
+  'notes',
+  // Schedule
   'start_time',
-  'signup_time',
   'end_time',
+  'signup_time',
   'recurrence_rule',
   'day_of_week',
+  // Location - venue
   'venue_name',
   'venue_address',
   'venue_city',
   'venue_state',
-  'notes',
-  'description',
-  'category',
-  'status',
+  // Location - custom (Phase 4.0)
+  'location_mode',
+  'online_url',
+  'custom_location_name',
+  'custom_address',
+  'custom_city',
+  'custom_state',
+  'location_notes',
+  // Cost (Phase 3.1)
+  'is_free',
+  'cost_label',
+  // Signup (Phase 3.1)
+  'signup_mode',
+  'signup_url',
+  // Age policy (Phase 3.1)
+  'age_policy',
 ];
 
 // Maximum length for text fields

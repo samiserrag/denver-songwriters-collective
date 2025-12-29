@@ -34,6 +34,16 @@ interface Venue {
   address?: string;
   city?: string;
   state?: string;
+  google_maps_url?: string | null;
+  map_link?: string | null;
+  website_url?: string | null;
+}
+
+// Phase 4.0: Placeholder detection for venue fields
+function isPlaceholderValue(value: string | null | undefined): boolean {
+  if (!value) return true;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "" || normalized === "tbd" || normalized === "unknown";
 }
 
 interface EventFormProps {
@@ -65,6 +75,14 @@ interface EventFormProps {
     signup_deadline?: string | null;
     age_policy?: string | null;
     is_dsc_event?: boolean;
+    // Phase 4.0: Custom location fields
+    custom_location_name?: string | null;
+    custom_address?: string | null;
+    custom_city?: string | null;
+    custom_state?: string | null;
+    custom_latitude?: number | null;
+    custom_longitude?: number | null;
+    location_notes?: string | null;
   };
 }
 
@@ -118,7 +136,21 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     signup_deadline: event?.signup_deadline || "",
     age_policy: event?.age_policy || "",
     is_dsc_event: event?.is_dsc_event ?? false,
+    // Phase 4.0: Custom location fields
+    custom_location_name: event?.custom_location_name || "",
+    custom_address: event?.custom_address || "",
+    custom_city: event?.custom_city || "",
+    custom_state: event?.custom_state || "CO",
+    custom_latitude: event?.custom_latitude?.toString() || "",
+    custom_longitude: event?.custom_longitude?.toString() || "",
+    location_notes: event?.location_notes || "",
   });
+
+  // Phase 4.0: Location selection mode - "venue" or "custom"
+  // Determine initial mode based on existing event data
+  const [locationSelectionMode, setLocationSelectionMode] = useState<"venue" | "custom">(
+    event?.custom_location_name ? "custom" : "venue"
+  );
 
   // Slot configuration state - defaults based on event type
   const defaultEventType = event?.event_type || "song_circle";
@@ -193,6 +225,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       return;
     }
 
+    // Phase 4.0: Validate custom location name if using custom location mode
+    if (locationSelectionMode === "custom" && formData.location_mode !== "online" && !formData.custom_location_name.trim()) {
+      setError("Location name is required for custom locations");
+      setLoading(false);
+      return;
+    }
+
     try {
       const url = mode === "create"
         ? "/api/my-events"
@@ -224,6 +263,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         signup_deadline: formData.signup_deadline || null,
         age_policy: formData.age_policy || null,
         is_dsc_event: canCreateDSC ? formData.is_dsc_event : false,
+        // Phase 4.0: Location selection mode and custom location fields
+        location_selection_mode: locationSelectionMode,
+        venue_id: locationSelectionMode === "venue" ? formData.venue_id : null,
+        custom_location_name: locationSelectionMode === "custom" ? (formData.custom_location_name.trim() || null) : null,
+        custom_address: locationSelectionMode === "custom" ? (formData.custom_address.trim() || null) : null,
+        custom_city: locationSelectionMode === "custom" ? (formData.custom_city.trim() || null) : null,
+        custom_state: locationSelectionMode === "custom" ? (formData.custom_state.trim() || null) : null,
+        custom_latitude: locationSelectionMode === "custom" && formData.custom_latitude ? parseFloat(formData.custom_latitude) : null,
+        custom_longitude: locationSelectionMode === "custom" && formData.custom_longitude ? parseFloat(formData.custom_longitude) : null,
+        location_notes: formData.location_notes.trim() || null,
       };
 
       const res = await fetch(url, {
@@ -374,15 +423,218 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      {/* Venue */}
-      <VenueSelector
-        venues={venues}
-        selectedVenueId={formData.venue_id}
-        onVenueChange={(venueId) => updateField("venue_id", venueId)}
-        onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
-        required
-        disabled={loading}
-      />
+      {/* Phase 4.0: Location Selection - Only show for venue/hybrid modes */}
+      {(formData.location_mode === "venue" || formData.location_mode === "hybrid") && (
+        <div className="space-y-4">
+          {/* Location Selection Mode Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Location Type *
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setLocationSelectionMode("venue")}
+                className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  locationSelectionMode === "venue"
+                    ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-accent)]"
+                    : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                }`}
+              >
+                Choose existing venue
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocationSelectionMode("custom")}
+                className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  locationSelectionMode === "custom"
+                    ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-accent)]"
+                    : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                }`}
+              >
+                Use custom location
+              </button>
+            </div>
+          </div>
+
+          {/* Venue Selection + Summary Panel */}
+          {locationSelectionMode === "venue" && (
+            <>
+              <VenueSelector
+                venues={venues}
+                selectedVenueId={formData.venue_id}
+                onVenueChange={(venueId) => updateField("venue_id", venueId)}
+                onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
+                required
+                disabled={loading}
+              />
+
+              {/* Venue Summary Panel - shows when venue is selected */}
+              {formData.venue_id && (() => {
+                const selectedVenue = venues.find(v => v.id === formData.venue_id);
+                if (!selectedVenue) return null;
+
+                const hasUnknownAddress = isPlaceholderValue(selectedVenue.address);
+                const hasUnknownCity = isPlaceholderValue(selectedVenue.city);
+                const hasAnyUnknown = hasUnknownAddress || hasUnknownCity;
+                const mapsUrl = selectedVenue.google_maps_url || selectedVenue.map_link;
+
+                return (
+                  <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-900/10 border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
+                    <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                      Venue Details
+                    </h4>
+                    <dl className="space-y-1 text-sm">
+                      <div className="flex gap-2">
+                        <dt className="text-[var(--color-text-secondary)] w-16">Name:</dt>
+                        <dd className="text-[var(--color-text-primary)]">{selectedVenue.name}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="text-[var(--color-text-secondary)] w-16">Address:</dt>
+                        <dd className={hasUnknownAddress ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                          {hasUnknownAddress ? "Unknown" : selectedVenue.address}
+                        </dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="text-[var(--color-text-secondary)] w-16">City:</dt>
+                        <dd className={hasUnknownCity ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                          {hasUnknownCity ? "Unknown" : `${selectedVenue.city}, ${selectedVenue.state || "CO"}`}
+                        </dd>
+                      </div>
+                      {mapsUrl && (
+                        <div className="flex gap-2">
+                          <dt className="text-[var(--color-text-secondary)] w-16">Map:</dt>
+                          <dd>
+                            <a
+                              href={mapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[var(--color-link)] hover:underline"
+                            >
+                              View on Google Maps ↗
+                            </a>
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                    {hasAnyUnknown && (
+                      <p className="mt-3 text-xs text-amber-400">
+                        This venue record is incomplete. Consider using a custom location or updating the venue details.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+            </>
+          )}
+
+          {/* Custom Location Fields */}
+          {locationSelectionMode === "custom" && (
+            <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
+              <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location</h4>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                  Location Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Back room at Joe's Coffee"
+                  value={formData.custom_location_name}
+                  onChange={(e) => updateField("custom_location_name", e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                  Street Address <span className="font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="123 Main St"
+                  value={formData.custom_address}
+                  onChange={(e) => updateField("custom_address", e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    City <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Denver"
+                    value={formData.custom_city}
+                    onChange={(e) => updateField("custom_city", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    State <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="CO"
+                    value={formData.custom_state}
+                    onChange={(e) => updateField("custom_state", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    Latitude <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="39.7392"
+                    value={formData.custom_latitude}
+                    onChange={(e) => updateField("custom_latitude", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    Longitude <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="-104.9903"
+                    value={formData.custom_longitude}
+                    onChange={(e) => updateField("custom_longitude", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                  Location Notes <span className="font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Back room, Meet at north entrance, etc."
+                  value={formData.location_notes}
+                  onChange={(e) => updateField("location_notes", e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  Additional instructions for finding the location
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Schedule */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -26,7 +26,7 @@ export default async function NewEventPage() {
   // Fetch venues for the selector
   const { data: venues } = await supabase
     .from("venues")
-    .select("id, name, address, city, state")
+    .select("id, name, address, city, state, google_maps_url, map_link, website_url")
     .order("name", { ascending: true });
 
   return (

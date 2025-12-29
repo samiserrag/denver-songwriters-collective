@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HappeningsCard } from "@/components/happenings";
+import { HappeningsFilters } from "@/components/happenings/HappeningsFilters";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
 
@@ -60,27 +62,99 @@ function formatDateHeader(dateStr: string): string {
   });
 }
 
+/**
+ * Phase 4.2 Search Params:
+ * - q: search query (matches title, description, venue_name, venue_address, custom_location_*)
+ * - time: upcoming|past|all
+ * - type: event_type (open_mic, showcase, workshop, etc.)
+ * - dsc: 1 = DSC events only
+ * - verify: verified|needs_verification
+ * - location: venue|online|hybrid
+ * - cost: free|paid|unknown
+ */
+interface HappeningsSearchParams {
+  q?: string;
+  time?: string;
+  type?: string;
+  dsc?: string;
+  verify?: string;
+  location?: string;
+  cost?: string;
+}
+
 export default async function HappeningsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; search?: string; time?: string }>;
+  searchParams: Promise<HappeningsSearchParams>;
 }) {
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const typeFilter = params.type;
-  const searchQuery = params.search || "";
-  const timeFilter = params.time || "upcoming"; // 'upcoming' | 'past' | 'all'
+
+  // Extract all filter params
+  const searchQuery = params.q || "";
+  const timeFilter = params.time || "upcoming";
+  const typeFilter = params.type || "";
+  const dscFilter = params.dsc === "1";
+  const verifyFilter = params.verify || "";
+  const locationFilter = params.location || "";
+  const costFilter = params.cost || "";
 
   const today = new Date().toISOString().split("T")[0];
 
+  // Build base query with venue join for search
   let query = supabase
     .from("events")
-    .select("*")
+    .select(`
+      *,
+      venues!left(name, address, city, state)
+    `)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification"]);
 
-  if (typeFilter === "open_mic") query = query.eq("event_type", "open_mic");
-  if (typeFilter === "dsc") query = query.eq("is_dsc_event", true);
+  // Type filter (event_type)
+  if (typeFilter === "open_mic") {
+    query = query.eq("event_type", "open_mic");
+  } else if (typeFilter === "showcase") {
+    query = query.eq("event_type", "showcase");
+  } else if (typeFilter === "workshop") {
+    query = query.eq("event_type", "workshop");
+  } else if (typeFilter === "song_circle") {
+    query = query.eq("event_type", "song_circle");
+  } else if (typeFilter === "gig") {
+    query = query.eq("event_type", "gig");
+  } else if (typeFilter === "other") {
+    query = query.eq("event_type", "other");
+  }
+
+  // DSC filter
+  if (dscFilter) {
+    query = query.eq("is_dsc_event", true);
+  }
+
+  // Verification status filter
+  if (verifyFilter === "verified") {
+    query = query.eq("status", "active");
+  } else if (verifyFilter === "needs_verification") {
+    query = query.eq("status", "needs_verification");
+  }
+
+  // Location mode filter
+  if (locationFilter === "venue") {
+    query = query.eq("location_mode", "venue");
+  } else if (locationFilter === "online") {
+    query = query.eq("location_mode", "online");
+  } else if (locationFilter === "hybrid") {
+    query = query.eq("location_mode", "hybrid");
+  }
+
+  // Cost filter
+  if (costFilter === "free") {
+    query = query.eq("is_free", true);
+  } else if (costFilter === "paid") {
+    query = query.eq("is_free", false);
+  } else if (costFilter === "unknown") {
+    query = query.is("is_free", null);
+  }
 
   // Date filter logic
   if (timeFilter === "upcoming") {
@@ -99,12 +173,63 @@ export default async function HappeningsPage({
     console.error("Error fetching happenings:", error);
   }
 
-  const list = events || [];
+  let list = events || [];
+
+  // Client-side search filtering (case-insensitive across multiple fields)
+  // This is done client-side because Supabase doesn't support OR across joins easily
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter((event: any) => {
+      // Direct event fields
+      const titleMatch = event.title?.toLowerCase().includes(q);
+      const descMatch = event.description?.toLowerCase().includes(q);
+      const venueNameMatch = event.venue_name?.toLowerCase().includes(q);
+      const venueAddrMatch = event.venue_address?.toLowerCase().includes(q);
+      const customLocMatch = event.custom_location_name?.toLowerCase().includes(q);
+      const customCityMatch = event.custom_city?.toLowerCase().includes(q);
+      const customStateMatch = event.custom_state?.toLowerCase().includes(q);
+
+      // Joined venue fields
+      const joinedVenueName = event.venues?.name?.toLowerCase().includes(q);
+      const joinedVenueAddr = event.venues?.address?.toLowerCase().includes(q);
+      const joinedVenueCity = event.venues?.city?.toLowerCase().includes(q);
+      const joinedVenueState = event.venues?.state?.toLowerCase().includes(q);
+
+      return (
+        titleMatch ||
+        descMatch ||
+        venueNameMatch ||
+        venueAddrMatch ||
+        customLocMatch ||
+        customCityMatch ||
+        customStateMatch ||
+        joinedVenueName ||
+        joinedVenueAddr ||
+        joinedVenueCity ||
+        joinedVenueState
+      );
+    });
+  }
+
   const datedEvents = list.filter((e: any) => e.event_date);
   const recurringEvents = list.filter((e: any) => !e.event_date);
 
-  // Hero only shows on unfiltered /happenings (no typeFilter)
-  const showHero = !typeFilter;
+  // Hero only shows on unfiltered /happenings (no filters active)
+  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || timeFilter !== "upcoming";
+  const showHero = !hasFilters;
+
+  // Page title based on active type filter
+  const getPageTitle = () => {
+    if (typeFilter === "open_mic") return "Open Mics";
+    if (typeFilter === "showcase") return "Shows";
+    if (typeFilter === "workshop") return "Workshops";
+    if (typeFilter === "song_circle") return "Song Circles";
+    if (typeFilter === "gig") return "Gigs";
+    if (dscFilter) return "DSC Happenings";
+    return null;
+  };
+
+  const pageTitle = getPageTitle();
 
   return (
     <>
@@ -123,76 +248,62 @@ export default async function HappeningsPage({
 
       <PageContainer className={showHero ? "" : "pt-8"}>
         {/* Community CTA - shows on all views */}
-        <div className="mb-8 p-6 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
-          <p className="text-[var(--color-text-secondary)] text-base mb-4">
-            This directory is maintained by our community. Help us keep it accurate and complete!
+        <div className="mb-6 p-5 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
+          <p className="text-[var(--color-text-secondary)] text-sm mb-3">
+            This directory is maintained by our community. Help us keep it accurate!
           </p>
-          <div className="flex flex-wrap gap-3 justify-center mb-4">
+          <div className="flex flex-wrap gap-2 justify-center mb-3">
             {typeFilter === "open_mic" ? (
               <Link
                 href="/submit-open-mic"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium hover:opacity-90 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
               >
                 + Add an Open Mic
               </Link>
             ) : (
               <Link
                 href="/dashboard/my-events/new"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium hover:opacity-90 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
               >
                 + Create a Happening
               </Link>
             )}
             <Link
               href="/submit-open-mic"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
             >
               Submit a Correction
             </Link>
           </div>
-          <p className="text-[var(--color-text-tertiary)] text-sm">
+          <p className="text-[var(--color-text-tertiary)] text-xs">
             Are you a host? <Link href="/dashboard/my-events" className="text-[var(--color-link)] hover:underline">Claim your listing</Link> to manage it directly.
           </p>
         </div>
 
-        {/* Page header with title + filters */}
-        <div className="mb-6">
-          {!showHero && (
-            <h1 className="text-3xl md:text-4xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-4">
-              {typeFilter === "open_mic" ? "Open Mics" : "DSC Happenings"}
-            </h1>
-          )}
-          <div className="flex gap-2 flex-wrap">
-            <FilterTab href="/happenings" label="All" active={!typeFilter} />
-            <FilterTab
-              href="/happenings?type=open_mic"
-              label="Open Mics"
-              active={typeFilter === "open_mic"}
-            />
-            <FilterTab
-              href="/happenings?type=dsc"
-              label="DSC Happenings"
-              active={typeFilter === "dsc"}
-            />
-          </div>
-          {/* Time filter */}
-          <div className="flex gap-2 mt-3">
-            <TimeFilterTab
-              href={typeFilter ? `/happenings?type=${typeFilter}&time=upcoming` : "/happenings?time=upcoming"}
-              label="Upcoming"
-              active={timeFilter === "upcoming"}
-            />
-            <TimeFilterTab
-              href={typeFilter ? `/happenings?type=${typeFilter}&time=past` : "/happenings?time=past"}
-              label="Past"
-              active={timeFilter === "past"}
-            />
-          </div>
-        </div>
+        {/* Page header with title */}
+        {!showHero && pageTitle && (
+          <h1 className="text-3xl md:text-4xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-4">
+            {pageTitle}
+          </h1>
+        )}
+
+        {/* Filter bar - wrapped in Suspense for useSearchParams */}
+        <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
+          <HappeningsFilters className="mb-6" />
+        </Suspense>
+
+        {/* Results count */}
+        {(searchQuery || hasFilters) && (
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            {list.length} {list.length === 1 ? "result" : "results"} found
+          </p>
+        )}
 
         {datedEvents.length > 0 && (
           <section className="mb-12">
-            <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">Upcoming Happenings</h2>
+            <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">
+              {timeFilter === "past" ? "Past Happenings" : "Upcoming Happenings"}
+            </h2>
             <div className="flex flex-col gap-6">
               {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
                 <div key={date}>
@@ -233,57 +344,13 @@ export default async function HappeningsPage({
         {list.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[var(--color-text-secondary)]">
-              No happenings found. Check back soon!
+              {searchQuery || hasFilters
+                ? "No happenings match your filters. Try adjusting your search."
+                : "No happenings found. Check back soon!"}
             </p>
           </div>
         )}
       </PageContainer>
     </>
-  );
-}
-
-function FilterTab({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-        active
-          ? "bg-[var(--color-accent-primary)] text-white"
-          : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function TimeFilterTab({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`px-3 py-1 rounded text-sm transition-colors ${
-        active
-          ? "text-[var(--color-text-accent)] border-b-2 border-[var(--color-accent-primary)]"
-          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-      }`}
-    >
-      {label}
-    </Link>
   );
 }

@@ -11,6 +11,7 @@ import { TimeslotSection } from "@/components/events/TimeslotSection";
 import { HostControls } from "@/components/events/HostControls";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { hasMissingDetails } from "@/lib/events/missingDetails";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,20 @@ export async function generateMetadata({
   };
 }
 
-function getGoogleMapsUrl(address: string | null): string | null {
+/**
+ * Phase 4.0: Generate Google Maps URL
+ * Supports lat/lng coordinates or address-based search
+ */
+function getGoogleMapsUrl(
+  address: string | null,
+  latitude?: number | null,
+  longitude?: number | null
+): string | null {
+  // Prefer lat/lng if available (more precise)
+  if (latitude && longitude) {
+    return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+  }
+  // Fall back to address search
   if (!address) return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
@@ -82,6 +96,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const supabase = await createSupabaseServerClient();
 
   // Fetch event with venue join and recurrence info
+  // Phase 4.0: Include custom location fields
   const { data: event, error } = await supabase
     .from("events")
     .select(`
@@ -89,7 +104,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       day_of_week, start_time, end_time, capacity, cover_image_url,
       is_dsc_event, status, created_at, event_date,
       has_timeslots, total_slots, slot_duration_minutes, is_published,
-      is_recurring, recurrence_pattern
+      is_recurring, recurrence_pattern,
+      custom_location_name, custom_address, custom_city, custom_state,
+      custom_latitude, custom_longitude, location_notes, location_mode,
+      is_free, age_policy
     `)
     .eq("id", id)
     .single();
@@ -130,20 +148,42 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const needsVerification = event.status === "needs_verification";
   const canRSVP = !isCancelled && !isPastEvent && event.is_published;
 
-  // If venue_name is null but venue_id exists, fetch from venues table
-  let venueName = event.venue_name;
-  let venueAddress = event.venue_address;
-  if (!venueName && event.venue_id) {
+  // Phase 4.0: Resolve location name and address
+  // Check venue first, then fall back to custom location
+  let locationName: string | null = event.venue_name;
+  let locationAddress: string | null = event.venue_address;
+  let isCustomLocation = false;
+
+  if (!locationName && event.venue_id) {
+    // Fetch from venues table if venue_name wasn't denormalized
     const { data: venue } = await supabase
       .from("venues")
-      .select("name, address")
+      .select("name, address, city, state")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
-      venueName = venue.name;
-      venueAddress = venue.address;
+      locationName = venue.name;
+      const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
+      locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
     }
   }
+
+  // Phase 4.0: Fall back to custom location if no venue
+  if (!locationName && event.custom_location_name) {
+    locationName = event.custom_location_name;
+    isCustomLocation = true;
+    // Build custom address from parts
+    const addressParts = [
+      event.custom_address,
+      event.custom_city,
+      event.custom_state
+    ].filter(Boolean);
+    locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+  }
+
+  // Keep legacy variable names for compatibility with rest of file
+  const venueName = locationName;
+  const venueAddress = locationAddress;
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
   const { data: eventHosts } = await supabase
@@ -190,7 +230,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   }
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
-  const mapsUrl = getGoogleMapsUrl(venueAddress);
+  // Phase 4.0: Pass lat/lng for custom locations
+  const mapsUrl = getGoogleMapsUrl(
+    venueAddress,
+    isCustomLocation ? event.custom_latitude : null,
+    isCustomLocation ? event.custom_longitude : null
+  );
   const remaining = event.capacity ? Math.max(0, event.capacity - attendanceCount) : null;
 
   // Format recurrence pattern for display
@@ -313,9 +358,32 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             )}
           </div>
 
-          <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-6">
+          <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
             {event.title}
           </h1>
+
+          {/* Phase 4.1: Missing details indicator */}
+          {hasMissingDetails({
+            location_mode: event.location_mode,
+            venue_id: event.venue_id,
+            venue_name: event.venue_name,
+            custom_location_name: event.custom_location_name,
+            online_url: (event as any).online_url,
+            is_free: (event as any).is_free,
+            age_policy: (event as any).age_policy,
+            is_dsc_event: event.is_dsc_event,
+            event_type: event.event_type
+          }) && (
+            <div className="mb-6 px-4 py-3 rounded-lg bg-amber-100 text-amber-800 flex items-center gap-3">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>
+                <span className="font-medium">Missing details</span>
+                <span className="ml-1">— Know more about this event? Contact an admin to help complete this listing.</span>
+              </span>
+            </div>
+          )}
 
           {/* Compact info row: Date | Time | Venue | Spots */}
           <div className="mb-6 p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
@@ -373,6 +441,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             {venueAddress && (
               <p className="mt-2 text-[var(--color-text-secondary)] text-sm pl-6">
                 {venueAddress}
+              </p>
+            )}
+
+            {/* Phase 4.0: Location notes (e.g., "Back room", "Meet at north entrance") */}
+            {event.location_notes && (
+              <p className="mt-1 text-[var(--color-text-secondary)] text-sm pl-6 italic">
+                {event.location_notes}
               </p>
             )}
           </div>

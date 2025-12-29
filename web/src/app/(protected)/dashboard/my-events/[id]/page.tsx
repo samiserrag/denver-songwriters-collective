@@ -54,7 +54,7 @@ export default async function EditEventPage({
     .from("events")
     .select(`
       *,
-      venues(id, name, address, city, state),
+      venues(id, name, address, city, state, google_maps_url, map_link, website_url),
       event_hosts(id, user_id, role, invitation_status)
     `)
     .eq("id", eventId)
@@ -101,7 +101,7 @@ export default async function EditEventPage({
   // Fetch venues for the selector
   const { data: venues } = await supabase
     .from("venues")
-    .select("id, name, address, city, state")
+    .select("id, name, address, city, state, google_maps_url, map_link, website_url")
     .order("name", { ascending: true });
 
   const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]

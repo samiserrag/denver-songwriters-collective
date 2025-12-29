@@ -131,10 +131,19 @@ export async function PATCH(
     );
   }
 
+  // Phase 4.0: Handle mutual exclusivity of venue_id and custom_location_name
+  const hasVenue = !!body.venue_id;
+  const hasCustomLocation = !!body.custom_location_name;
+
+  // Validate mutual exclusivity
+  if (hasVenue && hasCustomLocation) {
+    return NextResponse.json({ error: "Cannot have both venue_id and custom_location_name" }, { status: 400 });
+  }
+
   // Only allow updating specific fields
   const allowedFields = [
     "title", "description", "event_type", "capacity", "host_notes",
-    "venue_id", "day_of_week", "start_time", "event_date",
+    "day_of_week", "start_time", "event_date",
     "end_time", "status", "recurrence_rule", "cover_image_url", "is_published",
     // Phase 3 fields
     "timezone", "location_mode", "online_url", "is_free", "cost_label",
@@ -148,6 +157,54 @@ export async function PATCH(
     if (body[field] !== undefined) {
       updates[field] = body[field];
     }
+  }
+
+  // Phase 4.0: Handle location selection changes with invariant enforcement
+  if (hasVenue) {
+    // Venue selection path: set venue, clear all custom location fields
+    updates.venue_id = body.venue_id;
+    updates.custom_location_name = null;
+    updates.custom_address = null;
+    updates.custom_city = null;
+    updates.custom_state = null;
+    updates.custom_latitude = null;
+    updates.custom_longitude = null;
+    updates.location_notes = null;
+
+    // Lookup venue info
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("name, address, city, state")
+      .eq("id", body.venue_id)
+      .single();
+
+    if (venue) {
+      updates.venue_name = venue.name;
+      const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
+      updates.venue_address = addressParts.length > 0 ? addressParts.join(", ") : null;
+    }
+  } else if (hasCustomLocation) {
+    // Custom location path: clear venue, set custom fields
+    updates.venue_id = null;
+    updates.venue_name = null;
+    updates.venue_address = null;
+    updates.custom_location_name = body.custom_location_name;
+    updates.custom_address = body.custom_address || null;
+    updates.custom_city = body.custom_city || null;
+    updates.custom_state = body.custom_state || null;
+    updates.custom_latitude = body.custom_latitude || null;
+    updates.custom_longitude = body.custom_longitude || null;
+    updates.location_notes = body.location_notes || null;
+  } else if (body.venue_id === null) {
+    // Explicit venue clearing without custom location (for online-only events)
+    updates.venue_id = null;
+    updates.venue_name = null;
+    updates.venue_address = null;
+  }
+
+  // Handle location_notes updates even when not changing location mode
+  if (body.location_notes !== undefined && !hasCustomLocation) {
+    updates.location_notes = body.location_notes || null;
   }
 
   // Handle is_dsc_event separately - only allow if canCreateDSC

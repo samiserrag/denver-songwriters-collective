@@ -760,6 +760,12 @@ export type Database = {
           cost_label: string | null
           cover_image_url: string | null
           created_at: string | null
+          custom_address: string | null
+          custom_city: string | null
+          custom_latitude: number | null
+          custom_location_name: string | null
+          custom_longitude: number | null
+          custom_state: string | null
           day_of_week: string | null
           description: string | null
           end_time: string | null
@@ -778,6 +784,7 @@ export type Database = {
           last_major_update_at: string | null
           last_verified_at: string | null
           location_mode: string | null
+          location_notes: string | null
           notes: string | null
           online_url: string | null
           parent_event_id: string | null
@@ -798,7 +805,7 @@ export type Database = {
           source: string | null
           spotlight_reason: string | null
           start_time: string | null
-          status: string | null
+          status: string
           timezone: string | null
           title: string
           total_slots: number | null
@@ -818,6 +825,12 @@ export type Database = {
           cost_label?: string | null
           cover_image_url?: string | null
           created_at?: string | null
+          custom_address?: string | null
+          custom_city?: string | null
+          custom_latitude?: number | null
+          custom_location_name?: string | null
+          custom_longitude?: number | null
+          custom_state?: string | null
           day_of_week?: string | null
           description?: string | null
           end_time?: string | null
@@ -836,6 +849,7 @@ export type Database = {
           last_major_update_at?: string | null
           last_verified_at?: string | null
           location_mode?: string | null
+          location_notes?: string | null
           notes?: string | null
           online_url?: string | null
           parent_event_id?: string | null
@@ -856,7 +870,7 @@ export type Database = {
           source?: string | null
           spotlight_reason?: string | null
           start_time?: string | null
-          status?: string | null
+          status?: string
           timezone?: string | null
           title: string
           total_slots?: number | null
@@ -876,6 +890,12 @@ export type Database = {
           cost_label?: string | null
           cover_image_url?: string | null
           created_at?: string | null
+          custom_address?: string | null
+          custom_city?: string | null
+          custom_latitude?: number | null
+          custom_location_name?: string | null
+          custom_longitude?: number | null
+          custom_state?: string | null
           day_of_week?: string | null
           description?: string | null
           end_time?: string | null
@@ -894,6 +914,7 @@ export type Database = {
           last_major_update_at?: string | null
           last_verified_at?: string | null
           location_mode?: string | null
+          location_notes?: string | null
           notes?: string | null
           online_url?: string | null
           parent_event_id?: string | null
@@ -914,7 +935,7 @@ export type Database = {
           source?: string | null
           spotlight_reason?: string | null
           start_time?: string | null
-          status?: string | null
+          status?: string
           timezone?: string | null
           title?: string
           total_slots?: number | null

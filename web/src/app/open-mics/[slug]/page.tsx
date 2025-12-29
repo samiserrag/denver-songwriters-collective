@@ -219,6 +219,30 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
             dangerouslySetInnerHTML={{ __html: titleHtml }}
           />
 
+          {/* Phase 4.1: Missing details indicator */}
+          {hasMissingDetails({
+            location_mode: (event as any).location_mode,
+            venue_id: event.venue_id,
+            venue_name: venue?.name ?? (event as any).venue_name,
+            custom_location_name: (event as any).custom_location_name,
+            online_url: (event as any).online_url,
+            is_free: (event as any).is_free,
+            age_policy: (event as any).age_policy,
+            is_dsc_event: (event as any).is_dsc_event,
+            event_type: (event as any).event_type
+          }) && (
+            <a
+              href="#suggest-update"
+              className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="font-medium">Missing details</span>
+              <span className="text-sm">— Know more? Help complete this listing!</span>
+            </a>
+          )}
+
           {/* Quick info cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {/* Time Card */}
@@ -324,7 +348,7 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
       <OpenMicComments eventId={event.id} />
 
       {/* Community feedback section */}
-      <div className="mt-8 space-y-4">
+      <div id="suggest-update" className="mt-8 space-y-4 scroll-mt-24">
         {/* Quick report change form */}
         <ReportChangeForm eventId={event.id} eventTitle={event.title ?? "Open Mic"} />
 
@@ -352,3 +376,4 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 import EventSuggestionForm from "@/components/events/EventSuggestionForm";
 import ReportChangeForm from "@/components/events/ReportChangeForm";
 import { OpenMicComments } from "@/components/events";
+import { hasMissingDetails } from "@/lib/events/missingDetails";

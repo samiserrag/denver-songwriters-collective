@@ -1,0 +1,395 @@
+"use client";
+
+/**
+ * HappeningsFilters - URL-driven filter bar for /happenings
+ *
+ * Phase 4.2: Provides search + filter controls with shareable URLs.
+ * Design: Flyer-like aesthetic, no emoji, SVG icons only (sparse).
+ *
+ * URL params:
+ * - q: search query
+ * - time: upcoming|past|all
+ * - type: event_type (open_mic, showcase, workshop, etc.)
+ * - dsc: 1 = DSC events only
+ * - verify: all|verified|needs_verification
+ * - location: all|venue|online|hybrid
+ * - cost: all|free|paid|unknown
+ */
+
+import * as React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
+
+// SVG Icons (sparse use only)
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+}
+
+function MapPinIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function TagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  );
+}
+
+function MicIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+// Filter option types - human-readable labels
+const TIME_OPTIONS = [
+  { value: "upcoming", label: "Upcoming" },
+  { value: "past", label: "Past" },
+  { value: "all", label: "All" },
+] as const;
+
+const TYPE_OPTIONS = [
+  { value: "", label: "All Types" },
+  { value: "open_mic", label: "Open Mics" },
+  { value: "showcase", label: "Shows" },
+  { value: "workshop", label: "Workshops" },
+  { value: "song_circle", label: "Song Circles" },
+  { value: "gig", label: "Gigs" },
+  { value: "other", label: "Other" },
+] as const;
+
+const LOCATION_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "venue", label: "In-person" },
+  { value: "online", label: "Online" },
+  { value: "hybrid", label: "Hybrid" },
+] as const;
+
+const COST_OPTIONS = [
+  { value: "", label: "Any" },
+  { value: "free", label: "Free" },
+  { value: "paid", label: "Paid" },
+  { value: "unknown", label: "Unknown" },
+] as const;
+
+const VERIFY_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "verified", label: "Verified" },
+  { value: "needs_verification", label: "Needs verify" },
+] as const;
+
+interface HappeningsFiltersProps {
+  className?: string;
+}
+
+export function HappeningsFilters({ className }: HappeningsFiltersProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read current values from URL
+  const q = searchParams.get("q") || "";
+  const time = searchParams.get("time") || "upcoming";
+  const type = searchParams.get("type") || "";
+  const dsc = searchParams.get("dsc") === "1";
+  const verify = searchParams.get("verify") || "";
+  const location = searchParams.get("location") || "";
+  const cost = searchParams.get("cost") || "";
+
+  // Local search input state (debounced)
+  const [searchInput, setSearchInput] = React.useState(q);
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Sync search input when URL changes externally
+  React.useEffect(() => {
+    setSearchInput(q);
+  }, [q]);
+
+  // Build URL with updated params
+  const buildUrl = React.useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === "" || (value === "upcoming" && key === "time")) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+
+    // Clean up default values
+    if (params.get("time") === "upcoming") params.delete("time");
+
+    const queryString = params.toString();
+    return queryString ? `/happenings?${queryString}` : "/happenings";
+  }, [searchParams]);
+
+  // Update URL when filter changes
+  const updateFilter = React.useCallback((key: string, value: string | null) => {
+    router.push(buildUrl({ [key]: value }));
+  }, [router, buildUrl]);
+
+  // Handle search with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+
+    // Debounce URL update
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      updateFilter("q", value || null);
+    }, 300);
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchInput("");
+    updateFilter("q", null);
+  };
+
+  // Clear all filters
+  const clearAll = () => {
+    setSearchInput("");
+    router.push("/happenings");
+  };
+
+  // Toggle DSC filter
+  const toggleDsc = () => {
+    updateFilter("dsc", dsc ? null : "1");
+  };
+
+  // Collect active filter pills for display
+  const activeFilters: { key: string; label: string; icon?: React.ReactNode }[] = [];
+
+  if (q) {
+    activeFilters.push({ key: "q", label: `"${q}"` });
+  }
+  if (type) {
+    const typeLabel = TYPE_OPTIONS.find(o => o.value === type)?.label || type;
+    activeFilters.push({
+      key: "type",
+      label: typeLabel,
+      icon: type === "open_mic" ? <MicIcon className="w-3 h-3" /> : undefined
+    });
+  }
+  if (dsc) {
+    activeFilters.push({ key: "dsc", label: "DSC" });
+  }
+  if (location) {
+    const locationLabel = LOCATION_OPTIONS.find(o => o.value === location)?.label || location;
+    activeFilters.push({
+      key: "location",
+      label: locationLabel,
+      icon: <MapPinIcon className="w-3 h-3" />
+    });
+  }
+  if (cost) {
+    const costLabel = COST_OPTIONS.find(o => o.value === cost)?.label || cost;
+    activeFilters.push({
+      key: "cost",
+      label: costLabel,
+      icon: <TagIcon className="w-3 h-3" />
+    });
+  }
+  if (verify) {
+    const verifyLabel = VERIFY_OPTIONS.find(o => o.value === verify)?.label || verify;
+    activeFilters.push({ key: "verify", label: verifyLabel });
+  }
+  if (time && time !== "upcoming") {
+    const timeLabel = TIME_OPTIONS.find(o => o.value === time)?.label || time;
+    activeFilters.push({ key: "time", label: timeLabel });
+  }
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      {/* Search */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search happenings..."
+          value={searchInput}
+          onChange={handleSearchChange}
+          className="w-full px-4 py-2.5 pl-10 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]/50"
+        />
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
+        {searchInput && (
+          <button
+            onClick={clearSearch}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+            aria-label="Clear search"
+          >
+            <XIcon className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Filter Row 1: Time + Type + DSC */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {/* Time tabs */}
+        <div className="flex rounded-lg overflow-hidden border border-[var(--color-border-default)]">
+          {TIME_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => updateFilter("time", option.value === "upcoming" ? null : option.value)}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium transition-colors",
+                time === option.value || (option.value === "upcoming" && !searchParams.get("time"))
+                  ? "bg-[var(--color-accent-primary)] text-white"
+                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Type dropdown */}
+        <select
+          value={type}
+          onChange={(e) => updateFilter("type", e.target.value || null)}
+          className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+        >
+          {TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {/* DSC toggle - badge style */}
+        <button
+          onClick={toggleDsc}
+          className={cn(
+            "px-2.5 py-1 text-sm font-semibold rounded border transition-colors",
+            dsc
+              ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-accent-primary)]/40"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/40"
+          )}
+        >
+          DSC
+        </button>
+      </div>
+
+      {/* Filter Row 2: Location + Cost + Verification (collapsible) */}
+      <details className="group">
+        <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] list-none flex items-center gap-1">
+          <span>More filters</span>
+          <ChevronDownIcon className="w-4 h-4 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {/* Location dropdown */}
+          <div className="flex items-center gap-1.5">
+            <MapPinIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
+            <select
+              value={location}
+              onChange={(e) => updateFilter("location", e.target.value || null)}
+              className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+            >
+              {LOCATION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Cost dropdown */}
+          <div className="flex items-center gap-1.5">
+            <TagIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
+            <select
+              value={cost}
+              onChange={(e) => updateFilter("cost", e.target.value || null)}
+              className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+            >
+              {COST_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Verification dropdown */}
+          <select
+            value={verify}
+            onChange={(e) => updateFilter("verify", e.target.value || null)}
+            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+          >
+            {VERIFY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </details>
+
+      {/* Active filter pills */}
+      {activeFilters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-[var(--color-text-secondary)]">Active:</span>
+          {activeFilters.map((filter) => (
+            <span
+              key={filter.key}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm border border-[var(--color-border-default)]"
+            >
+              {filter.icon}
+              {filter.label}
+              <button
+                type="button"
+                onClick={() => {
+                  if (filter.key === "q") {
+                    setSearchInput("");
+                  }
+                  updateFilter(filter.key, null);
+                }}
+                className="ml-0.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                aria-label={`Remove ${filter.label} filter`}
+              >
+                <XIcon className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={clearAll}
+            className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default HappeningsFilters;

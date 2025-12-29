@@ -47,12 +47,13 @@ describe('Navigation Links', () => {
     expect(footerContent).not.toMatch(legacyListingPattern);
   });
 
-  it('header should use /happenings for open mics', () => {
+  it('header should NOT have Open Mics link after Phase 4.2', () => {
     const headerPath = path.join(navDir, 'header.tsx');
     const headerContent = fs.readFileSync(headerPath, 'utf-8');
 
-    // Should have /happenings?type=open_mic
-    expect(headerContent).toMatch(/\/happenings\?type=open_mic/);
+    // Phase 4.2: Open Mics link removed from header nav
+    // Users now use the filter bar on /happenings
+    expect(headerContent).not.toMatch(/label:\s*["'`]Open Mics["'`]/);
   });
 
   it('footer should use /happenings?type=open_mic for open mics', () => {

@@ -20,6 +20,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { highlight } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import { PosterMedia } from "@/components/media";
+import { MissingDetailsChipStatic } from "@/components/events/MissingDetailsChip";
 
 // ============================================================
 // Types
@@ -60,6 +61,15 @@ export interface HappeningEvent {
     neighborhood?: string | null;
   } | string | null;
 
+  // Phase 4.0: Custom location fields (mutually exclusive with venue)
+  custom_location_name?: string | null;
+  custom_address?: string | null;
+  custom_city?: string | null;
+  custom_state?: string | null;
+  custom_latitude?: number | null;
+  custom_longitude?: number | null;
+  location_notes?: string | null;
+
   // Cost (Phase 3.1 fields)
   is_free?: boolean | null;
   cost_label?: string | null;
@@ -68,6 +78,9 @@ export interface HappeningEvent {
   signup_mode?: "in_person" | "online" | "both" | "walk_in" | null;
   signup_time?: string | null;
   signup_url?: string | null;
+
+  // Age policy (Phase 3.1)
+  age_policy?: string | null;
 
   // Display
   cover_image_url?: string | null;
@@ -100,26 +113,39 @@ export interface HappeningCardProps {
 // Helpers
 // ============================================================
 
+/**
+ * Phase 4.0: Get location name - checks venue first, then custom location
+ * Venues and custom locations are mutually exclusive
+ */
 function getVenueName(event: HappeningEvent): string | null {
+  // Check venue fields first
   if (event.venue_name) return event.venue_name;
   if (typeof event.venue === "string") return event.venue;
   if (event.venue && typeof event.venue === "object" && event.venue.name) {
     return event.venue.name;
   }
+  // Phase 4.0: Fall back to custom location name
+  if (event.custom_location_name) return event.custom_location_name;
   return null;
 }
 
 function getVenueCity(event: HappeningEvent): string | null {
+  // Check venue object first
   if (typeof event.venue === "object" && event.venue?.city) {
     return event.venue.city;
   }
+  // Phase 4.0: Fall back to custom city
+  if (event.custom_city) return event.custom_city;
   return null;
 }
 
 function getVenueState(event: HappeningEvent): string | null {
+  // Check venue object first
   if (typeof event.venue === "object" && event.venue?.state) {
     return event.venue.state;
   }
+  // Phase 4.0: Fall back to custom state
+  if (event.custom_state) return event.custom_state;
   return null;
 }
 
@@ -142,6 +168,7 @@ function isValidMapUrl(url: string | null | undefined): boolean {
 }
 
 function getMapUrl(event: HappeningEvent): string | null {
+  // Check for venue map URLs first
   if (typeof event.venue === "object" && event.venue) {
     if (isValidMapUrl(event.venue.google_maps_url)) {
       return event.venue.google_maps_url!;
@@ -150,12 +177,20 @@ function getMapUrl(event: HappeningEvent): string | null {
       return event.venue.map_link!;
     }
   }
-  // Fallback: generate search URL
-  const venueName = getVenueName(event);
-  if (venueName) {
-    const address = event.venue_address ||
+
+  // Phase 4.0: Handle custom location with lat/lng
+  if (event.custom_latitude && event.custom_longitude) {
+    return `https://www.google.com/maps/search/?api=1&query=${event.custom_latitude},${event.custom_longitude}`;
+  }
+
+  // Fallback: generate search URL from name and address
+  const locationName = getVenueName(event);
+  if (locationName) {
+    // Use custom address if available, otherwise fall back to venue address
+    const address = event.custom_address ||
+      event.venue_address ||
       (typeof event.venue === "object" && event.venue?.address);
-    const query = address ? `${venueName}, ${address}` : venueName;
+    const query = address ? `${locationName}, ${address}` : locationName;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   }
   return null;
@@ -504,6 +539,10 @@ export function HappeningCard({
               {event.signup_mode === "both" && "Online or in-person signup"}
             </div>
           )}
+
+          {/* Phase 4.1: Missing details chip - invite community to help complete listing */}
+          {/* Use Static version since we're inside a Link wrapper */}
+          <MissingDetailsChipStatic event={event} compact={variant === "list"} />
 
           {/* Footer: View Details + Map */}
           <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">

@@ -145,16 +145,38 @@ export async function POST(request: Request) {
     );
   }
 
-  // Validate venue_id required for venue/hybrid events
-  if ((body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode) && !body.venue_id) {
-    return NextResponse.json({ error: "venue_id is required for in-person events" }, { status: 400 });
+  // Phase 4.0: Determine location selection mode
+  // User can either select a venue OR provide a custom location (mutually exclusive)
+  const hasVenue = !!body.venue_id;
+  const hasCustomLocation = !!body.custom_location_name;
+
+  // Validate: exactly one of venue_id or custom_location_name must be set for in-person/hybrid events
+  if (body.location_mode === "venue" || body.location_mode === "hybrid" || !body.location_mode) {
+    if (!hasVenue && !hasCustomLocation) {
+      return NextResponse.json({ error: "Either venue_id or custom_location_name is required for in-person events" }, { status: 400 });
+    }
+    if (hasVenue && hasCustomLocation) {
+      return NextResponse.json({ error: "Cannot have both venue_id and custom_location_name" }, { status: 400 });
+    }
   }
 
-  // Lookup venue name and address from venues table
+  // Lookup venue name and address from venues table (only if venue selected)
   let venueName: string | null = null;
   let venueAddress: string | null = null;
+  let finalVenueId: string | null = null;
+  let customLocationFields = {
+    custom_location_name: null as string | null,
+    custom_address: null as string | null,
+    custom_city: null as string | null,
+    custom_state: null as string | null,
+    custom_latitude: null as number | null,
+    custom_longitude: null as number | null,
+    location_notes: null as string | null,
+  };
 
-  if (body.venue_id) {
+  if (hasVenue) {
+    // Venue selection path: clear all custom location fields
+    finalVenueId = body.venue_id;
     const { data: venue } = await supabase
       .from("venues")
       .select("name, address, city, state")
@@ -167,6 +189,21 @@ export async function POST(request: Request) {
       const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
       venueAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
     }
+    // customLocationFields stays all null (cleared)
+  } else if (hasCustomLocation) {
+    // Custom location path: clear venue fields
+    finalVenueId = null;
+    venueName = null;
+    venueAddress = null;
+    customLocationFields = {
+      custom_location_name: body.custom_location_name,
+      custom_address: body.custom_address || null,
+      custom_city: body.custom_city || null,
+      custom_state: body.custom_state || null,
+      custom_latitude: body.custom_latitude || null,
+      custom_longitude: body.custom_longitude || null,
+      location_notes: body.location_notes || null,
+    };
   }
 
   // Determine series configuration
@@ -206,9 +243,18 @@ export async function POST(request: Request) {
         is_dsc_event: isDSCEvent,
         capacity: body.has_timeslots ? body.total_slots : (body.capacity || null),
         host_notes: body.host_notes || null,
-        venue_id: body.venue_id || null,
+        // Phase 4.0: Venue fields (mutually exclusive with custom location)
+        venue_id: finalVenueId,
         venue_name: venueName,
         venue_address: venueAddress,
+        // Phase 4.0: Custom location fields (mutually exclusive with venue)
+        custom_location_name: customLocationFields.custom_location_name,
+        custom_address: customLocationFields.custom_address,
+        custom_city: customLocationFields.custom_city,
+        custom_state: customLocationFields.custom_state,
+        custom_latitude: customLocationFields.custom_latitude,
+        custom_longitude: customLocationFields.custom_longitude,
+        location_notes: customLocationFields.location_notes,
         day_of_week: body.day_of_week || null,
         start_time: body.start_time,
         end_time: body.end_time || null,
