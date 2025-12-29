@@ -299,18 +299,19 @@ export default async function HappeningsPage({
           </p>
         )}
 
+        {/* Phase 4.3: Tight density - 10-12 rows visible on desktop, 6-8 on mobile */}
         {datedEvents.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">
+          <section className="mb-8">
+            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-3 text-stone-700 dark:text-stone-200">
               {timeFilter === "past" ? "Past Happenings" : "Upcoming Happenings"}
             </h2>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
                 <div key={date}>
-                  <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2 pb-1 border-b border-[var(--color-border-default)]">
+                  <h3 className="text-base font-medium text-stone-500 dark:text-stone-400 mb-1 pb-0.5 border-b border-stone-200 dark:border-stone-700">
                     {formatDateHeader(date)}
                   </h3>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col">
                     {eventsForDate.map((event: any) => (
                       <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
                     ))}
@@ -323,14 +324,14 @@ export default async function HappeningsPage({
 
         {recurringEvents.length > 0 && (
           <section>
-            <h2 className="text-2xl font-[var(--font-family-display)] font-semibold mb-4">Weekly Open Mics</h2>
-            <div className="flex flex-col gap-6">
+            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-3 text-stone-700 dark:text-stone-200">Weekly Open Mics</h2>
+            <div className="flex flex-col gap-4">
               {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
                 <div key={day}>
-                  <h3 className="text-2xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-2 pb-1 border-b-2 border-[var(--color-accent-primary)]">
+                  <h3 className="text-lg font-[var(--font-family-display)] font-bold text-stone-600 dark:text-stone-300 mb-1 pb-0.5 border-b-2 border-amber-400 dark:border-amber-500">
                     {day}s
                   </h3>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col">
                     {eventsForDay.map((event: any) => (
                       <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
                     ))}

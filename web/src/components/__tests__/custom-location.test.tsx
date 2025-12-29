@@ -67,11 +67,13 @@ describe('HappeningCard custom location rendering', () => {
       expect(container.textContent).toContain('Test Venue');
     });
 
-    it('should display venue city and state', () => {
+    it('should display venue name in Line 2 (Phase 4.3 simplified - no city/state)', () => {
       const { container } = render(
         <HappeningCard event={eventWithVenue} variant="grid" />
       );
-      expect(container.textContent).toContain('Denver, CO');
+      // Phase 4.3: Line 2 shows venue name only, not city/state
+      expect(container.textContent).toContain('Test Venue');
+      // City/state is NOT shown in the simplified card (shown on detail page instead)
     });
 
     it('should not display custom location when venue is set', () => {
@@ -111,11 +113,13 @@ describe('HappeningCard custom location rendering', () => {
       expect(container.textContent).toContain('Private Residence');
     });
 
-    it('should display custom city and state', () => {
+    it('should display custom location name only (Phase 4.3 - no city/state)', () => {
       const { container } = render(
         <HappeningCard event={eventWithCustomLocation} variant="grid" />
       );
-      expect(container.textContent).toContain('Boulder, CO');
+      // Phase 4.3: Line 2 shows location name only, not city/state
+      expect(container.textContent).toContain('Private Residence');
+      // City/state is NOT shown in the simplified card (shown on detail page instead)
     });
   });
 
@@ -228,16 +232,18 @@ describe('Custom location with coordinates', () => {
     const { container } = render(
       <HappeningCard event={eventWithCoords} variant="grid" />
     );
+    // Phase 4.3: Line 2 shows location name only, not city/state
     expect(container.textContent).toContain('City Park Pavilion');
-    expect(container.textContent).toContain('Denver, CO');
+    // City/state is NOT shown in the simplified card (shown on detail page instead)
   });
 
-  it('should render Map link when coordinates are available', () => {
+  it('should not render Map link in card (Phase 4.3 - map on detail page)', () => {
     const { container } = render(
       <HappeningCard event={eventWithCoords} variant="grid" />
     );
-    // The "Map" button should be rendered
-    expect(container.textContent).toContain('Map');
+    // Phase 4.3: Map link is NOT shown in the simplified card (available on detail page)
+    // This is correct behavior - cards are streamlined for scanning
+    expect(container.textContent).not.toContain('Map');
   });
 });
 
