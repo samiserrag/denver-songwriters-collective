@@ -213,12 +213,25 @@ See full backlog in previous CLAUDE.md version or `docs/known-issues.md`.
 
 ## Test Files
 
+All tests live in `web/src/` and run via `npm run test -- --run`.
+
 | File | Tests |
 |------|-------|
-| `card-variants.test.tsx` | Card variant behavior |
-| `navigation-links.test.ts` | Canonical route enforcement |
-| `no-notes-leak.test.tsx` | Raw dump regression |
-| `event-update-suggestions/page.test.tsx` | Suggestions page |
+| `__tests__/card-variants.test.tsx` | Card variant behavior |
+| `__tests__/navigation-links.test.ts` | Canonical route enforcement |
+| `__tests__/happenings-filters.test.ts` | Filter logic |
+| `__tests__/utils/datetime.test.ts` | Datetime utilities |
+| `components/__tests__/no-notes-leak.test.tsx` | Raw dump regression |
+| `app/.../event-update-suggestions/page.test.tsx` | Suggestions page |
+| `lib/guest-verification/*.test.ts` | Guest verification |
+| `lib/email/email.test.ts` | Email templates |
+| `app/api/guest/*.test.ts` | Guest API endpoints |
+
+### Archived Tests
+
+Legacy test suite archived at `docs/archived/tests-legacy-schema/`. These tests reference an older "Open Mic Drop" schema (`event_slots`, `performer_id`, etc.) incompatible with current DSC schema (`event_timeslots`, `timeslot_claims`, `member_id`).
+
+**Do NOT run archived tests against current database.**
 
 ---
 
