@@ -261,6 +261,8 @@ Scarcity helps decisions. Popularity games destroy trust.
 | Hover transform | translateX(2px) |
 | Page background | Warm off-white (#fffbf7) |
 
+> **Implementation note:** Hex values above are semantic reference targets for the warm/light theme. All implementations must use CSS theme tokens (e.g., `var(--color-border-accent)`) so colors adapt across themes. See `docs/theme-system.md` for token mappings.
+
 ---
 
 ## 9. Event Creation UX (Everyone, Not Just Admins)

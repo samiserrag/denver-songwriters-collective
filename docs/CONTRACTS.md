@@ -2,7 +2,7 @@
 
 This document defines the contracts for key components in the codebase. These contracts ensure consistent behavior and prevent regressions.
 
-> **See also:** [Phase 3.1 Display Spec](./phase-3.1-display-spec.md) — the authoritative design contract for event cards and detail pages.
+> **Canonical UX rules:** [PRODUCT_NORTH_STAR.md](./PRODUCT_NORTH_STAR.md) is the authoritative source for card layout, field visibility, and design decisions. This document covers component implementation contracts only.
 
 ---
 
@@ -44,6 +44,8 @@ interface HappeningCardProps {
 }
 ```
 
+> **⚠️ Grid Deprecated:** The `variant="grid"` option exists for legacy compatibility but is not used in production. All event listings use `variant="list"` per PRODUCT_NORTH_STAR.md. Do not introduce grid layouts without explicit approval.
+
 **Variant Behavior:**
 
 | Variant | Image Section | Badge Location | Recurrence Text | Padding |
@@ -54,7 +56,7 @@ interface HappeningCardProps {
 **Phase 3.1 Display Rules:**
 - Image section only renders if `cover_image_url` or `imageUrl` exists (no placeholders)
 - Images use `object-fit: contain` with bounded max-height (no cropping)
-- Missing fields are omitted, never shown as placeholders (NULL = show nothing)
+- **Decision-critical fields** (signup time, cost) show `NA` or `—` when missing. Non-critical fields are omitted. See PRODUCT_NORTH_STAR.md Section 10 for full rules.
 - Location mode badges: "Online" (blue) or "Hybrid" (purple) for non-venue events
 
 **Test:** `src/components/__tests__/card-variants.test.tsx`

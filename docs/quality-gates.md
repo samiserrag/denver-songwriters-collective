@@ -5,7 +5,7 @@
 | Check | Status |
 |-------|--------|
 | Lint | 0 errors (81 warnings acceptable) |
-| Tests | 4 passed |
+| Tests | 267 passed |
 | Typecheck | Clean |
 | Build | Passes |
 
