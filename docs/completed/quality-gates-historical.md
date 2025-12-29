@@ -1,4 +1,8 @@
-# Quality Gates
+# Quality Gates (Historical)
+
+> **Archived:** Content consolidated into CLAUDE.md (December 2025)
+
+---
 
 ## Baseline (December 16, 2025)
 
