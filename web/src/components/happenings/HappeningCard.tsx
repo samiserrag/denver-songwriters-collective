@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * HappeningCard - Phase 4.3 Visual Redesign
+ * HappeningCard - Phase 4.6 Premium Card Polish
  *
- * Live music calendar style - NOT a SaaS dashboard.
- * 3-line maximum, 2-line minimum layout.
+ * Inherits MemberCard surface recipe:
+ * - card-spotlight class for radial gradient bg + shadow tokens
+ * - Hover: shadow-card-hover + border-accent + subtle lift
+ * - Poster zoom on hover (scale-[1.02])
  *
- * LINE 1: Date (dominant) + Title + Details →
- * LINE 2: Time · Signup · Venue/Online · Cost · Age · ☆
- * LINE 3: Event Type · DSC Presents · Availability
+ * Layout:
+ * - Top: 4:3 poster with overlays
+ * - Bottom: Tight content stack
  */
 
 import * as React from "react";
@@ -17,7 +19,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+import { formatTimeToAMPM, getRecurrenceSummary } from "@/lib/recurrenceHumanizer";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 
 // ============================================================
@@ -75,6 +77,7 @@ export interface HappeningEvent {
 
   // Display
   cover_image_url?: string | null;
+  cover_image_card_url?: string | null;
   imageUrl?: string | null;
   status?: string | null;
   category?: string | null;
@@ -94,7 +97,7 @@ export interface HappeningCardProps {
   event: HappeningEvent;
   /** Search query for highlighting */
   searchQuery?: string | null;
-  /** Display variant: "grid" for card layout, "list" for compact row layout */
+  /** Display variant (reserved for future) */
   variant?: "grid" | "list";
   /** Optional click handler (if provided, renders as button instead of link) */
   onClick?: () => void;
@@ -113,23 +116,19 @@ function getDateInfo(event: HappeningEvent): {
   isPast: boolean;
 } {
   if (!event.event_date) {
-    // Recurring event - use day_of_week
     const day = event.day_of_week?.trim();
     if (day) {
-      // Check if today is that day
       const today = new Date();
       const todayDay = today.toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Denver" });
       if (todayDay.toUpperCase() === day.toUpperCase()) {
         return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false };
       }
-      // Check if tomorrow is that day
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowDay = tomorrow.toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Denver" });
       if (tomorrowDay.toUpperCase() === day.toUpperCase()) {
         return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false };
       }
-      // Future recurring - show abbreviated day
       return { label: day.substring(0, 3).toUpperCase(), isTonight: false, isTomorrow: false, isPast: false };
     }
     return { label: "", isTonight: false, isTomorrow: false, isPast: false };
@@ -151,7 +150,6 @@ function getDateInfo(event: HappeningEvent): {
     return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false };
   }
   if (eventDateOnly < today) {
-    // Past event
     const formatted = eventDate.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
@@ -161,7 +159,6 @@ function getDateInfo(event: HappeningEvent): {
     return { label: formatted, isTonight: false, isTomorrow: false, isPast: true };
   }
 
-  // Future event
   const formatted = eventDate.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -211,8 +208,6 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 export function HappeningCard({
   event,
-  searchQuery: _searchQuery, // Reserved for future search highlighting
-  variant: _variant = "list", // Reserved for potential future grid view
   onClick,
   className,
 }: HappeningCardProps) {
@@ -232,58 +227,50 @@ export function HappeningCard({
   const showScheduleTBD = event.status === "needs_verification" || event.status === "unverified";
   const showEnded = !showScheduleTBD && dateInfo.isPast;
 
-  // Cost display
+  // Cost display - NA standardization
   const getCostDisplay = (): string => {
     if (event.is_free === true) return "Free";
     if (event.is_free === false && event.cost_label) return event.cost_label;
-    return "—"; // Unknown cost
+    return "NA";
   };
 
-  // Signup display
-  const getSignupDisplay = (): string => {
-    if (signupTime) return `Sign-up: ${signupTime}`;
-    if (event.signup_mode === "online") return "Online signup";
-    if (event.signup_mode === "walk_in") return "Walk-in";
-    return "Sign-up: NA";
-  };
-
-  // Location display for Line 2
+  // Location display - NA standardization
   const getLocationDisplay = (): string => {
     if (isOnlineOnly) return "Online";
     if (isHybrid && venueName) return `${venueName} + Online`;
     if (venueName) return venueName;
-    return "—";
+    return "NA";
   };
 
-  // Age policy display (only if known)
+  // Age policy display
   const getAgeDisplay = (): string | null => {
     if (event.age_policy) return event.age_policy;
-    // DSC events default to 18+ if not specified
     if (event.is_dsc_event && !event.age_policy) return "18+";
     return null;
   };
 
   // Availability display
   const getAvailabilityDisplay = (): string | null => {
-    // Timeslot-based events
     if (event.has_timeslots && event.total_slots) {
-      // Would need to query actual claimed slots - for now just show total
       return `${event.total_slots} slots`;
     }
-    // RSVP-based events with capacity
     if (event.capacity && event.rsvp_count !== undefined) {
       const remaining = event.capacity - (event.rsvp_count || 0);
-      if (remaining > 0) return `${remaining} spots available`;
+      if (remaining > 0) return `${remaining} spots`;
       return "Full";
     }
     return null;
   };
 
-  // Event type label
   const eventTypeLabel = EVENT_TYPE_LABELS[event.event_type || "other"] || "Event";
-
-  // Missing details check
   const hasMissing = hasMissingDetails(event);
+
+  // Tier 2 recurrence summary
+  const recurrenceSummary = getRecurrenceSummary(
+    event.recurrence_rule,
+    event.day_of_week,
+    event.event_date
+  );
 
   // Favorites state
   const [favorited, setFavorited] = useState(false);
@@ -349,7 +336,7 @@ export function HappeningCard({
     }
   }
 
-  // Click handler for custom onClick
+  // Click handler
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
       e.preventDefault();
@@ -357,160 +344,226 @@ export function HappeningCard({
     }
   };
 
-  // Wrapper component
+  // Wrapper
   const CardWrapper = onClick ? "div" : Link;
   const wrapperProps = onClick
-    ? { onClick: handleClick, role: "button", tabIndex: 0, className: "block focus-visible:outline-none" }
-    : { href: detailHref, className: "block focus-visible:outline-none" };
+    ? { onClick: handleClick, role: "button", tabIndex: 0, className: "block h-full group focus-visible:outline-none" }
+    : { href: detailHref, className: "block h-full group focus-visible:outline-none" };
 
-  // Border color based on temporal state
-  const getBorderColor = () => {
-    if (dateInfo.isTonight || dateInfo.isTomorrow) return "border-l-amber-400";
-    if (dateInfo.isPast) return "border-l-stone-400/50";
-    return "border-l-stone-300";
+  // Image tiers
+  const cardImageUrl = event.cover_image_card_url;
+  const fullPosterUrl = event.cover_image_url || event.imageUrl;
+  const hasCardImage = !!cardImageUrl;
+  const hasFullPoster = !hasCardImage && !!fullPosterUrl;
+
+  // Signup chip
+  const getSignupChipState = (): { label: string; show: boolean } => {
+    if (signupTime) return { label: signupTime, show: true };
+    if (event.signup_mode === "online") return { label: "Online", show: true };
+    if (event.signup_mode === "walk_in") return { label: "Walk-in", show: true };
+    return { label: "N/A", show: false };
   };
-
-  // Date text color
-  const getDateColor = () => {
-    if (dateInfo.isTonight || dateInfo.isTomorrow) return "text-amber-500";
-    if (dateInfo.isPast) return "text-stone-400";
-    return "text-stone-700 dark:text-stone-300";
-  };
-
-  // Separator dot - stone-600 for Sunrise contrast compliance
-  const Dot = () => <span className="text-stone-600 dark:text-stone-500 mx-1.5">·</span>;
-
-  // Age display value
+  const signupChip = getSignupChipState();
   const ageDisplay = getAgeDisplay();
   const availabilityDisplay = getAvailabilityDisplay();
+
+  // Chip component - MemberCard pill style
+  // px-2 py-0.5 text-sm rounded-full border
+  // All variants use explicit tokens for theme-safe contrast
+  // - accent: Tier 1 (urgency/trust) - stronger accent fill + contrasting fg
+  // - recurrence: Tier 2 (pattern pills) - neutral fill + readable fg
+  // - default/muted: Tier 3 (type/context) - outline + muted fg
+  // - warning: Missing details badge - amber with explicit tokens
+  const Chip = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "accent" | "muted" | "recurrence" | "warning" }) => (
+    <span
+      className={cn(
+        "inline-flex items-center px-2 py-0.5 text-sm font-medium rounded-full border whitespace-nowrap",
+        // Tier 1: Accent fill with contrasting foreground (dark on light, dark on gold)
+        variant === "accent" && "bg-[var(--pill-bg-accent)] text-[var(--pill-fg-on-accent)] border-[var(--color-border-accent)]",
+        // Tier 2: Neutral fill with readable foreground
+        variant === "recurrence" && "bg-[var(--color-bg-secondary)] text-[var(--pill-fg-on-muted)] border-[var(--color-border-default)]",
+        // Tier 3: Muted fill with neutral foreground
+        variant === "default" && "bg-[var(--color-accent-muted)] text-[var(--pill-fg-on-neutral)] border-[var(--color-border-default)]",
+        variant === "muted" && "bg-[var(--color-bg-tertiary)] text-[var(--pill-fg-on-neutral)] border-[var(--color-border-subtle)]",
+        // Warning: Tokenized amber for theme safety
+        variant === "warning" && "bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border-[var(--pill-border-warning)]"
+      )}
+    >
+      {children}
+    </span>
+  );
 
   return (
     <CardWrapper {...(wrapperProps as any)}>
       <article
         className={cn(
-          // Base container - left border accent, rounded right corners
-          "border-l-[3px] rounded-r-lg",
-          getBorderColor(),
-          // Padding and spacing
-          "py-2.5 px-3 pr-4",
-          // Hover state
-          "transition-all duration-150",
-          "hover:bg-amber-50/50 dark:hover:bg-stone-800/50",
-          "hover:border-l-amber-400",
-          "hover:translate-x-0.5",
-          // Past events are muted
+          // MemberCard exact surface: card-spotlight class
+          "h-full overflow-hidden font-sans card-spotlight",
+          // Transitions matching MemberCard (card-spotlight provides base transition)
+          "transition-all duration-200 ease-out",
+          "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
+          // Focus ring
+          "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
+          // Tonight/Tomorrow highlight (same as MemberCard spotlight)
+          (dateInfo.isTonight || dateInfo.isTomorrow) && "border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5",
+          // Past events muted
           dateInfo.isPast && "opacity-70",
           className
         )}
         role="article"
         data-testid="happening-card"
       >
-        {/* LINE 1: Date + Title + Details → */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Date - bold, uppercase, DOMINANT (16px base, larger than title) */}
-            {dateInfo.label && (
-              <span
-                className={cn(
-                  "font-bold text-base uppercase tracking-wide whitespace-nowrap",
-                  "min-w-[5.5rem]",
-                  getDateColor()
-                )}
-              >
-                {dateInfo.label}
-              </span>
-            )}
-            {/* Title - slightly smaller than date for hierarchy */}
-            <h3
-              className={cn(
-                "font-medium text-stone-800 dark:text-stone-100 truncate",
-                "text-[0.9rem] leading-tight"
-              )}
-            >
-              {event.title}
-            </h3>
-          </div>
-          {/* Right side: Status badge OR Details arrow */}
-          {showScheduleTBD ? (
-            <span className="text-amber-600 dark:text-amber-400 text-sm whitespace-nowrap">
-              Schedule TBD
-            </span>
-          ) : showEnded ? (
-            <span className="text-stone-600 dark:text-stone-400 text-sm whitespace-nowrap">
-              Ended
-            </span>
-          ) : (
-            <span className="text-stone-600 dark:text-stone-400 text-sm whitespace-nowrap group-hover:underline">
-              Details →
-            </span>
+        {/* Poster Media Section - 4:3 aspect with zoom on hover */}
+        <div className="relative aspect-[4/3] overflow-hidden" data-testid="poster-thumbnail">
+          {/* Tier 1: Card-optimized 4:3 image */}
+          {hasCardImage && (
+            <img
+              src={cardImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              loading="lazy"
+              data-testid="card-image"
+            />
           )}
-        </div>
 
-        {/* LINE 2: Time · Signup · Venue/Online · Cost · Age · ☆ */}
-        {/* Fixed: text-sm (14px) for readability, stone-600 for Sunrise contrast */}
-        <div className="flex items-center text-sm text-stone-600 dark:text-stone-400 mt-1 flex-wrap gap-y-0.5">
-          {/* Time */}
-          <span>{startTime || "TBD"}</span>
-          <Dot />
-          {/* Signup */}
-          <span>{getSignupDisplay()}</span>
-          <Dot />
-          {/* Venue/Online */}
-          <span className="truncate max-w-[12rem]">{getLocationDisplay()}</span>
-          <Dot />
-          {/* Cost */}
-          <span>{getCostDisplay()}</span>
-          {/* Age (only if known) */}
-          {ageDisplay && (
+          {/* Tier 2: Full poster with blurred background */}
+          {hasFullPoster && (
             <>
-              <Dot />
-              <span>{ageDisplay}</span>
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url(${fullPosterUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(12px) brightness(0.7)',
+                }}
+                aria-hidden="true"
+              />
+              <img
+                src={fullPosterUrl}
+                alt=""
+                className="absolute inset-0 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+                loading="lazy"
+                data-testid="full-poster-contained"
+              />
             </>
           )}
-          {/* Favorite star - always shown, stone-400 minimum for visibility */}
+
+          {/* Tier 3: Designed placeholder - gradient with subtle pattern */}
+          {!hasCardImage && !hasFullPoster && (
+            <div
+              className={cn(
+                "absolute inset-0 flex items-center justify-center",
+                // Rich gradient from bg-secondary through accent-muted to bg-tertiary
+                "bg-gradient-to-br from-[var(--color-bg-secondary)] via-[var(--color-accent-muted)] to-[var(--color-bg-tertiary)]"
+              )}
+              data-testid="placeholder-tile"
+            >
+              {/* Music note icon - larger, subtler */}
+              <svg
+                className="w-16 h-16 text-[var(--color-text-tertiary)] opacity-20"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+                />
+              </svg>
+            </div>
+          )}
+
+          {/* Favorite star overlay - top right */}
           <button
             onClick={toggleFavorite}
             aria-label={favorited ? "Remove favorite" : "Add favorite"}
             className={cn(
-              "ml-2 text-lg leading-none transition-colors",
+              "absolute top-2.5 right-2.5 z-10",
+              "w-8 h-8 rounded-full flex items-center justify-center",
+              "bg-black/40 backdrop-blur-sm",
+              "text-lg leading-none transition-colors",
               favorited
-                ? "text-amber-500"
-                : "text-stone-400 dark:text-stone-500 hover:text-amber-400"
+                ? "text-[var(--color-accent-primary)]"
+                : "text-white/80 hover:text-[var(--color-accent-primary)]"
             )}
             disabled={loadingFav}
           >
             {favorited ? "★" : "☆"}
           </button>
+
+          {/* Status badge overlay - top left */}
+          {(showScheduleTBD || showEnded) && (
+            <div className="absolute top-2.5 left-2.5 z-10">
+              <span
+                className={cn(
+                  "px-2 py-1 text-xs font-medium rounded-full",
+                  "bg-black/40 backdrop-blur-sm",
+                  showScheduleTBD && "text-amber-300",
+                  showEnded && "text-white/70"
+                )}
+              >
+                {showScheduleTBD ? "Schedule TBD" : "Ended"}
+              </span>
+            </div>
+          )}
+
+          {/* Date badge overlay - bottom left */}
+          {dateInfo.label && (
+            <div className="absolute bottom-2.5 left-2.5 z-10">
+              <span
+                className={cn(
+                  "px-2 py-1 text-xs font-bold uppercase tracking-wide rounded",
+                  "bg-black/50 backdrop-blur-sm",
+                  dateInfo.isTonight || dateInfo.isTomorrow
+                    ? "text-[var(--color-accent-primary)]"
+                    : "text-white"
+                )}
+                data-testid="date-eyebrow"
+              >
+                {dateInfo.label}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* LINE 3: Event Type · DSC Presents · Availability · Missing details */}
-        {/* Fixed: text-sm (14px) for readability, stone-600 for Sunrise contrast */}
-        <div className="flex items-center text-sm text-stone-600 dark:text-stone-400 mt-1 flex-wrap gap-y-0.5">
-          {/* Event Type - italic */}
-          <span className="italic">{eventTypeLabel}</span>
-          {/* DSC Presents - solid color, no opacity for WCAG compliance */}
-          {event.is_dsc_event && (
-            <>
-              <Dot />
-              <span className="italic text-amber-700 dark:text-amber-400">DSC Presents</span>
-            </>
-          )}
-          {/* Availability (only if known) */}
-          {availabilityDisplay && (
-            <>
-              <Dot />
-              <span>{availabilityDisplay}</span>
-            </>
-          )}
-          {/* Missing details link */}
-          {hasMissing && (
-            <>
-              <Dot />
-              <span className="text-stone-600 dark:text-stone-400 underline decoration-dotted">
-                Missing details
-              </span>
-            </>
-          )}
+        {/* Content Section - Tighter density */}
+        <div className="p-4 space-y-1.5">
+          {/* Title - slightly larger on desktop, tighter leading */}
+          <h3
+            className={cn(
+              "font-semibold text-[var(--color-text-primary)]",
+              "text-base md:text-lg leading-tight tracking-tight",
+              "line-clamp-2"
+            )}
+          >
+            {event.title}
+          </h3>
+
+          {/* Tier 2 recurrence pill - always visible, below title */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Chip variant="recurrence">{recurrenceSummary}</Chip>
+            {/* DSC is Tier 1 - urgency/trust - shown prominently */}
+            {event.is_dsc_event && <Chip variant="accent">DSC</Chip>}
+          </div>
+
+          {/* Meta line: Time · Venue · Cost - promoted visibility */}
+          <p className="text-sm md:text-base text-[var(--color-text-secondary)] truncate">
+            {startTime || "NA"} · {getLocationDisplay()} · {getCostDisplay()}
+          </p>
+
+          {/* Chips row - Tier 3 type/context pills */}
+          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+            <Chip variant="default">{eventTypeLabel}</Chip>
+            {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}
+            {signupChip.show && <Chip variant="muted">Sign-up: {signupChip.label}</Chip>}
+            {availabilityDisplay && <Chip variant="muted">{availabilityDisplay}</Chip>}
+            {/* Missing details as warning badge, not link */}
+            {hasMissing && <Chip variant="warning">Missing details</Chip>}
+          </div>
         </div>
       </article>
     </CardWrapper>

@@ -223,26 +223,26 @@ function getNthWeekdayOfMonth(year: number, month: number, dayOfWeek: number, n:
 
 /**
  * Convert a time string (HH:MM or ISO datetime) to human AM/PM like "7:30 PM".
- * Returns "TBD" when not parseable or not provided.
+ * Returns "NA" when not parseable or not provided (Phase 4.8 NA standardization).
  */
 export function formatTimeToAMPM(time?: string | null): string {
-  if (!time) return "TBD";
+  if (!time) return "NA";
 
   try {
     // If ISO datetime, split on 'T'
     const t = time.includes("T") ? time.split("T")[1] : time;
     const timeOnly = t.split("Z")[0].split("+")[0]; // remove timezone if present
     const parts = timeOnly.split(":");
-    if (parts.length < 1) return "TBD";
+    if (parts.length < 1) return "NA";
     const hh = parseInt(parts[0], 10);
     const mm = parts[1] ?? "00";
-    if (Number.isNaN(hh)) return "TBD";
+    if (Number.isNaN(hh)) return "NA";
     const ampm = hh >= 12 ? "PM" : "AM";
     const hour12 = ((hh + 11) % 12) + 1;
     const minutes = mm.padEnd(2, "0").slice(0, 2);
     return `${hour12}${minutes === "00" ? "" : `:${minutes}`} ${ampm}`.trim();
   } catch {
-    return "TBD";
+    return "NA";
   }
 }
 
@@ -356,12 +356,64 @@ function humanizeParsedRRule(parsed: ParsedRRule, fallbackDay: string | null): s
   }
 }
 
+/**
+ * Get a short recurrence summary suitable for Tier 2 pills on event cards.
+ * This is the presentation-layer transformation for recurrence display.
+ *
+ * @param recurrenceRule - RRULE or simple text ("weekly", "1st", etc.)
+ * @param dayOfWeek - Day of week from event (e.g., "Monday")
+ * @param eventDate - Optional event_date for one-time events
+ * @returns Plain-language summary: "One-time", "Every Monday", "First Tuesday of the Month", etc.
+ */
+export function getRecurrenceSummary(
+  recurrenceRule: string | null | undefined,
+  dayOfWeek: string | null | undefined,
+  eventDate: string | null | undefined
+): string {
+  // One-time events: have an event_date but no recurrence or day_of_week pattern
+  // OR: have event_date and no meaningful recurrence_rule
+  if (eventDate && !recurrenceRule && !dayOfWeek) {
+    return "One-time";
+  }
+
+  // If there's a recurrence rule or day_of_week, use humanizeRecurrence
+  if (recurrenceRule || dayOfWeek) {
+    const humanized = humanizeRecurrence(recurrenceRule ?? null, dayOfWeek ?? null);
+    // Fallback if humanizeRecurrence returns empty or "Schedule TBD"
+    if (!humanized || humanized === "Schedule TBD") {
+      // If we have a day_of_week, at least show that pattern
+      if (dayOfWeek) {
+        return `Every ${dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1).toLowerCase()}`;
+      }
+      // If we have recurrence_rule but couldn't parse, show generic
+      if (recurrenceRule) {
+        return "Recurring";
+      }
+      // If we have an event_date as fallback, it's one-time
+      if (eventDate) {
+        return "One-time";
+      }
+      return "Recurring";
+    }
+    return humanized;
+  }
+
+  // If we have an event_date but nothing else, it's one-time
+  if (eventDate) {
+    return "One-time";
+  }
+
+  // Fallback
+  return "Recurring";
+}
+
 // Named export for module consumers
 export const recurrenceHumanizer = {
   humanizeRecurrence,
   formatTimeToAMPM,
   parseRRule,
   getNextOccurrence,
+  getRecurrenceSummary,
   dayOrder,
 };
 

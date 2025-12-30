@@ -71,6 +71,7 @@ function formatDateHeader(dateStr: string): string {
  * - verify: verified|needs_verification
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
+ * - days: comma-separated day abbreviations (mon,tue,wed,etc.) - Phase 4.8
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -80,6 +81,7 @@ interface HappeningsSearchParams {
   verify?: string;
   location?: string;
   cost?: string;
+  days?: string;
 }
 
 export default async function HappeningsPage({
@@ -98,6 +100,8 @@ export default async function HappeningsPage({
   const verifyFilter = params.verify || "";
   const locationFilter = params.location || "";
   const costFilter = params.cost || "";
+  // Phase 4.8: Day-of-week filter (comma-separated abbreviations: mon,tue,wed,etc.)
+  const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -211,11 +215,47 @@ export default async function HappeningsPage({
     });
   }
 
+  // Phase 4.8: Day-of-week filtering (lens, not sort)
+  // Maps abbreviations to full day names and day indices (0=Sunday)
+  const dayAbbrevMap: Record<string, { full: string; index: number }> = {
+    sun: { full: "Sunday", index: 0 },
+    mon: { full: "Monday", index: 1 },
+    tue: { full: "Tuesday", index: 2 },
+    wed: { full: "Wednesday", index: 3 },
+    thu: { full: "Thursday", index: 4 },
+    fri: { full: "Friday", index: 5 },
+    sat: { full: "Saturday", index: 6 },
+  };
+
+  if (daysFilter.length > 0) {
+    const targetDays = daysFilter
+      .map(abbr => dayAbbrevMap[abbr])
+      .filter(Boolean);
+    const targetFullDays = targetDays.map(d => d.full.toLowerCase());
+    const targetDayIndices = targetDays.map(d => d.index);
+
+    list = list.filter((event: any) => {
+      // For recurring events: check day_of_week field
+      if (event.day_of_week) {
+        const eventDay = event.day_of_week.trim().toLowerCase();
+        return targetFullDays.includes(eventDay);
+      }
+      // For dated events: derive day from event_date
+      if (event.event_date) {
+        const date = new Date(event.event_date + "T00:00:00");
+        const dayIndex = date.getDay();
+        return targetDayIndices.includes(dayIndex);
+      }
+      // No day info available - exclude from filtered results
+      return false;
+    });
+  }
+
   const datedEvents = list.filter((e: any) => e.event_date);
   const recurringEvents = list.filter((e: any) => !e.event_date);
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || timeFilter !== "upcoming";
+  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -299,19 +339,20 @@ export default async function HappeningsPage({
           </p>
         )}
 
-        {/* Phase 4.3: Tight density - 10-12 rows visible on desktop, 6-8 on mobile */}
+        {/* Phase 4.5: PosterCard grid - 1 col mobile, 2 col tablet, 3 col desktop */}
         {datedEvents.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-3 text-stone-700 dark:text-stone-200">
+            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-4 text-[var(--color-text-primary)]">
               {timeFilter === "past" ? "Past Happenings" : "Upcoming Happenings"}
             </h2>
-            <div className="flex flex-col gap-4">
+            <div className="space-y-6">
               {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
                 <div key={date}>
-                  <h3 className="text-base font-medium text-stone-500 dark:text-stone-400 mb-1 pb-0.5 border-b border-stone-200 dark:border-stone-700">
+                  <h3 className="text-base font-medium text-[var(--color-text-secondary)] mb-3 pb-1 border-b border-[var(--color-border-default)]">
                     {formatDateHeader(date)}
                   </h3>
-                  <div className="flex flex-col">
+                  {/* Grid: 1 col mobile, 2 col md, 3 col lg */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
                     {eventsForDate.map((event: any) => (
                       <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
                     ))}
@@ -324,14 +365,15 @@ export default async function HappeningsPage({
 
         {recurringEvents.length > 0 && (
           <section>
-            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-3 text-stone-700 dark:text-stone-200">Weekly Open Mics</h2>
-            <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-4 text-[var(--color-text-primary)]">Weekly Open Mics</h2>
+            <div className="space-y-6">
               {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
                 <div key={day}>
-                  <h3 className="text-lg font-[var(--font-family-display)] font-bold text-stone-600 dark:text-stone-300 mb-1 pb-0.5 border-b-2 border-amber-400 dark:border-amber-500">
+                  <h3 className="text-lg font-[var(--font-family-display)] font-bold text-[var(--color-text-secondary)] mb-3 pb-1 border-b-2 border-[var(--color-accent-primary)]">
                     {day}s
                   </h3>
-                  <div className="flex flex-col">
+                  {/* Grid: 1 col mobile, 2 col md, 3 col lg */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
                     {eventsForDay.map((event: any) => (
                       <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
                     ))}

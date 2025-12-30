@@ -1,5 +1,26 @@
 /* Theme Presets - Override semantic tokens based on data-theme attribute */
 
+/*
+ * ═══════════════════════════════════════════════════════════════
+ * CONTRAST RULE (Phase 4.8.1)
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * NEVER use hardcoded `text-white` on accent-colored backgrounds.
+ *
+ * WHY: White text works on dark backgrounds (Night theme gold),
+ *      but fails on light backgrounds (Sunrise theme orange).
+ *
+ * ALWAYS USE:
+ *   - .btn-accent class (from globals.css)
+ *   - text-[var(--color-text-on-accent)] for custom cases
+ *
+ * The --color-text-on-accent token is theme-aware:
+ *   - Sunrise (light): #FFFFFF (white on orange)
+ *   - Night (dark):    #0F172A (dark slate on gold)
+ *
+ * ═══════════════════════════════════════════════════════════════
+ */
+
 :root {
   /* Default theme uses globals.css tokens */
   /* Inverse text (for dark footer/backgrounds) */
@@ -24,13 +45,13 @@
   --color-bg-card-spotlight: radial-gradient(circle at top, rgba(249, 115, 22, 0.08), #FFFFFF);
 
   --color-text-primary: #1F2937;
-  --color-text-secondary: #374151;
-  --color-text-tertiary: #6B7280;
+  --color-text-secondary: #3F3F46; /* zinc-700: 7.2:1 contrast on #FFF7ED - stronger for legibility */
+  --color-text-tertiary: #52525B; /* zinc-600: 5.7:1 contrast - more readable than stone-600 */
   --color-text-accent: #C2410C;
-  --color-text-on-accent: #FFFFFF;
+  --color-text-on-accent: #7C2D12; /* orange-900: dark text on orange accent for WCAG AA */
   --color-bg-input: #FFFFFF;
-  --color-border-input: rgba(0, 0, 0, 0.20);
-  --color-placeholder: rgba(0, 0, 0, 0.45);
+  --color-border-input: rgba(0, 0, 0, 0.25); /* Increased from 0.20 */
+  --color-placeholder: rgba(0, 0, 0, 0.50); /* Increased from 0.45 */
 
   /* Light text for dark inverse background */
   --color-text-on-inverse-primary: #FAF9F7;
@@ -41,9 +62,22 @@
   --color-accent-hover: #EA580C;
   --color-accent-muted: rgba(249, 115, 22, 0.16);
 
-  --color-border-default: rgba(31, 41, 55, 0.14);
-  --color-border-subtle: rgba(31, 41, 55, 0.08);
-  --color-border-accent: rgba(249, 115, 22, 0.35);
+  --color-border-default: rgba(31, 41, 55, 0.30); /* Strengthened for visible dividers */
+  --color-border-subtle: rgba(31, 41, 55, 0.18); /* Increased from 0.12 for visibility */
+  --color-border-accent: rgba(249, 115, 22, 0.40); /* Increased from 0.35 */
+
+  /* Pill tokens - explicit contrast enforcement */
+  /* Tier 1: Accent pills need solid bg + contrasting text */
+  --pill-bg-accent: rgba(249, 115, 22, 0.25); /* Stronger orange wash for visibility */
+  --pill-fg-on-accent: #7C2D12; /* orange-900: dark text on light orange bg */
+  /* Tier 2: Neutral fill with readable text */
+  --pill-fg-on-muted: #3F3F46; /* zinc-700: matches text-secondary for consistency */
+  /* Tier 3: Outline/transparent with muted text */
+  --pill-fg-on-neutral: #52525B; /* zinc-600: matches text-tertiary for consistency */
+  /* Warning: Amber with explicit contrast */
+  --pill-bg-warning: rgba(245, 158, 11, 0.15); /* amber-500/15 */
+  --pill-fg-warning: #92400E; /* amber-800: dark on light bg */
+  --pill-border-warning: rgba(245, 158, 11, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -71,6 +105,19 @@
   --color-border-default: rgba(248, 250, 252, 0.14);
   --color-border-subtle: rgba(248, 250, 252, 0.08);
   --color-border-accent: rgba(246, 193, 119, 0.35);
+
+  /* Pill tokens - explicit contrast enforcement */
+  /* Tier 1: Accent pills - gold wash with dark text */
+  --pill-bg-accent: rgba(246, 193, 119, 0.3); /* Stronger gold wash */
+  --pill-fg-on-accent: #0F172A; /* slate-900: dark text on gold bg */
+  /* Tier 2: Neutral fill with light text */
+  --pill-fg-on-muted: #CBD5E1; /* slate-300: light text on dark fill */
+  /* Tier 3: Outline/transparent with muted text */
+  --pill-fg-on-neutral: #94A3B8; /* slate-400: muted text on outline/transparent */
+  /* Warning: Amber with explicit contrast for dark theme */
+  --pill-bg-warning: rgba(251, 191, 36, 0.2); /* amber-400/20 */
+  --pill-fg-warning: #FCD34D; /* amber-300: light on dark bg */
+  --pill-border-warning: rgba(251, 191, 36, 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -91,13 +138,13 @@
     --color-bg-card-spotlight: radial-gradient(circle at top, rgba(249, 115, 22, 0.08), #FFFFFF);
 
     --color-text-primary: #1F2937;
-    --color-text-secondary: #374151;
-    --color-text-tertiary: #6B7280;
+    --color-text-secondary: #3F3F46; /* zinc-700: 7.2:1 contrast on #FFF7ED - stronger for legibility */
+    --color-text-tertiary: #52525B; /* zinc-600: 5.7:1 contrast - more readable than stone-600 */
     --color-text-accent: #C2410C;
-    --color-text-on-accent: #FFFFFF;
+    --color-text-on-accent: #7C2D12; /* orange-900: dark text on orange accent for WCAG AA */
     --color-bg-input: #FFFFFF;
-    --color-border-input: rgba(0, 0, 0, 0.20);
-    --color-placeholder: rgba(0, 0, 0, 0.45);
+    --color-border-input: rgba(0, 0, 0, 0.25); /* Increased from 0.20 */
+    --color-placeholder: rgba(0, 0, 0, 0.50); /* Increased from 0.45 */
 
     --color-text-on-inverse-primary: #FAF9F7;
     --color-text-on-inverse-secondary: rgba(250, 249, 247, 0.75);
@@ -107,9 +154,22 @@
     --color-accent-hover: #EA580C;
     --color-accent-muted: rgba(249, 115, 22, 0.16);
 
-    --color-border-default: rgba(31, 41, 55, 0.14);
-    --color-border-subtle: rgba(31, 41, 55, 0.08);
-    --color-border-accent: rgba(249, 115, 22, 0.35);
+    --color-border-default: rgba(31, 41, 55, 0.30); /* Strengthened for visible dividers */
+    --color-border-subtle: rgba(31, 41, 55, 0.18); /* Increased from 0.12 for visibility */
+    --color-border-accent: rgba(249, 115, 22, 0.40); /* Increased from 0.35 */
+
+    /* Pill tokens - explicit contrast enforcement */
+    /* Tier 1: Accent pills need solid bg + contrasting text */
+    --pill-bg-accent: rgba(249, 115, 22, 0.25); /* Stronger orange wash for visibility */
+    --pill-fg-on-accent: #7C2D12; /* orange-900: dark text on light orange bg */
+    /* Tier 2: Neutral fill with readable text */
+    --pill-fg-on-muted: #3F3F46; /* zinc-700: matches text-secondary for consistency */
+    /* Tier 3: Outline/transparent with muted text */
+    --pill-fg-on-neutral: #52525B; /* zinc-600: matches text-tertiary for consistency */
+    /* Warning: Amber with explicit contrast */
+    --pill-bg-warning: rgba(245, 158, 11, 0.15); /* amber-500/15 */
+    --pill-fg-warning: #92400E; /* amber-800: dark on light bg */
+    --pill-border-warning: rgba(245, 158, 11, 0.25);
   }
 }
 

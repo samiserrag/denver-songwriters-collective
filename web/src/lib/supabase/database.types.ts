@@ -758,6 +758,7 @@ export type Database = {
           capacity: number | null
           category: string | null
           cost_label: string | null
+          cover_image_card_url: string | null
           cover_image_url: string | null
           created_at: string | null
           custom_address: string | null
@@ -823,6 +824,7 @@ export type Database = {
           capacity?: number | null
           category?: string | null
           cost_label?: string | null
+          cover_image_card_url?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           custom_address?: string | null
@@ -888,6 +890,7 @@ export type Database = {
           capacity?: number | null
           category?: string | null
           cost_label?: string | null
+          cover_image_card_url?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           custom_address?: string | null

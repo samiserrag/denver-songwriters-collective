@@ -1,10 +1,12 @@
 /**
- * Phase 4.3: HappeningCard Layout Tests
+ * Phase 4.6: HappeningCard Premium Card Polish Tests
  *
- * Tests verify the 3-line list layout follows the spec:
- * - Line 1: Date + Title + Details →
- * - Line 2: Time · Signup · Venue · Cost · Age · ☆
- * - Line 3: Event Type · DSC Presents · Availability
+ * Tests verify MemberCard-inspired card surface:
+ * - card-spotlight class for radial gradient bg + shadow tokens
+ * - Hover: shadow-card-hover + border-accent
+ * - Poster zoom on hover (scale-[1.02])
+ * - Tighter content density
+ * - MemberCard-style pills (px-2 py-0.5 text-sm rounded-full border)
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -36,7 +38,7 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
-describe('HappeningCard Phase 4.3 Layout', () => {
+describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
   const mockOpenMicEvent: HappeningEvent = {
     id: 'test-open-mic-1',
     title: 'Monday Night Open Mic',
@@ -65,17 +67,21 @@ describe('HappeningCard Phase 4.3 Layout', () => {
     age_policy: '21+',
   };
 
-  describe('Line 1: Date + Title + Details', () => {
+  describe('Title and Content', () => {
     it('should display event title', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
       expect(screen.getByText('Monday Night Open Mic')).toBeInTheDocument();
     });
 
-    it('should display Details → link for active events', () => {
+    it('should display meta line with time, venue, cost', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
-      expect(screen.getByText('Details →')).toBeInTheDocument();
+      expect(screen.getByText(/7 PM/)).toBeInTheDocument();
+      expect(screen.getByText(/Mercury Cafe/)).toBeInTheDocument();
+      expect(screen.getByText(/Free/)).toBeInTheDocument();
     });
+  });
 
+  describe('Status Badges', () => {
     it('should display Schedule TBD for needs_verification status', () => {
       const unverifiedEvent = { ...mockOpenMicEvent, status: 'needs_verification' };
       render(<HappeningCard event={unverifiedEvent} />);
@@ -89,49 +95,32 @@ describe('HappeningCard Phase 4.3 Layout', () => {
     });
   });
 
-  describe('Line 2: Decision Facts', () => {
-    it('should display start time', () => {
+  describe('Chips Row', () => {
+    it('should display event type chip', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
-      // formatTimeToAMPM omits :00 for even hours (7 PM instead of 7:00 PM)
-      expect(screen.getByText('7 PM')).toBeInTheDocument();
+      expect(screen.getByText('Open Mic')).toBeInTheDocument();
     });
 
-    it('should display signup time', () => {
+    it('should display signup chip when signup info exists', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
       expect(screen.getByText('Sign-up: 6:30 PM')).toBeInTheDocument();
     });
 
-    it('should display Sign-up: NA when no signup time', () => {
-      const noSignupEvent = { ...mockOpenMicEvent, signup_time: null };
+    it('should not display signup chip when no signup info', () => {
+      const noSignupEvent = { ...mockOpenMicEvent, signup_time: null, signup_mode: null };
       render(<HappeningCard event={noSignupEvent} />);
-      expect(screen.getByText('Sign-up: NA')).toBeInTheDocument();
-    });
-
-    it('should display venue name', () => {
-      render(<HappeningCard event={mockOpenMicEvent} />);
-      expect(screen.getByText('Mercury Cafe')).toBeInTheDocument();
+      expect(screen.queryByText(/Sign-up:/)).not.toBeInTheDocument();
     });
 
     it('should display Online for online-only events', () => {
       const onlineEvent = { ...mockOpenMicEvent, location_mode: 'online' as const, venue_name: null };
       render(<HappeningCard event={onlineEvent} />);
-      expect(screen.getByText('Online')).toBeInTheDocument();
-    });
-
-    it('should display Free for free events', () => {
-      render(<HappeningCard event={mockOpenMicEvent} />);
-      expect(screen.getByText('Free')).toBeInTheDocument();
+      expect(screen.getByText(/Online/)).toBeInTheDocument();
     });
 
     it('should display cost label for paid events', () => {
       render(<HappeningCard event={mockDscEvent} />);
-      expect(screen.getByText('$10')).toBeInTheDocument();
-    });
-
-    it('should display em dash for unknown cost', () => {
-      const unknownCostEvent = { ...mockOpenMicEvent, is_free: null };
-      render(<HappeningCard event={unknownCostEvent} />);
-      expect(screen.getByText('—')).toBeInTheDocument();
+      expect(screen.getByText(/\$10/)).toBeInTheDocument();
     });
 
     it('should display age policy when set', () => {
@@ -139,50 +128,41 @@ describe('HappeningCard Phase 4.3 Layout', () => {
       expect(screen.getByText('21+')).toBeInTheDocument();
     });
 
-    it('should display favorite star', () => {
+    it('should display DSC chip for DSC events', () => {
+      render(<HappeningCard event={mockDscEvent} />);
+      expect(screen.getByText('DSC')).toBeInTheDocument();
+    });
+
+    it('should not display DSC chip for non-DSC events', () => {
+      render(<HappeningCard event={mockOpenMicEvent} />);
+      const dscElements = screen.queryAllByText('DSC');
+      expect(dscElements.length).toBe(0);
+    });
+
+    it('should display availability for events with capacity', () => {
+      render(<HappeningCard event={mockDscEvent} />);
+      expect(screen.getByText('40 spots')).toBeInTheDocument();
+    });
+  });
+
+  describe('Favorite Star', () => {
+    it('should display favorite star button', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
       expect(screen.getByLabelText('Add favorite')).toBeInTheDocument();
     });
   });
 
-  describe('Line 3: Context', () => {
-    it('should display event type', () => {
-      render(<HappeningCard event={mockOpenMicEvent} />);
-      expect(screen.getByText('Open Mic')).toBeInTheDocument();
-    });
-
-    it('should display DSC Presents for DSC events', () => {
-      render(<HappeningCard event={mockDscEvent} />);
-      expect(screen.getByText('DSC Presents')).toBeInTheDocument();
-    });
-
-    it('should not display DSC Presents for non-DSC events', () => {
-      render(<HappeningCard event={mockOpenMicEvent} />);
-      expect(screen.queryByText('DSC Presents')).not.toBeInTheDocument();
-    });
-
-    it('should display availability for events with capacity', () => {
-      render(<HappeningCard event={mockDscEvent} />);
-      expect(screen.getByText('40 spots available')).toBeInTheDocument();
-    });
-  });
-
-  describe('Visual Treatment', () => {
-    it('should have left border accent', () => {
+  describe('Visual Treatment - MemberCard Surface', () => {
+    it('should use card-spotlight class for premium surface', () => {
       const { container } = render(<HappeningCard event={mockOpenMicEvent} />);
       const article = container.querySelector('article');
-      expect(article?.className).toContain('border-l-');
-    });
-
-    it('should have rounded right corners only', () => {
-      const { container } = render(<HappeningCard event={mockOpenMicEvent} />);
-      const article = container.querySelector('article');
-      expect(article?.className).toContain('rounded-r-lg');
+      expect(article?.className).toContain('card-spotlight');
     });
 
     it('should have hover transition', () => {
       const { container } = render(<HappeningCard event={mockOpenMicEvent} />);
       const article = container.querySelector('article');
+      // card-spotlight provides base transition, we use transition-all
       expect(article?.className).toContain('transition-all');
     });
 
@@ -194,12 +174,78 @@ describe('HappeningCard Phase 4.3 Layout', () => {
     });
   });
 
-  describe('No images in list view', () => {
-    it('should not render image section', () => {
-      const { container } = render(
-        <HappeningCard event={{ ...mockOpenMicEvent, cover_image_url: 'https://example.com/image.jpg' }} />
+  describe('Poster thumbnail 3-tier rendering', () => {
+    it('should use card image (tier 1) when cover_image_card_url is present', () => {
+      render(
+        <HappeningCard event={{
+          ...mockOpenMicEvent,
+          cover_image_card_url: 'https://example.com/card.jpg',
+          cover_image_url: 'https://example.com/full.jpg'
+        }} />
       );
-      expect(container.querySelectorAll('img').length).toBe(0);
+      expect(screen.getByTestId('card-image')).toBeInTheDocument();
+    });
+
+    it('should use blurred background mode (tier 2) when only full poster exists', () => {
+      render(
+        <HappeningCard event={{
+          ...mockOpenMicEvent,
+          cover_image_card_url: null,
+          cover_image_url: 'https://example.com/full.jpg'
+        }} />
+      );
+      expect(screen.getByTestId('full-poster-contained')).toBeInTheDocument();
+      expect(screen.getByTestId('poster-thumbnail')).toBeInTheDocument();
+    });
+
+    it('should render placeholder (tier 3) when no images exist', () => {
+      const { container } = render(
+        <HappeningCard event={{
+          ...mockOpenMicEvent,
+          cover_image_card_url: null,
+          cover_image_url: null,
+          imageUrl: null
+        }} />
+      );
+      expect(screen.getByTestId('placeholder-tile')).toBeInTheDocument();
+      expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
+    });
+
+    it('should have 4:3 aspect ratio container', () => {
+      render(<HappeningCard event={mockOpenMicEvent} />);
+      const thumbnail = screen.getByTestId('poster-thumbnail');
+      expect(thumbnail.className).toContain('aspect-[4/3]');
+    });
+
+    it('should have hover zoom on poster images', () => {
+      render(
+        <HappeningCard event={{
+          ...mockOpenMicEvent,
+          cover_image_card_url: 'https://example.com/card.jpg'
+        }} />
+      );
+      const img = screen.getByTestId('card-image');
+      expect(img.className).toContain('group-hover:scale-[1.02]');
+    });
+  });
+
+  describe('Chip styling - MemberCard pill style', () => {
+    it('should use text-sm for chips (not text-xs)', () => {
+      const { container } = render(<HappeningCard event={mockOpenMicEvent} />);
+      const chips = container.querySelectorAll('.rounded-full.text-sm');
+      expect(chips.length).toBeGreaterThan(0);
+    });
+
+    it('should display Missing details as warning badge', () => {
+      // Event with null values triggers hasMissingDetails
+      const eventWithMissing = {
+        ...mockDscEvent,
+        venue_name: null,
+        venue_id: null,
+        location_mode: null,
+      };
+      render(<HappeningCard event={eventWithMissing} />);
+      expect(screen.getByText('Missing details')).toBeInTheDocument();
     });
   });
 
@@ -207,7 +253,6 @@ describe('HappeningCard Phase 4.3 Layout', () => {
     it('should not contain emoji characters', () => {
       const { container } = render(<HappeningCard event={mockOpenMicEvent} />);
       const text = container.textContent || '';
-      // Check for common emoji ranges (not star which is used for favorites)
       const emojiPattern = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BE}]/u;
       const nonStarText = text.replace(/[★☆]/g, '');
       expect(nonStarText).not.toMatch(emojiPattern);

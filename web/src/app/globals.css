@@ -273,6 +273,38 @@ body > footer {
     color: var(--color-text-accent);
     border: 1px solid var(--color-border-accent);
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CONTRAST-SAFE BUTTON UTILITIES (Phase 4.8.1)
+     These utilities enforce proper foreground/background pairing
+     to prevent theme contrast issues (e.g., white text on gold).
+     ALWAYS use these instead of manual bg + text combinations.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Primary accent button - uses theme-aware foreground */
+  .btn-accent {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+  }
+  .btn-accent:hover {
+    background-color: var(--color-accent-hover);
+  }
+
+  /* Muted accent button - subtle background with readable text */
+  .btn-accent-muted {
+    background-color: var(--color-accent-muted);
+    color: var(--color-text-accent);
+    border: 1px solid var(--color-border-accent);
+  }
+
+  /* Secondary button - neutral background */
+  .btn-secondary {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-bg-tertiary);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

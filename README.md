@@ -6,10 +6,10 @@ Denver's community platform for songwriters. Discover open mics, showcases, song
 
 ## Features
 
-- **Open Mic Directory** — Find weekly open mics sorted by day
-- **Showcases & Events** — Discover songwriter showcases and special events
-- **Performer Profiles** — Connect with local songwriters
-- **Studio Listings** — Find recording studios and practice spaces
+- **Happenings** — Scan-first event discovery with poster-forward cards. Answer "do I need to leave my house tonight?" at a glance.
+- **Open Mics** — Weekly recurring open mics sorted by day, with signup info and venue details
+- **DSC Events** — Songwriter showcases, song circles, and special events curated by the collective
+- **Member Directory** — Connect with local songwriters, hosts, and studios
 - **Map View** — See what's happening near you
 
 ## Tech Stack
@@ -31,6 +31,15 @@ npm run dev
 ## Contributing
 
 This is a community-curated directory. Help us keep listings accurate by submitting updates through the app.
+
+## Changelog
+
+### December 2025 — Phase 4.7–4.9
+
+- Scan-first, image-forward event cards (North Star v2.0 + aligned docs)
+- Recurrence pill + day-of-week filter (URL param `days=...`)
+- Missing data standardized to "NA"
+- Contrast-safe pill/button foreground tokens; Sunrise theme contrast improved; Night unchanged
 
 ## License
 

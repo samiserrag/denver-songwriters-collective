@@ -88,6 +88,276 @@ Themes are applied via a `data-theme` attribute on the `<html>` element.
 | `--font-size-heading-lg` | Large headings |
 | `--font-size-heading-md` | Medium headings |
 
+## Card Surface Treatment (v2.0)
+
+The `card-spotlight` class provides the premium card surface used by MemberCard and HappeningCard.
+
+### Shadow Tokens
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--shadow-card` | `0 4px 20px rgba(0, 0, 0, 0.25)` | Base card shadow |
+| `--shadow-card-hover` | `0 8px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(255, 216, 106, 0.1)` | Hover state with accent glow |
+
+### Card Spotlight Class
+
+Defined in `globals.css`:
+
+```css
+.card-spotlight {
+  background: var(--color-bg-card-spotlight);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-2xl);
+}
+
+.card-spotlight:hover {
+  border-color: var(--color-border-accent);
+  box-shadow: var(--shadow-card-hover);
+}
+```
+
+### Card Background Gradient
+
+| Token | Description |
+|-------|-------------|
+| `--color-bg-card-spotlight` | Radial gradient from accent-muted at top to bg-primary |
+
+Theme-specific overrides in `presets.css`:
+
+| Theme | Gradient |
+|-------|----------|
+| `default` (dark) | Accent muted → bg-primary |
+| `sunset` (light) | Orange 0.08 opacity → white |
+| `night` (dark) | Accent muted → bg-primary |
+
+### Usage
+
+```tsx
+// ✅ Correct - use card-spotlight for premium cards
+<article className="card-spotlight p-5">
+  <h3>Card Title</h3>
+</article>
+
+// With hover transition
+<article className="card-spotlight transition-all duration-200 ease-out hover:shadow-md">
+  ...
+</article>
+```
+
+### Related Components
+
+- `MemberCard` - Reference implementation for card surface
+- `HappeningCard` - Uses same surface treatment for event cards
+
+---
+
+## Visual Language & Scanning System (v2.0)
+
+### Purpose
+
+This section defines the visual scanning system for event discovery.
+It exists to prevent information overload, color noise, and ambiguous hierarchy across light and dark themes.
+
+**This is not a styling suggestion. It is a contract.**
+
+### Scan-First, Image-Forward (Clarified)
+
+Scan-first does not mean text-only.
+
+Scan-first means:
+
+- A user can understand what an event is, when it happens, and whether it's reliable in under 5 seconds.
+- Visual pattern recognition (image + badges) is used to reduce reading burden.
+- Text remains the source of truth for decisions.
+
+**Images anchor attention. Text confirms decisions.**
+
+### Pill System (Hierarchical, Limited)
+
+Pills are used only for categorical signals that benefit from visual chunking.
+
+**Not all information should be pill-shaped.**
+
+#### Tier 1 — Primary Signal Pills (Max 1–2 per card)
+
+**Purpose:** Urgency, trust, or sponsorship
+
+**Examples:** `TONIGHT`, `THIS WEEK`, `FREE`, `DSC`
+
+**Rules:**
+
+- Filled pills
+- Accent-muted backgrounds
+- High-contrast text
+- Token-based colors only
+- Must remain readable in Sunrise and Night themes
+
+These pills may attract attention. Everything else must defer to them.
+
+#### Tier 2 — Recurrence & Pattern Pills (Always Visible)
+
+**Purpose:** Habit formation and predictability
+
+**Examples:** `Every Monday`, `Weekly`, `First Monday of the Month`, `Third Thursday`, `One-time`
+
+**Rules:**
+
+- Always visible on the card
+- Neutral or soft-fill appearance
+- No bright accent colors
+- Same visual weight as metadata, not CTAs
+
+**Recurrence must never be hidden in details. Patterns are part of scan-first clarity.**
+
+#### Tier 3 — Type & Context Pills (De-emphasized)
+
+**Purpose:** Categorization without distraction
+
+**Examples:** `Open Mic`, `Showcase`, `Workshop`, `18+`
+
+**Rules:**
+
+- Small
+- Muted border or low-contrast fill
+- No accent colors
+- May collapse or truncate on mobile
+
+These pills must never overpower title, date, or recurrence.
+
+### What Must Not Be Pills
+
+The following information must remain plain text to avoid noise:
+
+- Time
+- Venue / Location
+- Cost (except `FREE` as Tier 1)
+- Signup details
+- Notes or disclaimers
+
+**Pills are for categories, not raw data.**
+
+### Always-Visible Information Rule
+
+The following fields must always be present on event cards:
+
+| Field | Requirement |
+|-------|-------------|
+| Date | Badge or overlay |
+| Time | Show time or `NA` if missing |
+| Venue | Show venue or `NA` if missing |
+| Cost | `Free` or `NA` |
+| Recurrence | Tier 2 pill |
+| Event type | Tier 3 pill |
+| Image | User, derived, or default placeholder |
+
+**Missing information must render as labeled `NA`, never silently hidden.**
+
+### Color & Theme Safety
+
+- All pill colors must use tokens, never hardcoded values
+- Only Tier 1 pills may use accent color families
+- All other pills must remain neutral in both light and dark themes
+- Orange / red text must never sit directly on light backgrounds
+
+**Filled pills must never inherit text color. Foreground contrast is explicit and token-driven to prevent theme washout.**
+
+**Accessibility and legibility override visual flair.**
+
+### Global Contrast Rule (Phase 4.8.1)
+
+**NEVER use hardcoded `text-white` on accent-colored backgrounds.**
+
+This causes contrast failures across themes:
+- ❌ `text-white` on gold (Night theme) = unreadable
+- ❌ `text-white` may work on orange (Sunrise) but is not future-proof
+
+**Always use theme-aware tokens:**
+
+```tsx
+// ✅ CORRECT - Use utility class
+<button className="btn-accent">Submit</button>
+
+// ✅ CORRECT - Use token directly
+<button className="bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]">
+  Submit
+</button>
+
+// ❌ WRONG - Hardcoded white fails on some themes
+<button className="bg-[var(--color-accent-primary)] text-white">
+  Submit
+</button>
+```
+
+**Available utility classes (defined in globals.css):**
+
+| Class | Background | Text | Use Case |
+|-------|------------|------|----------|
+| `.btn-accent` | `--color-accent-primary` | `--color-text-on-accent` | Primary CTA buttons |
+| `.btn-accent-muted` | `--color-accent-muted` | `--color-text-accent` | Subtle accent buttons |
+| `.btn-secondary` | `--color-bg-secondary` | `--color-text-secondary` | Secondary actions |
+
+**Token values by theme:**
+
+| Theme | `--color-text-on-accent` | Rationale |
+|-------|--------------------------|-----------|
+| Default (dark) | `#0F172A` (dark slate) | Dark text on gold |
+| Night (dark) | `#0F172A` (dark slate) | Dark text on gold |
+| Sunrise (light) | `#7C2D12` (orange-900) | Dark text on orange for WCAG AA |
+
+**Pill-specific tokens:**
+
+| Token | Sunrise (light) | Night (dark) | Purpose |
+|-------|-----------------|--------------|---------|
+| `--pill-bg-accent` | `rgba(249,115,22,0.25)` | `rgba(246,193,119,0.3)` | Tier 1 background |
+| `--pill-fg-on-accent` | `#7C2D12` | `#0F172A` | Tier 1 text (dark on accent) |
+| `--pill-fg-on-muted` | `#3F3F46` | `#CBD5E1` | Tier 2 text |
+| `--pill-fg-on-neutral` | `#52525B` | `#94A3B8` | Tier 3 text |
+| `--pill-bg-warning` | `rgba(245,158,11,0.15)` | `rgba(251,191,36,0.2)` | Warning background |
+| `--pill-fg-warning` | `#92400E` | `#FCD34D` | Warning text |
+| `--pill-border-warning` | `rgba(245,158,11,0.25)` | `rgba(251,191,36,0.35)` | Warning border |
+
+### Sunrise Contrast Tuning (Phase 4.9)
+
+Sunrise secondary/tertiary text and border tokens are tuned for legibility on light backgrounds.
+Adjust tokens in `presets.css`, not components. Current values use zinc palette (cooler, higher contrast)
+instead of stone (warmer, lower contrast).
+
+### Design Reference
+
+MemberCard is the reference implementation for:
+
+- Pill density
+- Shadow hierarchy
+- Hover behavior
+
+Event cards must feel visually related, not stylistically separate.
+
+### Non-Goals (Explicit)
+
+- Pills are not buttons
+- Pills are not filters
+- Pills are not CTAs
+- Cards must not become color-heavy or "badge soup"
+
+### Status
+
+**Locked for v2.0**
+
+Any changes to this system require:
+
+1. PRODUCT_NORTH_STAR update
+2. CONTRACTS.md update
+3. Explicit rationale
+
+### Why This Matters
+
+Earlier text-only event rows failed the legitimacy test in user feedback.
+
+This system exists to ensure events feel real, repeatable, and trustworthy at a glance — without sacrificing clarity.
+
+---
+
 ## Usage Guidelines
 
 ### DO Use CSS Variables

@@ -2,12 +2,23 @@
 
 ## Product North Star & System Truths (Canonical)
 
-**Status:** LOCKED (living document — changes require explicit version bump)  
-**Version:** 1.0  
-**Last Updated:** December 2025  
+**Status:** LOCKED (living document — changes require explicit version bump)
+**Version:** 2.0
+**Last Updated:** December 2025
 **Audience:** Humans, repo agents, browser agents, future contributors
 
 > **This document is canonical. If something conflicts, this wins.**
+
+---
+
+### Version History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| v1.x | Nov 2025 | Text-first, list-only event discovery |
+| v2.0 | Dec 2025 | Image-forward, scan-first, poster-constrained cards |
+
+**v2.0 Rationale:** Text-only rows failed the "legitimacy test" in user feedback and did not convey event quality, intent, or credibility at a glance. Poster-based cards give events presence and visual weight.
 
 ---
 
@@ -63,11 +74,11 @@ These are **system laws**, not preferences.
 
 ### 3.2 What We Are NOT Building
 
-* ❌ SaaS dashboards
-* ❌ CRM tables
-* ❌ Admin-first layouts
-* ❌ Engagement farming
-* ❌ Popularity contests
+* SaaS dashboards
+* CRM tables
+* Admin-first layouts
+* Engagement farming
+* Popularity contests
 
 ---
 
@@ -133,75 +144,103 @@ We assume:
 
 ## 6. Event Discovery: `/happenings`
 
-### 6.1 Structural Rules
+### 6.1 Structural Rules (v2.0)
 
-* **List-only**
-* **Calendar-forward**
-* **Scan-first**
-* No grid
-* No cards pretending to be posters
+> **DEPRECATED (v1):** "List-only", "No grid", "No cards pretending to be posters"
+> These principles are retired as of v2.0.
 
-### 6.2 HappeningCard Contract (Canonical)
+**v2.0 Principles:**
 
-**Max:** 3 lines  
-**Min:** 2 lines (edge case only)
+* **Scan-first, not text-first** — Images communicate faster than text
+* **Posters are mandatory media** — Constrained into cards for fast visual parsing
+* **Grid layouts are permitted** — Only when cards are image-forward and aspect-constrained
+* **MemberCard is the reference quality bar** — Surface, shadow, density
 
-#### Line 1 — Temporal Anchor
+For the normative visual scanning and pill hierarchy system, see `docs/theme-system.md`.
 
-* Date is the loudest element
-* `TONIGHT` / `TOMORROW` take priority over formatted date
-* Title is secondary (semi-bold)
-* `Details →` always present (right-aligned), unless ended
+### 6.2 Scan Order (v2.0)
 
-#### Line 2 — Decision Facts (Always Visible)
+Users scan event cards in this order:
 
-Order is fixed:
+1. **Poster image** — Visual anchor, legitimacy signal
+2. **Event title** — What is this?
+3. **Date / time** — When is this?
+4. **Event type indicators** — Open mic? Showcase? DSC event?
+
+Text-only metadata (venue, cost, age) is supporting context, not primary.
+
+### 6.3 HappeningCard Contract (v2.0)
+
+**Layout:** Vertical poster card (not horizontal row)
+
+**Structure:**
+* **Top:** 4:3 aspect poster media with overlays (date badge, favorite star, status)
+* **Bottom:** Content stack (title, meta line, chips)
+
+**Poster Tiers:**
+1. `cover_image_card_url` — Optimized 4:3 thumbnail (object-cover)
+2. `cover_image_url` — Full poster with blurred background (object-contain)
+3. Gradient placeholder with music note icon (designed, not empty)
+
+**Grid Layout:**
+* Mobile: 1 column
+* Tablet (md): 2 columns
+* Desktop (lg): 3 columns
+
+### 6.4 Decision Facts (Always Visible)
+
+Order is fixed in meta line:
 
 ```
-Time · Signup · Location · Cost · Age · ☆
+Time · Venue · Cost
 ```
 
 | Field | If Present | If Missing |
 |-------|------------|------------|
-| Time | Show time range | Never missing |
-| Signup | `Sign-up 6:30` | `Sign-up: NA` |
-| Location | `Bar 404, Denver` | `Online` if online-only |
+| Time | Show time | "TBD" |
+| Venue | Venue name | "Online" if online-only, "—" otherwise |
 | Cost | `Free` or `$10` | `—` (em dash) |
-| Age | `18+` or `21+` | Omit unless required |
-| Favorite | `☆` | Always shown |
 
-#### Line 3 — Context (Conditional)
+### 6.5 Chips Row
 
-* Event type (always shown, italic)
-* `DSC Presents` if applicable
-* Availability **only** if capacity-based
+Event type, age, signup, DSC badge, availability — as pills below meta line.
 
-### 6.3 DSC Badge
+| Field | Display |
+|-------|---------|
+| Event type | Always shown |
+| Age | `18+` or `21+` when applicable |
+| Signup | `Sign-up: 6:30 PM` or `Sign-up: Online` when applicable |
+| DSC | `DSC` chip for DSC events |
+| Availability | `40 spots` when capacity-based |
+| Missing details | Warning badge (not underlined link) |
 
-* **Text:** `DSC Presents` (not "DSC" alone — that's jargon)
+### 6.6 DSC Badge
+
+* **Text:** `DSC` (chip format)
 * **Meaning:** Provenance/curation, not branding
-* **Style:** Italic, muted warm tone
-* **Location:** Line 3 only
+* **Style:** Accent-muted background, text-primary
 
-### 6.4 Temporal Emphasis (TONIGHT / TOMORROW)
+### 6.7 Temporal Emphasis (TONIGHT / TOMORROW)
 
-| Condition | Date Text | Left Border | Text Color |
-|-----------|-----------|-------------|------------|
-| Today | `TONIGHT` | Warm gold (#c9a66b) | Warm gold (#c9a66b) |
-| Tomorrow | `TOMORROW` | Warm gold (#c9a66b) | Warm gold (#c9a66b) |
-| Future | `FRI JAN 10` | Warm tan (#d4a574) | Dark gray (#44403c) |
-| Past | Formatted date | Muted tan | Muted |
+Date badge overlay on poster:
 
-**Rule:** No icons, no animations. Temporal emphasis is the *only* ambient "alive" signal.
+| Condition | Badge Text | Badge Color |
+|-----------|------------|-------------|
+| Today | `TONIGHT` | Accent primary |
+| Tomorrow | `TOMORROW` | Accent primary |
+| Future | `SAT JAN 10` | White |
+| Past | Formatted date | White/muted |
 
-### 6.5 Past Event Treatment
+**Rule:** No icons, no animations. Temporal emphasis through color and position.
 
-* `Details →` replaced with `Ended`
-* Entire row at **0.7 opacity**
+### 6.8 Past Event Treatment
+
+* Status badge: `Ended`
+* Entire card at **0.7 opacity**
 * Still clickable (for recap/history)
 * No availability shown
 
-### 6.6 Cost Display Rules
+### 6.9 Cost Display Rules
 
 | Situation | Display |
 |-----------|---------|
@@ -226,12 +265,12 @@ Time · Signup · Location · Cost · Age · ☆
 * Engagement metrics
 * "Trending"
 
-**Why:**  
+**Why:**
 Scarcity helps decisions. Popularity games destroy trust.
 
 **Lock statement:**
 
-> Phase 4+: Show availability only (spots/slots remaining). No "X going"/popularity counts until we explicitly choose a social-proof direction.
+> Show availability only (spots/slots remaining). No "X going"/popularity counts until we explicitly choose a social-proof direction.
 
 ---
 
@@ -239,9 +278,9 @@ Scarcity helps decisions. Popularity games destroy trust.
 
 ### 8.1 Horizontal Balance
 
-* Avoid "everything left, nothing center/right"
-* Use the full width humans already have
-* Visual weight should feel **intentional**, not accidental
+* Grid layout uses full width
+* Cards fill available space proportionally
+* Visual weight feels **intentional**, not accidental
 
 ### 8.2 Density
 
@@ -249,19 +288,19 @@ Scarcity helps decisions. Popularity games destroy trust.
 * Cramped horizontally is bad
 * White space must *help reading*, not waste space
 
-### 8.3 Card Visual Treatment
+### 8.3 Card Visual Treatment (v2.0)
 
 | Element | Value |
 |---------|-------|
-| Left border | 3px solid warm tan (#d4a574) |
-| Left border (tonight/tomorrow) | 3px solid warm gold (#c9a66b) |
-| Border radius | 0 10px 10px 0 |
-| Hover background | Warm cream (#fef9f3) |
-| Hover border | Warm gold (#c9a66b) |
-| Hover transform | translateX(2px) |
-| Page background | Warm off-white (#fffbf7) |
+| Surface class | `card-spotlight` |
+| Shadow (base) | `--shadow-card` |
+| Shadow (hover) | `--shadow-card-hover` |
+| Border radius | `var(--radius-2xl)` via card-spotlight |
+| Poster aspect | 4:3 |
+| Poster hover | `scale-[1.02]` (subtle zoom) |
+| Border accent | Tonight/Tomorrow get accent border |
 
-> **Implementation note:** Hex values above are semantic reference targets for the warm/light theme. All implementations must use CSS theme tokens (e.g., `var(--color-border-accent)`) so colors adapt across themes. See `docs/theme-system.md` for token mappings.
+> **Implementation note:** All card implementations must use the `card-spotlight` class for consistent surface treatment across themes.
 
 ---
 
@@ -306,16 +345,18 @@ Missing info is not hidden.
 
 | Field | If Missing |
 |-------|------------|
-| Signup time | `Sign-up: NA` |
+| Time | `TBD` |
+| Venue | `—` |
 | Cost | `—` |
 | Age | Omit |
 | Availability | Omit |
 | Venue (online) | `Online` |
+| Critical fields | Warning badge: "Missing details" |
 
 ### Philosophy
 
-* Show `NA` / `—` consistently for decision-critical fields
-* Use "Missing details" as a **soft CTA** to encourage updates
+* Show `—` consistently for decision-critical fields
+* Use "Missing details" badge as a **visual indicator** for incomplete events
 * Transparency > polish
 * Community repair > admin cleanup
 
@@ -388,7 +429,7 @@ If the product ever feels like:
 * An admin tool
 * A growth experiment
 
-…we have drifted.
+...we have drifted.
 
 **Re-center on:**
 
@@ -396,4 +437,4 @@ If the product ever feels like:
 
 ---
 
-**END — Canonical System Truth v1.0**
+**END — Canonical System Truth v2.0**

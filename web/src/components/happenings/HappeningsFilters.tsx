@@ -4,6 +4,7 @@
  * HappeningsFilters - URL-driven filter bar for /happenings
  *
  * Phase 4.2: Provides search + filter controls with shareable URLs.
+ * Phase 4.8: Added day-of-week filter for pattern discovery.
  * Design: Flyer-like aesthetic, no emoji, SVG icons only (sparse).
  *
  * URL params:
@@ -14,6 +15,7 @@
  * - verify: all|verified|needs_verification
  * - location: all|venue|online|hybrid
  * - cost: all|free|paid|unknown
+ * - days: comma-separated day abbreviations (mon,tue,wed,etc.) - Phase 4.8
  */
 
 import * as React from "react";
@@ -107,6 +109,17 @@ const VERIFY_OPTIONS = [
   { value: "needs_verification", label: "Needs verify" },
 ] as const;
 
+// Phase 4.8: Day-of-week filter options
+const DAY_OPTIONS = [
+  { value: "mon", label: "Mon", full: "Monday" },
+  { value: "tue", label: "Tue", full: "Tuesday" },
+  { value: "wed", label: "Wed", full: "Wednesday" },
+  { value: "thu", label: "Thu", full: "Thursday" },
+  { value: "fri", label: "Fri", full: "Friday" },
+  { value: "sat", label: "Sat", full: "Saturday" },
+  { value: "sun", label: "Sun", full: "Sunday" },
+] as const;
+
 interface HappeningsFiltersProps {
   className?: string;
 }
@@ -123,6 +136,9 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const verify = searchParams.get("verify") || "";
   const location = searchParams.get("location") || "";
   const cost = searchParams.get("cost") || "";
+  // Phase 4.8: Day-of-week filter (comma-separated: "mon,tue,wed")
+  const daysParam = searchParams.get("days") || "";
+  const selectedDays = daysParam ? daysParam.split(",").filter(Boolean) : [];
 
   // Local search input state (debounced)
   const [searchInput, setSearchInput] = React.useState(q);
@@ -188,6 +204,19 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     updateFilter("dsc", dsc ? null : "1");
   };
 
+  // Phase 4.8: Toggle day-of-week filter (multi-select)
+  const toggleDay = (day: string) => {
+    const newDays = selectedDays.includes(day)
+      ? selectedDays.filter((d) => d !== day)
+      : [...selectedDays, day];
+    updateFilter("days", newDays.length > 0 ? newDays.join(",") : null);
+  };
+
+  // Clear all days
+  const clearDays = () => {
+    updateFilter("days", null);
+  };
+
   // Collect active filter pills for display
   const activeFilters: { key: string; label: string; icon?: React.ReactNode }[] = [];
 
@@ -229,6 +258,11 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     const timeLabel = TIME_OPTIONS.find(o => o.value === time)?.label || time;
     activeFilters.push({ key: "time", label: timeLabel });
   }
+  // Phase 4.8: Day-of-week filter
+  if (selectedDays.length > 0) {
+    const dayLabels = selectedDays.map((d) => DAY_OPTIONS.find((o) => o.value === d)?.label || d).join(", ");
+    activeFilters.push({ key: "days", label: `Days: ${dayLabels}` });
+  }
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -253,6 +287,36 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         )}
       </div>
 
+      {/* Phase 4.8: Day-of-week filter bar */}
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="text-sm text-[var(--color-text-secondary)] mr-1">Days:</span>
+        <div className="flex rounded-lg overflow-hidden border border-[var(--color-border-default)]">
+          {DAY_OPTIONS.map((day) => (
+            <button
+              key={day.value}
+              onClick={() => toggleDay(day.value)}
+              title={day.full}
+              className={cn(
+                "px-2 py-1 text-sm font-medium transition-colors",
+                selectedDays.includes(day.value)
+                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
+              )}
+            >
+              {day.label}
+            </button>
+          ))}
+        </div>
+        {selectedDays.length > 0 && (
+          <button
+            onClick={clearDays}
+            className="ml-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] underline"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Filter Row 1: Time + Type + DSC */}
       <div className="flex flex-wrap gap-2 items-center">
         {/* Time tabs */}
@@ -264,7 +328,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               className={cn(
                 "px-3 py-1.5 text-sm font-medium transition-colors",
                 time === option.value || (option.value === "upcoming" && !searchParams.get("time"))
-                  ? "bg-[var(--color-accent-primary)] text-white"
+                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
                   : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
               )}
             >

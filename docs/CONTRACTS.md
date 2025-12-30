@@ -6,58 +6,117 @@ This document defines the contracts for key components in the codebase. These co
 
 ---
 
-## Image Rendering Contract (Phase 3.1)
+## Event Poster Media Contract (v2.0)
 
-**Global Rule:** Users are never required to crop, resize, or redesign images. Ever.
+**Global Rule:** Posters are mandatory media for all events. Users are never required to crop, resize, or redesign images.
 
-### Cards (List View)
-- Poster is **decorative**
-- Bounded container with `object-fit: contain`
-- Letterboxing allowed
-- Card height controlled by text, not image
+### Card Rendering (HappeningCard)
+
+- **Aspect ratio:** 4:3 enforced via `aspect-[4/3]`
+- **Image tiers:**
+  1. `cover_image_card_url` — Optimized card thumbnail (object-cover)
+  2. `cover_image_url` — Full poster with blurred background (object-contain)
+  3. Gradient placeholder with music note icon (designed, not empty)
+- **Surface:** `card-spotlight` class (radial gradient + shadow tokens)
+- **Hover:** `scale-[1.02]` zoom on poster, `shadow-card-hover` on card
 
 ### Detail Pages
+
 - Poster is **primary**
 - Rendered full width with natural height (`height: auto`)
 - No cropping, no overlays, no forced aspect ratio
 - All text content renders **below** the poster
 
+### Data Notes
+
+- No new schema fields required beyond existing `cover_image_url` and `cover_image_card_url`
+- Cropping/resizing is a **presentation concern**, not a data concern
+- Missing images render the designed gradient placeholder (never empty space)
+
+### Missing Field Display
+
+Empty or missing critical fields render with explicit indicators:
+
+| Field | If Missing |
+|-------|------------|
+| Time | `TBD` |
+| Venue | `—` (em dash) |
+| Cost | `—` (em dash) |
+| Venue (online-only) | `Online` |
+| Critical fields | "Missing details" warning badge |
+
+**Rule:** Never silently hide missing decision-critical data.
+
 ---
 
 ## Card Components
 
-### HappeningCard (Unified Card — Phase 3.1)
+### HappeningCard (Unified Card — v2.0)
 
 **File:** `web/src/components/happenings/HappeningCard.tsx`
 
-> **Phase 3.1 Migration:** This is the single unified card component for ALL event types.
-> The old `EventCard.tsx` (open mics) and `events/EventCard.tsx` (DSC events) are deprecated.
+> **v2.0 Visual System:** This is the single unified card component for ALL event types.
+> Design matches MemberCard surface treatment. See PRODUCT_NORTH_STAR.md Section 6.
 
 **Props:**
 ```typescript
 interface HappeningCardProps {
   event: HappeningEvent;
   searchQuery?: string | null;
-  variant?: "grid" | "list";  // default: "grid"
-  onClick?: () => void;
   className?: string;
 }
 ```
 
-> **⚠️ Grid Deprecated:** The `variant="grid"` option exists for legacy compatibility but is not used in production. All event listings use `variant="list"` per PRODUCT_NORTH_STAR.md. Do not introduce grid layouts without explicit approval.
+**Layout (Vertical Poster Card):**
 
-**Variant Behavior:**
+| Section | Content |
+|---------|---------|
+| **Top** | 4:3 aspect poster with overlays (date badge, favorite star, status) |
+| **Bottom** | Title, meta line (time · venue · cost), chips row |
 
-| Variant | Image Section | Badge Location | Recurrence Text | Padding |
-|---------|---------------|----------------|-----------------|---------|
-| `"grid"` | Visible (if `cover_image_url` exists) | Overlay on image | Visible | `p-5` |
-| `"list"` | **Hidden** | Inline in content header | **Hidden** | `p-3` |
+**Surface Treatment:**
+- `card-spotlight` class (radial gradient background, shadow tokens, border radius)
+- Hover: `shadow-card-hover` + `border-accent` + poster zoom `scale-[1.02]`
+- Past events: `opacity-70`
+- Tonight/Tomorrow: accent border highlight
 
-**Phase 3.1 Display Rules:**
-- Image section only renders if `cover_image_url` or `imageUrl` exists (no placeholders)
-- Images use `object-fit: contain` with bounded max-height (no cropping)
-- **Decision-critical fields** (signup time, cost) show `NA` or `—` when missing. Non-critical fields are omitted. See PRODUCT_NORTH_STAR.md Section 10 for full rules.
-- Location mode badges: "Online" (blue) or "Hybrid" (purple) for non-venue events
+**Scan Order:**
+1. Poster image — visual anchor
+2. Event title — what is this?
+3. Date/time — when is this?
+4. Chips — event type, DSC badge, age, signup, availability
+
+**Chips Row (MemberCard pill style):**
+- `px-2 py-0.5 text-sm font-medium rounded-full border`
+- Event type, age policy, signup time, DSC badge, availability
+- "Missing details" as warning badge (amber background)
+
+### Pill Hierarchy & Scan Signals
+
+For the full normative Visual Language & Scanning System, see `docs/theme-system.md`.
+
+**Pill Tiers (Summary):**
+
+| Tier | Purpose | Examples | Visual Weight |
+|------|---------|----------|---------------|
+| Tier 1 | Urgency/trust | `TONIGHT`, `FREE`, `DSC` | Accent-muted fill, high contrast |
+| Tier 2 | Recurrence | `Every Monday`, `Weekly` | Neutral fill, always visible |
+| Tier 3 | Type/context | `Open Mic`, `18+` | Muted border, de-emphasized |
+
+**Always-Visible Fields:**
+- Date, Time, Venue, Cost, Recurrence, Event type, Image
+- Missing fields render as `NA` or `—`, never hidden
+
+**Enforceable Rules:**
+- All pill colors must use tokens (no hardcoded values)
+- Only Tier 1 pills may use accent colors
+- Time, venue, cost must be plain text (not pills)
+- Cards must not become "badge soup"
+
+**Grid Layout (Responsive):**
+- Mobile: 1 column
+- Tablet (md): 2 columns
+- Desktop (lg): 3 columns
 
 **Test:** `src/components/__tests__/card-variants.test.tsx`
 
@@ -69,8 +128,8 @@ interface HappeningCardProps {
 
 **Behavior:**
 - Thin wrapper around `HappeningCard`
-- **Always passes `variant="list"`** for compact happenings page display
-- Used by `/happenings` page grouping logic
+- Passes through event data and search query
+- Used by `/happenings` page date-grouped grid layout
 
 ---
 
@@ -87,9 +146,16 @@ interface HappeningCardProps {
 
 ## Page Contracts
 
-### Happenings Page Hero Rules
+### Happenings Page Layout (v2.0)
 
 **File:** `web/src/app/happenings/page.tsx`
+
+**Grid Layout:**
+- Responsive card grid: 1 col (mobile) → 2 col (md) → 3 col (lg)
+- Date-grouped sections with date headers
+- Gap: `gap-4 lg:gap-5`
+
+**Hero Rules:**
 
 | URL | Hero Visible | Page Title Location |
 |-----|--------------|---------------------|
@@ -177,8 +243,10 @@ Tests that enforce these contracts:
 | Contract | Test File |
 |----------|-----------|
 | Nav links use canonical routes | `src/__tests__/navigation-links.test.ts` |
-| List variant hides media | `src/components/__tests__/card-variants.test.tsx` |
-| Grid variant shows media | `src/components/__tests__/card-variants.test.tsx` |
+| Card uses `card-spotlight` surface | `src/components/__tests__/card-variants.test.tsx` |
+| Poster thumbnail 3-tier rendering | `src/components/__tests__/card-variants.test.tsx` |
+| MemberCard pill-style chips | `src/components/__tests__/card-variants.test.tsx` |
+| Past event opacity treatment | `src/components/__tests__/card-variants.test.tsx` |
 
 **Rule:** Any change to these contracts must update both the implementation AND this documentation.
 

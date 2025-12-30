@@ -158,6 +158,38 @@ git push origin main
 
 ---
 
+## Locked Layout Rules (v2.0)
+
+These layout decisions are **locked** and must not be changed without explicit approval:
+
+### HappeningCard Layout
+
+| Element | Locked Value |
+|---------|--------------|
+| Card structure | Vertical poster card (not horizontal row) |
+| Poster aspect | 4:3 (`aspect-[4/3]`) |
+| Surface class | `card-spotlight` |
+| Grid layout | 1 col mobile, 2 col md, 3 col lg |
+| Poster hover | `scale-[1.02]` zoom |
+| Past event opacity | `opacity-70` |
+| Font minimum | 14px in discovery views |
+
+### Chip Styling
+
+| Element | Locked Value |
+|---------|--------------|
+| Base classes | `px-2 py-0.5 text-sm font-medium rounded-full border` |
+| Missing details | Warning badge (amber), not underlined link |
+
+### Forbidden Changes
+
+- Do NOT revert to horizontal/list layouts
+- Do NOT use `text-xs` for chips (14px minimum)
+- Do NOT add social proof ("X going", popularity counts)
+- Do NOT use hardcoded colors (must use theme tokens)
+
+---
+
 ## Documentation Hierarchy
 
 1. **PRODUCT_NORTH_STAR.md** — Philosophy & UX laws (canonical)
@@ -171,22 +203,27 @@ If something conflicts, higher-numbered docs yield to lower-numbered.
 
 ## Recent Changes
 
-### Phase 4.3 Card Redesign (December 2025)
-- HappeningCard visual overhaul
-- 3-line layout locked
+### v2.0 Visual System (December 2025)
+
+Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
+
+**Phase 4.6 Premium Card Polish:**
+- `card-spotlight` surface (MemberCard recipe)
+- Shadow token stack (`--shadow-card`, `--shadow-card-hover`)
+- Poster zoom on hover (`scale-[1.02]`)
+- MemberCard pill-style chips
+- "Missing details" as warning badge
+
+**Phase 4.5 Vertical PosterCard:**
+- Vertical layout (poster top, content bottom)
+- 4:3 aspect ratio poster media
+- Responsive grid (1 col / 2 col / 3 col)
+- 3-tier image rendering (card → blurred → placeholder)
+
+**Phase 4.3-4.4 Readability:**
 - Typography fixes (14px minimum)
 - Sunrise theme contrast fixes
 - TONIGHT/TOMORROW temporal emphasis
-
-### Phase 4.2 Unified Happenings (December 2025)
-- Single `/happenings` page with filters
-- Search functionality added
-- Legacy routes redirect
-
-### Phase 3.1 Display Spec (December 2025)
-- PosterMedia component
-- Unified HappeningCard
-- Scan-first card design
 
 ### Logging System (December 2025)
 - Admin logs at `/dashboard/admin/logs`
