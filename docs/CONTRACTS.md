@@ -1,31 +1,79 @@
-# Component Contracts
+# CONTRACTS — Canonical Product & UI Contracts (v2.0)
 
-This document defines the contracts for key components in the codebase. These contracts ensure consistent behavior and prevent regressions.
+## Purpose
 
-> **Canonical UX rules:** [PRODUCT_NORTH_STAR.md](./PRODUCT_NORTH_STAR.md) is the authoritative source for card layout, field visibility, and design decisions. This document covers component implementation contracts only.
+This document defines **enforceable contracts** for product behavior and UI rendering.
+If a rule can be tested, validated, or enforced, it belongs here.
+
+This is **normative** (not descriptive).
+
+> **Canonical UX rules:** [PRODUCT_NORTH_STAR.md](./PRODUCT_NORTH_STAR.md) is the authoritative source for philosophy and design decisions.
 
 ---
 
-## Event Poster Media Contract (v2.0)
+## Authority & Reading Order
+
+- Principles and philosophy live in: `docs/PRODUCT_NORTH_STAR.md` (canonical)
+- Visual tokens and theme system live in: `docs/theme-system.md` (canonical)
+- Testable UI/data rules live here: `docs/CONTRACTS.md` (canonical)
+
+If documents conflict:
+1. PRODUCT_NORTH_STAR wins on philosophy
+2. CONTRACTS wins on enforceable UI behavior
+3. theme-system wins on tokens and surfaces
+
+Any contradiction must be resolved explicitly; silent drift is not allowed.
+
+## Change Control
+
+Changes to contracts require:
+- A short rationale ("why")
+- Reference to user feedback or a concrete failure mode
+- Updating related tests when applicable
+
+---
+
+## Contract: Event Discovery Surface
+
+### Layout Contract (v2.0)
+
+- Event discovery cards are **scan-first, image-forward**.
+- Grid layouts are allowed **only** with poster-constrained cards (not row/classified layouts).
+- Event cards must visually align with MemberCard quality (density, hover polish, clarity).
+
+### Card Clickability Contract
+
+- Entire card is clickable to details (no tiny "Details →" link required).
+- Any secondary actions (e.g., favorite) must not break primary tap target.
+
+---
+
+## Contract: Event Poster Media
 
 **Global Rule:** Posters are mandatory media for all events. Users are never required to crop, resize, or redesign images.
 
-### Card Rendering (HappeningCard)
+### Card Thumbnail Aspect Ratio
 
-- **Aspect ratio:** 4:3 enforced via `aspect-[4/3]`
-- **Image tiers:**
-  1. `cover_image_card_url` — Optimized card thumbnail (object-cover)
-  2. `cover_image_url` — Full poster with blurred background (object-contain)
-  3. Gradient placeholder with music note icon (designed, not empty)
-- **Surface:** `card-spotlight` class (radial gradient + shadow tokens)
-- **Hover:** `scale-[1.02]` zoom on poster, `shadow-card-hover` on card
+- Card thumbnails use a constrained aspect ratio: **4:3**.
+- Card thumbnails must handle any source poster ratio:
+  - Preferred: dedicated 4:3 card image if available (`cover_image_card_url`)
+  - Otherwise: blurred background + contain foreground fallback (`cover_image_url`)
+  - Otherwise: type-based default image fallback (if available)
+  - Otherwise: neutral placeholder (gradient with music note icon)
 
-### Detail Pages
+### Detail Page Poster
 
-- Poster is **primary**
+- Detail pages may display the original poster in its native ratio.
 - Rendered full width with natural height (`height: auto`)
 - No cropping, no overlays, no forced aspect ratio
 - All text content renders **below** the poster
+
+### Upload Guidance Contract
+
+- UI that accepts poster uploads must provide:
+  - Recommended size guidance
+  - Cropping tool expectations (if cropping exists)
+  - A clear distinction between "card thumbnail" vs "full poster" behavior
 
 ### Data Notes
 
@@ -33,19 +81,110 @@ This document defines the contracts for key components in the codebase. These co
 - Cropping/resizing is a **presentation concern**, not a data concern
 - Missing images render the designed gradient placeholder (never empty space)
 
-### Missing Field Display
+---
 
-Empty or missing critical fields render with explicit indicators:
+## Contract: Pill Hierarchy & Scan Signals (v2.0)
+
+Pills exist to accelerate scanning. They must not become "badge soup".
+
+### Tier 1 — Primary Signal Pills (Max 1–2)
+
+**Purpose:** Urgency/trust/sponsorship
+
+**Examples:** `TONIGHT`, `THIS WEEK`, `DSC`, `FREE` (policy: FREE currently remains plain text unless explicitly promoted later)
+
+**Rules:**
+- Filled pills
+- Accent-muted backgrounds
+- Explicit foreground token (never inherited)
+- Must remain readable in Sunrise + Night themes
+
+### Tier 2 — Recurrence & Pattern (Always Visible)
+
+**Examples:** `Every Monday`, `Weekly`, `First Monday of the Month`, `Third Thursday`, `One-time`
+
+**Rules:**
+- Exactly one recurrence pill per card
+- Always visible
+- Neutral / soft styling (not accent)
+
+### Tier 3 — Type & Context (De-emphasized)
+
+**Examples:** `Open Mic`, `Showcase`, `Workshop`, `18+`
+
+**Rules:**
+- Muted styling
+- Never louder than Tier 1 or title/date
+
+### Chip Base Classes
+
+All chips use MemberCard pill style:
+```
+px-2 py-0.5 text-sm font-medium rounded-full border
+```
+
+### Enforceable Rules
+
+- All pill colors must use tokens (no hardcoded values)
+- Only Tier 1 pills may use accent colors
+- Time, venue, cost must be plain text (not pills)
+- Cards must not become "badge soup"
+
+---
+
+## Contract: Missing Data Rendering
+
+Decision-critical fields must never disappear silently.
+
+### Always-Visible Fields on Event Cards
+
+| Field | Requirement |
+|-------|-------------|
+| Date | Badge or overlay |
+| Time | Show time or `NA` if missing |
+| Venue | Show venue or `NA` if missing |
+| Cost | `Free` or `NA` |
+| Recurrence | Tier 2 pill |
+| Event type | Tier 3 pill |
+| Image | User/derived/default/placeholder |
+
+### Missing Value Standard
 
 | Field | If Missing |
 |-------|------------|
-| Time | `TBD` |
-| Venue | `—` (em dash) |
-| Cost | `—` (em dash) |
-| Venue (online-only) | `Online` |
+| Time | `NA` |
+| Venue | `NA` (or `Online` for online-only) |
+| Cost | `NA` |
 | Critical fields | "Missing details" warning badge |
 
-**Rule:** Never silently hide missing decision-critical data.
+**Rules:**
+- Missing decision-critical values render as: **NA**
+- Do not use TBD or em-dash for these fields.
+- If labels are shown, use `Label: NA` (preferred) rather than bare `NA`.
+- Never silently hide missing decision-critical data.
+
+---
+
+## Contract: Filtering Behavior
+
+### Day-of-Week Filter (Lens, not sort)
+
+- Day filter reduces visible cards but does not change ordering.
+- Default: all days active
+- Multi-select supported
+- URL param is supported (example): `?days=mon,wed,fri`
+- Sorting remains linear and date-based.
+
+---
+
+## Contract: Theme Contrast Safety
+
+- Any filled surface (pills, buttons) must have explicit foreground tokens.
+- Filled pills must never inherit text color.
+- No orange/red text on light backgrounds unless contrast is proven safe.
+- Token usage only; avoid hardcoded color classes for interactive components.
+
+See `docs/theme-system.md` for full token definitions and Global Contrast Rule.
 
 ---
 
@@ -85,33 +224,6 @@ interface HappeningCardProps {
 2. Event title — what is this?
 3. Date/time — when is this?
 4. Chips — event type, DSC badge, age, signup, availability
-
-**Chips Row (MemberCard pill style):**
-- `px-2 py-0.5 text-sm font-medium rounded-full border`
-- Event type, age policy, signup time, DSC badge, availability
-- "Missing details" as warning badge (amber background)
-
-### Pill Hierarchy & Scan Signals
-
-For the full normative Visual Language & Scanning System, see `docs/theme-system.md`.
-
-**Pill Tiers (Summary):**
-
-| Tier | Purpose | Examples | Visual Weight |
-|------|---------|----------|---------------|
-| Tier 1 | Urgency/trust | `TONIGHT`, `FREE`, `DSC` | Accent-muted fill, high contrast |
-| Tier 2 | Recurrence | `Every Monday`, `Weekly` | Neutral fill, always visible |
-| Tier 3 | Type/context | `Open Mic`, `18+` | Muted border, de-emphasized |
-
-**Always-Visible Fields:**
-- Date, Time, Venue, Cost, Recurrence, Event type, Image
-- Missing fields render as `NA` or `—`, never hidden
-
-**Enforceable Rules:**
-- All pill colors must use tokens (no hardcoded values)
-- Only Tier 1 pills may use accent colors
-- Time, venue, cost must be plain text (not pills)
-- Cards must not become "badge soup"
 
 **Grid Layout (Responsive):**
 - Mobile: 1 column
@@ -248,10 +360,6 @@ Tests that enforce these contracts:
 | MemberCard pill-style chips | `src/components/__tests__/card-variants.test.tsx` |
 | Past event opacity treatment | `src/components/__tests__/card-variants.test.tsx` |
 
+**Rule:** If a contract affects rendering logic (NA, pill tiers, filters), it should have a test. Tests must enforce the contract language (not old v1 expectations). Stale or contradictory test descriptions must be updated.
+
 **Rule:** Any change to these contracts must update both the implementation AND this documentation.
-
----
-
-## Canonical UX Rules
-
-Product philosophy and UX laws live in **[PRODUCT_NORTH_STAR.md](./PRODUCT_NORTH_STAR.md)**.

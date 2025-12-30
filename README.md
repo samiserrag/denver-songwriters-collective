@@ -28,6 +28,15 @@ npm install
 npm run dev
 ```
 
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [CLAUDE.md](./CLAUDE.md) | Repo operations (start here for agents) |
+| [docs/PRODUCT_NORTH_STAR.md](./docs/PRODUCT_NORTH_STAR.md) | Philosophy & UX laws |
+| [docs/CONTRACTS.md](./docs/CONTRACTS.md) | Enforceable UI/data contracts |
+| [docs/theme-system.md](./docs/theme-system.md) | Tokens & visual system |
+
 ## Contributing
 
 This is a community-curated directory. Help us keep listings accurate by submitting updates through the app.

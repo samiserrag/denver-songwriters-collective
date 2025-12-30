@@ -154,6 +154,8 @@ Theme-specific overrides in `presets.css`:
 
 ## Visual Language & Scanning System (v2.0)
 
+> **Enforceable contract:** See [docs/CONTRACTS.md](./CONTRACTS.md) §Contract: Pill Hierarchy & Scan Signals for testable rules.
+
 ### Purpose
 
 This section defines the visual scanning system for event discovery.
@@ -346,9 +348,11 @@ Event cards must feel visually related, not stylistically separate.
 
 Any changes to this system require:
 
-1. PRODUCT_NORTH_STAR update
-2. CONTRACTS.md update
+1. `docs/PRODUCT_NORTH_STAR.md` update
+2. `docs/CONTRACTS.md` update
 3. Explicit rationale
+
+> For enforceable pill hierarchy and missing data contracts, see [docs/CONTRACTS.md](./CONTRACTS.md).
 
 ### Why This Matters
 

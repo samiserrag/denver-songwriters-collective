@@ -171,6 +171,8 @@ Text-only metadata (venue, cost, age) is supporting context, not primary.
 
 ### 6.3 HappeningCard Contract (v2.0)
 
+> **Enforceable contract:** See [docs/CONTRACTS.md](./CONTRACTS.md) §Card Components for testable rules.
+
 **Layout:** Vertical poster card (not horizontal row)
 
 **Structure:**
@@ -197,9 +199,9 @@ Time · Venue · Cost
 
 | Field | If Present | If Missing |
 |-------|------------|------------|
-| Time | Show time | "TBD" |
-| Venue | Venue name | "Online" if online-only, "—" otherwise |
-| Cost | `Free` or `$10` | `—` (em dash) |
+| Time | Show time | `NA` |
+| Venue | Venue name | `Online` if online-only, `NA` otherwise |
+| Cost | `Free` or `$10` | `NA` |
 
 ### 6.5 Chips Row
 
@@ -246,7 +248,7 @@ Date badge overlay on poster:
 |-----------|---------|
 | Free event | `Free` |
 | Paid event | `$10` (actual amount) |
-| Unknown | `—` (em dash, not "TBD" or "NA") |
+| Unknown | `NA` |
 
 ---
 
@@ -341,13 +343,15 @@ This prevents:
 
 Missing info is not hidden.
 
+> **Enforceable contract:** See [docs/CONTRACTS.md](./CONTRACTS.md) §Contract: Missing Data Rendering for testable rules. The standard missing value is **NA**.
+
 ### Display Rules
 
 | Field | If Missing |
 |-------|------------|
-| Time | `TBD` |
-| Venue | `—` |
-| Cost | `—` |
+| Time | `NA` |
+| Venue | `NA` |
+| Cost | `NA` |
 | Age | Omit |
 | Availability | Omit |
 | Venue (online) | `Online` |
@@ -355,7 +359,7 @@ Missing info is not hidden.
 
 ### Philosophy
 
-* Show `—` consistently for decision-critical fields
+* Show `NA` consistently for decision-critical fields
 * Use "Missing details" badge as a **visual indicator** for incomplete events
 * Transparency > polish
 * Community repair > admin cleanup
@@ -407,16 +411,19 @@ See `docs/copy-tone-guide.md` for full guidelines.
 2. Database schema
 3. API invariants
 4. Production UI (browser-verified)
-5. Supporting docs (CONTRACTS.md, specs)
+5. Supporting docs (`docs/CONTRACTS.md`, specs)
 
 ### Document Hierarchy
 
 | Document | Purpose | Updates |
 |----------|---------|---------|
-| PRODUCT_NORTH_STAR.md | Philosophy & UX laws | Rarely |
-| CLAUDE.md | Repo operations & file locations | Every push |
-| CONTRACTS.md | Component contracts | When components change |
+| `docs/PRODUCT_NORTH_STAR.md` | Philosophy & UX laws | Rarely |
+| `CLAUDE.md` | Repo operations & file locations | Every push |
+| `docs/CONTRACTS.md` | Enforceable UI/data contracts | When components change |
+| `docs/theme-system.md` | Tokens & visual system | When styling changes |
 | Supporting docs | Historical/implementation detail | As needed |
+
+> For enforceable UI contracts, see [docs/CONTRACTS.md](./CONTRACTS.md).
 
 ---
 

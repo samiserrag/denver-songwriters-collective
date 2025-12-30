@@ -1,5 +1,7 @@
 # Denver Songwriters Collective — Repo Agent Context
 
+> **All contributors and agents must read this file before making changes. This file supersedes README.md for operational context.**
+
 > **For product philosophy, UX rules, and design decisions, see [PRODUCT_NORTH_STAR.md](./docs/PRODUCT_NORTH_STAR.md)**
 
 This file contains **repo-specific operational knowledge** for agents working in this codebase.
@@ -190,14 +192,22 @@ These layout decisions are **locked** and must not be changed without explicit a
 
 ---
 
-## Documentation Hierarchy
+## Documentation Hierarchy & Reading Order
 
-1. **PRODUCT_NORTH_STAR.md** — Philosophy & UX laws (canonical)
-2. **CLAUDE.md** — Repo operations (this file)
-3. **CONTRACTS.md** — Component contracts
-4. **Supporting docs** — Historical/implementation
+**Required reading order for agents:**
+1. `CLAUDE.md` (this file) — Repo operations
+2. `docs/PRODUCT_NORTH_STAR.md` — Philosophy & UX laws
+3. `docs/CONTRACTS.md` — Enforceable UI/data contracts
+4. `docs/theme-system.md` — Tokens & visual system
 
-If something conflicts, higher-numbered docs yield to lower-numbered.
+| Document | Purpose | Authority |
+|----------|---------|-----------|
+| `docs/PRODUCT_NORTH_STAR.md` | Philosophy & UX laws | Wins on philosophy |
+| `docs/CONTRACTS.md` | Enforceable UI behavior | Wins on testable rules |
+| `docs/theme-system.md` | Tokens & surfaces | Wins on styling |
+| `CLAUDE.md` | Repo operations | Wins on workflow |
+
+If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
