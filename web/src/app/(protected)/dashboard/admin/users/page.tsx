@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { UserDirectoryTable } from "@/components/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { isSuperAdmin } from "@/lib/auth/adminAuth";
@@ -36,6 +37,20 @@ export default async function AdminUsersPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
+  // Fetch user emails from auth.users using service role client
+  const serviceClient = createServiceRoleClient();
+  const { data: authUsers } = await serviceClient.auth.admin.listUsers();
+
+  // Create a map of user ID to email
+  const emailMap: Record<string, string> = {};
+  if (authUsers?.users) {
+    for (const authUser of authUsers.users) {
+      if (authUser.email) {
+        emailMap[authUser.id] = authUser.email;
+      }
+    }
+  }
+
   const currentUserIsSuperAdmin = isSuperAdmin(user.email);
 
   return (
@@ -49,6 +64,7 @@ export default async function AdminUsersPage() {
 
       <UserDirectoryTable
         users={(users ?? []) as Profile[]}
+        emailMap={emailMap}
         isSuperAdmin={currentUserIsSuperAdmin}
         currentUserId={user.id}
       />

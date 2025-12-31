@@ -9,6 +9,7 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface Props {
   users: Profile[];
+  emailMap?: Record<string, string>;
   isSuperAdmin?: boolean;
   currentUserId?: string;
 }
@@ -65,7 +66,7 @@ const SPOTLIGHT_OPTIONS = [
 // Filter types - flag-based with admin using role
 type FilterType = "all" | "songwriters" | "studios" | "hosts" | "fans" | "admin";
 
-export default function UserDirectoryTable({ users, isSuperAdmin = false, currentUserId }: Props) {
+export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin = false, currentUserId }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
@@ -120,13 +121,14 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
 
       const name = (u.full_name ?? "").toLowerCase();
       const typeLabel = getUserTypeLabel(u).toLowerCase();
+      const email = (emailMap[u.id] ?? "").toLowerCase();
 
       return (
         matchesFilter &&
-        (name.includes(term) || typeLabel.includes(term))
+        (name.includes(term) || typeLabel.includes(term) || email.includes(term))
       );
     });
-  }, [users, search, filterType, deletedUserIds]);
+  }, [users, search, filterType, deletedUserIds, emailMap]);
 
   const handleSpotlightChange = async (user: Profile, value: string) => {
     setUpdatingSpotlight(user.id);
@@ -241,7 +243,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search by name or role..."
+            placeholder="Search by name, email, or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-accent)]/60"
@@ -271,6 +273,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
           <thead className="border-b border-[var(--color-border-default)] text-[var(--color-text-accent)]">
             <tr>
               <th className="py-2 px-3">Name</th>
+              <th className="py-2 px-3">Email</th>
               <th className="py-2 px-3">Type</th>
               <th className="py-2 px-3">Host</th>
               <th className="py-2 px-3">Spotlight</th>
@@ -287,6 +290,9 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
                 <tr key={u.id} className="border-b border-[var(--color-border-default)]/30">
                   <td className="py-2 px-3 text-[var(--color-text-primary)]">
                     {u.full_name ?? "Unnamed User"}
+                  </td>
+                  <td className="py-2 px-3 text-[var(--color-text-secondary)] text-xs">
+                    {emailMap[u.id] ?? "-"}
                   </td>
                   <td className="py-2 px-3">
                     <span
@@ -389,7 +395,7 @@ export default function UserDirectoryTable({ users, isSuperAdmin = false, curren
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="py-6 px-3 text-center text-[var(--color-text-secondary)]"
                 >
                   No users found for this filter.
