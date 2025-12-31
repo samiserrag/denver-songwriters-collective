@@ -50,12 +50,22 @@
 | OG Image | Medium | Low | P2 | ✅ Resolved |
 | Unused Imports | None | Medium | P4 | ✅ Resolved |
 | Admin `<img>` | Low | Medium | P4 | ✅ Resolved |
+| Lint Warnings | None | Medium | P4 | ✅ Resolved |
+
+## 7. ~~Lint Warnings (no-img-element, unused vars)~~ ✅ RESOLVED
+
+- **Original count**: 29 warnings after Phase 4.12
+- **Fix**: Phase 4.14–4.16 systematic cleanup
+  - Converted public-facing `<img>` to `next/image` (avatars, thumbnails, HappeningCard)
+  - Added documented eslint suppressions for intentional `<img>` usage (ReactCrop, blob URLs, user uploads)
+- **Final count**: 0 warnings
+- **Resolved**: Phase 4.16 (December 2025)
 
 ## Resolution Plan
 
-All original issues resolved or accepted. Lint warnings reduced from 41 to 29.
+All issues resolved or accepted. **Lint warnings: 0**.
 
-**Current Status**: 5 of 6 issues resolved; 1 accepted (footer heading order is decorative).
+**Current Status**: 6 of 7 issues resolved; 1 accepted (footer heading order is decorative).
 
 ---
 

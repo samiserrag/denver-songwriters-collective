@@ -43,6 +43,12 @@ This is a community-curated directory. Help us keep listings accurate by submitt
 
 ## Changelog
 
+### December 2025 — Phase 4.14–4.16
+
+- Lint warnings eliminated (29 → 0)
+- `next/image` conversions for public-facing avatars, thumbnails, HappeningCard
+- Intentional `<img>` suppressions documented (ReactCrop, blob URLs, user uploads)
+
 ### December 2025 — Phase 4.7–4.9
 
 - Scan-first, image-forward event cards (North Star v2.0 + aligned docs)
