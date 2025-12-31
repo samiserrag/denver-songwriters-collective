@@ -60,12 +60,11 @@ function mapDBProfileToMember(profile: DBProfile): Member {
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
 
+  // Session available for future auth-aware features
   const {
-    data: { session },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    data: { session: _session },
   } = await supabase.auth.getSession();
-
-  // Session used only to check if user is logged in
-  const _user = session?.user ?? null;
 
   const [upcomingEventsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)
