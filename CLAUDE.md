@@ -50,9 +50,11 @@ All must pass before merge:
 
 | Check | Requirement |
 |-------|-------------|
-| Lint | 0 errors |
+| Lint | 0 errors, 0 warnings |
 | Tests | All passing |
 | Build | Success |
+
+**Current Status (Phase 4.16):** Lint warnings = 0. Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -234,6 +236,11 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - Typography fixes (14px minimum)
 - Sunrise theme contrast fixes
 - TONIGHT/TOMORROW temporal emphasis
+
+**Phase 4.14-4.16 Lint Cleanup:**
+- Lint warnings: 29 → 0
+- `next/image` conversions for public avatars, thumbnails, HappeningCard
+- Documented eslint suppressions for intentional `<img>` (ReactCrop, blob URLs, user uploads)
 
 ### Logging System (December 2025)
 - Admin logs at `/dashboard/admin/logs`
