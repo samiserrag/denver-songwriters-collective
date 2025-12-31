@@ -76,6 +76,10 @@ interface BulkUploadGridProps {
   onUploadComplete: () => void;
 }
 
+// File size limits (outside component so they're truly constant)
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 // Sortable Thumbnail Component
 function SortableThumbnail({
   file,
@@ -240,10 +244,6 @@ export default function BulkUploadGrid({
       queuedFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
     };
   }, [queuedFiles]);
-
-  // File size limit
-  const MAX_FILE_SIZE_MB = 10;
-  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
   // Handle file selection
   const handleFilesSelected = useCallback((files: FileList | File[]) => {
