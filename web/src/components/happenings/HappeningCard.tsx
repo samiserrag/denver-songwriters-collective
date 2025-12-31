@@ -203,6 +203,28 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 // ============================================================
+// Default Event Type Images (Tier 3 fallback)
+// ============================================================
+
+const DEFAULT_EVENT_IMAGES: Record<string, string> = {
+  open_mic: "/images/event-defaults/open-mic.svg",
+  showcase: "/images/event-defaults/showcase.svg",
+  song_circle: "/images/event-defaults/song-circle.svg",
+  workshop: "/images/event-defaults/workshop.svg",
+  gig: "/images/event-defaults/gig.svg",
+  other: "/images/event-defaults/event.svg",
+};
+
+/**
+ * Get default image URL for event type.
+ * Returns null if type is unknown (fallback to gradient placeholder).
+ */
+function getDefaultImageForType(eventType: string | undefined): string | null {
+  if (!eventType) return null;
+  return DEFAULT_EVENT_IMAGES[eventType] || DEFAULT_EVENT_IMAGES["other"] || null;
+}
+
+// ============================================================
 // Component
 // ============================================================
 
@@ -350,11 +372,17 @@ export function HappeningCard({
     ? { onClick: handleClick, role: "button", tabIndex: 0, className: "block h-full group focus-visible:outline-none" }
     : { href: detailHref, className: "block h-full group focus-visible:outline-none" };
 
-  // Image tiers
+  // Image tiers:
+  // 1. cover_image_card_url (optimized 4:3)
+  // 2. cover_image_url / imageUrl (full poster with blurred bg)
+  // 3. default image by event type
+  // 4. gradient placeholder
   const cardImageUrl = event.cover_image_card_url;
   const fullPosterUrl = event.cover_image_url || event.imageUrl;
+  const defaultImageUrl = getDefaultImageForType(event.event_type);
   const hasCardImage = !!cardImageUrl;
   const hasFullPoster = !hasCardImage && !!fullPosterUrl;
+  const hasDefaultImage = !hasCardImage && !hasFullPoster && !!defaultImageUrl;
 
   // Signup chip
   const getSignupChipState = (): { label: string; show: boolean } => {
@@ -449,8 +477,19 @@ export function HappeningCard({
             </>
           )}
 
-          {/* Tier 3: Designed placeholder - gradient with subtle pattern */}
-          {!hasCardImage && !hasFullPoster && (
+          {/* Tier 3: Default image by event type */}
+          {hasDefaultImage && (
+            <img
+              src={defaultImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              loading="lazy"
+              data-testid="default-type-image"
+            />
+          )}
+
+          {/* Tier 4: Designed placeholder - gradient with subtle pattern */}
+          {!hasCardImage && !hasFullPoster && !hasDefaultImage && (
             <div
               className={cn(
                 "absolute inset-0 flex items-center justify-center",

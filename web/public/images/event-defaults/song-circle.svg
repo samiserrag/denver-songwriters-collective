@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg-song-circle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a2f"/>
+      <stop offset="50%" style="stop-color:#1a2f38"/>
+      <stop offset="100%" style="stop-color:#0f2530"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg-song-circle)"/>
+  <!-- Circle of music notes -->
+  <g transform="translate(200, 130)" fill="none" stroke="#8fbc8f" stroke-width="2" opacity="0.6">
+    <circle cx="0" cy="0" r="60"/>
+    <!-- Music notes around circle -->
+    <g transform="translate(0, -70)">
+      <path d="M-5 15 L-5 -5 L10 -10 L10 10" stroke-width="1.5"/>
+      <circle cx="-5" cy="15" r="5" fill="#8fbc8f"/>
+    </g>
+    <g transform="translate(60, -25) rotate(72)">
+      <path d="M-5 15 L-5 -5 L10 -10 L10 10" stroke-width="1.5"/>
+      <circle cx="-5" cy="15" r="5" fill="#8fbc8f"/>
+    </g>
+    <g transform="translate(40, 55) rotate(144)">
+      <path d="M-5 15 L-5 -5 L10 -10 L10 10" stroke-width="1.5"/>
+      <circle cx="-5" cy="15" r="5" fill="#8fbc8f"/>
+    </g>
+    <g transform="translate(-40, 55) rotate(216)">
+      <path d="M-5 15 L-5 -5 L10 -10 L10 10" stroke-width="1.5"/>
+      <circle cx="-5" cy="15" r="5" fill="#8fbc8f"/>
+    </g>
+    <g transform="translate(-60, -25) rotate(288)">
+      <path d="M-5 15 L-5 -5 L10 -10 L10 10" stroke-width="1.5"/>
+      <circle cx="-5" cy="15" r="5" fill="#8fbc8f"/>
+    </g>
+  </g>
+  <text x="200" y="260" text-anchor="middle" fill="#8fbc8f" font-family="system-ui" font-size="18" opacity="0.4">Song Circle</text>
+</svg>

@@ -1,5 +1,5 @@
 /**
- * Phase 4.6: HappeningCard Premium Card Polish Tests
+ * Phase 4.6-4.10: HappeningCard Premium Card Polish Tests
  *
  * Tests verify MemberCard-inspired card surface:
  * - card-spotlight class for radial gradient bg + shadow tokens
@@ -7,6 +7,7 @@
  * - Poster zoom on hover (scale-[1.02])
  * - Tighter content density
  * - MemberCard-style pills (px-2 py-0.5 text-sm rounded-full border)
+ * - 4-tier poster rendering: card image → full poster → default by type → placeholder
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -174,7 +175,7 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
     });
   });
 
-  describe('Poster thumbnail 3-tier rendering', () => {
+  describe('Poster thumbnail 4-tier rendering', () => {
     it('should use card image (tier 1) when cover_image_card_url is present', () => {
       render(
         <HappeningCard event={{
@@ -198,10 +199,70 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
       expect(screen.getByTestId('poster-thumbnail')).toBeInTheDocument();
     });
 
-    it('should render placeholder (tier 3) when no images exist', () => {
-      const { container } = render(
+    it('should use default type image (tier 3) for open_mic when no images exist', () => {
+      render(
         <HappeningCard event={{
           ...mockOpenMicEvent,
+          cover_image_card_url: null,
+          cover_image_url: null,
+          imageUrl: null
+        }} />
+      );
+      const defaultImage = screen.getByTestId('default-type-image');
+      expect(defaultImage).toBeInTheDocument();
+      expect(defaultImage.getAttribute('src')).toBe('/images/event-defaults/open-mic.svg');
+    });
+
+    it('should use default type image (tier 3) for showcase when no images exist', () => {
+      render(
+        <HappeningCard event={{
+          ...mockDscEvent,
+          cover_image_card_url: null,
+          cover_image_url: null,
+          imageUrl: null
+        }} />
+      );
+      const defaultImage = screen.getByTestId('default-type-image');
+      expect(defaultImage).toBeInTheDocument();
+      expect(defaultImage.getAttribute('src')).toBe('/images/event-defaults/showcase.svg');
+    });
+
+    it('should use default type image (tier 3) for workshop when no images exist', () => {
+      render(
+        <HappeningCard event={{
+          id: 'test-workshop',
+          title: 'Songwriting Workshop',
+          event_type: 'workshop',
+          cover_image_card_url: null,
+          cover_image_url: null,
+        }} />
+      );
+      const defaultImage = screen.getByTestId('default-type-image');
+      expect(defaultImage).toBeInTheDocument();
+      expect(defaultImage.getAttribute('src')).toBe('/images/event-defaults/workshop.svg');
+    });
+
+    it('should use fallback default image for unknown event types', () => {
+      render(
+        <HappeningCard event={{
+          id: 'test-unknown',
+          title: 'Unknown Event Type',
+          event_type: 'some_new_type',
+          cover_image_card_url: null,
+          cover_image_url: null,
+        }} />
+      );
+      const defaultImage = screen.getByTestId('default-type-image');
+      expect(defaultImage).toBeInTheDocument();
+      expect(defaultImage.getAttribute('src')).toBe('/images/event-defaults/event.svg');
+    });
+
+    it('should render placeholder (tier 4) when event_type is undefined and no images exist', () => {
+      const { container } = render(
+        <HappeningCard event={{
+          id: 'test-no-type',
+          title: 'No Type Event',
+          event_type: undefined,
           cover_image_card_url: null,
           cover_image_url: null,
           imageUrl: null
@@ -225,6 +286,18 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
         }} />
       );
       const img = screen.getByTestId('card-image');
+      expect(img.className).toContain('group-hover:scale-[1.02]');
+    });
+
+    it('should have hover zoom on default type images', () => {
+      render(
+        <HappeningCard event={{
+          ...mockOpenMicEvent,
+          cover_image_card_url: null,
+          cover_image_url: null,
+        }} />
+      );
+      const img = screen.getByTestId('default-type-image');
       expect(img.className).toContain('group-hover:scale-[1.02]');
     });
   });
