@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Member } from "@/types";
 import { SpotlightBadge } from "@/components/special/spotlight-badge";
@@ -113,10 +114,12 @@ export function MemberCard({ member, className }: MemberCardProps) {
         {/* Image Section */}
         <div className="relative aspect-[4/3] overflow-hidden">
           {member.avatarUrl ? (
-            <img
+            <Image
               src={member.avatarUrl}
               alt={member.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover"
             />
           ) : (
             <ImagePlaceholder

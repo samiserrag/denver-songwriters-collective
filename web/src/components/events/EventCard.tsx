@@ -7,6 +7,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/types";
 import { ImagePlaceholder } from "@/components/ui";
@@ -101,10 +102,12 @@ export function EventCard({ event, onClick, className, compact = false, variant 
         {variant === "grid" && (
           <div className={cn("relative overflow-hidden", "aspect-[4/3]")}>
             {event.imageUrl ? (
-              <img
+              <Image
                 src={event.imageUrl}
                 alt={event.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-cover"
               />
             ) : (
               <ImagePlaceholder
