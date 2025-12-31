@@ -190,6 +190,17 @@ export default async function DashboardPage() {
                 <span className="block text-2xl mb-2">📷</span>
                 <span className="text-sm font-medium text-[var(--color-text-primary)]">My Photos</span>
               </Link>
+
+              {/* Admin Panel - only for admins */}
+              {p?.role === "admin" && (
+                <Link
+                  href="/dashboard/admin"
+                  className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg hover:border-red-500/60 hover:bg-red-500/20 transition-colors text-center col-span-2 sm:col-span-1"
+                >
+                  <span className="block text-2xl mb-2">⚙️</span>
+                  <span className="text-sm font-medium text-red-400">Admin Panel</span>
+                </Link>
+              )}
             </div>
           </section>
 
@@ -253,13 +264,6 @@ export default async function DashboardPage() {
                     Studio Bookings
                   </Link>
                 </>
-              )}
-
-              {/* Admin link */}
-              {p?.role === "admin" && (
-                <Link href="/dashboard/admin" className="text-[var(--color-accent-primary)] hover:underline font-medium">
-                  Admin Panel →
-                </Link>
               )}
 
               {/* Settings always available */}
