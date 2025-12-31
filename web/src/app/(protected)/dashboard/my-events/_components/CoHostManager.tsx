@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface Host {
   id: string;
@@ -87,7 +88,7 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm">
                 {host.user?.avatar_url ? (
-                  <img src={host.user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                  <Image src={host.user.avatar_url} alt="" width={32} height={32} className="w-full h-full rounded-full object-cover" />
                 ) : (
                   host.user?.full_name?.[0]?.toUpperCase() || "?"
                 )}

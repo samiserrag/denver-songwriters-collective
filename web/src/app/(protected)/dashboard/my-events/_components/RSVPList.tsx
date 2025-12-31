@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 interface RSVPListProps {
   eventId: string;
@@ -87,7 +88,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
               <li key={rsvp.id} className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-900/50 text-green-400 rounded-full flex items-center justify-center text-sm">
                   {rsvp.user?.avatar_url ? (
-                    <img src={rsvp.user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                    <Image src={rsvp.user.avatar_url} alt="" width={32} height={32} className="w-full h-full rounded-full object-cover" />
                   ) : (
                     rsvp.user?.full_name?.[0]?.toUpperCase() || "?"
                   )}
