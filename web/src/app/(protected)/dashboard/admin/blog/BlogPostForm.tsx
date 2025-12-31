@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
@@ -304,8 +305,8 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       const imgMatch = block.match(/!\[([^\]]*)\]\(([^)]+)\)/);
       if (imgMatch) {
         return (
-          <div key={i} className="my-4">
-            <img src={imgMatch[2]} alt={imgMatch[1]} className="max-w-full rounded-lg" />
+          <div key={i} className="my-4 relative">
+            <Image src={imgMatch[2]} alt={imgMatch[1]} width={800} height={450} className="max-w-full rounded-lg" style={{ width: '100%', height: 'auto' }} />
           </div>
         );
       }
@@ -518,7 +519,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
         {showPreview ? (
           <div className="p-6 bg-[var(--color-bg-tertiary)] min-h-[400px] max-h-[600px] overflow-y-auto prose prose-invert">
             {formData.cover_image_url && (
-              <img src={formData.cover_image_url} alt="Cover" className="w-full h-48 object-cover rounded-lg mb-6" />
+              <Image src={formData.cover_image_url} alt="Cover" width={800} height={192} className="w-full h-48 object-cover rounded-lg mb-6" />
             )}
             <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-4">{formData.title || "Untitled"}</h1>
             {renderPreview(formData.content)}
