@@ -45,5 +45,5 @@ export function highlight(text?: string | null, query?: string | null): string {
   const re = new RegExp(escapedQuery, 'ig');
 
   // Wrap matched (escaped) text in a <mark> for highlighting.
-  return escaped.replace(re, (m) => `<mark class="bg-[var(--color-accent-primary)]/40 text-white px-1 rounded-sm">${m}</mark>`);
+  return escaped.replace(re, (m) => `<mark class="bg-[var(--color-accent-primary)]/40 text-[var(--color-text-on-accent)] px-1 rounded-sm">${m}</mark>`);
 }

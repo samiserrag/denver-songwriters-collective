@@ -1,36 +1,31 @@
 # Known Issues (Non-Blocking)
 
-## 1. Missing PWA Icon
+## 1. ~~Missing PWA Icon~~ ✅ RESOLVED
 
 - **File**: `public/icons/icon-192x192.png`
-- **Error**: 404 on page load
-- **Impact**: PWA manifest incomplete
-- **Fix**: Add icon file to `public/icons/`
-- **Priority**: Low
+- **Status**: File exists (19KB)
+- **Resolved**: December 2025
 
-## 2. Button Contrast
+## 2. ~~Button Contrast~~ ✅ RESOLVED
 
-- **Element**: `button.px-4.py-2.bg-[var(--color-accent-primary)]`
-- **Issue**: Background/foreground contrast ratio insufficient for WCAG AA
-- **Impact**: Accessibility score reduced
-- **Fix**: Adjust `--color-accent-primary` or text color in theme presets
-- **Priority**: Medium
+- **Issue**: `text-white` on accent backgrounds insufficient for WCAG AA
+- **Fix**: Replaced with `text-[var(--color-text-on-accent)]` token in 4 files
+- **Resolved**: Phase 4.11 (December 2025)
 
 ## 3. Heading Order
 
 - **Element**: `h4` used before `h2`/`h3`
-- **Location**: Gallery page footer section
+- **Location**: Gallery page footer section (not reproducible - needs exact location)
 - **Impact**: Screen reader navigation affected
 - **Fix**: Use proper heading hierarchy (`h1` → `h2` → `h3` → `h4`)
 - **Priority**: Low
+- **Status**: Cannot reproduce - no `h4` found in gallery directory
 
-## 4. Missing Default OG Image
+## 4. ~~Missing Default OG Image~~ ✅ RESOLVED
 
 - **File**: `public/images/og-image.jpg`
-- **Issue**: OpenGraph default image not created
-- **Impact**: Social shares show no preview image when page-specific image missing
-- **Fix**: Create 1200x630px image with DSC branding
-- **Priority**: Medium
+- **Status**: File exists (151KB)
+- **Resolved**: December 2025
 
 ## 5. Unused Imports Across Codebase
 
@@ -53,23 +48,22 @@
 
 ## Priority Matrix
 
-| Issue | User Impact | Effort | Priority |
-|-------|-------------|--------|----------|
-| PWA Icon | Low | Low | P3 |
-| Button Contrast | Medium | Low | P2 |
-| Heading Order | Low | Low | P3 |
-| OG Image | Medium | Low | P2 |
-| Unused Imports | None | Medium | P4 |
-| Admin `<img>` | Low | Medium | P4 |
+| Issue | User Impact | Effort | Priority | Status |
+|-------|-------------|--------|----------|--------|
+| PWA Icon | Low | Low | P3 | ✅ Resolved |
+| Button Contrast | Medium | Low | P2 | ✅ Resolved |
+| Heading Order | Low | Low | P3 | Cannot reproduce |
+| OG Image | Medium | Low | P2 | ✅ Resolved |
+| Unused Imports | None | Medium | P4 | Open |
+| Admin `<img>` | Low | Medium | P4 | Open |
 
 ## Resolution Plan
 
-All issues are non-blocking polish items. Address in a dedicated cleanup PR when:
+Remaining issues are non-blocking polish items. Address in a dedicated cleanup PR when:
 - Feature development has a natural pause
 - Accessibility audit is scheduled
-- PWA support becomes a priority
 
-**Current Status**: Not blocking v0.3.0 release or Stream 3 completion.
+**Current Status**: 3 of 6 issues resolved in Phase 4.11.
 
 ---
 

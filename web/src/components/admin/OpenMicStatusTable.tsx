@@ -214,7 +214,7 @@ export default function OpenMicStatusTable({ events: initialEvents }: Props) {
             onClick={() => setActiveTab(key)}
             className={`px-4 py-2 rounded-t text-sm font-medium transition-colors ${
               activeTab === key
-                ? "bg-[var(--color-accent)] text-white"
+                ? "bg-[var(--color-accent)] text-[var(--color-text-on-accent)]"
                 : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
             }`}
           >

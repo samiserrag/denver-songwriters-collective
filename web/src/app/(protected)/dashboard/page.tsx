@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                 <span className="block text-2xl mb-2">📅</span>
                 <span className="text-sm font-medium text-[var(--color-text-primary)]">My Events</span>
                 {(myEventsCount ?? 0) > 0 && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--color-accent-primary)] text-white text-xs rounded-full">
+                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs rounded-full">
                     {myEventsCount}
                   </span>
                 )}
