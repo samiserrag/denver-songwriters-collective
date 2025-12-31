@@ -119,8 +119,7 @@ function SortableThumbnail({
       style={style}
       className="relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] group"
     >
-      {/* Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- Uses objectURL from local file; next/image incompatible with blob URLs */}
       <img
         src={file.previewUrl}
         alt=""
