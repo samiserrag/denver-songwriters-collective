@@ -291,7 +291,7 @@ export default function UserGalleryUpload({
                 key={index}
                 className="relative aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- Uses objectURL from local file; next/image incompatible with blob URLs */}
                 <img
                   src={uploadFile.preview}
                   alt={`Preview ${index + 1}`}

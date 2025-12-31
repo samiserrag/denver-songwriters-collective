@@ -152,7 +152,7 @@ export function CropModal({ file, aspectRatio, onComplete, onCancel }: CropModal
               onComplete={(_, percentCrop) => setCompletedCrop(percentCrop)}
               aspect={aspectRatio}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* eslint-disable-next-line @next/next/no-img-element -- Native img required for ReactCrop library; next/image conflicts with crop pipeline */}
               <img
                 ref={imgRef}
                 src={previewUrl}

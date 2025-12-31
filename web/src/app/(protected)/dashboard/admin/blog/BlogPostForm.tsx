@@ -561,6 +561,7 @@ Regular paragraph text here. Use **bold** for emphasis.
             {galleryImages.map((img, index) => (
               <div key={index} className="relative group">
                 <div className="aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Admin gallery preview; user-uploaded images with dynamic URLs */}
                   <img
                     src={img.image_url}
                     alt={img.caption || `Gallery image ${index + 1}`}

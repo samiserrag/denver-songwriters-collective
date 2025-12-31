@@ -303,6 +303,7 @@ export function ImageUpload({
                 aspect={aspectRatio}
                 circularCrop={shape === 'circle'}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element -- Native img required for ReactCrop; next/image conflicts with crop pipeline */}
                 <img
                   ref={imgRef}
                   src={previewUrl}
@@ -331,6 +332,7 @@ export function ImageUpload({
                       marginTop: `-${(completedCrop.y / completedCrop.height) * 100}%`,
                     }}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- Preview uses CSS transform for crop visualization; next/image incompatible */}
                     <img
                       src={previewUrl}
                       alt="Final preview"
@@ -428,6 +430,7 @@ export function ImageUpload({
       >
         {currentImageUrl ? (
           <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Displays objectURL or user-uploaded image; next/image requires remote config */}
             <img
               src={currentImageUrl}
               alt="Profile"
