@@ -235,6 +235,7 @@ export default async function BlogPostPage({ params }: Props) {
       {post.cover_image_url && (
         <div className="max-w-2xl mx-auto px-4 pt-8">
           <div className="relative aspect-[4/3] w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element -- Blog cover images from user uploads; dimensions vary, next/image requires controlled sizing */}
             <img
               src={post.cover_image_url}
               alt={post.title}
@@ -279,6 +280,7 @@ export default async function BlogPostPage({ params }: Props) {
           {/* Author info */}
           <div className="flex items-center gap-4 pb-8 mb-8 border-b border-[var(--color-border-subtle)]">
             {author?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
               <img
                 src={author.avatar_url}
                 alt={author.full_name ?? "Author"}
@@ -316,6 +318,7 @@ export default async function BlogPostPage({ params }: Props) {
                 {galleryImages.map((image: { id: string; image_url: string; caption: string | null }) => (
                   <div key={image.id} className="group relative">
                     <div className="aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- Gallery images from user uploads; dimensions vary per image */}
                       <img
                         src={image.image_url}
                         alt={image.caption || "Gallery image"}
@@ -348,6 +351,7 @@ export default async function BlogPostPage({ params }: Props) {
               </h3>
               <div className="flex items-start gap-4">
                 {author.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
                   <img
                     src={author.avatar_url}
                     alt={author.full_name ?? "Author"}
