@@ -15,6 +15,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -445,11 +446,12 @@ export function HappeningCard({
         <div className="relative aspect-[4/3] overflow-hidden" data-testid="poster-thumbnail">
           {/* Tier 1: Card-optimized 4:3 image */}
           {hasCardImage && (
-            <img
+            <Image
               src={cardImageUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-              loading="lazy"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               data-testid="card-image"
             />
           )}
@@ -467,11 +469,12 @@ export function HappeningCard({
                 }}
                 aria-hidden="true"
               />
-              <img
+              <Image
                 src={fullPosterUrl}
                 alt=""
-                className="absolute inset-0 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-                loading="lazy"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-contain transition-transform duration-300 ease-out group-hover:scale-[1.02]"
                 data-testid="full-poster-contained"
               />
             </>
@@ -479,11 +482,12 @@ export function HappeningCard({
 
           {/* Tier 3: Default image by event type */}
           {hasDefaultImage && (
-            <img
+            <Image
               src={defaultImageUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-              loading="lazy"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               data-testid="default-type-image"
             />
           )}

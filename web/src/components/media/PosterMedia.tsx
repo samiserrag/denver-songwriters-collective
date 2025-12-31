@@ -84,6 +84,7 @@ export function PosterMedia({
             priority={priority}
           />
         ) : (
+          // eslint-disable-next-line @next/next/no-img-element -- Fallback for external domains not in next.config remotePatterns
           <img
             src={src}
             alt={alt}
@@ -110,6 +111,7 @@ export function PosterMedia({
           priority={priority}
         />
       ) : (
+        // eslint-disable-next-line @next/next/no-img-element -- Fallback for external domains not in next.config remotePatterns
         <img
           src={src}
           alt={alt}
