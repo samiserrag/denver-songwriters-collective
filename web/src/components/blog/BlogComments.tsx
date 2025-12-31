@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface Comment {
@@ -118,10 +119,12 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
         <form onSubmit={handleSubmit} className="mb-8">
           <div className="flex items-start gap-3">
             {userProfile?.avatar_url ? (
-              <img
+              <Image
                 src={userProfile.avatar_url}
                 alt={userProfile.full_name ?? "You"}
-                className="w-10 h-10 rounded-full object-cover"
+                width={40}
+                height={40}
+                className="rounded-full object-cover"
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0">
@@ -173,10 +176,12 @@ export default function BlogComments({ postId, initialComments }: BlogCommentsPr
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-3">
               {comment.author?.avatar_url ? (
-                <img
+                <Image
                   src={comment.author?.avatar_url}
                   alt={comment.author?.full_name ?? "Member"}
-                  className="w-10 h-10 rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0">

@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import type { EventType } from "@/types/events";
@@ -538,10 +539,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] transition-colors"
                   >
                     {host.avatar_url ? (
-                      <img
+                      <Image
                         src={host.avatar_url}
                         alt={host.full_name || "Host"}
-                        className="w-10 h-10 rounded-full object-cover"
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -164,10 +165,12 @@ export function OpenMicComments({ eventId }: OpenMicCommentsProps) {
               <div className="flex items-start gap-3">
                 {/* Avatar */}
                 {comment.user?.avatar_url ? (
-                  <img
+                  <Image
                     src={comment.user.avatar_url}
                     alt={comment.user.full_name ?? "User"}
-                    className="w-10 h-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">

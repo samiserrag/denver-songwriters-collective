@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import QRCode from "qrcode";
 
@@ -253,10 +254,12 @@ export default function EventDisplayPage() {
             <div className="bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-transparent border-2 border-[var(--color-accent-primary)] rounded-2xl p-8 h-[calc(100%-40px)]">
               <div className="flex flex-col items-center text-center h-full justify-center">
                 {nowPlayingSlot.claim.member.avatar_url ? (
-                  <img
+                  <Image
                     src={nowPlayingSlot.claim.member.avatar_url}
                     alt={nowPlayingSlot.claim.member.full_name || "Performer"}
-                    className="w-48 h-48 rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-6"
+                    width={192}
+                    height={192}
+                    className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-6"
                   />
                 ) : (
                   <div className="w-48 h-48 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-6">
@@ -273,10 +276,12 @@ export default function EventDisplayPage() {
                 </p>
                 {qrCodes.get(nowPlayingSlot.claim.member.id) && (
                   <div className="mt-6">
-                    <img
-                      src={qrCodes.get(nowPlayingSlot.claim.member.id)}
+                    <Image
+                      src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
                       alt="Profile QR Code"
-                      className="w-24 h-24 mx-auto"
+                      width={96}
+                      height={96}
+                      className="mx-auto"
                     />
                     <p className="text-xs text-gray-500 mt-2">Scan for profile</p>
                   </div>
@@ -314,10 +319,12 @@ export default function EventDisplayPage() {
                   {slot.claim?.member ? (
                     <>
                       {slot.claim.member.avatar_url ? (
-                        <img
+                        <Image
                           src={slot.claim.member.avatar_url}
                           alt={slot.claim.member.full_name || ""}
-                          className="w-12 h-12 rounded-full object-cover"
+                          width={48}
+                          height={48}
+                          className="rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
@@ -335,10 +342,11 @@ export default function EventDisplayPage() {
                         </p>
                       </div>
                       {qrCodes.get(slot.claim.member.id) && index === 0 && (
-                        <img
-                          src={qrCodes.get(slot.claim.member.id)}
+                        <Image
+                          src={qrCodes.get(slot.claim.member.id)!}
                           alt="QR"
-                          className="w-16 h-16"
+                          width={64}
+                          height={64}
                         />
                       )}
                     </>
@@ -378,10 +386,12 @@ export default function EventDisplayPage() {
                       className="flex items-center gap-2 px-3 py-1.5 bg-gray-900/30 rounded-full text-sm text-gray-500"
                     >
                       {slot.claim.member.avatar_url ? (
-                        <img
+                        <Image
                           src={slot.claim.member.avatar_url}
                           alt=""
-                          className="w-5 h-5 rounded-full object-cover opacity-50"
+                          width={20}
+                          height={20}
+                          className="rounded-full object-cover opacity-50"
                         />
                       ) : (
                         <div className="w-5 h-5 rounded-full bg-gray-800" />

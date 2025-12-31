@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 interface Comment {
@@ -104,10 +105,12 @@ export function EventComments({ eventId }: EventCommentsProps) {
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 bg-[var(--color-bg-tertiary)] rounded-full flex items-center justify-center text-sm text-[var(--color-text-primary)] overflow-hidden">
                   {comment.user?.avatar_url ? (
-                    <img
+                    <Image
                       src={comment.user.avatar_url}
                       alt=""
-                      className="w-full h-full rounded-full object-cover"
+                      width={32}
+                      height={32}
+                      className="rounded-full object-cover"
                     />
                   ) : (
                     <span>

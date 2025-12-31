@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/useAuth";
 import { Button } from "@/components/ui";
@@ -402,10 +403,12 @@ export default function LineupControlPage() {
                   {slot.claim?.member ? (
                     <div className="flex items-center gap-3 flex-1">
                       {slot.claim.member.avatar_url ? (
-                        <img
+                        <Image
                           src={slot.claim.member.avatar_url}
                           alt=""
-                          className="w-10 h-10 rounded-full object-cover"
+                          width={40}
+                          height={40}
+                          className="rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
