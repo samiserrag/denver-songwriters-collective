@@ -72,6 +72,24 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
+// Star icon for DSC Events
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+    </svg>
+  );
+}
+
+// Music note / guitar icon for Shows
+function MusicIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+    </svg>
+  );
+}
+
 // Filter option types - human-readable labels
 const TIME_OPTIONS = [
   { value: "upcoming", label: "Upcoming" },
@@ -82,7 +100,8 @@ const TIME_OPTIONS = [
 const TYPE_OPTIONS = [
   { value: "", label: "All Types" },
   { value: "open_mic", label: "Open Mics" },
-  { value: "showcase", label: "Shows" },
+  { value: "shows", label: "Shows" },
+  { value: "showcase", label: "Showcases" },
   { value: "workshop", label: "Workshops" },
   { value: "song_circle", label: "Song Circles" },
   { value: "gig", label: "Gigs" },
@@ -264,8 +283,77 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     activeFilters.push({ key: "days", label: `Days: ${dayLabels}` });
   }
 
+  // Check which quick filter is active
+  const isOpenMicsActive = type === "open_mic";
+  const isDscActive = dsc;
+  const isShowsActive = type === "shows";
+
   return (
     <div className={cn("space-y-3", className)}>
+      {/* Quick Filter Buttons - 3 giant buttons */}
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          onClick={() => {
+            // If already active, clear it; otherwise set it
+            if (isOpenMicsActive) {
+              updateFilter("type", null);
+            } else {
+              // Clear dsc if setting type
+              router.push(buildUrl({ type: "open_mic", dsc: null }));
+            }
+          }}
+          className={cn(
+            "py-4 px-4 rounded-xl text-center font-semibold text-lg transition-all",
+            isOpenMicsActive
+              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10"
+          )}
+        >
+          <MicIcon className="w-6 h-6 mx-auto mb-1" />
+          Open Mics
+        </button>
+
+        <button
+          onClick={() => {
+            if (isDscActive) {
+              updateFilter("dsc", null);
+            } else {
+              // Clear type if setting dsc
+              router.push(buildUrl({ dsc: "1", type: null }));
+            }
+          }}
+          className={cn(
+            "py-4 px-4 rounded-xl text-center font-semibold text-lg transition-all",
+            isDscActive
+              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10"
+          )}
+        >
+          <StarIcon className="w-6 h-6 mx-auto mb-1" />
+          DSC Events
+        </button>
+
+        <button
+          onClick={() => {
+            if (isShowsActive) {
+              updateFilter("type", null);
+            } else {
+              // Clear dsc if setting type
+              router.push(buildUrl({ type: "shows", dsc: null }));
+            }
+          }}
+          className={cn(
+            "py-4 px-4 rounded-xl text-center font-semibold text-lg transition-all",
+            isShowsActive
+              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10"
+          )}
+        >
+          <MusicIcon className="w-6 h-6 mx-auto mb-1" />
+          Shows
+        </button>
+      </div>
+
       {/* Search */}
       <div className="relative">
         <input

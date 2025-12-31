@@ -118,6 +118,9 @@ export default async function HappeningsPage({
   // Type filter (event_type)
   if (typeFilter === "open_mic") {
     query = query.eq("event_type", "open_mic");
+  } else if (typeFilter === "shows") {
+    // "Shows" covers showcases, gigs, and other performances (not open mics, workshops, or song circles)
+    query = query.in("event_type", ["showcase", "gig", "other"]);
   } else if (typeFilter === "showcase") {
     query = query.eq("event_type", "showcase");
   } else if (typeFilter === "workshop") {
@@ -261,11 +264,12 @@ export default async function HappeningsPage({
   // Page title based on active type filter
   const getPageTitle = () => {
     if (typeFilter === "open_mic") return "Open Mics";
-    if (typeFilter === "showcase") return "Shows";
+    if (typeFilter === "shows") return "Shows";
+    if (typeFilter === "showcase") return "Showcases";
     if (typeFilter === "workshop") return "Workshops";
     if (typeFilter === "song_circle") return "Song Circles";
     if (typeFilter === "gig") return "Gigs";
-    if (dscFilter) return "DSC Happenings";
+    if (dscFilter) return "DSC Events";
     return null;
   };
 
