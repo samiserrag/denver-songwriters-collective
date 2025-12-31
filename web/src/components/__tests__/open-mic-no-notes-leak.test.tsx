@@ -11,7 +11,7 @@
  * This test ensures the leak cannot recur.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // Mock the escapeHtml and linkifyUrls functions used in the page
 vi.mock("@/lib/highlight", () => ({

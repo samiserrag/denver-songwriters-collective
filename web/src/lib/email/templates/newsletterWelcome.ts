@@ -18,6 +18,7 @@ export interface NewsletterWelcomeEmailParams {
   // No params needed - generic welcome
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getNewsletterWelcomeEmail(_params?: NewsletterWelcomeEmailParams): {
   subject: string;
   html: string;

@@ -13,6 +13,7 @@ interface SiteStyleSettingsProps {
  * Admin-only component that wraps ThemeSwitcher and FontSwitcher
  * with a "Save as Site Default" button to persist settings to the database.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SiteStyleSettings(_props: SiteStyleSettingsProps) {
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);

@@ -13,8 +13,9 @@ import { sendMagicLink } from "@/lib/auth/magic";
 
 function SignupForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const _redirectTo = searchParams.get("redirectTo") ?? "/"; // Reserved for future use
+  // searchParams available for redirectTo handling in future
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _searchParams = useSearchParams();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");

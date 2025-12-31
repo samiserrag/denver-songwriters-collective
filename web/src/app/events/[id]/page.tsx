@@ -238,8 +238,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   );
   const remaining = event.capacity ? Math.max(0, event.capacity - attendanceCount) : null;
 
-  // Format recurrence pattern for display
-  const getRecurrenceLabel = () => {
+  // Format recurrence pattern for display (available for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getRecurrenceLabel = () => {
     if (!event.is_recurring || !event.recurrence_pattern) return null;
     switch (event.recurrence_pattern) {
       case "weekly": return `Every ${event.day_of_week || "week"}`;
@@ -248,7 +249,6 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       default: return null;
     }
   };
-  const _recurrenceLabel = getRecurrenceLabel(); // Available for future use
 
   // Build calendar date from event_date + start_time
   let calendarStartDate: Date | null = null;

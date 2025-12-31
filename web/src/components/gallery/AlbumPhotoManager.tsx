@@ -164,7 +164,8 @@ function SortablePhotoCard({
 }
 
 export function AlbumPhotoManager({
-  albumId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  albumId: _albumId,
   albumName,
   photos: initialPhotos,
   onUpdate,

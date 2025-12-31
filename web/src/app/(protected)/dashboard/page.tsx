@@ -38,15 +38,14 @@ export default async function DashboardPage() {
 
   const p = profile as DBProfile | null;
 
-  // Check host status
-  const { data: hostStatus } = await supabase
+  // Check host status (available for future use: isApprovedHost logic)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { data: _hostStatus } = await supabase
     .from("approved_hosts")
     .select("status")
     .eq("user_id", user.id)
     .eq("status", "active")
     .maybeSingle();
-
-  const isApprovedHost = !!hostStatus || p?.role === "admin";
 
   // Get pending invitations with event details
   const { data: pendingInvitations } = await supabase
