@@ -3,9 +3,6 @@ import OpenMicStatusTable from "@/components/admin/OpenMicStatusTable";
 
 export const dynamic = "force-dynamic";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RawEvent = any;
-
 export default async function AdminOpenMicsPage() {
   const supabase = await createSupabaseServerClient();
 
@@ -47,7 +44,7 @@ export default async function AdminOpenMicsPage() {
   }
 
   // Normalize the events - ensure venues is object or null (not array)
-  const events = (rawEvents || []).map((e: RawEvent) => ({
+  const events = (rawEvents || []).map((e) => ({
     id: e.id as string,
     title: e.title as string,
     slug: e.slug as string | null,
