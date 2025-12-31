@@ -24,7 +24,7 @@ export default function HappeningsError({
         </p>
         <button
           onClick={reset}
-          className="px-6 py-3 bg-[var(--color-accent-primary)] text-white rounded-lg hover:opacity-90 transition"
+          className="px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] rounded-lg hover:opacity-90 transition"
         >
           Try again
         </button>
