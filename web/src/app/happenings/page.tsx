@@ -6,6 +6,12 @@ import { HappeningsCard } from "@/components/happenings";
 import { HappeningsFilters } from "@/components/happenings/HappeningsFilters";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
+import {
+  getTodayDenver,
+  groupEventsByNextOccurrence,
+  formatDateGroupHeader,
+  computeNextOccurrence,
+} from "@/lib/events/nextOccurrence";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -14,56 +20,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// Grouping helpers
-function groupByDate(events: any[]): Map<string, any[]> {
-  const groups = new Map<string, any[]>();
-  for (const event of events) {
-    const dateKey = event.event_date!;
-    if (!groups.has(dateKey)) {
-      groups.set(dateKey, []);
-    }
-    groups.get(dateKey)!.push(event);
-  }
-  return new Map([...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])));
-}
-
-export function groupByDayOfWeek(events: any[]): Map<string, any[]> {
-  const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const groups = new Map<string, any[]>();
-
-  for (const day of dayOrder) {
-    groups.set(day, []);
-  }
-
-  for (const event of events) {
-    const day = event.day_of_week?.trim();
-    if (day && groups.has(day)) {
-      groups.get(day)!.push(event);
-    }
-  }
-
-  // Remove empty days
-  for (const [day, items] of groups) {
-    if (items.length === 0) groups.delete(day);
-  }
-
-  return groups;
-}
-
-function formatDateHeader(dateStr: string): string {
-  const date = new Date(dateStr + "T00:00:00");
-  // Use explicit timezone to prevent server/client hydration mismatch
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "America/Denver",
-  });
-}
-
 /**
- * Phase 4.2 Search Params:
+ * Phase 4.17 Search Params:
  * - q: search query (matches title, description, venue_name, venue_address, custom_location_*)
  * - time: upcoming|past|all
  * - type: event_type (open_mic, showcase, workshop, etc.)
@@ -71,7 +29,7 @@ function formatDateHeader(dateStr: string): string {
  * - verify: verified|needs_verification
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
- * - days: comma-separated day abbreviations (mon,tue,wed,etc.) - Phase 4.8
+ * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -100,10 +58,10 @@ export default async function HappeningsPage({
   const verifyFilter = params.verify || "";
   const locationFilter = params.location || "";
   const costFilter = params.cost || "";
-  // Phase 4.8: Day-of-week filter (comma-separated abbreviations: mon,tue,wed,etc.)
+  // Day-of-week filter (comma-separated abbreviations: mon,tue,wed,etc.)
   const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayDenver();
 
   // Build base query with venue join for search
   let query = supabase
@@ -163,16 +121,11 @@ export default async function HappeningsPage({
     query = query.is("is_free", null);
   }
 
-  // Date filter logic
-  if (timeFilter === "upcoming") {
-    // Events today or future, OR recurring events (no specific date)
-    query = query.or(`event_date.gte.${today},event_date.is.null`);
-  } else if (timeFilter === "past") {
+  // For "past" filter, only get events with event_date < today
+  // For "upcoming" and "all", we filter client-side based on next occurrence
+  if (timeFilter === "past") {
     query = query.lt("event_date", today);
   }
-  // 'all' = no date filter
-
-  query = query.order("day_of_week", { ascending: true });
 
   const { data: events, error } = await query;
 
@@ -180,14 +133,12 @@ export default async function HappeningsPage({
     console.error("Error fetching happenings:", error);
   }
 
-  let list = events || [];
+  let list = (events || []) as any[];
 
   // Client-side search filtering (case-insensitive across multiple fields)
-  // This is done client-side because Supabase doesn't support OR across joins easily
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     list = list.filter((event: any) => {
-      // Direct event fields
       const titleMatch = event.title?.toLowerCase().includes(q);
       const descMatch = event.description?.toLowerCase().includes(q);
       const venueNameMatch = event.venue_name?.toLowerCase().includes(q);
@@ -195,8 +146,6 @@ export default async function HappeningsPage({
       const customLocMatch = event.custom_location_name?.toLowerCase().includes(q);
       const customCityMatch = event.custom_city?.toLowerCase().includes(q);
       const customStateMatch = event.custom_state?.toLowerCase().includes(q);
-
-      // Joined venue fields
       const joinedVenueName = event.venues?.name?.toLowerCase().includes(q);
       const joinedVenueAddr = event.venues?.address?.toLowerCase().includes(q);
       const joinedVenueCity = event.venues?.city?.toLowerCase().includes(q);
@@ -218,8 +167,7 @@ export default async function HappeningsPage({
     });
   }
 
-  // Phase 4.8: Day-of-week filtering (lens, not sort)
-  // Maps abbreviations to full day names and day indices (0=Sunday)
+  // Day-of-week filtering
   const dayAbbrevMap: Record<string, { full: string; index: number }> = {
     sun: { full: "Sunday", index: 0 },
     mon: { full: "Monday", index: 1 },
@@ -249,13 +197,35 @@ export default async function HappeningsPage({
         const dayIndex = date.getDay();
         return targetDayIndices.includes(dayIndex);
       }
-      // No day info available - exclude from filtered results
       return false;
     });
   }
 
-  const datedEvents = list.filter((e: any) => e.event_date);
-  const recurringEvents = list.filter((e: any) => !e.event_date);
+  // Phase 4.17: Filter by next occurrence for "upcoming" view
+  if (timeFilter === "upcoming") {
+    list = list.filter((event: any) => {
+      const occurrence = computeNextOccurrence(event);
+      return occurrence.date >= today;
+    });
+  }
+
+  // Sort all events by their next occurrence date, then by start_time
+  list.sort((a: any, b: any) => {
+    const occA = computeNextOccurrence(a);
+    const occB = computeNextOccurrence(b);
+
+    // First sort by date
+    const dateCompare = occA.date.localeCompare(occB.date);
+    if (dateCompare !== 0) return dateCompare;
+
+    // Then by start_time (null times go last)
+    const timeA = a.start_time || "99:99";
+    const timeB = b.start_time || "99:99";
+    return timeA.localeCompare(timeB);
+  });
+
+  // Group events by next occurrence date
+  const groupedEvents = groupEventsByNextOccurrence(list);
 
   // Hero only shows on unfiltered /happenings (no filters active)
   const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
@@ -343,52 +313,37 @@ export default async function HappeningsPage({
           </p>
         )}
 
-        {/* Phase 4.5: PosterCard grid - 1 col mobile, 2 col tablet, 3 col desktop */}
-        {datedEvents.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-4 text-[var(--color-text-primary)]">
-              {timeFilter === "past" ? "Past Happenings" : "Upcoming Happenings"}
-            </h2>
-            <div className="space-y-6">
-              {[...groupByDate(datedEvents)].map(([date, eventsForDate]) => (
-                <div key={date}>
-                  <h3 className="text-base font-medium text-[var(--color-text-secondary)] mb-3 pb-1 border-b border-[var(--color-border-default)]">
-                    {formatDateHeader(date)}
-                  </h3>
-                  {/* Grid: 1 col mobile, 2 col md, 3 col lg */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-                    {eventsForDate.map((event: any) => (
-                      <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
-                    ))}
-                  </div>
+        {/* Phase 4.17: Date-grouped list with sticky headers */}
+        {list.length > 0 ? (
+          <div className="space-y-1">
+            {[...groupedEvents].map(([dateStr, eventsForDate]) => (
+              <section key={dateStr} className="relative">
+                {/* Sticky date header
+                    - top-16 accounts for 64px site header (h-16)
+                    - z-30 keeps it above cards but below nav (z-50)
+                    - Background matches page with blur for elegance
+                */}
+                <div
+                  className="sticky top-16 z-30 py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
+                >
+                  <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {formatDateGroupHeader(dateStr, today)}
+                    <span className="ml-2 text-sm font-normal text-[var(--color-text-secondary)]">
+                      ({eventsForDate.length})
+                    </span>
+                  </h2>
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
 
-        {recurringEvents.length > 0 && (
-          <section>
-            <h2 className="text-xl font-[var(--font-family-display)] font-semibold mb-4 text-[var(--color-text-primary)]">Weekly Open Mics</h2>
-            <div className="space-y-6">
-              {[...groupByDayOfWeek(recurringEvents)].map(([day, eventsForDay]) => (
-                <div key={day}>
-                  <h3 className="text-lg font-[var(--font-family-display)] font-bold text-[var(--color-text-secondary)] mb-3 pb-1 border-b-2 border-[var(--color-accent-primary)]">
-                    {day}s
-                  </h3>
-                  {/* Grid: 1 col mobile, 2 col md, 3 col lg */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-                    {eventsForDay.map((event: any) => (
-                      <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
-                    ))}
-                  </div>
+                {/* Event cards grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
+                  {eventsForDate.map((event: any) => (
+                    <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {list.length === 0 && (
+              </section>
+            ))}
+          </div>
+        ) : (
           <div className="text-center py-12">
             <p className="text-[var(--color-text-secondary)]">
               {searchQuery || hasFilters
