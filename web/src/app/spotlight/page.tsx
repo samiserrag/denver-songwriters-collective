@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 
@@ -197,10 +198,12 @@ function SpotlightCard({
       {/* Avatar */}
       <div className={`relative ${isCurrent ? "aspect-square" : "aspect-[4/3]"} overflow-hidden bg-[var(--color-bg-tertiary)]`}>
         {profile.avatar_url ? (
-          <img
+          <Image
             src={profile.avatar_url}
             alt={profile.full_name ?? "Profile"}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-transparent">
