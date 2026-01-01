@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.16):** Lint warnings = 0. Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.18):** Lint warnings = 0. All tests passing (355). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -85,10 +85,12 @@ All must pass before merge:
 | Component | Path |
 |-----------|------|
 | HappeningCard (unified) | `web/src/components/happenings/HappeningCard.tsx` |
+| DateJumpControl | `web/src/components/happenings/DateJumpControl.tsx` |
 | PosterMedia | `web/src/components/media/PosterMedia.tsx` |
 | Header nav | `web/src/components/navigation/header.tsx` |
 | Footer | `web/src/components/navigation/footer.tsx` |
 | Event form | `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` |
+| Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
 
 ### Key Pages
 
@@ -242,6 +244,15 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - `next/image` conversions for public avatars, thumbnails, HappeningCard
 - Documented eslint suppressions for intentional `<img>` (ReactCrop, blob URLs, user uploads)
 
+**Phase 4.18 Recurrence Expansion + Date Jump:**
+- Multi-ordinal recurrence support ("2nd/3rd", "1st & 3rd", `BYDAY=1TH,3TH`)
+- 90-day rolling window occurrence expansion
+- Weekly events show all future occurrences (~13 entries)
+- Monthly ordinal events show 3-4 occurrences per window
+- DateJumpControl for jumping to specific dates
+- "Schedule unknown" section for uncomputable events
+- Beta warning banner prominent at top of /happenings
+
 ### Logging System (December 2025)
 - Admin logs at `/dashboard/admin/logs`
 - Error boundaries wired to appLogger
@@ -274,6 +285,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/card-variants.test.tsx` | Card variant behavior |
 | `__tests__/navigation-links.test.ts` | Canonical route enforcement |
 | `__tests__/happenings-filters.test.ts` | Filter logic |
+| `lib/events/__tests__/nextOccurrence.test.ts` | Occurrence computation (61 tests) |
 | `__tests__/utils/datetime.test.ts` | Datetime utilities |
 | `components/__tests__/no-notes-leak.test.tsx` | Raw dump regression |
 | `app/.../event-update-suggestions/page.test.tsx` | Suggestions page |
