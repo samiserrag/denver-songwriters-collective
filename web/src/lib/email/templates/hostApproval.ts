@@ -27,7 +27,7 @@ export function getHostApprovalEmail(params: HostApprovalEmailParams): {
   const safeName = escapeHtml(userName);
   const dashboardUrl = `${SITE_URL}/dashboard/my-events`;
 
-  const subject = "You're approved as a host!";
+  const subject = "You're approved as a host! — The Denver Songwriters Collective";
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

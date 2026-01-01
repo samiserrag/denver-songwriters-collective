@@ -30,7 +30,7 @@ export function getHostRejectionEmail(params: HostRejectionEmailParams): {
   const safeReason = reason ? escapeHtml(reason) : null;
   const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
 
-  const subject = "Update on your host application";
+  const subject = "Update on your host application — The Denver Songwriters Collective";
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
