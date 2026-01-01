@@ -121,6 +121,8 @@ ${createButton("View Updated Event", eventUrl)}
 <p style="margin: 24px 0 0 0; color: #737373; font-size: 13px;">
   Can't make it anymore? <a href="${cancelUrl}" style="color: #d4a853; text-decoration: none;">Cancel your RSVP</a>
 </p>
+
+${paragraph("Hope to see you there!", { muted: true })}
 `;
 
   const html = wrapEmailHtml(htmlContent);
@@ -140,7 +142,9 @@ Your spot is still reserved. If the new details don't work for you, just let us 
 
 View event: ${eventUrl}
 
-Can't make it anymore? Cancel: ${cancelUrl}`;
+Can't make it anymore? Cancel: ${cancelUrl}
+
+Hope to see you there!`;
 
   const text = wrapEmailText(textContent);
 
