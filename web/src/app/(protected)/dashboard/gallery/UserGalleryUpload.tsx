@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 
 interface Album {
   id: string;
@@ -35,18 +36,98 @@ interface UploadingFile {
 }
 
 export default function UserGalleryUpload({
-  albums,
+  albums: initialAlbums,
   venues,
   events,
   userId,
 }: UserGalleryUploadProps) {
   const router = useRouter();
   const [files, setFiles] = useState<UploadingFile[]>([]);
+  const [albums, setAlbums] = useState<Album[]>(initialAlbums);
   const [albumId, setAlbumId] = useState("");
   const [venueId, setVenueId] = useState("");
   const [eventId, setEventId] = useState("");
   const [caption, setCaption] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+
+  // Album creation state
+  const [showAlbumCreate, setShowAlbumCreate] = useState(false);
+  const [newAlbumName, setNewAlbumName] = useState("");
+  const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
+  const [albumError, setAlbumError] = useState<string | null>(null);
+
+  /**
+   * Generate a URL-safe slug from a name.
+   * Same logic used in admin GalleryAdminTabs.tsx (lines 116-120).
+   */
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  };
+
+  /**
+   * Create a new album for the current user.
+   * Reuses slug generation and conflict resolution from admin flow.
+   */
+  const handleCreateAlbum = async () => {
+    const trimmedName = newAlbumName.trim();
+    if (!trimmedName) {
+      setAlbumError("Album name is required");
+      return;
+    }
+
+    setIsCreatingAlbum(true);
+    setAlbumError(null);
+
+    const supabase = createClient();
+    const baseSlug = generateSlug(trimmedName);
+
+    // Check for existing slugs and auto-increment if needed
+    // Same logic as admin GalleryAdminTabs.tsx (lines 122-136)
+    let finalSlug = baseSlug;
+    const { data: existingSlugs } = await supabase
+      .from("gallery_albums")
+      .select("slug")
+      .like("slug", `${baseSlug}%`);
+
+    if (existingSlugs && existingSlugs.length > 0) {
+      const slugSet = new Set(existingSlugs.map((a: { slug: string }) => a.slug));
+      let counter = 1;
+      while (slugSet.has(finalSlug)) {
+        finalSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from("gallery_albums")
+      .insert({
+        name: trimmedName,
+        slug: finalSlug,
+        created_by: userId,
+        is_published: false, // User albums start unpublished
+      })
+      .select("id, name")
+      .single();
+
+    if (error) {
+      console.error("Album creation error:", error);
+      setAlbumError("Could not create album. Please try again.");
+      setIsCreatingAlbum(false);
+      return;
+    }
+
+    // Add to local state and select it
+    setAlbums((prev) => [...prev, { id: data.id, name: data.name }]);
+    setAlbumId(data.id);
+    setNewAlbumName("");
+    setShowAlbumCreate(false);
+    setIsCreatingAlbum(false);
+    toast.success("Album created");
+    router.refresh();
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -192,18 +273,69 @@ export default function UserGalleryUpload({
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Album (optional)
           </label>
-          <select
-            value={albumId}
-            onChange={(e) => setAlbumId(e.target.value)}
-            className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
-          >
-            <option value="">No album</option>
-            {albums.map((album) => (
-              <option key={album.id} value={album.id}>
-                {album.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={albumId}
+              onChange={(e) => setAlbumId(e.target.value)}
+              className="flex-1 px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
+            >
+              <option value="">No album</option>
+              {albums.map((album) => (
+                <option key={album.id} value={album.id}>
+                  {album.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowAlbumCreate(!showAlbumCreate)}
+              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors"
+              title="Create new album"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          {/* Inline album creation */}
+          {showAlbumCreate && (
+            <div className="mt-2 p-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+              <input
+                type="text"
+                value={newAlbumName}
+                onChange={(e) => {
+                  setNewAlbumName(e.target.value);
+                  setAlbumError(null);
+                }}
+                placeholder="Album name"
+                className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] mb-2"
+                disabled={isCreatingAlbum}
+              />
+              {albumError && (
+                <p className="text-sm text-red-500 mb-2">{albumError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCreateAlbum}
+                  disabled={isCreatingAlbum || !newAlbumName.trim()}
+                  className="px-3 py-1.5 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] text-sm rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  {isCreatingAlbum ? "Creating..." : "Create album"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAlbumCreate(false);
+                    setNewAlbumName("");
+                    setAlbumError(null);
+                  }}
+                  disabled={isCreatingAlbum}
+                  className="px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">

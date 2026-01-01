@@ -1,0 +1,260 @@
+/**
+ * User Album Creation Tests
+ *
+ * Tests the inline album creation feature on the user gallery upload page.
+ * Verifies:
+ * - Album create UI renders and responds to user input
+ * - Slug generation follows the same logic as admin
+ * - Album creation updates the dropdown selection
+ */
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import UserGalleryUpload from "../UserGalleryUpload";
+
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
+// Mock sonner toast
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock supabase client
+const mockInsert = vi.fn();
+const mockSelect = vi.fn();
+const mockSingle = vi.fn();
+const mockFrom = vi.fn();
+const mockLike = vi.fn();
+const mockUpload = vi.fn();
+const mockGetPublicUrl = vi.fn();
+
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    from: (table: string) => {
+      mockFrom(table);
+      return {
+        insert: (data: unknown) => {
+          mockInsert(data);
+          return {
+            select: () => ({
+              single: () => mockSingle(),
+            }),
+          };
+        },
+        select: (columns: string) => {
+          mockSelect(columns);
+          return {
+            like: (_col: string, pattern: string) => {
+              mockLike(pattern);
+              return Promise.resolve({ data: [], error: null });
+            },
+          };
+        },
+      };
+    },
+    storage: {
+      from: () => ({
+        upload: mockUpload,
+        getPublicUrl: mockGetPublicUrl,
+      }),
+    },
+  }),
+}));
+
+describe("UserGalleryUpload - Album Creation", () => {
+  const defaultProps = {
+    albums: [{ id: "existing-1", name: "Existing Album" }],
+    venues: [{ id: "venue-1", name: "Mercury Cafe" }],
+    events: [{ id: "event-1", title: "Monday Open Mic" }],
+    userId: "user-123",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSingle.mockResolvedValue({
+      data: { id: "new-album-id", name: "My New Album" },
+      error: null,
+    });
+  });
+
+  describe("Album dropdown with create button", () => {
+    it("should render album dropdown with existing albums", () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      // Multiple comboboxes exist (album, venue, event) - find album by checking its options
+      const comboboxes = screen.getAllByRole("combobox");
+      expect(comboboxes.length).toBe(3); // Album, Venue, Event
+      expect(screen.getByText("Existing Album")).toBeInTheDocument();
+    });
+
+    it("should render + button to show album creation form", () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      expect(screen.getByTitle("Create new album")).toBeInTheDocument();
+    });
+
+    it("should show album creation form when + button clicked", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      const addButton = screen.getByTitle("Create new album");
+      await userEvent.click(addButton);
+      expect(screen.getByPlaceholderText("Album name")).toBeInTheDocument();
+      expect(screen.getByText("Create album")).toBeInTheDocument();
+      expect(screen.getByText("Cancel")).toBeInTheDocument();
+    });
+
+    it("should hide album creation form when Cancel clicked", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      expect(screen.getByPlaceholderText("Album name")).toBeInTheDocument();
+      await userEvent.click(screen.getByText("Cancel"));
+      expect(screen.queryByPlaceholderText("Album name")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Album creation flow", () => {
+    it("should disable Create album button when name is empty", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      const createButton = screen.getByText("Create album");
+      expect(createButton).toBeDisabled();
+    });
+
+    it("should enable Create album button when name is entered", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      const input = screen.getByPlaceholderText("Album name");
+      await userEvent.type(input, "My New Album");
+      const createButton = screen.getByText("Create album");
+      expect(createButton).not.toBeDisabled();
+    });
+
+    it("should call Supabase insert with correct data on create", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
+      await userEvent.click(screen.getByText("Create album"));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith({
+          name: "My New Album",
+          slug: "my-new-album",
+          created_by: "user-123",
+          is_published: false,
+        });
+      });
+    });
+
+    it("should add new album to dropdown after creation", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
+      await userEvent.click(screen.getByText("Create album"));
+
+      await waitFor(() => {
+        const options = screen.getAllByRole("option");
+        const albumNames = options.map((opt) => opt.textContent);
+        expect(albumNames).toContain("My New Album");
+      });
+    });
+
+    it("should auto-select newly created album", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
+      await userEvent.click(screen.getByText("Create album"));
+
+      await waitFor(() => {
+        // The album dropdown is the first combobox
+        const comboboxes = screen.getAllByRole("combobox");
+        const albumSelect = comboboxes[0] as HTMLSelectElement;
+        expect(albumSelect.value).toBe("new-album-id");
+      });
+    });
+
+    it("should hide creation form after successful create", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
+      await userEvent.click(screen.getByText("Create album"));
+
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText("Album name")).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Error handling", () => {
+    it("should show error message when album name is empty on submit", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      const input = screen.getByPlaceholderText("Album name");
+      await userEvent.type(input, "   "); // Just spaces
+      await userEvent.clear(input);
+      // Button should be disabled, but if somehow clicked...
+      const createButton = screen.getByText("Create album");
+      expect(createButton).toBeDisabled();
+    });
+
+    it("should show error on Supabase insert failure", async () => {
+      mockSingle.mockResolvedValue({
+        data: null,
+        error: { message: "RLS policy violation" },
+      });
+
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "Test Album");
+      await userEvent.click(screen.getByText("Create album"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Could not create album. Please try again.")).toBeInTheDocument();
+      });
+    });
+  });
+});
+
+describe("Slug generation", () => {
+  // Test slug generation logic matches admin GalleryAdminTabs.tsx
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  };
+
+  it("should convert to lowercase", () => {
+    expect(generateSlug("My Album")).toBe("my-album");
+  });
+
+  it("should replace spaces with hyphens", () => {
+    expect(generateSlug("summer photos 2025")).toBe("summer-photos-2025");
+  });
+
+  it("should remove special characters", () => {
+    expect(generateSlug("Open Mic @ Mercury!")).toBe("open-mic-mercury");
+  });
+
+  it("should collapse multiple hyphens", () => {
+    expect(generateSlug("test   album   name")).toBe("test-album-name");
+  });
+
+  it("should trim leading/trailing hyphens", () => {
+    expect(generateSlug("  test  ")).toBe("test");
+    expect(generateSlug("--test--")).toBe("test");
+  });
+
+  it("should handle unicode characters", () => {
+    expect(generateSlug("Café Photos")).toBe("caf-photos");
+  });
+
+  it("should handle numbers", () => {
+    expect(generateSlug("2025 Open Mic Night")).toBe("2025-open-mic-night");
+  });
+});

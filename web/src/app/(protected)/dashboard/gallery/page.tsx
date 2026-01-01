@@ -36,10 +36,11 @@ export default async function UserGalleryPage() {
     .order("created_at", { ascending: false });
 
   // Fetch albums for the upload form
+  // Include both: published albums (from anyone) OR user's own albums (even if unpublished)
   const { data: albums } = await supabase
     .from("gallery_albums")
     .select("id, name")
-    .eq("is_published", true)
+    .or(`is_published.eq.true,created_by.eq.${userId}`)
     .order("name");
 
   // Fetch venues for metadata
