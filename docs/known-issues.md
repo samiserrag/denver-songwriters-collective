@@ -37,6 +37,13 @@ These issues have been resolved and are now guarded by regression tests to preve
 - **Guard:** `threaded-comments.test.ts` tests ProfileComments integration
 - **Resolved:** Phase 4.30 (January 2026)
 
+### 12. Per-Date Cancellations/Overrides ✅ RESOLVED
+
+- **Issue:** No way to cancel or customize individual occurrences of recurring events
+- **Fix:** Per-occurrence override system via `occurrence_overrides` table
+- **Guard:** `occurrence-overrides.test.ts` (17 tests)
+- **Resolved:** Phase 4.21 (January 2026)
+
 ---
 
 ## 1. ~~Missing PWA Icon~~ ✅ RESOLVED
@@ -102,11 +109,12 @@ These issues have been resolved and are now guarded by regression tests to preve
 
 ## Resolution Plan
 
-All issues resolved or accepted. **Lint warnings: 0**. **Tests: 533+ passing**.
+All issues resolved or accepted. **Lint warnings: 0**. **Tests: 550+ passing**.
 
-**Current Status**: 10 of 11 issues resolved; 1 accepted (footer heading order is decorative).
+**Current Status**: 11 of 12 issues resolved; 1 accepted (footer heading order is decorative).
 
 **Phase 4.30 Track:** Gallery + Comments — CLOSED (January 2026)
+**Phase 4.21 Track:** Occurrence Overrides — COMPLETE (January 2026)
 
 ---
 

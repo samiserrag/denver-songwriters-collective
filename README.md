@@ -7,6 +7,9 @@ Denver's community platform for songwriters. Discover open mics, showcases, song
 ## Features
 
 - **Happenings** — Scan-first event discovery with poster-forward cards. Answer "do I need to leave my house tonight?" at a glance.
+  - Recurring events with multi-ordinal schedules (1st & 3rd Thursday, etc.)
+  - 90-day rolling window occurrence expansion
+  - Per-date cancellations and overrides without duplicating events
 - **Open Mics** — Weekly recurring open mics sorted by day, with signup info and venue details
 - **DSC Events** — Songwriter showcases, song circles, and special events curated by the collective
 - **Member Directory** — Connect with local songwriters, hosts, and studios
@@ -46,6 +49,14 @@ This is a community-curated directory. Help us keep listings accurate by submitt
 
 ## Changelog
 
+### January 2026 — Phase 4.21
+
+- **Occurrence Overrides for Recurring Events**
+- Per-date cancellations and overrides without persisting occurrences
+- Cancelled occurrences hidden by default with toggle to reveal
+- Override flyer and notes take precedence when present
+- 550+ tests passing
+
 ### January 2026 — Phase 4.30
 
 - **Gallery + Comments Track CLOSED**
@@ -53,14 +64,17 @@ This is a community-curated directory. Help us keep listings accurate by submitt
 - Profile comments for songwriter and studio pages
 - Owner moderation (hide/unhide) with audit trail
 - Copy freeze tests to prevent gamification language
-- 533+ tests passing
 
-### December 2025 — Phase 4.20
+### December 2025 — Phase 4.17–4.20
 
-- Gallery UX final lock
-- Album publish/unpublish workflow
-- Bulk comment moderation
-- Weekly digest kill switch
+- **Happenings Recurrence & UX Maturity**
+- Canonical Denver timezone date logic for ordinal correctness
+- 90-day rolling window occurrence expansion
+- Multi-ordinal recurrence support (1st & 3rd, 2nd/4th)
+- DateJumpControl with presets (Today, Tomorrow, This Weekend)
+- StickyControls with collapsible date sections
+- Gallery UX final lock (album publish/unpublish workflow)
+- Bulk comment moderation with audit trail
 
 ### December 2025 — Phase 4.14–4.16
 

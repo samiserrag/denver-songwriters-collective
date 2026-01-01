@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.30):** Lint warnings = 0. All tests passing (533+). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.21):** Lint warnings = 0. All tests passing (550+). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -333,6 +333,27 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - **Bug fix:** Album detail page now shows images for new albums (query mismatch fix)
   - Was filtering by `is_approved=true`, now uses `is_published/is_hidden` to match gallery listing
 
+**Phase 4.21 Occurrence Overrides for Recurring Events (January 2026):**
+- Per-occurrence override system without persisting occurrences
+- New `occurrence_overrides` table:
+  - `event_id` — Reference to the recurring series
+  - `date_key` — YYYY-MM-DD (Denver-canonical)
+  - `status` — `normal` or `cancelled`
+  - `override_start_time` — Optional time change
+  - `override_cover_image_url` — Optional flyer override
+  - `override_notes` — Optional occurrence-specific notes
+- Overrides apply only to the specific occurrence date
+- Recurring events remain single canonical records (no DB row per date)
+- Overrides are evaluated during occurrence expansion in `nextOccurrence.ts`
+- Cancelled occurrences:
+  - Hidden by default on `/happenings`
+  - Revealed via "Show cancelled" toggle in StickyControls
+  - Visually de-emphasized with CANCELLED badge and red accent
+- Override flyer and notes take precedence when present
+- RLS: public read, admin-only write
+- **Database Migration:** `supabase/migrations/20260101200000_occurrence_overrides.sql`
+- **Test Coverage:** 17 new tests in `__tests__/occurrence-overrides.test.ts`
+
 ### Key Gallery Components
 
 | Component | Path |
@@ -388,6 +409,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/gallery-copy-freeze.test.ts` | Copy freeze (no approval/metrics language) |
 | `__tests__/threaded-comments.test.ts` | Threaded comments + profile comments |
 | `__tests__/gallery-comments-soft-delete-rls.test.ts` | Comment RLS policies |
+| `__tests__/occurrence-overrides.test.ts` | Occurrence override model (17 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests

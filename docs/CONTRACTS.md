@@ -428,3 +428,52 @@ User-facing gallery/comments UI must NOT contain:
 | `__tests__/gallery-photo-comments.test.ts` | Comments-as-likes, no gamification |
 | `__tests__/gallery-copy-freeze.test.ts` | Copy freeze patterns |
 | `__tests__/gallery-comments-soft-delete-rls.test.ts` | RLS policy enforcement |
+
+---
+
+## Contract: Occurrence Overrides (Phase 4.21)
+
+> **Track Status:** January 2026
+
+### Core Principles
+
+- Occurrences are never persisted as primary records
+- Overrides are the sole mechanism for per-date changes
+- Recurring events remain single canonical DB records
+
+### Override Scope
+
+An override applies only to:
+- One `event_id`
+- One `date_key` (YYYY-MM-DD, Denver-canonical)
+
+### Enforceable Rules
+
+| Rule | Description |
+|------|-------------|
+| No persisted occurrences | Individual dates are computed at render time, never stored as separate event rows |
+| Cancelled occurrences isolated | Cancelling one date must not affect other occurrences or alter recurrence rules |
+| Override precedence | When present, overrides take priority: `override_cover_image_url` > `cover_image_url`, `override_start_time` > `start_time` |
+| Hidden by default | Cancelled occurrences are not shown unless user explicitly enables "Show cancelled" toggle |
+| Admin-only write | Only admins can create, update, or delete overrides (RLS enforced) |
+
+### Visibility Contract
+
+| Toggle State | Cancelled Occurrences |
+|--------------|----------------------|
+| Default (off) | Hidden from `/happenings` |
+| Enabled (`?showCancelled=1`) | Shown in separate "Cancelled" section |
+
+### UI Display Contract
+
+| Status | Card Treatment |
+|--------|----------------|
+| Cancelled | Reduced opacity (60%), red accent border, CANCELLED badge (top-left) |
+| Override notes | "Note" chip in chips row |
+| Override flyer | Card uses override flyer instead of event flyer |
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/occurrence-overrides.test.ts` | Override map, cancelled separation, override attachment |
