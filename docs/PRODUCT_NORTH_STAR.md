@@ -252,6 +252,22 @@ Date badge overlay on poster:
 
 ---
 
+## 6.10 Recurrence & Real-World Flexibility
+
+Recurring events are modeled as single canonical records.
+Individual dates are derived at render time within a rolling window.
+
+Real-world exceptions (cancellations, special nights, alternate flyers)
+are handled via per-occurrence overrides, not by duplicating events.
+
+This preserves:
+- Scan-first clarity
+- Accurate future listings
+- Efficient editing of recurring series
+- Human flexibility without data corruption
+
+---
+
 ## 7. Availability vs Social Proof (Locked)
 
 ### Allowed:

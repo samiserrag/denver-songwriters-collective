@@ -150,6 +150,23 @@ Theme-specific overrides in `presets.css`:
 - `MemberCard` - Reference implementation for card surface
 - `HappeningCard` - Uses same surface treatment for event cards
 
+### Cancelled State Styling (Phase 4.21)
+
+Cancelled occurrences use distinct visual treatment to indicate unavailability while remaining readable.
+
+| Element | Value |
+|---------|-------|
+| Card opacity | `opacity-60` |
+| Border accent | `border-red-500/30` |
+| Background tint | `bg-red-500/5` |
+| Badge text | `CANCELLED` (top-left overlay) |
+| Badge style | `text-red-400` on `bg-black/50 backdrop-blur-sm` |
+
+**Rules:**
+- Cancelled styling must not disrupt date grouping or layout rhythm
+- Cancelled cards must remain readable but clearly de-emphasized
+- Cancelled state styling overrides Tonight/Tomorrow highlight
+
 ---
 
 ## Visual Language & Scanning System (v2.0)

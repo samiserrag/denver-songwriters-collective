@@ -494,6 +494,8 @@ export interface ExpansionOptions {
   maxEvents?: number;
   /** Maximum total occurrences across all events (default 500) */
   maxTotalOccurrences?: number;
+  /** Pre-built override map for applying per-occurrence overrides */
+  overrideMap?: OverrideMap;
 }
 
 export interface ExpandedOccurrence {
@@ -753,20 +755,67 @@ export function groupEventsByNextOccurrence<
 // Phase 4.18: Expanded Grouping (events appear on multiple dates)
 // ============================================================
 
+/**
+ * Override status for a specific occurrence.
+ */
+export type OccurrenceStatus = "normal" | "cancelled";
+
+/**
+ * Override data for a specific occurrence (from occurrence_overrides table).
+ */
+export interface OccurrenceOverride {
+  event_id: string;
+  date_key: string;
+  status: OccurrenceStatus;
+  override_start_time?: string | null;
+  override_cover_image_url?: string | null;
+  override_notes?: string | null;
+}
+
+/**
+ * Map of overrides keyed by "event_id:date_key" for efficient lookup.
+ */
+export type OverrideMap = Map<string, OccurrenceOverride>;
+
+/**
+ * Build an override lookup key.
+ */
+export function buildOverrideKey(eventId: string, dateKey: string): string {
+  return `${eventId}:${dateKey}`;
+}
+
+/**
+ * Build an override map from an array of overrides.
+ */
+export function buildOverrideMap(overrides: OccurrenceOverride[]): OverrideMap {
+  const map = new Map<string, OccurrenceOverride>();
+  for (const o of overrides) {
+    map.set(buildOverrideKey(o.event_id, o.date_key), o);
+  }
+  return map;
+}
+
 export interface EventOccurrenceEntry<T extends EventForOccurrence = EventForOccurrence> {
   event: T;
   dateKey: string;
   isConfident: boolean;
+  /** Override data if present (cancelled, time change, etc.) */
+  override?: OccurrenceOverride;
+  /** Whether this occurrence is cancelled */
+  isCancelled: boolean;
 }
 
 export interface ExpansionResult<T extends EventForOccurrence = EventForOccurrence> {
   groupedEvents: Map<string, EventOccurrenceEntry<T>[]>;
+  /** Cancelled occurrences (kept separate for toggle control) */
+  cancelledOccurrences: EventOccurrenceEntry<T>[];
   unknownEvents: T[];
   /** Performance metrics for instrumentation */
   metrics: {
     eventsProcessed: number;
     eventsSkipped: number;
     totalOccurrences: number;
+    cancelledCount: number;
     wasCapped: boolean;
   };
 }
@@ -775,13 +824,16 @@ export interface ExpansionResult<T extends EventForOccurrence = EventForOccurren
  * Expand and group events by ALL their occurrences within a window.
  * One event can appear on multiple dates (e.g., every Wednesday in next 90 days).
  *
+ * Phase 4.21: Now applies per-occurrence overrides (cancellations, time/flyer changes).
+ * Cancelled occurrences are tracked separately for toggle control.
+ *
  * Performance caps are enforced to prevent runaway processing:
  * - maxEvents: Maximum events to process (default 200)
  * - maxTotalOccurrences: Maximum total occurrences (default 500)
  * - maxOccurrences: Maximum occurrences per event (default 40)
  *
  * @param events - Array of events with timing fields and an `id` field
- * @param options - Expansion options
+ * @param options - Expansion options (including optional overrideMap)
  * @returns Map of date strings to event entries, sorted by date, plus metrics
  */
 export function expandAndGroupEvents<T extends EventForOccurrence & { id: string }>(
@@ -792,13 +844,16 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
   const endKey = options?.endKey ?? addDaysDenver(startKey, EXPANSION_CAPS.DEFAULT_WINDOW_DAYS);
   const maxEvents = options?.maxEvents ?? EXPANSION_CAPS.MAX_EVENTS;
   const maxTotalOccurrences = options?.maxTotalOccurrences ?? EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES;
+  const overrideMap = options?.overrideMap ?? new Map<string, OccurrenceOverride>();
 
   const groupedEvents = new Map<string, EventOccurrenceEntry<T>[]>();
+  const cancelledOccurrences: EventOccurrenceEntry<T>[] = [];
   const unknownEvents: T[] = [];
 
   // Performance metrics
   let eventsProcessed = 0;
   let totalOccurrences = 0;
+  let cancelledCount = 0;
   let wasCapped = false;
 
   // Apply event cap - process only first N events
@@ -838,38 +893,60 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
 
       totalOccurrences++;
 
-      if (!groupedEvents.has(occ.dateKey)) {
-        groupedEvents.set(occ.dateKey, []);
-      }
-      groupedEvents.get(occ.dateKey)!.push({
+      // Check for override
+      const overrideKey = buildOverrideKey(event.id, occ.dateKey);
+      const override = overrideMap.get(overrideKey);
+      const isCancelled = override?.status === "cancelled";
+
+      const entry: EventOccurrenceEntry<T> = {
         event,
         dateKey: occ.dateKey,
         isConfident: occ.isConfident,
-      });
+        override,
+        isCancelled,
+      };
+
+      if (isCancelled) {
+        // Track cancelled occurrences separately
+        cancelledCount++;
+        cancelledOccurrences.push(entry);
+      } else {
+        // Add to normal grouping
+        if (!groupedEvents.has(occ.dateKey)) {
+          groupedEvents.set(occ.dateKey, []);
+        }
+        groupedEvents.get(occ.dateKey)!.push(entry);
+      }
     }
   }
 
-  // Sort groups by date, and within each group by start_time
+  // Sort groups by date, and within each group by start_time (applying overrides)
   const sortedGroups = new Map(
     [...groupedEvents.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([dateKey, entries]) => [
         dateKey,
         entries.sort((a, b) => {
-          const timeA = a.event.start_time || "99:99";
-          const timeB = b.event.start_time || "99:99";
+          // Use override time if present, else event time
+          const timeA = a.override?.override_start_time || a.event.start_time || "99:99";
+          const timeB = b.override?.override_start_time || b.event.start_time || "99:99";
           return timeA.localeCompare(timeB);
         }),
       ])
   );
 
+  // Sort cancelled occurrences by date
+  cancelledOccurrences.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
   return {
     groupedEvents: sortedGroups,
+    cancelledOccurrences,
     unknownEvents,
     metrics: {
       eventsProcessed,
       eventsSkipped,
       totalOccurrences,
+      cancelledCount,
       wasCapped,
     },
   };
