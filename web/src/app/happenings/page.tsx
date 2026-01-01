@@ -4,13 +4,15 @@ import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HappeningsCard } from "@/components/happenings";
 import { HappeningsFilters } from "@/components/happenings/HappeningsFilters";
+import { DateJumpControl } from "@/components/happenings/DateJumpControl";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
 import {
   getTodayDenver,
+  addDaysDenver,
   formatDateGroupHeader,
-  computeNextOccurrence,
-  type NextOccurrenceResult,
+  expandAndGroupEvents,
+  type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
 
 export const metadata: Metadata = {
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Phase 4.17 Search Params:
+ * Phase 4.18 Search Params:
  * - q: search query (matches title, description, venue_name, venue_address, custom_location_*)
  * - time: upcoming|past|all
  * - type: event_type (open_mic, showcase, workshop, etc.)
@@ -30,6 +32,7 @@ export const dynamic = "force-dynamic";
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
+ * - jumpTo: date to scroll to (YYYY-MM-DD)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -41,6 +44,7 @@ interface HappeningsSearchParams {
   cost?: string;
   days?: string;
   debugDates?: string;
+  jumpTo?: string;
 }
 
 export default async function HappeningsPage({
@@ -63,8 +67,12 @@ export default async function HappeningsPage({
   const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
   // Debug mode for date computation visualization
   const debugDates = params.debugDates === "1";
+  // Jump to date
+  const jumpToDate = params.jumpTo || "";
 
   const today = getTodayDenver();
+  // 90-day window for occurrence expansion
+  const windowEnd = addDaysDenver(today, 90);
 
   // Build base query with venue join for search
   let query = supabase
@@ -125,7 +133,7 @@ export default async function HappeningsPage({
   }
 
   // For "past" filter, only get events with event_date < today
-  // For "upcoming" and "all", we filter client-side based on next occurrence
+  // For "upcoming" and "all", we filter client-side based on occurrence expansion
   if (timeFilter === "past") {
     query = query.lt("event_date", today);
   }
@@ -204,86 +212,41 @@ export default async function HappeningsPage({
     });
   }
 
-  // Phase 4.17.5: Compute occurrences ONCE with canonical todayKey
-  // This ensures all events use the same date context for grouping and display
-  type EventWithOccurrence = {
-    event: (typeof list)[0];
-    occurrence: NextOccurrenceResult;
-  };
+  // Phase 4.18: Expand occurrences within 90-day window
+  // This allows one event to appear on multiple dates (e.g., every Wednesday)
+  const { groupedEvents: expandedGroups, unknownEvents } = expandAndGroupEvents(
+    list as any[],
+    {
+      startKey: today,
+      endKey: windowEnd,
+      maxOccurrences: 40,
+    }
+  );
 
-  let eventsWithOccurrences: EventWithOccurrence[] = list.map((event: any) => ({
-    event,
-    occurrence: computeNextOccurrence(event, { todayKey: today }),
-  }));
-
-  // Phase 4.17: Filter by next occurrence for "upcoming" view
+  // Filter to only upcoming occurrences for "upcoming" view
+  let filteredGroups = expandedGroups;
   if (timeFilter === "upcoming") {
-    eventsWithOccurrences = eventsWithOccurrences.filter(
-      ({ occurrence }) => occurrence.date >= today
+    filteredGroups = new Map(
+      [...expandedGroups.entries()].filter(([dateKey]) => dateKey >= today)
     );
   }
 
-  // Phase 4.17.6: Separate confident and unconfident events
-  // Events with isConfident=false have unknown schedules and should not appear under dated headers
-  const confidentEvents = eventsWithOccurrences.filter(
-    ({ occurrence }) => occurrence.isConfident
-  );
-  const unknownScheduleEvents = eventsWithOccurrences.filter(
-    ({ occurrence }) => !occurrence.isConfident
-  );
-
-  // Sort confident events by their next occurrence date, then by start_time
-  confidentEvents.sort((a, b) => {
-    // First sort by date
-    const dateCompare = a.occurrence.date.localeCompare(b.occurrence.date);
-    if (dateCompare !== 0) return dateCompare;
-
-    // Then by start_time (null times go last)
-    const timeA = a.event.start_time || "99:99";
-    const timeB = b.event.start_time || "99:99";
-    return timeA.localeCompare(timeB);
-  });
-
   // Sort unknown schedule events alphabetically by title
-  unknownScheduleEvents.sort((a, b) => {
-    const titleA = a.event.title || "";
-    const titleB = b.event.title || "";
+  const sortedUnknownEvents = [...unknownEvents].sort((a: any, b: any) => {
+    const titleA = a.title || "";
+    const titleB = b.title || "";
     return titleA.localeCompare(titleB);
   });
 
-  // Group confident events by next occurrence date (using pre-computed occurrence)
-  const groupedEvents = new Map<string, EventWithOccurrence[]>();
-  for (const item of confidentEvents) {
-    const dateKey = item.occurrence.date;
-    if (!groupedEvents.has(dateKey)) {
-      groupedEvents.set(dateKey, []);
-    }
-    groupedEvents.get(dateKey)!.push(item);
+  // Count total occurrences for display
+  let totalOccurrences = 0;
+  for (const entries of filteredGroups.values()) {
+    totalOccurrences += entries.length;
   }
+  const totalDisplayableEvents = totalOccurrences + sortedUnknownEvents.length;
 
-  // Sort groups by date (chronological order)
-  const sortedGroupedEvents = new Map(
-    [...groupedEvents.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  );
-
-  // DEV INVARIANT: Verify every event's occurrence.date matches its group key
-  // This catches any mismatch that would cause "Friday card in Tomorrow group"
-  if (process.env.NODE_ENV === "development") {
-    for (const [groupDateKey, items] of sortedGroupedEvents) {
-      for (const item of items) {
-        if (item.occurrence.date !== groupDateKey) {
-          console.error(
-            `[INVARIANT VIOLATION] Event "${item.event.title}" (${item.event.id}) ` +
-            `has occurrence.date="${item.occurrence.date}" but is grouped under "${groupDateKey}". ` +
-            `This should never happen - check computeNextOccurrence logic.`
-          );
-        }
-      }
-    }
-  }
-
-  // Total displayable events for results count
-  const totalDisplayableEvents = confidentEvents.length + unknownScheduleEvents.length;
+  // Check if jump date is within window
+  const jumpDateOutOfWindow = jumpToDate && (jumpToDate < today || jumpToDate > windowEnd);
 
   // Hero only shows on unfiltered /happenings (no filters active)
   const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
@@ -303,6 +266,7 @@ export default async function HappeningsPage({
 
   const pageTitle = getPageTitle();
 
+
   return (
     <>
       {showHero && (
@@ -319,6 +283,13 @@ export default async function HappeningsPage({
       )}
 
       <PageContainer className={showHero ? "" : "pt-8"}>
+        {/* Beta warning banner - prominent for all users */}
+        <div className="mb-6 p-4 rounded-lg bg-amber-500/15 border border-amber-500/40">
+          <p className="text-sm text-amber-200">
+            <strong className="text-amber-100">⚠️ Beta notice:</strong> These events are community-submitted and schedules may be incomplete or incorrect. Please verify with venues before attending.
+          </p>
+        </div>
+
         {/* Community CTA - shows on all views */}
         <div className="mb-6 p-5 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
           <p className="text-[var(--color-text-secondary)] text-sm mb-3">
@@ -361,34 +332,39 @@ export default async function HappeningsPage({
 
         {/* Filter bar - wrapped in Suspense for useSearchParams */}
         <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
-          <HappeningsFilters className="mb-6" />
+          <HappeningsFilters className="mb-4" />
         </Suspense>
 
-        {/* Beta warning banner */}
-        <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200">
-          <p className="text-sm">
-            <strong>Beta notice:</strong> Event schedules may be incomplete or incorrect. Please verify with venues before attending.
-          </p>
-        </div>
+        {/* Date Jump Control */}
+        <Suspense fallback={null}>
+          <DateJumpControl
+            todayKey={today}
+            windowEndKey={windowEnd}
+            className="mb-6"
+          />
+        </Suspense>
+
+        {/* Out of window warning */}
+        {jumpDateOutOfWindow && (
+          <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)]">
+            Selected date is outside the 90-day window ({today} to {windowEnd}).
+          </div>
+        )}
 
         {/* Results count */}
         {(searchQuery || hasFilters) && (
           <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-            {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "result" : "results"} found
+            {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "occurrence" : "occurrences"} found across {list.length} events
           </p>
         )}
 
-        {/* Phase 4.17: Date-grouped list with sticky headers */}
+        {/* Phase 4.18: Date-grouped list with expanded occurrences */}
         {totalDisplayableEvents > 0 ? (
           <div className="space-y-1">
-            {/* Confident events grouped by date */}
-            {[...sortedGroupedEvents].map(([dateStr, itemsForDate]) => (
-              <section key={dateStr} className="relative">
-                {/* Sticky date header
-                    - top-16 accounts for 64px site header (h-16)
-                    - z-30 keeps it above cards but below nav (z-50)
-                    - Background matches page with blur for elegance
-                */}
+            {/* Dated occurrences grouped by date */}
+            {[...filteredGroups].map(([dateStr, entriesForDate]) => (
+              <section key={dateStr} id={`date-${dateStr}`} className="relative">
+                {/* Sticky date header */}
                 <div
                   className="sticky top-16 z-30 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
                 >
@@ -396,20 +372,25 @@ export default async function HappeningsPage({
                     <span className="w-1 h-6 bg-[var(--color-accent-primary)] rounded-full" aria-hidden="true" />
                     {formatDateGroupHeader(dateStr, today)}
                     <span className="text-base font-normal text-[var(--color-text-secondary)]">
-                      ({itemsForDate.length})
+                      ({entriesForDate.length})
                     </span>
                   </h2>
                 </div>
 
                 {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
-                  {itemsForDate.map(({ event, occurrence }) => (
+                  {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
                     <HappeningsCard
-                      key={event.id}
-                      event={event}
+                      key={`${entry.event.id}-${entry.dateKey}`}
+                      event={entry.event}
                       searchQuery={searchQuery}
                       debugDates={debugDates}
-                      occurrence={occurrence}
+                      occurrence={{
+                        date: entry.dateKey,
+                        isToday: entry.dateKey === today,
+                        isTomorrow: entry.dateKey === addDaysDenver(today, 1),
+                        isConfident: entry.isConfident,
+                      }}
                       todayKey={today}
                     />
                   ))}
@@ -418,7 +399,7 @@ export default async function HappeningsPage({
             ))}
 
             {/* Schedule Unknown section - appears after all dated sections */}
-            {unknownScheduleEvents.length > 0 && (
+            {sortedUnknownEvents.length > 0 && (
               <section className="relative">
                 <div
                   className="sticky top-16 z-30 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
@@ -427,7 +408,7 @@ export default async function HappeningsPage({
                     <span className="w-1 h-6 bg-amber-500 rounded-full" aria-hidden="true" />
                     Schedule unknown
                     <span className="text-base font-normal text-[var(--color-text-secondary)]">
-                      ({unknownScheduleEvents.length})
+                      ({sortedUnknownEvents.length})
                     </span>
                   </h2>
                   <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
@@ -437,13 +418,18 @@ export default async function HappeningsPage({
 
                 {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
-                  {unknownScheduleEvents.map(({ event, occurrence }) => (
+                  {sortedUnknownEvents.map((event: any) => (
                     <HappeningsCard
                       key={event.id}
                       event={event}
                       searchQuery={searchQuery}
                       debugDates={debugDates}
-                      occurrence={occurrence}
+                      occurrence={{
+                        date: today,
+                        isToday: true,
+                        isTomorrow: false,
+                        isConfident: false,
+                      }}
                       todayKey={today}
                     />
                   ))}

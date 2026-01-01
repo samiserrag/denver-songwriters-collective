@@ -202,7 +202,8 @@ describe('Happenings Page Filter Logic', () => {
 
   describe('Results Display', () => {
     it('should show results count when filters active', () => {
-      expect(pageContent).toContain('results"} found');
+      // Phase 4.18 changed from "results" to "occurrences" for expanded recurrence
+      expect(pageContent).toContain('occurrences"} found');
     });
 
     it('should show no results message with filter hint', () => {

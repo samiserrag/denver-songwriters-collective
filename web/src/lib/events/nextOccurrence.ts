@@ -1,12 +1,16 @@
 /**
- * Phase 4.17: Next Occurrence Computation
+ * Phase 4.18: Occurrence Computation & Expansion
  *
- * Computes the next occurrence date for events, handling:
+ * Computes occurrence dates for events, handling:
  * - One-time events (event_date)
  * - Weekly recurring events (day_of_week)
- * - Nth weekday of month events (RRULE with BYDAY ordinal)
+ * - Single nth weekday of month (RRULE BYDAY=2TH or legacy "2nd")
+ * - Multi-ordinal monthly (RRULE BYDAY=1TH,3TH or legacy "2nd/3rd", "1st & 3rd")
  *
- * Used for Today-first date grouping on /happenings.
+ * Phase 4.18 adds:
+ * - Multi-ordinal detection to prevent fallback to weekly
+ * - Occurrence expansion within a 90-day window
+ * - One event can appear on multiple dates (e.g., every Wednesday)
  *
  * IMPORTANT: All date keys are in America/Denver timezone.
  * Never use toISOString().split("T")[0] for date keys (that's UTC).
@@ -74,6 +78,11 @@ const LEGACY_ORDINAL_TO_NUMBER: Record<string, number> = {
   "3rd": 3,
   "4th": 4,
   "5th": 5,
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
   last: -1,
 };
 
@@ -89,6 +98,40 @@ const DAY_NAME_TO_ABBREV: Record<string, string> = {
   friday: "FR",
   saturday: "SA",
 };
+
+/**
+ * Check if a recurrence rule appears to be multi-ordinal format.
+ * Multi-ordinal patterns should NOT fall back to weekly.
+ */
+function isMultiOrdinalPattern(rule: string | null | undefined): boolean {
+  if (!rule) return false;
+  const r = rule.toLowerCase().trim();
+  // Contains separators: /, &, "and", or comma
+  if (r.includes("/") || r.includes("&") || r.includes(",")) return true;
+  if (/\band\b/.test(r)) return true;
+  // Contains multiple ordinal words: "1st 3rd", "first third", etc.
+  const ordinalMatches = r.match(/\b(1st|2nd|3rd|4th|5th|first|second|third|fourth|fifth|last)\b/g);
+  if (ordinalMatches && ordinalMatches.length > 1) return true;
+  return false;
+}
+
+/**
+ * Parse a multi-ordinal legacy format like "2nd/3rd", "1st & 3rd", "1st, 3rd".
+ * Returns array of numeric ordinals, or null if not parseable.
+ */
+function parseMultiOrdinal(rule: string): number[] | null {
+  const r = rule.toLowerCase().trim();
+  // Split on /, &, comma, or "and"
+  const parts = r.split(/[\/&,]|\band\b/).map((p) => p.trim()).filter(Boolean);
+  const ordinals: number[] = [];
+  for (const part of parts) {
+    const ordinal = LEGACY_ORDINAL_TO_NUMBER[part];
+    if (ordinal !== undefined) {
+      ordinals.push(ordinal);
+    }
+  }
+  return ordinals.length > 0 ? ordinals : null;
+}
 
 /**
  * Get the nth weekday of a month as a date key string.
@@ -161,7 +204,7 @@ export interface NextOccurrenceResult {
   isToday: boolean;
   /** Whether this is tomorrow */
   isTomorrow: boolean;
-  /** Whether this date can be confidently shown (false for complex nth-weekday) */
+  /** Whether this date can be confidently shown (false for unknown schedules) */
   isConfident: boolean;
 }
 
@@ -238,6 +281,46 @@ function getNextNthWeekdayOccurrenceKey(
 }
 
 /**
+ * Get the next occurrence for a multi-ordinal monthly event.
+ * E.g., "2nd/3rd Thursday" - find the earliest upcoming 2nd or 3rd Thursday.
+ */
+function getNextMultiOrdinalOccurrenceKey(
+  ordinals: number[],
+  dayAbbrev: string,
+  todayKey: string
+): { dateKey: string; confident: boolean } | null {
+  const targetDayIndex = DAY_ABBREV_TO_INDEX[dayAbbrev];
+  if (targetDayIndex === undefined) return null;
+
+  const todayDate = dateFromDenverKey(todayKey);
+  const candidates: string[] = [];
+
+  // Check this month and next 2 months
+  for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
+    const checkYear = todayDate.getUTCFullYear();
+    const checkMonth = todayDate.getUTCMonth() + monthOffset;
+
+    for (const ordinal of ordinals) {
+      const occurrenceKey = getNthWeekdayOfMonthKey(
+        checkYear,
+        checkMonth,
+        targetDayIndex,
+        ordinal
+      );
+      if (occurrenceKey && occurrenceKey >= todayKey) {
+        candidates.push(occurrenceKey);
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Sort and return the earliest
+  candidates.sort();
+  return { dateKey: candidates[0], confident: true };
+}
+
+/**
  * Options for computing next occurrence with a canonical date context.
  * Passing these ensures consistent todayKey across all computations.
  */
@@ -271,52 +354,100 @@ export function computeNextOccurrence(
     };
   }
 
-  // Case 2: Check for RRULE with nth weekday (e.g., "2nd Tuesday")
+  // Case 2: Check for RRULE with nth weekday(s)
   const parsed = parseRRule(event.recurrence_rule ?? null);
-  if (
-    parsed &&
-    parsed.freq === "MONTHLY" &&
-    parsed.byday.length > 0 &&
-    parsed.byday[0].ordinal !== null
-  ) {
-    const { ordinal, day } = parsed.byday[0];
-    const result = getNextNthWeekdayOccurrenceKey(ordinal, day, todayKey);
-    if (result) {
-      return {
-        date: result.dateKey,
-        isToday: result.dateKey === todayKey,
-        isTomorrow: result.dateKey === tomorrowKey,
-        isConfident: result.confident,
-      };
+  if (parsed && parsed.freq === "MONTHLY" && parsed.byday.length > 0) {
+    // Check if ALL byday entries have ordinals
+    const withOrdinals = parsed.byday.filter((d) => d.ordinal !== null);
+
+    if (withOrdinals.length > 0) {
+      // Multi-BYDAY: e.g., BYDAY=1TH,3TH
+      if (withOrdinals.length > 1) {
+        const ordinals = withOrdinals.map((d) => d.ordinal!);
+        const dayAbbrev = withOrdinals[0].day;
+        const result = getNextMultiOrdinalOccurrenceKey(ordinals, dayAbbrev, todayKey);
+        if (result) {
+          return {
+            date: result.dateKey,
+            isToday: result.dateKey === todayKey,
+            isTomorrow: result.dateKey === tomorrowKey,
+            isConfident: result.confident,
+          };
+        }
+      } else {
+        // Single ordinal BYDAY
+        const { ordinal, day } = withOrdinals[0];
+        const result = getNextNthWeekdayOccurrenceKey(ordinal!, day, todayKey);
+        if (result) {
+          return {
+            date: result.dateKey,
+            isToday: result.dateKey === todayKey,
+            isTomorrow: result.dateKey === tomorrowKey,
+            isConfident: result.confident,
+          };
+        }
+      }
     }
   }
 
-  // Case 2.5: Legacy ordinal format (e.g., recurrence_rule="1st" + day_of_week="Wednesday")
-  // This handles events where the ordinal is stored as "1st", "2nd", etc. instead of RRULE
+  // Case 2.5: Legacy format with day_of_week
   if (event.recurrence_rule && event.day_of_week) {
-    const legacyOrdinal =
-      LEGACY_ORDINAL_TO_NUMBER[event.recurrence_rule.toLowerCase().trim()];
+    const rule = event.recurrence_rule.toLowerCase().trim();
     const dayAbbrev = DAY_NAME_TO_ABBREV[event.day_of_week.toLowerCase().trim()];
 
-    if (legacyOrdinal !== undefined && dayAbbrev) {
-      const result = getNextNthWeekdayOccurrenceKey(
-        legacyOrdinal,
-        dayAbbrev,
-        todayKey
-      );
-      if (result) {
+    if (dayAbbrev) {
+      // Check for multi-ordinal pattern first (e.g., "2nd/3rd")
+      if (isMultiOrdinalPattern(rule)) {
+        const ordinals = parseMultiOrdinal(rule);
+        if (ordinals && ordinals.length > 0) {
+          const result = getNextMultiOrdinalOccurrenceKey(ordinals, dayAbbrev, todayKey);
+          if (result) {
+            return {
+              date: result.dateKey,
+              isToday: result.dateKey === todayKey,
+              isTomorrow: result.dateKey === tomorrowKey,
+              isConfident: result.confident,
+            };
+          }
+        }
+        // Multi-ordinal detected but couldn't parse - mark as unknown
         return {
-          date: result.dateKey,
-          isToday: result.dateKey === todayKey,
-          isTomorrow: result.dateKey === tomorrowKey,
-          isConfident: result.confident,
+          date: todayKey,
+          isToday: true,
+          isTomorrow: false,
+          isConfident: false,
+        };
+      }
+
+      // Single ordinal format (e.g., "1st", "2nd")
+      const legacyOrdinal = LEGACY_ORDINAL_TO_NUMBER[rule];
+      if (legacyOrdinal !== undefined) {
+        const result = getNextNthWeekdayOccurrenceKey(legacyOrdinal, dayAbbrev, todayKey);
+        if (result) {
+          return {
+            date: result.dateKey,
+            isToday: result.dateKey === todayKey,
+            isTomorrow: result.dateKey === tomorrowKey,
+            isConfident: result.confident,
+          };
+        }
+      }
+
+      // "weekly", "none", etc. - treat as weekly pattern
+      if (rule === "weekly" || rule === "none" || rule === "") {
+        const dateKey = getNextWeeklyOccurrenceKey(event.day_of_week, todayKey);
+        return {
+          date: dateKey,
+          isToday: dateKey === todayKey,
+          isTomorrow: dateKey === tomorrowKey,
+          isConfident: true,
         };
       }
     }
   }
 
-  // Case 3: Weekly recurring with day_of_week
-  if (event.day_of_week) {
+  // Case 3: Weekly recurring with day_of_week only (no recurrence_rule or empty)
+  if (event.day_of_week && !isMultiOrdinalPattern(event.recurrence_rule)) {
     const dayName = event.day_of_week.trim();
     const dateKey = getNextWeeklyOccurrenceKey(dayName, todayKey);
     return {
@@ -334,6 +465,185 @@ export function computeNextOccurrence(
     isTomorrow: false,
     isConfident: false,
   };
+}
+
+// ============================================================
+// Phase 4.18: Occurrence Expansion for Rolling Window
+// ============================================================
+
+export interface ExpansionOptions {
+  /** Start of window (YYYY-MM-DD), defaults to today */
+  startKey?: string;
+  /** End of window (YYYY-MM-DD), defaults to startKey + 90 days */
+  endKey?: string;
+  /** Maximum occurrences per event (prevents runaway), default 40 */
+  maxOccurrences?: number;
+}
+
+export interface ExpandedOccurrence {
+  /** Date key (YYYY-MM-DD) */
+  dateKey: string;
+  /** Whether this occurrence is confident */
+  isConfident: boolean;
+}
+
+/**
+ * Expand all occurrences for an event within a date window.
+ * Weekly events generate weekly dates, monthly events generate monthly dates.
+ *
+ * @param event - Event with timing fields
+ * @param options - Expansion options (window, max occurrences)
+ * @returns Array of occurrence date keys within window
+ */
+export function expandOccurrencesForEvent(
+  event: EventForOccurrence,
+  options?: ExpansionOptions
+): ExpandedOccurrence[] {
+  const startKey = options?.startKey ?? getTodayDenver();
+  const endKey = options?.endKey ?? addDaysDenver(startKey, 90);
+  const maxOccurrences = options?.maxOccurrences ?? 40;
+
+  const occurrences: ExpandedOccurrence[] = [];
+
+  // Case 1: One-time event
+  if (event.event_date) {
+    if (event.event_date >= startKey && event.event_date <= endKey) {
+      occurrences.push({ dateKey: event.event_date, isConfident: true });
+    }
+    return occurrences;
+  }
+
+  // Case 2: RRULE with MONTHLY + BYDAY
+  const parsed = parseRRule(event.recurrence_rule ?? null);
+  if (parsed && parsed.freq === "MONTHLY" && parsed.byday.length > 0) {
+    const withOrdinals = parsed.byday.filter((d) => d.ordinal !== null);
+    if (withOrdinals.length > 0) {
+      const dayAbbrev = withOrdinals[0].day;
+      const targetDayIndex = DAY_ABBREV_TO_INDEX[dayAbbrev];
+      if (targetDayIndex !== undefined) {
+        const ordinals = withOrdinals.map((d) => d.ordinal!);
+        expandMonthlyOrdinals(ordinals, targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
+        return occurrences;
+      }
+    }
+  }
+
+  // Case 2.5: Legacy format with day_of_week
+  if (event.recurrence_rule && event.day_of_week) {
+    const rule = event.recurrence_rule.toLowerCase().trim();
+    const dayAbbrev = DAY_NAME_TO_ABBREV[event.day_of_week.toLowerCase().trim()];
+    const targetDayIndex = dayAbbrev ? DAY_ABBREV_TO_INDEX[dayAbbrev] : undefined;
+
+    if (targetDayIndex !== undefined) {
+      // Multi-ordinal pattern
+      if (isMultiOrdinalPattern(rule)) {
+        const ordinals = parseMultiOrdinal(rule);
+        if (ordinals && ordinals.length > 0) {
+          expandMonthlyOrdinals(ordinals, targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
+          return occurrences;
+        }
+        // Couldn't parse - return empty (unknown)
+        return [];
+      }
+
+      // Single ordinal
+      const legacyOrdinal = LEGACY_ORDINAL_TO_NUMBER[rule];
+      if (legacyOrdinal !== undefined) {
+        expandMonthlyOrdinals([legacyOrdinal], targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
+        return occurrences;
+      }
+
+      // "weekly", "none", etc. - expand as weekly
+      if (rule === "weekly" || rule === "none" || rule === "") {
+        expandWeekly(targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
+        return occurrences;
+      }
+    }
+  }
+
+  // Case 3: Weekly with day_of_week only
+  if (event.day_of_week && !isMultiOrdinalPattern(event.recurrence_rule)) {
+    const dayAbbrev = DAY_NAME_TO_ABBREV[event.day_of_week.toLowerCase().trim()];
+    const targetDayIndex = dayAbbrev ? DAY_ABBREV_TO_INDEX[dayAbbrev] : undefined;
+    if (targetDayIndex !== undefined) {
+      expandWeekly(targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
+      return occurrences;
+    }
+  }
+
+  // Unknown schedule - return empty
+  return [];
+}
+
+/**
+ * Expand weekly occurrences within window.
+ */
+function expandWeekly(
+  dayOfWeek: number,
+  startKey: string,
+  endKey: string,
+  maxOccurrences: number,
+  occurrences: ExpandedOccurrence[]
+): void {
+  const startDate = dateFromDenverKey(startKey);
+  const startDayIndex = startDate.getUTCDay();
+
+  // Find first occurrence >= startKey
+  let daysUntil = dayOfWeek - startDayIndex;
+  if (daysUntil < 0) daysUntil += 7;
+
+  let current = addDaysDenver(startKey, daysUntil);
+
+  while (current <= endKey && occurrences.length < maxOccurrences) {
+    occurrences.push({ dateKey: current, isConfident: true });
+    current = addDaysDenver(current, 7);
+  }
+}
+
+/**
+ * Expand monthly ordinal occurrences within window.
+ */
+function expandMonthlyOrdinals(
+  ordinals: number[],
+  dayOfWeek: number,
+  startKey: string,
+  endKey: string,
+  maxOccurrences: number,
+  occurrences: ExpandedOccurrence[]
+): void {
+  const startDate = dateFromDenverKey(startKey);
+  const endDate = dateFromDenverKey(endKey);
+
+  // Iterate through months in window
+  let year = startDate.getUTCFullYear();
+  let month = startDate.getUTCMonth();
+
+  const endYear = endDate.getUTCFullYear();
+  const endMonth = endDate.getUTCMonth();
+
+  while (
+    (year < endYear || (year === endYear && month <= endMonth)) &&
+    occurrences.length < maxOccurrences
+  ) {
+    for (const ordinal of ordinals) {
+      if (occurrences.length >= maxOccurrences) break;
+
+      const dateKey = getNthWeekdayOfMonthKey(year, month, dayOfWeek, ordinal);
+      if (dateKey && dateKey >= startKey && dateKey <= endKey) {
+        occurrences.push({ dateKey, isConfident: true });
+      }
+    }
+
+    // Move to next month
+    month++;
+    if (month > 11) {
+      month = 0;
+      year++;
+    }
+  }
+
+  // Sort by date
+  occurrences.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 }
 
 /**
@@ -421,4 +731,77 @@ export function groupEventsByNextOccurrence<
   return new Map(
     [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   );
+}
+
+// ============================================================
+// Phase 4.18: Expanded Grouping (events appear on multiple dates)
+// ============================================================
+
+export interface EventOccurrenceEntry<T extends EventForOccurrence = EventForOccurrence> {
+  event: T;
+  dateKey: string;
+  isConfident: boolean;
+}
+
+/**
+ * Expand and group events by ALL their occurrences within a window.
+ * One event can appear on multiple dates (e.g., every Wednesday in next 90 days).
+ *
+ * @param events - Array of events with timing fields and an `id` field
+ * @param options - Expansion options
+ * @returns Map of date strings to event entries, sorted by date
+ */
+export function expandAndGroupEvents<T extends EventForOccurrence & { id: string }>(
+  events: T[],
+  options?: ExpansionOptions
+): {
+  groupedEvents: Map<string, EventOccurrenceEntry<T>[]>;
+  unknownEvents: T[];
+} {
+  const startKey = options?.startKey ?? getTodayDenver();
+  const endKey = options?.endKey ?? addDaysDenver(startKey, 90);
+
+  const groupedEvents = new Map<string, EventOccurrenceEntry<T>[]>();
+  const unknownEvents: T[] = [];
+
+  for (const event of events) {
+    const occurrences = expandOccurrencesForEvent(event, {
+      startKey,
+      endKey,
+      maxOccurrences: options?.maxOccurrences,
+    });
+
+    if (occurrences.length === 0) {
+      // No computable occurrences - mark as unknown
+      unknownEvents.push(event);
+      continue;
+    }
+
+    for (const occ of occurrences) {
+      if (!groupedEvents.has(occ.dateKey)) {
+        groupedEvents.set(occ.dateKey, []);
+      }
+      groupedEvents.get(occ.dateKey)!.push({
+        event,
+        dateKey: occ.dateKey,
+        isConfident: occ.isConfident,
+      });
+    }
+  }
+
+  // Sort groups by date, and within each group by start_time
+  const sortedGroups = new Map(
+    [...groupedEvents.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([dateKey, entries]) => [
+        dateKey,
+        entries.sort((a, b) => {
+          const timeA = a.event.start_time || "99:99";
+          const timeB = b.event.start_time || "99:99";
+          return timeA.localeCompare(timeB);
+        }),
+      ])
+  );
+
+  return { groupedEvents: sortedGroups, unknownEvents };
 }
