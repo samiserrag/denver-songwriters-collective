@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.18):** Lint warnings = 0. All tests passing (355). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.19):** Lint warnings = 0. All tests passing (376). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -86,6 +86,9 @@ All must pass before merge:
 |-----------|------|
 | HappeningCard (unified) | `web/src/components/happenings/HappeningCard.tsx` |
 | DateJumpControl | `web/src/components/happenings/DateJumpControl.tsx` |
+| StickyControls | `web/src/components/happenings/StickyControls.tsx` |
+| DateSection | `web/src/components/happenings/DateSection.tsx` |
+| BetaBanner | `web/src/components/happenings/BetaBanner.tsx` |
 | PosterMedia | `web/src/components/media/PosterMedia.tsx` |
 | Header nav | `web/src/components/navigation/header.tsx` |
 | Footer | `web/src/components/navigation/footer.tsx` |
@@ -173,7 +176,7 @@ These layout decisions are **locked** and must not be changed without explicit a
 | Element | Locked Value |
 |---------|--------------|
 | Card structure | Vertical poster card (not horizontal row) |
-| Poster aspect | 4:3 (`aspect-[4/3]`) |
+| Poster aspect | 3:2 (`aspect-[3/2]`) |
 | Surface class | `card-spotlight` |
 | Grid layout | 1 col mobile, 2 col md, 3 col lg |
 | Poster hover | `scale-[1.02]` zoom |
@@ -252,6 +255,15 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - DateJumpControl for jumping to specific dates
 - "Schedule unknown" section for uncomputable events
 - Beta warning banner prominent at top of /happenings
+
+**Phase 4.19 Happenings UX Pass:**
+- DateJumpControl presets: Today, Tomorrow, This Weekend, Pick a date
+- Synchronized Month/Day/Year dropdowns with 90-day window constraint
+- Denser cards: 3:2 aspect ratio (was 4:3), reduced padding/spacing
+- StickyControls wrapper with backdrop blur (sticks below nav)
+- DateSection with collapsible date groups (chevron toggle)
+- BetaBanner dismissible per session (localStorage)
+- Results summary: event/date counts with filter breakdown
 
 ### Logging System (December 2025)
 - Admin logs at `/dashboard/admin/logs`
