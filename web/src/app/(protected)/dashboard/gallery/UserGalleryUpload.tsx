@@ -61,8 +61,10 @@ export default function UserGalleryUpload({
   // Album creation state
   const [showAlbumCreate, setShowAlbumCreate] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState("");
+  const [saveAsDraft, setSaveAsDraft] = useState(false);
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
   const [albumError, setAlbumError] = useState<string | null>(null);
+  const [lastCreatedAlbum, setLastCreatedAlbum] = useState<{ id: string; name: string; isPublished: boolean } | null>(null);
 
   /**
    * Generate a URL-safe slug from a name.
@@ -109,13 +111,14 @@ export default function UserGalleryUpload({
       }
     }
 
+    const isPublished = !saveAsDraft;
     const { data, error } = await supabase
       .from("gallery_albums")
       .insert({
         name: trimmedName,
         slug: finalSlug,
         created_by: userId,
-        is_published: false, // User albums start unpublished
+        is_published: isPublished, // Published by default, unless "Save as draft" checked
       })
       .select("id, name")
       .single();
@@ -130,10 +133,12 @@ export default function UserGalleryUpload({
     // Add to local state and select it
     setAlbums((prev) => [...prev, { id: data.id, name: data.name }]);
     setAlbumId(data.id);
+    setLastCreatedAlbum({ id: data.id, name: data.name, isPublished });
     setNewAlbumName("");
+    setSaveAsDraft(false);
     setShowAlbumCreate(false);
     setIsCreatingAlbum(false);
-    toast.success("Album created");
+    toast.success(isPublished ? "Album created and published" : "Album created as draft");
     router.refresh();
   };
 
@@ -290,7 +295,10 @@ export default function UserGalleryUpload({
           <div className="flex gap-2">
             <select
               value={albumId}
-              onChange={(e) => setAlbumId(e.target.value)}
+              onChange={(e) => {
+                setAlbumId(e.target.value);
+                setLastCreatedAlbum(null); // Clear status chip when user changes selection
+              }}
               className="flex-1 px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
             >
               <option value="">No album</option>
@@ -303,12 +311,24 @@ export default function UserGalleryUpload({
             <button
               type="button"
               onClick={() => setShowAlbumCreate(!showAlbumCreate)}
-              className="px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors"
-              title="Create new album"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">New album</span>
             </button>
           </div>
+          {/* Status chip for newly created album */}
+          {lastCreatedAlbum && albumId === lastCreatedAlbum.id && (
+            <div className="mt-2">
+              <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
+                lastCreatedAlbum.isPublished
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+              }`}>
+                {lastCreatedAlbum.isPublished ? "Published" : "Draft — not visible in public gallery"}
+              </span>
+            </div>
+          )}
           {/* Inline album creation */}
           {showAlbumCreate && (
             <div className="mt-2 p-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
@@ -323,6 +343,20 @@ export default function UserGalleryUpload({
                 className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] mb-2"
                 disabled={isCreatingAlbum}
               />
+              {/* Save as draft toggle */}
+              <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saveAsDraft}
+                  onChange={(e) => setSaveAsDraft(e.target.checked)}
+                  disabled={isCreatingAlbum}
+                  className="w-4 h-4 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                />
+                <span className="text-sm text-[var(--color-text-secondary)]">
+                  Save as draft
+                  <span className="text-[var(--color-text-tertiary)]"> (won&apos;t appear in public gallery)</span>
+                </span>
+              </label>
               {albumError && (
                 <p className="text-sm text-red-500 mb-2">{albumError}</p>
               )}
@@ -340,6 +374,7 @@ export default function UserGalleryUpload({
                   onClick={() => {
                     setShowAlbumCreate(false);
                     setNewAlbumName("");
+                    setSaveAsDraft(false);
                     setAlbumError(null);
                   }}
                   disabled={isCreatingAlbum}
