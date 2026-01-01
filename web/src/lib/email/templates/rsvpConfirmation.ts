@@ -95,7 +95,7 @@ function getConfirmedVariant(params: {
 }): { subject: string; html: string; text: string } {
   const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl } = params;
 
-  const subject = `You're going to ${eventTitle}`;
+  const subject = `You're going to ${eventTitle} — The Denver Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
@@ -165,7 +165,7 @@ function getWaitlistVariant(params: {
 }): { subject: string; html: string; text: string } {
   const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl, waitlistPosition } = params;
 
-  const subject = `You're on the waitlist for ${eventTitle}`;
+  const subject = `You're on the waitlist for ${eventTitle} — The Denver Songwriters Collective`;
 
   const positionText = waitlistPosition !== undefined
     ? `You're <strong>#${waitlistPosition}</strong> on the waitlist.`
