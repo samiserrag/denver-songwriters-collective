@@ -47,7 +47,9 @@ describe("Email Templates", () => {
         expiresInMinutes: 15,
       });
 
-      expect(result.subject).toBe("Your code for Open Mic at The Walnut Room");
+      expect(result.subject).toBe(
+        "Your code for Open Mic at The Walnut Room — The Denver Songwriters Collective"
+      );
     });
 
     it("includes code in HTML body", () => {
