@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { formatEventDateLabel } from "@/lib/datetime";
 
 interface Album {
   id: string;
@@ -414,22 +415,11 @@ export default function UserGalleryUpload({
                 className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
               >
                 <option value="">Select event</option>
-                {events.map((event) => {
-                  // Format: "Event Title — Dec 31, 2025" or "Event Title" if no date
-                  const dateLabel = event.event_date
-                    ? ` — ${new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        timeZone: "America/Denver",
-                      })}`
-                    : "";
-                  return (
-                    <option key={event.id} value={event.id}>
-                      {event.title}{dateLabel}
-                    </option>
-                  );
-                })}
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.title}{formatEventDateLabel(event.event_date)}
+                  </option>
+                ))}
               </select>
               <button
                 type="button"

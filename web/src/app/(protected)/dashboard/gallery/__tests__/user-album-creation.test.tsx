@@ -11,6 +11,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import UserGalleryUpload from "../UserGalleryUpload";
+import { formatEventDate } from "@/lib/datetime";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -221,15 +222,7 @@ describe("UserGalleryUpload - Album Creation", () => {
 });
 
 describe("UserGalleryUpload - Event Dropdown", () => {
-  // Helper to format dates exactly as the component does (America/Denver timezone)
-  const formatEventDate = (dateStr: string): string => {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "America/Denver",
-    });
-  };
+  // Uses formatEventDate from @/lib/datetime (imported at top)
 
   const propsWithEvents = {
     albums: [],
