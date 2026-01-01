@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.19):** Lint warnings = 0. All tests passing (376). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.20):** Lint warnings = 0. All tests passing (443). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -265,6 +265,30 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - BetaBanner dismissible per session (localStorage)
 - Results summary: event/date counts with filter breakdown
 
+**Phase 4.20 Gallery UX Final Lock (December 2025):**
+- Explicit Publish/Unpublish button for draft albums (discoverability fix)
+- "New album" button moved below dropdown to prevent overlap
+- Inline status feedback (no toasts) for publish/unpublish actions
+- Empty-state guidance for albums without photos
+- Owner context for "Hidden by admin" status badge
+- Bulk comment moderation (hide/unhide all) in AlbumManager
+- Admin audit trail logging (`lib/audit/moderationAudit.ts`)
+- Weekly digest kill switch via `ENABLE_WEEKLY_DIGEST` env var
+- Copy freeze tests (no approval/metrics/urgency language in user-facing copy)
+- **Bug fix:** Album detail page now shows images for new albums (query mismatch fix)
+  - Was filtering by `is_approved=true`, now uses `is_published/is_hidden` to match gallery listing
+
+### Key Gallery Components
+
+| Component | Path |
+|-----------|------|
+| AlbumManager | `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` |
+| UserGalleryUpload | `web/src/app/(protected)/dashboard/gallery/UserGalleryUpload.tsx` |
+| Gallery listing | `web/src/app/gallery/page.tsx` |
+| Album detail | `web/src/app/gallery/[slug]/page.tsx` |
+| Moderation audit | `web/src/lib/audit/moderationAudit.ts` |
+| Feature flags | `web/src/lib/featureFlags.ts` |
+
 ### Logging System (December 2025)
 - Admin logs at `/dashboard/admin/logs`
 - Error boundaries wired to appLogger
@@ -304,6 +328,10 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `lib/guest-verification/*.test.ts` | Guest verification |
 | `lib/email/email.test.ts` | Email templates |
 | `app/api/guest/*.test.ts` | Guest API endpoints |
+| `__tests__/gallery-photo-comments.test.ts` | Gallery photo comments |
+| `__tests__/gallery-album-management.test.ts` | Album management (25 tests) |
+| `__tests__/gallery-copy-freeze.test.ts` | Copy freeze (no approval/metrics language) |
+| `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
 
