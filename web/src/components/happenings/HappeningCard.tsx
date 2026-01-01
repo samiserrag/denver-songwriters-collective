@@ -487,8 +487,8 @@ export function HappeningCard({
         role="article"
         data-testid="happening-card"
       >
-        {/* Poster Media Section - 4:3 aspect with zoom on hover */}
-        <div className="relative aspect-[4/3] overflow-hidden" data-testid="poster-thumbnail">
+        {/* Poster Media Section - Reduced height for density (was 4:3, now 3:2) */}
+        <div className="relative aspect-[3/2] overflow-hidden" data-testid="poster-thumbnail">
           {/* Tier 1: Card-optimized 4:3 image */}
           {hasCardImage && (
             <Image
@@ -618,8 +618,8 @@ export function HappeningCard({
           )}
         </div>
 
-        {/* Content Section - Tighter density */}
-        <div className="p-4 space-y-1.5">
+        {/* Content Section - Denser padding (was p-4, now p-3) */}
+        <div className="p-3 space-y-1">
           {/* Title - slightly larger on desktop, tighter leading */}
           <h3
             className={cn(
@@ -632,7 +632,7 @@ export function HappeningCard({
           </h3>
 
           {/* Tier 2 recurrence pill - always visible, below title */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             <Chip variant="recurrence">{recurrenceSummary}</Chip>
             {/* DSC is Tier 1 - urgency/trust - shown prominently */}
             {event.is_dsc_event && <Chip variant="accent">DSC</Chip>}
@@ -644,7 +644,7 @@ export function HappeningCard({
           </p>
 
           {/* Chips row - Tier 3 type/context pills */}
-          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+          <div className="flex items-center gap-1 flex-wrap">
             <Chip variant="default">{eventTypeLabel}</Chip>
             {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}
             {signupChip.show && <Chip variant="muted">Sign-up: {signupChip.label}</Chip>}

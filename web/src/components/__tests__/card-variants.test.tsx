@@ -272,10 +272,11 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
       expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
     });
 
-    it('should have 4:3 aspect ratio container', () => {
+    it('should have 3:2 aspect ratio container for denser cards', () => {
+      // Phase 4.19: Changed from 4:3 to 3:2 for denser card layout
       render(<HappeningCard event={mockOpenMicEvent} />);
       const thumbnail = screen.getByTestId('poster-thumbnail');
-      expect(thumbnail.className).toContain('aspect-[4/3]');
+      expect(thumbnail.className).toContain('aspect-[3/2]');
     });
 
     it('should have hover zoom on poster images', () => {

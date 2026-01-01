@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { HappeningsCard } from "@/components/happenings";
-import { HappeningsFilters } from "@/components/happenings/HappeningsFilters";
-import { DateJumpControl } from "@/components/happenings/DateJumpControl";
+import { HappeningsCard, DateSection, StickyControls } from "@/components/happenings";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
+import { BetaBanner } from "@/components/happenings/BetaBanner";
 import {
   getTodayDenver,
   addDaysDenver,
@@ -23,7 +22,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Phase 4.18 Search Params:
+ * Phase 4.19 Search Params:
  * - q: search query (matches title, description, venue_name, venue_address, custom_location_*)
  * - time: upcoming|past|all
  * - type: event_type (open_mic, showcase, workshop, etc.)
@@ -32,7 +31,6 @@ export const dynamic = "force-dynamic";
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
- * - jumpTo: date to scroll to (YYYY-MM-DD)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -44,7 +42,6 @@ interface HappeningsSearchParams {
   cost?: string;
   days?: string;
   debugDates?: string;
-  jumpTo?: string;
 }
 
 export default async function HappeningsPage({
@@ -67,8 +64,6 @@ export default async function HappeningsPage({
   const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
   // Debug mode for date computation visualization
   const debugDates = params.debugDates === "1";
-  // Jump to date
-  const jumpToDate = params.jumpTo || "";
 
   const today = getTodayDenver();
   // 90-day window for occurrence expansion
@@ -244,9 +239,7 @@ export default async function HappeningsPage({
     totalOccurrences += entries.length;
   }
   const totalDisplayableEvents = totalOccurrences + sortedUnknownEvents.length;
-
-  // Check if jump date is within window
-  const jumpDateOutOfWindow = jumpToDate && (jumpToDate < today || jumpToDate > windowEnd);
+  const totalDates = filteredGroups.size + (sortedUnknownEvents.length > 0 ? 1 : 0);
 
   // Hero only shows on unfiltered /happenings (no filters active)
   const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
@@ -266,6 +259,42 @@ export default async function HappeningsPage({
 
   const pageTitle = getPageTitle();
 
+  // Build filter summary for results display
+  const getFilterSummary = (): string[] => {
+    const parts: string[] = [];
+    if (searchQuery) parts.push(`"${searchQuery}"`);
+    if (typeFilter) {
+      const labels: Record<string, string> = {
+        open_mic: "Open Mics",
+        shows: "Shows",
+        showcase: "Showcases",
+        workshop: "Workshops",
+        song_circle: "Song Circles",
+        gig: "Gigs",
+        other: "Other",
+      };
+      parts.push(labels[typeFilter] || typeFilter);
+    }
+    if (dscFilter) parts.push("DSC Events");
+    if (locationFilter) {
+      const labels: Record<string, string> = { venue: "In-person", online: "Online", hybrid: "Hybrid" };
+      parts.push(labels[locationFilter] || locationFilter);
+    }
+    if (costFilter) {
+      const labels: Record<string, string> = { free: "Free", paid: "Paid", unknown: "Unknown cost" };
+      parts.push(labels[costFilter] || costFilter);
+    }
+    if (daysFilter.length > 0) {
+      const dayLabels = daysFilter.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(", ");
+      parts.push(dayLabels);
+    }
+    if (timeFilter && timeFilter !== "upcoming") {
+      parts.push(timeFilter === "past" ? "Past" : "All time");
+    }
+    return parts;
+  };
+
+  const filterSummary = getFilterSummary();
 
   return (
     <>
@@ -283,158 +312,121 @@ export default async function HappeningsPage({
       )}
 
       <PageContainer className={showHero ? "" : "pt-8"}>
-        {/* Beta warning banner - prominent for all users */}
-        <div className="mb-6 p-4 rounded-lg bg-amber-500/15 border border-amber-500/40">
-          <p className="text-sm text-amber-200">
-            <strong className="text-amber-100">⚠️ Beta notice:</strong> These events are community-submitted and schedules may be incomplete or incorrect. Please verify with venues before attending.
-          </p>
-        </div>
+        {/* Beta warning banner - refined, dismissible per session */}
+        <BetaBanner className="mb-4" />
 
-        {/* Community CTA - shows on all views */}
-        <div className="mb-6 p-5 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
-          <p className="text-[var(--color-text-secondary)] text-sm mb-3">
-            This directory is maintained by our community. Help us keep it accurate!
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center mb-3">
+        {/* Community CTA - condensed */}
+        <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-center">
+          <div className="flex flex-wrap gap-2 justify-center items-center">
+            <span className="text-[var(--color-text-secondary)] text-sm">
+              Help keep this directory accurate:
+            </span>
             {typeFilter === "open_mic" ? (
               <Link
                 href="/submit-open-mic"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
               >
-                + Add an Open Mic
+                + Add Open Mic
               </Link>
             ) : (
               <Link
                 href="/dashboard/my-events/new"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
               >
-                + Create a Happening
+                + Add Event
               </Link>
             )}
             <Link
               href="/submit-open-mic"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
             >
-              Submit a Correction
+              Correction
             </Link>
           </div>
-          <p className="text-[var(--color-text-tertiary)] text-xs">
-            Are you a host? <Link href="/dashboard/my-events" className="text-[var(--color-link)] hover:underline">Claim your listing</Link> to manage it directly.
-          </p>
         </div>
 
         {/* Page header with title */}
         {!showHero && pageTitle && (
-          <h1 className="text-3xl md:text-4xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-4">
+          <h1 className="text-2xl md:text-3xl font-[var(--font-family-display)] font-bold text-[var(--color-text-primary)] mb-3">
             {pageTitle}
           </h1>
         )}
 
-        {/* Filter bar - wrapped in Suspense for useSearchParams */}
+        {/* Sticky Filter + Jump Controls */}
         <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
-          <HappeningsFilters className="mb-4" />
+          <StickyControls todayKey={today} windowEndKey={windowEnd} />
         </Suspense>
 
-        {/* Date Jump Control */}
-        <Suspense fallback={null}>
-          <DateJumpControl
-            todayKey={today}
-            windowEndKey={windowEnd}
-            className="mb-6"
-          />
-        </Suspense>
+        {/* Results summary - under sticky controls */}
+        <div className="py-3 text-sm text-[var(--color-text-secondary)]">
+          <span className="font-medium text-[var(--color-text-primary)]">
+            {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "event" : "events"}
+          </span>
+          {" "}across{" "}
+          <span className="font-medium text-[var(--color-text-primary)]">{totalDates}</span>
+          {" "}{totalDates === 1 ? "date" : "dates"}
+          {" "}(next 90 days)
+          {filterSummary.length > 0 && (
+            <span className="ml-2 text-[var(--color-text-tertiary)]">
+              · Filtered by: {filterSummary.join(", ")}
+            </span>
+          )}
+        </div>
 
-        {/* Out of window warning */}
-        {jumpDateOutOfWindow && (
-          <div className="mb-4 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)]">
-            Selected date is outside the 90-day window ({today} to {windowEnd}).
-          </div>
-        )}
-
-        {/* Results count */}
-        {(searchQuery || hasFilters) && (
-          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-            {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "occurrence" : "occurrences"} found across {list.length} events
-          </p>
-        )}
-
-        {/* Phase 4.18: Date-grouped list with expanded occurrences */}
+        {/* Phase 4.19: Date-grouped list with collapsible sections */}
         {totalDisplayableEvents > 0 ? (
-          <div className="space-y-1">
+          <div className="space-y-0">
             {/* Dated occurrences grouped by date */}
             {[...filteredGroups].map(([dateStr, entriesForDate]) => (
-              <section key={dateStr} id={`date-${dateStr}`} className="relative">
-                {/* Sticky date header */}
-                <div
-                  className="sticky top-16 z-30 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
-                >
-                  <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
-                    <span className="w-1 h-6 bg-[var(--color-accent-primary)] rounded-full" aria-hidden="true" />
-                    {formatDateGroupHeader(dateStr, today)}
-                    <span className="text-base font-normal text-[var(--color-text-secondary)]">
-                      ({entriesForDate.length})
-                    </span>
-                  </h2>
-                </div>
-
-                {/* Event cards grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
-                  {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
-                    <HappeningsCard
-                      key={`${entry.event.id}-${entry.dateKey}`}
-                      event={entry.event}
-                      searchQuery={searchQuery}
-                      debugDates={debugDates}
-                      occurrence={{
-                        date: entry.dateKey,
-                        isToday: entry.dateKey === today,
-                        isTomorrow: entry.dateKey === addDaysDenver(today, 1),
-                        isConfident: entry.isConfident,
-                      }}
-                      todayKey={today}
-                    />
-                  ))}
-                </div>
-              </section>
+              <DateSection
+                key={dateStr}
+                dateKey={dateStr}
+                headerText={formatDateGroupHeader(dateStr, today)}
+                eventCount={entriesForDate.length}
+              >
+                {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
+                  <HappeningsCard
+                    key={`${entry.event.id}-${entry.dateKey}`}
+                    event={entry.event}
+                    searchQuery={searchQuery}
+                    debugDates={debugDates}
+                    occurrence={{
+                      date: entry.dateKey,
+                      isToday: entry.dateKey === today,
+                      isTomorrow: entry.dateKey === addDaysDenver(today, 1),
+                      isConfident: entry.isConfident,
+                    }}
+                    todayKey={today}
+                  />
+                ))}
+              </DateSection>
             ))}
 
             {/* Schedule Unknown section - appears after all dated sections */}
             {sortedUnknownEvents.length > 0 && (
-              <section className="relative">
-                <div
-                  className="sticky top-16 z-30 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
-                >
-                  <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
-                    <span className="w-1 h-6 bg-amber-500 rounded-full" aria-hidden="true" />
-                    Schedule unknown
-                    <span className="text-base font-normal text-[var(--color-text-secondary)]">
-                      ({sortedUnknownEvents.length})
-                    </span>
-                  </h2>
-                  <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                    These events are missing schedule information. Please verify with the venue.
-                  </p>
-                </div>
-
-                {/* Event cards grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
-                  {sortedUnknownEvents.map((event: any) => (
-                    <HappeningsCard
-                      key={event.id}
-                      event={event}
-                      searchQuery={searchQuery}
-                      debugDates={debugDates}
-                      occurrence={{
-                        date: today,
-                        isToday: true,
-                        isTomorrow: false,
-                        isConfident: false,
-                      }}
-                      todayKey={today}
-                    />
-                  ))}
-                </div>
-              </section>
+              <DateSection
+                dateKey="unknown"
+                headerText="Schedule unknown"
+                eventCount={sortedUnknownEvents.length}
+                isUnknown
+                description="These events are missing schedule information. Please verify with the venue."
+              >
+                {sortedUnknownEvents.map((event: any) => (
+                  <HappeningsCard
+                    key={event.id}
+                    event={event}
+                    searchQuery={searchQuery}
+                    debugDates={debugDates}
+                    occurrence={{
+                      date: today,
+                      isToday: true,
+                      isTomorrow: false,
+                      isConfident: false,
+                    }}
+                    todayKey={today}
+                  />
+                ))}
+              </DateSection>
             )}
           </div>
         ) : (

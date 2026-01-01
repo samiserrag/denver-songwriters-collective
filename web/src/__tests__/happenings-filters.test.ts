@@ -201,9 +201,11 @@ describe('Happenings Page Filter Logic', () => {
   });
 
   describe('Results Display', () => {
-    it('should show results count when filters active', () => {
-      // Phase 4.18 changed from "results" to "occurrences" for expanded recurrence
-      expect(pageContent).toContain('occurrences"} found');
+    it('should show results count summary', () => {
+      // Phase 4.19 changed to "X events across Y dates (next 90 days)"
+      expect(pageContent).toContain('totalDisplayableEvents');
+      expect(pageContent).toContain('totalDates');
+      expect(pageContent).toContain('(next 90 days)');
     });
 
     it('should show no results message with filter hint', () => {

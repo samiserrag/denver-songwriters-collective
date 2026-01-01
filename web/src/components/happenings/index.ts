@@ -2,3 +2,7 @@ export { HappeningCard } from "./HappeningCard";
 export type { HappeningCardProps, HappeningEvent } from "./HappeningCard";
 export { HappeningsCard } from "./HappeningsCard";
 export { HappeningsFilters } from "./HappeningsFilters";
+export { DateJumpControl } from "./DateJumpControl";
+export { DateSection } from "./DateSection";
+export { StickyControls } from "./StickyControls";
+export { BetaBanner } from "./BetaBanner";
