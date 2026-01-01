@@ -487,8 +487,8 @@ export function HappeningCard({
         role="article"
         data-testid="happening-card"
       >
-        {/* Poster Media Section - Reduced height for density (was 4:3, now 3:2) */}
-        <div className="relative aspect-[3/2] overflow-hidden" data-testid="poster-thumbnail">
+        {/* Poster Media Section - Compact height for density (16:9 aspect ratio) */}
+        <div className="relative aspect-video overflow-hidden" data-testid="poster-thumbnail">
           {/* Tier 1: Card-optimized 4:3 image */}
           {hasCardImage && (
             <Image
@@ -618,8 +618,8 @@ export function HappeningCard({
           )}
         </div>
 
-        {/* Content Section - Denser padding (was p-4, now p-3) */}
-        <div className="p-3 space-y-1">
+        {/* Content Section - Compact padding for density */}
+        <div className="p-2 space-y-0.5">
           {/* Title - slightly larger on desktop, tighter leading */}
           <h3
             className={cn(

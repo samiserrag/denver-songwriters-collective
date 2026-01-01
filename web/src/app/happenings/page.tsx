@@ -365,7 +365,10 @@ export default async function HappeningsPage({
           {" "}across{" "}
           <span className="font-medium text-[var(--color-text-primary)]">{totalDates}</span>
           {" "}{totalDates === 1 ? "date" : "dates"}
-          {" "}(next 90 days)
+          {" "}
+          <span className="text-[var(--color-text-tertiary)]">
+            ({new Date(`${today}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} – {new Date(`${windowEnd}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })})
+          </span>
           {filterSummary.length > 0 && (
             <span className="ml-2 text-[var(--color-text-tertiary)]">
               · Filtered by: {filterSummary.join(", ")}

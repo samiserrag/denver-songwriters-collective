@@ -3,8 +3,11 @@
 /**
  * DateSection - Collapsible date group for happenings
  *
- * Phase 4.19: Per-date collapse toggle
- * - Each date header gets a chevron to collapse/expand its events
+ * Phase 4.20: Improved collapse UX
+ * - Obvious chevron toggle with rotation animation
+ * - Full-width clickable header button (not just chevron)
+ * - cursor-pointer + hover feedback for discoverability
+ * - Collapse/expand hint text on hover
  * - State is in-memory only (resets on navigation)
  */
 
@@ -30,13 +33,14 @@ function ChevronIcon({ className, isExpanded }: { className?: string; isExpanded
   return (
     <svg
       className={cn(
-        "w-5 h-5 transition-transform duration-200",
+        "w-5 h-5 transition-transform duration-200 ease-out",
         isExpanded ? "rotate-0" : "-rotate-90",
         className
       )}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
+      aria-hidden="true"
     >
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
@@ -61,13 +65,18 @@ export function DateSection({
       >
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center gap-2 text-left group"
+          className={cn(
+            "w-full flex items-center gap-2 text-left group cursor-pointer",
+            "rounded-md -mx-2 px-2 py-1",
+            "hover:bg-[var(--color-bg-secondary)]/50 transition-colors"
+          )}
           aria-expanded={isExpanded}
           aria-controls={`events-${dateKey}`}
+          title={isExpanded ? "Click to collapse" : "Click to expand"}
         >
           <ChevronIcon
             isExpanded={isExpanded}
-            className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]"
+            className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-accent-primary)] transition-colors"
           />
           <h2 className="text-lg md:text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2 flex-1">
             <span
@@ -90,11 +99,11 @@ export function DateSection({
         )}
       </div>
 
-      {/* Event cards grid (collapsible) */}
+      {/* Event cards grid (collapsible) - compact gaps for density */}
       <div
         id={`events-${dateKey}`}
         className={cn(
-          "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 pt-3 pb-4",
+          "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 pt-2 pb-3",
           "transition-all duration-200",
           !isExpanded && "hidden"
         )}
