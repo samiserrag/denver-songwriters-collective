@@ -223,8 +223,17 @@ export default async function HappeningsPage({
     );
   }
 
-  // Sort all events by their next occurrence date, then by start_time
-  eventsWithOccurrences.sort((a, b) => {
+  // Phase 4.17.6: Separate confident and unconfident events
+  // Events with isConfident=false have unknown schedules and should not appear under dated headers
+  const confidentEvents = eventsWithOccurrences.filter(
+    ({ occurrence }) => occurrence.isConfident
+  );
+  const unknownScheduleEvents = eventsWithOccurrences.filter(
+    ({ occurrence }) => !occurrence.isConfident
+  );
+
+  // Sort confident events by their next occurrence date, then by start_time
+  confidentEvents.sort((a, b) => {
     // First sort by date
     const dateCompare = a.occurrence.date.localeCompare(b.occurrence.date);
     if (dateCompare !== 0) return dateCompare;
@@ -235,9 +244,16 @@ export default async function HappeningsPage({
     return timeA.localeCompare(timeB);
   });
 
-  // Group events by next occurrence date (using pre-computed occurrence)
+  // Sort unknown schedule events alphabetically by title
+  unknownScheduleEvents.sort((a, b) => {
+    const titleA = a.event.title || "";
+    const titleB = b.event.title || "";
+    return titleA.localeCompare(titleB);
+  });
+
+  // Group confident events by next occurrence date (using pre-computed occurrence)
   const groupedEvents = new Map<string, EventWithOccurrence[]>();
-  for (const item of eventsWithOccurrences) {
+  for (const item of confidentEvents) {
     const dateKey = item.occurrence.date;
     if (!groupedEvents.has(dateKey)) {
       groupedEvents.set(dateKey, []);
@@ -265,6 +281,9 @@ export default async function HappeningsPage({
       }
     }
   }
+
+  // Total displayable events for results count
+  const totalDisplayableEvents = confidentEvents.length + unknownScheduleEvents.length;
 
   // Hero only shows on unfiltered /happenings (no filters active)
   const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
@@ -345,16 +364,24 @@ export default async function HappeningsPage({
           <HappeningsFilters className="mb-6" />
         </Suspense>
 
+        {/* Beta warning banner */}
+        <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200">
+          <p className="text-sm">
+            <strong>Beta notice:</strong> Event schedules may be incomplete or incorrect. Please verify with venues before attending.
+          </p>
+        </div>
+
         {/* Results count */}
         {(searchQuery || hasFilters) && (
           <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-            {eventsWithOccurrences.length} {eventsWithOccurrences.length === 1 ? "result" : "results"} found
+            {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "result" : "results"} found
           </p>
         )}
 
         {/* Phase 4.17: Date-grouped list with sticky headers */}
-        {eventsWithOccurrences.length > 0 ? (
+        {totalDisplayableEvents > 0 ? (
           <div className="space-y-1">
+            {/* Confident events grouped by date */}
             {[...sortedGroupedEvents].map(([dateStr, itemsForDate]) => (
               <section key={dateStr} className="relative">
                 {/* Sticky date header
@@ -389,6 +416,40 @@ export default async function HappeningsPage({
                 </div>
               </section>
             ))}
+
+            {/* Schedule Unknown section - appears after all dated sections */}
+            {unknownScheduleEvents.length > 0 && (
+              <section className="relative">
+                <div
+                  className="sticky top-16 z-30 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
+                >
+                  <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
+                    <span className="w-1 h-6 bg-amber-500 rounded-full" aria-hidden="true" />
+                    Schedule unknown
+                    <span className="text-base font-normal text-[var(--color-text-secondary)]">
+                      ({unknownScheduleEvents.length})
+                    </span>
+                  </h2>
+                  <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+                    These events are missing schedule information. Please verify with the venue.
+                  </p>
+                </div>
+
+                {/* Event cards grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
+                  {unknownScheduleEvents.map(({ event, occurrence }) => (
+                    <HappeningsCard
+                      key={event.id}
+                      event={event}
+                      searchQuery={searchQuery}
+                      debugDates={debugDates}
+                      occurrence={occurrence}
+                      todayKey={today}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

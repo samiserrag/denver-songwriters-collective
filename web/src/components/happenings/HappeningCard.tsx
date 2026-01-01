@@ -137,6 +137,8 @@ interface DateInfo {
   isTonight: boolean;
   isTomorrow: boolean;
   isPast: boolean;
+  /** Whether the schedule is unknown/unconfident */
+  isUnknown: boolean;
   /** The occurrence used to compute this info */
   occurrence: NextOccurrenceResult;
 }
@@ -176,12 +178,20 @@ function getDateInfo(
   // Check if the occurrence is in the past
   const isPast = occurrence.date < todayKey;
 
-  // Format the date label
-  if (occurrence.isToday) {
-    return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false, occurrence };
+  // Phase 4.17.6: Only show TONIGHT/TOMORROW for confident schedules
+  // Events with unknown schedules should not display misleading temporal badges
+  if (occurrence.isConfident) {
+    if (occurrence.isToday) {
+      return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false, isUnknown: false, occurrence };
+    }
+    if (occurrence.isTomorrow) {
+      return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false, isUnknown: false, occurrence };
+    }
   }
-  if (occurrence.isTomorrow) {
-    return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false, occurrence };
+
+  // For unconfident events, show "Schedule unknown"
+  if (!occurrence.isConfident) {
+    return { label: "SCHEDULE UNKNOWN", isTonight: false, isTomorrow: false, isPast: false, isUnknown: true, occurrence };
   }
 
   // Format the date for display (parse at noon UTC for safe formatting)
@@ -193,7 +203,7 @@ function getDateInfo(
     timeZone: "America/Denver",
   }).toUpperCase();
 
-  return { label: formatted, isTonight: false, isTomorrow: false, isPast, occurrence };
+  return { label: formatted, isTonight: false, isTomorrow: false, isPast, isUnknown: false, occurrence };
 }
 
 // ============================================================
@@ -468,6 +478,8 @@ export function HappeningCard({
           "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
           // Tonight/Tomorrow highlight (same as MemberCard spotlight)
           (dateInfo.isTonight || dateInfo.isTomorrow) && "border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5",
+          // Unknown schedule warning style
+          dateInfo.isUnknown && "border-amber-500/30 bg-amber-500/5",
           // Past events muted
           dateInfo.isPast && "opacity-70",
           className

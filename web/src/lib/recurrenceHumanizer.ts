@@ -277,9 +277,13 @@ export function humanizeRecurrence(recurrence: string | null, day: string | null
   }
 
   // Fall back to simple text matching
+  // Treat null, empty, and "none" the same - if we have a day, show "Every {day}"
   if (!recurrence) return d ? `Every ${d}` : "Schedule TBD";
 
   const r = String(recurrence).trim().toLowerCase();
+
+  // Phase 4.17.6: Treat "none" as no recurrence - use day_of_week if available
+  if (r === "none") return d ? `Every ${d}` : "Schedule TBD";
 
   if (r === "weekly") return d ? `Every ${d}` : "Weekly";
   if (r === "biweekly" || r === "every other week") return d ? `Every Other ${d}` : "Every Other Week";
