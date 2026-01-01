@@ -28,7 +28,7 @@ export function getNewsletterWelcomeEmail(_params?: NewsletterWelcomeEmailParams
   const privacyUrl = `${SITE_URL}/privacy`;
   const contactUrl = `${SITE_URL}/contact`;
 
-  const subject = "Welcome to the Denver Songwriters Collective!";
+  const subject = "Welcome to The Denver Songwriters Collective!";
 
   const htmlContent = `
 ${paragraph("Hi there,")}

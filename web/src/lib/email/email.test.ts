@@ -525,7 +525,7 @@ describe("New Email Templates", () => {
     it("generates welcome email", () => {
       const result = getNewsletterWelcomeEmail();
 
-      expect(result.subject).toBe("Welcome to the Denver Songwriters Collective!");
+      expect(result.subject).toBe("Welcome to The Denver Songwriters Collective!");
       expect(result.html).toContain("Open mics and songwriter events");
       expect(result.html).toContain("happenings?type=open_mic");
       expect(result.text).toContain("Tips and resources");
