@@ -1,5 +1,8 @@
 /**
  * Phase 4.17: Tests for next occurrence computation
+ *
+ * All date keys must be in America/Denver timezone.
+ * These tests verify no UTC/local timezone leakage.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -8,6 +11,8 @@ import {
   formatDateGroupHeader,
   groupEventsByNextOccurrence,
   getTodayDenver,
+  denverDateKeyFromDate,
+  addDaysDenver,
 } from "../nextOccurrence";
 
 // Mock date for consistent tests
@@ -251,6 +256,93 @@ describe("nextOccurrence", () => {
       const keys = [...groups.keys()];
 
       expect(keys[0]).toBe("2025-01-14");
+    });
+  });
+
+  describe("Denver timezone helpers", () => {
+    it("denverDateKeyFromDate produces YYYY-MM-DD in Denver timezone", () => {
+      // 11pm Denver time on Jan 15 = 6am UTC on Jan 16
+      const lateNightDenver = new Date("2025-01-16T06:00:00Z");
+      const dateKey = denverDateKeyFromDate(lateNightDenver);
+      // Should be Jan 15 in Denver, not Jan 16
+      expect(dateKey).toBe("2025-01-15");
+    });
+
+    it("addDaysDenver correctly steps calendar days", () => {
+      const todayKey = "2025-01-15";
+      expect(addDaysDenver(todayKey, 1)).toBe("2025-01-16");
+      expect(addDaysDenver(todayKey, 7)).toBe("2025-01-22");
+      expect(addDaysDenver(todayKey, -1)).toBe("2025-01-14");
+    });
+
+    it("addDaysDenver handles month boundaries", () => {
+      expect(addDaysDenver("2025-01-31", 1)).toBe("2025-02-01");
+      expect(addDaysDenver("2025-02-01", -1)).toBe("2025-01-31");
+    });
+
+    it("addDaysDenver handles year boundaries", () => {
+      expect(addDaysDenver("2025-12-31", 1)).toBe("2026-01-01");
+      expect(addDaysDenver("2026-01-01", -1)).toBe("2025-12-31");
+    });
+  });
+
+  describe("Phase 4.17.2 timezone bug fixes", () => {
+    it("no duplicate Tomorrow + Thursday headers for the same Denver day", () => {
+      // If tomorrow is Thursday (Jan 16), there should only be one group key
+      mockDate("2025-01-15"); // Wednesday
+      const events = [
+        { id: "1", event_date: "2025-01-16" }, // Thursday
+        { id: "2", day_of_week: "Thursday" },   // Also next Thursday (Jan 16)
+      ];
+
+      const groups = groupEventsByNextOccurrence(events);
+      const keys = [...groups.keys()];
+
+      // Both events should be in the same group
+      expect(keys.length).toBe(1);
+      expect(keys[0]).toBe("2025-01-16");
+      expect(groups.get("2025-01-16")?.length).toBe(2);
+    });
+
+    it("Friday event in Denver never buckets under Thursday", () => {
+      mockDate("2025-01-15"); // Wednesday
+      const fridayEvent = { id: "1", event_date: "2025-01-17" }; // Friday
+
+      const result = computeNextOccurrence(fridayEvent);
+      expect(result.date).toBe("2025-01-17");
+
+      // Also verify grouping
+      const groups = groupEventsByNextOccurrence([{ ...fridayEvent }]);
+      expect(groups.has("2025-01-17")).toBe(true);
+      expect(groups.has("2025-01-16")).toBe(false); // NOT Thursday
+    });
+
+    it("Tomorrow label corresponds to addDaysDenver(todayKey, 1)", () => {
+      mockDate("2025-01-15");
+      const todayKey = getTodayDenver();
+      const tomorrowKey = addDaysDenver(todayKey, 1);
+
+      // formatDateGroupHeader should return "Tomorrow" for tomorrowKey
+      expect(formatDateGroupHeader(tomorrowKey, todayKey)).toBe("Tomorrow");
+
+      // And an event on that date should have isTomorrow = true
+      const tomorrowEvent = { event_date: tomorrowKey };
+      const result = computeNextOccurrence(tomorrowEvent);
+      expect(result.isTomorrow).toBe(true);
+    });
+
+    it("weekly recurring event computes correct Denver date key", () => {
+      // Wednesday, Jan 15, 2025
+      mockDate("2025-01-15");
+      const event = { day_of_week: "Friday" };
+      const result = computeNextOccurrence(event);
+
+      // Next Friday is Jan 17 - verify it's exactly that date key
+      expect(result.date).toBe("2025-01-17");
+
+      // Verify it matches what addDaysDenver would produce
+      const expectedFriday = addDaysDenver("2025-01-15", 2); // Wed + 2 = Fri
+      expect(result.date).toBe(expectedFriday);
     });
   });
 });
