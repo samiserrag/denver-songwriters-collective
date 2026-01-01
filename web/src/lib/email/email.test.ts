@@ -417,7 +417,9 @@ describe("New Email Templates", () => {
         isWaitlist: false,
       });
 
-      expect(result.subject).toBe("You're going to DSC Showcase");
+      expect(result.subject).toBe(
+        "You're going to DSC Showcase — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("Hi Sarah,");
       expect(result.html).toContain("DSC Showcase");
       expect(result.html).toContain("Dec 20, 2025");
@@ -435,7 +437,9 @@ describe("New Email Templates", () => {
         waitlistPosition: 3,
       });
 
-      expect(result.subject).toBe("You're on the waitlist for DSC Showcase");
+      expect(result.subject).toBe(
+        "You're on the waitlist for DSC Showcase — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("#3");
       expect(result.text).toContain("#3");
     });
