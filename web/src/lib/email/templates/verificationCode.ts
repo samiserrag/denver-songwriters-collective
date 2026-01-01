@@ -31,13 +31,13 @@ export function getVerificationCodeEmail(params: VerificationCodeEmailParams): {
   const safeEventTitle = escapeHtml(eventTitle);
 
   // Subject
-  const subject = `Your code for ${eventTitle}`;
+  const subject = `Your code for ${eventTitle} — The Denver Songwriters Collective`;
 
   // HTML content
   const htmlContent = `
 ${paragraph(getGreeting(guestName))}
 
-${paragraph(`Here's your verification code to claim your spot at <strong>${safeEventTitle}</strong>:`)}
+${paragraph(`You requested a code to claim a slot at <strong>${safeEventTitle}</strong>:`)}
 
 ${codeBlock(code)}
 
@@ -53,7 +53,7 @@ ${paragraph("If you didn't request this code, you can safely ignore this email."
   // Plain text
   const textContent = `${guestName?.trim() ? `Hi ${guestName.trim()},` : "Hi there,"}
 
-Here's your verification code to claim your spot at ${eventTitle}:
+You requested a code to claim a slot at ${eventTitle}:
 
 ${code}
 
