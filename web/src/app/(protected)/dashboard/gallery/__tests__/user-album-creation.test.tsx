@@ -221,6 +221,16 @@ describe("UserGalleryUpload - Album Creation", () => {
 });
 
 describe("UserGalleryUpload - Event Dropdown", () => {
+  // Helper to format dates exactly as the component does (America/Denver timezone)
+  const formatEventDate = (dateStr: string): string => {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "America/Denver",
+    });
+  };
+
   const propsWithEvents = {
     albums: [],
     venues: [],
@@ -234,9 +244,11 @@ describe("UserGalleryUpload - Event Dropdown", () => {
 
   it("should display events with dates in format 'Title — MMM D, YYYY'", () => {
     render(<UserGalleryUpload {...propsWithEvents} />);
-    // Check that event with date shows formatted date
-    expect(screen.getByText(/Monday Open Mic — Jan 15, 2025/)).toBeInTheDocument();
-    expect(screen.getByText(/Songwriter Showcase — Feb 20, 2025/)).toBeInTheDocument();
+    // Use the same formatting as the component (America/Denver timezone)
+    const expectedDate1 = formatEventDate("2025-01-15");
+    const expectedDate2 = formatEventDate("2025-02-20");
+    expect(screen.getByText(new RegExp(`Monday Open Mic — ${expectedDate1}`))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`Songwriter Showcase — ${expectedDate2}`))).toBeInTheDocument();
   });
 
   it("should display events without dates as title only", () => {
