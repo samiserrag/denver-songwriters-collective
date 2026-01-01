@@ -22,6 +22,11 @@ import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTimeToAMPM, getRecurrenceSummary } from "@/lib/recurrenceHumanizer";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
+import {
+  computeNextOccurrence,
+  getTodayDenver,
+  type EventForOccurrence,
+} from "@/lib/events/nextOccurrence";
 
 // ============================================================
 // Types
@@ -110,63 +115,51 @@ export interface HappeningCardProps {
 // Date Helpers
 // ============================================================
 
+/**
+ * Get date display info using the canonical computeNextOccurrence logic.
+ *
+ * IMPORTANT: This uses computeNextOccurrence to determine isTonight/isTomorrow,
+ * which correctly handles monthly ordinal recurrence (e.g., "3rd Wednesday").
+ * A 5th Wednesday will NOT show TONIGHT for a 3WE event.
+ */
 function getDateInfo(event: HappeningEvent): {
   label: string;
   isTonight: boolean;
   isTomorrow: boolean;
   isPast: boolean;
 } {
-  if (!event.event_date) {
-    const day = event.day_of_week?.trim();
-    if (day) {
-      const today = new Date();
-      const todayDay = today.toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Denver" });
-      if (todayDay.toUpperCase() === day.toUpperCase()) {
-        return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false };
-      }
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowDay = tomorrow.toLocaleDateString("en-US", { weekday: "long", timeZone: "America/Denver" });
-      if (tomorrowDay.toUpperCase() === day.toUpperCase()) {
-        return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false };
-      }
-      return { label: day.substring(0, 3).toUpperCase(), isTonight: false, isTomorrow: false, isPast: false };
-    }
-    return { label: "", isTonight: false, isTomorrow: false, isPast: false };
-  }
+  const todayKey = getTodayDenver();
 
-  const eventDate = new Date(event.event_date + "T00:00:00");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Use computeNextOccurrence to get the canonical next occurrence date
+  const eventForOccurrence: EventForOccurrence = {
+    event_date: event.event_date,
+    day_of_week: event.day_of_week,
+    recurrence_rule: event.recurrence_rule,
+    start_time: event.start_time,
+  };
+  const occurrence = computeNextOccurrence(eventForOccurrence);
 
-  const eventDateOnly = new Date(eventDate);
-  eventDateOnly.setHours(0, 0, 0, 0);
+  // Check if the occurrence is in the past
+  const isPast = occurrence.date < todayKey;
 
-  if (eventDateOnly.getTime() === today.getTime()) {
+  // Format the date label
+  if (occurrence.isToday) {
     return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false };
   }
-  if (eventDateOnly.getTime() === tomorrow.getTime()) {
+  if (occurrence.isTomorrow) {
     return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false };
   }
-  if (eventDateOnly < today) {
-    const formatted = eventDate.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      timeZone: "America/Denver",
-    }).toUpperCase();
-    return { label: formatted, isTonight: false, isTomorrow: false, isPast: true };
-  }
 
-  const formatted = eventDate.toLocaleDateString("en-US", {
+  // Format the date for display (parse at noon UTC for safe formatting)
+  const displayDate = new Date(`${occurrence.date}T12:00:00Z`);
+  const formatted = displayDate.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     timeZone: "America/Denver",
   }).toUpperCase();
-  return { label: formatted, isTonight: false, isTomorrow: false, isPast: false };
+
+  return { label: formatted, isTonight: false, isTomorrow: false, isPast };
 }
 
 // ============================================================
