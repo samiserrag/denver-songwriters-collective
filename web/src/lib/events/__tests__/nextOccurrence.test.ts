@@ -345,4 +345,98 @@ describe("nextOccurrence", () => {
       expect(result.date).toBe(expectedFriday);
     });
   });
+
+  describe("Phase 4.17.3 - 5th weekday must not match 1st-4th ordinal", () => {
+    /**
+     * January 2025 Wednesdays:
+     * - 1st Wednesday: Jan 1
+     * - 2nd Wednesday: Jan 8
+     * - 3rd Wednesday: Jan 15
+     * - 4th Wednesday: Jan 22
+     * - 5th Wednesday: Jan 29 (this should NOT match any 1WE, 2WE, 3WE, 4WE)
+     *
+     * February 2025 Wednesdays:
+     * - 1st Wednesday: Feb 5
+     * - 2nd Wednesday: Feb 12
+     * - 3rd Wednesday: Feb 19
+     * - 4th Wednesday: Feb 26
+     */
+
+    it("on 5th Wednesday (Jan 29), 1WE event should show Feb 5 (next 1st Wed)", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = { recurrence_rule: "FREQ=MONTHLY;BYDAY=1WE" };
+      const result = computeNextOccurrence(event);
+
+      // Should NOT be today (Jan 29 is 5th Wed, not 1st)
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-05"); // Next 1st Wednesday
+    });
+
+    it("on 5th Wednesday (Jan 29), 2WE event should show Feb 12 (next 2nd Wed)", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = { recurrence_rule: "FREQ=MONTHLY;BYDAY=2WE" };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-12"); // Next 2nd Wednesday
+    });
+
+    it("on 5th Wednesday (Jan 29), 3WE event should show Feb 19 (next 3rd Wed)", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = { recurrence_rule: "FREQ=MONTHLY;BYDAY=3WE" };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-19"); // Next 3rd Wednesday
+    });
+
+    it("on 5th Wednesday (Jan 29), 4WE event should show Feb 26 (next 4th Wed)", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = { recurrence_rule: "FREQ=MONTHLY;BYDAY=4WE" };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-26"); // Next 4th Wednesday
+    });
+
+    it("grouping places 5th Wednesday events under future correct ordinal date", () => {
+      mockDate("2025-01-29"); // 5th Wednesday
+      const events = [
+        { id: "1", recurrence_rule: "FREQ=MONTHLY;BYDAY=1WE" },
+        { id: "2", recurrence_rule: "FREQ=MONTHLY;BYDAY=2WE" },
+        { id: "3", recurrence_rule: "FREQ=MONTHLY;BYDAY=3WE" },
+        { id: "4", recurrence_rule: "FREQ=MONTHLY;BYDAY=4WE" },
+      ];
+
+      const groups = groupEventsByNextOccurrence(events);
+
+      // None should be grouped under today (2025-01-29)
+      expect(groups.has("2025-01-29")).toBe(false);
+
+      // Each should be under its correct February date
+      expect(groups.has("2025-02-05")).toBe(true);  // 1WE
+      expect(groups.has("2025-02-12")).toBe(true);  // 2WE
+      expect(groups.has("2025-02-19")).toBe(true);  // 3WE
+      expect(groups.has("2025-02-26")).toBe(true);  // 4WE
+    });
+
+    it("on the true 3rd Wednesday (Jan 15), 3WE event should show today", () => {
+      mockDate("2025-01-15"); // 3rd Wednesday of Jan
+      const event = { recurrence_rule: "FREQ=MONTHLY;BYDAY=3WE" };
+      const result = computeNextOccurrence(event);
+
+      expect(result.date).toBe("2025-01-15");
+      expect(result.isToday).toBe(true);
+    });
+
+    it("on 4th Wednesday (Jan 22), 3WE event should show Feb 19 (past this month)", () => {
+      mockDate("2025-01-22"); // 4th Wednesday of Jan
+      const event = { recurrence_rule: "FREQ=MONTHLY;BYDAY=3WE" };
+      const result = computeNextOccurrence(event);
+
+      // Jan 15 (3rd Wed) is past, so next is Feb 19
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-19");
+    });
+  });
 });
