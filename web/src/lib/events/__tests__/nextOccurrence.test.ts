@@ -703,4 +703,91 @@ describe("nextOccurrence", () => {
       expect(groups.get("2025-02-26")?.some(e => e.id === "4th-wed")).toBe(true);
     });
   });
+
+  describe("Phase 4.17.6 Investigation - Weekly events in forward horizon", () => {
+    /**
+     * These tests verify that weekly events appear correctly in all future
+     * weeks, not just Today/Tomorrow. This confirms the occurrence computation
+     * is correct and any display issues are data problems, not logic bugs.
+     */
+
+    it("weekly Wednesday event on Today (Wed) should show today", () => {
+      mockDate("2025-01-15"); // Wednesday
+      const event = { day_of_week: "Wednesday", recurrence_rule: "weekly" };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-15");
+    });
+
+    it("weekly Wednesday event on Thursday should show next Wed (6 days)", () => {
+      mockDate("2025-01-16"); // Thursday
+      const event = { day_of_week: "Wednesday", recurrence_rule: "weekly" };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-01-22"); // Next Wednesday
+    });
+
+    it("weekly Wednesday event on 5th Wednesday should show 5th Wednesday (today)", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = { day_of_week: "Wednesday", recurrence_rule: "weekly" };
+      const result = computeNextOccurrence(event);
+
+      // This is the key test: weekly events SHOULD appear on 5th Wed
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-29");
+    });
+
+    it("weekly Wednesday with NULL recurrence_rule still computes correctly", () => {
+      mockDate("2025-01-15"); // Wednesday
+      // This matches Velvet Banjo's data: day_of_week=Wednesday, recurrence_rule=NULL
+      const event = { day_of_week: "Wednesday", recurrence_rule: null };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-15");
+    });
+
+    it("event with NULL day_of_week and NULL recurrence_rule falls back to today", () => {
+      mockDate("2025-01-15");
+      // This matches Hooked on Colfax's data: both NULL
+      const event = { day_of_week: null, recurrence_rule: null };
+      const result = computeNextOccurrence(event);
+
+      // Falls back to today but NOT confident
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-15");
+      expect(result.isConfident).toBe(false);
+    });
+
+    it("event with recurrence_rule='none' and NULL day_of_week falls back to today", () => {
+      mockDate("2025-01-15");
+      // This matches Joe Willy's data: recurrence_rule="none", day_of_week=NULL
+      const event = { day_of_week: null, recurrence_rule: "none" };
+      const result = computeNextOccurrence(event);
+
+      // "none" is not a recognized ordinal, so falls through to Case 3/fallback
+      expect(result.date).toBe("2025-01-15");
+      expect(result.isConfident).toBe(false);
+    });
+
+    it("grouping correctly separates weekly vs monthly ordinal events", () => {
+      mockDate("2025-01-29"); // 5th Wednesday
+      const events = [
+        { id: "weekly-wed", day_of_week: "Wednesday", recurrence_rule: "weekly" },
+        { id: "1st-wed", day_of_week: "Wednesday", recurrence_rule: "1st" },
+        { id: "2nd-wed", day_of_week: "Wednesday", recurrence_rule: "2nd" },
+      ];
+
+      const groups = groupEventsByNextOccurrence(events);
+
+      // Weekly should be TODAY (5th Wed)
+      expect(groups.get("2025-01-29")?.some(e => e.id === "weekly-wed")).toBe(true);
+
+      // Ordinals should be in FEBRUARY
+      expect(groups.get("2025-02-05")?.some(e => e.id === "1st-wed")).toBe(true);
+      expect(groups.get("2025-02-12")?.some(e => e.id === "2nd-wed")).toBe(true);
+    });
+  });
 });
