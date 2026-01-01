@@ -36,6 +36,12 @@ import { getEventReminderEmail } from "./templates/eventReminder";
 import { getEventUpdatedEmail } from "./templates/eventUpdated";
 import { getEventCancelledEmail } from "./templates/eventCancelled";
 import { getSuggestionResponseEmail } from "./templates/suggestionResponse";
+import { getEventClaimSubmittedEmail } from "./templates/eventClaimSubmitted";
+import { getEventClaimApprovedEmail } from "./templates/eventClaimApproved";
+import { getEventClaimRejectedEmail } from "./templates/eventClaimRejected";
+import { getAdminEventClaimNotificationEmail } from "./templates/adminEventClaimNotification";
+import { getOccurrenceCancelledHostEmail } from "./templates/occurrenceCancelledHost";
+import { getOccurrenceModifiedHostEmail } from "./templates/occurrenceModifiedHost";
 
 describe("Email Templates", () => {
   describe("getVerificationCodeEmail", () => {
@@ -357,7 +363,13 @@ describe("Email Registry", () => {
     expect(keys).toContain("eventUpdated");
     expect(keys).toContain("eventCancelled");
     expect(keys).toContain("suggestionResponse");
-    expect(keys.length).toBe(13);
+    expect(keys).toContain("eventClaimSubmitted");
+    expect(keys).toContain("eventClaimApproved");
+    expect(keys).toContain("eventClaimRejected");
+    expect(keys).toContain("adminEventClaimNotification");
+    expect(keys).toContain("occurrenceCancelledHost");
+    expect(keys).toContain("occurrenceModifiedHost");
+    expect(keys.length).toBe(19);
   });
 
   it("getTemplate returns valid output for all templates", () => {
@@ -665,6 +677,187 @@ describe("New Email Templates", () => {
       expect(result.html).toContain("This venue closed down.");
     });
   });
+
+  describe("getEventClaimSubmittedEmail", () => {
+    it("generates submitted email", () => {
+      const result = getEventClaimSubmittedEmail({
+        userName: "Alex",
+        eventTitle: "Monday Night Mic",
+      });
+
+      expect(result.subject).toBe(
+        "Your claim for Monday Night Mic is under review — The Denver Songwriters Collective"
+      );
+      expect(result.html).toContain("Hi Alex,");
+      expect(result.html).toContain("Monday Night Mic");
+      expect(result.html).toContain("under review");
+      expect(result.text).toContain("1-2 business days");
+    });
+
+    it("uses fallback greeting when name is null", () => {
+      const result = getEventClaimSubmittedEmail({
+        eventTitle: "Open Mic",
+      });
+
+      expect(result.html).toContain("Hi there,");
+    });
+  });
+
+  describe("getEventClaimApprovedEmail", () => {
+    it("generates approval email", () => {
+      const result = getEventClaimApprovedEmail({
+        userName: "Jordan",
+        eventTitle: "Thursday Showcase",
+        eventId: "123",
+      });
+
+      expect(result.subject).toBe(
+        "You're now the host of Thursday Showcase — The Denver Songwriters Collective"
+      );
+      expect(result.html).toContain("Hi Jordan,");
+      expect(result.html).toContain("Thursday Showcase");
+      expect(result.html).toContain("official host");
+      expect(result.html).toContain("Welcome to the table");
+      expect(result.text).toContain("Edit event details");
+    });
+  });
+
+  describe("getEventClaimRejectedEmail", () => {
+    it("generates rejection email with reason", () => {
+      const result = getEventClaimRejectedEmail({
+        userName: "Pat",
+        eventTitle: "Open Mic Night",
+        reason: "The current host is still active.",
+      });
+
+      expect(result.subject).toBe(
+        "Update on your claim for Open Mic Night — The Denver Songwriters Collective"
+      );
+      expect(result.html).toContain("Hi Pat,");
+      expect(result.html).toContain("not able to approve");
+      expect(result.html).toContain("current host is still active");
+      expect(result.text).toContain("Feedback");
+    });
+
+    it("generates rejection email without reason", () => {
+      const result = getEventClaimRejectedEmail({
+        userName: "Pat",
+        eventTitle: "Open Mic Night",
+      });
+
+      expect(result.subject).toBe(
+        "Update on your claim for Open Mic Night — The Denver Songwriters Collective"
+      );
+      expect(result.html).not.toContain("Feedback");
+    });
+  });
+
+  describe("getAdminEventClaimNotificationEmail", () => {
+    it("generates admin notification", () => {
+      const result = getAdminEventClaimNotificationEmail({
+        requesterName: "Jane Doe",
+        eventTitle: "Friday Night Mic",
+        eventId: "456",
+      });
+
+      expect(result.subject).toBe("[DSC Claim] Jane Doe wants to host Friday Night Mic");
+      expect(result.html).toContain("Jane Doe");
+      expect(result.html).toContain("Friday Night Mic");
+      expect(result.html).toContain("/dashboard/admin/claims");
+      expect(result.text).toContain("Review claim");
+    });
+
+    it("does not include email addresses in body", () => {
+      const result = getAdminEventClaimNotificationEmail({
+        requesterName: "Jane Doe",
+        eventTitle: "Open Mic",
+        eventId: "789",
+      });
+
+      // Should not contain email-like patterns (except site domain)
+      const unexpectedEmails = result.html.match(/@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+      const filtered = unexpectedEmails.filter(
+        email => !email.includes("denversongwriterscollective")
+      );
+      expect(filtered).toEqual([]);
+    });
+  });
+
+  describe("getOccurrenceCancelledHostEmail", () => {
+    it("generates cancellation email for single occurrence", () => {
+      const result = getOccurrenceCancelledHostEmail({
+        userName: "Sam",
+        eventTitle: "Weekly Jam",
+        occurrenceDate: "Dec 25, 2025",
+        venueName: "The Walnut Room",
+        reason: "Holiday closure",
+        hostName: "Alex",
+        eventId: "123",
+      });
+
+      expect(result.subject).toBe(
+        "Cancelled: Weekly Jam on Dec 25, 2025 — The Denver Songwriters Collective"
+      );
+      expect(result.html).toContain("Hi Sam,");
+      expect(result.html).toContain("Weekly Jam");
+      expect(result.html).toContain("Dec 25, 2025 only");
+      expect(result.html).toContain("Holiday closure");
+      expect(result.html).toContain("Note from Alex");
+      expect(result.text).toContain("regular series continues");
+    });
+
+    it("generates cancellation without reason", () => {
+      const result = getOccurrenceCancelledHostEmail({
+        eventTitle: "Open Mic",
+        occurrenceDate: "Dec 30",
+        venueName: "Venue",
+        eventId: "456",
+      });
+
+      expect(result.html).not.toContain("Note from");
+      expect(result.html).toContain("Dec 30 only");
+    });
+  });
+
+  describe("getOccurrenceModifiedHostEmail", () => {
+    it("generates modification email with time change", () => {
+      const result = getOccurrenceModifiedHostEmail({
+        userName: "Chris",
+        eventTitle: "Songwriter Circle",
+        occurrenceDate: "Dec 22, 2025",
+        eventId: "789",
+        changes: {
+          time: { old: "7pm", new: "8pm" },
+        },
+        newTime: "8pm",
+        venueName: "New Venue",
+        notes: "Starting an hour later this week.",
+      });
+
+      expect(result.subject).toBe(
+        "Update: Songwriter Circle on Dec 22, 2025 — The Denver Songwriters Collective"
+      );
+      expect(result.html).toContain("Hi Chris,");
+      expect(result.html).toContain("Dec 22, 2025 only");
+      expect(result.html).toContain("7pm");
+      expect(result.html).toContain("8pm");
+      expect(result.html).toContain("Starting an hour later");
+      expect(result.text).toContain("Hope to see you there!");
+    });
+
+    it("generates modification email without changes", () => {
+      const result = getOccurrenceModifiedHostEmail({
+        eventTitle: "Open Mic",
+        occurrenceDate: "Dec 28",
+        eventId: "101",
+        changes: {},
+        venueName: "Venue",
+      });
+
+      expect(result.html).toContain("Dec 28 only");
+      expect(result.html).not.toContain("What changed");
+    });
+  });
 });
 
 describe("All Templates - Common Requirements", () => {
@@ -683,6 +876,12 @@ describe("All Templates - Common Requirements", () => {
     getEventUpdatedEmail({ eventTitle: "Event", eventId: "123", changes: {}, eventDate: "Dec 20", eventTime: "7pm", venueName: "Venue" }),
     getEventCancelledEmail({ eventTitle: "Event", eventDate: "Dec 20", venueName: "Venue" }),
     getSuggestionResponseEmail({ status: "approved", isNewEvent: true, adminMessage: "Looks great!" }),
+    getEventClaimSubmittedEmail({ userName: "Test", eventTitle: "Event" }),
+    getEventClaimApprovedEmail({ userName: "Test", eventTitle: "Event", eventId: "123" }),
+    getEventClaimRejectedEmail({ userName: "Test", eventTitle: "Event" }),
+    getAdminEventClaimNotificationEmail({ requesterName: "Test", eventTitle: "Event", eventId: "123" }),
+    getOccurrenceCancelledHostEmail({ userName: "Test", eventTitle: "Event", occurrenceDate: "Dec 20", venueName: "Venue", eventId: "123" }),
+    getOccurrenceModifiedHostEmail({ userName: "Test", eventTitle: "Event", occurrenceDate: "Dec 20", eventId: "123", changes: {}, venueName: "Venue" }),
   ];
 
   it("all templates render both html and text", () => {

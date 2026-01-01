@@ -57,6 +57,30 @@ import {
   getSuggestionResponseEmail,
   type SuggestionResponseEmailParams,
 } from "./templates/suggestionResponse";
+import {
+  getEventClaimSubmittedEmail,
+  type EventClaimSubmittedEmailParams,
+} from "./templates/eventClaimSubmitted";
+import {
+  getEventClaimApprovedEmail,
+  type EventClaimApprovedEmailParams,
+} from "./templates/eventClaimApproved";
+import {
+  getEventClaimRejectedEmail,
+  type EventClaimRejectedEmailParams,
+} from "./templates/eventClaimRejected";
+import {
+  getAdminEventClaimNotificationEmail,
+  type AdminEventClaimNotificationEmailParams,
+} from "./templates/adminEventClaimNotification";
+import {
+  getOccurrenceCancelledHostEmail,
+  type OccurrenceCancelledHostEmailParams,
+} from "./templates/occurrenceCancelledHost";
+import {
+  getOccurrenceModifiedHostEmail,
+  type OccurrenceModifiedHostEmailParams,
+} from "./templates/occurrenceModifiedHost";
 
 /**
  * All available email template keys
@@ -74,7 +98,13 @@ export type EmailTemplateKey =
   | "eventReminder"
   | "eventUpdated"
   | "eventCancelled"
-  | "suggestionResponse";
+  | "suggestionResponse"
+  | "eventClaimSubmitted"
+  | "eventClaimApproved"
+  | "eventClaimRejected"
+  | "adminEventClaimNotification"
+  | "occurrenceCancelledHost"
+  | "occurrenceModifiedHost";
 
 /**
  * Map of template keys to their parameter types
@@ -93,6 +123,12 @@ export interface EmailTemplateParams {
   eventUpdated: EventUpdatedEmailParams;
   eventCancelled: EventCancelledEmailParams;
   suggestionResponse: SuggestionResponseEmailParams;
+  eventClaimSubmitted: EventClaimSubmittedEmailParams;
+  eventClaimApproved: EventClaimApprovedEmailParams;
+  eventClaimRejected: EventClaimRejectedEmailParams;
+  adminEventClaimNotification: AdminEventClaimNotificationEmailParams;
+  occurrenceCancelledHost: OccurrenceCancelledHostEmailParams;
+  occurrenceModifiedHost: OccurrenceModifiedHostEmailParams;
 }
 
 /**
@@ -224,6 +260,54 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: false,
   },
+  eventClaimSubmitted: {
+    key: "eventClaimSubmitted",
+    name: "Event Claim Submitted",
+    description: "Confirmation that claim is under review",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
+  eventClaimApproved: {
+    key: "eventClaimApproved",
+    name: "Event Claim Approved",
+    description: "Claim approved - user is now host",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
+  eventClaimRejected: {
+    key: "eventClaimRejected",
+    name: "Event Claim Rejected",
+    description: "Claim not approved with optional reason",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
+  adminEventClaimNotification: {
+    key: "adminEventClaimNotification",
+    name: "Admin Event Claim Notification",
+    description: "New claim request for admin review",
+    audience: "admin",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
+  occurrenceCancelledHost: {
+    key: "occurrenceCancelledHost",
+    name: "Occurrence Cancelled",
+    description: "Single occurrence cancelled by host",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
+  occurrenceModifiedHost: {
+    key: "occurrenceModifiedHost",
+    name: "Occurrence Modified",
+    description: "Single occurrence modified by host",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
 };
 
 /**
@@ -268,6 +352,18 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getEventCancelledEmail(params as EventCancelledEmailParams);
     case "suggestionResponse":
       return getSuggestionResponseEmail(params as SuggestionResponseEmailParams);
+    case "eventClaimSubmitted":
+      return getEventClaimSubmittedEmail(params as EventClaimSubmittedEmailParams);
+    case "eventClaimApproved":
+      return getEventClaimApprovedEmail(params as EventClaimApprovedEmailParams);
+    case "eventClaimRejected":
+      return getEventClaimRejectedEmail(params as EventClaimRejectedEmailParams);
+    case "adminEventClaimNotification":
+      return getAdminEventClaimNotificationEmail(params as AdminEventClaimNotificationEmailParams);
+    case "occurrenceCancelledHost":
+      return getOccurrenceCancelledHostEmail(params as OccurrenceCancelledHostEmailParams);
+    case "occurrenceModifiedHost":
+      return getOccurrenceModifiedHostEmail(params as OccurrenceModifiedHostEmailParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -305,6 +401,12 @@ export {
   getEventUpdatedEmail,
   getEventCancelledEmail,
   getSuggestionResponseEmail,
+  getEventClaimSubmittedEmail,
+  getEventClaimApprovedEmail,
+  getEventClaimRejectedEmail,
+  getAdminEventClaimNotificationEmail,
+  getOccurrenceCancelledHostEmail,
+  getOccurrenceModifiedHostEmail,
 };
 
 // Re-export param types
@@ -322,4 +424,10 @@ export type {
   EventUpdatedEmailParams,
   EventCancelledEmailParams,
   SuggestionResponseEmailParams,
+  EventClaimSubmittedEmailParams,
+  EventClaimApprovedEmailParams,
+  EventClaimRejectedEmailParams,
+  AdminEventClaimNotificationEmailParams,
+  OccurrenceCancelledHostEmailParams,
+  OccurrenceModifiedHostEmailParams,
 };
