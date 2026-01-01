@@ -218,7 +218,7 @@ export default function UserGalleryUpload({
           .from("gallery-images")
           .getPublicUrl(fileName);
 
-        // Insert into database (pending approval)
+        // Insert into database (published immediately - good actor model)
         // Mutual exclusivity: use custom fields XOR FK fields
         const { error: insertError } = await supabase
           .from("gallery_images")
@@ -234,7 +234,8 @@ export default function UserGalleryUpload({
             custom_event_name: useCustomEvent && customEventName.trim() ? customEventName.trim() : null,
             custom_event_date: useCustomEvent && customEventDate ? customEventDate : null,
             uploaded_by: userId,
-            is_approved: false, // Requires admin approval
+            is_published: true, // Photos show immediately (good actor model)
+            is_hidden: false, // Not hidden by admin
           });
 
         if (insertError) throw insertError;

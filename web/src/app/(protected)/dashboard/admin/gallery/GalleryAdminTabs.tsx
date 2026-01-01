@@ -14,7 +14,8 @@ interface GalleryImage {
   id: string;
   image_url: string;
   caption: string | null;
-  is_approved: boolean;
+  is_hidden: boolean;
+  is_published: boolean;
   is_featured: boolean;
   created_at: string;
   album_id: string | null;
@@ -31,6 +32,7 @@ interface Album {
   description: string | null;
   cover_image_url: string | null;
   is_published: boolean;
+  is_hidden: boolean;
   created_at: string;
 }
 
@@ -53,7 +55,7 @@ function normalizeRelation<T>(data: T | T[] | null): T | null {
 export default function GalleryAdminTabs({ images, albums, venues, events, userId }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("albums");
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "unassigned">("all");
+  const [filter, setFilter] = useState<"all" | "visible" | "hidden" | "unassigned">("all");
 
   // Album form state
   const [albumName, setAlbumName] = useState("");
@@ -79,21 +81,31 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     images.filter((img) => img.album_id === albumId).length;
 
   const filteredImages = images.filter((img) => {
-    if (filter === "pending") return !img.is_approved;
-    if (filter === "approved") return img.is_approved;
+    if (filter === "visible") return !img.is_hidden;
+    if (filter === "hidden") return img.is_hidden;
     if (filter === "unassigned") return !img.album_id;
     return true;
   });
 
-  const handleApprove = async (imageId: string) => {
+  const handleHide = async (imageId: string) => {
     const supabase = createClient();
-    await supabase.from("gallery_images").update({ is_approved: true }).eq("id", imageId);
+    await supabase.from("gallery_images").update({ is_hidden: true }).eq("id", imageId);
+    toast.success("Photo hidden");
     router.refresh();
   };
 
-  const handleReject = async (imageId: string) => {
+  const handleUnhide = async (imageId: string) => {
+    const supabase = createClient();
+    await supabase.from("gallery_images").update({ is_hidden: false }).eq("id", imageId);
+    toast.success("Photo visible");
+    router.refresh();
+  };
+
+  const handleDelete = async (imageId: string) => {
+    if (!confirm("Delete this photo permanently? This cannot be undone.")) return;
     const supabase = createClient();
     await supabase.from("gallery_images").delete().eq("id", imageId);
+    toast.success("Photo deleted");
     router.refresh();
   };
 
@@ -172,6 +184,13 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     const supabase = createClient();
     await supabase.from("gallery_albums").update({ is_published: !currentValue }).eq("id", albumId);
     toast.success(currentValue ? "Album unpublished" : "Album published");
+    router.refresh();
+  };
+
+  const handleToggleAlbumHidden = async (albumId: string, currentHidden: boolean) => {
+    const supabase = createClient();
+    await supabase.from("gallery_albums").update({ is_hidden: !currentHidden }).eq("id", albumId);
+    toast.success(currentHidden ? "Album visible" : "Album hidden");
     router.refresh();
   };
 
@@ -479,6 +498,11 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                           <span className="text-sm text-[var(--color-text-secondary)]">
                             {photoCount} {photoCount === 1 ? "photo" : "photos"}
                           </span>
+                          {album.is_hidden && (
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">
+                              Hidden
+                            </span>
+                          )}
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs ${
                               album.is_published
@@ -501,13 +525,23 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                               : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-primary)]"
                           }`}
                         >
-                          {isExpanded ? "Hide Photos" : "Manage Photos"}
+                          {isExpanded ? "Close Photos" : "Manage Photos"}
                         </button>
                         <button
                           onClick={() => handleToggleAlbumPublished(album.id, album.is_published)}
                           className="px-3 py-1.5 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] text-xs rounded transition-colors"
                         >
                           {album.is_published ? "Unpublish" : "Publish"}
+                        </button>
+                        <button
+                          onClick={() => handleToggleAlbumHidden(album.id, album.is_hidden)}
+                          className={`px-3 py-1.5 text-xs rounded transition-colors ${
+                            album.is_hidden
+                              ? "bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
+                              : "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+                          }`}
+                        >
+                          {album.is_hidden ? "Unhide" : "Hide"}
                         </button>
                         <button
                           onClick={() => handleDeleteAlbum(album.id)}
@@ -630,7 +664,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
         <div>
           {/* Filter */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {(["all", "pending", "approved", "unassigned"] as const).map((f) => (
+            {(["all", "visible", "hidden", "unassigned"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -641,8 +675,8 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 }`}
               >
                 {f === "all" && `All (${images.length})`}
-                {f === "pending" && `Pending (${images.filter((i) => !i.is_approved).length})`}
-                {f === "approved" && `Approved (${images.filter((i) => i.is_approved).length})`}
+                {f === "visible" && `Visible (${images.filter((i) => !i.is_hidden).length})`}
+                {f === "hidden" && `Hidden (${images.filter((i) => i.is_hidden).length})`}
                 {f === "unassigned" && `Unassigned (${unassignedImages.length})`}
               </button>
             ))}
@@ -659,7 +693,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 <div
                   key={image.id}
                   className={`relative rounded-lg overflow-hidden border ${
-                    image.is_approved ? "border-[var(--color-border-default)]" : "border-yellow-600"
+                    image.is_hidden ? "border-red-400 opacity-60" : "border-[var(--color-border-default)]"
                   }`}
                 >
                   <Image
@@ -673,9 +707,9 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
 
                   {/* Status badges */}
                   <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                    {!image.is_approved && (
-                      <span className="px-2 py-0.5 bg-yellow-600 text-white text-xs rounded-full">
-                        Pending
+                    {image.is_hidden && (
+                      <span className="px-2 py-0.5 bg-red-600 text-white text-xs rounded-full">
+                        Hidden
                       </span>
                     )}
                     {image.is_featured && (
@@ -707,42 +741,37 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
 
                   {/* Actions */}
                   <div className="absolute top-2 right-2 flex flex-col gap-1">
-                    {!image.is_approved && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(image.id)}
-                          className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(image.id)}
-                          className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white text-xs rounded"
-                        >
-                          Reject
-                        </button>
-                      </>
+                    {image.is_hidden ? (
+                      <button
+                        onClick={() => handleUnhide(image.id)}
+                        className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded"
+                      >
+                        Unhide
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleHide(image.id)}
+                        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 text-white text-xs rounded"
+                      >
+                        Hide
+                      </button>
                     )}
-                    {image.is_approved && (
-                      <>
-                        <button
-                          onClick={() => handleToggleFeatured(image.id, image.is_featured)}
-                          className={`px-2 py-1 text-xs rounded ${
-                            image.is_featured
-                              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                              : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
-                          }`}
-                        >
-                          {image.is_featured ? "Unfeature" : "Feature"}
-                        </button>
-                        <button
-                          onClick={() => handleReject(image.id)}
-                          className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
+                    <button
+                      onClick={() => handleToggleFeatured(image.id, image.is_featured)}
+                      className={`px-2 py-1 text-xs rounded ${
+                        image.is_featured
+                          ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                          : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
+                      }`}
+                    >
+                      {image.is_featured ? "Unfeature" : "Feature"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(image.id)}
+                      className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               );
