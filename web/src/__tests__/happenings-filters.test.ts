@@ -201,11 +201,13 @@ describe('Happenings Page Filter Logic', () => {
   });
 
   describe('Results Display', () => {
-    it('should show results count summary', () => {
-      // Phase 4.19 changed to "X events across Y dates (next 90 days)"
+    it('should show results count summary with rolling date range', () => {
+      // Phase 4.20: Changed from static "(next 90 days)" to rolling date range
       expect(pageContent).toContain('totalDisplayableEvents');
       expect(pageContent).toContain('totalDates');
-      expect(pageContent).toContain('(next 90 days)');
+      // Now displays formatted date range: "(Jan 1 – Apr 1)" style
+      expect(pageContent).toContain('today');
+      expect(pageContent).toContain('windowEnd');
     });
 
     it('should show no results message with filter hint', () => {

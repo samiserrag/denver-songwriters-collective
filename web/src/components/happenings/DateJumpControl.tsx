@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * DateJumpControl - Preset-based date jump with dropdown picker
+ * DateJumpControl - Preset buttons + date picker for jumping to dates
  *
- * Phase 4.19 UX improvements:
- * - Preset dropdown: Today, Tomorrow, This Weekend, Pick a date...
- * - Synchronized Month/Day/Year dropdowns when "Pick a date" selected
- * - Smooth scroll to date headers using existing id="date-YYYY-MM-DD" anchors
- * - Shows warning if date is outside 90-day window
- * - Preserves existing URL filters
+ * Phase 4.20 UX corrections:
+ * - Preset BUTTONS (not dropdown): Today, Tomorrow, This Weekend
+ * - Separate "Pick a date" control with Month/Day/Year pickers
+ * - Deterministic scrolling with sticky header offset calculation
+ * - Shows friendly message if date has no events
+ * - Rolling 90-day window range display
  */
 
 import * as React from "react";
@@ -22,16 +22,6 @@ interface DateJumpControlProps {
   /** Additional CSS classes */
   className?: string;
 }
-
-// Preset option types
-type PresetValue = "today" | "tomorrow" | "this-weekend" | "pick-a-date";
-
-const PRESET_OPTIONS: { value: PresetValue; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "tomorrow", label: "Tomorrow" },
-  { value: "this-weekend", label: "This Weekend" },
-  { value: "pick-a-date", label: "Pick a date..." },
-];
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -100,49 +90,6 @@ function getThisWeekendDate(todayKey: string): string {
 }
 
 /**
- * Compute target date key for a preset value.
- */
-function getPresetTargetDate(
-  preset: PresetValue,
-  todayKey: string,
-  windowEndKey: string
-): { dateKey: string | null; outOfWindow: boolean } {
-  switch (preset) {
-    case "today":
-      return { dateKey: todayKey, outOfWindow: false };
-    case "tomorrow":
-      const tomorrow = addDays(todayKey, 1);
-      return { dateKey: tomorrow, outOfWindow: tomorrow > windowEndKey };
-    case "this-weekend":
-      const weekend = getThisWeekendDate(todayKey);
-      if (weekend > windowEndKey) {
-        // Try Sunday if Saturday is out of window
-        const sunday = addDays(todayKey, 7 - getDayOfWeek(todayKey));
-        if (sunday <= windowEndKey) {
-          return { dateKey: sunday, outOfWindow: false };
-        }
-        return { dateKey: weekend, outOfWindow: true };
-      }
-      return { dateKey: weekend, outOfWindow: false };
-    case "pick-a-date":
-    default:
-      return { dateKey: null, outOfWindow: false };
-  }
-}
-
-/**
- * Scroll smoothly to a date header if it exists.
- */
-function scrollToDateHeader(dateKey: string): boolean {
-  const el = document.getElementById(`date-${dateKey}`);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-    return true;
-  }
-  return false;
-}
-
-/**
  * Format date range for display.
  */
 function formatDateRange(startKey: string, endKey: string): string {
@@ -156,14 +103,49 @@ function formatDateRange(startKey: string, endKey: string): string {
   return `${formatter.format(start)} – ${formatter.format(end)}`;
 }
 
+/**
+ * Calculate the total sticky offset (nav + sticky controls).
+ * Header is h-16 (64px), StickyControls adds variable height.
+ * We measure dynamically to be safe.
+ */
+function getStickyOffsetPx(): number {
+  // Base header height (h-16 = 64px)
+  let offset = 64;
+
+  // Try to find the StickyControls wrapper and add its height
+  // StickyControls has the class "sticky top-16"
+  const stickyControls = document.querySelector('[class*="sticky"][class*="top-16"]');
+  if (stickyControls) {
+    offset += stickyControls.getBoundingClientRect().height;
+  }
+
+  // Add a small buffer to avoid "touching"
+  return offset + 8;
+}
+
+/**
+ * Scroll to a date header with proper offset for sticky elements.
+ * Returns true if the element was found, false otherwise.
+ */
+function scrollToDateHeader(dateKey: string): boolean {
+  const el = document.getElementById(`date-${dateKey}`);
+  if (!el) {
+    return false;
+  }
+
+  const offset = getStickyOffsetPx();
+  const y = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: y, behavior: "smooth" });
+  return true;
+}
+
 export function DateJumpControl({
   todayKey,
   windowEndKey,
   className,
 }: DateJumpControlProps) {
-  const [selectedPreset, setSelectedPreset] = React.useState<PresetValue | "">("");
   const [showDatePicker, setShowDatePicker] = React.useState(false);
-  const [warningMessage, setWarningMessage] = React.useState<string | null>(null);
+  const [message, setMessage] = React.useState<{ text: string; type: "warning" | "info" } | null>(null);
 
   // Date picker state
   const todayParsed = parseDateKey(todayKey);
@@ -172,6 +154,9 @@ export function DateJumpControl({
   const [pickerYear, setPickerYear] = React.useState(todayParsed.year);
   const [pickerMonth, setPickerMonth] = React.useState(todayParsed.month);
   const [pickerDay, setPickerDay] = React.useState(todayParsed.day);
+
+  // Rolling window range display
+  const windowRangeLabel = formatDateRange(todayKey, windowEndKey);
 
   // Generate available years (within window)
   const availableYears = React.useMemo(() => {
@@ -230,172 +215,213 @@ export function DateJumpControl({
     return DAY_NAMES[dow];
   }, [pickerYear, pickerMonth, pickerDay]);
 
-  // Handle preset change
-  const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as PresetValue | "";
-    setSelectedPreset(value);
-    setWarningMessage(null);
-
-    if (!value) {
-      setShowDatePicker(false);
-      return;
-    }
-
-    if (value === "pick-a-date") {
-      setShowDatePicker(true);
-      return;
-    }
-
+  // Handle preset button clicks
+  const handlePresetClick = (preset: "today" | "tomorrow" | "this-weekend") => {
+    setMessage(null);
     setShowDatePicker(false);
-    const { dateKey, outOfWindow } = getPresetTargetDate(value, todayKey, windowEndKey);
 
-    if (dateKey) {
-      if (outOfWindow) {
-        setWarningMessage(`Not in current range (${formatDateRange(todayKey, windowEndKey)})`);
-      } else {
-        const found = scrollToDateHeader(dateKey);
-        if (!found) {
-          setWarningMessage("No events on this date");
+    let targetDate: string;
+    switch (preset) {
+      case "today":
+        targetDate = todayKey;
+        break;
+      case "tomorrow":
+        targetDate = addDays(todayKey, 1);
+        if (targetDate > windowEndKey) {
+          setMessage({ text: `Tomorrow is outside the ${windowRangeLabel} range.`, type: "warning" });
+          return;
         }
-      }
+        break;
+      case "this-weekend":
+        targetDate = getThisWeekendDate(todayKey);
+        if (targetDate > windowEndKey) {
+          setMessage({ text: `This weekend is outside the ${windowRangeLabel} range.`, type: "warning" });
+          return;
+        }
+        break;
+    }
+
+    const found = scrollToDateHeader(targetDate);
+    if (!found) {
+      const dateFormatted = new Date(`${targetDate}T12:00:00Z`).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      });
+      setMessage({ text: `No events on ${dateFormatted} within the next 90 days.`, type: "info" });
     }
   };
 
   // Handle date picker "Go" button
   const handleDatePickerGo = () => {
     const dateKey = formatDateKey(pickerYear, pickerMonth, pickerDay);
-    setWarningMessage(null);
+    setMessage(null);
 
     if (dateKey < todayKey || dateKey > windowEndKey) {
-      setWarningMessage(`Not in current range (${formatDateRange(todayKey, windowEndKey)})`);
+      setMessage({ text: `Date is outside the ${windowRangeLabel} range.`, type: "warning" });
       return;
     }
 
     const found = scrollToDateHeader(dateKey);
     if (!found) {
-      setWarningMessage("No events on this date");
+      const dateFormatted = new Date(`${dateKey}T12:00:00Z`).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      });
+      setMessage({ text: `No events on ${dateFormatted} within the next 90 days.`, type: "info" });
     }
   };
 
-  // Handle "Jump to Today" from warning
-  const handleJumpToToday = () => {
-    setSelectedPreset("today");
-    setShowDatePicker(false);
-    setWarningMessage(null);
-    scrollToDateHeader(todayKey);
+  // Toggle date picker visibility
+  const toggleDatePicker = () => {
+    setShowDatePicker(!showDatePicker);
+    setMessage(null);
   };
+
+  // Common button styles
+  const buttonBase = cn(
+    "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
+    "border border-[var(--color-border-default)]",
+    "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]",
+    "hover:bg-[var(--color-bg-tertiary)] hover:border-[var(--color-border-accent)]",
+    "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
+  );
 
   return (
     <div className={cn("space-y-2", className)}>
+      {/* Row 1: Preset buttons + Pick a date toggle */}
       <div className="flex flex-wrap items-center gap-2">
-        <label className="text-sm text-[var(--color-text-secondary)] whitespace-nowrap">
+        <span className="text-sm text-[var(--color-text-secondary)] whitespace-nowrap">
           Jump to:
-        </label>
+        </span>
 
-        {/* Preset dropdown */}
-        <select
-          value={selectedPreset}
-          onChange={handlePresetChange}
+        {/* Preset buttons */}
+        <button
+          onClick={() => handlePresetClick("today")}
+          className={buttonBase}
+        >
+          Today
+        </button>
+        <button
+          onClick={() => handlePresetClick("tomorrow")}
+          className={buttonBase}
+        >
+          Tomorrow
+        </button>
+        <button
+          onClick={() => handlePresetClick("this-weekend")}
+          className={buttonBase}
+        >
+          This Weekend
+        </button>
+
+        {/* Pick a date toggle */}
+        <button
+          onClick={toggleDatePicker}
           className={cn(
-            "px-3 py-1.5 text-sm rounded-lg",
-            "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
-            "text-[var(--color-text-primary)]",
-            "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30 focus:border-[var(--color-border-accent)]",
-            "transition-colors"
+            buttonBase,
+            showDatePicker && "bg-[var(--color-accent-muted)] border-[var(--color-border-accent)]"
           )}
         >
-          <option value="">Select...</option>
-          {PRESET_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Date picker dropdowns (shown when "Pick a date" selected) */}
-        {showDatePicker && (
-          <div className="flex items-center gap-1.5">
-            {/* Month */}
-            <select
-              value={pickerMonth}
-              onChange={(e) => setPickerMonth(Number(e.target.value))}
-              className={cn(
-                "px-2 py-1.5 text-sm rounded-lg",
-                "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
-                "text-[var(--color-text-primary)]",
-                "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
-              )}
-            >
-              {availableMonths.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Day */}
-            <select
-              value={pickerDay}
-              onChange={(e) => setPickerDay(Number(e.target.value))}
-              className={cn(
-                "px-2 py-1.5 text-sm rounded-lg",
-                "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
-                "text-[var(--color-text-primary)]",
-                "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
-              )}
-            >
-              {availableDays.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-
-            {/* Year */}
-            <select
-              value={pickerYear}
-              onChange={(e) => setPickerYear(Number(e.target.value))}
-              className={cn(
-                "px-2 py-1.5 text-sm rounded-lg",
-                "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
-                "text-[var(--color-text-primary)]",
-                "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
-              )}
-            >
-              {availableYears.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-
-            {/* Day of week indicator */}
-            <span className="text-sm text-[var(--color-text-secondary)] font-medium">
-              ({pickerDayOfWeek})
-            </span>
-
-            {/* Go button */}
-            <button
-              onClick={handleDatePickerGo}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-lg",
-                "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]",
-                "hover:opacity-90 transition-opacity"
-              )}
-            >
-              Go
-            </button>
-          </div>
-        )}
+          {showDatePicker ? "Hide Picker" : "Pick a date"}
+        </button>
       </div>
 
-      {/* Warning message */}
-      {warningMessage && (
-        <div className="flex items-center gap-2 text-sm text-amber-400">
-          <span>{warningMessage}</span>
+      {/* Row 2: Date picker dropdowns (shown when toggled) */}
+      {showDatePicker && (
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Month */}
+          <select
+            value={pickerMonth}
+            onChange={(e) => setPickerMonth(Number(e.target.value))}
+            className={cn(
+              "px-2 py-1.5 text-sm rounded-lg",
+              "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
+              "text-[var(--color-text-primary)]",
+              "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
+            )}
+          >
+            {availableMonths.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Day */}
+          <select
+            value={pickerDay}
+            onChange={(e) => setPickerDay(Number(e.target.value))}
+            className={cn(
+              "px-2 py-1.5 text-sm rounded-lg",
+              "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
+              "text-[var(--color-text-primary)]",
+              "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
+            )}
+          >
+            {availableDays.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+
+          {/* Year */}
+          <select
+            value={pickerYear}
+            onChange={(e) => setPickerYear(Number(e.target.value))}
+            className={cn(
+              "px-2 py-1.5 text-sm rounded-lg",
+              "bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)]",
+              "text-[var(--color-text-primary)]",
+              "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/30"
+            )}
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          {/* Day of week indicator */}
+          <span className="text-sm text-[var(--color-text-secondary)] font-medium">
+            ({pickerDayOfWeek})
+          </span>
+
+          {/* Go button */}
           <button
-            onClick={handleJumpToToday}
-            className="underline hover:text-amber-300 transition-colors"
+            onClick={handleDatePickerGo}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium rounded-lg",
+              "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]",
+              "hover:opacity-90 transition-opacity",
+              "focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/50"
+            )}
+          >
+            Go
+          </button>
+
+          {/* Range hint */}
+          <span className="text-xs text-[var(--color-text-tertiary)]">
+            ({windowRangeLabel})
+          </span>
+        </div>
+      )}
+
+      {/* Message display */}
+      {message && (
+        <div className={cn(
+          "flex items-center gap-2 text-sm",
+          message.type === "warning" ? "text-amber-400" : "text-[var(--color-text-secondary)]"
+        )}>
+          <span>{message.text}</span>
+          <button
+            onClick={() => handlePresetClick("today")}
+            className="underline hover:text-[var(--color-text-primary)] transition-colors"
           >
             Jump to Today
           </button>
