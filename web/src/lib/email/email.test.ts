@@ -629,7 +629,9 @@ describe("New Email Templates", () => {
         adminMessage: "This is a great addition!",
       });
 
-      expect(result.subject).toBe("Your open mic submission is live!");
+      expect(result.subject).toBe(
+        "Your open mic submission is live! — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("Monday Night Mic");
       expect(result.html).toContain("This is a great addition!");
@@ -643,7 +645,9 @@ describe("New Email Templates", () => {
         adminMessage: "What time does it start?",
       });
 
-      expect(result.subject).toBe("Quick question about your suggestion");
+      expect(result.subject).toBe(
+        "Quick question about your suggestion — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("What time does it start?");
       expect(result.text).toContain("submit-open-mic");
     });
@@ -655,7 +659,9 @@ describe("New Email Templates", () => {
         adminMessage: "This venue closed down.",
       });
 
-      expect(result.subject).toBe("About your open mic submission");
+      expect(result.subject).toBe(
+        "About your open mic submission — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("This venue closed down.");
     });
   });

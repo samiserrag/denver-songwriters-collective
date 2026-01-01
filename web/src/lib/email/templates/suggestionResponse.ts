@@ -29,8 +29,8 @@ export interface SuggestionResponseEmailParams {
 
 const STATUS_CONFIG = {
   approved: {
-    subjectNew: "Your open mic submission is live!",
-    subjectEdit: "Your suggestion was approved!",
+    subjectNew: "Your open mic submission is live! — The Denver Songwriters Collective",
+    subjectEdit: "Your suggestion was approved! — The Denver Songwriters Collective",
     emoji: "🎉",
     boxBg: "#22c55e15",
     boxBorder: "#22c55e30",
@@ -39,8 +39,8 @@ const STATUS_CONFIG = {
     headlineEdit: "Your correction has been applied!",
   },
   rejected: {
-    subjectNew: "About your open mic submission",
-    subjectEdit: "About your suggestion",
+    subjectNew: "About your open mic submission — The Denver Songwriters Collective",
+    subjectEdit: "About your suggestion — The Denver Songwriters Collective",
     emoji: "💬",
     boxBg: "#f5f5f515",
     boxBorder: "#52525230",
@@ -49,8 +49,8 @@ const STATUS_CONFIG = {
     headlineEdit: "We weren't able to make this change.",
   },
   needs_info: {
-    subjectNew: "Quick question about your open mic submission",
-    subjectEdit: "Quick question about your suggestion",
+    subjectNew: "Quick question about your open mic submission — The Denver Songwriters Collective",
+    subjectEdit: "Quick question about your suggestion — The Denver Songwriters Collective",
     emoji: "🤔",
     boxBg: "#f59e0b15",
     boxBorder: "#f59e0b30",
