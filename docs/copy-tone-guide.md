@@ -214,6 +214,10 @@ After reading DSC copy, a visitor should feel:
 
 > **Write like a calm, friendly host who wants people to show up this week — not like a brand trying to impress them.**
 
+**For emails specifically:**
+
+> Short, warm, and excited they're participating.
+
 ---
 
 If you want next, I can:
