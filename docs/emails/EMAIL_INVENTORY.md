@@ -3,6 +3,12 @@
 **Last Updated:** December 2025
 **Status:** Complete audit of all email use cases
 
+## Email Audit Status
+
+✅ **Completed December 2025** — All templates audited for tone guide alignment.
+
+PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68
+
 ## Summary
 
 | Metric | Count |
@@ -66,49 +72,49 @@
 ## Template Details
 
 ### 1. verificationCode.ts
-- **Subject:** `Your code for {eventTitle}`
+- **Subject:** `Your code for {eventTitle} — The Denver Songwriters Collective`
 - **Audience:** Guest (unregistered)
 - **Links:** None (code entry on same page)
 - **Tone:** Good (warm, transactional)
 
 ### 2. claimConfirmed.ts
-- **Subject:** `You're on the lineup for {eventTitle}` / `You're on the waitlist for {eventTitle}`
+- **Subject:** `You're on the lineup for {eventTitle} — The Denver Songwriters Collective` / `You're on the waitlist for {eventTitle} — The Denver Songwriters Collective`
 - **Audience:** Guest (verified)
 - **Links:** Cancel URL (magic link)
 - **Tone:** Good (celebratory/encouraging)
 
 ### 3. waitlistOffer.ts
-- **Subject:** `A spot just opened up at {eventTitle}`
+- **Subject:** `A spot just opened up at {eventTitle} — The Denver Songwriters Collective`
 - **Audience:** Guest (waitlisted, now offered)
 - **Links:** Confirm URL, Cancel URL
 - **Tone:** Good (urgent but friendly)
 
 ### 4. rsvpConfirmation.ts
-- **Subject:** `You're confirmed for {eventTitle}` / `Waitlisted for {eventTitle}`
+- **Subject:** `You're going to {eventTitle} — The Denver Songwriters Collective` / `You're on the waitlist for {eventTitle} — The Denver Songwriters Collective`
 - **Audience:** Member (authenticated)
 - **Links:** Event page, Calendar links
 - **Tone:** Good (warm, helpful)
 
 ### 5. waitlistPromotion.ts
-- **Subject:** `A spot opened up for {eventTitle}`
+- **Subject:** `A spot just opened up at {eventTitle} — The Denver Songwriters Collective`
 - **Audience:** Member (waitlisted, now offered)
 - **Links:** Confirm URL (event page with ?confirm=true)
 - **Tone:** Good (exciting, clear deadline)
 
 ### 6. hostApproval.ts
-- **Subject:** `You're approved as a host!`
+- **Subject:** `You're approved as a host! — The Denver Songwriters Collective`
 - **Audience:** Member (applicant)
 - **Links:** Dashboard link
 - **Tone:** Good (celebratory)
 
 ### 7. hostRejection.ts
-- **Subject:** `Update on your host application`
+- **Subject:** `Update on your host application — The Denver Songwriters Collective`
 - **Audience:** Member (applicant)
 - **Links:** Open mics page
 - **Tone:** Good (empathetic, constructive)
 
 ### 8. suggestionResponse.ts
-- **Subject:** Varies by status (approved/rejected/needs_info)
+- **Subject:** Varies by status (approved/rejected/needs_info) — all include `— The Denver Songwriters Collective`
 - **Audience:** Community submitter
 - **Links:** Open mics page, Submit form
 - **Tone:** Good (appreciative, encouraging)
@@ -120,15 +126,15 @@
 - **Tone:** Good (functional, admin-facing)
 
 ### 10. newsletterWelcome.ts
-- **Subject:** `Welcome to the Denver Songwriters Collective!`
+- **Subject:** `Welcome to The Denver Songwriters Collective!`
 - **Audience:** Subscriber
 - **Links:** Open mics page, Privacy
 - **Tone:** Good (welcoming)
 
 ### 11-13. Event Lifecycle Templates (Template Only)
-- **eventReminder.ts:** Tonight/tomorrow reminder
-- **eventUpdated.ts:** Time/location changed
-- **eventCancelled.ts:** Event cancelled
+- **eventReminder.ts:** `Reminder: {eventTitle} is {tonight/tomorrow}! — The Denver Songwriters Collective`
+- **eventUpdated.ts:** `Update: {eventTitle} details have changed — The Denver Songwriters Collective`
+- **eventCancelled.ts:** `Cancelled: {eventTitle} on {date} — The Denver Songwriters Collective`
 
 ---
 

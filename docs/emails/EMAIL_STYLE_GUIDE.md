@@ -5,6 +5,14 @@
 
 ---
 
+## Email Voice (Summary)
+
+> **Short, warm, and excited they're participating.**
+
+See also: [Copy Tone Guide](../copy-tone-guide.md) for full site-wide guidance.
+
+---
+
 ## Voice & Tone
 
 ### The DSC Voice
@@ -99,6 +107,15 @@ function getGreeting(name?: string | null): string {
 - "Your spot is probably slot #3 or thereabouts 😅"
 - "You've got about 24ish hours to confirm"
 - "Oopsie! Something went wrong"
+
+### Warm Closers (use where appropriate)
+
+These phrases add warmth without being over-the-top:
+
+- "Can't wait to hear you — see you soon!"
+- "Should be a good one. See you soon!"
+- "Hope to see you there!"
+- "Questions? Reach out to your host or post a comment on the event page."
 
 ---
 
@@ -196,16 +213,23 @@ Never use these phrases in DSC emails:
 
 ## Subject Line Guidelines
 
+### Sender Identity Pattern
+
+All user-facing emails end with: `— The Denver Songwriters Collective`
+
+This ensures recipients always know who's emailing them.
+
 ### Structure
 
 ```
-[Outcome/Status]: [Event Title]
+[Outcome/Status]: [Event Title] — The Denver Songwriters Collective
 ```
 
 **Good examples:**
-- "You're on the lineup for Open Mic at The Walnut Room"
-- "A spot just opened up at Songwriter Showcase"
-- "Your code for Friday Night Open Mic"
+- "You're on the lineup for Open Mic at The Walnut Room — The Denver Songwriters Collective"
+- "A spot just opened up at Songwriter Showcase — The Denver Songwriters Collective"
+- "Your code for Friday Night Open Mic — The Denver Songwriters Collective"
+- "Reminder: Open Mic is tonight! — The Denver Songwriters Collective"
 
 **Bad examples:**
 - "[DSC] RSVP Confirmation - ID#12345"
@@ -216,9 +240,9 @@ Never use these phrases in DSC emails:
 
 1. **Include event title** when relevant
 2. **Lead with outcome**, not action
-3. **No ALL CAPS** (except abbreviations)
-4. **No emojis** in transactional emails
-5. **Under 60 characters** for mobile preview
+3. **End with sender identity** (— The Denver Songwriters Collective)
+4. **No ALL CAPS** (except abbreviations)
+5. **No emojis** in transactional emails
 
 ---
 
@@ -328,7 +352,7 @@ Before shipping any email template, verify:
 ### Good: Guest Slot Confirmation
 
 ```
-Subject: You're on the lineup for Open Mic at The Walnut Room
+Subject: You're on the lineup for Open Mic at The Walnut Room — The Denver Songwriters Collective
 
 Hi Sarah,
 
@@ -339,8 +363,9 @@ You've got slot #3.
 [Green success box]
 You're on the lineup!
 
-Show up a few minutes early to check in with the host.
-We can't wait to hear you play!
+Can't wait to hear you — see you soon!
+
+Questions? Reach out to your host or post a comment on the event page.
 
 I can't make it [link]
 
@@ -352,7 +377,7 @@ You can reply directly to this email if you need anything.
 ### Good: Waitlist Offer
 
 ```
-Subject: A spot just opened up at Songwriter Showcase
+Subject: A spot just opened up at Songwriter Showcase — The Denver Songwriters Collective
 
 Hi there,
 
