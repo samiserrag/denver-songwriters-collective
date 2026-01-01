@@ -65,6 +65,32 @@ const DAY_ABBREV_TO_INDEX: Record<string, number> = {
 };
 
 /**
+ * Map legacy ordinal strings to numeric ordinals.
+ * These come from the database recurrence_rule field.
+ */
+const LEGACY_ORDINAL_TO_NUMBER: Record<string, number> = {
+  "1st": 1,
+  "2nd": 2,
+  "3rd": 3,
+  "4th": 4,
+  "5th": 5,
+  last: -1,
+};
+
+/**
+ * Map full day names to RRULE-style abbreviations.
+ */
+const DAY_NAME_TO_ABBREV: Record<string, string> = {
+  sunday: "SU",
+  monday: "MO",
+  tuesday: "TU",
+  wednesday: "WE",
+  thursday: "TH",
+  friday: "FR",
+  saturday: "SA",
+};
+
+/**
  * Get the nth weekday of a month
  * @param year - Year
  * @param month - Month (0-11)
@@ -232,6 +258,30 @@ export function computeNextOccurrence(
         isTomorrow: result.dateKey === tomorrowKey,
         isConfident: result.confident,
       };
+    }
+  }
+
+  // Case 2.5: Legacy ordinal format (e.g., recurrence_rule="1st" + day_of_week="Wednesday")
+  // This handles events where the ordinal is stored as "1st", "2nd", etc. instead of RRULE
+  if (event.recurrence_rule && event.day_of_week) {
+    const legacyOrdinal =
+      LEGACY_ORDINAL_TO_NUMBER[event.recurrence_rule.toLowerCase().trim()];
+    const dayAbbrev = DAY_NAME_TO_ABBREV[event.day_of_week.toLowerCase().trim()];
+
+    if (legacyOrdinal !== undefined && dayAbbrev) {
+      const result = getNextNthWeekdayOccurrenceKey(
+        legacyOrdinal,
+        dayAbbrev,
+        todayKey
+      );
+      if (result) {
+        return {
+          date: result.dateKey,
+          isToday: result.dateKey === todayKey,
+          isTomorrow: result.dateKey === tomorrowKey,
+          isConfident: result.confident,
+        };
+      }
     }
   }
 

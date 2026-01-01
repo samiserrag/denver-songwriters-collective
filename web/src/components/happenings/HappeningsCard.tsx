@@ -14,14 +14,16 @@ import type { HappeningEvent } from "./HappeningCard";
 type Props = {
   event: Event;
   searchQuery?: string;
+  debugDates?: boolean;
 };
 
-export function HappeningsCard({ event, searchQuery }: Props) {
+export function HappeningsCard({ event, searchQuery, debugDates }: Props) {
   return (
     <HappeningCard
       event={event as unknown as HappeningEvent}
       searchQuery={searchQuery}
       variant="list"
+      debugDates={debugDates}
     />
   );
 }

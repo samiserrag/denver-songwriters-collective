@@ -40,6 +40,7 @@ interface HappeningsSearchParams {
   location?: string;
   cost?: string;
   days?: string;
+  debugDates?: string;
 }
 
 export default async function HappeningsPage({
@@ -60,6 +61,8 @@ export default async function HappeningsPage({
   const costFilter = params.cost || "";
   // Day-of-week filter (comma-separated abbreviations: mon,tue,wed,etc.)
   const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
+  // Debug mode for date computation visualization
+  const debugDates = params.debugDates === "1";
 
   const today = getTodayDenver();
 
@@ -337,7 +340,7 @@ export default async function HappeningsPage({
                 {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
                   {eventsForDate.map((event: any) => (
-                    <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} />
+                    <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} debugDates={debugDates} />
                   ))}
                 </div>
               </section>

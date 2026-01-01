@@ -439,4 +439,163 @@ describe("nextOccurrence", () => {
       expect(result.date).toBe("2025-02-19");
     });
   });
+
+  describe("Phase 4.17.4 - Legacy ordinal format (recurrence_rule='1st' + day_of_week)", () => {
+    /**
+     * This tests the actual database schema where:
+     * - recurrence_rule = "1st", "2nd", "3rd", "4th", "last"
+     * - day_of_week = "Wednesday", "Tuesday", etc.
+     *
+     * Examples:
+     * - Two Moons: recurrence_rule="1st", day_of_week="Wednesday"
+     * - Scully's Cafe: recurrence_rule="2nd", day_of_week="Wednesday"
+     */
+
+    it("1st Wednesday event (legacy format) should NOT show on 5th Wednesday", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = {
+        recurrence_rule: "1st",
+        day_of_week: "Wednesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      // Should NOT be today (Jan 29 is 5th Wed, not 1st)
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-05"); // Next 1st Wednesday
+    });
+
+    it("2nd Wednesday event (legacy format) should NOT show on 5th Wednesday", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = {
+        recurrence_rule: "2nd",
+        day_of_week: "Wednesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      // Should NOT be today
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-12"); // Next 2nd Wednesday
+    });
+
+    it("3rd Wednesday event (legacy format) should NOT show on 5th Wednesday", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = {
+        recurrence_rule: "3rd",
+        day_of_week: "Wednesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-19"); // Next 3rd Wednesday
+    });
+
+    it("4th Wednesday event (legacy format) should NOT show on 5th Wednesday", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan
+      const event = {
+        recurrence_rule: "4th",
+        day_of_week: "Wednesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-26"); // Next 4th Wednesday
+    });
+
+    it("last Wednesday event (legacy format) should show on 5th Wednesday if it's the last", () => {
+      mockDate("2025-01-29"); // 5th Wednesday of Jan, also the last
+      const event = {
+        recurrence_rule: "last",
+        day_of_week: "Wednesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      // Jan 29 IS the last Wednesday of Jan
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-29");
+    });
+
+    it("1st Tuesday event (legacy format) should show on actual 1st Tuesday", () => {
+      mockDate("2025-01-07"); // 1st Tuesday of Jan
+      const event = {
+        recurrence_rule: "1st",
+        day_of_week: "Tuesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-07");
+    });
+
+    it("2nd Tuesday event (legacy format) should NOT show on 1st Tuesday", () => {
+      mockDate("2025-01-07"); // 1st Tuesday of Jan
+      const event = {
+        recurrence_rule: "2nd",
+        day_of_week: "Tuesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      // 2nd Tuesday is Jan 14
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-01-14");
+    });
+
+    it("legacy format handles mixed case", () => {
+      mockDate("2025-01-29"); // 5th Wednesday
+      const event = {
+        recurrence_rule: "1ST",
+        day_of_week: "WEDNESDAY",
+      };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-05");
+    });
+
+    it("legacy format handles whitespace", () => {
+      mockDate("2025-01-29"); // 5th Wednesday
+      const event = {
+        recurrence_rule: " 2nd ",
+        day_of_week: " Wednesday ",
+      };
+      const result = computeNextOccurrence(event);
+
+      expect(result.isToday).toBe(false);
+      expect(result.date).toBe("2025-02-12");
+    });
+
+    it("grouping with legacy format separates ordinals correctly", () => {
+      mockDate("2025-01-29"); // 5th Wednesday
+      const events = [
+        { id: "two-moons", recurrence_rule: "1st", day_of_week: "Wednesday" },
+        { id: "scullys", recurrence_rule: "2nd", day_of_week: "Wednesday" },
+        { id: "third-wed", recurrence_rule: "3rd", day_of_week: "Wednesday" },
+        { id: "fourth-wed", recurrence_rule: "4th", day_of_week: "Wednesday" },
+      ];
+
+      const groups = groupEventsByNextOccurrence(events);
+
+      // None should be grouped under today (5th Wednesday)
+      expect(groups.has("2025-01-29")).toBe(false);
+
+      // Each should be under its correct February date
+      expect(groups.get("2025-02-05")).toContainEqual(expect.objectContaining({ id: "two-moons" }));
+      expect(groups.get("2025-02-12")).toContainEqual(expect.objectContaining({ id: "scullys" }));
+      expect(groups.get("2025-02-19")).toContainEqual(expect.objectContaining({ id: "third-wed" }));
+      expect(groups.get("2025-02-26")).toContainEqual(expect.objectContaining({ id: "fourth-wed" }));
+    });
+
+    it("non-ordinal recurrence_rule falls back to weekly", () => {
+      // Events with recurrence_rule like "weekly" or "none" should use day_of_week as weekly
+      mockDate("2025-01-15"); // Wednesday
+      const event = {
+        recurrence_rule: "weekly",
+        day_of_week: "Wednesday",
+      };
+      const result = computeNextOccurrence(event);
+
+      // Should treat as weekly Wednesday = today
+      expect(result.isToday).toBe(true);
+      expect(result.date).toBe("2025-01-15");
+    });
+  });
 });

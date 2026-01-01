@@ -109,6 +109,8 @@ export interface HappeningCardProps {
   onClick?: () => void;
   /** Additional CSS classes */
   className?: string;
+  /** Show debug overlay with date computation details */
+  debugDates?: boolean;
 }
 
 // ============================================================
@@ -226,12 +228,14 @@ export function HappeningCard({
   event,
   onClick,
   className,
+  debugDates = false,
 }: HappeningCardProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 
   // Derived values
   const dateInfo = getDateInfo(event);
+  const todayKey = getTodayDenver();
   const venueName = getVenueName(event);
   const detailHref = getDetailHref(event);
   const startTime = formatTimeToAMPM(event.start_time ?? null);
@@ -600,6 +604,19 @@ export function HappeningCard({
             {/* Missing details as warning badge, not link */}
             {hasMissing && <Chip variant="warning">Missing details</Chip>}
           </div>
+
+          {/* Debug overlay - shown when ?debugDates=1 */}
+          {debugDates && (
+            <div className="mt-2 p-2 bg-black/80 text-white text-xs font-mono rounded space-y-0.5">
+              <div>todayKey: {todayKey}</div>
+              <div>nextOcc: {dateInfo.label}</div>
+              <div>event_date: {event.event_date || "null"}</div>
+              <div>day_of_week: {event.day_of_week || "null"}</div>
+              <div>recurrence_rule: {event.recurrence_rule || "null"}</div>
+              <div>isTonight: {dateInfo.isTonight.toString()}</div>
+              <div>isTomorrow: {dateInfo.isTomorrow.toString()}</div>
+            </div>
+          )}
         </div>
       </article>
     </CardWrapper>
