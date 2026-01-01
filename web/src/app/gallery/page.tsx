@@ -36,6 +36,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
       created_at
     `)
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .order("created_at", { ascending: false })
     .limit(6);
 
@@ -46,7 +47,8 @@ export default async function GalleryPage({ searchParams }: PageProps) {
         .from("gallery_images")
         .select("*", { count: "exact", head: true })
         .eq("album_id", album.id)
-        .eq("is_approved", true);
+        .eq("is_published", true)
+        .eq("is_hidden", false);
       return { ...album, imageCount: count ?? 0 };
     })
   )).filter((album) => album.imageCount > 0) : [];
@@ -64,7 +66,8 @@ export default async function GalleryPage({ searchParams }: PageProps) {
       event:events(title),
       venue:venues(name)
     `, { count: "exact" })
-    .eq("is_approved", true)
+    .eq("is_published", true)
+    .eq("is_hidden", false)
     .is("album_id", null)
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
@@ -229,7 +232,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                   {albumsWithCount.length > 0 ? "No individual photos yet." : "No photos yet. Be the first to share!"}
                 </p>
                 <p className="text-[var(--color-text-tertiary)] text-sm">
-                  Photos from community members will appear here after approval.
+                  Photos show up right away. Admins may hide anything that violates guidelines.
                 </p>
                 <Link
                   href="/dashboard/gallery"

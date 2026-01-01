@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .select("name, description")
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .single();
 
   if (!album) {
@@ -65,6 +66,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     `)
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .single();
 
   if (!album) {
@@ -86,7 +88,8 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       venue:venues(name)
     `, { count: "exact" })
     .eq("album_id", album.id)
-    .eq("is_approved", true)
+    .eq("is_published", true)
+    .eq("is_hidden", false)
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })

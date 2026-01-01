@@ -28,7 +28,8 @@ export default async function UserGalleryPage() {
       id,
       image_url,
       caption,
-      is_approved,
+      is_published,
+      is_hidden,
       created_at,
       album:gallery_albums(id, name)
     `)
@@ -55,8 +56,9 @@ export default async function UserGalleryPage() {
     .select("id, title, event_date")
     .order("event_date", { ascending: false, nullsFirst: false });
 
-  const pendingCount = myPhotos?.filter(p => !p.is_approved).length ?? 0;
-  const approvedCount = myPhotos?.filter(p => p.is_approved).length ?? 0;
+  // Count visible photos (published and not hidden by admin)
+  const visibleCount = myPhotos?.filter(p => p.is_published && !p.is_hidden).length ?? 0;
+  const hiddenCount = myPhotos?.filter(p => p.is_hidden).length ?? 0;
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -78,15 +80,17 @@ export default async function UserGalleryPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className={`grid gap-4 mb-8 ${hiddenCount > 0 ? 'grid-cols-2' : 'grid-cols-1 max-w-xs'}`}>
           <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center">
-            <div className="text-2xl font-bold text-emerald-500">{approvedCount}</div>
-            <div className="text-sm text-[var(--color-text-secondary)]">Published</div>
+            <div className="text-2xl font-bold text-emerald-500">{visibleCount}</div>
+            <div className="text-sm text-[var(--color-text-secondary)]">Visible in Gallery</div>
           </div>
-          <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center">
-            <div className="text-2xl font-bold text-amber-500">{pendingCount}</div>
-            <div className="text-sm text-[var(--color-text-secondary)]">Pending Review</div>
-          </div>
+          {hiddenCount > 0 && (
+            <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center">
+              <div className="text-2xl font-bold text-red-500">{hiddenCount}</div>
+              <div className="text-sm text-[var(--color-text-secondary)]">Hidden by Admin</div>
+            </div>
+          )}
         </div>
 
         {/* Upload Section */}
@@ -124,13 +128,13 @@ export default async function UserGalleryPage() {
                   />
                   {/* Status Badge */}
                   <div className="absolute top-2 right-2">
-                    {photo.is_approved ? (
-                      <span className="px-2 py-1 bg-emerald-500/90 text-white text-xs rounded-full">
-                        Live
+                    {photo.is_hidden ? (
+                      <span className="px-2 py-1 bg-red-500/90 text-white text-xs rounded-full">
+                        Hidden
                       </span>
                     ) : (
-                      <span className="px-2 py-1 bg-amber-500/90 text-white text-xs rounded-full">
-                        Pending
+                      <span className="px-2 py-1 bg-emerald-500/90 text-white text-xs rounded-full">
+                        Visible
                       </span>
                     )}
                   </div>
@@ -158,8 +162,8 @@ export default async function UserGalleryPage() {
         <div className="mt-8 p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
           <h3 className="font-medium text-[var(--color-text-primary)] mb-2">How it works</h3>
           <ul className="text-sm text-[var(--color-text-secondary)] space-y-1">
-            <li>• Photos are reviewed before appearing in the public gallery</li>
-            <li>• Most photos are approved within 24 hours</li>
+            <li>• Photos appear immediately in the gallery</li>
+            <li>• Admins may hide photos that violate community guidelines</li>
             <li>• Please only upload photos you have permission to share</li>
             <li>• Avoid photos with identifiable faces without consent</li>
           </ul>

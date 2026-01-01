@@ -36,7 +36,8 @@ export default async function AdminGalleryPage() {
       id,
       image_url,
       caption,
-      is_approved,
+      is_hidden,
+      is_published,
       is_featured,
       created_at,
       album_id,
@@ -57,6 +58,7 @@ export default async function AdminGalleryPage() {
       description,
       cover_image_url,
       is_published,
+      is_hidden,
       created_at
     `)
     .order("created_at", { ascending: false });
@@ -73,7 +75,7 @@ export default async function AdminGalleryPage() {
     .select("id, title")
     .order("title");
 
-  const pendingCount = images?.filter((img) => !img.is_approved).length ?? 0;
+  const hiddenCount = images?.filter((img) => img.is_hidden).length ?? 0;
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-6xl mx-auto">
@@ -82,9 +84,9 @@ export default async function AdminGalleryPage() {
           <h1 className="text-4xl font-bold text-[var(--color-text-accent)] mb-2">Gallery Management</h1>
           <p className="text-[var(--color-text-secondary)]">
             Manage photos and albums.
-            {pendingCount > 0 && (
-              <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">
-                {pendingCount} pending approval
+            {hiddenCount > 0 && (
+              <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded-full text-sm">
+                {hiddenCount} hidden
               </span>
             )}
           </p>
