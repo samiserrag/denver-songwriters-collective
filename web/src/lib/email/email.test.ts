@@ -202,7 +202,9 @@ describe("Email Templates", () => {
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       });
 
-      expect(result.subject).toBe("A spot just opened up at Songwriter Showcase");
+      expect(result.subject).toBe(
+        "A spot just opened up at Songwriter Showcase — The Denver Songwriters Collective"
+      );
     });
 
     it("includes confirm and cancel URLs", () => {
