@@ -4,7 +4,24 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Album {
   id: string;
@@ -30,10 +47,95 @@ interface UserGalleryUploadProps {
 }
 
 interface UploadingFile {
+  id: string;
   file: File;
   preview: string;
   status: "pending" | "uploading" | "done" | "error";
   error?: string;
+}
+
+// Sortable thumbnail component for drag-and-drop reordering
+function SortableThumbnail({
+  uploadFile,
+  index,
+  onRemove,
+}: {
+  uploadFile: UploadingFile;
+  index: number;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: uploadFile.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)] group"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- Uses objectURL from local file; next/image incompatible with blob URLs */}
+      <img
+        src={uploadFile.preview}
+        alt={`Preview ${index + 1}`}
+        className="w-full h-full object-cover"
+      />
+
+      {/* Drag Handle - only for pending files */}
+      {uploadFile.status === "pending" && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-1 left-1 p-1 bg-black/60 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-3.5 h-3.5 text-white" />
+        </div>
+      )}
+
+      {/* Status Overlay */}
+      {uploadFile.status === "uploading" && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {uploadFile.status === "done" && (
+        <div className="absolute inset-0 bg-emerald-500/50 flex items-center justify-center">
+          <span className="text-white text-2xl">✓</span>
+        </div>
+      )}
+      {uploadFile.status === "error" && (
+        <div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
+          <span className="text-white text-2xl">✕</span>
+        </div>
+      )}
+
+      {/* Remove Button (only for pending) */}
+      {uploadFile.status === "pending" && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="absolute top-1 right-1 w-5 h-5 bg-black/60 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function UserGalleryUpload({
@@ -65,6 +167,26 @@ export default function UserGalleryUpload({
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
   const [albumError, setAlbumError] = useState<string | null>(null);
   const [lastCreatedAlbum, setLastCreatedAlbum] = useState<{ id: string; name: string; isPublished: boolean } | null>(null);
+
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setFiles((prev) => {
+      const oldIndex = prev.findIndex((f) => f.id === active.id);
+      const newIndex = prev.findIndex((f) => f.id === over.id);
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }, []);
 
   /**
    * Generate a URL-safe slug from a name.
@@ -167,6 +289,7 @@ export default function UserGalleryUpload({
     });
 
     const newUploadingFiles: UploadingFile[] = validFiles.map(file => ({
+      id: crypto.randomUUID(),
       file,
       preview: URL.createObjectURL(file),
       status: "pending",
@@ -175,12 +298,13 @@ export default function UserGalleryUpload({
     setFiles(prev => [...prev, ...newUploadingFiles]);
   };
 
-  const removeFile = (index: number) => {
+  const removeFile = (id: string) => {
     setFiles(prev => {
-      const newFiles = [...prev];
-      URL.revokeObjectURL(newFiles[index].preview);
-      newFiles.splice(index, 1);
-      return newFiles;
+      const file = prev.find(f => f.id === id);
+      if (file) {
+        URL.revokeObjectURL(file.preview);
+      }
+      return prev.filter(f => f.id !== id);
     });
   };
 
@@ -193,8 +317,22 @@ export default function UserGalleryUpload({
     setIsUploading(true);
     const supabase = createClient();
 
+    // Get starting sort_order for the album (if one is selected)
+    let startSortOrder = 0;
+    if (albumId) {
+      const { data: maxSort } = await supabase
+        .from("gallery_images")
+        .select("sort_order")
+        .eq("album_id", albumId)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .single();
+      startSortOrder = (maxSort?.sort_order ?? -1) + 1;
+    }
+
     let successCount = 0;
     let errorCount = 0;
+    let sortOrderOffset = 0;
 
     for (let i = 0; i < files.length; i++) {
       const uploadFile = files[i];
@@ -224,6 +362,7 @@ export default function UserGalleryUpload({
           .getPublicUrl(fileName);
 
         // Insert into database (pending approval)
+        // sort_order preserves user's drag-and-drop order
         // Mutual exclusivity: use custom fields XOR FK fields
         const { error: insertError } = await supabase
           .from("gallery_images")
@@ -231,6 +370,7 @@ export default function UserGalleryUpload({
             image_url: publicUrl,
             caption: caption || null,
             album_id: albumId || null,
+            sort_order: startSortOrder + sortOrderOffset,
             // Venue: either venue_id OR custom_venue_name (not both)
             venue_id: useCustomVenue ? null : (venueId || null),
             custom_venue_name: useCustomVenue && customVenueName.trim() ? customVenueName.trim() : null,
@@ -243,6 +383,8 @@ export default function UserGalleryUpload({
           });
 
         if (insertError) throw insertError;
+
+        sortOrderOffset++;
 
         // Update status to done
         setFiles(prev => {
@@ -545,55 +687,40 @@ export default function UserGalleryUpload({
         </p>
       </div>
 
-      {/* Preview Grid */}
+      {/* Preview Grid with Drag-and-Drop Reordering */}
       {files.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">
-            Selected Photos ({files.length})
-          </h3>
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-            {files.map((uploadFile, index) => (
-              <div
-                key={index}
-                className="relative aspect-square rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- Uses objectURL from local file; next/image incompatible with blob URLs */}
-                <img
-                  src={uploadFile.preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                {/* Status Overlay */}
-                {uploadFile.status === "uploading" && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-                {uploadFile.status === "done" && (
-                  <div className="absolute inset-0 bg-emerald-500/50 flex items-center justify-center">
-                    <span className="text-white text-2xl">✓</span>
-                  </div>
-                )}
-                {uploadFile.status === "error" && (
-                  <div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
-                    <span className="text-white text-2xl">✕</span>
-                  </div>
-                )}
-                {/* Remove Button (only for pending) */}
-                {uploadFile.status === "pending" && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(index);
-                    }}
-                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 hover:bg-red-500 rounded-full flex items-center justify-center text-white text-xs"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">
+              Selected Photos ({files.length})
+            </h3>
+            {pendingCount > 1 && (
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                Drag to reorder before uploading
+              </p>
+            )}
           </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={files.map((f) => f.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {files.map((uploadFile, index) => (
+                  <SortableThumbnail
+                    key={uploadFile.id}
+                    uploadFile={uploadFile}
+                    index={index}
+                    onRemove={() => removeFile(uploadFile.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 

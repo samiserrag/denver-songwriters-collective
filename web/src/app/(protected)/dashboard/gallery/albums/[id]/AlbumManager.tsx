@@ -5,7 +5,24 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Star, Check, Pencil, X, MessageSquare } from "lucide-react";
+import { Star, Check, Pencil, X, MessageSquare, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Album {
   id: string;
@@ -35,7 +52,100 @@ interface AlbumManagerProps {
   isAdmin: boolean;
 }
 
-export default function AlbumManager({ album, images, isAdmin }: AlbumManagerProps) {
+// Sortable photo card for drag-and-drop reordering
+function SortablePhotoCard({
+  image,
+  isCover,
+  onSetCover,
+}: {
+  image: GalleryImage;
+  isCover: boolean;
+  onSetCover: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
+        isCover
+          ? "border-[var(--color-accent-primary)] ring-2 ring-[var(--color-accent-primary)]/30"
+          : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
+      }`}
+    >
+      <Image
+        src={image.image_url}
+        alt={image.caption || "Album photo"}
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+        className="object-cover"
+      />
+
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 p-1.5 bg-black/60 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4 text-white" />
+      </div>
+
+      {/* Cover Badge */}
+      {isCover && (
+        <div className="absolute top-2 right-2">
+          <span className="px-2 py-1 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs rounded-full flex items-center gap-1">
+            <Star className="w-3 h-3 fill-current" />
+            Cover
+          </span>
+        </div>
+      )}
+
+      {/* Hidden indicator */}
+      {image.is_hidden && (
+        <div className="absolute top-2 right-2">
+          <span className="px-2 py-1 bg-red-500/90 text-white text-xs rounded-full">
+            Hidden
+          </span>
+        </div>
+      )}
+
+      {/* Set as Cover Button */}
+      <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+        {isCover ? (
+          <div className="text-center text-white text-xs font-medium">
+            Current Cover
+          </div>
+        ) : (
+          <button
+            onClick={onSetCover}
+            className="w-full px-3 py-1.5 bg-white/90 hover:bg-white text-gray-900 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
+          >
+            <Star className="w-3 h-3" />
+            Set as cover
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function AlbumManager({ album, images: initialImages, isAdmin }: AlbumManagerProps) {
   const router = useRouter();
   const [isEditingName, setIsEditingName] = useState(false);
   const [albumName, setAlbumName] = useState(album.name);
@@ -44,6 +154,50 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isModeratingComments, setIsModeratingComments] = useState(false);
+  const [images, setImages] = useState(initialImages);
+  const [isReordering, setIsReordering] = useState(false);
+
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = images.findIndex((img) => img.id === active.id);
+      const newIndex = images.findIndex((img) => img.id === over.id);
+      const newOrder = arrayMove(images, oldIndex, newIndex);
+      setImages(newOrder);
+
+      // Persist new sort_order to database
+      setIsReordering(true);
+      const supabase = createClient();
+
+      const updates = newOrder.map((img, index) => ({
+        id: img.id,
+        sort_order: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("gallery_images")
+          .update({ sort_order: update.sort_order })
+          .eq("id", update.id);
+      }
+
+      setIsReordering(false);
+      setStatusMessage("Photo order saved.");
+      setTimeout(() => setStatusMessage(null), 2000);
+    },
+    [images]
+  );
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -368,76 +522,44 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
         </div>
       </div>
 
-      {/* Images Grid - Set as Cover */}
+      {/* Images Grid - Drag to Reorder, Set as Cover */}
       <div>
-        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-          Album Photos
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            Album Photos
+          </h3>
+          {isReordering && (
+            <span className="text-sm text-[var(--color-text-accent)] animate-pulse">
+              Saving order...
+            </span>
+          )}
+        </div>
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-          Click &quot;Set as cover&quot; on any photo to use it as the album cover.
+          Drag photos to reorder. Click &quot;Set as cover&quot; to choose the album cover.
         </p>
 
         {images.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {images.map((image) => {
-              const isCover = currentCoverUrl === image.image_url;
-
-              return (
-                <div
-                  key={image.id}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                    isCover
-                      ? "border-[var(--color-accent-primary)] ring-2 ring-[var(--color-accent-primary)]/30"
-                      : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
-                  }`}
-                >
-                  <Image
-                    src={image.image_url}
-                    alt={image.caption || "Album photo"}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                    className="object-cover"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={images.map((img) => img.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {images.map((image) => (
+                  <SortablePhotoCard
+                    key={image.id}
+                    image={image}
+                    isCover={currentCoverUrl === image.image_url}
+                    onSetCover={() => handleSetCover(image.image_url)}
                   />
-
-                  {/* Cover Badge */}
-                  {isCover && (
-                    <div className="absolute top-2 left-2">
-                      <span className="px-2 py-1 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs rounded-full flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-current" />
-                        Cover
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Hidden indicator */}
-                  {image.is_hidden && (
-                    <div className="absolute top-2 right-2">
-                      <span className="px-2 py-1 bg-red-500/90 text-white text-xs rounded-full">
-                        Hidden
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Set as Cover Button */}
-                  <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                    {isCover ? (
-                      <div className="text-center text-white text-xs font-medium">
-                        Current Cover
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleSetCover(image.image_url)}
-                        className="w-full px-3 py-1.5 bg-white/90 hover:bg-white text-gray-900 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Star className="w-3 h-3" />
-                        Set as cover
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         ) : (
           <div className="text-center py-12 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
             <div className="text-4xl mb-4">📷</div>
