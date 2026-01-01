@@ -9,6 +9,7 @@ import CancelEventButton from "./_components/CancelEventButton";
 import PublishButton from "./_components/PublishButton";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
+import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
 
 export const metadata = {
   title: "Edit Event | DSC"
@@ -176,6 +177,18 @@ export default async function EditEventPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Series Editing Notice - Phase 4.22.1 */}
+            <SeriesEditingNotice
+              event={{
+                id: event.id,
+                recurrence_rule: event.recurrence_rule,
+                day_of_week: event.day_of_week,
+                event_date: event.event_date,
+                is_recurring: event.is_recurring,
+              }}
+              showOverrideLink={isAdmin}
+            />
+
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Event Details</h2>

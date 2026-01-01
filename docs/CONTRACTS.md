@@ -477,3 +477,53 @@ An override applies only to:
 | Test File | Contracts Enforced |
 |-----------|-------------------|
 | `__tests__/occurrence-overrides.test.ts` | Override map, cancelled separation, override attachment |
+
+---
+
+## Contract: Event Claims (Phase 4.22.3)
+
+> **Track Status:** January 2026
+
+### Core Principles
+
+- Only unclaimed events (host_id IS NULL) can be claimed
+- Claims are private (users see only their own claims)
+- Admin approval required before ownership transfer
+
+### Visibility Contract
+
+| Condition | Claim Button Visible |
+|-----------|---------------------|
+| User signed in + host_id IS NULL | Yes |
+| User signed in + host_id IS NOT NULL | No |
+| User not signed in | No |
+| User has pending claim | Show status, no new button |
+
+### Claim Status Display
+
+| Status | User Display |
+|--------|-------------|
+| `pending` | "Pending Approval" pill |
+| `approved` | "Approved" pill |
+| `rejected` | "Rejected" pill + rejection reason if present |
+
+### Approval Flow Contract
+
+| Step | Action |
+|------|--------|
+| Admin approves | Set claim status='approved', event host_id=requester_id, insert event_hosts |
+| Event already claimed | Auto-reject with reason "Event was already claimed by another user" |
+| Admin rejects | Set claim status='rejected', optional rejection_reason |
+
+### RLS Contract
+
+| Actor | Can Create | Can View Own | Can View All | Can Update |
+|-------|-----------|--------------|--------------|------------|
+| Authenticated user | Yes (own claims) | Yes | No | No |
+| Admin | Yes | Yes | Yes | Yes |
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/event-claims.test.ts` | Visibility rules, duplicate prevention, approval/rejection flow, RLS behavior |

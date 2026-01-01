@@ -10,6 +10,7 @@ import { RSVPSection } from "@/components/events/RSVPSection";
 import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 import { TimeslotSection } from "@/components/events/TimeslotSection";
 import { HostControls } from "@/components/events/HostControls";
+import { ClaimEventButton } from "@/components/events/ClaimEventButton";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
@@ -98,6 +99,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
   // Fetch event with venue join and recurrence info
   // Phase 4.0: Include custom location fields
+  // Phase 4.22.3: Include host_id for claim functionality
   const { data: event, error } = await supabase
     .from("events")
     .select(`
@@ -108,7 +110,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       is_recurring, recurrence_pattern,
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
-      is_free, age_policy
+      is_free, age_policy, host_id
     `)
     .eq("id", id)
     .single();
@@ -238,6 +240,31 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     .eq("is_approved", true)
     .order("created_at", { ascending: false })
     .limit(12);
+
+  // Phase 4.22.3: Check for unclaimed event and user's existing claim
+  const { data: { session } } = await supabase.auth.getSession();
+  const eventHostId = (event as { host_id?: string | null }).host_id;
+  const isUnclaimed = !eventHostId;
+  const isUserTheHost = session && eventHostId === session.user.id;
+  let userClaim: { status: "pending" | "approved" | "rejected"; rejection_reason?: string | null } | null = null;
+
+  if (session && isUnclaimed) {
+    const { data: existingClaim } = await supabase
+      .from("event_claims")
+      .select("status, rejection_reason")
+      .eq("event_id", id)
+      .eq("requester_id", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingClaim) {
+      userClaim = {
+        status: existingClaim.status as "pending" | "approved" | "rejected",
+        rejection_reason: existingClaim.rejection_reason,
+      };
+    }
+  }
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
   // Phase 4.0: Pass lat/lng for custom locations
@@ -610,6 +637,39 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <span className="font-medium text-[var(--color-text-primary)]">{config.label}:</span> {config.description}
             </p>
           </div>
+
+          {/* Phase 4.22.3: Host confirmation or Claim Event Section */}
+          {isUserTheHost && (
+            <div className="mt-8 p-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10">
+              <div className="flex items-center gap-3">
+                <span className="text-emerald-400 text-lg">✓</span>
+                <div>
+                  <p className="font-medium text-emerald-400">You are the host of this event</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Manage this event from your{" "}
+                    <Link href="/dashboard/my-events" className="text-[var(--color-text-accent)] hover:underline">
+                      dashboard
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {session && isUnclaimed && (
+            <div className="mt-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
+                Claim This Event
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                Are you the organizer of this event? Request ownership to manage details and updates.
+              </p>
+              <ClaimEventButton
+                eventId={event.id}
+                eventTitle={event.title}
+                existingClaim={userClaim}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -367,3 +367,239 @@ describe("Override status values", () => {
     expect(override.status === "cancelled").toBe(true);
   });
 });
+
+/**
+ * Phase 4.22.2: Override Editor Merge Logic Tests
+ *
+ * Tests for the admin override editor that merges computed occurrences
+ * with existing overrides for display and editing.
+ */
+describe("Override Editor merge logic", () => {
+  // Simulate the merge logic used in the overrides page
+  interface MergedOccurrence {
+    dateKey: string;
+    isConfident: boolean;
+    override: OccurrenceOverride | null;
+    isCancelled: boolean;
+  }
+
+  function mergeOccurrencesWithOverrides(
+    occurrences: Array<{ dateKey: string; isConfident: boolean }>,
+    overrideMap: Map<string, OccurrenceOverride>,
+    eventId: string
+  ): MergedOccurrence[] {
+    return occurrences.map((occ) => {
+      const key = `${eventId}:${occ.dateKey}`;
+      const override = overrideMap.get(key) || null;
+      return {
+        dateKey: occ.dateKey,
+        isConfident: occ.isConfident,
+        override,
+        isCancelled: override?.status === "cancelled",
+      };
+    });
+  }
+
+  const sampleOccurrences = [
+    { dateKey: "2026-01-07", isConfident: true },
+    { dateKey: "2026-01-14", isConfident: true },
+    { dateKey: "2026-01-21", isConfident: true },
+    { dateKey: "2026-01-28", isConfident: true },
+  ];
+
+  it("merges cancelled override status correctly", () => {
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-14",
+        status: "cancelled",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    expect(merged.find((o) => o.dateKey === "2026-01-14")?.isCancelled).toBe(true);
+    expect(merged.find((o) => o.dateKey === "2026-01-07")?.isCancelled).toBe(false);
+    expect(merged.find((o) => o.dateKey === "2026-01-21")?.isCancelled).toBe(false);
+  });
+
+  it("attaches override_start_time to merged occurrence", () => {
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-21",
+        status: "normal",
+        override_start_time: "20:30:00",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    const jan21 = merged.find((o) => o.dateKey === "2026-01-21");
+    expect(jan21?.override?.override_start_time).toBe("20:30:00");
+    expect(jan21?.isCancelled).toBe(false);
+  });
+
+  it("attaches override_notes to merged occurrence", () => {
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-28",
+        status: "normal",
+        override_notes: "Special guest performance tonight!",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    const jan28 = merged.find((o) => o.dateKey === "2026-01-28");
+    expect(jan28?.override?.override_notes).toBe("Special guest performance tonight!");
+  });
+
+  it("returns null override for occurrences without overrides", () => {
+    const overrideMap = buildOverrideMap([]);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    expect(merged.every((o) => o.override === null)).toBe(true);
+    expect(merged.every((o) => o.isCancelled === false)).toBe(true);
+  });
+
+  it("filters cancelled occurrences for default view", () => {
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-07",
+        status: "cancelled",
+      },
+      {
+        event_id: "event-1",
+        date_key: "2026-01-28",
+        status: "cancelled",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    // Default view: filter out cancelled
+    const normalOccurrences = merged.filter((o) => !o.isCancelled);
+    expect(normalOccurrences.length).toBe(2);
+    expect(normalOccurrences.map((o) => o.dateKey)).toEqual([
+      "2026-01-14",
+      "2026-01-21",
+    ]);
+
+    // showCancelled view: show all
+    expect(merged.length).toBe(4);
+  });
+
+  it("separates cancelled occurrences for showCancelled toggle", () => {
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-14",
+        status: "cancelled",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    const cancelledOccurrences = merged.filter((o) => o.isCancelled);
+    const normalOccurrences = merged.filter((o) => !o.isCancelled);
+
+    expect(cancelledOccurrences.length).toBe(1);
+    expect(cancelledOccurrences[0].dateKey).toBe("2026-01-14");
+    expect(normalOccurrences.length).toBe(3);
+  });
+
+  it("clearing override removes override effect", () => {
+    // Step 1: Create an override
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-21",
+        status: "cancelled",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const mergedWithOverride = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+    expect(mergedWithOverride.find((o) => o.dateKey === "2026-01-21")?.isCancelled).toBe(true);
+
+    // Step 2: Clear the override (empty map simulates deleted override)
+    const emptyMap = buildOverrideMap([]);
+    const mergedAfterClear = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      emptyMap,
+      "event-1"
+    );
+
+    // After clearing, the occurrence should be normal
+    const jan21 = mergedAfterClear.find((o) => o.dateKey === "2026-01-21");
+    expect(jan21?.isCancelled).toBe(false);
+    expect(jan21?.override).toBeNull();
+  });
+
+  it("handles multiple override fields on same occurrence", () => {
+    const overrides: OccurrenceOverride[] = [
+      {
+        event_id: "event-1",
+        date_key: "2026-01-14",
+        status: "normal",
+        override_start_time: "19:30:00",
+        override_cover_image_url: "https://example.com/special-flyer.jpg",
+        override_notes: "Rescheduled to 7:30 PM with special guest",
+      },
+    ];
+    const overrideMap = buildOverrideMap(overrides);
+
+    const merged = mergeOccurrencesWithOverrides(
+      sampleOccurrences,
+      overrideMap,
+      "event-1"
+    );
+
+    const jan14 = merged.find((o) => o.dateKey === "2026-01-14");
+    expect(jan14?.isCancelled).toBe(false);
+    expect(jan14?.override?.override_start_time).toBe("19:30:00");
+    expect(jan14?.override?.override_cover_image_url).toBe(
+      "https://example.com/special-flyer.jpg"
+    );
+    expect(jan14?.override?.override_notes).toBe(
+      "Rescheduled to 7:30 PM with special guest"
+    );
+  });
+});
