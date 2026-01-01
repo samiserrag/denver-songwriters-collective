@@ -24,7 +24,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const offset = (page - 1) * IMAGES_PER_PAGE;
 
-  // Fetch published albums with image count
+  // Fetch published and visible albums
   const { data: albums } = await supabase
     .from("gallery_albums")
     .select(`
@@ -36,18 +36,37 @@ export default async function GalleryPage({ searchParams }: PageProps) {
       created_at
     `)
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .order("created_at", { ascending: false })
     .limit(6);
 
-  // Count images in each album and filter out empty albums
+  // Count images in each album, get fallback cover, and filter out empty albums
   const albumsWithCount = albums ? (await Promise.all(
     albums.map(async (album) => {
       const { count } = await supabase
         .from("gallery_images")
         .select("*", { count: "exact", head: true })
         .eq("album_id", album.id)
-        .eq("is_approved", true);
-      return { ...album, imageCount: count ?? 0 };
+        .eq("is_published", true)
+        .eq("is_hidden", false);
+
+      // Get first visible image for cover fallback if no cover_image_url set
+      let displayCoverUrl = album.cover_image_url;
+      if (!displayCoverUrl) {
+        const { data: firstImage } = await supabase
+          .from("gallery_images")
+          .select("image_url")
+          .eq("album_id", album.id)
+          .eq("is_published", true)
+          .eq("is_hidden", false)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        displayCoverUrl = firstImage?.image_url ?? null;
+      }
+
+      return { ...album, imageCount: count ?? 0, displayCoverUrl };
     })
   )).filter((album) => album.imageCount > 0) : [];
 
@@ -64,7 +83,8 @@ export default async function GalleryPage({ searchParams }: PageProps) {
       event:events(title),
       venue:venues(name)
     `, { count: "exact" })
-    .eq("is_approved", true)
+    .eq("is_published", true)
+    .eq("is_hidden", false)
     .is("album_id", null)
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
@@ -117,9 +137,9 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                     className="group block rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
                   >
                     <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
-                      {album.cover_image_url ? (
+                      {album.displayCoverUrl ? (
                         <Image
-                          src={album.cover_image_url}
+                          src={album.displayCoverUrl}
                           alt={album.name}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -229,7 +249,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
                   {albumsWithCount.length > 0 ? "No individual photos yet." : "No photos yet. Be the first to share!"}
                 </p>
                 <p className="text-[var(--color-text-tertiary)] text-sm">
-                  Photos from community members will appear here after approval.
+                  Photos show up right away. Admins may hide anything that violates guidelines.
                 </p>
                 <Link
                   href="/dashboard/gallery"
