@@ -13,6 +13,7 @@ import { ThemePicker } from "@/components/ui/ThemePicker";
 import {
   getTodayDenver,
   expandAndGroupEvents,
+  EXPANSION_CAPS,
 } from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
@@ -82,6 +83,7 @@ export default async function HomePage() {
       .order("created_at", { ascending: false })
       .limit(6),
     // Tonight's happenings - all event types, published only
+    // Limit to MAX_EVENTS to prevent performance issues
     supabase
       .from("events")
       .select(`
@@ -89,7 +91,8 @@ export default async function HomePage() {
         venues!left(name, address, city, state)
       `)
       .eq("is_published", true)
-      .in("status", ["active", "needs_verification"]),
+      .in("status", ["active", "needs_verification"])
+      .limit(EXPANSION_CAPS.MAX_EVENTS),
     // Featured members of any role - only spotlighted members
     supabase
       .from("profiles")
@@ -196,11 +199,20 @@ export default async function HomePage() {
   // Get tonight's happenings using occurrence expansion
   const today = getTodayDenver();
   const allEventsForTonight = (tonightsHappeningsRes.data ?? []) as any[];
-  const { groupedEvents } = expandAndGroupEvents(allEventsForTonight, {
+  const { groupedEvents, metrics } = expandAndGroupEvents(allEventsForTonight, {
     startKey: today,
     endKey: today,
   });
   const tonightsHappenings = groupedEvents.get(today) ?? [];
+
+  // Log performance metrics when caps are hit (server-side only, grepable)
+  if (metrics.wasCapped) {
+    console.log(
+      `[PERF:homepage] tonights_happenings: ${allEventsForTonight.length} events, ` +
+      `${metrics.eventsProcessed} processed, ${metrics.totalOccurrences} occurrences, ` +
+      `capped=${metrics.wasCapped}`
+    );
+  }
 
   const latestBlog = latestBlogRes.data;
   const latestBlogAuthor = latestBlog?.author

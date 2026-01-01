@@ -471,6 +471,18 @@ export function computeNextOccurrence(
 // Phase 4.18: Occurrence Expansion for Rolling Window
 // ============================================================
 
+/** Performance caps for occurrence expansion */
+export const EXPANSION_CAPS = {
+  /** Maximum events to process in a single expansion call */
+  MAX_EVENTS: 200,
+  /** Maximum total occurrences across all events */
+  MAX_TOTAL_OCCURRENCES: 500,
+  /** Maximum occurrences per individual event */
+  MAX_PER_EVENT: 40,
+  /** Default window size in days */
+  DEFAULT_WINDOW_DAYS: 90,
+} as const;
+
 export interface ExpansionOptions {
   /** Start of window (YYYY-MM-DD), defaults to today */
   startKey?: string;
@@ -478,6 +490,10 @@ export interface ExpansionOptions {
   endKey?: string;
   /** Maximum occurrences per event (prevents runaway), default 40 */
   maxOccurrences?: number;
+  /** Maximum events to process (default 200) */
+  maxEvents?: number;
+  /** Maximum total occurrences across all events (default 500) */
+  maxTotalOccurrences?: number;
 }
 
 export interface ExpandedOccurrence {
@@ -500,8 +516,8 @@ export function expandOccurrencesForEvent(
   options?: ExpansionOptions
 ): ExpandedOccurrence[] {
   const startKey = options?.startKey ?? getTodayDenver();
-  const endKey = options?.endKey ?? addDaysDenver(startKey, 90);
-  const maxOccurrences = options?.maxOccurrences ?? 40;
+  const endKey = options?.endKey ?? addDaysDenver(startKey, EXPANSION_CAPS.DEFAULT_WINDOW_DAYS);
+  const maxOccurrences = options?.maxOccurrences ?? EXPANSION_CAPS.MAX_PER_EVENT;
 
   const occurrences: ExpandedOccurrence[] = [];
 
@@ -743,28 +759,64 @@ export interface EventOccurrenceEntry<T extends EventForOccurrence = EventForOcc
   isConfident: boolean;
 }
 
+export interface ExpansionResult<T extends EventForOccurrence = EventForOccurrence> {
+  groupedEvents: Map<string, EventOccurrenceEntry<T>[]>;
+  unknownEvents: T[];
+  /** Performance metrics for instrumentation */
+  metrics: {
+    eventsProcessed: number;
+    eventsSkipped: number;
+    totalOccurrences: number;
+    wasCapped: boolean;
+  };
+}
+
 /**
  * Expand and group events by ALL their occurrences within a window.
  * One event can appear on multiple dates (e.g., every Wednesday in next 90 days).
  *
+ * Performance caps are enforced to prevent runaway processing:
+ * - maxEvents: Maximum events to process (default 200)
+ * - maxTotalOccurrences: Maximum total occurrences (default 500)
+ * - maxOccurrences: Maximum occurrences per event (default 40)
+ *
  * @param events - Array of events with timing fields and an `id` field
  * @param options - Expansion options
- * @returns Map of date strings to event entries, sorted by date
+ * @returns Map of date strings to event entries, sorted by date, plus metrics
  */
 export function expandAndGroupEvents<T extends EventForOccurrence & { id: string }>(
   events: T[],
   options?: ExpansionOptions
-): {
-  groupedEvents: Map<string, EventOccurrenceEntry<T>[]>;
-  unknownEvents: T[];
-} {
+): ExpansionResult<T> {
   const startKey = options?.startKey ?? getTodayDenver();
-  const endKey = options?.endKey ?? addDaysDenver(startKey, 90);
+  const endKey = options?.endKey ?? addDaysDenver(startKey, EXPANSION_CAPS.DEFAULT_WINDOW_DAYS);
+  const maxEvents = options?.maxEvents ?? EXPANSION_CAPS.MAX_EVENTS;
+  const maxTotalOccurrences = options?.maxTotalOccurrences ?? EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES;
 
   const groupedEvents = new Map<string, EventOccurrenceEntry<T>[]>();
   const unknownEvents: T[] = [];
 
-  for (const event of events) {
+  // Performance metrics
+  let eventsProcessed = 0;
+  let totalOccurrences = 0;
+  let wasCapped = false;
+
+  // Apply event cap - process only first N events
+  const eventsToProcess = events.slice(0, maxEvents);
+  const eventsSkipped = events.length - eventsToProcess.length;
+  if (eventsSkipped > 0) {
+    wasCapped = true;
+  }
+
+  for (const event of eventsToProcess) {
+    // Stop if we've hit the total occurrence cap
+    if (totalOccurrences >= maxTotalOccurrences) {
+      wasCapped = true;
+      break;
+    }
+
+    eventsProcessed++;
+
     const occurrences = expandOccurrencesForEvent(event, {
       startKey,
       endKey,
@@ -778,6 +830,14 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
     }
 
     for (const occ of occurrences) {
+      // Enforce total occurrence cap
+      if (totalOccurrences >= maxTotalOccurrences) {
+        wasCapped = true;
+        break;
+      }
+
+      totalOccurrences++;
+
       if (!groupedEvents.has(occ.dateKey)) {
         groupedEvents.set(occ.dateKey, []);
       }
@@ -803,5 +863,14 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
       ])
   );
 
-  return { groupedEvents: sortedGroups, unknownEvents };
+  return {
+    groupedEvents: sortedGroups,
+    unknownEvents,
+    metrics: {
+      eventsProcessed,
+      eventsSkipped,
+      totalOccurrences,
+      wasCapped,
+    },
+  };
 }
