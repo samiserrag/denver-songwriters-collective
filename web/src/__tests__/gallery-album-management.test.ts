@@ -60,7 +60,7 @@ describe('Gallery Album Management', () => {
     it('should show hidden status (read-only for user)', () => {
       const content = fs.readFileSync(albumManagerPath, 'utf-8');
       expect(content).toMatch(/is_hidden/);
-      expect(content).toMatch(/Hidden by Admin/);
+      expect(content).toMatch(/Hidden by admin/i);
     });
   });
 

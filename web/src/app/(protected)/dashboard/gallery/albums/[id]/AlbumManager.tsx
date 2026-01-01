@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Star, Check, Pencil, X } from "lucide-react";
+import { Star, Check, Pencil, X, MessageSquare } from "lucide-react";
 
 interface Album {
   id: string;
@@ -42,6 +42,8 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
   const [albumDescription, setAlbumDescription] = useState(album.description || "");
   const [isSaving, setIsSaving] = useState(false);
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isModeratingComments, setIsModeratingComments] = useState(false);
 
   // Generate slug from name
   const generateSlug = (name: string): string => {
@@ -102,7 +104,7 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
     }
   };
 
-  // Toggle publish state
+  // Toggle publish state with inline feedback (no toasts)
   const handleTogglePublish = async () => {
     const supabase = createClient();
     const newState = !album.is_published;
@@ -113,9 +115,11 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
       .eq("id", album.id);
 
     if (error) {
-      toast.error("Failed to update album");
+      setStatusMessage("Failed to update album.");
+      setTimeout(() => setStatusMessage(null), 3000);
     } else {
-      toast.success(newState ? "Album published" : "Album set to draft");
+      setStatusMessage(newState ? "Album published." : "Album hidden from public view.");
+      setTimeout(() => setStatusMessage(null), 3000);
       router.refresh();
     }
   };
@@ -138,6 +142,74 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
       router.refresh();
     }
   }, [album.id, router]);
+
+  // Bulk hide all comments on this album (album comments + photo comments)
+  const handleBulkHideComments = async () => {
+    setIsModeratingComments(true);
+    const supabase = createClient();
+
+    // Hide album-level comments
+    const { error: albumError } = await supabase
+      .from("gallery_album_comments")
+      .update({ is_deleted: true })
+      .eq("album_id", album.id)
+      .eq("is_deleted", false);
+
+    // Hide photo comments for all images in this album
+    const imageIds = images.map((img) => img.id);
+    let photoError = null;
+    if (imageIds.length > 0) {
+      const { error } = await supabase
+        .from("gallery_photo_comments")
+        .update({ is_deleted: true })
+        .in("image_id", imageIds)
+        .eq("is_deleted", false);
+      photoError = error;
+    }
+
+    setIsModeratingComments(false);
+
+    if (albumError || photoError) {
+      setStatusMessage("Failed to hide some comments.");
+    } else {
+      setStatusMessage("All comments hidden.");
+    }
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  // Bulk unhide all comments on this album
+  const handleBulkUnhideComments = async () => {
+    setIsModeratingComments(true);
+    const supabase = createClient();
+
+    // Unhide album-level comments
+    const { error: albumError } = await supabase
+      .from("gallery_album_comments")
+      .update({ is_deleted: false })
+      .eq("album_id", album.id)
+      .eq("is_deleted", true);
+
+    // Unhide photo comments for all images in this album
+    const imageIds = images.map((img) => img.id);
+    let photoError = null;
+    if (imageIds.length > 0) {
+      const { error } = await supabase
+        .from("gallery_photo_comments")
+        .update({ is_deleted: false })
+        .in("image_id", imageIds)
+        .eq("is_deleted", true);
+      photoError = error;
+    }
+
+    setIsModeratingComments(false);
+
+    if (albumError || photoError) {
+      setStatusMessage("Failed to unhide some comments.");
+    } else {
+      setStatusMessage("All comments restored.");
+    }
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
 
   // Get first visible image for fallback
   const firstVisibleImage = images.find((img) => img.is_published && !img.is_hidden);
@@ -251,9 +323,14 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
                 {images.length} {images.length === 1 ? "photo" : "photos"}
               </span>
 
-              {album.is_hidden && (
+              {album.is_hidden && !isAdmin && (
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full" title="Contact us if you think this is a mistake">
+                  Hidden by admin
+                </span>
+              )}
+              {album.is_hidden && isAdmin && (
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
-                  Hidden by Admin
+                  Hidden
                 </span>
               )}
 
@@ -279,6 +356,13 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
               >
                 {album.is_published ? "Unpublish" : "Publish"}
               </button>
+
+              {/* Inline status feedback */}
+              {statusMessage && (
+                <span className="text-sm text-[var(--color-text-secondary)] italic">
+                  {statusMessage}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -357,13 +441,52 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
         ) : (
           <div className="text-center py-12 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
             <div className="text-4xl mb-4">📷</div>
-            <p className="text-[var(--color-text-secondary)]">No photos in this album yet.</p>
-            <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-              Upload photos and add them to this album.
+            <p className="text-[var(--color-text-primary)] font-medium">Add photos to finish this album.</p>
+            <p className="text-sm text-[var(--color-text-tertiary)] mt-2">
+              Go to your gallery dashboard and select this album when uploading.
             </p>
           </div>
         )}
       </div>
+
+      {/* Comment Moderation Section */}
+      <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className="w-5 h-5 text-[var(--color-text-secondary)]" />
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            Comment Moderation
+          </h3>
+        </div>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+          Bulk actions for all comments on this album and its photos.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleBulkHideComments}
+            disabled={isModeratingComments}
+            className="px-4 py-2 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            {isModeratingComments ? "Working..." : "Hide all comments"}
+          </button>
+          <button
+            onClick={handleBulkUnhideComments}
+            disabled={isModeratingComments}
+            className="px-4 py-2 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] rounded-lg font-medium transition-colors disabled:opacity-50"
+          >
+            {isModeratingComments ? "Working..." : "Unhide all comments"}
+          </button>
+        </div>
+      </div>
+
+      {/* Owner context for hidden albums (non-admin) */}
+      {album.is_hidden && !isAdmin && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm text-amber-800">
+            This album has been hidden by an admin and is not visible in the public gallery.
+            Contact us if you think this is a mistake.
+          </p>
+        </div>
+      )}
 
       {/* Admin Info */}
       {isAdmin && (
