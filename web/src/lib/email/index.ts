@@ -12,6 +12,14 @@
 export { sendEmail, isEmailConfigured, ADMIN_EMAIL } from "./mailer";
 export type { EmailPayload } from "./mailer";
 
+// Preference-aware sending
+export {
+  sendEmailWithPreferences,
+  sendAdminEmailWithPreferences,
+  type SendWithPreferencesOptions,
+  type SendWithPreferencesResult,
+} from "./sendWithPreferences";
+
 // Rendering utilities
 export {
   wrapEmailHtml,
@@ -109,3 +117,35 @@ export {
   type SuggestionResponseEmailParams,
   type SuggestionStatus,
 } from "./templates/suggestionResponse";
+
+// Event claim templates
+export {
+  getEventClaimSubmittedEmail,
+  type EventClaimSubmittedEmailParams,
+} from "./templates/eventClaimSubmitted";
+
+export {
+  getEventClaimApprovedEmail,
+  type EventClaimApprovedEmailParams,
+} from "./templates/eventClaimApproved";
+
+export {
+  getEventClaimRejectedEmail,
+  type EventClaimRejectedEmailParams,
+} from "./templates/eventClaimRejected";
+
+export {
+  getAdminEventClaimNotificationEmail,
+  type AdminEventClaimNotificationEmailParams,
+} from "./templates/adminEventClaimNotification";
+
+// Occurrence override templates
+export {
+  getOccurrenceCancelledHostEmail,
+  type OccurrenceCancelledHostEmailParams,
+} from "./templates/occurrenceCancelledHost";
+
+export {
+  getOccurrenceModifiedHostEmail,
+  type OccurrenceModifiedHostEmailParams,
+} from "./templates/occurrenceModifiedHost";

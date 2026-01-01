@@ -1,17 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import {
+  getPreferences,
+  upsertPreferences,
+  DEFAULT_PREFERENCES,
+  type NotificationPreferences,
+} from "@/lib/notifications/preferences";
 
 export default function SettingsPage() {
   const supabase = createClient();
 
+  // Account deletion state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  // Notification preferences state
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
+  const [prefsLoading, setPrefsLoading] = useState(true);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsSaved, setPrefsSaved] = useState(false);
+
+  // Load user and preferences
+  useEffect(() => {
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setUserId(user.id);
+
+      // Check if admin
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      setIsAdmin(profile?.role === "admin");
+
+      // Load preferences
+      const preferences = await getPreferences(supabase, user.id);
+      setPrefs(preferences);
+      setPrefsLoading(false);
+    }
+
+    loadData();
+  }, [supabase]);
+
+  // Handle preference toggle
+  const handleToggle = async (key: keyof typeof DEFAULT_PREFERENCES, value: boolean) => {
+    if (!userId || !prefs) return;
+
+    setPrefsSaving(true);
+    setPrefsSaved(false);
+
+    const updated = await upsertPreferences(supabase, userId, { [key]: value });
+    if (updated) {
+      setPrefs(updated);
+      setPrefsSaved(true);
+      // Clear saved message after 3 seconds
+      setTimeout(() => setPrefsSaved(false), 3000);
+    }
+
+    setPrefsSaving(false);
+  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE MY ACCOUNT") {
@@ -127,6 +186,115 @@ export default function SettingsPage() {
     <main className="min-h-screen py-12 px-6">
       <div className="max-w-2xl mx-auto">
         <h1 className="font-display text-3xl text-[var(--color-text-primary)] mb-8">Account Settings</h1>
+
+        {/* Email Preferences */}
+        <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Email Preferences</h2>
+          <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+            Turning off emails won&apos;t hide anything — these notifications still appear in your dashboard.
+          </p>
+
+          {prefsLoading ? (
+            <div className="text-[var(--color-text-tertiary)]">Loading preferences...</div>
+          ) : prefs ? (
+            <div className="space-y-4">
+              {/* Claim Updates Toggle */}
+              <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div>
+                  <span className="text-[var(--color-text-primary)]">Event claim updates</span>
+                  <p className="text-[var(--color-text-tertiary)] text-sm">
+                    When you submit, or we respond to, a host claim
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={prefs.email_claim_updates}
+                  onClick={() => handleToggle("email_claim_updates", !prefs.email_claim_updates)}
+                  disabled={prefsSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    prefs.email_claim_updates
+                      ? "bg-[var(--color-accent-primary)]"
+                      : "bg-[var(--color-bg-tertiary)]"
+                  } ${prefsSaving ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      prefs.email_claim_updates ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </label>
+
+              {/* Event Updates Toggle */}
+              <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div>
+                  <span className="text-[var(--color-text-primary)]">Event updates</span>
+                  <p className="text-[var(--color-text-tertiary)] text-sm">
+                    Reminders and changes for events you&apos;re attending or hosting
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={prefs.email_event_updates}
+                  onClick={() => handleToggle("email_event_updates", !prefs.email_event_updates)}
+                  disabled={prefsSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    prefs.email_event_updates
+                      ? "bg-[var(--color-accent-primary)]"
+                      : "bg-[var(--color-bg-tertiary)]"
+                  } ${prefsSaving ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      prefs.email_event_updates ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </label>
+
+              {/* Admin Notifications Toggle - only show to admins */}
+              {isAdmin && (
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <span className="text-[var(--color-text-primary)]">Admin alerts</span>
+                    <p className="text-[var(--color-text-tertiary)] text-sm">
+                      Notifications about claims, submissions, and community activity
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={prefs.email_admin_notifications}
+                    onClick={() => handleToggle("email_admin_notifications", !prefs.email_admin_notifications)}
+                    disabled={prefsSaving}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      prefs.email_admin_notifications
+                        ? "bg-[var(--color-accent-primary)]"
+                        : "bg-[var(--color-bg-tertiary)]"
+                    } ${prefsSaving ? "opacity-50" : ""}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        prefs.email_admin_notifications ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </label>
+              )}
+
+              {/* Saved confirmation */}
+              {prefsSaved && (
+                <p className="text-green-500 text-sm mt-4">
+                  Saved. You&apos;ll still see all notifications in your dashboard.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-[var(--color-text-tertiary)]">Unable to load preferences.</div>
+          )}
+        </section>
 
         {/* Privacy Link */}
         <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">

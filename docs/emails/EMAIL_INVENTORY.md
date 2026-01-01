@@ -1,21 +1,44 @@
 # DSC Email Inventory
 
-**Last Updated:** December 2025
+**Last Updated:** January 2026
 **Status:** Complete audit of all email use cases
 
 ## Email Audit Status
 
 ✅ **Completed December 2025** — All templates audited for tone guide alignment.
+✅ **Phase 4.24 (January 2026)** — Added 6 new templates for event claims and occurrence overrides.
+✅ **Phase 4.25 (January 2026)** — Added user email preferences; dashboard notifications remain canonical.
 
 PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68
+
+---
+
+## Email Preferences
+
+**Key Principle:** Preferences gate email delivery only. Dashboard notifications always appear (canonical).
+
+Users can control email delivery via `/dashboard/settings`:
+- **Event claim updates** — Submission confirmations, approvals, rejections
+- **Event updates** — Reminders, time/location changes, cancellations
+- **Admin alerts** — (Admins only) Claims, submissions, community activity
+
+**How it works:**
+1. Dashboard notification is created first (always)
+2. Email is sent only if user's preference allows
+3. Unsubscribing from emails never hides dashboard notifications
+
+**Implementation:**
+- `notification_preferences` table stores per-user toggles
+- `sendEmailWithPreferences()` helper enforces the preference check
+- Templates mapped to categories via `EMAIL_CATEGORY_MAP`
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| **Total Use Cases** | 15 |
+| **Total Use Cases** | 21 |
 | **Covered (template exists + wired)** | 11 |
-| **Templates Only (not wired)** | 3 |
+| **Templates Only (not wired)** | 9 |
 | **Inline (needs consolidation)** | 2 |
 
 ---
@@ -66,6 +89,22 @@ PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68
 | 13 | Event Reminder | Cron/manual (future) | `eventReminder.ts` | Template only |
 | 14 | Event Updated | Host updates time/location (future) | `eventUpdated.ts` | Template only |
 | 15 | Event Cancelled | Host cancels (future) | `eventCancelled.ts` | Template only |
+
+### Event Claims (Phase 4.24 - Templates Only)
+
+| # | Use Case | Trigger | Template | Status |
+|---|----------|---------|----------|--------|
+| 16 | Claim Submitted | User submits event claim | `eventClaimSubmitted.ts` | Template only |
+| 17 | Claim Approved | Admin approves claim | `eventClaimApproved.ts` | Template only |
+| 18 | Claim Rejected | Admin rejects claim | `eventClaimRejected.ts` | Template only |
+| 19 | Admin Claim Notification | New claim submitted | `adminEventClaimNotification.ts` | Template only |
+
+### Occurrence Overrides (Phase 4.24 - Templates Only)
+
+| # | Use Case | Trigger | Template | Status |
+|---|----------|---------|----------|--------|
+| 20 | Occurrence Cancelled | Host cancels single occurrence | `occurrenceCancelledHost.ts` | Template only |
+| 21 | Occurrence Modified | Host modifies single occurrence | `occurrenceModifiedHost.ts` | Template only |
 
 ---
 
@@ -136,6 +175,49 @@ PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68
 - **eventUpdated.ts:** `Update: {eventTitle} details have changed — The Denver Songwriters Collective`
 - **eventCancelled.ts:** `Cancelled: {eventTitle} on {date} — The Denver Songwriters Collective`
 
+### 14-17. Event Claim Templates (Phase 4.24 - Template Only)
+
+#### eventClaimSubmitted.ts
+- **Subject:** `Your claim for {eventTitle} is under review — The Denver Songwriters Collective`
+- **Audience:** Member (claimant)
+- **Links:** Happenings page
+- **Tone:** Good (acknowledging, sets expectations)
+
+#### eventClaimApproved.ts
+- **Subject:** `You're now the host of {eventTitle} — The Denver Songwriters Collective`
+- **Audience:** Member (new host)
+- **Links:** Event management dashboard
+- **Tone:** Good (celebratory, "Welcome to the table")
+
+#### eventClaimRejected.ts
+- **Subject:** `Update on your claim for {eventTitle} — The Denver Songwriters Collective`
+- **Audience:** Member (claimant)
+- **Links:** Happenings page
+- **Tone:** Good (empathetic, constructive — modeled after hostRejection.ts)
+
+#### adminEventClaimNotification.ts
+- **Subject:** `[DSC Claim] {requesterName} wants to host {eventTitle}`
+- **Audience:** Admin
+- **Links:** Admin claims review page
+- **Tone:** Good (functional, admin-facing)
+- **Note:** Does NOT include requester email in body (security requirement)
+
+### 18-19. Occurrence Override Templates (Phase 4.24 - Template Only)
+
+#### occurrenceCancelledHost.ts
+- **Subject:** `Cancelled: {eventTitle} on {occurrenceDate} — The Denver Songwriters Collective`
+- **Audience:** Member (RSVPed attendee)
+- **Links:** Happenings page
+- **Tone:** Good (apologetic, clear that series continues)
+- **Key message:** "This is for {date} only. The regular series continues."
+
+#### occurrenceModifiedHost.ts
+- **Subject:** `Update: {eventTitle} on {occurrenceDate} — The Denver Songwriters Collective`
+- **Audience:** Member (RSVPed attendee)
+- **Links:** Event page, Cancel RSVP link
+- **Tone:** Good (informative, preserves RSVP)
+- **Key message:** "This update is for {date} only."
+
 ---
 
 ## System Architecture
@@ -145,8 +227,8 @@ web/src/lib/email/
 ├── index.ts                 # Main exports
 ├── mailer.ts                # SMTP transport (nodemailer)
 ├── render.ts                # Shared layout/styling
-├── registry.ts              # Template registry with types
-├── email.test.ts            # Template tests
+├── registry.ts              # Template registry with types (19 templates)
+├── email.test.ts            # Template tests (61 tests)
 └── templates/
     ├── verificationCode.ts  # Guest verification
     ├── claimConfirmed.ts    # Guest claim + waitlist
@@ -160,7 +242,13 @@ web/src/lib/email/
     ├── suggestionResponse.ts # Community response
     ├── eventReminder.ts     # Template only
     ├── eventUpdated.ts      # Template only
-    └── eventCancelled.ts    # Template only
+    ├── eventCancelled.ts    # Template only
+    ├── eventClaimSubmitted.ts    # Phase 4.24 - Claim submitted
+    ├── eventClaimApproved.ts     # Phase 4.24 - Claim approved
+    ├── eventClaimRejected.ts     # Phase 4.24 - Claim rejected
+    ├── adminEventClaimNotification.ts # Phase 4.24 - Admin notification
+    ├── occurrenceCancelledHost.ts    # Phase 4.24 - Occurrence cancelled
+    └── occurrenceModifiedHost.ts     # Phase 4.24 - Occurrence modified
 
 Legacy (for backwards compatibility):
 web/src/lib/email.ts         # Re-exports from email/index.ts
