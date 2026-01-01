@@ -134,7 +134,9 @@ describe("Email Templates", () => {
         status: "confirmed",
       });
 
-      expect(result.subject).toBe("You're on the lineup for Open Mic Night");
+      expect(result.subject).toBe(
+        "You're on the lineup for Open Mic Night — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("slot #3");
       expect(result.text).toContain("slot #3");
     });
@@ -148,7 +150,9 @@ describe("Email Templates", () => {
         waitlistPosition: 2,
       });
 
-      expect(result.subject).toBe("You're on the waitlist for Open Mic Night");
+      expect(result.subject).toBe(
+        "You're on the waitlist for Open Mic Night — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("#2");
       expect(result.text).toContain("#2");
     });
