@@ -49,11 +49,11 @@ export default async function UserGalleryPage() {
     .select("id, name")
     .order("name");
 
-  // Fetch events for metadata
+  // Fetch events for metadata - include event_date for display, sort by most recent first
   const { data: events } = await supabase
     .from("events")
-    .select("id, title")
-    .order("title");
+    .select("id, title, event_date")
+    .order("event_date", { ascending: false, nullsFirst: false });
 
   const pendingCount = myPhotos?.filter(p => !p.is_approved).length ?? 0;
   const approvedCount = myPhotos?.filter(p => p.is_approved).length ?? 0;

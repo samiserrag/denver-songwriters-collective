@@ -230,6 +230,15 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     attendanceCount = rsvpCount || 0;
   }
 
+  // Fetch approved gallery photos linked to this event
+  const { data: eventPhotos } = await supabase
+    .from("gallery_images")
+    .select("id, image_url, caption")
+    .eq("event_id", id)
+    .eq("is_approved", true)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
   // Phase 4.0: Pass lat/lng for custom locations
   const mapsUrl = getGoogleMapsUrl(
@@ -559,6 +568,40 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                   </Link>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Event Photos Section */}
+          {eventPhotos && eventPhotos.length > 0 && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
+                Photos
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {eventPhotos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                  >
+                    <Image
+                      src={photo.image_url}
+                      alt={photo.caption || "Event photo"}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-[var(--color-text-secondary)]">
+                Have photos from this event?{" "}
+                <Link
+                  href="/dashboard/gallery"
+                  className="text-[var(--color-text-accent)] hover:underline"
+                >
+                  Share them with the community
+                </Link>
+              </p>
             </div>
           )}
 

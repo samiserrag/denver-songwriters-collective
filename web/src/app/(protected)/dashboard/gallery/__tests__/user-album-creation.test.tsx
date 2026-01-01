@@ -74,7 +74,7 @@ describe("UserGalleryUpload - Album Creation", () => {
   const defaultProps = {
     albums: [{ id: "existing-1", name: "Existing Album" }],
     venues: [{ id: "venue-1", name: "Mercury Cafe" }],
-    events: [{ id: "event-1", title: "Monday Open Mic" }],
+    events: [{ id: "event-1", title: "Monday Open Mic", event_date: "2025-01-15" }],
     userId: "user-123",
   };
 
@@ -217,6 +217,39 @@ describe("UserGalleryUpload - Album Creation", () => {
         expect(screen.getByText("Could not create album. Please try again.")).toBeInTheDocument();
       });
     });
+  });
+});
+
+describe("UserGalleryUpload - Event Dropdown", () => {
+  const propsWithEvents = {
+    albums: [],
+    venues: [],
+    events: [
+      { id: "event-1", title: "Monday Open Mic", event_date: "2025-01-15" },
+      { id: "event-2", title: "Songwriter Showcase", event_date: "2025-02-20" },
+      { id: "event-3", title: "Workshop", event_date: null },
+    ],
+    userId: "user-123",
+  };
+
+  it("should display events with dates in format 'Title — MMM D, YYYY'", () => {
+    render(<UserGalleryUpload {...propsWithEvents} />);
+    // Check that event with date shows formatted date
+    expect(screen.getByText(/Monday Open Mic — Jan 15, 2025/)).toBeInTheDocument();
+    expect(screen.getByText(/Songwriter Showcase — Feb 20, 2025/)).toBeInTheDocument();
+  });
+
+  it("should display events without dates as title only", () => {
+    render(<UserGalleryUpload {...propsWithEvents} />);
+    // Workshop has no date - should show title only
+    const options = screen.getAllByRole("option");
+    const workshopOption = options.find(opt => opt.textContent === "Workshop");
+    expect(workshopOption).toBeInTheDocument();
+  });
+
+  it("should have 'Select event' as default option", () => {
+    render(<UserGalleryUpload {...propsWithEvents} />);
+    expect(screen.getByText("Select event")).toBeInTheDocument();
   });
 });
 
