@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 
 interface Event {
@@ -18,6 +19,55 @@ interface Event {
   rsvp_count: number;
   user_role: string;
   series_id: string | null;
+}
+
+interface CancelDraftModalProps {
+  isOpen: boolean;
+  eventTitle: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}
+
+function CancelDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }: CancelDraftModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      {/* Modal */}
+      <div className="relative bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
+          Cancel this draft?
+        </h2>
+        <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+          This hides &ldquo;{eventTitle}&rdquo; from your drafts. You can recreate it later.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isLoading ? "Cancelling..." : "Yes, cancel draft"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function formatEventDate(dateStr: string | null): string {
@@ -38,8 +88,62 @@ interface Props {
 
 type FilterTab = "active" | "drafts" | "cancelled";
 
-export default function MyEventsFilteredList({ events, isApprovedHost }: Props) {
+export default function MyEventsFilteredList({ events: initialEvents, isApprovedHost }: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<FilterTab>("active");
+  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [cancelModalState, setCancelModalState] = useState<{
+    isOpen: boolean;
+    eventId: string;
+    eventTitle: string;
+  }>({ isOpen: false, eventId: "", eventTitle: "" });
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelDraftClick = useCallback((e: React.MouseEvent, event: Event) => {
+    e.preventDefault(); // Prevent navigation to event detail
+    e.stopPropagation();
+    setCancelModalState({
+      isOpen: true,
+      eventId: event.id,
+      eventTitle: event.title,
+    });
+  }, []);
+
+  const handleCancelConfirm = useCallback(async () => {
+    const { eventId } = cancelModalState;
+    setIsCancelling(true);
+
+    try {
+      const res = await fetch(`/api/my-events/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        // Optimistic update: move event to cancelled status
+        setEvents((prev) =>
+          prev.map((e) =>
+            e.id === eventId ? { ...e, status: "cancelled" } : e
+          )
+        );
+        setCancelModalState({ isOpen: false, eventId: "", eventTitle: "" });
+        // Switch to cancelled tab to show the moved event
+        setActiveTab("cancelled");
+        router.refresh();
+      } else {
+        console.error("Failed to cancel draft");
+      }
+    } catch (err) {
+      console.error("Failed to cancel draft:", err);
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [cancelModalState, router]);
+
+  const handleCancelModalClose = useCallback(() => {
+    if (!isCancelling) {
+      setCancelModalState({ isOpen: false, eventId: "", eventTitle: "" });
+    }
+  }, [isCancelling]);
 
   // Compute counts for each tab
   const counts = useMemo(() => {
@@ -215,11 +319,38 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
                       {formatEventDate(event.event_date)} • {event.venue_name}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count}</div>
-                    <div className="text-xs text-[var(--color-text-secondary)]">
-                      {event.capacity ? `of ${event.capacity}` : "RSVPs"}
+                  <div className="flex items-start gap-4">
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-[var(--color-text-primary)]">{event.rsvp_count}</div>
+                      <div className="text-xs text-[var(--color-text-secondary)]">
+                        {event.capacity ? `of ${event.capacity}` : "RSVPs"}
+                      </div>
                     </div>
+                    {/* Cancel draft button - only show for drafts */}
+                    {!event.is_published && event.status !== "cancelled" && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleCancelDraftClick(e, event)}
+                        className="flex-shrink-0 p-2 text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Cancel draft"
+                        aria-label="Cancel draft"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
               </Link>
@@ -227,6 +358,15 @@ export default function MyEventsFilteredList({ events, isApprovedHost }: Props) 
           })}
         </div>
       )}
+
+      {/* Cancel Draft Modal */}
+      <CancelDraftModal
+        isOpen={cancelModalState.isOpen}
+        eventTitle={cancelModalState.eventTitle}
+        onConfirm={handleCancelConfirm}
+        onCancel={handleCancelModalClose}
+        isLoading={isCancelling}
+      />
     </div>
   );
 }
