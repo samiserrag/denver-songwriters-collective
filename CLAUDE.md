@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.21):** Lint warnings = 0. All tests passing (550+). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.25):** Lint warnings = 0. All tests passing (600+). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -225,6 +225,86 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.25 — Email Preferences (January 2026)
+
+**Features Delivered:**
+
+- **Per-user email preferences** — Users can toggle email delivery for claim updates, event updates, and admin alerts
+- **Dashboard notifications canonical** — Preferences only gate emails; dashboard notifications always appear
+- **Settings UI** — Toggle switches at `/dashboard/settings` with inline confirmation
+- **Admin toggle visibility** — Admin alerts toggle only renders for users with `role='admin'`
+
+**Design Decision:**
+
+Email preferences gate delivery only. Dashboard notifications remain the canonical record. Users who disable emails still see all notifications in their dashboard. This ensures no missed information while respecting communication preferences.
+
+**Database Migration:**
+
+- `supabase/migrations/20260101400000_notification_preferences.sql` — Per-user preference toggles
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/lib/notifications/preferences.ts` | Preference helpers + category mapping |
+| `web/src/lib/email/sendWithPreferences.ts` | Preference-aware email sending |
+| `web/src/app/(protected)/dashboard/settings/page.tsx` | Settings UI with toggles |
+
+**Email Category Mapping:**
+
+| Category | Templates |
+|----------|-----------|
+| `claim_updates` | eventClaimSubmitted, eventClaimApproved, eventClaimRejected |
+| `event_updates` | eventReminder, eventUpdated, eventCancelled, occurrenceCancelledHost, occurrenceModifiedHost, rsvpConfirmation, waitlistPromotion |
+| `admin_notifications` | adminEventClaimNotification, contactNotification |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/notification-preferences.test.ts` | Default preferences, category mapping, completeness checks |
+
+---
+
+### Phase 4.22 — Editing + Ownership UX (January 2026)
+
+**Features Delivered:**
+
+- **Series Editor Notice (4.22.1)** — `SeriesEditingNotice` component shows recurrence summary + "changes affect all future occurrences" messaging on event edit pages
+- **Occurrence Override Editor (4.22.2)** — Admin UI at `/dashboard/admin/events/[id]/overrides` to cancel/modify single occurrences without changing series
+- **Event Claim Flow (4.22.3)** — Users can claim unclaimed events (host_id IS NULL); admins approve/reject at `/dashboard/admin/claims`
+
+**Database Migrations:**
+
+- `supabase/migrations/20260101200000_occurrence_overrides.sql` — Per-date override table
+- `supabase/migrations/20260101300000_event_claims.sql` — Event ownership claims table
+
+**Key Components:**
+
+| Component | Path |
+|-----------|------|
+| SeriesEditingNotice | `web/src/components/events/SeriesEditingNotice.tsx` |
+| OccurrenceOverrideList | `web/src/app/(protected)/dashboard/admin/events/[id]/overrides/_components/OccurrenceOverrideList.tsx` |
+| OccurrenceOverrideModal | `web/src/app/(protected)/dashboard/admin/events/[id]/overrides/_components/OccurrenceOverrideModal.tsx` |
+| ClaimEventButton | `web/src/components/events/ClaimEventButton.tsx` |
+| ClaimsTable | `web/src/app/(protected)/dashboard/admin/claims/_components/ClaimsTable.tsx` |
+
+**Key Pages:**
+
+| Route | Purpose |
+|-------|---------|
+| `/dashboard/admin/events/[id]/overrides` | Admin override editor for recurring events |
+| `/dashboard/admin/claims` | Admin review of event ownership claims |
+
+**Test Coverage (21+ tests added):**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/occurrence-overrides.test.ts` | Override merge logic, cancelled filtering |
+| `__tests__/event-claims.test.ts` | Claim visibility, duplicate prevention, approval/rejection flow |
 
 ---
 

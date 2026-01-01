@@ -386,6 +386,60 @@ export type Database = {
           },
         ]
       }
+      event_claims: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          message: string | null
+          rejection_reason: string | null
+          requester_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          requester_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          requester_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_claims_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_claims_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_comments: {
         Row: {
           content: string
@@ -1635,41 +1689,76 @@ export type Database = {
         }
         Relationships: []
       }
-      occurrence_overrides: {
+      notification_preferences: {
         Row: {
-          id: string
-          event_id: string
-          date_key: string
-          status: string
-          override_start_time: string | null
-          override_cover_image_url: string | null
-          override_notes: string | null
-          created_by: string | null
+          user_id: string
+          email_claim_updates: boolean
+          email_event_updates: boolean
+          email_admin_notifications: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          event_id: string
-          date_key: string
-          status?: string
-          override_start_time?: string | null
-          override_cover_image_url?: string | null
-          override_notes?: string | null
-          created_by?: string | null
+          user_id: string
+          email_claim_updates?: boolean
+          email_event_updates?: boolean
+          email_admin_notifications?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
+          user_id?: string
+          email_claim_updates?: boolean
+          email_event_updates?: boolean
+          email_admin_notifications?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      occurrence_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_key: string
+          event_id: string
+          id: string
+          override_cover_image_url: string | null
+          override_notes: string | null
+          override_start_time: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_key: string
+          event_id: string
           id?: string
-          event_id?: string
-          date_key?: string
-          status?: string
-          override_start_time?: string | null
           override_cover_image_url?: string | null
           override_notes?: string | null
-          created_by?: string | null
+          override_start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
           created_at?: string
+          created_by?: string | null
+          date_key?: string
+          event_id?: string
+          id?: string
+          override_cover_image_url?: string | null
+          override_notes?: string | null
+          override_start_time?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -1677,14 +1766,14 @@ export type Database = {
             foreignKeyName: "occurrence_overrides_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
           },
           {
-            foreignKeyName: "occurrence_overrides_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "occurrence_overrides_event_id_fkey"
+            columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -2552,6 +2641,28 @@ export type Database = {
       promote_timeslot_waitlist: {
         Args: { p_offer_window_minutes?: number; p_timeslot_id: string }
         Returns: string
+      }
+      upsert_notification_preferences: {
+        Args: {
+          p_user_id: string
+          p_email_claim_updates?: boolean | null
+          p_email_event_updates?: boolean | null
+          p_email_admin_notifications?: boolean | null
+        }
+        Returns: {
+          user_id: string
+          email_claim_updates: boolean
+          email_event_updates: boolean
+          email_admin_notifications: boolean
+          created_at: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notification_preferences"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       rpc_admin_set_showcase_lineup: {
         Args: { event_id: string; performer_ids: string[] }
