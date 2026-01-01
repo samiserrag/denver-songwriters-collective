@@ -63,7 +63,7 @@ export function getEventReminderEmail(params: EventReminderEmailParams): {
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
 
-${paragraph(`Just a friendly reminder—<strong>${safeTitle}</strong> is ${timeWord}!`)}
+${paragraph(`<strong>${safeTitle}</strong> is ${timeWord} — can't wait to see you!`)}
 
 ${slotInfo ? paragraph(slotInfo) : ""}
 
@@ -85,9 +85,7 @@ ${slotInfo ? paragraph(slotInfo) : ""}
   </table>
 </div>
 
-${paragraph(slotNumber !== undefined
-  ? "Show up a few minutes early to check in with the host. We can't wait to hear you play!"
-  : "See you there!", { muted: true })}
+${paragraph("Should be a good one. See you soon!", { muted: true })}
 
 ${createButton("View Event Details", eventUrl)}
 
@@ -100,15 +98,13 @@ ${createButton("View Event Details", eventUrl)}
 
   const textContent = `${userName?.trim() ? `Hi ${userName.trim()},` : "Hi there,"}
 
-Just a friendly reminder—${eventTitle} is ${timeWord}!
+${eventTitle} is ${timeWord} — can't wait to see you!
 
 ${slotNumber !== undefined ? `You're slot #${slotNumber} on the lineup.\n` : ""}
 WHEN: ${safeDate} at ${safeTime}
 WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 
-${slotNumber !== undefined
-  ? "Show up a few minutes early to check in with the host. We can't wait to hear you play!"
-  : "See you there!"}
+Should be a good one. See you soon!
 
 View event: ${eventUrl}
 

@@ -64,7 +64,9 @@ ${paragraph(slotInfo)}
   </p>
 </div>
 
-${paragraph("Show up a few minutes early to check in with the host. We can't wait to hear you play!", { muted: true })}
+${paragraph("Can't wait to hear you — see you soon!", { muted: true })}
+
+${paragraph("Questions? Reach out to your host or post a comment on the event page.", { muted: true })}
 
 ${createSecondaryLink("I can't make it", cancelUrl)}
 `;
@@ -79,7 +81,9 @@ ${slotNumber !== undefined ? `You've got slot #${slotNumber}.` : "Your spot is c
 
 You're on the lineup!
 
-Show up a few minutes early to check in with the host. We can't wait to hear you play!
+Can't wait to hear you — see you soon!
+
+Questions? Reach out to your host or post a comment on the event page.
 
 Can't make it? Cancel here: ${cancelUrl}`;
 
