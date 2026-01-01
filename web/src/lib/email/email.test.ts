@@ -544,7 +544,7 @@ describe("New Email Templates", () => {
         reminderType: "tonight",
       });
 
-      expect(result.subject).toBe("Reminder: Open Mic is tonight!");
+      expect(result.subject).toBe("Reminder: Open Mic is tonight! — The Denver Songwriters Collective");
       expect(result.html).toContain("tonight");
     });
 
@@ -560,7 +560,7 @@ describe("New Email Templates", () => {
         slotNumber: 5,
       });
 
-      expect(result.subject).toBe("Reminder: Open Mic is tomorrow!");
+      expect(result.subject).toBe("Reminder: Open Mic is tomorrow! — The Denver Songwriters Collective");
       expect(result.html).toContain("slot");
       expect(result.html).toContain("#5");
     });
@@ -581,7 +581,7 @@ describe("New Email Templates", () => {
         venueName: "New Venue",
       });
 
-      expect(result.subject).toBe("Update: Songwriter Circle details have changed");
+      expect(result.subject).toBe("Update: Songwriter Circle details have changed — The Denver Songwriters Collective");
       expect(result.html).toContain("7pm");
       expect(result.html).toContain("8pm");
       expect(result.html).toContain("Old Place");
@@ -600,7 +600,7 @@ describe("New Email Templates", () => {
         hostName: "Host Name",
       });
 
-      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25");
+      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25 — The Denver Songwriters Collective");
       expect(result.html).toContain("cancelled");
       expect(result.html).toContain("weather conditions");
       expect(result.html).toContain("Host Name");
@@ -613,7 +613,7 @@ describe("New Email Templates", () => {
         venueName: "The Walnut Room",
       });
 
-      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25");
+      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25 — The Denver Songwriters Collective");
       expect(result.html).toContain("cancelled");
       expect(result.html).not.toContain("Note from");
     });

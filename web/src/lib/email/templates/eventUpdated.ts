@@ -58,7 +58,7 @@ export function getEventUpdatedEmail(params: EventUpdatedEmailParams): {
   const eventUrl = `${SITE_URL}/events/${eventId}`;
   const cancelUrl = `${SITE_URL}/events/${eventId}?cancel=true`;
 
-  const subject = `Update: ${eventTitle} details have changed`;
+  const subject = `Update: ${eventTitle} details have changed — The Denver Songwriters Collective`;
 
   // Build change summary
   const changeLines: string[] = [];

@@ -39,7 +39,7 @@ export function getEventCancelledEmail(params: EventCancelledEmailParams): {
 
   const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
 
-  const subject = `Cancelled: ${eventTitle} on ${eventDate}`;
+  const subject = `Cancelled: ${eventTitle} on ${eventDate} — The Denver Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
