@@ -292,31 +292,30 @@ export default function UserGalleryUpload({
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Album (optional)
           </label>
-          <div className="flex gap-2">
-            <select
-              value={albumId}
-              onChange={(e) => {
-                setAlbumId(e.target.value);
-                setLastCreatedAlbum(null); // Clear status chip when user changes selection
-              }}
-              className="flex-1 px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
-            >
-              <option value="">No album</option>
-              {albums.map((album) => (
-                <option key={album.id} value={album.id}>
-                  {album.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setShowAlbumCreate(!showAlbumCreate)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">New album</span>
-            </button>
-          </div>
+          <select
+            value={albumId}
+            onChange={(e) => {
+              setAlbumId(e.target.value);
+              setLastCreatedAlbum(null); // Clear status chip when user changes selection
+            }}
+            className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
+          >
+            <option value="">No album</option>
+            {albums.map((album) => (
+              <option key={album.id} value={album.id}>
+                {album.name}
+              </option>
+            ))}
+          </select>
+          {/* New album link - below dropdown */}
+          <button
+            type="button"
+            onClick={() => setShowAlbumCreate(!showAlbumCreate)}
+            className="mt-2 inline-flex items-center gap-1 text-sm text-[var(--color-text-accent)] hover:underline"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New album</span>
+          </button>
           {/* Status chip for newly created album */}
           {lastCreatedAlbum && albumId === lastCreatedAlbum.id && (
             <div className="mt-2">
