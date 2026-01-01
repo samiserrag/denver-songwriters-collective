@@ -457,7 +457,9 @@ describe("New Email Templates", () => {
         offerExpiresAt: new Date(Date.now() + 86400000).toISOString(),
       });
 
-      expect(result.subject).toBe("A spot just opened up at Open Mic Night");
+      expect(result.subject).toBe(
+        "A spot just opened up at Open Mic Night — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("Confirm");
     });
   });
@@ -468,7 +470,9 @@ describe("New Email Templates", () => {
         userName: "Alex",
       });
 
-      expect(result.subject).toBe("You're approved as a host!");
+      expect(result.subject).toBe(
+        "You're approved as a host! — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("host privileges");
       expect(result.text).toContain("Congratulations");
@@ -482,7 +486,9 @@ describe("New Email Templates", () => {
         reason: "Please complete your profile first",
       });
 
-      expect(result.subject).toBe("Update on your host application");
+      expect(result.subject).toBe(
+        "Update on your host application — The Denver Songwriters Collective"
+      );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("complete your profile");
       expect(result.text).toContain("reapply in the future");
@@ -493,7 +499,9 @@ describe("New Email Templates", () => {
         userName: "Alex",
       });
 
-      expect(result.subject).toBe("Update on your host application");
+      expect(result.subject).toBe(
+        "Update on your host application — The Denver Songwriters Collective"
+      );
       expect(result.html).not.toContain("Feedback");
     });
   });
