@@ -20,6 +20,8 @@ interface DateSectionProps {
   eventCount: number;
   /** Whether this section is "Schedule unknown" style */
   isUnknown?: boolean;
+  /** Whether this section is "Cancelled" style (Phase 4.21) */
+  isCancelled?: boolean;
   /** Children (the event cards grid) */
   children: React.ReactNode;
   /** Description text for unknown section */
@@ -48,6 +50,7 @@ export function DateSection({
   headerText,
   eventCount,
   isUnknown = false,
+  isCancelled = false,
   children,
   description,
 }: DateSectionProps) {
@@ -73,7 +76,9 @@ export function DateSection({
             <span
               className={cn(
                 "w-1 h-5 rounded-full",
-                isUnknown ? "bg-amber-500" : "bg-[var(--color-accent-primary)]"
+                isCancelled && "bg-red-500",
+                !isCancelled && isUnknown && "bg-amber-500",
+                !isCancelled && !isUnknown && "bg-[var(--color-accent-primary)]"
               )}
               aria-hidden="true"
             />

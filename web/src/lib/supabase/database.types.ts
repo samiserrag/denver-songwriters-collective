@@ -1635,6 +1635,60 @@ export type Database = {
         }
         Relationships: []
       }
+      occurrence_overrides: {
+        Row: {
+          id: string
+          event_id: string
+          date_key: string
+          status: string
+          override_start_time: string | null
+          override_cover_image_url: string | null
+          override_notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          date_key: string
+          status?: string
+          override_start_time?: string | null
+          override_cover_image_url?: string | null
+          override_notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          date_key?: string
+          status?: string
+          override_start_time?: string | null
+          override_cover_image_url?: string | null
+          override_notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "occurrence_overrides_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "occurrence_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       open_mic_claims: {
         Row: {
           created_at: string | null

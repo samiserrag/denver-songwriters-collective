@@ -27,6 +27,7 @@ import {
   getTodayDenver,
   type EventForOccurrence,
   type NextOccurrenceResult,
+  type OccurrenceOverride,
 } from "@/lib/events/nextOccurrence";
 
 // ============================================================
@@ -123,6 +124,16 @@ export interface HappeningCardProps {
    * When provided with occurrence, ensures consistent date comparisons.
    */
   todayKey?: string;
+  /**
+   * Phase 4.21: Per-occurrence override (cancellation, time change, notes, flyer).
+   * When provided, the card uses override data for display.
+   */
+  override?: OccurrenceOverride;
+  /**
+   * Phase 4.21: Whether this occurrence is cancelled.
+   * Shorthand derived from override?.status === 'cancelled'.
+   */
+  isCancelled?: boolean;
 }
 
 // ============================================================
@@ -273,6 +284,8 @@ export function HappeningCard({
   debugDates = false,
   occurrence: precomputedOccurrence,
   todayKey: canonicalTodayKey,
+  override,
+  isCancelled = false,
 }: HappeningCardProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
@@ -280,11 +293,17 @@ export function HappeningCard({
   // Use canonical todayKey if provided, otherwise compute fresh
   const todayKey = canonicalTodayKey ?? getTodayDenver();
 
+  // Phase 4.21: Apply override data
+  // Override time takes precedence over event time
+  const effectiveStartTime = override?.override_start_time || event.start_time;
+  // Override flyer takes precedence over event flyer
+  const effectiveCoverUrl = override?.override_cover_image_url || event.cover_image_url;
+
   // Derived values - use pre-computed occurrence if available
   const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
   const venueName = getVenueName(event);
   const detailHref = getDetailHref(event);
-  const startTime = formatTimeToAMPM(event.start_time ?? null);
+  const startTime = formatTimeToAMPM(effectiveStartTime ?? null);
   const signupTime = event.signup_time ? formatTimeToAMPM(event.signup_time) : null;
 
   const isOnlineOnly = event.location_mode === "online";
@@ -418,14 +437,15 @@ export function HappeningCard({
 
   // Image tiers:
   // 1. cover_image_card_url (optimized 4:3)
-  // 2. cover_image_url / imageUrl (full poster with blurred bg)
+  // 2. cover_image_url / imageUrl (full poster with blurred bg) - or override flyer
   // 3. default image by event type
   // 4. gradient placeholder
+  // Phase 4.21: override flyer takes precedence if present
   const cardImageUrl = event.cover_image_card_url;
-  const fullPosterUrl = event.cover_image_url || event.imageUrl;
+  const fullPosterUrl = effectiveCoverUrl || event.imageUrl;
   const defaultImageUrl = getDefaultImageForType(event.event_type);
-  const hasCardImage = !!cardImageUrl;
-  const hasFullPoster = !hasCardImage && !!fullPosterUrl;
+  const hasCardImage = !!cardImageUrl && !override?.override_cover_image_url; // Skip card image if override has flyer
+  const hasFullPoster = (!hasCardImage && !!fullPosterUrl) || !!override?.override_cover_image_url;
   const hasDefaultImage = !hasCardImage && !hasFullPoster && !!defaultImageUrl;
 
   // Signup chip
@@ -476,16 +496,19 @@ export function HappeningCard({
           "hover:shadow-md hover:border-[var(--color-accent-primary)]/30",
           // Focus ring
           "group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]",
-          // Tonight/Tomorrow highlight (same as MemberCard spotlight)
-          (dateInfo.isTonight || dateInfo.isTomorrow) && "border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5",
+          // Phase 4.21: Cancelled occurrences - de-emphasized with red accent
+          isCancelled && "opacity-60 border-red-500/30 bg-red-500/5",
+          // Tonight/Tomorrow highlight (same as MemberCard spotlight) - skip if cancelled
+          !isCancelled && (dateInfo.isTonight || dateInfo.isTomorrow) && "border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5",
           // Unknown schedule warning style
-          dateInfo.isUnknown && "border-amber-500/30 bg-amber-500/5",
+          !isCancelled && dateInfo.isUnknown && "border-amber-500/30 bg-amber-500/5",
           // Past events muted
-          dateInfo.isPast && "opacity-70",
+          !isCancelled && dateInfo.isPast && "opacity-70",
           className
         )}
         role="article"
         data-testid="happening-card"
+        data-cancelled={isCancelled ? "true" : undefined}
       >
         {/* Poster Media Section - Reduced height for density (was 4:3, now 3:2) */}
         <div className="relative aspect-[3/2] overflow-hidden" data-testid="poster-thumbnail">
@@ -502,7 +525,7 @@ export function HappeningCard({
           )}
 
           {/* Tier 2: Full poster with blurred background */}
-          {hasFullPoster && (
+          {hasFullPoster && fullPosterUrl && (
             <>
               <div
                 className="absolute inset-0"
@@ -584,17 +607,18 @@ export function HappeningCard({
           </button>
 
           {/* Status badge overlay - top left */}
-          {(showScheduleTBD || showEnded) && (
+          {(isCancelled || showScheduleTBD || showEnded) && (
             <div className="absolute top-2.5 left-2.5 z-10">
               <span
                 className={cn(
-                  "px-2 py-1 text-xs font-medium rounded-full",
-                  "bg-black/40 backdrop-blur-sm",
-                  showScheduleTBD && "text-amber-300",
-                  showEnded && "text-white/70"
+                  "px-2 py-1 text-xs font-bold uppercase tracking-wide rounded-full",
+                  "bg-black/50 backdrop-blur-sm",
+                  isCancelled && "text-red-400",
+                  !isCancelled && showScheduleTBD && "text-amber-300",
+                  !isCancelled && showEnded && "text-white/70"
                 )}
               >
-                {showScheduleTBD ? "Schedule TBD" : "Ended"}
+                {isCancelled ? "CANCELLED" : showScheduleTBD ? "Schedule TBD" : "Ended"}
               </span>
             </div>
           )}
@@ -651,6 +675,8 @@ export function HappeningCard({
             {availabilityDisplay && <Chip variant="muted">{availabilityDisplay}</Chip>}
             {/* Missing details as warning badge, not link */}
             {hasMissing && <Chip variant="warning">Missing details</Chip>}
+            {/* Phase 4.21: Override notes indicator */}
+            {override?.override_notes && <Chip variant="accent">Note</Chip>}
           </div>
 
           {/* Debug overlay - shown when ?debugDates=1 */}

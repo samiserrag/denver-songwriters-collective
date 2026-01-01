@@ -11,6 +11,7 @@ import {
   addDaysDenver,
   formatDateGroupHeader,
   expandAndGroupEvents,
+  buildOverrideMap,
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
 
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Phase 4.19 Search Params:
+ * Phase 4.21 Search Params:
  * - q: search query (matches title, description, venue_name, venue_address, custom_location_*)
  * - time: upcoming|past|all
  * - type: event_type (open_mic, showcase, workshop, etc.)
@@ -31,6 +32,7 @@ export const dynamic = "force-dynamic";
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
+ * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -42,6 +44,7 @@ interface HappeningsSearchParams {
   cost?: string;
   days?: string;
   debugDates?: string;
+  showCancelled?: string;
 }
 
 export default async function HappeningsPage({
@@ -64,6 +67,8 @@ export default async function HappeningsPage({
   const daysFilter = params.days ? params.days.split(",").map(d => d.trim().toLowerCase()) : [];
   // Debug mode for date computation visualization
   const debugDates = params.debugDates === "1";
+  // Show cancelled occurrences (default: hidden)
+  const showCancelled = params.showCancelled === "1";
 
   const today = getTodayDenver();
   // 90-day window for occurrence expansion
@@ -78,6 +83,25 @@ export default async function HappeningsPage({
     `)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification"]);
+
+  // Fetch occurrence overrides for the window
+  // This runs in parallel with the events query
+  const { data: overridesData } = await supabase
+    .from("occurrence_overrides")
+    .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes")
+    .gte("date_key", today)
+    .lte("date_key", windowEnd);
+
+  const overrideMap = buildOverrideMap(
+    (overridesData || []).map(o => ({
+      event_id: o.event_id,
+      date_key: o.date_key,
+      status: o.status as "normal" | "cancelled",
+      override_start_time: o.override_start_time,
+      override_cover_image_url: o.override_cover_image_url,
+      override_notes: o.override_notes,
+    }))
+  );
 
   // Type filter (event_type)
   if (typeFilter === "open_mic") {
@@ -207,14 +231,21 @@ export default async function HappeningsPage({
     });
   }
 
-  // Phase 4.18: Expand occurrences within 90-day window
+  // Phase 4.21: Expand occurrences within 90-day window with override support
   // This allows one event to appear on multiple dates (e.g., every Wednesday)
-  const { groupedEvents: expandedGroups, unknownEvents } = expandAndGroupEvents(
+  // Cancelled occurrences are tracked separately for toggle control
+  const {
+    groupedEvents: expandedGroups,
+    cancelledOccurrences,
+    unknownEvents,
+    metrics: expansionMetrics,
+  } = expandAndGroupEvents(
     list as any[],
     {
       startKey: today,
       endKey: windowEnd,
       maxOccurrences: 40,
+      overrideMap,
     }
   );
 
@@ -354,7 +385,11 @@ export default async function HappeningsPage({
 
         {/* Sticky Filter + Jump Controls */}
         <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
-          <StickyControls todayKey={today} windowEndKey={windowEnd} />
+          <StickyControls
+            todayKey={today}
+            windowEndKey={windowEnd}
+            cancelledCount={expansionMetrics.cancelledCount}
+          />
         </Suspense>
 
         {/* Results summary - under sticky controls */}
@@ -397,6 +432,8 @@ export default async function HappeningsPage({
                       isConfident: entry.isConfident,
                     }}
                     todayKey={today}
+                    override={entry.override}
+                    isCancelled={entry.isCancelled}
                   />
                 ))}
               </DateSection>
@@ -424,6 +461,35 @@ export default async function HappeningsPage({
                       isConfident: false,
                     }}
                     todayKey={today}
+                  />
+                ))}
+              </DateSection>
+            )}
+
+            {/* Phase 4.21: Cancelled occurrences section - only shown when toggle is on */}
+            {showCancelled && cancelledOccurrences.length > 0 && (
+              <DateSection
+                dateKey="cancelled"
+                headerText="Cancelled"
+                eventCount={cancelledOccurrences.length}
+                isCancelled
+                description="These occurrences have been cancelled. They may be rescheduled in the future."
+              >
+                {cancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => (
+                  <HappeningsCard
+                    key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                    event={entry.event}
+                    searchQuery={searchQuery}
+                    debugDates={debugDates}
+                    occurrence={{
+                      date: entry.dateKey,
+                      isToday: entry.dateKey === today,
+                      isTomorrow: entry.dateKey === addDaysDenver(today, 1),
+                      isConfident: entry.isConfident,
+                    }}
+                    todayKey={today}
+                    override={entry.override}
+                    isCancelled={true}
                   />
                 ))}
               </DateSection>
