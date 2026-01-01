@@ -95,23 +95,30 @@ describe("UserGalleryUpload - Album Creation", () => {
       expect(screen.getByText("Existing Album")).toBeInTheDocument();
     });
 
-    it("should render + button to show album creation form", () => {
+    it("should render labeled 'New album' button (not just + icon)", () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      expect(screen.getByTitle("Create new album")).toBeInTheDocument();
+      // Button should have visible "New album" text, not just a title attribute
+      expect(screen.getByRole("button", { name: /new album/i })).toBeInTheDocument();
     });
 
-    it("should show album creation form when + button clicked", async () => {
+    it("should show album creation form when 'New album' button clicked", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      const addButton = screen.getByTitle("Create new album");
+      const addButton = screen.getByRole("button", { name: /new album/i });
       await userEvent.click(addButton);
       expect(screen.getByPlaceholderText("Album name")).toBeInTheDocument();
-      expect(screen.getByText("Create album")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Create album" })).toBeInTheDocument();
       expect(screen.getByText("Cancel")).toBeInTheDocument();
+    });
+
+    it("should show 'Save as draft' checkbox in creation form", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
+      expect(screen.getByLabelText(/save as draft/i)).toBeInTheDocument();
     });
 
     it("should hide album creation form when Cancel clicked", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       expect(screen.getByPlaceholderText("Album name")).toBeInTheDocument();
       await userEvent.click(screen.getByText("Cancel"));
       expect(screen.queryByPlaceholderText("Album name")).not.toBeInTheDocument();
@@ -121,41 +128,59 @@ describe("UserGalleryUpload - Album Creation", () => {
   describe("Album creation flow", () => {
     it("should disable Create album button when name is empty", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
-      const createButton = screen.getByText("Create album");
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
+      const createButton = screen.getByRole("button", { name: "Create album" });
       expect(createButton).toBeDisabled();
     });
 
     it("should enable Create album button when name is entered", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       const input = screen.getByPlaceholderText("Album name");
       await userEvent.type(input, "My New Album");
-      const createButton = screen.getByText("Create album");
+      const createButton = screen.getByRole("button", { name: "Create album" });
       expect(createButton).not.toBeDisabled();
     });
 
-    it("should call Supabase insert with correct data on create", async () => {
+    it("should create album as published by default (is_published=true)", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
-      await userEvent.click(screen.getByText("Create album"));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
 
       await waitFor(() => {
         expect(mockInsert).toHaveBeenCalledWith({
           name: "My New Album",
           slug: "my-new-album",
           created_by: "user-123",
-          is_published: false,
+          is_published: true, // Default: published so it appears in public gallery
+        });
+      });
+    });
+
+    it("should create album as draft when 'Save as draft' is checked", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My Draft Album");
+      // Check the "Save as draft" checkbox
+      await userEvent.click(screen.getByLabelText(/save as draft/i));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith({
+          name: "My Draft Album",
+          slug: "my-draft-album",
+          created_by: "user-123",
+          is_published: false, // Draft: not visible in public gallery
         });
       });
     });
 
     it("should add new album to dropdown after creation", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
-      await userEvent.click(screen.getByText("Create album"));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
 
       await waitFor(() => {
         const options = screen.getAllByRole("option");
@@ -166,9 +191,9 @@ describe("UserGalleryUpload - Album Creation", () => {
 
     it("should auto-select newly created album", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
-      await userEvent.click(screen.getByText("Create album"));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
 
       await waitFor(() => {
         // The album dropdown is the first combobox
@@ -178,11 +203,34 @@ describe("UserGalleryUpload - Album Creation", () => {
       });
     });
 
+    it("should show 'Published' status chip after creating published album", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Published")).toBeInTheDocument();
+      });
+    });
+
+    it("should show 'Draft' status chip after creating draft album", async () => {
+      render(<UserGalleryUpload {...defaultProps} />);
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
+      await userEvent.type(screen.getByPlaceholderText("Album name"), "My Draft Album");
+      await userEvent.click(screen.getByLabelText(/save as draft/i));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/Draft.*not visible in public gallery/i)).toBeInTheDocument();
+      });
+    });
+
     it("should hide creation form after successful create", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       await userEvent.type(screen.getByPlaceholderText("Album name"), "My New Album");
-      await userEvent.click(screen.getByText("Create album"));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
 
       await waitFor(() => {
         expect(screen.queryByPlaceholderText("Album name")).not.toBeInTheDocument();
@@ -193,12 +241,12 @@ describe("UserGalleryUpload - Album Creation", () => {
   describe("Error handling", () => {
     it("should show error message when album name is empty on submit", async () => {
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       const input = screen.getByPlaceholderText("Album name");
       await userEvent.type(input, "   "); // Just spaces
       await userEvent.clear(input);
       // Button should be disabled, but if somehow clicked...
-      const createButton = screen.getByText("Create album");
+      const createButton = screen.getByRole("button", { name: "Create album" });
       expect(createButton).toBeDisabled();
     });
 
@@ -209,9 +257,9 @@ describe("UserGalleryUpload - Album Creation", () => {
       });
 
       render(<UserGalleryUpload {...defaultProps} />);
-      await userEvent.click(screen.getByTitle("Create new album"));
+      await userEvent.click(screen.getByRole("button", { name: /new album/i }));
       await userEvent.type(screen.getByPlaceholderText("Album name"), "Test Album");
-      await userEvent.click(screen.getByText("Create album"));
+      await userEvent.click(screen.getByRole("button", { name: "Create album" }));
 
       await waitFor(() => {
         expect(screen.getByText("Could not create album. Please try again.")).toBeInTheDocument();
