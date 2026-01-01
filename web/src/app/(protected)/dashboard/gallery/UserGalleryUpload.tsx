@@ -49,6 +49,13 @@ export default function UserGalleryUpload({
   const [venueId, setVenueId] = useState("");
   const [eventId, setEventId] = useState("");
   const [caption, setCaption] = useState("");
+
+  // Custom venue/event override state
+  const [useCustomVenue, setUseCustomVenue] = useState(false);
+  const [customVenueName, setCustomVenueName] = useState("");
+  const [useCustomEvent, setUseCustomEvent] = useState(false);
+  const [customEventName, setCustomEventName] = useState("");
+  const [customEventDate, setCustomEventDate] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   // Album creation state
@@ -212,14 +219,20 @@ export default function UserGalleryUpload({
           .getPublicUrl(fileName);
 
         // Insert into database (pending approval)
+        // Mutual exclusivity: use custom fields XOR FK fields
         const { error: insertError } = await supabase
           .from("gallery_images")
           .insert({
             image_url: publicUrl,
             caption: caption || null,
             album_id: albumId || null,
-            venue_id: venueId || null,
-            event_id: eventId || null,
+            // Venue: either venue_id OR custom_venue_name (not both)
+            venue_id: useCustomVenue ? null : (venueId || null),
+            custom_venue_name: useCustomVenue && customVenueName.trim() ? customVenueName.trim() : null,
+            // Event: either event_id OR custom_event_name/date (not both)
+            event_id: useCustomEvent ? null : (eventId || null),
+            custom_event_name: useCustomEvent && customEventName.trim() ? customEventName.trim() : null,
+            custom_event_date: useCustomEvent && customEventDate ? customEventDate : null,
             uploaded_by: userId,
             is_approved: false, // Requires admin approval
           });
@@ -342,46 +355,121 @@ export default function UserGalleryUpload({
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Venue (optional)
           </label>
-          <select
-            value={venueId}
-            onChange={(e) => setVenueId(e.target.value)}
-            className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
-          >
-            <option value="">Select venue</option>
-            {venues.map((venue) => (
-              <option key={venue.id} value={venue.id}>
-                {venue.name}
-              </option>
-            ))}
-          </select>
+          {!useCustomVenue ? (
+            <div className="space-y-2">
+              <select
+                value={venueId}
+                onChange={(e) => setVenueId(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
+              >
+                <option value="">Select venue</option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustomVenue(true);
+                  setVenueId("");
+                }}
+                className="text-sm text-[var(--color-text-accent)] hover:underline"
+              >
+                Venue not listed? Enter manually
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={customVenueName}
+                onChange={(e) => setCustomVenueName(e.target.value)}
+                placeholder="Enter venue name"
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustomVenue(false);
+                  setCustomVenueName("");
+                }}
+                className="text-sm text-[var(--color-text-accent)] hover:underline"
+              >
+                Select from list instead
+              </button>
+            </div>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Event (optional)
           </label>
-          <select
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
-          >
-            <option value="">Select event</option>
-            {events.map((event) => {
-              // Format: "Event Title — Dec 31, 2025" or "Event Title" if no date
-              const dateLabel = event.event_date
-                ? ` — ${new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    timeZone: "America/Denver",
-                  })}`
-                : "";
-              return (
-                <option key={event.id} value={event.id}>
-                  {event.title}{dateLabel}
-                </option>
-              );
-            })}
-          </select>
+          {!useCustomEvent ? (
+            <div className="space-y-2">
+              <select
+                value={eventId}
+                onChange={(e) => setEventId(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
+              >
+                <option value="">Select event</option>
+                {events.map((event) => {
+                  // Format: "Event Title — Dec 31, 2025" or "Event Title" if no date
+                  const dateLabel = event.event_date
+                    ? ` — ${new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "America/Denver",
+                      })}`
+                    : "";
+                  return (
+                    <option key={event.id} value={event.id}>
+                      {event.title}{dateLabel}
+                    </option>
+                  );
+                })}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustomEvent(true);
+                  setEventId("");
+                }}
+                className="text-sm text-[var(--color-text-accent)] hover:underline"
+              >
+                Event not listed? Enter manually
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={customEventName}
+                onChange={(e) => setCustomEventName(e.target.value)}
+                placeholder="Enter event name"
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)]"
+              />
+              <input
+                type="date"
+                value={customEventDate}
+                onChange={(e) => setCustomEventDate(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)]"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setUseCustomEvent(false);
+                  setCustomEventName("");
+                  setCustomEventDate("");
+                }}
+                className="text-sm text-[var(--color-text-accent)] hover:underline"
+              >
+                Select from list instead
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

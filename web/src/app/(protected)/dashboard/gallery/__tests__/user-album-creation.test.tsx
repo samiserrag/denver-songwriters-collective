@@ -253,6 +253,97 @@ describe("UserGalleryUpload - Event Dropdown", () => {
   });
 });
 
+describe("UserGalleryUpload - Custom Venue Toggle", () => {
+  const defaultProps = {
+    albums: [],
+    venues: [
+      { id: "venue-1", name: "Mercury Cafe" },
+      { id: "venue-2", name: "The Oriental Theater" },
+    ],
+    events: [],
+    userId: "user-123",
+  };
+
+  it("should show venue dropdown by default", () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    expect(screen.getByText("Mercury Cafe")).toBeInTheDocument();
+    expect(screen.getByText("Venue not listed? Enter manually")).toBeInTheDocument();
+  });
+
+  it("should show custom venue input when toggle clicked", async () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    await userEvent.click(screen.getByText("Venue not listed? Enter manually"));
+    expect(screen.getByPlaceholderText("Enter venue name")).toBeInTheDocument();
+    expect(screen.getByText("Select from list instead")).toBeInTheDocument();
+  });
+
+  it("should switch back to dropdown when 'Select from list' clicked", async () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    await userEvent.click(screen.getByText("Venue not listed? Enter manually"));
+    expect(screen.getByPlaceholderText("Enter venue name")).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Select from list instead"));
+    expect(screen.queryByPlaceholderText("Enter venue name")).not.toBeInTheDocument();
+    expect(screen.getByText("Mercury Cafe")).toBeInTheDocument();
+  });
+
+  it("should clear custom venue name when switching back to dropdown", async () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    await userEvent.click(screen.getByText("Venue not listed? Enter manually"));
+    await userEvent.type(screen.getByPlaceholderText("Enter venue name"), "My Custom Venue");
+    await userEvent.click(screen.getByText("Select from list instead"));
+    await userEvent.click(screen.getByText("Venue not listed? Enter manually"));
+    expect(screen.getByPlaceholderText("Enter venue name")).toHaveValue("");
+  });
+});
+
+describe("UserGalleryUpload - Custom Event Toggle", () => {
+  const defaultProps = {
+    albums: [],
+    venues: [],
+    events: [
+      { id: "event-1", title: "Monday Open Mic", event_date: "2025-01-15" },
+    ],
+    userId: "user-123",
+  };
+
+  it("should show event dropdown by default", () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    expect(screen.getByText(/Monday Open Mic/)).toBeInTheDocument();
+    expect(screen.getByText("Event not listed? Enter manually")).toBeInTheDocument();
+  });
+
+  it("should show custom event inputs when toggle clicked", async () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    await userEvent.click(screen.getByText("Event not listed? Enter manually"));
+    expect(screen.getByPlaceholderText("Enter event name")).toBeInTheDocument();
+    // Date input exists (no placeholder text, but type=date input)
+    const dateInput = document.querySelector('input[type="date"]');
+    expect(dateInput).toBeInTheDocument();
+    expect(screen.getByText("Select from list instead")).toBeInTheDocument();
+  });
+
+  it("should switch back to dropdown when 'Select from list' clicked", async () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    await userEvent.click(screen.getByText("Event not listed? Enter manually"));
+    expect(screen.getByPlaceholderText("Enter event name")).toBeInTheDocument();
+    // Find the correct "Select from list instead" button (there may be two - one for venue, one for event)
+    const selectButtons = screen.getAllByText("Select from list instead");
+    await userEvent.click(selectButtons[0]); // Click the first one (event is the only custom mode active)
+    expect(screen.queryByPlaceholderText("Enter event name")).not.toBeInTheDocument();
+    expect(screen.getByText(/Monday Open Mic/)).toBeInTheDocument();
+  });
+
+  it("should clear custom event fields when switching back to dropdown", async () => {
+    render(<UserGalleryUpload {...defaultProps} />);
+    await userEvent.click(screen.getByText("Event not listed? Enter manually"));
+    await userEvent.type(screen.getByPlaceholderText("Enter event name"), "My Custom Event");
+    const selectButtons = screen.getAllByText("Select from list instead");
+    await userEvent.click(selectButtons[0]);
+    await userEvent.click(screen.getByText("Event not listed? Enter manually"));
+    expect(screen.getByPlaceholderText("Enter event name")).toHaveValue("");
+  });
+});
+
 describe("Slug generation", () => {
   // Test slug generation logic matches admin GalleryAdminTabs.tsx
   const generateSlug = (name: string): string => {
