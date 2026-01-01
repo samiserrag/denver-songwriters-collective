@@ -8,9 +8,9 @@ import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
 import {
   getTodayDenver,
-  groupEventsByNextOccurrence,
   formatDateGroupHeader,
   computeNextOccurrence,
+  type NextOccurrenceResult,
 } from "@/lib/events/nextOccurrence";
 
 export const metadata: Metadata = {
@@ -204,31 +204,67 @@ export default async function HappeningsPage({
     });
   }
 
+  // Phase 4.17.5: Compute occurrences ONCE with canonical todayKey
+  // This ensures all events use the same date context for grouping and display
+  type EventWithOccurrence = {
+    event: (typeof list)[0];
+    occurrence: NextOccurrenceResult;
+  };
+
+  let eventsWithOccurrences: EventWithOccurrence[] = list.map((event: any) => ({
+    event,
+    occurrence: computeNextOccurrence(event, { todayKey: today }),
+  }));
+
   // Phase 4.17: Filter by next occurrence for "upcoming" view
   if (timeFilter === "upcoming") {
-    list = list.filter((event: any) => {
-      const occurrence = computeNextOccurrence(event);
-      return occurrence.date >= today;
-    });
+    eventsWithOccurrences = eventsWithOccurrences.filter(
+      ({ occurrence }) => occurrence.date >= today
+    );
   }
 
   // Sort all events by their next occurrence date, then by start_time
-  list.sort((a: any, b: any) => {
-    const occA = computeNextOccurrence(a);
-    const occB = computeNextOccurrence(b);
-
+  eventsWithOccurrences.sort((a, b) => {
     // First sort by date
-    const dateCompare = occA.date.localeCompare(occB.date);
+    const dateCompare = a.occurrence.date.localeCompare(b.occurrence.date);
     if (dateCompare !== 0) return dateCompare;
 
     // Then by start_time (null times go last)
-    const timeA = a.start_time || "99:99";
-    const timeB = b.start_time || "99:99";
+    const timeA = a.event.start_time || "99:99";
+    const timeB = b.event.start_time || "99:99";
     return timeA.localeCompare(timeB);
   });
 
-  // Group events by next occurrence date
-  const groupedEvents = groupEventsByNextOccurrence(list);
+  // Group events by next occurrence date (using pre-computed occurrence)
+  const groupedEvents = new Map<string, EventWithOccurrence[]>();
+  for (const item of eventsWithOccurrences) {
+    const dateKey = item.occurrence.date;
+    if (!groupedEvents.has(dateKey)) {
+      groupedEvents.set(dateKey, []);
+    }
+    groupedEvents.get(dateKey)!.push(item);
+  }
+
+  // Sort groups by date (chronological order)
+  const sortedGroupedEvents = new Map(
+    [...groupedEvents.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  );
+
+  // DEV INVARIANT: Verify every event's occurrence.date matches its group key
+  // This catches any mismatch that would cause "Friday card in Tomorrow group"
+  if (process.env.NODE_ENV === "development") {
+    for (const [groupDateKey, items] of sortedGroupedEvents) {
+      for (const item of items) {
+        if (item.occurrence.date !== groupDateKey) {
+          console.error(
+            `[INVARIANT VIOLATION] Event "${item.event.title}" (${item.event.id}) ` +
+            `has occurrence.date="${item.occurrence.date}" but is grouped under "${groupDateKey}". ` +
+            `This should never happen - check computeNextOccurrence logic.`
+          );
+        }
+      }
+    }
+  }
 
   // Hero only shows on unfiltered /happenings (no filters active)
   const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
@@ -312,14 +348,14 @@ export default async function HappeningsPage({
         {/* Results count */}
         {(searchQuery || hasFilters) && (
           <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-            {list.length} {list.length === 1 ? "result" : "results"} found
+            {eventsWithOccurrences.length} {eventsWithOccurrences.length === 1 ? "result" : "results"} found
           </p>
         )}
 
         {/* Phase 4.17: Date-grouped list with sticky headers */}
-        {list.length > 0 ? (
+        {eventsWithOccurrences.length > 0 ? (
           <div className="space-y-1">
-            {[...groupedEvents].map(([dateStr, eventsForDate]) => (
+            {[...sortedGroupedEvents].map(([dateStr, itemsForDate]) => (
               <section key={dateStr} className="relative">
                 {/* Sticky date header
                     - top-16 accounts for 64px site header (h-16)
@@ -327,20 +363,28 @@ export default async function HappeningsPage({
                     - Background matches page with blur for elegance
                 */}
                 <div
-                  className="sticky top-16 z-30 py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
+                  className="sticky top-16 z-30 py-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
                 >
-                  <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                  <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
+                    <span className="w-1 h-6 bg-[var(--color-accent-primary)] rounded-full" aria-hidden="true" />
                     {formatDateGroupHeader(dateStr, today)}
-                    <span className="ml-2 text-sm font-normal text-[var(--color-text-secondary)]">
-                      ({eventsForDate.length})
+                    <span className="text-base font-normal text-[var(--color-text-secondary)]">
+                      ({itemsForDate.length})
                     </span>
                   </h2>
                 </div>
 
                 {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5 pt-4 pb-6">
-                  {eventsForDate.map((event: any) => (
-                    <HappeningsCard key={event.id} event={event} searchQuery={searchQuery} debugDates={debugDates} />
+                  {itemsForDate.map(({ event, occurrence }) => (
+                    <HappeningsCard
+                      key={event.id}
+                      event={event}
+                      searchQuery={searchQuery}
+                      debugDates={debugDates}
+                      occurrence={occurrence}
+                      todayKey={today}
+                    />
                   ))}
                 </div>
               </section>

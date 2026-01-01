@@ -26,6 +26,7 @@ import {
   computeNextOccurrence,
   getTodayDenver,
   type EventForOccurrence,
+  type NextOccurrenceResult,
 } from "@/lib/events/nextOccurrence";
 
 // ============================================================
@@ -111,6 +112,17 @@ export interface HappeningCardProps {
   className?: string;
   /** Show debug overlay with date computation details */
   debugDates?: boolean;
+  /**
+   * Pre-computed occurrence from parent.
+   * When provided, the card uses this instead of computing independently.
+   * This ensures consistent todayKey across all cards in a list.
+   */
+  occurrence?: NextOccurrenceResult;
+  /**
+   * Canonical today key (YYYY-MM-DD in Denver timezone).
+   * When provided with occurrence, ensures consistent date comparisons.
+   */
+  todayKey?: string;
 }
 
 // ============================================================
@@ -118,38 +130,58 @@ export interface HappeningCardProps {
 // ============================================================
 
 /**
+ * Date display info derived from occurrence.
+ */
+interface DateInfo {
+  label: string;
+  isTonight: boolean;
+  isTomorrow: boolean;
+  isPast: boolean;
+  /** The occurrence used to compute this info */
+  occurrence: NextOccurrenceResult;
+}
+
+/**
  * Get date display info using the canonical computeNextOccurrence logic.
  *
  * IMPORTANT: This uses computeNextOccurrence to determine isTonight/isTomorrow,
  * which correctly handles monthly ordinal recurrence (e.g., "3rd Wednesday").
  * A 5th Wednesday will NOT show TONIGHT for a 3WE event.
+ *
+ * @param event - The event to compute date info for
+ * @param precomputedOccurrence - Optional pre-computed occurrence from parent
+ * @param canonicalTodayKey - Optional canonical today key for consistency
  */
-function getDateInfo(event: HappeningEvent): {
-  label: string;
-  isTonight: boolean;
-  isTomorrow: boolean;
-  isPast: boolean;
-} {
-  const todayKey = getTodayDenver();
+function getDateInfo(
+  event: HappeningEvent,
+  precomputedOccurrence?: NextOccurrenceResult,
+  canonicalTodayKey?: string
+): DateInfo {
+  const todayKey = canonicalTodayKey ?? getTodayDenver();
 
-  // Use computeNextOccurrence to get the canonical next occurrence date
-  const eventForOccurrence: EventForOccurrence = {
-    event_date: event.event_date,
-    day_of_week: event.day_of_week,
-    recurrence_rule: event.recurrence_rule,
-    start_time: event.start_time,
-  };
-  const occurrence = computeNextOccurrence(eventForOccurrence);
+  // Use pre-computed occurrence if provided, otherwise compute fresh
+  let occurrence: NextOccurrenceResult;
+  if (precomputedOccurrence) {
+    occurrence = precomputedOccurrence;
+  } else {
+    const eventForOccurrence: EventForOccurrence = {
+      event_date: event.event_date,
+      day_of_week: event.day_of_week,
+      recurrence_rule: event.recurrence_rule,
+      start_time: event.start_time,
+    };
+    occurrence = computeNextOccurrence(eventForOccurrence, { todayKey });
+  }
 
   // Check if the occurrence is in the past
   const isPast = occurrence.date < todayKey;
 
   // Format the date label
   if (occurrence.isToday) {
-    return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false };
+    return { label: "TONIGHT", isTonight: true, isTomorrow: false, isPast: false, occurrence };
   }
   if (occurrence.isTomorrow) {
-    return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false };
+    return { label: "TOMORROW", isTonight: false, isTomorrow: true, isPast: false, occurrence };
   }
 
   // Format the date for display (parse at noon UTC for safe formatting)
@@ -161,7 +193,7 @@ function getDateInfo(event: HappeningEvent): {
     timeZone: "America/Denver",
   }).toUpperCase();
 
-  return { label: formatted, isTonight: false, isTomorrow: false, isPast };
+  return { label: formatted, isTonight: false, isTomorrow: false, isPast, occurrence };
 }
 
 // ============================================================
@@ -229,13 +261,17 @@ export function HappeningCard({
   onClick,
   className,
   debugDates = false,
+  occurrence: precomputedOccurrence,
+  todayKey: canonicalTodayKey,
 }: HappeningCardProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 
-  // Derived values
-  const dateInfo = getDateInfo(event);
-  const todayKey = getTodayDenver();
+  // Use canonical todayKey if provided, otherwise compute fresh
+  const todayKey = canonicalTodayKey ?? getTodayDenver();
+
+  // Derived values - use pre-computed occurrence if available
+  const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
   const venueName = getVenueName(event);
   const detailHref = getDetailHref(event);
   const startTime = formatTimeToAMPM(event.start_time ?? null);
@@ -609,12 +645,14 @@ export function HappeningCard({
           {debugDates && (
             <div className="mt-2 p-2 bg-black/80 text-white text-xs font-mono rounded space-y-0.5">
               <div>todayKey: {todayKey}</div>
-              <div>nextOcc: {dateInfo.label}</div>
+              <div>occDate: {dateInfo.occurrence.date}</div>
+              <div>label: {dateInfo.label}</div>
               <div>event_date: {event.event_date || "null"}</div>
               <div>day_of_week: {event.day_of_week || "null"}</div>
               <div>recurrence_rule: {event.recurrence_rule || "null"}</div>
               <div>isTonight: {dateInfo.isTonight.toString()}</div>
               <div>isTomorrow: {dateInfo.isTomorrow.toString()}</div>
+              <div>precomputed: {precomputedOccurrence ? "yes" : "no"}</div>
             </div>
           )}
         </div>

@@ -219,15 +219,26 @@ function getNextNthWeekdayOccurrenceKey(
 }
 
 /**
+ * Options for computing next occurrence with a canonical date context.
+ * Passing these ensures consistent todayKey across all computations.
+ */
+export interface OccurrenceOptions {
+  /** Canonical today date key (YYYY-MM-DD in Denver timezone) */
+  todayKey?: string;
+}
+
+/**
  * Compute the next occurrence date for an event.
  *
  * @param event - The event object with timing fields
+ * @param options - Optional date context for consistent computation
  * @returns NextOccurrenceResult with the computed date and metadata
  */
 export function computeNextOccurrence(
-  event: EventForOccurrence
+  event: EventForOccurrence,
+  options?: OccurrenceOptions
 ): NextOccurrenceResult {
-  const todayKey = getTodayDenver();
+  const todayKey = options?.todayKey ?? getTodayDenver();
   const tomorrowKey = addDaysDenver(todayKey, 1);
 
   // Case 1: One-time event with specific date
@@ -337,18 +348,48 @@ export function formatDateGroupHeader(
 }
 
 /**
+ * Event with pre-computed occurrence attached.
+ * This is the canonical type for events after occurrence computation.
+ */
+export interface EventWithOccurrence<T extends EventForOccurrence = EventForOccurrence> {
+  event: T;
+  occurrence: NextOccurrenceResult;
+}
+
+/**
+ * Compute occurrences for all events with a consistent todayKey.
+ * This ensures all events use the same date context.
+ *
+ * @param events - Array of events with timing fields
+ * @param options - Optional date context (defaults to current Denver time)
+ * @returns Array of events with their pre-computed occurrences
+ */
+export function computeOccurrencesForEvents<T extends EventForOccurrence>(
+  events: T[],
+  options?: OccurrenceOptions
+): EventWithOccurrence<T>[] {
+  const todayKey = options?.todayKey ?? getTodayDenver();
+  return events.map((event) => ({
+    event,
+    occurrence: computeNextOccurrence(event, { todayKey }),
+  }));
+}
+
+/**
  * Group events by their next occurrence date.
  *
  * @param events - Array of events with timing fields and an `id` field
+ * @param options - Optional date context for consistent computation
  * @returns Map of date strings to event arrays, sorted by date
  */
 export function groupEventsByNextOccurrence<
   T extends EventForOccurrence & { id: string }
->(events: T[]): Map<string, T[]> {
+>(events: T[], options?: OccurrenceOptions): Map<string, T[]> {
+  const todayKey = options?.todayKey ?? getTodayDenver();
   const groups = new Map<string, T[]>();
 
   for (const event of events) {
-    const occurrence = computeNextOccurrence(event);
+    const occurrence = computeNextOccurrence(event, { todayKey });
     const dateKey = occurrence.date;
 
     if (!groups.has(dateKey)) {

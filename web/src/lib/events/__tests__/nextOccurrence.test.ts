@@ -598,4 +598,109 @@ describe("nextOccurrence", () => {
       expect(result.date).toBe("2025-01-15");
     });
   });
+
+  describe("Phase 4.17.5 - Canonical todayKey option", () => {
+    it("uses provided todayKey instead of computing fresh", () => {
+      // Set real time to Jan 15
+      mockDate("2025-01-15");
+
+      // But pass todayKey as Jan 20
+      const event = { day_of_week: "Friday" };
+      const result = computeNextOccurrence(event, { todayKey: "2025-01-20" });
+
+      // Next Friday from Jan 20 (Monday) is Jan 24, not Jan 17
+      expect(result.date).toBe("2025-01-24");
+      expect(result.isToday).toBe(false);
+    });
+
+    it("marks isToday correctly relative to provided todayKey", () => {
+      mockDate("2025-01-15");
+
+      // Pass todayKey as a Friday
+      const event = { day_of_week: "Friday" };
+      const result = computeNextOccurrence(event, { todayKey: "2025-01-17" });
+
+      // Friday Jan 17 is "today" relative to the provided key
+      expect(result.date).toBe("2025-01-17");
+      expect(result.isToday).toBe(true);
+    });
+
+    it("marks isTomorrow correctly relative to provided todayKey", () => {
+      mockDate("2025-01-15");
+
+      // Pass todayKey as Thursday Jan 16
+      const event = { day_of_week: "Friday" };
+      const result = computeNextOccurrence(event, { todayKey: "2025-01-16" });
+
+      // Friday Jan 17 is "tomorrow" relative to Thursday Jan 16
+      expect(result.date).toBe("2025-01-17");
+      expect(result.isTomorrow).toBe(true);
+    });
+
+    it("groupEventsByNextOccurrence uses provided todayKey", () => {
+      mockDate("2025-01-15"); // Wednesday
+
+      const events = [
+        { id: "1", day_of_week: "Friday" },
+        { id: "2", day_of_week: "Monday" },
+      ];
+
+      // Group with a different todayKey (Monday Jan 20)
+      const groups = groupEventsByNextOccurrence(events, { todayKey: "2025-01-20" });
+      const keys = [...groups.keys()];
+
+      // From Monday Jan 20: Friday = Jan 24, Monday = Jan 20 (today)
+      expect(keys).toContain("2025-01-20"); // Monday
+      expect(keys).toContain("2025-01-24"); // Friday
+      expect(keys).not.toContain("2025-01-17"); // Would be next Friday from Jan 15
+    });
+  });
+
+  describe("Invariant: occurrence.date === group key", () => {
+    it("every grouped event has occurrence.date matching its group key", () => {
+      mockDate("2025-01-15");
+      const todayKey = "2025-01-15";
+
+      const events = [
+        { id: "1", event_date: "2025-01-15" },
+        { id: "2", event_date: "2025-01-17" },
+        { id: "3", day_of_week: "Friday" }, // Jan 17
+        { id: "4", recurrence_rule: "FREQ=MONTHLY;BYDAY=3WE" }, // Jan 15
+        { id: "5", recurrence_rule: "2nd", day_of_week: "Tuesday" }, // Jan 14 (past) -> Feb 11
+      ];
+
+      const groups = groupEventsByNextOccurrence(events, { todayKey });
+
+      for (const [groupKey, groupEvents] of groups) {
+        for (const event of groupEvents) {
+          // Re-compute occurrence with same todayKey to verify
+          const occurrence = computeNextOccurrence(event, { todayKey });
+          expect(occurrence.date).toBe(groupKey);
+        }
+      }
+    });
+
+    it("5th Wednesday events do not appear in 1st-4th Wednesday groups", () => {
+      mockDate("2025-01-29"); // 5th Wednesday
+      const todayKey = "2025-01-29";
+
+      const events = [
+        { id: "1st-wed", recurrence_rule: "1st", day_of_week: "Wednesday" },
+        { id: "2nd-wed", recurrence_rule: "2nd", day_of_week: "Wednesday" },
+        { id: "3rd-wed", recurrence_rule: "3rd", day_of_week: "Wednesday" },
+        { id: "4th-wed", recurrence_rule: "4th", day_of_week: "Wednesday" },
+      ];
+
+      const groups = groupEventsByNextOccurrence(events, { todayKey });
+
+      // None of these should be grouped under today (Jan 29)
+      expect(groups.has("2025-01-29")).toBe(false);
+
+      // Each should be in their respective February dates
+      expect(groups.get("2025-02-05")?.some(e => e.id === "1st-wed")).toBe(true);
+      expect(groups.get("2025-02-12")?.some(e => e.id === "2nd-wed")).toBe(true);
+      expect(groups.get("2025-02-19")?.some(e => e.id === "3rd-wed")).toBe(true);
+      expect(groups.get("2025-02-26")?.some(e => e.id === "4th-wed")).toBe(true);
+    });
+  });
 });
