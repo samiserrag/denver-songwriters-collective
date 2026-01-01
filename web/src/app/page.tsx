@@ -266,25 +266,11 @@ export default async function HomePage() {
           <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-6">
             Join us if you&apos;re…
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-[var(--color-text-secondary)]">🎸 a songwriter looking to play, improve, or connect</div>
             <div className="text-[var(--color-text-secondary)]">🎤 an open mic host or venue</div>
             <div className="text-[var(--color-text-secondary)]">🎶 a songwriting group or collective</div>
             <div className="text-[var(--color-text-secondary)]">🎭 a showcase or event promoter</div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/happenings"
-              className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
-            >
-              See happenings
-            </Link>
-            <Link
-              href="/submit-open-mic"
-              className="inline-flex items-center justify-center px-5 py-2.5 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
-            >
-              Host a happening
-            </Link>
           </div>
         </div>
       </section>
