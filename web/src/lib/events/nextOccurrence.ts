@@ -7,9 +7,42 @@
  * - Nth weekday of month events (RRULE with BYDAY ordinal)
  *
  * Used for Today-first date grouping on /happenings.
+ *
+ * IMPORTANT: All date keys are in America/Denver timezone.
+ * Never use toISOString().split("T")[0] for date keys (that's UTC).
  */
 
 import { parseRRule } from "@/lib/recurrenceHumanizer";
+
+/**
+ * Denver timezone formatter for producing YYYY-MM-DD date keys.
+ * Reused across all date key generation.
+ */
+const denverDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Denver",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * Convert a Date object to a Denver timezone date key (YYYY-MM-DD).
+ * This is the ONLY way to produce date keys - never use toISOString().
+ */
+export function denverDateKeyFromDate(d: Date): string {
+  return denverDateFormatter.format(d);
+}
+
+/**
+ * Add days to a Denver date key and return the new date key.
+ * Uses noon UTC to avoid DST edge cases when stepping days.
+ */
+export function addDaysDenver(dateKey: string, days: number): string {
+  // Parse at noon UTC to avoid DST midnight issues
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return denverDateKeyFromDate(date);
+}
 
 const DAY_NAME_TO_INDEX: Record<string, number> = {
   sunday: 0,
@@ -90,61 +123,56 @@ export interface NextOccurrenceResult {
  * Get today's date string in Denver timezone (YYYY-MM-DD)
  */
 export function getTodayDenver(): string {
-  const now = new Date();
-  // Create a formatter that outputs in Denver timezone
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Denver",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  return formatter.format(now); // Returns YYYY-MM-DD
+  return denverDateKeyFromDate(new Date());
 }
 
 /**
- * Get today as a Date object at midnight in local time
+ * Parse a Denver date key into a Date at noon UTC.
+ * This avoids DST edge cases when doing date arithmetic.
  */
-function getTodayDate(): Date {
-  const todayStr = getTodayDenver();
-  return new Date(todayStr + "T00:00:00");
+function dateFromDenverKey(dateKey: string): Date {
+  return new Date(`${dateKey}T12:00:00Z`);
 }
 
 /**
- * Get the next occurrence of a weekly event given a day name
+ * Get the next occurrence date key of a weekly event given a day name.
+ * Works entirely with Denver date keys to avoid timezone issues.
  */
-function getNextWeeklyOccurrence(dayName: string, today: Date): Date {
+function getNextWeeklyOccurrenceKey(dayName: string, todayKey: string): string {
   const targetDayIndex = DAY_NAME_TO_INDEX[dayName.toLowerCase()];
   if (targetDayIndex === undefined) {
-    return today; // Fallback
+    return todayKey; // Fallback
   }
 
-  const todayDayIndex = today.getDay();
+  // Parse today at noon UTC for safe day-of-week calculation
+  const todayDate = dateFromDenverKey(todayKey);
+  const todayDayIndex = todayDate.getUTCDay();
   let daysUntil = targetDayIndex - todayDayIndex;
   if (daysUntil < 0) {
     daysUntil += 7;
   }
 
-  const nextDate = new Date(today);
-  nextDate.setDate(today.getDate() + daysUntil);
-  return nextDate;
+  return addDaysDenver(todayKey, daysUntil);
 }
 
 /**
- * Get the next occurrence for an nth-weekday-of-month event
- * Returns null if we can't confidently determine it
+ * Get the next occurrence date key for an nth-weekday-of-month event.
+ * Returns null if we can't confidently determine it.
  */
-function getNextNthWeekdayOccurrence(
+function getNextNthWeekdayOccurrenceKey(
   ordinal: number,
   dayAbbrev: string,
-  today: Date
-): { date: Date; confident: boolean } | null {
+  todayKey: string
+): { dateKey: string; confident: boolean } | null {
   const targetDayIndex = DAY_ABBREV_TO_INDEX[dayAbbrev];
   if (targetDayIndex === undefined) return null;
 
+  const todayDate = dateFromDenverKey(todayKey);
+
   // Check this month and next 2 months
   for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
-    const checkYear = today.getFullYear();
-    const checkMonth = today.getMonth() + monthOffset;
+    const checkYear = todayDate.getUTCFullYear();
+    const checkMonth = todayDate.getUTCMonth() + monthOffset;
     const occurrence = getNthWeekdayOfMonth(
       checkYear + Math.floor(checkMonth / 12),
       checkMonth % 12,
@@ -152,8 +180,12 @@ function getNextNthWeekdayOccurrence(
       ordinal
     );
 
-    if (occurrence && occurrence >= today) {
-      return { date: occurrence, confident: true };
+    if (occurrence) {
+      const occurrenceKey = denverDateKeyFromDate(occurrence);
+      // Compare date keys lexicographically (YYYY-MM-DD format)
+      if (occurrenceKey >= todayKey) {
+        return { dateKey: occurrenceKey, confident: true };
+      }
     }
   }
 
@@ -169,19 +201,16 @@ function getNextNthWeekdayOccurrence(
 export function computeNextOccurrence(
   event: EventForOccurrence
 ): NextOccurrenceResult {
-  const today = getTodayDate();
-  const todayStr = getTodayDenver();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const todayKey = getTodayDenver();
+  const tomorrowKey = addDaysDenver(todayKey, 1);
 
   // Case 1: One-time event with specific date
   if (event.event_date) {
-    const eventDateStr = event.event_date;
+    const eventDateKey = event.event_date;
     return {
-      date: eventDateStr,
-      isToday: eventDateStr === todayStr,
-      isTomorrow: eventDateStr === tomorrowStr,
+      date: eventDateKey,
+      isToday: eventDateKey === todayKey,
+      isTomorrow: eventDateKey === tomorrowKey,
       isConfident: true,
     };
   }
@@ -195,14 +224,12 @@ export function computeNextOccurrence(
     parsed.byday[0].ordinal !== null
   ) {
     const { ordinal, day } = parsed.byday[0];
-    const result = getNextNthWeekdayOccurrence(ordinal, day, today);
+    const result = getNextNthWeekdayOccurrenceKey(ordinal, day, todayKey);
     if (result) {
-      const dateStr = result.date.toISOString().split("T")[0];
       return {
-        date: dateStr,
-        isToday: dateStr === todayStr,
-        isTomorrow: dateStr === tomorrowStr,
-        // For nth-weekday, we're confident IF we computed it correctly
+        date: result.dateKey,
+        isToday: result.dateKey === todayKey,
+        isTomorrow: result.dateKey === tomorrowKey,
         isConfident: result.confident,
       };
     }
@@ -211,19 +238,18 @@ export function computeNextOccurrence(
   // Case 3: Weekly recurring with day_of_week
   if (event.day_of_week) {
     const dayName = event.day_of_week.trim();
-    const nextDate = getNextWeeklyOccurrence(dayName, today);
-    const dateStr = nextDate.toISOString().split("T")[0];
+    const dateKey = getNextWeeklyOccurrenceKey(dayName, todayKey);
     return {
-      date: dateStr,
-      isToday: dateStr === todayStr,
-      isTomorrow: dateStr === tomorrowStr,
+      date: dateKey,
+      isToday: dateKey === todayKey,
+      isTomorrow: dateKey === tomorrowKey,
       isConfident: true,
     };
   }
 
   // Fallback: Return today but mark as not confident
   return {
-    date: todayStr,
+    date: todayKey,
     isToday: true,
     isTomorrow: false,
     isConfident: false,
@@ -233,26 +259,25 @@ export function computeNextOccurrence(
 /**
  * Format a date string for display as a group header.
  *
- * @param dateStr - Date string (YYYY-MM-DD)
- * @param todayStr - Today's date string (YYYY-MM-DD)
+ * @param dateKey - Date key (YYYY-MM-DD) in Denver timezone
+ * @param todayKey - Today's date key (YYYY-MM-DD) in Denver timezone
  * @returns Human-readable header: "Today", "Tomorrow", or "Fri, Jan 3"
  */
 export function formatDateGroupHeader(
-  dateStr: string,
-  todayStr: string
+  dateKey: string,
+  todayKey: string
 ): string {
-  const tomorrow = new Date(todayStr + "T00:00:00");
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const tomorrowKey = addDaysDenver(todayKey, 1);
 
-  if (dateStr === todayStr) {
+  if (dateKey === todayKey) {
     return "Today";
   }
-  if (dateStr === tomorrowStr) {
+  if (dateKey === tomorrowKey) {
     return "Tomorrow";
   }
 
-  const date = new Date(dateStr + "T00:00:00");
+  // Parse at noon UTC for safe formatting
+  const date = dateFromDenverKey(dateKey);
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
