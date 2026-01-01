@@ -10,20 +10,27 @@
 import type { Event } from "@/types";
 import { HappeningCard } from "./HappeningCard";
 import type { HappeningEvent } from "./HappeningCard";
+import type { NextOccurrenceResult } from "@/lib/events/nextOccurrence";
 
 type Props = {
   event: Event;
   searchQuery?: string;
   debugDates?: boolean;
+  /** Pre-computed occurrence from parent for consistent date handling */
+  occurrence?: NextOccurrenceResult;
+  /** Canonical today key for consistent date comparisons */
+  todayKey?: string;
 };
 
-export function HappeningsCard({ event, searchQuery, debugDates }: Props) {
+export function HappeningsCard({ event, searchQuery, debugDates, occurrence, todayKey }: Props) {
   return (
     <HappeningCard
       event={event as unknown as HappeningEvent}
       searchQuery={searchQuery}
       variant="list"
       debugDates={debugDates}
+      occurrence={occurrence}
+      todayKey={todayKey}
     />
   );
 }

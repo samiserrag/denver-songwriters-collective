@@ -91,36 +91,56 @@ const DAY_NAME_TO_ABBREV: Record<string, string> = {
 };
 
 /**
- * Get the nth weekday of a month
+ * Get the nth weekday of a month as a date key string.
+ * Uses UTC throughout to avoid timezone issues on CI.
+ *
  * @param year - Year
  * @param month - Month (0-11)
  * @param dayOfWeek - Day of week (0=Sunday, 6=Saturday)
  * @param n - Which occurrence (1=first, 2=second, -1=last, etc.)
+ * @returns Date key string (YYYY-MM-DD) or null
  */
-function getNthWeekdayOfMonth(
+function getNthWeekdayOfMonthKey(
   year: number,
   month: number,
   dayOfWeek: number,
   n: number
-): Date | null {
+): string | null {
+  // Adjust year/month for overflow (e.g., month=13 -> next year January)
+  const adjustedYear = year + Math.floor(month / 12);
+  const adjustedMonth = ((month % 12) + 12) % 12;
+
   if (n > 0) {
     let count = 0;
     for (let day = 1; day <= 31; day++) {
-      const date = new Date(year, month, day);
-      if (date.getMonth() !== month) break;
-      if (date.getDay() === dayOfWeek) {
+      // Use UTC to avoid timezone issues
+      const date = new Date(Date.UTC(adjustedYear, adjustedMonth, day, 12, 0, 0));
+      if (date.getUTCMonth() !== adjustedMonth) break;
+      if (date.getUTCDay() === dayOfWeek) {
         count++;
-        if (count === n) return date;
+        if (count === n) {
+          // Return as YYYY-MM-DD string directly from UTC
+          const y = date.getUTCFullYear();
+          const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+          const d = String(date.getUTCDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        }
       }
     }
   } else if (n < 0) {
-    const lastDay = new Date(year, month + 1, 0).getDate();
+    // Get last day of month using UTC
+    const lastDay = new Date(Date.UTC(adjustedYear, adjustedMonth + 1, 0, 12, 0, 0)).getUTCDate();
     let count = 0;
     for (let day = lastDay; day >= 1; day--) {
-      const date = new Date(year, month, day);
-      if (date.getDay() === dayOfWeek) {
+      const date = new Date(Date.UTC(adjustedYear, adjustedMonth, day, 12, 0, 0));
+      if (date.getUTCDay() === dayOfWeek) {
         count++;
-        if (count === Math.abs(n)) return date;
+        if (count === Math.abs(n)) {
+          const y = date.getUTCFullYear();
+          const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+          const d = String(date.getUTCDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        }
       }
     }
   }
@@ -199,15 +219,14 @@ function getNextNthWeekdayOccurrenceKey(
   for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
     const checkYear = todayDate.getUTCFullYear();
     const checkMonth = todayDate.getUTCMonth() + monthOffset;
-    const occurrence = getNthWeekdayOfMonth(
-      checkYear + Math.floor(checkMonth / 12),
-      checkMonth % 12,
+    const occurrenceKey = getNthWeekdayOfMonthKey(
+      checkYear,
+      checkMonth,
       targetDayIndex,
       ordinal
     );
 
-    if (occurrence) {
-      const occurrenceKey = denverDateKeyFromDate(occurrence);
+    if (occurrenceKey) {
       // Compare date keys lexicographically (YYYY-MM-DD format)
       if (occurrenceKey >= todayKey) {
         return { dateKey: occurrenceKey, confident: true };
@@ -219,15 +238,26 @@ function getNextNthWeekdayOccurrenceKey(
 }
 
 /**
+ * Options for computing next occurrence with a canonical date context.
+ * Passing these ensures consistent todayKey across all computations.
+ */
+export interface OccurrenceOptions {
+  /** Canonical today date key (YYYY-MM-DD in Denver timezone) */
+  todayKey?: string;
+}
+
+/**
  * Compute the next occurrence date for an event.
  *
  * @param event - The event object with timing fields
+ * @param options - Optional date context for consistent computation
  * @returns NextOccurrenceResult with the computed date and metadata
  */
 export function computeNextOccurrence(
-  event: EventForOccurrence
+  event: EventForOccurrence,
+  options?: OccurrenceOptions
 ): NextOccurrenceResult {
-  const todayKey = getTodayDenver();
+  const todayKey = options?.todayKey ?? getTodayDenver();
   const tomorrowKey = addDaysDenver(todayKey, 1);
 
   // Case 1: One-time event with specific date
@@ -337,18 +367,48 @@ export function formatDateGroupHeader(
 }
 
 /**
+ * Event with pre-computed occurrence attached.
+ * This is the canonical type for events after occurrence computation.
+ */
+export interface EventWithOccurrence<T extends EventForOccurrence = EventForOccurrence> {
+  event: T;
+  occurrence: NextOccurrenceResult;
+}
+
+/**
+ * Compute occurrences for all events with a consistent todayKey.
+ * This ensures all events use the same date context.
+ *
+ * @param events - Array of events with timing fields
+ * @param options - Optional date context (defaults to current Denver time)
+ * @returns Array of events with their pre-computed occurrences
+ */
+export function computeOccurrencesForEvents<T extends EventForOccurrence>(
+  events: T[],
+  options?: OccurrenceOptions
+): EventWithOccurrence<T>[] {
+  const todayKey = options?.todayKey ?? getTodayDenver();
+  return events.map((event) => ({
+    event,
+    occurrence: computeNextOccurrence(event, { todayKey }),
+  }));
+}
+
+/**
  * Group events by their next occurrence date.
  *
  * @param events - Array of events with timing fields and an `id` field
+ * @param options - Optional date context for consistent computation
  * @returns Map of date strings to event arrays, sorted by date
  */
 export function groupEventsByNextOccurrence<
   T extends EventForOccurrence & { id: string }
->(events: T[]): Map<string, T[]> {
+>(events: T[], options?: OccurrenceOptions): Map<string, T[]> {
+  const todayKey = options?.todayKey ?? getTodayDenver();
   const groups = new Map<string, T[]>();
 
   for (const event of events) {
-    const occurrence = computeNextOccurrence(event);
+    const occurrence = computeNextOccurrence(event, { todayKey });
     const dateKey = occurrence.date;
 
     if (!groups.has(dateKey)) {
