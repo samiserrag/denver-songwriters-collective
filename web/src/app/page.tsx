@@ -5,10 +5,15 @@ import { HeroSection } from "@/components/layout";
 import { EventGrid } from "@/components/events";
 import { MemberCard } from "@/components/members/MemberCard";
 import { OpenMicGrid, type SpotlightOpenMic } from "@/components/open-mics";
+import { HappeningsCard } from "@/components/happenings";
 // Button removed - not currently used on homepage
 import { LazyIframe, CLSLogger } from "@/components/home";
 import { NewsletterSection } from "@/components/navigation/NewsletterSection";
 import { ThemePicker } from "@/components/ui/ThemePicker";
+import {
+  getTodayDenver,
+  expandAndGroupEvents,
+} from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 
@@ -66,7 +71,7 @@ export default async function HomePage() {
     data: { session: _session },
   } = await supabase.auth.getSession();
 
-  const [upcomingEventsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
+  const [upcomingEventsRes, tonightsHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)
     supabase
       .from("events")
@@ -76,6 +81,15 @@ export default async function HomePage() {
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(6),
+    // Tonight's happenings - all event types, published only
+    supabase
+      .from("events")
+      .select(`
+        *,
+        venues!left(name, address, city, state)
+      `)
+      .eq("is_published", true)
+      .in("status", ["active", "needs_verification"]),
     // Featured members of any role - only spotlighted members
     supabase
       .from("profiles")
@@ -179,6 +193,15 @@ export default async function HomePage() {
     is_featured: om.is_featured,
   }));
 
+  // Get tonight's happenings using occurrence expansion
+  const today = getTodayDenver();
+  const allEventsForTonight = (tonightsHappeningsRes.data ?? []) as any[];
+  const { groupedEvents } = expandAndGroupEvents(allEventsForTonight, {
+    startKey: today,
+    endKey: today,
+  });
+  const tonightsHappenings = groupedEvents.get(today) ?? [];
+
   const latestBlog = latestBlogRes.data;
   const latestBlogAuthor = latestBlog?.author
     ? Array.isArray(latestBlog.author)
@@ -199,6 +222,7 @@ export default async function HomePage() {
   const highlights: Highlight[] = highlightsRes.data ?? [];
 
   const hasUpcomingEvents = upcomingEvents.length > 0;
+  const hasTonightsHappenings = tonightsHappenings.length > 0;
   const hasFeaturedMembers = featuredMembers.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = !!latestBlog;
@@ -265,29 +289,29 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Open Mic Directory - Hero Feature */}
+      {/* Collective Happenings - Hero Feature */}
       <section className="py-10 px-6 bg-[var(--color-bg-secondary)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-6">
             <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl lg:text-5xl text-[var(--color-text-primary)] tracking-tight mb-4">
-              Contribute to our dynamic, comprehensive list of local open mics!
+              Explore and contribute to our collective happenings
             </h2>
             <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl mx-auto">
-              Find open mics, see the lineup, and know when you&apos;re up.
+              The best open mic list on the Front Range, plus showcases, song circles, and community events. See what&apos;s happening or add your own.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/happenings?type=open_mic"
+              href="/happenings"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
-              See open mics
+              See happenings
             </Link>
             <Link
-              href="/submit-open-mic"
+              href="/happenings?type=open_mic"
               className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
             >
-              Submit an open mic
+              See open mics
             </Link>
           </div>
         </div>
@@ -354,23 +378,23 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Happenings - DSC events */}
+      {/* DSC Events - Sponsored happenings only */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
-                Happenings
+                DSC Events
               </h2>
               <p className="text-[var(--color-text-secondary)]">
-                Song circles, showcases, and gatherings hosted by the Denver music community.
+                Song circles, showcases, and gatherings sponsored by Denver Songwriters Collective.
               </p>
             </div>
             <Link
-              href="/happenings?type=dsc"
+              href="/happenings?dsc=1"
               className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              See all
+              See all DSC events
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -381,13 +405,67 @@ export default async function HomePage() {
           ) : (
             <div className="text-center py-12 px-6 card-base rounded-xl border border-[var(--color-border-default)]">
               <p className="text-[var(--color-text-secondary)] mb-4">
-                Nothing on the calendar yet. That usually means someone&apos;s about to fix that.
+                No DSC events on the calendar yet. Check back soon!
               </p>
               <Link
-                href="/submit-open-mic"
+                href="/happenings"
                 className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
               >
-                Host a happening
+                See all happenings
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Tonight's Happenings - All types */}
+      <section className="py-10 px-6 border-t border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6 flex items-baseline justify-between gap-4">
+            <div>
+              <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
+                Tonight&apos;s Happenings
+              </h2>
+              <p className="text-[var(--color-text-secondary)]">
+                Open mics, showcases, and events happening today in Denver.
+              </p>
+            </div>
+            <Link
+              href="/happenings"
+              className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              See all happenings
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          {hasTonightsHappenings ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tonightsHappenings.slice(0, 6).map((entry) => (
+                <HappeningsCard
+                  key={`${entry.event.id}-${entry.dateKey}`}
+                  event={entry.event}
+                  occurrence={{
+                    date: entry.dateKey,
+                    isToday: true,
+                    isTomorrow: false,
+                    isConfident: entry.isConfident,
+                  }}
+                  todayKey={today}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 px-6 card-base rounded-xl border border-[var(--color-border-default)]">
+              <p className="text-[var(--color-text-secondary)] mb-4">
+                Nothing scheduled for tonight. Check out what&apos;s coming up!
+              </p>
+              <Link
+                href="/happenings"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-medium rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+              >
+                See upcoming happenings
               </Link>
             </div>
           )}
