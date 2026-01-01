@@ -21,6 +21,20 @@ export function useAuth(): UseAuthResult {
 
     async function getInitialUser() {
       try {
+        // First, try to get from session (faster, uses cookies)
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to getUser (more authoritative but slower)
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -40,6 +54,8 @@ export function useAuth(): UseAuthResult {
     } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (!isMounted) return;
       setUser(session?.user ?? null);
+      // Also ensure loading is false when auth state changes
+      setLoading(false);
     });
 
     return () => {
