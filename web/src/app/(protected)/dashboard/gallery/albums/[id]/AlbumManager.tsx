@@ -257,15 +257,27 @@ export default function AlbumManager({ album, images, isAdmin }: AlbumManagerPro
                 </span>
               )}
 
+              {/* Status badge */}
+              <span
+                className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                  album.is_published
+                    ? "bg-green-100 text-green-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                {album.is_published ? "Published" : "Draft"}
+              </span>
+
+              {/* Explicit publish/unpublish button */}
               <button
                 onClick={handleTogglePublish}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   album.is_published
-                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                    ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
+                    : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
                 }`}
               >
-                {album.is_published ? "Published" : "Draft"}
+                {album.is_published ? "Unpublish" : "Publish"}
               </button>
             </div>
           </div>
