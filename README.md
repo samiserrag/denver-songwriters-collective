@@ -10,6 +10,9 @@ Denver's community platform for songwriters. Discover open mics, showcases, song
 - **Open Mics** — Weekly recurring open mics sorted by day, with signup info and venue details
 - **DSC Events** — Songwriter showcases, song circles, and special events curated by the collective
 - **Member Directory** — Connect with local songwriters, hosts, and studios
+- **Gallery** — Album-based photo galleries with threaded comments and owner moderation
+- **Blog** — Community blog with threaded comments
+- **Profile Comments** — Leave comments on songwriter and studio profiles
 - **Map View** — See what's happening near you
 
 ## Tech Stack
@@ -42,6 +45,22 @@ npm run dev
 This is a community-curated directory. Help us keep listings accurate by submitting updates through the app.
 
 ## Changelog
+
+### January 2026 — Phase 4.30
+
+- **Gallery + Comments Track CLOSED**
+- Threaded comments (1-level nesting) on all comment surfaces
+- Profile comments for songwriter and studio pages
+- Owner moderation (hide/unhide) with audit trail
+- Copy freeze tests to prevent gamification language
+- 533+ tests passing
+
+### December 2025 — Phase 4.20
+
+- Gallery UX final lock
+- Album publish/unpublish workflow
+- Bulk comment moderation
+- Weekly digest kill switch
 
 ### December 2025 — Phase 4.14–4.16
 

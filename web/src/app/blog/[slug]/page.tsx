@@ -103,8 +103,8 @@ export default async function BlogPostPage({ params }: Props) {
   const { data: { session } } = await supabase.auth.getSession();
   const currentUserId = session?.user?.id;
 
-  // Fetch like count, user's like status, comments, and gallery images
-  const [likesRes, userLikeRes, commentsRes, galleryRes] = await Promise.all([
+  // Fetch like count, user's like status, and gallery images (comments fetched client-side)
+  const [likesRes, userLikeRes, galleryRes] = await Promise.all([
     supabase
       .from("blog_likes")
       .select("*", { count: "exact", head: true })
@@ -118,17 +118,6 @@ export default async function BlogPostPage({ params }: Props) {
           .maybeSingle()
       : Promise.resolve({ data: null }),
     supabase
-      .from("blog_comments")
-      .select(`
-        id,
-        content,
-        created_at,
-        author:profiles!blog_comments_author_id_fkey(id, full_name, avatar_url)
-      `)
-      .eq("post_id", post.id)
-      .eq("is_approved", true)
-      .order("created_at", { ascending: false }),
-    supabase
       .from("blog_gallery_images")
       .select("id, image_url, caption, sort_order")
       .eq("post_id", post.id)
@@ -137,12 +126,6 @@ export default async function BlogPostPage({ params }: Props) {
 
   const likeCount = (likesRes as any).count ?? 0;
   const hasLiked = !!userLikeRes.data;
-  const comments = (commentsRes.data ?? []).map((c: any) => ({
-    id: c.id,
-    content: c.content,
-    created_at: c.created_at,
-    author: Array.isArray(c.author) ? c.author[0] : c.author,
-  }));
   const galleryImages = galleryRes.data ?? [];
 
   const formattedDate = post.published_at
@@ -375,7 +358,7 @@ export default async function BlogPostPage({ params }: Props) {
           )}
 
           {/* Comments section */}
-          <BlogComments postId={post.id} initialComments={comments} />
+          <BlogComments postId={post.id} />
         </div>
       </PageContainer>
     </article>

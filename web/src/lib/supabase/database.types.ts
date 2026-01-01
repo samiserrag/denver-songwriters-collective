@@ -134,6 +134,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_approved: boolean | null
+          parent_id: string | null
           post_id: string
           updated_at: string | null
         }
@@ -143,6 +144,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_approved?: boolean | null
+          parent_id?: string | null
           post_id: string
           updated_at?: string | null
         }
@@ -152,6 +154,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_approved?: boolean | null
+          parent_id?: string | null
           post_id?: string
           updated_at?: string | null
         }
@@ -161,6 +164,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "blog_comments"
             referencedColumns: ["id"]
           },
           {
@@ -1031,24 +1041,33 @@ export type Database = {
           album_id: string
           content: string
           created_at: string
+          hidden_by: string | null
           id: string
           is_deleted: boolean
+          is_hidden: boolean
+          parent_id: string | null
           user_id: string
         }
         Insert: {
           album_id: string
           content: string
           created_at?: string
+          hidden_by?: string | null
           id?: string
           is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
           user_id: string
         }
         Update: {
           album_id?: string
           content?: string
           created_at?: string
+          hidden_by?: string | null
           id?: string
           is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1057,6 +1076,20 @@ export type Database = {
             columns: ["album_id"]
             isOneToOne: false
             referencedRelation: "gallery_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_album_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_album_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_album_comments"
             referencedColumns: ["id"]
           },
           {
@@ -1259,33 +1292,56 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          hidden_by: string | null
           id: string
           image_id: string
           is_deleted: boolean
+          is_hidden: boolean
+          parent_id: string | null
           user_id: string
         }
         Insert: {
           content: string
           created_at?: string
+          hidden_by?: string | null
           id?: string
           image_id: string
           is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
           user_id: string
         }
         Update: {
           content?: string
           created_at?: string
+          hidden_by?: string | null
           id?: string
           image_id?: string
           is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gallery_photo_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gallery_photo_comments_image_id_fkey"
             columns: ["image_id"]
             isOneToOne: false
             referencedRelation: "gallery_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_photo_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_photo_comments"
             referencedColumns: ["id"]
           },
           {
@@ -1630,7 +1686,11 @@ export type Database = {
           content: string
           created_at: string | null
           event_id: string
+          hidden_by: string | null
           id: string
+          is_deleted: boolean
+          is_hidden: boolean
+          parent_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1638,7 +1698,11 @@ export type Database = {
           content: string
           created_at?: string | null
           event_id: string
+          hidden_by?: string | null
           id?: string
+          is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1646,7 +1710,11 @@ export type Database = {
           content?: string
           created_at?: string | null
           event_id?: string
+          hidden_by?: string | null
           id?: string
+          is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1666,8 +1734,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "open_mic_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_mic_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "open_mic_comments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "open_mic_comments_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          hidden_by: string | null
+          id: string
+          is_deleted: boolean
+          is_hidden: boolean
+          parent_id: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          hidden_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          hidden_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_hidden?: boolean
+          parent_id?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profile_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_comments_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

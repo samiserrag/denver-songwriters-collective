@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
 import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
+import { ProfileComments } from "@/components/comments";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
 export const dynamic = "force-dynamic";
@@ -273,6 +274,9 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               Check back soon for upcoming show dates.
             </p>
           </section>
+
+          {/* Profile Comments Section */}
+          <ProfileComments profileId={songwriter.id} profileOwnerId={songwriter.id} />
         </div>
       </PageContainer>
     </>

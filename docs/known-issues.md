@@ -1,5 +1,44 @@
 # Known Issues (Non-Blocking)
 
+---
+
+## Resolved / Guarded (Phase 4.30 — Gallery + Comments Track)
+
+> **Track Closed: 2026-01-01**
+
+These issues have been resolved and are now guarded by regression tests to prevent reintroduction.
+
+### 8. Gallery Visibility Query Mismatch ✅ RESOLVED
+
+- **Issue:** Album detail page used `is_approved=true` while gallery listing used `is_published/is_hidden`
+- **Impact:** New albums showed empty on detail page until manually approved
+- **Fix:** Unified queries to use `is_published=true AND is_hidden=false`
+- **Guard:** `gallery-album-management.test.ts` tests query consistency
+- **Resolved:** Phase 4.20 (December 2025)
+
+### 9. Gamification Language in Gallery UI ✅ GUARDED
+
+- **Risk:** UI could introduce "most commented", "trending", or popularity-based language
+- **Fix:** Copy freeze tests prevent approval/metrics/urgency language in user-facing copy
+- **Guard:** `gallery-copy-freeze.test.ts` (39+ pattern tests)
+- **Status:** Permanently guarded by test suite
+
+### 10. Comment Threading Inconsistency ✅ RESOLVED
+
+- **Issue:** Blog comments had threading but gallery/profile comments did not
+- **Fix:** Added `parent_id` to all comment tables; shared `CommentThread` component
+- **Guard:** `threaded-comments.test.ts` enforces threading behavior
+- **Resolved:** Phase 4.30 (January 2026)
+
+### 11. Profile Comments Missing ✅ RESOLVED
+
+- **Issue:** Songwriter and studio profiles had no comment support
+- **Fix:** Created `profile_comments` table with RLS; `ProfileComments` component
+- **Guard:** `threaded-comments.test.ts` tests ProfileComments integration
+- **Resolved:** Phase 4.30 (January 2026)
+
+---
+
 ## 1. ~~Missing PWA Icon~~ ✅ RESOLVED
 
 - **File**: `public/icons/icon-192x192.png`
@@ -63,9 +102,11 @@
 
 ## Resolution Plan
 
-All issues resolved or accepted. **Lint warnings: 0**.
+All issues resolved or accepted. **Lint warnings: 0**. **Tests: 533+ passing**.
 
-**Current Status**: 6 of 7 issues resolved; 1 accepted (footer heading order is decorative).
+**Current Status**: 10 of 11 issues resolved; 1 accepted (footer heading order is decorative).
+
+**Phase 4.30 Track:** Gallery + Comments — CLOSED (January 2026)
 
 ---
 
