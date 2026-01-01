@@ -44,6 +44,13 @@ These issues have been resolved and are now guarded by regression tests to preve
 - **Guard:** `occurrence-overrides.test.ts` (17 tests)
 - **Resolved:** Phase 4.21 (January 2026)
 
+### 13. Event Ownership Claiming ✅ RESOLVED
+
+- **Issue:** Unclaimed events (host_id IS NULL) had no path for users to claim ownership
+- **Fix:** Event claims system with `event_claims` table, user claim button, admin review queue
+- **Guard:** `event-claims.test.ts` (13 tests)
+- **Resolved:** Phase 4.22 (January 2026)
+
 ---
 
 ## 1. ~~Missing PWA Icon~~ ✅ RESOLVED
@@ -111,10 +118,11 @@ These issues have been resolved and are now guarded by regression tests to preve
 
 All issues resolved or accepted. **Lint warnings: 0**. **Tests: 550+ passing**.
 
-**Current Status**: 11 of 12 issues resolved; 1 accepted (footer heading order is decorative).
+**Current Status**: 12 of 13 issues resolved; 1 accepted (footer heading order is decorative).
 
 **Phase 4.30 Track:** Gallery + Comments — CLOSED (January 2026)
 **Phase 4.21 Track:** Occurrence Overrides — COMPLETE (January 2026)
+**Phase 4.22 Track:** Editing + Ownership UX — COMPLETE (January 2026)
 
 ---
 
