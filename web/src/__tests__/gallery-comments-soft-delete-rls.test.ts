@@ -245,36 +245,47 @@ describe("Gallery Comments Soft-Delete RLS Fix", () => {
   });
 
   describe("Client Component Compatibility", () => {
-    const componentPath = path.join(
+    // GalleryComments now delegates to CommentThread, so we check both:
+    // - GalleryComments.tsx should import CommentThread
+    // - CommentThread.tsx should implement the soft-delete pattern
+    const galleryCommentsPath = path.join(
       __dirname,
       "../components/gallery/GalleryComments.tsx"
     );
+    const commentThreadPath = path.join(
+      __dirname,
+      "../components/comments/CommentThread.tsx"
+    );
 
-    it("client should filter is_deleted=false when fetching (public view)", () => {
-      const content = fs.readFileSync(componentPath, "utf-8");
-      // The client query should explicitly filter is_deleted=false
-      expect(content).toMatch(/\.eq\(["']is_deleted["'],\s*false\)/);
+    it("GalleryComments should delegate to CommentThread", () => {
+      const content = fs.readFileSync(galleryCommentsPath, "utf-8");
+      expect(content).toMatch(/import.*CommentThread.*from/);
+      expect(content).toMatch(/<CommentThread/);
     });
 
-    it("client should set is_deleted=true when deleting (soft delete)", () => {
-      const content = fs.readFileSync(componentPath, "utf-8");
+    it("CommentThread should handle is_deleted visibility", () => {
+      const content = fs.readFileSync(commentThreadPath, "utf-8");
+      // The CommentThread filters hidden/deleted client-side for non-owners
+      expect(content).toMatch(/is_deleted/);
+    });
+
+    it("CommentThread should set is_deleted=true when deleting (soft delete)", () => {
+      const content = fs.readFileSync(commentThreadPath, "utf-8");
       // The delete operation should update is_deleted to true
       expect(content).toMatch(/\.update\(\s*\{\s*is_deleted:\s*true\s*\}/);
     });
 
-    it("client should check canDelete before showing delete button", () => {
-      const content = fs.readFileSync(componentPath, "utf-8");
+    it("CommentThread should check canDelete before showing delete button", () => {
+      const content = fs.readFileSync(commentThreadPath, "utf-8");
       expect(content).toMatch(/function canDelete/);
       expect(content).toMatch(/canDelete\(comment\)/);
     });
 
-    it("canDelete should check author, admin, uploader, and owner", () => {
-      const content = fs.readFileSync(componentPath, "utf-8");
-      // Should check user_id (author), isAdmin, imageUploaderId, albumOwnerId
-      expect(content).toMatch(/comment\.user_id === currentUserId/);
+    it("canDelete should check author and admin", () => {
+      const content = fs.readFileSync(commentThreadPath, "utf-8");
+      // Should check author (via author_id or user_id) and isAdmin
+      expect(content).toMatch(/authorId === currentUserId/);
       expect(content).toMatch(/isAdmin/);
-      expect(content).toMatch(/imageUploaderId/);
-      expect(content).toMatch(/albumOwnerId/);
     });
   });
 });

@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.20):** Lint warnings = 0. All tests passing (443). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.30):** Lint warnings = 0. All tests passing (533+). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -94,6 +94,10 @@ All must pass before merge:
 | Footer | `web/src/components/navigation/footer.tsx` |
 | Event form | `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` |
 | Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
+| CommentThread (shared) | `web/src/components/comments/CommentThread.tsx` |
+| ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
+| GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
+| BlogComments | `web/src/components/blog/BlogComments.tsx` |
 
 ### Key Pages
 
@@ -104,6 +108,8 @@ All must pass before merge:
 | Event detail | `web/src/app/events/[id]/page.tsx` |
 | Dashboard | `web/src/app/(protected)/dashboard/` |
 | Admin | `web/src/app/(protected)/dashboard/admin/` |
+| Songwriter profile | `web/src/app/songwriters/[id]/page.tsx` |
+| Studio profile | `web/src/app/studios/[id]/page.tsx` |
 
 ---
 
@@ -220,6 +226,55 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ## Recent Changes
 
+---
+
+### Gallery + Comments Track — CLOSED (Phase 4.30, January 2026)
+
+> **Track Closed: 2026-01-01**
+>
+> This track is complete. All features shipped, tests passing, docs updated.
+
+**Features Delivered:**
+
+- **Album-first gallery architecture** — Photos belong to albums; no orphan uploads
+- **Album visibility** — `is_published` + `is_hidden` (never `is_approved` in user-facing queries)
+- **Photo/album comments** — `gallery_photo_comments` and `gallery_album_comments` tables
+- **Threaded comments (1-level)** — `parent_id` references on all comment tables
+- **Owner moderation** — `is_hidden` / `hidden_by` columns; entity owner + admin can hide
+- **Soft-delete by author** — `is_deleted` column; author/admin can soft-delete own comments
+- **Profile comments** — New `profile_comments` table for songwriter/studio profiles
+- **Shared CommentThread component** — Reusable component for all comment surfaces
+- **Weekly digest with kill switch** — `ENABLE_WEEKLY_DIGEST` env var
+- **Copy freeze guardrails** — No approval/metrics/urgency language in user-facing copy
+
+**Database Migration:**
+
+- `supabase/migrations/20260101100000_threaded_comments_and_profile_comments.sql`
+- Additive-only (safe rollout): all `ADD COLUMN IF NOT EXISTS` with defaults
+- New table: `profile_comments` with RLS policies
+
+**Test Coverage (39+ tests added):**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/threaded-comments.test.ts` | Threading, moderation, profile comments |
+| `__tests__/gallery-photo-comments.test.ts` | Comments-as-likes model, no gamification |
+| `__tests__/gallery-copy-freeze.test.ts` | No approval/metrics/urgency language |
+| `__tests__/gallery-comments-soft-delete-rls.test.ts` | RLS policy coverage |
+
+**Key Components:**
+
+| Component | Path |
+|-----------|------|
+| CommentThread | `web/src/components/comments/CommentThread.tsx` |
+| ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
+| GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
+| BlogComments | `web/src/components/blog/BlogComments.tsx` |
+
+**Investigation Doc:** `docs/investigation/comments-phase3-threading.md`
+
+---
+
 ### v2.0 Visual System (December 2025)
 
 Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
@@ -331,6 +386,8 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/gallery-photo-comments.test.ts` | Gallery photo comments |
 | `__tests__/gallery-album-management.test.ts` | Album management (25 tests) |
 | `__tests__/gallery-copy-freeze.test.ts` | Copy freeze (no approval/metrics language) |
+| `__tests__/threaded-comments.test.ts` | Threaded comments + profile comments |
+| `__tests__/gallery-comments-soft-delete-rls.test.ts` | Comment RLS policies |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
@@ -355,4 +412,4 @@ NEXT_PUBLIC_SITE_URL=
 
 ---
 
-**Last updated:** December 2025
+**Last updated:** January 2026

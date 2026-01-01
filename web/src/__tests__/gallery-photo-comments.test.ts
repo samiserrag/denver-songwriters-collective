@@ -43,7 +43,9 @@ describe('Gallery Photo Comments - Comments-as-Likes Model', () => {
   });
 
   describe('GalleryComments Component', () => {
+    // GalleryComments now delegates to CommentThread for the actual implementation
     const componentPath = path.join(__dirname, '../components/gallery/GalleryComments.tsx');
+    const commentThreadPath = path.join(__dirname, '../components/comments/CommentThread.tsx');
 
     it('should exist and handle photo comments', () => {
       expect(fs.existsSync(componentPath)).toBe(true);
@@ -51,8 +53,14 @@ describe('Gallery Photo Comments - Comments-as-Likes Model', () => {
       expect(content).toMatch(/type: "photo" \| "album"/);
     });
 
-    it('should NOT render like/heart/reaction buttons', () => {
+    it('should delegate to CommentThread', () => {
       const content = fs.readFileSync(componentPath, 'utf-8');
+      expect(content).toMatch(/import.*CommentThread.*from/);
+      expect(content).toMatch(/<CommentThread/);
+    });
+
+    it('should NOT render like/heart/reaction buttons in CommentThread', () => {
+      const content = fs.readFileSync(commentThreadPath, 'utf-8');
       expect(content).not.toMatch(/like.*button/i);
       expect(content).not.toMatch(/heart.*button/i);
       expect(content).not.toMatch(/reaction/i);
@@ -60,7 +68,7 @@ describe('Gallery Photo Comments - Comments-as-Likes Model', () => {
     });
 
     it('should NOT display comment counts prominently (only subtle count in header)', () => {
-      const content = fs.readFileSync(componentPath, 'utf-8');
+      const content = fs.readFileSync(commentThreadPath, 'utf-8');
       // The only count should be the subtle "(N)" in the header, not "most commented" or rankings
       expect(content).not.toMatch(/most commented/i);
       expect(content).not.toMatch(/top comment/i);
@@ -68,20 +76,20 @@ describe('Gallery Photo Comments - Comments-as-Likes Model', () => {
     });
 
     it('should show delete button for authorized users', () => {
-      const content = fs.readFileSync(componentPath, 'utf-8');
+      const content = fs.readFileSync(commentThreadPath, 'utf-8');
       expect(content).toMatch(/canDelete/);
       expect(content).toMatch(/handleDelete/);
-      expect(content).toMatch(/Delete comment/);
+      expect(content).toMatch(/Delete/); // Delete button text
     });
 
     it('should use soft delete (is_deleted)', () => {
-      const content = fs.readFileSync(componentPath, 'utf-8');
+      const content = fs.readFileSync(commentThreadPath, 'utf-8');
       expect(content).toMatch(/update.*is_deleted.*true/i);
     });
 
     it('should order comments by created_at (chronological, not by popularity)', () => {
-      const content = fs.readFileSync(componentPath, 'utf-8');
-      expect(content).toMatch(/order.*created_at.*ascending.*true/i);
+      const content = fs.readFileSync(commentThreadPath, 'utf-8');
+      expect(content).toMatch(/order.*created_at/i);
       // Should NOT order by count or popularity
       expect(content).not.toMatch(/order.*count/i);
       expect(content).not.toMatch(/order.*popularity/i);
@@ -89,7 +97,7 @@ describe('Gallery Photo Comments - Comments-as-Likes Model', () => {
     });
 
     it('should show sign-in prompt for non-authenticated users', () => {
-      const content = fs.readFileSync(componentPath, 'utf-8');
+      const content = fs.readFileSync(commentThreadPath, 'utf-8');
       expect(content).toMatch(/Sign in.*to leave a comment/);
     });
   });

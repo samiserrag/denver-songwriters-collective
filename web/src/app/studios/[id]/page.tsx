@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { ServiceCard } from "@/components/studios";
 import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
+import { ProfileComments } from "@/components/comments";
 import type { Database } from "@/lib/supabase/database.types";
 import type { StudioService } from "@/types";
 import Link from "next/link";
@@ -179,6 +180,9 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
               </div>
             </section>
           )}
+
+          {/* Profile Comments Section */}
+          <ProfileComments profileId={studio.id} profileOwnerId={studio.id} />
         </div>
       </PageContainer>
     </>

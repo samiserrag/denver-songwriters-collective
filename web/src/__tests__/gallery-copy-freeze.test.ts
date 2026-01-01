@@ -22,8 +22,10 @@ const galleryFiles = glob.sync(
   { ignore: ['**/*.test.*', '**/__tests__/**', '**/admin/**'] }
 );
 
-// Also check the GalleryComments component specifically
+// GalleryComments now delegates to CommentThread for the actual UI
+// Check both the wrapper and the implementation
 const commentsComponentPath = path.join(__dirname, '../components/gallery/GalleryComments.tsx');
+const commentThreadPath = path.join(__dirname, '../components/comments/CommentThread.tsx');
 
 describe('Gallery Copy Freeze - Locked Language Guidelines', () => {
   describe('No Approval Language', () => {
@@ -135,8 +137,9 @@ describe('Gallery Copy Freeze - Locked Language Guidelines', () => {
 
   describe('Allowed Copy Patterns', () => {
     it('should use conversational invitation language', () => {
-      if (fs.existsSync(commentsComponentPath)) {
-        const content = fs.readFileSync(commentsComponentPath, 'utf-8');
+      // CommentThread contains the actual UI copy
+      if (fs.existsSync(commentThreadPath)) {
+        const content = fs.readFileSync(commentThreadPath, 'utf-8');
         // These are the approved patterns
         expect(content).toMatch(/No comments yet/i);
         expect(content).toMatch(/Sign in.*to leave a comment/i);

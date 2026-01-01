@@ -363,3 +363,68 @@ Tests that enforce these contracts:
 **Rule:** If a contract affects rendering logic (NA, pill tiers, filters), it should have a test. Tests must enforce the contract language (not old v1 expectations). Stale or contradictory test descriptions must be updated.
 
 **Rule:** Any change to these contracts must update both the implementation AND this documentation.
+
+---
+
+## Contract: Comments System (Phase 4.30)
+
+> **Track Closed: 2026-01-01**
+
+### Comments-as-Likes Model
+
+Comments replace likes/reactions. Social engagement happens through conversation, not counters.
+
+**Enforceable Rules:**
+
+| Rule | Enforcement |
+|------|-------------|
+| No like/reaction buttons | Test: `gallery-photo-comments.test.ts` |
+| No upvote/downvote | Test: `gallery-photo-comments.test.ts` |
+| No comment counts in rankings | Test: `gallery-copy-freeze.test.ts` |
+| No "most commented" sorting | Test: `gallery-copy-freeze.test.ts` |
+| No popularity metrics | Test: `gallery-copy-freeze.test.ts` |
+| No trending/leaderboard UI | Test: `threaded-comments.test.ts` |
+
+### Threading Contract
+
+- **1-level max nesting** — Replies attach to top-level comments only (no reply-to-reply)
+- **Chronological order** — Comments sorted by `created_at`, not popularity
+- **`parent_id` column** — All comment tables have `parent_id UUID REFERENCES self`
+
+### Visibility Contract
+
+- **Gallery albums/photos:** `is_published=true AND is_hidden=false` (never `is_approved`)
+- **Hidden comments:** `is_hidden=true` visible only to moderators (owner/admin)
+- **Deleted comments:** `is_deleted=true` visible only to admins with `[deleted]` badge
+
+### Moderation Contract
+
+| Actor | Can Hide | Can Unhide | Can Delete |
+|-------|----------|------------|------------|
+| Comment author | No | No | Yes (soft) |
+| Entity owner | Yes | Yes | No |
+| Admin | Yes | Yes | Yes |
+
+**Audit trail:** `hidden_by` column tracks who hid the comment.
+
+### Copy Freeze (Guardrails)
+
+User-facing gallery/comments UI must NOT contain:
+
+| Pattern | Reason |
+|---------|--------|
+| "pending approval" / "awaiting review" | Implies moderation queue |
+| "most commented" / "most popular" | Gamification language |
+| "trending" / "top 10" | Ranking language |
+| "hurry" / "limited time" / "don't miss" | Urgency/FOMO language |
+
+**Test:** `gallery-copy-freeze.test.ts`
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/threaded-comments.test.ts` | Threading, moderation, profile comments |
+| `__tests__/gallery-photo-comments.test.ts` | Comments-as-likes, no gamification |
+| `__tests__/gallery-copy-freeze.test.ts` | Copy freeze patterns |
+| `__tests__/gallery-comments-soft-delete-rls.test.ts` | RLS policy enforcement |
