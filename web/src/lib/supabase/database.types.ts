@@ -758,7 +758,6 @@ export type Database = {
           capacity: number | null
           category: string | null
           cost_label: string | null
-          cover_image_card_url: string | null
           cover_image_url: string | null
           created_at: string | null
           custom_address: string | null
@@ -824,7 +823,6 @@ export type Database = {
           capacity?: number | null
           category?: string | null
           cost_label?: string | null
-          cover_image_card_url?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           custom_address?: string | null
@@ -890,7 +888,6 @@ export type Database = {
           capacity?: number | null
           category?: string | null
           cost_label?: string | null
-          cover_image_card_url?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           custom_address?: string | null
@@ -1080,6 +1077,7 @@ export type Database = {
           event_id: string | null
           id: string
           is_approved: boolean | null
+          is_hidden: boolean
           is_published: boolean | null
           name: string
           slug: string
@@ -1094,6 +1092,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           is_approved?: boolean | null
+          is_hidden?: boolean
           is_published?: boolean | null
           name: string
           slug: string
@@ -1108,6 +1107,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           is_approved?: boolean | null
+          is_hidden?: boolean
           is_published?: boolean | null
           name?: string
           slug?: string
@@ -1157,11 +1157,16 @@ export type Database = {
           album_id: string | null
           caption: string | null
           created_at: string | null
+          custom_event_date: string | null
+          custom_event_name: string | null
+          custom_venue_name: string | null
           event_id: string | null
           id: string
           image_url: string
           is_approved: boolean | null
           is_featured: boolean | null
+          is_hidden: boolean
+          is_published: boolean
           sort_order: number | null
           updated_at: string | null
           uploaded_by: string
@@ -1171,11 +1176,16 @@ export type Database = {
           album_id?: string | null
           caption?: string | null
           created_at?: string | null
+          custom_event_date?: string | null
+          custom_event_name?: string | null
+          custom_venue_name?: string | null
           event_id?: string | null
           id?: string
           image_url: string
           is_approved?: boolean | null
           is_featured?: boolean | null
+          is_hidden?: boolean
+          is_published?: boolean
           sort_order?: number | null
           updated_at?: string | null
           uploaded_by: string
@@ -1185,11 +1195,16 @@ export type Database = {
           album_id?: string | null
           caption?: string | null
           created_at?: string | null
+          custom_event_date?: string | null
+          custom_event_name?: string | null
+          custom_venue_name?: string | null
           event_id?: string | null
           id?: string
           image_url?: string
           is_approved?: boolean | null
           is_featured?: boolean | null
+          is_hidden?: boolean
+          is_published?: boolean
           sort_order?: number | null
           updated_at?: string | null
           uploaded_by?: string

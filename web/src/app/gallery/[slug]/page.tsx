@@ -72,6 +72,8 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
   }
 
   // Fetch images for this album with pagination
+  // Filter by is_published/is_hidden (matches gallery listing page)
+  // RLS handles owner access to their own unapproved images
   const { data: images, count: totalCount } = await supabase
     .from("gallery_images")
     .select(`
@@ -86,7 +88,8 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       venue:venues(name)
     `, { count: "exact" })
     .eq("album_id", album.id)
-    .eq("is_approved", true)
+    .eq("is_published", true)
+    .eq("is_hidden", false)
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
