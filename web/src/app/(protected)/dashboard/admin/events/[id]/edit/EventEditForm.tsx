@@ -302,9 +302,10 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         <button
           type="button"
           onClick={() => router.push("/dashboard/admin/events")}
-          className="px-6 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
+          className="px-6 py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] rounded transition-colors"
+          aria-label="Back without saving (does not cancel event)"
         >
-          Cancel
+          Back without saving
         </button>
       </div>
     </form>
