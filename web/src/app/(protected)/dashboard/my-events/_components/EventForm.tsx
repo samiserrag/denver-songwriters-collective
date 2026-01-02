@@ -1137,9 +1137,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           <button
             type="button"
             onClick={() => router.push("/dashboard/my-events")}
-            className="px-6 py-3 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg transition-colors"
+            className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] rounded-lg transition-colors"
+            aria-label="Back without saving (does not cancel event)"
           >
-            Cancel
+            Back without saving
           </button>
         )}
       </div>
