@@ -552,6 +552,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           {/* Timeslot claiming section for timeslot-enabled events */}
           {event.is_dsc_event && (event as { has_timeslots?: boolean }).has_timeslots && (
             <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-2">Performance Slots</h2>
+              <p className="text-[var(--color-text-secondary)] text-sm mb-4">Claim a performance slot below.</p>
               <TimeslotSection
                 eventId={event.id}
                 eventStartTime={event.start_time}
