@@ -123,6 +123,59 @@ export async function PATCH(
 
   const body = await request.json();
 
+  // Handle restore action for cancelled drafts
+  if (body.action === "restore") {
+    // Fetch current event to check eligibility
+    const { data: currentEvent, error: fetchError } = await supabase
+      .from("events")
+      .select("status, published_at, is_published")
+      .eq("id", eventId)
+      .single();
+
+    if (fetchError || !currentEvent) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Only allow restoring cancelled events
+    if (currentEvent.status !== "cancelled") {
+      return NextResponse.json(
+        { error: "Only cancelled events can be restored" },
+        { status: 400 }
+      );
+    }
+
+    // Only allow restoring events that were never published
+    // published_at being set means it was published at some point
+    if (currentEvent.published_at) {
+      return NextResponse.json(
+        { error: "Cannot restore events that were previously published. Only cancelled drafts can be restored." },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date().toISOString();
+
+    // Restore to draft status
+    const { data: restoredEvent, error: restoreError } = await supabase
+      .from("events")
+      .update({
+        status: "draft",
+        cancelled_at: null,
+        cancel_reason: null,
+        is_published: false,
+        updated_at: now,
+      })
+      .eq("id", eventId)
+      .select()
+      .single();
+
+    if (restoreError) {
+      return NextResponse.json({ error: restoreError.message }, { status: 500 });
+    }
+
+    return NextResponse.json(restoredEvent);
+  }
+
   // Validate online_url required for online/hybrid events
   if ((body.location_mode === "online" || body.location_mode === "hybrid") && !body.online_url) {
     return NextResponse.json(

@@ -36,6 +36,7 @@ export default async function MyEventsPage() {
     start_time: string;
     status: string;
     is_published: boolean;
+    published_at: string | null;
     capacity: number | null;
     rsvp_count: number;
     user_role: string;
