@@ -6,3 +6,4 @@ export { DateJumpControl } from "./DateJumpControl";
 export { DateSection } from "./DateSection";
 export { StickyControls } from "./StickyControls";
 export { BetaBanner } from "./BetaBanner";
+export { CancelledDisclosureRow } from "./CancelledDisclosureRow";

@@ -264,6 +264,24 @@ export default async function HappeningsPage({
     return titleA.localeCompare(titleB);
   });
 
+  // Phase 4.23: Group cancelled occurrences by date for Today/Tomorrow disclosure
+  const tomorrow = addDaysDenver(today, 1);
+  const cancelledByDate = new Map<string, EventOccurrenceEntry<any>[]>();
+  for (const entry of cancelledOccurrences) {
+    const dateKey = entry.dateKey;
+    // Only group Today and Tomorrow for disclosure; other dates go to the main cancelled section
+    if (dateKey === today || dateKey === tomorrow) {
+      if (!cancelledByDate.has(dateKey)) {
+        cancelledByDate.set(dateKey, []);
+      }
+      cancelledByDate.get(dateKey)!.push(entry);
+    }
+  }
+  // Cancelled occurrences that are NOT Today/Tomorrow (shown in main cancelled section)
+  const otherCancelledOccurrences = cancelledOccurrences.filter(
+    (entry) => entry.dateKey !== today && entry.dateKey !== tomorrow
+  );
+
   // Count total occurrences for display
   let totalOccurrences = 0;
   for (const entries of filteredGroups.values()) {
@@ -412,32 +430,62 @@ export default async function HappeningsPage({
         {totalDisplayableEvents > 0 ? (
           <div className="space-y-0">
             {/* Dated occurrences grouped by date */}
-            {[...filteredGroups].map(([dateStr, entriesForDate]) => (
-              <DateSection
-                key={dateStr}
-                dateKey={dateStr}
-                headerText={formatDateGroupHeader(dateStr, today)}
-                eventCount={entriesForDate.length}
-              >
-                {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
-                  <HappeningsCard
-                    key={`${entry.event.id}-${entry.dateKey}`}
-                    event={entry.event}
-                    searchQuery={searchQuery}
-                    debugDates={debugDates}
-                    occurrence={{
-                      date: entry.dateKey,
-                      isToday: entry.dateKey === today,
-                      isTomorrow: entry.dateKey === addDaysDenver(today, 1),
-                      isConfident: entry.isConfident,
-                    }}
-                    todayKey={today}
-                    override={entry.override}
-                    isCancelled={entry.isCancelled}
-                  />
-                ))}
-              </DateSection>
-            ))}
+            {[...filteredGroups].map(([dateStr, entriesForDate]) => {
+              // Phase 4.23: For Today/Tomorrow, pass cancelled occurrences for disclosure
+              const isTodayOrTomorrow = dateStr === today || dateStr === tomorrow;
+              const cancelledForDate = showCancelled && isTodayOrTomorrow
+                ? cancelledByDate.get(dateStr) || []
+                : [];
+
+              return (
+                <DateSection
+                  key={dateStr}
+                  dateKey={dateStr}
+                  headerText={formatDateGroupHeader(dateStr, today)}
+                  eventCount={entriesForDate.length}
+                  cancelledCount={cancelledForDate.length}
+                  cancelledChildren={
+                    cancelledForDate.length > 0
+                      ? cancelledForDate.map((entry: EventOccurrenceEntry<any>) => (
+                          <HappeningsCard
+                            key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                            event={entry.event}
+                            searchQuery={searchQuery}
+                            debugDates={debugDates}
+                            occurrence={{
+                              date: entry.dateKey,
+                              isToday: entry.dateKey === today,
+                              isTomorrow: entry.dateKey === tomorrow,
+                              isConfident: entry.isConfident,
+                            }}
+                            todayKey={today}
+                            override={entry.override}
+                            isCancelled={true}
+                          />
+                        ))
+                      : undefined
+                  }
+                >
+                  {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
+                    <HappeningsCard
+                      key={`${entry.event.id}-${entry.dateKey}`}
+                      event={entry.event}
+                      searchQuery={searchQuery}
+                      debugDates={debugDates}
+                      occurrence={{
+                        date: entry.dateKey,
+                        isToday: entry.dateKey === today,
+                        isTomorrow: entry.dateKey === tomorrow,
+                        isConfident: entry.isConfident,
+                      }}
+                      todayKey={today}
+                      override={entry.override}
+                      isCancelled={entry.isCancelled}
+                    />
+                  ))}
+                </DateSection>
+              );
+            })}
 
             {/* Schedule Unknown section - appears after all dated sections */}
             {sortedUnknownEvents.length > 0 && (
@@ -466,16 +514,17 @@ export default async function HappeningsPage({
               </DateSection>
             )}
 
-            {/* Phase 4.21: Cancelled occurrences section - only shown when toggle is on */}
-            {showCancelled && cancelledOccurrences.length > 0 && (
+            {/* Phase 4.21/4.23: Cancelled occurrences section - only for non-Today/Tomorrow */}
+            {/* Today/Tomorrow cancelled are shown inline via disclosure rows */}
+            {showCancelled && otherCancelledOccurrences.length > 0 && (
               <DateSection
                 dateKey="cancelled"
                 headerText="Cancelled"
-                eventCount={cancelledOccurrences.length}
+                eventCount={otherCancelledOccurrences.length}
                 isCancelled
                 description="These occurrences have been cancelled. They may be rescheduled in the future."
               >
-                {cancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => (
+                {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => (
                   <HappeningsCard
                     key={`${entry.event.id}-${entry.dateKey}-cancelled`}
                     event={entry.event}
@@ -484,7 +533,7 @@ export default async function HappeningsPage({
                     occurrence={{
                       date: entry.dateKey,
                       isToday: entry.dateKey === today,
-                      isTomorrow: entry.dateKey === addDaysDenver(today, 1),
+                      isTomorrow: entry.dateKey === tomorrow,
                       isConfident: entry.isConfident,
                     }}
                     todayKey={today}

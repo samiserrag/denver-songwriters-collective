@@ -6,10 +6,16 @@
  * Phase 4.19: Per-date collapse toggle
  * - Each date header gets a chevron to collapse/expand its events
  * - State is in-memory only (resets on navigation)
+ *
+ * Phase 4.23: Cancelled disclosure for Today/Tomorrow
+ * - When showCancelled=1 and this is Today/Tomorrow, cancelled occurrences
+ *   are shown in a collapsed disclosure row after active events
+ * - Other dates remain unchanged
  */
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { CancelledDisclosureRow } from "./CancelledDisclosureRow";
 
 interface DateSectionProps {
   /** Date key (YYYY-MM-DD) for the anchor ID */
@@ -26,6 +32,10 @@ interface DateSectionProps {
   children: React.ReactNode;
   /** Description text for unknown section */
   description?: string;
+  /** Cancelled occurrences for this date (Phase 4.23 - Today/Tomorrow only) */
+  cancelledChildren?: React.ReactNode;
+  /** Count of cancelled occurrences for disclosure row */
+  cancelledCount?: number;
 }
 
 function ChevronIcon({ className, isExpanded }: { className?: string; isExpanded: boolean }) {
@@ -53,8 +63,11 @@ export function DateSection({
   isCancelled = false,
   children,
   description,
+  cancelledChildren,
+  cancelledCount = 0,
 }: DateSectionProps) {
   const [isExpanded, setIsExpanded] = React.useState(true);
+  const [cancelledExpanded, setCancelledExpanded] = React.useState(false);
 
   return (
     <section id={`date-${dateKey}`} className="relative">
@@ -99,12 +112,26 @@ export function DateSection({
       <div
         id={`events-${dateKey}`}
         className={cn(
-          "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 pt-3 pb-4",
+          "pt-3 pb-4",
           "transition-all duration-200",
           !isExpanded && "hidden"
         )}
       >
-        {children}
+        {/* Active occurrences grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+          {children}
+        </div>
+
+        {/* Phase 4.23: Cancelled disclosure for Today/Tomorrow */}
+        {cancelledCount > 0 && cancelledChildren && (
+          <CancelledDisclosureRow
+            count={cancelledCount}
+            isExpanded={cancelledExpanded}
+            onToggle={() => setCancelledExpanded(!cancelledExpanded)}
+          >
+            {cancelledChildren}
+          </CancelledDisclosureRow>
+        )}
       </div>
     </section>
   );
