@@ -147,7 +147,9 @@ export async function PATCH(
     "end_time", "status", "recurrence_rule", "cover_image_url", "is_published",
     // Phase 3 fields
     "timezone", "location_mode", "online_url", "is_free", "cost_label",
-    "signup_mode", "signup_url", "signup_deadline", "age_policy"
+    "signup_mode", "signup_url", "signup_deadline", "age_policy",
+    // Timeslot configuration fields
+    "has_timeslots", "total_slots", "slot_duration_minutes"
   ];
 
   const now = new Date().toISOString();
@@ -218,6 +220,11 @@ export async function PATCH(
     updates.is_dsc_event = body.is_dsc_event;
   }
 
+  // Handle allow_guests → allow_guest_slots mapping (form sends allow_guests, DB uses allow_guest_slots)
+  if (body.allow_guests !== undefined) {
+    updates.allow_guest_slots = body.allow_guests;
+  }
+
   // Track major updates (date/time/venue/location_mode changes)
   const majorFields = ["event_date", "start_time", "end_time", "venue_id", "location_mode", "day_of_week"];
   const hasMajorChange = majorFields.some(field => body[field] !== undefined);
@@ -251,6 +258,47 @@ export async function PATCH(
     }
   }
 
+  // Get current event state before update (for timeslot regeneration decision)
+  const { data: currentEvent } = await supabase
+    .from("events")
+    .select("has_timeslots, total_slots, slot_duration_minutes")
+    .eq("id", eventId)
+    .single();
+
+  // Determine if this update requires timeslot regeneration
+  const timeslotsNowEnabled = body.has_timeslots === true;
+  const timeslotsWereDisabled = currentEvent?.has_timeslots === false;
+  const totalSlotsChanged = body.total_slots !== undefined && body.total_slots !== currentEvent?.total_slots;
+  const slotDurationChanged = body.slot_duration_minutes !== undefined && body.slot_duration_minutes !== currentEvent?.slot_duration_minutes;
+
+  const regenNeeded = timeslotsNowEnabled && (timeslotsWereDisabled || totalSlotsChanged || slotDurationChanged);
+
+  // If regen needed, check for existing claims BEFORE applying update (fail fast)
+  if (regenNeeded) {
+    const { data: existingSlots } = await supabase
+      .from("event_timeslots")
+      .select("id")
+      .eq("event_id", eventId);
+
+    if (existingSlots && existingSlots.length > 0) {
+      const slotIds = existingSlots.map(s => s.id);
+      const { count: claimCount } = await supabase
+        .from("timeslot_claims")
+        .select("*", { count: "exact", head: true })
+        .in("timeslot_id", slotIds)
+        .in("status", ["confirmed", "performed", "waitlist"]);
+
+      if (claimCount && claimCount > 0) {
+        // Has existing claims - reject the entire update with 409
+        return NextResponse.json(
+          { error: "Slot configuration can't be changed after signups exist. Unclaim all slots first." },
+          { status: 409 }
+        );
+      }
+    }
+  }
+
+  // Now safe to apply the update
   const { data: event, error } = await supabase
     .from("events")
     .update(updates)
@@ -260,6 +308,32 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Regenerate timeslots if needed (we already verified no claims exist)
+  if (regenNeeded) {
+    const { data: existingSlots } = await supabase
+      .from("event_timeslots")
+      .select("id")
+      .eq("event_id", eventId);
+
+    if (existingSlots && existingSlots.length > 0) {
+      // Slots exist but no claims - safe to regenerate
+      const { error: regenError } = await supabase.rpc("generate_event_timeslots", { p_event_id: eventId });
+      if (regenError) {
+        console.error(`[PATCH /api/my-events/${eventId}] Timeslot regeneration error:`, regenError.message);
+      } else {
+        console.log(`[PATCH /api/my-events/${eventId}] Timeslots regenerated (${body.total_slots} slots)`);
+      }
+    } else {
+      // No existing slots - generate fresh
+      const { error: genError } = await supabase.rpc("generate_event_timeslots", { p_event_id: eventId });
+      if (genError) {
+        console.error(`[PATCH /api/my-events/${eventId}] Timeslot generation error:`, genError.message);
+      } else {
+        console.log(`[PATCH /api/my-events/${eventId}] Timeslots generated (${body.total_slots} slots)`);
+      }
+    }
   }
 
   return NextResponse.json(event);

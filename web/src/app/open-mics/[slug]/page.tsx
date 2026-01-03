@@ -124,6 +124,11 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
     notFound();
   }
 
+  // DSC events should be viewed at /events/[id] which supports timeslots and RSVP
+  if ((event as { is_dsc_event?: boolean }).is_dsc_event) {
+    redirect(`/events/${event.id}`);
+  }
+
   if (isUUID && event.slug) {
     // If the user accessed by UUID and the event has a canonical slug, redirect there.
     redirect(`/open-mics/${event.slug}`);
