@@ -21,8 +21,10 @@ function getInitials(name: string): string {
 }
 
 export function StudioCard({ studio, className, compact = false }: StudioCardProps) {
+  // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
+  const studioPath = `/studios/${studio.slug || studio.id}`;
   return (
-    <Link href={`/studios/${studio.id}`} className="block h-full group">
+    <Link href={studioPath} className="block h-full group">
       <article
         className={cn(
           "h-full overflow-hidden card-spotlight",

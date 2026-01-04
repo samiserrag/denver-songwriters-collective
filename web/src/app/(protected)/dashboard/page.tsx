@@ -251,13 +251,13 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap gap-4 text-sm">
               {/* Profile-specific links */}
               {(p?.is_songwriter || p?.role === "performer") && (
-                <Link href={`/songwriters/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">
+                <Link href={`/songwriters/${p?.slug || user.id}`} className="text-[var(--color-accent-primary)] hover:underline">
                   View Public Profile
                 </Link>
               )}
               {(p?.is_studio || p?.role === "studio") && (
                 <>
-                  <Link href={`/studios/${user.id}`} className="text-[var(--color-accent-primary)] hover:underline">
+                  <Link href={`/studios/${p?.slug || user.id}`} className="text-[var(--color-accent-primary)] hover:underline">
                     View Studio Profile
                   </Link>
                   <Link href="/dashboard/studio-appointments" className="text-[var(--color-accent-primary)] hover:underline">

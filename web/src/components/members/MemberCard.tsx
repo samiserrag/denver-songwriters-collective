@@ -84,13 +84,15 @@ function getLabel(member: Member): string {
 
 /**
  * Get profile link based on identity flags (Studio -> /studios, others -> /songwriters)
+ * Prefers slug for SEO-friendly URLs, falls back to id for backward compatibility
  */
 function getProfileLink(member: Member): string {
+  const identifier = member.slug || member.id;
   if (isMemberStudio(member)) {
-    return `/studios/${member.id}`;
+    return `/studios/${identifier}`;
   }
   // All other members (songwriters, hosts, fans) go to /songwriters/[id]
-  return `/songwriters/${member.id}`;
+  return `/songwriters/${identifier}`;
 }
 
 export function MemberCard({ member, className }: MemberCardProps) {

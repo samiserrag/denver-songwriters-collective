@@ -1656,6 +1656,41 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_admin_notifications: boolean
+          email_claim_updates: boolean
+          email_event_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_admin_notifications?: boolean
+          email_claim_updates?: boolean
+          email_event_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_admin_notifications?: boolean
+          email_claim_updates?: boolean
+          email_event_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -2711,6 +2746,28 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "event_slots"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_notification_preferences: {
+        Args: {
+          p_email_admin_notifications?: boolean
+          p_email_claim_updates?: boolean
+          p_email_event_updates?: boolean
+          p_user_id: string
+        }
+        Returns: {
+          created_at: string
+          email_admin_notifications: boolean
+          email_claim_updates: boolean
+          email_event_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notification_preferences"
           isOneToOne: true
           isSetofReturn: false
         }

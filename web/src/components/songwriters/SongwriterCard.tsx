@@ -24,8 +24,10 @@ function getInitials(name: string): string {
 }
 
 export function SongwriterCard({ songwriter, className }: SongwriterCardProps) {
+  // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
+  const profilePath = `/songwriters/${songwriter.slug || songwriter.id}`;
   return (
-    <Link href={`/songwriters/${songwriter.id}`} className="block h-full group focus-visible:outline-none">
+    <Link href={profilePath} className="block h-full group focus-visible:outline-none">
       <article
         className={cn(
           "h-full overflow-hidden card-spotlight",

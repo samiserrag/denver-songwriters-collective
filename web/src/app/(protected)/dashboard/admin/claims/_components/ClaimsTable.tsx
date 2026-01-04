@@ -29,6 +29,7 @@ interface EventClaim {
   } | null;
   requester: {
     id: string;
+    slug: string | null;
     full_name: string | null;
     email: string | null;
   } | null;
@@ -241,7 +242,7 @@ export default function ClaimsTable({
                   {claim.requester ? (
                     <div>
                       <Link
-                        href={`/songwriters/${claim.requester.id}`}
+                        href={`/songwriters/${claim.requester.slug || claim.requester.id}`}
                         className="text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)]"
                       >
                         {claim.requester.full_name || "Unknown"}

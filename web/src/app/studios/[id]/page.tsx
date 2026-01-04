@@ -26,17 +26,29 @@ function mapDBServiceToService(service: DBService): StudioService {
   };
 }
 
+// Check if string is a valid UUID
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 export default async function StudioDetailPage({ params }: StudioDetailPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  // Query using identity flags with legacy role fallback
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .or("is_studio.eq.true,role.eq.studio")
-    .single();
+  // Support both UUID and slug lookups for backward compatibility
+  const { data: profile, error } = isUUID(id)
+    ? await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .or("is_studio.eq.true,role.eq.studio")
+        .single()
+    : await supabase
+        .from("profiles")
+        .select("*")
+        .eq("slug", id)
+        .or("is_studio.eq.true,role.eq.studio")
+        .single();
 
   if (error || !profile) {
     notFound();

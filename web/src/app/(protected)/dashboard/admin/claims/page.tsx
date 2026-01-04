@@ -26,6 +26,7 @@ interface EventClaim {
   } | null;
   requester: {
     id: string;
+    slug: string | null;
     full_name: string | null;
     email: string | null;
   } | null;
@@ -76,7 +77,7 @@ export default async function AdminClaimsPage() {
   const { data: requesters } = requesterIds.length > 0
     ? await supabase
         .from("profiles")
-        .select("id, full_name, email")
+        .select("id, slug, full_name, email")
         .in("id", requesterIds)
     : { data: [] };
 

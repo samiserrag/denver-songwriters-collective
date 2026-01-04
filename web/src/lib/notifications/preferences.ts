@@ -62,9 +62,9 @@ export async function upsertPreferences(
 ): Promise<NotificationPreferences | null> {
   const { data, error } = await supabase.rpc("upsert_notification_preferences", {
     p_user_id: userId,
-    p_email_claim_updates: patch.email_claim_updates ?? null,
-    p_email_event_updates: patch.email_event_updates ?? null,
-    p_email_admin_notifications: patch.email_admin_notifications ?? null,
+    p_email_claim_updates: patch.email_claim_updates,
+    p_email_event_updates: patch.email_event_updates,
+    p_email_admin_notifications: patch.email_admin_notifications,
   });
 
   if (error) {

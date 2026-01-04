@@ -16,6 +16,7 @@ interface TimeslotClaim extends DBTimeslotClaim {
   // Joined profile data
   member?: {
     id: string;
+    slug: string | null;
     full_name: string | null;
   } | null;
 }
@@ -79,7 +80,7 @@ export function TimeslotSection({
         .from("timeslot_claims")
         .select(`
           *,
-          member:profiles!timeslot_claims_member_id_fkey(id, full_name)
+          member:profiles!timeslot_claims_member_id_fkey(id, slug, full_name)
         `)
         .in("timeslot_id", slotIds)
         .not("status", "in", "(cancelled,no_show)");
@@ -342,7 +343,7 @@ export function TimeslotSection({
                   </div>
                 ) : (
                   <Link
-                    href={`/songwriters/${slot.claim.member.id}`}
+                    href={`/songwriters/${slot.claim.member.slug || slot.claim.member.id}`}
                     className="group block"
                   >
                     <p className="text-base font-semibold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic group-hover:underline">

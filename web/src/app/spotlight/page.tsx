@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 interface SpotlightProfile {
   id: string;
+  slug: string | null;
   full_name: string | null;
   bio: string | null;
   avatar_url: string | null;
@@ -34,7 +35,7 @@ export default async function SpotlightPage() {
   // Include identity flags for proper display/linking
   const { data: currentSpotlights } = await supabase
     .from("profiles")
-    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
+    .select("id, slug, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
     .eq("is_featured", true)
     .eq("is_public", true)
     .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,role.in.(performer,host,studio)")
@@ -44,7 +45,7 @@ export default async function SpotlightPage() {
   // We'll show anyone with a featured_at timestamp who isn't currently featured
   const { data: previousSpotlights } = await supabase
     .from("profiles")
-    .select("id, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
+    .select("id, slug, full_name, bio, avatar_url, role, featured_at, is_featured, is_songwriter, is_host, is_studio, is_fan, spotlight_type")
     .eq("is_featured", false)
     .eq("is_public", true)
     .not("featured_at", "is", null)
@@ -83,9 +84,11 @@ export default async function SpotlightPage() {
   };
 
   const getProfileLink = (profile: SpotlightProfile) => {
+    // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
+    const identifier = profile.slug || profile.id;
     // Studios -> /studios/[id], everyone else -> /songwriters/[id]
-    if (isProfileStudio(profile)) return `/studios/${profile.id}`;
-    return `/songwriters/${profile.id}`;
+    if (isProfileStudio(profile)) return `/studios/${identifier}`;
+    return `/songwriters/${identifier}`;
   };
 
   return (

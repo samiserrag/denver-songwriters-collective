@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 
 interface Performer {
   id: string;
+  slug: string | null;
   full_name: string | null;
   avatar_url: string | null;
 }
@@ -98,7 +99,7 @@ export default function EventDisplayPage() {
         .from("timeslot_claims")
         .select(`
           id, timeslot_id, status,
-          member:profiles!timeslot_claims_member_id_fkey(id, full_name, avatar_url)
+          member:profiles!timeslot_claims_member_id_fkey(id, slug, full_name, avatar_url)
         `)
         .in("timeslot_id", slotIds)
         .in("status", ["confirmed", "performed"]);
@@ -137,7 +138,7 @@ export default function EventDisplayPage() {
       const newQrCodes = new Map<string, string>();
       for (const slot of slotsWithClaims) {
         if (slot.claim?.member?.id) {
-          const profileUrl = `${SITE_URL}/songwriters/${slot.claim.member.id}`;
+          const profileUrl = `${SITE_URL}/songwriters/${slot.claim.member.slug || slot.claim.member.id}`;
           try {
             const qrDataUrl = await QRCode.toDataURL(profileUrl, {
               width: 100,

@@ -225,12 +225,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     .eq("event_id", id);
 
   // Fetch host profiles if there are hosts
-  let hosts: Array<{ id: string; full_name: string | null; avatar_url: string | null }> = [];
+  let hosts: Array<{ id: string; slug: string | null; full_name: string | null; avatar_url: string | null }> = [];
   if (eventHosts && eventHosts.length > 0) {
     const hostIds = eventHosts.map((h) => h.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_url")
+      .select("id, slug, full_name, avatar_url")
       .in("id", hostIds);
     hosts = profiles || [];
   }
@@ -644,7 +644,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 {hosts.map((host) => host && (
                   <Link
                     key={host.id}
-                    href={`/songwriters/${host.id}`}
+                    href={`/songwriters/${host.slug || host.id}`}
                     className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] transition-colors"
                   >
                     {host.avatar_url ? (

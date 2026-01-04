@@ -64,6 +64,7 @@ export interface SocialLinks {
 
 export interface Songwriter {
   id: string;
+  slug?: string | null;
   name: string;
   bio?: string;
   genre?: string;
@@ -111,6 +112,7 @@ export interface Host {
 
 export interface Studio {
   id: string;
+  slug?: string | null;
   name: string;
   description?: string;
   imageUrl?: string;
@@ -169,6 +171,7 @@ export type MemberRole = "member" | "songwriter" | "performer" | "host" | "studi
 
 export interface Member {
   id: string;
+  slug?: string | null;
   name: string;
   role: MemberRole;
   // Identity flags (preferred over role for UX)
