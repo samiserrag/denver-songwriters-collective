@@ -12,13 +12,13 @@ DECLARE
   final_slug text;
   counter int := 1;
 BEGIN
-  -- Generate base slug from title
-  base_slug := lower(regexp_replace(
-    coalesce(nullif(trim(event_title), ''), 'event'),
+  -- Generate base slug: lowercase first, then remove non-alphanumeric
+  base_slug := regexp_replace(
+    lower(coalesce(nullif(trim(event_title), ''), 'event')),
     '[^a-z0-9]+',
     '-',
     'g'
-  ));
+  );
   -- Trim leading/trailing hyphens
   base_slug := trim(both '-' from base_slug);
   -- Limit length

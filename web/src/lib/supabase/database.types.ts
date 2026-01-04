@@ -1689,41 +1689,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notification_preferences: {
-        Row: {
-          user_id: string
-          email_claim_updates: boolean
-          email_event_updates: boolean
-          email_admin_notifications: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          user_id: string
-          email_claim_updates?: boolean
-          email_event_updates?: boolean
-          email_admin_notifications?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          user_id?: string
-          email_claim_updates?: boolean
-          email_event_updates?: boolean
-          email_admin_notifications?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notification_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       occurrence_overrides: {
         Row: {
           created_at: string
@@ -2571,6 +2536,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_event_slug: {
+        Args: { event_id: string; event_title: string }
+        Returns: string
+      }
       generate_event_timeslots: {
         Args: { p_event_id: string }
         Returns: {
@@ -2587,6 +2556,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      generate_profile_slug: {
+        Args: { full_name: string; profile_id: string }
+        Returns: string
       }
       generate_recurring_event_instances: {
         Args: { p_parent_event_id: string; p_weeks_ahead?: number }
@@ -2644,28 +2617,6 @@ export type Database = {
       promote_timeslot_waitlist: {
         Args: { p_offer_window_minutes?: number; p_timeslot_id: string }
         Returns: string
-      }
-      upsert_notification_preferences: {
-        Args: {
-          p_user_id: string
-          p_email_claim_updates?: boolean | null
-          p_email_event_updates?: boolean | null
-          p_email_admin_notifications?: boolean | null
-        }
-        Returns: {
-          user_id: string
-          email_claim_updates: boolean
-          email_event_updates: boolean
-          email_admin_notifications: boolean
-          created_at: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "notification_preferences"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       rpc_admin_set_showcase_lineup: {
         Args: { event_id: string; performer_ids: string[] }

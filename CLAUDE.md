@@ -228,6 +228,40 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.35 — Email Signature + SEO-Friendly Slugs (January 2026)
+
+**Email Signature Update:**
+- Changed from "— Denver Songwriters Collective" to "— From Sami Serrag on Behalf of the Denver Songwriters Collective"
+- Sami's name links to `/songwriters/sami-serrag`
+- Updated both HTML and plain text email formats
+
+**Profile Slugs:**
+- Added `slug` column to `profiles` table
+- URLs now use readable slugs: `/songwriters/sami-serrag` instead of UUIDs
+- Auto-generated from `full_name` (e.g., "Sami Serrag" → "sami-serrag")
+- Collision handling: appends `-2`, `-3`, etc. for duplicates
+- Trigger auto-generates slug on insert or when name changes
+- Backward compatible: both UUID and slug lookups supported
+
+**Event Slugs Cleaned:**
+- Event slugs now use title only (no UUID suffix)
+- Example: `/events/open-mic-night` instead of `/events/open-mic-night-a407c8e5...`
+- Same collision handling and auto-generation trigger
+
+**Database Migrations:**
+- `supabase/migrations/20260103000001_add_profile_slug.sql` — Profile slug column + trigger
+- `supabase/migrations/20260103000002_clean_event_slugs.sql` — Event slug cleanup + trigger
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/lib/email/render.ts` | Email signature with Sami link |
+| `web/src/app/songwriters/[id]/page.tsx` | UUID + slug lookup support |
+| `web/src/app/events/[id]/page.tsx` | UUID + slug lookup support |
+
+---
+
 ### Phase 4.32–4.34 — UX Fixes, Host Guardrails, Smoke Suite (January 2026)
 
 **Phase 4.32: Host/Admin No-Signup Warning**
