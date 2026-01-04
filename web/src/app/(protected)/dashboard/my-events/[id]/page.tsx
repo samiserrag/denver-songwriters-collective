@@ -118,7 +118,7 @@ export default async function EditEventPage({
       <div className="max-w-4xl mx-auto">
         {/* Success Banner for newly created events */}
         {created === "true" && (
-          <CreatedSuccessBanner isDraft={status === "draft"} eventId={eventId} />
+          <CreatedSuccessBanner isDraft={status === "draft"} eventId={eventId} eventSlug={event.slug} />
         )}
 
         {/* Header */}
@@ -163,7 +163,7 @@ export default async function EditEventPage({
 
             {event.is_published && event.status === "active" && (
               <Link
-                href={`/events/${eventId}`}
+                href={`/events/${event.slug || eventId}`}
                 className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
                 target="_blank"
               >

@@ -6,9 +6,10 @@ import Link from "next/link";
 interface CreatedSuccessBannerProps {
   isDraft: boolean;
   eventId: string;
+  eventSlug?: string | null;
 }
 
-export default function CreatedSuccessBanner({ isDraft, eventId }: CreatedSuccessBannerProps) {
+export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: CreatedSuccessBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
@@ -39,7 +40,7 @@ export default function CreatedSuccessBanner({ isDraft, eventId }: CreatedSucces
           </p>
         ) : (
           <Link
-            href={`/events/${eventId}`}
+            href={`/events/${eventSlug || eventId}`}
             className="inline-block mt-2 text-sm text-emerald-600 hover:underline"
           >
             View Public Page →
