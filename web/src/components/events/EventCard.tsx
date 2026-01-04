@@ -65,9 +65,11 @@ export function EventCard({ event, onClick, className, compact = false, variant 
   };
 
   const CardWrapper = onClick ? "div" : Link;
+  // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
+  const eventHref = `/events/${event.slug || event.id}`;
   const wrapperProps = onClick
     ? { onClick: handleClick, role: "button", tabIndex: 0, className: "block h-full group cursor-pointer focus-visible:outline-none" }
-    : { href: `/events/${event.id}`, className: "block h-full group focus-visible:outline-none" };
+    : { href: eventHref, className: "block h-full group focus-visible:outline-none" };
 
   // Ensure venue renders as a simple string (name) for UI components
   const venueDisplay: string = typeof event.venue === "object" && event.venue && "name" in event.venue

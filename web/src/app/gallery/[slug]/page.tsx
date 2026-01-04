@@ -60,7 +60,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       cover_image_url,
       created_at,
       created_by,
-      event:events(id, title),
+      event:events(id, slug, title),
       venue:venues(id, name)
     `)
     .eq("slug", slug)
@@ -148,7 +148,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             {normalizedAlbum.event && (
               <span>
                 <Link
-                  href={`/events/${normalizedAlbum.event.id}`}
+                  href={`/events/${normalizedAlbum.event.slug || normalizedAlbum.event.id}`}
                   className="hover:text-[var(--color-text-accent)] transition-colors"
                 >
                   @ {normalizedAlbum.event.title}

@@ -232,10 +232,12 @@ function getVenueName(event: HappeningEvent): string | null {
 }
 
 function getDetailHref(event: HappeningEvent): string {
+  // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
+  const identifier = event.slug || event.id;
   if (event.event_type === "open_mic") {
-    return event.slug ? `/open-mics/${event.slug}` : `/open-mics/${event.id}`;
+    return `/open-mics/${identifier}`;
   }
-  return `/events/${event.id}`;
+  return `/events/${identifier}`;
 }
 
 // ============================================================

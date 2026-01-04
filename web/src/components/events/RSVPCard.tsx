@@ -8,6 +8,7 @@ import { formatTimeRemaining } from "@/lib/waitlistOfferClient";
 
 export interface RSVPCardEvent {
   id: string;
+  slug?: string | null;
   title: string;
   event_date: string | null;
   start_time: string | null;
@@ -184,7 +185,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
             <Link
-              href={`/events/${event.id}`}
+              href={`/events/${event.slug || event.id}`}
               className="text-lg font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)] transition-colors line-clamp-2"
             >
               {event.title}
@@ -267,7 +268,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
 
           {/* View Event link */}
           <Link
-            href={`/events/${event.id}`}
+            href={`/events/${event.slug || event.id}`}
             className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
             View Event

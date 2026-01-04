@@ -26,9 +26,11 @@ export function MissingDetailsChip({ event, compact = false, className }: Missin
   if (!missing) return null;
 
   // Build detail page URL with anchor to suggestion form
+  // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
+  const identifier = event.slug || event.id;
   const detailHref = event.event_type === "open_mic"
-    ? `/open-mics/${event.slug || event.id}#suggest-update`
-    : `/events/${event.id}#suggest-update`;
+    ? `/open-mics/${identifier}#suggest-update`
+    : `/events/${identifier}#suggest-update`;
 
   const tooltipText = `Know the details? Make this listing better!\n\nMissing:\n${reasons.map(r => `• ${r}`).join("\n")}`;
 
