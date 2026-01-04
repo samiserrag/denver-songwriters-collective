@@ -65,9 +65,22 @@ export default function BlogPostsTable({ posts }: Props) {
     setIsApproving(post.id);
     const supabase = createClient();
 
+    const newApprovalStatus = !post.is_approved;
+
+    // When approving a post that's marked for publication, auto-publish it
+    // This streamlines the flow: user submits for publication -> admin approves -> post goes live
+    const updates: { is_approved: boolean; is_published?: boolean; published_at?: string } = {
+      is_approved: newApprovalStatus,
+    };
+
+    if (newApprovalStatus && post.is_published && !post.published_at) {
+      // Post was submitted for publication and is being approved - set published_at
+      updates.published_at = new Date().toISOString();
+    }
+
     await supabase
       .from("blog_posts")
-      .update({ is_approved: !post.is_approved })
+      .update(updates)
       .eq("id", post.id);
 
     setIsApproving(null);

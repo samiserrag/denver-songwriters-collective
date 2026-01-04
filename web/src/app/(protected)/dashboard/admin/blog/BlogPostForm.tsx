@@ -46,7 +46,9 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
     content: post?.content ?? "",
     cover_image_url: post?.cover_image_url ?? "",
     tags: post?.tags?.join(", ") ?? "",
-    is_published: post?.is_published ?? false,
+    // Default to "submit for publication" for non-admins creating new posts
+    // (most users want their post published, not saved as a draft)
+    is_published: post?.is_published ?? !isAdmin,
   });
 
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialGallery);
@@ -222,7 +224,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       cover_image_url: formData.cover_image_url || null,
       tags: tagsArray,
       is_published: formData.is_published,
-      is_approved: isAdmin, // Auto-approve for admins, require approval for non-admins
+      is_approved: true, // Trust members - auto-approve all posts (admins can hide if needed)
       published_at: formData.is_published && !post?.is_published
         ? new Date().toISOString()
         : undefined,
@@ -644,13 +646,10 @@ Regular paragraph text here. Use **bold** for emphasis.
         />
         <div>
           <label htmlFor="is_published" className="text-[var(--color-text-primary)] font-medium cursor-pointer">
-            {isAdmin ? "Publish immediately" : "Submit for publication"}
+            Publish now
           </label>
           <p className="text-[var(--color-text-tertiary)] text-sm">
-            {isAdmin
-              ? (formData.is_published ? "This post will be visible to everyone" : "Save as draft for later")
-              : (formData.is_published ? "This post will be submitted for admin approval" : "Save as draft for later")
-            }
+            {formData.is_published ? "This post will be visible to everyone" : "Save as draft for later"}
           </p>
         </div>
       </div>

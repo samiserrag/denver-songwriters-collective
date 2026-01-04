@@ -116,13 +116,14 @@ These issues have been resolved and are now guarded by regression tests to preve
 
 ## Resolution Plan
 
-All issues resolved or accepted. **Lint warnings: 0**. **Tests: 550+ passing**.
+All issues resolved or accepted. **Lint warnings: 0**. **Tests: 661 passing**.
 
 **Current Status**: 12 of 13 issues resolved; 1 accepted (footer heading order is decorative).
 
 **Phase 4.30 Track:** Gallery + Comments — CLOSED (January 2026)
 **Phase 4.21 Track:** Occurrence Overrides — COMPLETE (January 2026)
 **Phase 4.22 Track:** Editing + Ownership UX — COMPLETE (January 2026)
+**Phase 4.32 Track:** Trust-Based Content Model — COMPLETE (January 2026)
 
 ---
 

@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.25):** Lint warnings = 0. All tests passing (600+). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.32):** Lint warnings = 0. All tests passing (661). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -225,6 +225,33 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.32 — Trust-Based Content Model (January 2026)
+
+**Philosophy:** We trust our members. Content goes live immediately without admin approval. Admins retain the ability to hide content if needed.
+
+**Events:**
+- Any member can create events (no host approval required)
+- Only approved hosts see "Is this a DSC Event" toggle
+- Non-DSC events are community events, not officially endorsed
+- Events publish immediately when creator toggles "Published"
+
+**Gallery:**
+- Photos appear immediately in the gallery on upload
+- Admins can hide photos that violate community guidelines
+
+**Blog:**
+- Posts go live immediately when published
+- No approval queue - direct publishing for all members
+- Admins can hide posts if needed
+
+**Key Implementation:**
+- `is_approved: true` set automatically on all content creation
+- `canCreateDSC` prop controls DSC toggle visibility in EventForm
+- Gallery upload toast: "uploaded successfully!" (not "pending review")
+- Blog form: "Publish now" (not "Submit for publication")
 
 ---
 

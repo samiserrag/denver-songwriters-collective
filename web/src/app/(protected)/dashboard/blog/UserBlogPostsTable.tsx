@@ -42,17 +42,10 @@ export default function UserBlogPostsTable({ posts }: Props) {
   };
 
   const getStatusBadge = (post: BlogPost) => {
-    if (post.is_published && post.is_approved) {
+    if (post.is_published) {
       return (
         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
           Published
-        </span>
-      );
-    }
-    if (post.is_published && !post.is_approved) {
-      return (
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-          Pending Approval
         </span>
       );
     }
@@ -66,9 +59,9 @@ export default function UserBlogPostsTable({ posts }: Props) {
   return (
     <>
       {/* Info banner */}
-      <div className="mb-6 p-4 bg-blue-100 border border-blue-300 rounded-lg">
-        <p className="text-blue-700 text-sm">
-          <strong>How it works:</strong> When you submit a post for publication, it will be reviewed by an admin before appearing on the public blog. You&apos;ll see the status update here once it&apos;s approved.
+      <div className="mb-6 p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
+        <p className="text-[var(--color-text-secondary)] text-sm">
+          <strong className="text-[var(--color-text-primary)]">Share your story:</strong> When you publish a post, it goes live immediately on the blog for the community to read.
         </p>
       </div>
 
@@ -117,7 +110,7 @@ export default function UserBlogPostsTable({ posts }: Props) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    {post.is_published && post.is_approved && (
+                    {post.is_published && (
                       <Link
                         href={`/blog/${post.slug}`}
                         target="_blank"

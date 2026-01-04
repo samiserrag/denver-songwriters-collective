@@ -361,7 +361,7 @@ export default function UserGalleryUpload({
           .from("gallery-images")
           .getPublicUrl(fileName);
 
-        // Insert into database (pending approval)
+        // Insert into database (auto-approved - trust members)
         // sort_order preserves user's drag-and-drop order
         // Mutual exclusivity: use custom fields XOR FK fields
         const { error: insertError } = await supabase
@@ -379,7 +379,7 @@ export default function UserGalleryUpload({
             custom_event_name: useCustomEvent && customEventName.trim() ? customEventName.trim() : null,
             custom_event_date: useCustomEvent && customEventDate ? customEventDate : null,
             uploaded_by: userId,
-            is_approved: false, // Requires admin approval
+            is_approved: true, // Trust members - auto-approve all uploads (admins can hide if needed)
           });
 
         if (insertError) throw insertError;
@@ -412,7 +412,7 @@ export default function UserGalleryUpload({
     setIsUploading(false);
 
     if (successCount > 0) {
-      toast.success(`${successCount} photo${successCount > 1 ? "s" : ""} uploaded! Pending review.`);
+      toast.success(`${successCount} photo${successCount > 1 ? "s" : ""} uploaded successfully!`);
       // Clear successful uploads
       setFiles(prev => prev.filter(f => f.status !== "done"));
       setCaption("");
