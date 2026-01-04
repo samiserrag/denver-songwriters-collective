@@ -130,7 +130,7 @@ export async function sendOfferNotifications(
   // Get event details
   const { data: eventData } = await supabase
     .from("events")
-    .select("title, event_date, start_time, venue_name")
+    .select("title, slug, event_date, start_time, venue_name")
     .eq("id", eventId)
     .single();
 
@@ -143,13 +143,16 @@ export async function sendOfferNotifications(
   const { data: userData } = await supabase.auth.admin.getUserById(userId);
   const userEmail = userData?.user?.email;
 
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventData.slug || eventId;
+
   // Send in-app notification
   const { error: notifyError } = await supabase.rpc("create_user_notification", {
     p_user_id: userId,
     p_type: "waitlist_offer",
     p_title: "A Spot Opened Up!",
     p_message: `A spot is available for "${eventData.title}". Confirm within 24 hours to secure it!`,
-    p_link: `/events/${eventId}?confirm=true`,
+    p_link: `/events/${eventIdentifier}?confirm=true`,
   });
 
   if (notifyError) {
@@ -165,6 +168,7 @@ export async function sendOfferNotifications(
         eventTime: eventData.start_time || "TBA",
         venueName: eventData.venue_name || "TBA",
         eventId,
+        eventSlug: eventData.slug,
         offerExpiresAt,
       });
 
