@@ -27,12 +27,12 @@ echo ""
 # Helper function for test results
 pass() {
     echo -e "${GREEN}[PASS]${NC} $1"
-    ((PASS_COUNT++))
+    PASS_COUNT=$((PASS_COUNT + 1))
 }
 
 fail() {
     echo -e "${RED}[FAIL]${NC} $1"
-    ((FAIL_COUNT++))
+    FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
 warn() {
@@ -80,14 +80,14 @@ else
     warn "Open mics route returned $HTTP_CODE (expected 404 for test slug)"
 fi
 
-# Test 5: API health check (events endpoint)
+# Test 5: API health check (search endpoint)
 echo ""
 echo "Test 5: API responds"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/auth/session" 2>/dev/null || echo "error")
-if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ]; then
-    pass "Auth API endpoint responds ($HTTP_CODE)"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/search?q=test" 2>/dev/null || echo "error")
+if [ "$HTTP_CODE" = "200" ]; then
+    pass "Search API endpoint responds ($HTTP_CODE)"
 else
-    fail "Auth API returned unexpected code: $HTTP_CODE"
+    fail "Search API returned unexpected code: $HTTP_CODE"
 fi
 
 # Test 6: Static assets load (theme CSS)
