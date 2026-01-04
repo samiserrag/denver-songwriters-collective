@@ -12,7 +12,11 @@ import {
   getGreeting,
   paragraph,
   createButton,
+  quoteBlock,
+  infoBox,
+  rsvpsDashboardLink,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface EventCancelledEmailParams {
@@ -34,36 +38,32 @@ export function getEventCancelledEmail(params: EventCancelledEmailParams): {
   const safeTitle = escapeHtml(eventTitle);
   const safeVenue = escapeHtml(venueName);
   const safeDate = escapeHtml(eventDate);
-  const safeReason = reason ? escapeHtml(reason) : null;
-  const safeHostName = hostName ? escapeHtml(hostName) : null;
 
-  const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
+  const happeningsUrl = `${SITE_URL}/happenings`;
 
   const subject = `Cancelled: ${eventTitle} on ${eventDate} — The Denver Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
 
-${paragraph(`Unfortunately, <strong>${safeTitle}</strong> scheduled for ${safeDate} at ${safeVenue} has been cancelled.`)}
-
-${safeReason ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0 0 8px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
-    ${safeHostName ? `Note from ${safeHostName}` : "Host's note"}
+<div style="background-color: ${EMAIL_COLORS.errorBg}; border: 1px solid ${EMAIL_COLORS.errorBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0; color: ${EMAIL_COLORS.error}; font-size: 15px; font-weight: 600;">
+    Event cancelled
   </p>
-  <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6;">${safeReason}</p>
+  <p style="margin: 8px 0 0 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px;">
+    <strong>${safeTitle}</strong> on ${safeDate} at ${safeVenue}
+  </p>
 </div>
-` : ""}
+
+${reason ? quoteBlock(hostName ? `Note from ${hostName}` : "Host's note", reason) : ""}
 
 ${paragraph("We're sorry for any inconvenience. We hope to see you at another event soon!", { muted: true })}
 
-<div style="background-color: #22c55e15; border: 1px solid #22c55e30; border-radius: 8px; padding: 14px 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #22c55e; font-size: 15px; font-weight: 500;">
-    Looking for something else this week?
-  </p>
-</div>
+${infoBox("🎵", "Looking for something else this week?")}
 
-${createButton("Find Another Open Mic", openMicsUrl)}
+${createButton("Browse Happenings", `${SITE_URL}/happenings`)}
+
+${rsvpsDashboardLink()}
 `;
 
   const html = wrapEmailHtml(htmlContent);
@@ -71,11 +71,13 @@ ${createButton("Find Another Open Mic", openMicsUrl)}
   const textContent = `${userName?.trim() ? `Hi ${userName.trim()},` : "Hi there,"}
 
 Unfortunately, ${eventTitle} scheduled for ${safeDate} at ${safeVenue} has been cancelled.
-${safeReason ? `\n${safeHostName ? `Note from ${safeHostName}` : "Host's note"}: ${safeReason}\n` : ""}
+${reason ? `\n${hostName ? `Note from ${hostName}` : "Host's note"}: ${reason}\n` : ""}
 We're sorry for any inconvenience. We hope to see you at another event soon!
 
 Looking for something else this week?
-Find another open mic: ${openMicsUrl}`;
+Browse happenings: ${happeningsUrl}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps`;
 
   const text = wrapEmailText(textContent);
 

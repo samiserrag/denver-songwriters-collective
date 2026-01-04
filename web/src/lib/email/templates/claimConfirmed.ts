@@ -12,6 +12,8 @@ import {
   getGreeting,
   paragraph,
   createSecondaryLink,
+  successBox,
+  infoBox,
 } from "../render";
 
 export interface ClaimConfirmedEmailParams {
@@ -58,11 +60,7 @@ ${paragraph(`Great news! You're confirmed for <strong>${safeEventTitle}</strong>
 
 ${paragraph(slotInfo)}
 
-<div style="background-color: #22c55e15; border: 1px solid #22c55e30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #22c55e; font-size: 15px; font-weight: 500;">
-    You're on the lineup!
-  </p>
-</div>
+${successBox("🎵", "You're on the lineup!")}
 
 ${paragraph("Can't wait to hear you — see you soon!", { muted: true })}
 
@@ -112,11 +110,7 @@ ${paragraph(`Thanks for signing up for <strong>${safeEventTitle}</strong>!`)}
 
 ${paragraph(positionInfo)}
 
-<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #f59e0b; font-size: 15px; font-weight: 500;">
-    We'll email you right away if a spot opens up.
-  </p>
-</div>
+${infoBox("📬", "We'll email you right away if a spot opens up.")}
 
 ${paragraph("Spots open up more often than you'd think — keep an eye on your inbox!", { muted: true })}
 

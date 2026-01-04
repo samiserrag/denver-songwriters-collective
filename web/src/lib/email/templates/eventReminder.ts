@@ -11,8 +11,10 @@ import {
   wrapEmailText,
   getGreeting,
   paragraph,
-  createButton,
+  eventCard,
+  rsvpsDashboardLink,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface EventReminderEmailParams {
@@ -67,19 +69,19 @@ ${paragraph(`<strong>${safeTitle}</strong> is ${timeWord} — can't wait to see 
 
 ${slotInfo ? paragraph(slotInfo) : ""}
 
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td style="padding-bottom: 12px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
-        <p style="margin: 0; color: #d4a853; font-size: 15px;">${safeDate} at ${safeTime}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 15px; font-weight: 600;">${safeDate} at ${safeTime}</p>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
-        <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
-        ${safeAddress ? `<p style="margin: 4px 0 0 0; color: #a3a3a3; font-size: 14px;">${safeAddress}</p>` : ""}
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${safeVenue}</p>
+        ${safeAddress ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${safeAddress}</p>` : ""}
       </td>
     </tr>
   </table>
@@ -87,10 +89,12 @@ ${slotInfo ? paragraph(slotInfo) : ""}
 
 ${paragraph("Should be a good one. See you soon!", { muted: true })}
 
-${createButton("View Event Details", eventUrl)}
+${eventCard(eventTitle, eventUrl)}
 
-<p style="margin: 24px 0 0 0; color: #737373; font-size: 13px;">
-  Plans changed? <a href="${cancelUrl}" style="color: #d4a853; text-decoration: none;">Let us know</a> so we can update the list.
+${rsvpsDashboardLink()}
+
+<p style="margin: 24px 0 0 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
+  Plans changed? <a href="${cancelUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Let us know</a> so we can update the list.
 </p>
 `;
 
@@ -107,6 +111,8 @@ WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 Should be a good one. See you soon!
 
 View event: ${eventUrl}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 
 Plans changed? Let us know: ${cancelUrl}`;
 

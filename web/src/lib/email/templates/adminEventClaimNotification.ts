@@ -9,7 +9,7 @@
  */
 
 import { escapeHtml } from "@/lib/highlight";
-import { wrapEmailHtml, wrapEmailText, SITE_URL } from "../render";
+import { wrapEmailHtml, wrapEmailText, SITE_URL, EMAIL_COLORS } from "../render";
 
 export interface AdminEventClaimNotificationEmailParams {
   requesterName: string;
@@ -33,23 +33,23 @@ export function getAdminEventClaimNotificationEmail(params: AdminEventClaimNotif
   const subject = `[DSC Claim] ${requesterName} wants to host ${eventTitle}`;
 
   const htmlContent = `
-<p style="margin: 0 0 24px 0; color: #a3a3a3; font-size: 15px; line-height: 1.6;">
+<p style="margin: 0 0 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 15px; line-height: 1.6;">
   New event claim request:
 </p>
 
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 0 0 24px 0;">
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 0 0 24px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td style="padding-bottom: 16px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Requester</p>
-        <p style="margin: 0; color: #ffffff; font-size: 16px;">${safeName}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Requester</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 16px;">${safeName}</p>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Event</p>
-        <p style="margin: 0; color: #d4a853; font-size: 16px;">
-          <a href="${eventUrl}" style="color: #d4a853; text-decoration: none;">${safeTitle}</a>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Event</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 16px;">
+          <a href="${eventUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">${safeTitle}</a>
         </p>
       </td>
     </tr>
@@ -58,8 +58,8 @@ export function getAdminEventClaimNotificationEmail(params: AdminEventClaimNotif
 
 <table cellpadding="0" cellspacing="0">
   <tr>
-    <td style="background: linear-gradient(135deg, #d4a853 0%, #b8943f 100%); border-radius: 8px;">
-      <a href="${claimsUrl}" style="display: inline-block; padding: 12px 24px; color: #0a0a0a; text-decoration: none; font-weight: 600; font-size: 14px;">
+    <td style="background-color: ${EMAIL_COLORS.accent}; border-radius: 8px;">
+      <a href="${claimsUrl}" style="display: inline-block; padding: 12px 24px; color: ${EMAIL_COLORS.textOnAccent}; text-decoration: none; font-weight: 600; font-size: 14px;">
         Review claim
       </a>
     </td>

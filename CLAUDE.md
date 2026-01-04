@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.32):** Lint warnings = 0. All tests passing (661). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.33):** Lint warnings = 0. All tests passing (661). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -225,6 +225,46 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.33 — Email Template UX Improvements (January 2026)
+
+**Visual Redesign:**
+- Navy blue header (`#1e3a5f`) with bright blue accents (`#2563eb`)
+- Logo image in email header (hosted on Supabase storage)
+- Centralized `EMAIL_COLORS` constant for consistent theming
+- Helper functions for reusable email components
+
+**Copy Updates:**
+- Host approval email: "Create DSC official events" (clarifies host privileges)
+- Newsletter welcome: Button now links to `/happenings` (not `/happenings?type=open_mic`)
+- Event cancellation emails: "Browse Happenings" button (not "Find Another Open Mic")
+
+**New Email Helper Functions (`render.ts`):**
+- `eventCard(eventTitle, eventUrl)` — Card-style link with event name and arrow
+- `rsvpsDashboardLink()` — "View all your RSVPs →" link to dashboard
+
+**Event-Related Emails Now Include:**
+- Event name as clickable card link to event detail page
+- RSVPs dashboard link for easy access to all user's RSVPs
+- Both HTML and plain text versions updated
+
+**Templates Updated:**
+- `rsvpConfirmation.ts` — Confirmed and waitlist variants
+- `eventReminder.ts` — Tonight/tomorrow reminders
+- `eventUpdated.ts` — Event detail changes
+- `eventCancelled.ts` — Full event cancellations
+- `waitlistPromotion.ts` — Spot opened notifications
+- `occurrenceCancelledHost.ts` — Single occurrence cancellations
+- `occurrenceModifiedHost.ts` — Single occurrence modifications
+- `hostApproval.ts` — Host approval copy update
+- `newsletterWelcome.ts` — Button and link updates
+
+**Preview Script:**
+- `scripts/preview-all-emails.ts` — Generates HTML previews for all 23 templates
+- Run: `npx tsx scripts/preview-all-emails.ts`
+- Open: `scripts/email-previews/index.html`
 
 ---
 

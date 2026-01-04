@@ -11,9 +11,12 @@ import {
   wrapEmailText,
   getGreeting,
   paragraph,
-  createButton,
   createSecondaryLink,
+  successBox,
+  eventCard,
+  rsvpsDashboardLink,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface RsvpConfirmationEmailParams {
@@ -102,31 +105,29 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Great news! You're confirmed for <strong>${safeTitle}</strong>.`)}
 
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td style="padding-bottom: 12px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
-        <p style="margin: 0; color: #d4a853; font-size: 15px;">${safeDate} at ${safeTime}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 15px; font-weight: 600;">${safeDate} at ${safeTime}</p>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
-        <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
-        ${safeAddress ? `<p style="margin: 4px 0 0 0; color: #a3a3a3; font-size: 14px;">${safeAddress}</p>` : ""}
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${safeVenue}</p>
+        ${safeAddress ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${safeAddress}</p>` : ""}
       </td>
     </tr>
   </table>
 </div>
 
-<div style="background-color: #22c55e15; border: 1px solid #22c55e30; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
-  <p style="margin: 0; color: #22c55e; font-size: 15px; font-weight: 500;">
-    You're all set! See you there.
-  </p>
-</div>
+${successBox("✓", "You're all set! See you there.")}
 
-${createButton("View Event Details", eventUrl)}
+${eventCard(eventTitle, eventUrl)}
+
+${rsvpsDashboardLink()}
 
 ${createSecondaryLink("I can't make it anymore", cancelUrl)}
 `;
@@ -143,6 +144,8 @@ WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 You're all set! See you there.
 
 View event: ${eventUrl}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 
 Can't make it? Cancel here: ${cancelUrl}`;
 
@@ -178,33 +181,35 @@ ${paragraph(`Thanks for your interest in <strong>${safeTitle}</strong>!`)}
 
 ${paragraph(positionText)}
 
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td style="padding-bottom: 12px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
-        <p style="margin: 0; color: #d4a853; font-size: 15px;">${safeDate} at ${safeTime}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 15px; font-weight: 600;">${safeDate} at ${safeTime}</p>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
-        <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
-        ${safeAddress ? `<p style="margin: 4px 0 0 0; color: #a3a3a3; font-size: 14px;">${safeAddress}</p>` : ""}
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${safeVenue}</p>
+        ${safeAddress ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${safeAddress}</p>` : ""}
       </td>
     </tr>
   </table>
 </div>
 
-<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
-  <p style="margin: 0; color: #f59e0b; font-size: 15px; font-weight: 500;">
+<div style="background-color: ${EMAIL_COLORS.warningBg}; border: 1px solid ${EMAIL_COLORS.warningBorder}; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+  <p style="margin: 0; color: ${EMAIL_COLORS.warning}; font-size: 15px; font-weight: 500;">
     We'll email you right away if a spot opens up.
   </p>
 </div>
 
 ${paragraph("Spots open up more often than you'd think—keep an eye on your inbox!", { muted: true })}
 
-${createButton("View Event Details", eventUrl)}
+${eventCard(eventTitle, eventUrl)}
+
+${rsvpsDashboardLink()}
 
 ${createSecondaryLink("Remove me from the waitlist", cancelUrl)}
 `;
@@ -225,6 +230,8 @@ We'll email you right away if a spot opens up.
 Spots open up more often than you'd think—keep an eye on your inbox!
 
 View event: ${eventUrl}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 
 Remove me from the waitlist: ${cancelUrl}`;
 

@@ -13,7 +13,10 @@ import {
   paragraph,
   createButton,
   createSecondaryLink,
+  eventCard,
+  rsvpsDashboardLink,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface WaitlistPromotionEmailParams {
@@ -65,31 +68,35 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Good news! A spot just opened up at <strong>${safeTitle}</strong>, and you're next in line.`)}
 
-<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0 0 8px 0; color: #f59e0b; font-size: 15px; font-weight: 600;">
+<div style="background-color: ${EMAIL_COLORS.warningBg}; border: 1px solid ${EMAIL_COLORS.warningBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.warning}; font-size: 15px; font-weight: 600;">
     Confirm by ${escapeHtml(formattedExpiry)} to lock in your spot.
   </p>
-  ${expiryMessage ? `<p style="margin: 0; color: #a3a3a3; font-size: 13px;">${expiryMessage}</p>` : ""}
+  ${expiryMessage ? `<p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">${expiryMessage}</p>` : ""}
 </div>
 
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td style="padding-bottom: 12px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
-        <p style="margin: 0; color: #d4a853; font-size: 15px;">${safeDate} at ${safeTime}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 15px; font-weight: 600;">${safeDate} at ${safeTime}</p>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
-        <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${safeVenue}</p>
       </td>
     </tr>
   </table>
 </div>
 
 ${createButton("Confirm my spot", confirmUrl, "green")}
+
+${eventCard(eventTitle, `${SITE_URL}/events/${eventId}`)}
+
+${rsvpsDashboardLink()}
 
 ${paragraph("If you can't make it, no worries—just let us know so we can offer the spot to someone else.", { muted: true })}
 
@@ -111,6 +118,10 @@ WHERE: ${safeVenue}
 CONFIRM MY SPOT: ${confirmUrl}
 
 If you can't make it, no worries—just let us know so we can offer the spot to someone else.
+
+View event: ${SITE_URL}/events/${eventId}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 
 I can't make it: ${cancelUrl}`;
 

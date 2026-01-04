@@ -14,7 +14,11 @@ import {
   getGreeting,
   paragraph,
   createButton,
+  successBox,
+  neutralBox,
+  quoteBlock,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export type SuggestionStatus = "approved" | "rejected" | "needs_info";
@@ -24,6 +28,8 @@ export interface SuggestionResponseEmailParams {
   status: SuggestionStatus;
   isNewEvent: boolean;
   eventTitle?: string | null;
+  eventSlug?: string | null;
+  eventId?: string | null;
   adminMessage: string;
 }
 
@@ -32,9 +38,6 @@ const STATUS_CONFIG = {
     subjectNew: "Your open mic submission is live! — The Denver Songwriters Collective",
     subjectEdit: "Your suggestion was approved! — The Denver Songwriters Collective",
     emoji: "🎉",
-    boxBg: "#22c55e15",
-    boxBorder: "#22c55e30",
-    boxColor: "#22c55e",
     headlineNew: "Your open mic is now live on Denver Songwriters Collective!",
     headlineEdit: "Your correction has been applied!",
   },
@@ -42,9 +45,6 @@ const STATUS_CONFIG = {
     subjectNew: "About your open mic submission — The Denver Songwriters Collective",
     subjectEdit: "About your suggestion — The Denver Songwriters Collective",
     emoji: "💬",
-    boxBg: "#f5f5f515",
-    boxBorder: "#52525230",
-    boxColor: "#a3a3a3",
     headlineNew: "We weren't able to add this open mic just yet.",
     headlineEdit: "We weren't able to make this change.",
   },
@@ -52,9 +52,6 @@ const STATUS_CONFIG = {
     subjectNew: "Quick question about your open mic submission — The Denver Songwriters Collective",
     subjectEdit: "Quick question about your suggestion — The Denver Songwriters Collective",
     emoji: "🤔",
-    boxBg: "#f59e0b15",
-    boxBorder: "#f59e0b30",
-    boxColor: "#f59e0b",
     headlineNew: "We'd love a bit more info before adding this!",
     headlineEdit: "We need a bit more info to make this change.",
   },
@@ -65,10 +62,17 @@ export function getSuggestionResponseEmail(params: SuggestionResponseEmailParams
   html: string;
   text: string;
 } {
-  const { submitterName, status, isNewEvent, eventTitle, adminMessage } = params;
+  const { submitterName, status, isNewEvent, eventTitle, eventSlug, eventId, adminMessage } = params;
   const config = STATUS_CONFIG[status];
 
   const subject = isNewEvent ? config.subjectNew : config.subjectEdit;
+
+  // Build event link if we have the info
+  const eventLink = eventSlug
+    ? `${SITE_URL}/open-mics/${eventSlug}`
+    : eventId
+    ? `${SITE_URL}/events/${eventId}`
+    : null;
 
   // Personalized opening
   const openingLines = [
@@ -92,33 +96,35 @@ export function getSuggestionResponseEmail(params: SuggestionResponseEmailParams
     closing = "Just reply to this email with any additional info and we'll take another look!";
   }
 
+  // Build status box based on type
+  let statusBoxHtml = "";
+  if (status === "approved") {
+    statusBoxHtml = successBox(config.emoji, headline, eventTitle ? `Re: ${eventTitle}` : undefined);
+  } else if (status === "rejected") {
+    statusBoxHtml = neutralBox(config.emoji, headline, eventTitle ? `Re: ${eventTitle}` : undefined);
+  } else {
+    // needs_info - use warning style
+    statusBoxHtml = `<div style="background-color: ${EMAIL_COLORS.warningBg}; border: 1px solid ${EMAIL_COLORS.warningBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.warning}; font-size: 15px; font-weight: 600;">
+    ${config.emoji} ${escapeHtml(headline)}
+  </p>
+  ${eventTitle ? `<p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 14px;">Re: ${escapeHtml(eventTitle)}</p>` : ""}
+</div>`;
+  }
+
   const htmlContent = `
 ${paragraph(getGreeting(submitterName))}
 
 ${paragraph(opening)}
 
-<div style="background-color: ${config.boxBg}; border: 1px solid ${config.boxBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0 0 8px 0; color: ${config.boxColor}; font-size: 15px; font-weight: 600;">
-    ${config.emoji} ${headline}
-  </p>
-  ${eventTitle ? `<p style="margin: 0; color: #737373; font-size: 14px;">Re: ${escapeHtml(eventTitle)}</p>` : ""}
-</div>
+${statusBoxHtml}
 
-${adminMessage ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 16px; margin: 20px 0; border-left: 3px solid #d4a853;">
-  <p style="margin: 0 0 8px 0; color: #737373; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
-    From the DSC team:
-  </p>
-  <p style="margin: 0; color: #e5e5e5; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">
-${escapeHtml(adminMessage)}
-  </p>
-</div>
-` : ""}
+${adminMessage ? quoteBlock("From the DSC team:", adminMessage) : ""}
 
 ${paragraph(closing)}
 
-${status === "approved" && isNewEvent ? createButton("Check it out", `${SITE_URL}/happenings?type=open_mic`, "green") : ""}
-${status === "approved" && !isNewEvent ? createButton("View open mics", `${SITE_URL}/happenings?type=open_mic`) : ""}
+${status === "approved" && eventLink ? createButton("View the listing", eventLink, "green") : ""}
+${status === "approved" && !eventLink ? createButton("View open mics", `${SITE_URL}/happenings?type=open_mic`, "green") : ""}
 ${status === "needs_info" ? createButton("Submit more info", `${SITE_URL}/submit-open-mic`) : ""}
 `;
 
@@ -135,7 +141,8 @@ ${adminMessage ? `From the DSC team:\n${adminMessage}` : ""}
 
 ${closing}
 
-${status === "approved" ? `Check it out: ${SITE_URL}/happenings?type=open_mic` : ""}
+${status === "approved" && eventLink ? `View the listing: ${eventLink}` : ""}
+${status === "approved" && !eventLink ? `View open mics: ${SITE_URL}/happenings?type=open_mic` : ""}
 ${status === "needs_info" ? `Submit more info: ${SITE_URL}/submit-open-mic` : ""}`;
 
   const text = wrapEmailText(textContent);

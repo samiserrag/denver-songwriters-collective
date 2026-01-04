@@ -11,6 +11,8 @@ import {
   wrapEmailText,
   getGreeting,
   paragraph,
+  createButton,
+  infoBox,
   SITE_URL,
 } from "../render";
 
@@ -35,19 +37,13 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Thanks for claiming <strong>${safeTitle}</strong>. We've received your request and it's now under review.`)}
 
-<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #f59e0b; font-size: 15px; font-weight: 500;">
-    We'll email you once your claim is approved or if we need more information.
-  </p>
-</div>
+${infoBox("📋", "We'll email you once your claim is approved or if we need more information.")}
 
 ${paragraph("This usually takes 1-2 business days.", { muted: true })}
 
 ${paragraph(`In the meantime, check out other events in the community:`, { muted: true })}
 
-<p style="margin: 0; color: #737373; font-size: 14px;">
-  <a href="${happeningsUrl}" style="color: #d4a853; text-decoration: none;">Browse happenings</a>
-</p>
+${createButton("Browse happenings", happeningsUrl)}
 `;
 
   const html = wrapEmailHtml(htmlContent);

@@ -13,6 +13,7 @@ import {
   paragraph,
   createButton,
   createSecondaryLink,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface WaitlistOfferEmailParams {
@@ -50,8 +51,8 @@ ${paragraph(getGreeting(guestName))}
 
 ${paragraph(`Good news! A spot just opened up at <strong>${safeEventTitle}</strong>, and you're next in line.`)}
 
-<div style="background-color: #22c55e15; border: 1px solid #22c55e30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #22c55e; font-size: 15px; font-weight: 500;">
+<div style="background-color: ${EMAIL_COLORS.successBg}; border: 1px solid ${EMAIL_COLORS.successBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
+  <p style="margin: 0; color: ${EMAIL_COLORS.success}; font-size: 15px; font-weight: 500;">
     Confirm by ${escapeHtml(formattedExpiry)} to lock in your spot.
   </p>
 </div>

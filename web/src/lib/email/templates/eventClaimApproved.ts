@@ -12,7 +12,9 @@ import {
   getGreeting,
   paragraph,
   createButton,
+  successBox,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface EventClaimApprovedEmailParams {
@@ -38,15 +40,11 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Great news! Your claim for <strong>${safeTitle}</strong> has been approved.`)}
 
-<div style="background-color: #22c55e15; border: 1px solid #22c55e30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #22c55e; font-size: 15px; font-weight: 500;">
-    You're now the official host of this event!
-  </p>
-</div>
+${successBox("🎉", "You're now the official host of this event!")}
 
 ${paragraph("As the host, you can:")}
 
-<ul style="margin: 0 0 24px 0; padding-left: 20px; color: #a3a3a3; font-size: 15px; line-height: 1.8;">
+<ul style="margin: 0 0 24px 0; padding-left: 20px; color: ${EMAIL_COLORS.textSecondary}; font-size: 15px; line-height: 1.8;">
   <li>Edit event details (time, location, description)</li>
   <li>Manage RSVPs and the lineup</li>
   <li>Cancel or modify individual occurrences</li>
@@ -56,8 +54,8 @@ ${paragraph("Welcome to the table. We're glad you're here.", { muted: true })}
 
 ${createButton("Manage your event", dashboardUrl)}
 
-<p style="margin: 24px 0 0 0; color: #737373; font-size: 14px;">
-  <a href="${eventUrl}" style="color: #d4a853; text-decoration: none;">View event page</a>
+<p style="margin: 24px 0 0 0; color: ${EMAIL_COLORS.textMuted}; font-size: 14px;">
+  <a href="${eventUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">View event page</a>
 </p>
 `;
 

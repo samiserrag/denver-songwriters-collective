@@ -11,7 +11,9 @@ import {
   getGreeting,
   paragraph,
   createButton,
+  successBox,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface HostApprovalEmailParams {
@@ -34,23 +36,19 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph("Congratulations! Your request to become a host has been approved.")}
 
-<div style="background-color: #22c55e15; border: 1px solid #22c55e30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #22c55e; font-size: 15px; font-weight: 500;">
-    Your host privileges are now active!
-  </p>
-</div>
+${successBox("🎉", "Your host privileges are now active!")}
 
-${paragraph("As a host, you can:")}
+${paragraph("As an approved host, you can:")}
 
-<ul style="margin: 0 0 24px 0; padding-left: 20px; color: #a3a3a3; font-size: 15px; line-height: 1.8;">
-  <li>Create and manage your own events</li>
+<ul style="margin: 0 0 24px 0; padding-left: 20px; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.8;">
+  <li>Create DSC official events</li>
   <li>Track RSVPs and manage your lineup</li>
   <li>Be featured in the community directory</li>
 </ul>
 
 ${paragraph("We can't wait to see what you create!", { muted: true })}
 
-${createButton("Create your first event", dashboardUrl)}
+${createButton("Create your first event", dashboardUrl, "green")}
 `;
 
   const html = wrapEmailHtml(htmlContent);
@@ -61,8 +59,8 @@ Congratulations! Your request to become a host has been approved.
 
 Your host privileges are now active!
 
-As a host, you can:
-- Create and manage your own events
+As an approved host, you can:
+- Create DSC official events
 - Track RSVPs and manage your lineup
 - Be featured in the community directory
 

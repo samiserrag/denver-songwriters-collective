@@ -12,6 +12,7 @@ import {
   getGreeting,
   paragraph,
   createButton,
+  quoteBlock,
   SITE_URL,
 } from "../render";
 
@@ -40,12 +41,7 @@ ${paragraph(`Thanks for your interest in hosting <strong>${safeTitle}</strong>.`
 
 ${paragraph("After reviewing your claim, we're not able to approve it at this time.")}
 
-${safeReason ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0 0 8px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Feedback</p>
-  <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6;">${safeReason}</p>
-</div>
-` : ""}
+${safeReason ? quoteBlock("Feedback", reason!) : ""}
 
 ${paragraph("If you have questions or think there's been a mix-up, feel free to reply to this email.", { muted: true })}
 

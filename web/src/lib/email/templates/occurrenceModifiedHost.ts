@@ -13,8 +13,12 @@ import {
   wrapEmailText,
   getGreeting,
   paragraph,
-  createButton,
+  quoteBlock,
+  infoBox,
+  eventCard,
+  rsvpsDashboardLink,
   SITE_URL,
+  EMAIL_COLORS,
 } from "../render";
 
 export interface OccurrenceModifiedHostEmailParams {
@@ -56,9 +60,9 @@ export function getOccurrenceModifiedHostEmail(params: OccurrenceModifiedHostEma
     changesHtml += `
     <tr>
       <td style="padding-bottom: 12px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Time</p>
-        <p style="margin: 0; color: #ef4444; font-size: 15px; text-decoration: line-through;">${escapeHtml(changes.time.old)}</p>
-        <p style="margin: 4px 0 0 0; color: #22c55e; font-size: 15px; font-weight: 500;">${escapeHtml(changes.time.new)}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Time</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.error}; font-size: 15px; text-decoration: line-through;">${escapeHtml(changes.time.old)}</p>
+        <p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.success}; font-size: 15px; font-weight: 500;">${escapeHtml(changes.time.new)}</p>
       </td>
     </tr>`;
     changesText += `Time: ${changes.time.old} → ${changes.time.new}\n`;
@@ -69,41 +73,32 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`The details for <strong>${safeTitle}</strong> on ${safeDate} have been updated.`)}
 
-<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
-  <p style="margin: 0; color: #f59e0b; font-size: 14px; font-weight: 500;">
-    This update is for ${safeDate} only.
-  </p>
-</div>
+${infoBox("📅", `This update is for ${safeDate} only.`)}
 
 ${changesHtml ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
-  <p style="margin: 0 0 16px 0; color: #a3a3a3; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">What changed</p>
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+  <p style="margin: 0 0 16px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">What changed</p>
   <table width="100%" cellpadding="0" cellspacing="0">
     ${changesHtml}
   </table>
 </div>
 ` : ""}
 
-${safeNotes ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0 0 8px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Note from the host</p>
-  <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6;">${safeNotes}</p>
-</div>
-` : ""}
+${notes ? quoteBlock("Note from the host", notes) : ""}
 
-<div style="background-color: #262626; border-radius: 8px; padding: 20px; margin: 20px 0;">
-  <p style="margin: 0 0 16px 0; color: #a3a3a3; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Updated details</p>
+<div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+  <p style="margin: 0 0 16px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Updated details</p>
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
       <td style="padding-bottom: 12px;">
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
-        <p style="margin: 0; color: #d4a853; font-size: 15px;">${safeDate}${safeNewTime ? ` at ${safeNewTime}` : ""}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">When</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 15px; font-weight: 600;">${safeDate}${safeNewTime ? ` at ${safeNewTime}` : ""}</p>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="margin: 0 0 4px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
-        <p style="margin: 0; color: #ffffff; font-size: 15px;">${safeVenue}</p>
+        <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Where</p>
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${safeVenue}</p>
       </td>
     </tr>
   </table>
@@ -111,10 +106,12 @@ ${safeNotes ? `
 
 ${paragraph("Your spot is still reserved. If the new details don't work for you, just let us know.", { muted: true })}
 
-${createButton("View Updated Event", eventUrl)}
+${eventCard(eventTitle, eventUrl)}
 
-<p style="margin: 24px 0 0 0; color: #737373; font-size: 13px;">
-  Can't make it anymore? <a href="${cancelUrl}" style="color: #d4a853; text-decoration: none;">Cancel your RSVP</a>
+${rsvpsDashboardLink()}
+
+<p style="margin: 24px 0 0 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
+  Can't make it anymore? <a href="${cancelUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Cancel your RSVP</a>
 </p>
 
 ${paragraph("Hope to see you there!", { muted: true })}
@@ -137,6 +134,8 @@ Where: ${venueName}
 Your spot is still reserved. If the new details don't work for you, just let us know.
 
 View event: ${eventUrl}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 
 Can't make it anymore? Cancel: ${cancelUrl}
 

@@ -14,6 +14,10 @@ import {
   getGreeting,
   paragraph,
   createButton,
+  quoteBlock,
+  infoBox,
+  eventCard,
+  rsvpsDashboardLink,
   SITE_URL,
 } from "../render";
 
@@ -50,30 +54,17 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Unfortunately, <strong>${safeTitle}</strong> scheduled for ${safeDate} at ${safeVenue} has been cancelled.`)}
 
-${safeReason && safeHostName ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0 0 8px 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Note from ${safeHostName}</p>
-  <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6;">${safeReason}</p>
-</div>
-` : safeReason ? `
-<div style="background-color: #262626; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #a3a3a3; font-size: 15px; line-height: 1.6;">${safeReason}</p>
-</div>
-` : ""}
+${reason ? quoteBlock(hostName ? `Note from ${hostName}` : "Host's note", reason) : ""}
 
-<div style="background-color: #f59e0b15; border: 1px solid #f59e0b30; border-radius: 8px; padding: 16px; margin: 20px 0;">
-  <p style="margin: 0; color: #f59e0b; font-size: 15px; font-weight: 500;">
-    This is for ${safeDate} only. The regular series continues as scheduled.
-  </p>
-</div>
+${infoBox("📅", `This is for ${safeDate} only. The regular series continues as scheduled.`)}
 
 ${paragraph("We're sorry for any inconvenience. We hope to see you at another event soon!", { muted: true })}
 
-${createButton("Find another event", happeningsUrl)}
+${createButton("Browse Happenings", happeningsUrl)}
 
-<p style="margin: 24px 0 0 0; color: #737373; font-size: 14px;">
-  <a href="${eventUrl}" style="color: #d4a853; text-decoration: none;">View event series</a>
-</p>
+${eventCard(eventTitle, eventUrl)}
+
+${rsvpsDashboardLink()}
 `;
 
   const html = wrapEmailHtml(htmlContent);
@@ -86,8 +77,10 @@ This is for ${occurrenceDate} only. The regular series continues as scheduled.
 
 We're sorry for any inconvenience. We hope to see you at another event soon!
 
-Find another event: ${happeningsUrl}
-View event series: ${eventUrl}`;
+Browse happenings: ${happeningsUrl}
+View event series: ${eventUrl}
+
+View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps`;
 
   const text = wrapEmailText(textContent);
 
