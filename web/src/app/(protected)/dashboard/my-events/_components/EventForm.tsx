@@ -112,6 +112,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     return nextDate.toISOString().split("T")[0];
   };
 
+  // Publish confirmation state - only needed when transitioning from unpublished to published
+  const [publishConfirmed, setPublishConfirmed] = useState(false);
+
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
@@ -300,6 +303,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       return;
     }
 
+    // Phase 4.36: Require publish confirmation when transitioning to published
+    // Confirmation is needed when: (1) publishing a new event, OR (2) publishing a previously draft event
+    const wasPublished = event?.is_published ?? false;
+    const willPublish = formData.is_published;
+    const isNewPublish = willPublish && !wasPublished;
+
+    if (isNewPublish && !publishConfirmed) {
+      setError("Please confirm that this event is real and happening before publishing.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const url = mode === "create"
         ? "/api/my-events"
@@ -312,6 +327,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         capacity: slotConfig.has_timeslots ? slotConfig.total_slots : (formData.capacity ? parseInt(formData.capacity) : null),
         cover_image_url: coverImageUrl,
         is_published: formData.is_published,
+        // Phase 4.36: Include publish confirmation flag when publishing
+        host_publish_confirmed: isNewPublish ? publishConfirmed : undefined,
         // Slot configuration
         has_timeslots: slotConfig.has_timeslots,
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
@@ -1049,7 +1066,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       </div>
 
       {/* Publish Toggle */}
-      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
@@ -1063,7 +1080,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </div>
           <button
             type="button"
-            onClick={() => setFormData(prev => ({ ...prev, is_published: !prev.is_published }))}
+            onClick={() => {
+              const newPublished = !formData.is_published;
+              setFormData(prev => ({ ...prev, is_published: newPublished }));
+              // Reset confirmation when toggling off
+              if (!newPublished) {
+                setPublishConfirmed(false);
+              }
+            }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               formData.is_published
                 ? "bg-emerald-600"
@@ -1079,6 +1103,26 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             />
           </button>
         </div>
+
+        {/* Phase 4.36: Publish confirmation checkbox - only show when publishing a new/draft event */}
+        {formData.is_published && !(event?.is_published) && (
+          <label className="flex items-start gap-3 cursor-pointer p-3 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+            <input
+              type="checkbox"
+              checked={publishConfirmed}
+              onChange={(e) => setPublishConfirmed(e.target.checked)}
+              className="mt-0.5 w-5 h-5 rounded border-[var(--color-border-default)] text-emerald-600 focus:ring-emerald-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                I confirm this event is real and happening
+              </span>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+                By publishing, you confirm that this event will take place as described and attendees can sign up.
+              </p>
+            </div>
+          </label>
+        )}
       </div>
 
       {/* ============ LIVE PREVIEW SECTION ============ */}
