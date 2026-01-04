@@ -381,8 +381,8 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
             </button>
           </form>
 
-          {/* Albums List */}
-          <div className="space-y-4">
+          {/* Albums Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {albums.map((album) => {
               const photoCount = getAlbumPhotoCount(album.id);
               const isExpanded = expandedAlbumId === album.id;
@@ -396,102 +396,107 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                   sort_order: img.sort_order ?? 0,
                 }));
 
+              // Get first photo as fallback cover
+              const fallbackCover = albumPhotos[0]?.image_url;
+
               return (
                 <div
                   key={album.id}
                   className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] overflow-hidden"
                 >
-                  <div className="flex flex-col md:flex-row">
-                    {/* Cover Image */}
-                    {album.cover_image_url ? (
-                      <div className="relative w-full md:w-48 h-32 flex-shrink-0">
-                        <Image
-                          src={album.cover_image_url}
-                          alt={album.name}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 200px"
-                          className="object-cover"
-                        />
-                      </div>
+                  {/* Cover Image - vertical card layout */}
+                  <div className="relative aspect-[3/2] bg-[var(--color-bg-tertiary)]">
+                    {(album.cover_image_url || fallbackCover) ? (
+                      <Image
+                        src={album.cover_image_url || fallbackCover}
+                        alt={album.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
+                      />
                     ) : (
-                      <div className="w-full md:w-48 h-32 flex-shrink-0 bg-[var(--color-bg-tertiary)] flex items-center justify-center">
-                        <FolderOpen className="w-8 h-8 text-[var(--color-text-tertiary)]" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <FolderOpen className="w-12 h-12 text-[var(--color-text-tertiary)]" />
                       </div>
                     )}
 
-                    {/* Album Info */}
-                    <div className="flex-1 p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          {isEditing ? (
-                            <div className="space-y-2">
-                              <input
-                                type="text"
-                                value={editAlbumName}
-                                onChange={(e) => setEditAlbumName(e.target.value)}
-                                className="w-full px-2 py-1 text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-                                autoFocus
-                              />
-                              <input
-                                type="text"
-                                value={editAlbumDescription}
-                                onChange={(e) => setEditAlbumDescription(e.target.value)}
-                                placeholder="Description..."
-                                className="w-full px-2 py-1 text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => saveAlbumEdit(album.id)}
-                                  className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1"
-                                >
-                                  <Check className="w-3 h-3" /> Save
-                                </button>
-                                <button
-                                  onClick={() => setEditingAlbumId(null)}
-                                  className="px-2 py-1 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] text-xs rounded flex items-center gap-1"
-                                >
-                                  <X className="w-3 h-3" /> Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-medium text-[var(--color-text-primary)]">{album.name}</h3>
-                                <button
-                                  onClick={() => startEditAlbum(album)}
-                                  className="p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-                                  title="Edit album"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              <p className="text-[var(--color-text-tertiary)] text-xs">/{album.slug}</p>
-                              {album.description && (
-                                <p className="text-[var(--color-text-secondary)] text-sm mt-1 line-clamp-2">
-                                  {album.description}
-                                </p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <span className="text-sm text-[var(--color-text-secondary)]">
-                            {photoCount} {photoCount === 1 ? "photo" : "photos"}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs ${
-                              album.is_published
-                                ? "bg-green-100 text-green-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
+                    {/* Status Badge */}
+                    <div className="absolute top-2 left-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          album.is_published
+                            ? "bg-green-500/90 text-white"
+                            : "bg-yellow-500/90 text-white"
+                        }`}
+                      >
+                        {album.is_published ? "Published" : "Draft"}
+                      </span>
+                    </div>
+
+                    {/* Photo count badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-black/60 text-white">
+                        {photoCount} {photoCount === 1 ? "photo" : "photos"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Album Info */}
+                  <div className="p-4">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editAlbumName}
+                          onChange={(e) => setEditAlbumName(e.target.value)}
+                          className="w-full px-2 py-1 text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+                          autoFocus
+                        />
+                        <input
+                          type="text"
+                          value={editAlbumDescription}
+                          onChange={(e) => setEditAlbumDescription(e.target.value)}
+                          placeholder="Description..."
+                          className="w-full px-2 py-1 text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveAlbumEdit(album.id)}
+                            className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded flex items-center gap-1"
                           >
-                            {album.is_published ? "Published" : "Draft"}
-                          </span>
+                            <Check className="w-3 h-3" /> Save
+                          </button>
+                          <button
+                            onClick={() => setEditingAlbumId(null)}
+                            className="px-2 py-1 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] text-xs rounded flex items-center gap-1"
+                          >
+                            <X className="w-3 h-3" /> Cancel
+                          </button>
                         </div>
                       </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium text-[var(--color-text-primary)] truncate">{album.name}</h3>
+                          <button
+                            onClick={() => startEditAlbum(album)}
+                            className="p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
+                            title="Edit album"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-[var(--color-text-tertiary)] text-xs mb-2">/{album.slug}</p>
+                        {album.description && (
+                          <p className="text-[var(--color-text-secondary)] text-sm line-clamp-2 mb-3">
+                            {album.description}
+                          </p>
+                        )}
+                      </>
+                    )}
 
-                      {/* Album Actions */}
+                    {/* Album Actions */}
+                    {!isEditing && (
                       <div className="flex flex-wrap gap-2 mt-3">
                         <button
                           onClick={() => setExpandedAlbumId(isExpanded ? null : album.id)}
@@ -516,10 +521,10 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                           Delete
                         </button>
                       </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Album Photo Manager (expandable) */}
+                  {/* Album Photo Manager (expandable) - full width below card */}
                   {isExpanded && (
                     <AlbumPhotoManager
                       albumId={album.id}
