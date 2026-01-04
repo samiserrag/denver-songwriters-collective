@@ -27,6 +27,8 @@ export interface RsvpConfirmationEmailParams {
   venueName: string;
   venueAddress?: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
   isWaitlist: boolean;
   waitlistPosition?: number;
 }
@@ -44,6 +46,7 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
     venueName,
     venueAddress,
     eventId,
+    eventSlug,
     isWaitlist,
     waitlistPosition,
   } = params;
@@ -54,8 +57,10 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
   const safeDate = escapeHtml(eventDate);
   const safeTime = escapeHtml(eventTime);
 
-  const eventUrl = `${SITE_URL}/events/${eventId}`;
-  const cancelUrl = `${SITE_URL}/events/${eventId}?cancel=true`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
 
   if (isWaitlist) {
     return getWaitlistVariant({

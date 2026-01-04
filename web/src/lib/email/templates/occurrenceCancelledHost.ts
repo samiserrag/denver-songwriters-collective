@@ -29,6 +29,8 @@ export interface OccurrenceCancelledHostEmailParams {
   reason?: string;
   hostName?: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
 }
 
 export function getOccurrenceCancelledHostEmail(params: OccurrenceCancelledHostEmailParams): {
@@ -36,7 +38,7 @@ export function getOccurrenceCancelledHostEmail(params: OccurrenceCancelledHostE
   html: string;
   text: string;
 } {
-  const { userName, eventTitle, occurrenceDate, venueName, reason, hostName, eventId } = params;
+  const { userName, eventTitle, occurrenceDate, venueName, reason, hostName, eventId, eventSlug } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeVenue = escapeHtml(venueName);
@@ -44,7 +46,9 @@ export function getOccurrenceCancelledHostEmail(params: OccurrenceCancelledHostE
   const safeReason = reason ? escapeHtml(reason) : null;
   const safeHostName = hostName ? escapeHtml(hostName) : null;
 
-  const eventUrl = `${SITE_URL}/events/${eventId}`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
   const happeningsUrl = `${SITE_URL}/happenings`;
 
   const subject = `Cancelled: ${eventTitle} on ${occurrenceDate} — The Denver Songwriters Collective`;

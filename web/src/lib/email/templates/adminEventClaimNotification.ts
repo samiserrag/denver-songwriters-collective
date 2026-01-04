@@ -15,6 +15,8 @@ export interface AdminEventClaimNotificationEmailParams {
   requesterName: string;
   eventTitle: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
 }
 
 export function getAdminEventClaimNotificationEmail(params: AdminEventClaimNotificationEmailParams): {
@@ -22,13 +24,15 @@ export function getAdminEventClaimNotificationEmail(params: AdminEventClaimNotif
   html: string;
   text: string;
 } {
-  const { requesterName, eventTitle, eventId } = params;
+  const { requesterName, eventTitle, eventId, eventSlug } = params;
 
   const safeName = escapeHtml(requesterName);
   const safeTitle = escapeHtml(eventTitle);
 
   const claimsUrl = `${SITE_URL}/dashboard/admin/claims`;
-  const eventUrl = `${SITE_URL}/events/${eventId}`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
 
   const subject = `[DSC Claim] ${requesterName} wants to host ${eventTitle}`;
 

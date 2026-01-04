@@ -26,6 +26,8 @@ export interface OccurrenceModifiedHostEmailParams {
   eventTitle: string;
   occurrenceDate: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
   changes: {
     time?: { old: string; new: string };
   };
@@ -39,7 +41,7 @@ export function getOccurrenceModifiedHostEmail(params: OccurrenceModifiedHostEma
   html: string;
   text: string;
 } {
-  const { userName, eventTitle, occurrenceDate, eventId, changes, newTime, venueName, notes } = params;
+  const { userName, eventTitle, occurrenceDate, eventId, eventSlug, changes, newTime, venueName, notes } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeDate = escapeHtml(occurrenceDate);
@@ -47,8 +49,10 @@ export function getOccurrenceModifiedHostEmail(params: OccurrenceModifiedHostEma
   const safeNotes = notes ? escapeHtml(notes) : null;
   const safeNewTime = newTime ? escapeHtml(newTime) : null;
 
-  const eventUrl = `${SITE_URL}/events/${eventId}`;
-  const cancelUrl = `${SITE_URL}/events/${eventId}?cancel=true`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
 
   const subject = `Update: ${eventTitle} on ${occurrenceDate} — The Denver Songwriters Collective`;
 

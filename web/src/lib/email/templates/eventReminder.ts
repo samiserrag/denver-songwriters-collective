@@ -25,6 +25,8 @@ export interface EventReminderEmailParams {
   venueName: string;
   venueAddress?: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
   reminderType: "tonight" | "tomorrow";
   slotNumber?: number; // For performers with assigned slots
 }
@@ -42,6 +44,7 @@ export function getEventReminderEmail(params: EventReminderEmailParams): {
     venueName,
     venueAddress,
     eventId,
+    eventSlug,
     reminderType,
     slotNumber,
   } = params;
@@ -52,8 +55,10 @@ export function getEventReminderEmail(params: EventReminderEmailParams): {
   const safeDate = escapeHtml(eventDate);
   const safeTime = escapeHtml(eventTime);
 
-  const eventUrl = `${SITE_URL}/events/${eventId}`;
-  const cancelUrl = `${SITE_URL}/events/${eventId}?cancel=true`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
 
   const timeWord = reminderType === "tonight" ? "tonight" : "tomorrow";
   const subject = `Reminder: ${eventTitle} is ${timeWord}! — The Denver Songwriters Collective`;

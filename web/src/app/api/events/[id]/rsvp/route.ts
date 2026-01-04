@@ -84,7 +84,7 @@ export async function POST(
   // Get event - must be DSC event, active, and published
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, title, capacity, is_dsc_event, status, is_published, event_date, start_time, venue_name, venue_address")
+    .select("id, slug, title, capacity, is_dsc_event, status, is_published, event_date, start_time, venue_name, venue_address")
     .eq("id", eventId)
     .single();
 
@@ -159,6 +159,7 @@ export async function POST(
         venueName: event.venue_name || "TBA",
         venueAddress: event.venue_address || undefined,
         eventId,
+        eventSlug: event.slug,
         isWaitlist: status === "waitlist",
         waitlistPosition: waitlistPosition ?? undefined,
       });

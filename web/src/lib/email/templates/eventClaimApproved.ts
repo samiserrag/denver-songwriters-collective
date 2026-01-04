@@ -21,6 +21,8 @@ export interface EventClaimApprovedEmailParams {
   userName?: string | null;
   eventTitle: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
 }
 
 export function getEventClaimApprovedEmail(params: EventClaimApprovedEmailParams): {
@@ -28,9 +30,11 @@ export function getEventClaimApprovedEmail(params: EventClaimApprovedEmailParams
   html: string;
   text: string;
 } {
-  const { userName, eventTitle, eventId } = params;
+  const { userName, eventTitle, eventId, eventSlug } = params;
   const safeTitle = escapeHtml(eventTitle);
-  const eventUrl = `${SITE_URL}/events/${eventId}`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
   const dashboardUrl = `${SITE_URL}/dashboard/my-events`;
 
   const subject = `You're now the host of ${eventTitle} — The Denver Songwriters Collective`;

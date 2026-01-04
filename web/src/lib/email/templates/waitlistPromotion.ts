@@ -26,6 +26,8 @@ export interface WaitlistPromotionEmailParams {
   eventTime: string;
   venueName: string;
   eventId: string;
+  /** Prefer slug for SEO-friendly URLs, falls back to eventId */
+  eventSlug?: string | null;
   offerExpiresAt?: string; // ISO timestamp
 }
 
@@ -34,15 +36,17 @@ export function getWaitlistPromotionEmail(params: WaitlistPromotionEmailParams):
   html: string;
   text: string;
 } {
-  const { userName, eventTitle, eventDate, eventTime, venueName, eventId, offerExpiresAt } = params;
+  const { userName, eventTitle, eventDate, eventTime, venueName, eventId, eventSlug, offerExpiresAt } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeVenue = escapeHtml(venueName);
   const safeDate = escapeHtml(eventDate);
   const safeTime = escapeHtml(eventTime);
 
-  const confirmUrl = `${SITE_URL}/events/${eventId}?confirm=true`;
-  const cancelUrl = `${SITE_URL}/events/${eventId}?cancel=true`;
+  // Prefer slug for SEO-friendly URLs, fallback to id
+  const eventIdentifier = eventSlug || eventId;
+  const confirmUrl = `${SITE_URL}/events/${eventIdentifier}?confirm=true`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
 
   // Format expiry time for display
   let expiryMessage = "";
@@ -94,7 +98,7 @@ ${paragraph(`Good news! A spot just opened up at <strong>${safeTitle}</strong>, 
 
 ${createButton("Confirm my spot", confirmUrl, "green")}
 
-${eventCard(eventTitle, `${SITE_URL}/events/${eventId}`)}
+${eventCard(eventTitle, `${SITE_URL}/events/${eventIdentifier}`)}
 
 ${rsvpsDashboardLink()}
 
@@ -119,7 +123,7 @@ CONFIRM MY SPOT: ${confirmUrl}
 
 If you can't make it, no worries—just let us know so we can offer the spot to someone else.
 
-View event: ${SITE_URL}/events/${eventId}
+View event: ${SITE_URL}/events/${eventIdentifier}
 
 View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 
