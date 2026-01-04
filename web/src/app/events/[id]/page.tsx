@@ -93,6 +93,24 @@ function formatTime(time: string | null): string | null {
   return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
 
+/**
+ * Phase 4.32: Determines if an event has a functioning signup lane.
+ * - Timeslot events need actual timeslot rows to exist
+ * - RSVP events need capacity to be set
+ */
+function hasSignupLane(
+  event: { has_timeslots?: boolean | null; capacity?: number | null },
+  timeslotCount: number
+): boolean {
+  if (event.has_timeslots) {
+    // Timeslot lane exists only if timeslot rows exist
+    return timeslotCount > 0;
+  } else {
+    // RSVP lane exists only if capacity is set
+    return event.capacity !== null && event.capacity !== undefined;
+  }
+}
+
 export default async function EventDetailPage({ params }: EventPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
@@ -206,13 +224,17 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   }
 
   // Get attendance count - use timeslot_claims for timeslot events, event_rsvps otherwise
+  // Also track timeslot count for Phase 4.32 signup lane detection
   let attendanceCount = 0;
+  let timeslotCount = 0;
   if (event.has_timeslots) {
     // First get the timeslot IDs for this event
     const { data: timeslots } = await supabase
       .from("event_timeslots")
       .select("id")
       .eq("event_id", id);
+
+    timeslotCount = timeslots?.length || 0;
 
     if (timeslots && timeslots.length > 0) {
       const slotIds = timeslots.map(s => s.id);
@@ -265,6 +287,20 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       };
     }
   }
+
+  // Phase 4.32: Check if current user can manage this event (host or admin)
+  let canManageEvent = false;
+  if (session) {
+    // Check if user is in event_hosts table
+    const isEventHost = eventHosts?.some(h => h.user_id === session.user.id);
+    // Check if user is admin
+    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    // User can manage if they're the primary host, an event host, or an admin
+    canManageEvent = isUserTheHost || isEventHost || isAdmin;
+  }
+
+  // Phase 4.32: Check if signup lane exists (only shown to managers)
+  const signupLaneExists = hasSignupLane(event, timeslotCount);
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
   // Phase 4.0: Pass lat/lng for custom locations
@@ -359,6 +395,31 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <p className="font-semibold">Draft Preview</p>
               <p className="text-sm text-amber-300/80">This event is not published yet. Only you and admins can see it.</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 4.32: No signup lane warning - only visible to hosts/admins */}
+      {canManageEvent && event.is_dsc_event && !signupLaneExists && (
+        <div className="mb-4 p-4 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-300">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚙️</span>
+              <div>
+                <p className="font-semibold">No sign-up method configured</p>
+                <p className="text-sm text-amber-300/80">
+                  {event.has_timeslots
+                    ? "Timeslots are enabled but no slots have been generated yet."
+                    : "Set a capacity to enable RSVP, or enable performance slots."}
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/dashboard/my-events/${event.id}`}
+              className="flex-shrink-0 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-[var(--color-text-primary)] font-medium text-sm transition-colors"
+            >
+              Fix Sign-up
+            </Link>
           </div>
         </div>
       )}
@@ -466,7 +527,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                       Full
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-sm">
+                    <span className="px-2 py-0.5 rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] text-sm font-medium">
                       {remaining} {remaining === 1 ? "spot" : "spots"} left
                     </span>
                   )}

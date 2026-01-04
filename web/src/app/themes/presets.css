@@ -78,6 +78,10 @@
   --pill-bg-warning: rgba(245, 158, 11, 0.15); /* amber-500/15 */
   --pill-fg-warning: #92400E; /* amber-800: dark on light bg */
   --pill-border-warning: rgba(245, 158, 11, 0.25);
+  /* Success: Green with explicit contrast for light theme */
+  --pill-bg-success: rgba(16, 185, 129, 0.15); /* emerald-500/15 */
+  --pill-fg-success: #065F46; /* emerald-800: dark on light bg */
+  --pill-border-success: rgba(16, 185, 129, 0.30);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -118,6 +122,10 @@
   --pill-bg-warning: rgba(251, 191, 36, 0.2); /* amber-400/20 */
   --pill-fg-warning: #FCD34D; /* amber-300: light on dark bg */
   --pill-border-warning: rgba(251, 191, 36, 0.35);
+  /* Success: Green with explicit contrast for dark theme */
+  --pill-bg-success: rgba(52, 211, 153, 0.2); /* emerald-400/20 */
+  --pill-fg-success: #6EE7B7; /* emerald-300: light on dark bg */
+  --pill-border-success: rgba(52, 211, 153, 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -170,6 +178,10 @@
     --pill-bg-warning: rgba(245, 158, 11, 0.15); /* amber-500/15 */
     --pill-fg-warning: #92400E; /* amber-800: dark on light bg */
     --pill-border-warning: rgba(245, 158, 11, 0.25);
+    /* Success: Green with explicit contrast for light theme */
+    --pill-bg-success: rgba(16, 185, 129, 0.15); /* emerald-500/15 */
+    --pill-fg-success: #065F46; /* emerald-800: dark on light bg */
+    --pill-border-success: rgba(16, 185, 129, 0.30);
   }
 }
 
