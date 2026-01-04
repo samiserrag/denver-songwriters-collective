@@ -23,6 +23,7 @@ interface EventClaim {
   reviewed_at: string | null;
   event: {
     id: string;
+    slug: string | null;
     title: string;
     venue_name: string | null;
     host_id: string | null;
@@ -216,7 +217,7 @@ export default function ClaimsTable({
                   {claim.event ? (
                     <div>
                       <Link
-                        href={`/events/${claim.event.id}`}
+                        href={`/events/${claim.event.slug || claim.event.id}`}
                         className="text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)] font-medium"
                       >
                         {claim.event.title}

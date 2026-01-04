@@ -20,6 +20,7 @@ interface EventClaim {
   reviewed_at: string | null;
   event: {
     id: string;
+    slug: string | null;
     title: string;
     venue_name: string | null;
     host_id: string | null;
@@ -70,7 +71,7 @@ export default async function AdminClaimsPage() {
   const { data: events } = eventIds.length > 0
     ? await supabase
         .from("events")
-        .select("id, title, venue_name, host_id")
+        .select("id, slug, title, venue_name, host_id")
         .in("id", eventIds)
     : { data: [] };
 
