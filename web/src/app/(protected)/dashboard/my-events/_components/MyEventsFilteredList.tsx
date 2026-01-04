@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 
+// Phase 4.33: Collapsed cancelled section disclosure
+
 interface Event {
   id: string;
   title: string;
@@ -86,12 +88,14 @@ interface Props {
   isApprovedHost: boolean;
 }
 
-type FilterTab = "active" | "drafts" | "cancelled";
+type FilterTab = "active" | "drafts";
 
 export default function MyEventsFilteredList({ events: initialEvents, isApprovedHost }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FilterTab>("active");
   const [events, setEvents] = useState<Event[]>(initialEvents);
+  // Phase 4.33: Cancelled section is collapsed by default
+  const [showCancelled, setShowCancelled] = useState(false);
   const [cancelModalState, setCancelModalState] = useState<{
     isOpen: boolean;
     eventId: string;
@@ -126,8 +130,8 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
           )
         );
         setCancelModalState({ isOpen: false, eventId: "", eventTitle: "" });
-        // Switch to cancelled tab to show the moved event
-        setActiveTab("cancelled");
+        // Phase 4.33: Expand cancelled section to show the moved event
+        setShowCancelled(true);
         router.refresh();
       } else {
         console.error("Failed to cancel draft");
@@ -160,12 +164,15 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
         return events.filter(e => e.status === "active" && e.is_published);
       case "drafts":
         return events.filter(e => !e.is_published && e.status !== "cancelled");
-      case "cancelled":
-        return events.filter(e => e.status === "cancelled");
       default:
         return events;
     }
   }, [events, activeTab]);
+
+  // Phase 4.33: Cancelled events are shown separately in a collapsible section
+  const cancelledEvents = useMemo(() => {
+    return events.filter(e => e.status === "cancelled");
+  }, [events]);
 
   // Get badge for event status
   const getStatusBadge = (event: Event) => {
@@ -216,7 +223,7 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
 
   return (
     <div>
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Phase 4.33: Removed Cancelled as primary tab */}
       <div className="flex gap-2 mb-6 border-b border-[var(--color-border-default)] pb-2">
         <button
           onClick={() => setActiveTab("active")}
@@ -248,21 +255,6 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
             </span>
           )}
         </button>
-        <button
-          onClick={() => setActiveTab("cancelled")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors relative ${
-            activeTab === "cancelled"
-              ? "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-b-2 border-[var(--color-accent-primary)]"
-              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
-          }`}
-        >
-          Cancelled
-          {counts.cancelled > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
-              {counts.cancelled}
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Events List */}
@@ -270,7 +262,6 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
         <div className="text-center py-12 text-[var(--color-text-secondary)]">
           {activeTab === "active" && "No live events. Publish a draft to make it live!"}
           {activeTab === "drafts" && "No draft events."}
-          {activeTab === "cancelled" && "No cancelled events."}
         </div>
       ) : (
         <div className="space-y-4">
@@ -356,6 +347,72 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* Phase 4.33: Cancelled events disclosure - collapsed by default */}
+      {cancelledEvents.length > 0 && (
+        <div className="mt-8 border-t border-[var(--color-border-default)] pt-4">
+          <button
+            onClick={() => setShowCancelled(!showCancelled)}
+            className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showCancelled ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Cancelled
+            <span className="px-1.5 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
+              {cancelledEvents.length}
+            </span>
+          </button>
+
+          {showCancelled && (
+            <div className="mt-4 space-y-4">
+              {cancelledEvents.map((event) => {
+                const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+                  || EVENT_TYPE_CONFIG.other;
+
+                return (
+                  <Link
+                    key={event.id}
+                    href={`/dashboard/my-events/${event.id}`}
+                    className="block p-4 bg-[var(--color-bg-secondary)]/50 hover:bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg transition-colors opacity-60 hover:opacity-80"
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Date box - muted */}
+                      {event.event_date && (
+                        <div className="flex-shrink-0 w-12 h-12 bg-[var(--color-bg-tertiary)] rounded-lg flex flex-col items-center justify-center text-[var(--color-text-secondary)]">
+                          <span className="text-xs font-medium uppercase">
+                            {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                          </span>
+                          <span className="text-lg font-bold leading-none">
+                            {new Date(event.event_date + "T00:00:00").getDate()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-lg">{config.icon}</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">
+                            Cancelled
+                          </span>
+                        </div>
+                        <h2 className="text-base text-[var(--color-text-primary)] font-medium line-through decoration-red-500/50">{event.title}</h2>
+                        <p className="text-[var(--color-text-secondary)] text-sm mt-1">
+                          {formatEventDate(event.event_date)} • {event.venue_name}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

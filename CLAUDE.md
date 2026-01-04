@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.33):** Lint warnings = 0. All tests passing (661). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.34):** Lint warnings = 0. All tests passing (686). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -225,6 +225,53 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.32–4.34 — UX Fixes, Host Guardrails, Smoke Suite (January 2026)
+
+**Phase 4.32: Host/Admin No-Signup Warning**
+- `hasSignupLane()` helper in `/events/[id]/page.tsx` detects missing signup configuration
+- Warning banner shows for hosts/admins when:
+  - `has_timeslots=true` but no timeslot rows exist
+  - `has_timeslots=false` and `capacity=null`
+- "Fix Sign-up" button links to dashboard edit page
+- Banner NOT visible to public viewers
+
+**Phase 4.33: Cancelled UX Refinement (My Events Dashboard)**
+- Removed "Cancelled" as primary tab in MyEventsFilteredList
+- Cancelled events now in collapsible disclosure section below Live/Drafts
+- Collapsed by default, expands on click
+- Muted styling with strikethrough for cancelled titles
+
+**UI Contrast Fixes:**
+- Primary button uses `--color-text-on-accent` (theme-aware, was `--color-bg-secondary`)
+- Added `--pill-bg-success`, `--pill-fg-success`, `--pill-border-success` tokens
+- "X spots left" chip uses theme-aware success tokens
+- RSVPCard confirmed badge uses theme-aware tokens
+- Fixes readability in Sunrise (light) theme
+
+**Phase 4.34: Production Smoke Suite**
+- `docs/SMOKE-PROD.md` — Checklist for production verification
+- `scripts/smoke-prod.sh` — Automated curl-based smoke tests
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/app/events/[id]/page.tsx` | hasSignupLane() + no-signup banner |
+| `web/src/app/(protected)/dashboard/my-events/_components/MyEventsFilteredList.tsx` | Cancelled disclosure |
+| `web/src/app/themes/presets.css` | Success pill tokens |
+| `web/src/components/ui/button.tsx` | Theme-aware primary button text |
+| `docs/SMOKE-PROD.md` | Production smoke checklist |
+| `scripts/smoke-prod.sh` | Automated smoke tests |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/signup-lane-detection.test.ts` | 16 tests - hasSignupLane logic + banner visibility |
+| `__tests__/cancelled-ux-refinement.test.ts` | 9 tests - Cancelled disclosure behavior |
 
 ---
 
@@ -557,6 +604,8 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/threaded-comments.test.ts` | Threaded comments + profile comments |
 | `__tests__/gallery-comments-soft-delete-rls.test.ts` | Comment RLS policies |
 | `__tests__/occurrence-overrides.test.ts` | Occurrence override model (17 tests) |
+| `__tests__/signup-lane-detection.test.ts` | Signup lane detection + banner visibility (16 tests) |
+| `__tests__/cancelled-ux-refinement.test.ts` | Cancelled disclosure behavior (9 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
