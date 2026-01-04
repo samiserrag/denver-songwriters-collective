@@ -180,25 +180,25 @@ export function RSVPButton({
       {rsvp?.status === "confirmed" ? (
         <div className="space-y-2">
           <div
-            className={`flex items-center gap-3 p-4 bg-emerald-900/30 border border-emerald-700/50 rounded-xl transition-all duration-300 ${
-              showSuccess ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-[var(--color-background)]" : ""
+            className={`flex items-center gap-3 p-4 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700/50 rounded-xl transition-all duration-300 ${
+              showSuccess ? "ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 ring-offset-[var(--color-background)]" : ""
             }`}
           >
-            <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center ${
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-emerald-200 dark:bg-emerald-500/20 flex items-center justify-center ${
               showSuccess ? "animate-bounce" : ""
             }`}>
-              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div>
-              <p className="text-emerald-300 font-semibold">You&apos;re going!</p>
-              <p className="text-emerald-400/70 text-sm">We&apos;ll see you there</p>
+              <p className="text-emerald-800 dark:text-emerald-300 font-semibold">You&apos;re going!</p>
+              <p className="text-emerald-700 dark:text-emerald-400/70 text-sm">We&apos;ll see you there</p>
             </div>
           </div>
 
           {showSuccess && (
-            <p className="text-emerald-400 text-sm animate-fade-in">
+            <p className="text-emerald-600 dark:text-emerald-400 text-sm animate-fade-in">
               ✨ RSVP confirmed! Check your email for details.
             </p>
           )}
