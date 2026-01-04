@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.34):** Lint warnings = 0. All tests passing (686). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.35):** Lint warnings = 0. All tests passing (686). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -248,6 +248,25 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Example: `/events/open-mic-night` instead of `/events/open-mic-night-a407c8e5...`
 - Same collision handling and auto-generation trigger
 
+**Complete Slug Coverage (All User-Facing Links):**
+
+All user-facing links now use the `slug || id` pattern for backward compatibility:
+
+| Category | Files Updated |
+|----------|---------------|
+| Profile cards | `SongwriterCard`, `MemberCard`, `StudioCard` |
+| Event cards | `HappeningCard`, `EventCard`, `RSVPCard`, `MissingDetailsChip` |
+| Dashboard | `CreatedSuccessBanner`, `my-events/[id]/page.tsx` |
+| Email templates | All 8 event-related templates (rsvpConfirmation, eventReminder, eventUpdated, waitlistPromotion, occurrenceCancelledHost, occurrenceModifiedHost, eventClaimApproved, adminEventClaimNotification) |
+| API routes | `/api/events/[id]/rsvp`, `waitlistOffer.ts` (fetch slug for emails/notifications) |
+| Admin pages | `ClaimsTable` (event and profile links) |
+| URL helpers | `lib/events/urls.ts` |
+
+**Intentionally Using UUIDs:**
+- API endpoints (data operations need stable IDs)
+- Admin dashboard routes (`/dashboard/admin/events/...`)
+- Host control pages (`/events/.../lineup`, `/events/.../display`)
+
 **Database Migrations:**
 - `supabase/migrations/20260103000001_add_profile_slug.sql` — Profile slug column + trigger
 - `supabase/migrations/20260103000002_clean_event_slugs.sql` — Event slug cleanup + trigger
@@ -257,8 +276,10 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 | File | Purpose |
 |------|---------|
 | `web/src/lib/email/render.ts` | Email signature with Sami link |
+| `web/src/lib/events/urls.ts` | Centralized URL helper with slug support |
 | `web/src/app/songwriters/[id]/page.tsx` | UUID + slug lookup support |
 | `web/src/app/events/[id]/page.tsx` | UUID + slug lookup support |
+| `web/src/app/studios/[id]/page.tsx` | UUID + slug lookup support |
 
 ---
 
