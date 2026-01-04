@@ -14,18 +14,31 @@ interface SongwriterDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Check if string is a valid UUID
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 export default async function SongwriterDetailPage({ params }: SongwriterDetailPageProps) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
+  // Support both UUID and slug lookups
   // First try to find a profile with is_songwriter or legacy performer/host role
   // This accommodates both the new identity flags and old role system
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
-    .single();
+  const { data: profile, error } = isUUID(id)
+    ? await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
+        .single()
+    : await supabase
+        .from("profiles")
+        .select("*")
+        .eq("slug", id)
+        .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
+        .single();
 
   if (error || !profile) {
     notFound();

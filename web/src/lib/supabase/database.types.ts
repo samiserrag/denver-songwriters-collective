@@ -1999,6 +1999,7 @@ export type Database = {
           open_to_collabs: boolean | null
           paypal_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          slug: string | null
           song_links: string[] | null
           specialties: string[] | null
           spotify_url: string | null
@@ -2043,6 +2044,7 @@ export type Database = {
           open_to_collabs?: boolean | null
           paypal_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          slug?: string | null
           song_links?: string[] | null
           specialties?: string[] | null
           spotify_url?: string | null
@@ -2087,6 +2089,7 @@ export type Database = {
           open_to_collabs?: boolean | null
           paypal_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          slug?: string | null
           song_links?: string[] | null
           specialties?: string[] | null
           spotify_url?: string | null

@@ -109,7 +109,7 @@ export function wrapEmailHtml(content: string): string {
           <tr>
             <td style="padding: 20px 28px; border-top: 1px solid ${EMAIL_COLORS.border}; background-color: ${EMAIL_COLORS.bgMuted};">
               <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">
-                — Denver Songwriters Collective
+                — From <a href="${SITE_URL}/songwriters/sami-serrag" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Sami Serrag</a> on Behalf of the Denver Songwriters Collective
               </p>
               <p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; line-height: 1.5;">
                 You can reply directly to this email if you need anything.
@@ -268,7 +268,7 @@ export function wrapEmailText(content: string): string {
   return `${content}
 
 ---
-— Denver Songwriters Collective
+— From Sami Serrag on Behalf of the Denver Songwriters Collective
 You can reply directly to this email if you need anything.
 ${SITE_URL}`;
 }

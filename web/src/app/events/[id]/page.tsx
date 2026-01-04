@@ -17,6 +17,11 @@ import { hasMissingDetails } from "@/lib/events/missingDetails";
 
 export const dynamic = "force-dynamic";
 
+// Check if string is a valid UUID
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 interface EventPageProps {
   params: Promise<{ id: string }>;
 }
@@ -27,11 +32,18 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("title, description, event_type, venue_name")
-    .eq("id", id)
-    .single();
+  // Support both UUID and slug lookups
+  const { data: event } = isUUID(id)
+    ? await supabase
+        .from("events")
+        .select("title, description, event_type, venue_name")
+        .eq("id", id)
+        .single()
+    : await supabase
+        .from("events")
+        .select("title, description, event_type, venue_name")
+        .eq("slug", id)
+        .single();
 
   if (!event) {
     return {
@@ -118,9 +130,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   // Fetch event with venue join and recurrence info
   // Phase 4.0: Include custom location fields
   // Phase 4.22.3: Include host_id for claim functionality
-  const { data: event, error } = await supabase
-    .from("events")
-    .select(`
+  // Support both UUID and slug lookups
+  const eventSelectQuery = `
       id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
       is_dsc_event, status, created_at, event_date,
@@ -129,9 +140,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
       is_free, age_policy, host_id
-    `)
-    .eq("id", id)
-    .single();
+    `;
+  const { data: event, error } = isUUID(id)
+    ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
+    : await supabase.from("events").select(eventSelectQuery).eq("slug", id).single();
 
   if (error || !event) {
     notFound();
