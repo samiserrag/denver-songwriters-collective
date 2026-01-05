@@ -5,7 +5,16 @@
  * - parseRRule(rrule) - Parse RFC 5545 RRULE string
  * - getNextOccurrence(rrule, startDate) - Calculate next occurrence
  * - dayOrder (Sunday -> Saturday)
+ *
+ * Phase 4.42c: getRecurrenceSummary now uses the shared recurrence contract
  */
+
+// Phase 4.42c: Import shared contract for unified recurrence interpretation
+import {
+  interpretRecurrence,
+  labelFromRecurrence,
+  type RecurrenceInput,
+} from "@/lib/events/recurrenceContract";
 
 const ordinalWords: Record<string, string> = {
   "1": "First",
@@ -364,6 +373,9 @@ function humanizeParsedRRule(parsed: ParsedRRule, fallbackDay: string | null): s
  * Get a short recurrence summary suitable for Tier 2 pills on event cards.
  * This is the presentation-layer transformation for recurrence display.
  *
+ * Phase 4.42c: Now uses the shared recurrence contract to ensure
+ * labels ALWAYS match what the generator produces.
+ *
  * @param recurrenceRule - RRULE or simple text ("weekly", "1st", etc.)
  * @param dayOfWeek - Day of week from event (e.g., "Monday")
  * @param eventDate - Optional event_date for one-time events
@@ -374,41 +386,14 @@ export function getRecurrenceSummary(
   dayOfWeek: string | null | undefined,
   eventDate: string | null | undefined
 ): string {
-  // One-time events: have an event_date but no recurrence or day_of_week pattern
-  // OR: have event_date and no meaningful recurrence_rule
-  if (eventDate && !recurrenceRule && !dayOfWeek) {
-    return "One-time";
-  }
+  // Phase 4.42c: Use the shared contract to ensure labels match generator output
+  const recurrence = interpretRecurrence({
+    event_date: eventDate ?? null,
+    day_of_week: dayOfWeek ?? null,
+    recurrence_rule: recurrenceRule ?? null,
+  } as RecurrenceInput);
 
-  // If there's a recurrence rule or day_of_week, use humanizeRecurrence
-  if (recurrenceRule || dayOfWeek) {
-    const humanized = humanizeRecurrence(recurrenceRule ?? null, dayOfWeek ?? null);
-    // Fallback if humanizeRecurrence returns empty or "Schedule TBD"
-    if (!humanized || humanized === "Schedule TBD") {
-      // If we have a day_of_week, at least show that pattern
-      if (dayOfWeek) {
-        return `Every ${dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1).toLowerCase()}`;
-      }
-      // If we have recurrence_rule but couldn't parse, show generic
-      if (recurrenceRule) {
-        return "Recurring";
-      }
-      // If we have an event_date as fallback, it's one-time
-      if (eventDate) {
-        return "One-time";
-      }
-      return "Recurring";
-    }
-    return humanized;
-  }
-
-  // If we have an event_date but nothing else, it's one-time
-  if (eventDate) {
-    return "One-time";
-  }
-
-  // Fallback
-  return "Recurring";
+  return labelFromRecurrence(recurrence);
 }
 
 // Named export for module consumers
