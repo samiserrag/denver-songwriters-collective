@@ -103,7 +103,29 @@ Quick verification checklist for production deployments. Run after each deploy t
 
 ---
 
-### 7. Event Updated Notifications (Phase 4.36)
+### 7. Verification Status Display (Phase 4.40)
+
+**After running reset script:**
+
+**URL:** `/happenings`
+
+**Expected:**
+- ALL events show "Unconfirmed" amber badge
+- No events show "Confirmed" green badge (unless admin has verified since reset)
+
+**After admin verifies one event:**
+
+**URL:** `/happenings` or `/events/{verified-event-slug}`
+
+**Expected:**
+- Verified event shows "Confirmed" green badge with checkmark
+- Other events still show "Unconfirmed"
+
+**Pass Criteria:** Reset causes all Unconfirmed; admin verify causes Confirmed
+
+---
+
+### 8. Event Updated Notifications (Phase 4.36)
 
 **Precondition:**
 - Logged in as host

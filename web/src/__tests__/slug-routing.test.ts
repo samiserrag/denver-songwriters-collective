@@ -41,26 +41,29 @@ describe("Slug routing - canonical URL behavior", () => {
   });
 });
 
-describe("Verification pill display logic", () => {
-  describe("Always shows verification state", () => {
-    it("returns confirmed for host-owned published event", () => {
+describe("Verification pill display logic (Phase 4.40)", () => {
+  describe("All events unconfirmed until verified", () => {
+    it("returns unconfirmed for any event without last_verified_at", () => {
       const result = getPublicVerificationState({
         status: "active",
         host_id: "user-123",
         source: "community",
         is_published: true,
-      });
-      expect(result.state).toBe("confirmed");
-    });
-
-    it("returns unconfirmed for seeded event without verification", () => {
-      const result = getPublicVerificationState({
-        status: "active",
-        host_id: null,
-        source: "import",
         last_verified_at: null,
       });
+      // Phase 4.40: all events start unconfirmed
       expect(result.state).toBe("unconfirmed");
+    });
+
+    it("returns confirmed only when last_verified_at is set", () => {
+      const result = getPublicVerificationState({
+        status: "active",
+        host_id: "user-123",
+        source: "community",
+        is_published: true,
+        last_verified_at: "2026-01-15T12:00:00Z",
+      });
+      expect(result.state).toBe("confirmed");
     });
 
     it("returns cancelled for cancelled status", () => {
@@ -81,21 +84,23 @@ describe("Verification pill display logic", () => {
   });
 
   describe("HappeningCard verification pill variants", () => {
-    it("confirmed events should show green success pill", () => {
+    it("verified events should show green success pill", () => {
       const result = getPublicVerificationState({
         status: "active",
         host_id: "user-123",
         source: "community",
+        last_verified_at: "2026-01-15T12:00:00Z",
       });
       // In the card, this maps to variant="success" with green styling
       expect(result.state).toBe("confirmed");
     });
 
-    it("unconfirmed events should show amber warning pill", () => {
+    it("unverified events should show amber warning pill", () => {
       const result = getPublicVerificationState({
-        status: "unverified",
-        host_id: null,
-        source: "import",
+        status: "active",
+        host_id: "user-123",
+        source: "community",
+        last_verified_at: null,
       });
       // In the card, this maps to variant="warning" with amber styling
       expect(result.state).toBe("unconfirmed");
