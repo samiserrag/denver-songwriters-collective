@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.36):** Lint warnings = 0. All tests passing (719). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.38):** Lint warnings = 0. All tests passing (760). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -89,6 +89,7 @@ All must pass before merge:
 | StickyControls | `web/src/components/happenings/StickyControls.tsx` |
 | DateSection | `web/src/components/happenings/DateSection.tsx` |
 | BetaBanner | `web/src/components/happenings/BetaBanner.tsx` |
+| BackToTop | `web/src/components/happenings/BackToTop.tsx` |
 | PosterMedia | `web/src/components/media/PosterMedia.tsx` |
 | Header nav | `web/src/components/navigation/header.tsx` |
 | Footer | `web/src/components/navigation/footer.tsx` |
@@ -225,6 +226,51 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.38 — Happenings UX + Slug Routing + Avatar Fixes (January 2026)
+
+**Happenings Filter UX:**
+- Removed sticky positioning from filter controls (was `sticky top-16`)
+- Filters now scroll with content, freeing vertical screen space
+- Added `BackToTop` floating button (appears after scrolling 400px)
+
+**Canonical Slug Redirects:**
+- Events: UUID access (`/events/{uuid}`) redirects to `/events/{slug}` when slug exists
+- Songwriters: UUID access redirects to `/songwriters/{slug}` when slug exists
+- Studios: UUID access redirects to `/studios/{slug}` when slug exists
+- Backward compatible: both UUID and slug URLs continue to work
+
+**Always-Visible Verification Pills:**
+- HappeningCard now shows verification status in chips row (always visible, not just overlay)
+- Green "Confirmed" pill with checkmark for verified events
+- Amber "Unconfirmed" pill for seeded/imported events
+- Red "Cancelled" pill for cancelled events
+- Added `success` and `danger` chip variants
+
+**Avatar Cropping Fix:**
+- `SongwriterAvatar`: Added `object-top` to prevent head/face cropping
+- `MemberCard`: Added `object-top` for member avatar images
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/components/happenings/StickyControls.tsx` | Non-sticky filters |
+| `web/src/components/happenings/BackToTop.tsx` | Floating back-to-top button |
+| `web/src/components/happenings/HappeningCard.tsx` | Verification pills in chips row |
+| `web/src/app/events/[id]/page.tsx` | Canonical slug redirect |
+| `web/src/app/songwriters/[id]/page.tsx` | Canonical slug redirect |
+| `web/src/app/studios/[id]/page.tsx` | Canonical slug redirect |
+| `web/src/components/songwriters/SongwriterAvatar.tsx` | object-top fix |
+| `web/src/components/members/MemberCard.tsx` | object-top fix |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/slug-routing.test.ts` | 15 tests - UUID detection, verification states, URL patterns |
 
 ---
 
@@ -758,6 +804,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/signup-lane-detection.test.ts` | Signup lane detection + banner visibility (16 tests) |
 | `__tests__/cancelled-ux-refinement.test.ts` | Cancelled disclosure behavior (9 tests) |
 | `__tests__/verification-state.test.ts` | Verification state helper + detail page block (26 tests) |
+| `__tests__/slug-routing.test.ts` | Slug routing + verification pills (15 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
