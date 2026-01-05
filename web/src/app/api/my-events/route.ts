@@ -106,6 +106,39 @@ function generateSeriesDates(startDate: string, count: number): string[] {
   return dates;
 }
 
+/**
+ * Phase 4.42: Validate that start_date matches day_of_week
+ *
+ * Prevents mismatch where label says "Every Monday" but dates are Tuesdays.
+ * Uses Denver timezone for consistency with occurrence expansion.
+ */
+function validateDayOfWeekMatch(
+  startDate: string,
+  dayOfWeek: string | null | undefined
+): { valid: boolean; error?: string; actualDay?: string } {
+  if (!dayOfWeek) {
+    // No day_of_week specified - no validation needed
+    return { valid: true };
+  }
+
+  // Parse date at noon to avoid timezone edge cases
+  const date = new Date(`${startDate}T12:00:00`);
+  const actualDay = date.toLocaleDateString("en-US", {
+    weekday: "long",
+    timeZone: "America/Denver",
+  });
+
+  if (actualDay.toLowerCase() !== dayOfWeek.toLowerCase()) {
+    return {
+      valid: false,
+      error: `Start date ${startDate} is ${actualDay}, but day_of_week is ${dayOfWeek}. Please select a date that falls on ${dayOfWeek}.`,
+      actualDay,
+    };
+  }
+
+  return { valid: true, actualDay };
+}
+
 // POST - Create new DSC event (or series of events)
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -212,6 +245,12 @@ export async function POST(request: Request) {
 
   if (!startDate) {
     return NextResponse.json({ error: "start_date is required" }, { status: 400 });
+  }
+
+  // Phase 4.42: Validate day_of_week matches start_date to prevent label/generator mismatch
+  const dayValidation = validateDayOfWeekMatch(startDate, body.day_of_week);
+  if (!dayValidation.valid) {
+    return NextResponse.json({ error: dayValidation.error }, { status: 400 });
   }
 
   // Generate series_id if creating multiple events
