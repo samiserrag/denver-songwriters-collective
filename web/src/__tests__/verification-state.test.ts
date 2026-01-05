@@ -282,3 +282,54 @@ describe("formatVerifiedDate", () => {
     expect(formatVerifiedDate("not-a-date")).toBeNull();
   });
 });
+
+describe("Event Detail Page Verification Block", () => {
+  it("confirmed renders green block even when last_verified_at is null", () => {
+    // Simulating the event detail page logic:
+    // If verificationState === "confirmed", render the green block
+    // - If lastVerifiedAt exists: "Verified {date}"
+    // - Else: "Confirmed"
+
+    const event: VerificationInput = {
+      status: "active",
+      host_id: "user-123", // Claimed by host → confirmed
+      source: "community",
+      last_verified_at: null, // No verification date
+    };
+
+    const result = getPublicVerificationState(event);
+
+    // Should be confirmed
+    expect(result.state).toBe("confirmed");
+
+    // In the detail page, this would render:
+    // - Green block shown because state === "confirmed"
+    // - Text shows "Confirmed" (not "Verified {date}" since lastVerifiedAt is null)
+    const displayText = result.lastVerifiedAt
+      ? `Verified ${formatVerifiedDate(result.lastVerifiedAt)}`
+      : "Confirmed";
+
+    expect(displayText).toBe("Confirmed");
+  });
+
+  it("confirmed with last_verified_at renders verified date", () => {
+    const event: VerificationInput = {
+      status: "active",
+      host_id: "user-123",
+      source: "community",
+      last_verified_at: "2026-01-15T12:00:00Z", // Use noon UTC to avoid timezone edge cases
+    };
+
+    const result = getPublicVerificationState(event);
+
+    expect(result.state).toBe("confirmed");
+    expect(result.lastVerifiedAt).toBe("2026-01-15T12:00:00Z");
+
+    const displayText = result.lastVerifiedAt
+      ? `Verified ${formatVerifiedDate(result.lastVerifiedAt)}`
+      : "Confirmed";
+
+    // Date formatting varies by timezone, so just check it starts with "Verified" and contains "2026"
+    expect(displayText).toMatch(/^Verified .* 2026$/);
+  });
+});

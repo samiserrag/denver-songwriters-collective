@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display, Inter, Fraunces } from "next/font/google";
 import { Header, Footer } from "@/components/navigation";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { getSiteSettings } from "@/lib/site-settings";
 import { ThemeInitializer } from "@/components/ui/ThemeInitializer";
 import "./globals.css";
@@ -211,6 +212,7 @@ export default async function RootLayout({
         <main className="flex-1">{children}</main>
         <Footer />
         <Toaster />
+        <SpeedInsights />
       </body>
     </html>
   );
