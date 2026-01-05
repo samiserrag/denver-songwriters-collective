@@ -83,10 +83,11 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
   });
 
   describe('Status Badges', () => {
-    it('should display Schedule TBD for needs_verification status', () => {
+    // Phase 4.37: Changed from "Schedule TBD" to "Unconfirmed" for needs_verification status
+    it('should display Unconfirmed for needs_verification status', () => {
       const unverifiedEvent = { ...mockOpenMicEvent, status: 'needs_verification' };
       render(<HappeningCard event={unverifiedEvent} />);
-      expect(screen.getByText('Schedule TBD')).toBeInTheDocument();
+      expect(screen.getByText('Unconfirmed')).toBeInTheDocument();
     });
 
     it('should display Ended for past events', () => {

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTimeToAMPM, getRecurrenceSummary } from "@/lib/recurrenceHumanizer";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
+import { getPublicVerificationState } from "@/lib/events/verification";
 import {
   computeNextOccurrence,
   getTodayDenver,
@@ -98,7 +99,9 @@ export interface HappeningEvent {
 
   // Verification
   last_verified_at?: string | null;
+  verified_by?: string | null;
   source?: string | null;
+  host_id?: string | null;
 }
 
 export interface HappeningCardProps {
@@ -311,7 +314,19 @@ export function HappeningCard({
   const isOnlineOnly = event.location_mode === "online";
   const isHybrid = event.location_mode === "hybrid";
 
-  const showScheduleTBD = event.status === "needs_verification" || event.status === "unverified";
+  // Phase 4.37: Use verification state helper for consistent badge logic
+  const verificationResult = getPublicVerificationState({
+    status: event.status,
+    host_id: event.host_id,
+    source: event.source,
+    last_verified_at: event.last_verified_at,
+    verified_by: event.verified_by,
+  });
+  const verificationState = verificationResult.state;
+  const isUnconfirmed = verificationState === "unconfirmed";
+
+  // Legacy: showScheduleTBD is now replaced by isUnconfirmed for badge display
+  const showScheduleTBD = isUnconfirmed;
   const showEnded = !showScheduleTBD && dateInfo.isPast;
 
   // Cost display - NA standardization
@@ -609,18 +624,19 @@ export function HappeningCard({
           </button>
 
           {/* Status badge overlay - top left */}
-          {(isCancelled || showScheduleTBD || showEnded) && (
+          {/* Phase 4.37: Show verification state badges */}
+          {(isCancelled || isUnconfirmed || showEnded) && (
             <div className="absolute top-2.5 left-2.5 z-10">
               <span
                 className={cn(
                   "px-2 py-1 text-xs font-bold uppercase tracking-wide rounded-full",
                   "bg-black/50 backdrop-blur-sm",
                   isCancelled && "text-red-400",
-                  !isCancelled && showScheduleTBD && "text-amber-300",
-                  !isCancelled && showEnded && "text-white/70"
+                  !isCancelled && isUnconfirmed && "text-amber-300",
+                  !isCancelled && !isUnconfirmed && showEnded && "text-white/70"
                 )}
               >
-                {isCancelled ? "CANCELLED" : showScheduleTBD ? "Schedule TBD" : "Ended"}
+                {isCancelled ? "CANCELLED" : isUnconfirmed ? "Unconfirmed" : "Ended"}
               </span>
             </div>
           )}

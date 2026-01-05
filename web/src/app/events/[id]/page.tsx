@@ -14,6 +14,7 @@ import { ClaimEventButton } from "@/components/events/ClaimEventButton";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
+import { getPublicVerificationState, formatVerifiedDate } from "@/lib/events/verification";
 
 export const dynamic = "force-dynamic";
 
@@ -131,15 +132,17 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   // Phase 4.0: Include custom location fields
   // Phase 4.22.3: Include host_id for claim functionality
   // Support both UUID and slug lookups
+  // Phase 4.37: Added slug, source, last_verified_at, verified_by for verification display
   const eventSelectQuery = `
       id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
-      is_dsc_event, status, created_at, event_date,
+      is_dsc_event, status, created_at, event_date, slug,
       has_timeslots, total_slots, slot_duration_minutes, is_published,
       is_recurring, recurrence_pattern,
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
-      is_free, age_policy, host_id
+      is_free, age_policy, host_id,
+      source, last_verified_at, verified_by
     `;
   const { data: event, error } = isUUID(id)
     ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
@@ -180,6 +183,17 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const isCancelled = event.status === "cancelled";
   const needsVerification = event.status === "needs_verification";
   const canRSVP = !isCancelled && !isPastEvent && event.is_published;
+
+  // Phase 4.37: Get verification state for display
+  const verificationResult = getPublicVerificationState({
+    status: event.status,
+    host_id: (event as { host_id?: string | null }).host_id,
+    source: (event as { source?: string | null }).source,
+    last_verified_at: (event as { last_verified_at?: string | null }).last_verified_at,
+    verified_by: (event as { verified_by?: string | null }).verified_by,
+  });
+  const verificationState = verificationResult.state;
+  const isUnconfirmed = verificationState === "unconfirmed";
 
   // Phase 4.0: Resolve location name and address
   // Check venue first, then fall back to custom location
@@ -302,13 +316,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
   // Phase 4.32: Check if current user can manage this event (host or admin)
   let canManageEvent = false;
+  let isAdminUser = false;
   if (session) {
     // Check if user is in event_hosts table
     const isEventHost = eventHosts?.some(h => h.user_id === session.user.id);
     // Check if user is admin
-    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    isAdminUser = await checkAdminRole(supabase, session.user.id);
     // User can manage if they're the primary host, an event host, or an admin
-    canManageEvent = isUserTheHost || isEventHost || isAdmin;
+    canManageEvent = isUserTheHost || isEventHost || isAdminUser;
   }
 
   // Phase 4.32: Check if signup lane exists (only shown to managers)
@@ -471,6 +486,59 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
             {event.title}
           </h1>
+
+          {/* Phase 4.37: Verification status block */}
+          {verificationState === "cancelled" && (
+            <div className="mb-6 px-4 py-3 rounded-lg bg-red-100 text-red-800 flex items-center gap-3">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>
+                <span className="font-medium">Cancelled</span>
+                <span className="ml-1">— This event has been cancelled.</span>
+              </span>
+            </div>
+          )}
+          {isUnconfirmed && !isCancelled && (
+            <div className="mb-6 px-4 py-3 rounded-lg bg-amber-100 text-amber-800 flex items-center gap-3">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <span className="font-medium">Happening (not confirmed)</span>
+                <span className="block text-sm mt-0.5">
+                  This event was imported from an external source and hasn&apos;t been verified yet.
+                  {verificationResult.lastVerifiedAt && (
+                    <span className="ml-1">Last verified: {formatVerifiedDate(verificationResult.lastVerifiedAt)}</span>
+                  )}
+                </span>
+                <div className="flex gap-3 mt-1">
+                  <Link
+                    href={`/open-mics/${(event as { slug?: string }).slug || event.id}`}
+                    className="text-sm underline hover:no-underline"
+                  >
+                    Suggest an update
+                  </Link>
+                  {isAdminUser && (
+                    <Link
+                      href="/dashboard/admin/open-mics"
+                      className="text-sm underline hover:no-underline"
+                    >
+                      Admin: Manage status
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {verificationState === "confirmed" && verificationResult.lastVerifiedAt && (
+            <div className="mb-4 text-sm text-emerald-600 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Verified {formatVerifiedDate(verificationResult.lastVerifiedAt)}</span>
+            </div>
+          )}
 
           {/* Phase 4.1: Missing details indicator */}
           {hasMissingDetails({

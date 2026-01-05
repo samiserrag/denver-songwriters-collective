@@ -672,6 +672,18 @@ See full backlog in previous CLAUDE.md version or `docs/known-issues.md`.
 - Loading.tsx coverage gaps
 - Duplicate VenueSelector components
 
+### Future: Phase 4.38 — Hard Delete Admin Tools
+**Investigation completed in:** `docs/investigation/phase4-37-seeded-verification-status-system.md` (Section 6)
+
+Event hard delete is safe—all FKs use CASCADE or SET NULL:
+- `event_rsvps`, `event_timeslots`, `timeslot_claims`, `occurrence_overrides`, `event_claims`, `event_update_suggestions`, `change_reports`, `favorites`, `event_hosts`, `event_comments`, `guest_verifications` — CASCADE
+- `gallery_albums`, `monthly_highlights` — SET NULL (orphans album / removes highlight)
+
+Venue hard delete requires check:
+- Before delete: Check for events referencing `venue_id`
+- If events exist: Block delete or cascade-nullify `venue_id`
+- Add admin confirmation: "X events reference this venue"
+
 ---
 
 ## Test Files

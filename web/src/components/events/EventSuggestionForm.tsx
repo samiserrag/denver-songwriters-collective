@@ -42,6 +42,8 @@ interface Event {
   custom_city?: string | null;
   custom_state?: string | null;
   location_notes?: string | null;
+  // Phase 4.37: Status for verification suggestion
+  status?: string | null;
 }
 
 interface Props {
@@ -62,6 +64,14 @@ const LOCATION_MODES = [
   { value: "venue", label: "Physical venue" },
   { value: "online", label: "Online only" },
   { value: "hybrid", label: "Hybrid (both)" }
+];
+
+// Phase 4.37: Status suggestion options
+const STATUS_SUGGESTIONS = [
+  { value: "", label: "Select status..." },
+  { value: "confirmed", label: "Confirmed - This event is happening" },
+  { value: "unconfirmed", label: "Unconfirmed - May still happen but not verified" },
+  { value: "cancelled", label: "Cancelled - This event is no longer happening" }
 ];
 
 export default function EventSuggestionForm({ event }: Props) {
@@ -104,6 +114,8 @@ export default function EventSuggestionForm({ event }: Props) {
   const [submitterName, setSubmitterName] = useState("");
   const [submitterEmail, setSubmitterEmail] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
+  // Phase 4.37: Status suggestion
+  const [suggestedStatus, setSuggestedStatus] = useState("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -169,8 +181,17 @@ export default function EventSuggestionForm({ event }: Props) {
       }
     }
 
+    // Phase 4.37: Add status suggestion as a separate change
+    if (suggestedStatus) {
+      changes.push({
+        field: "suggested_status",
+        old_value: event.status || "",
+        new_value: suggestedStatus
+      });
+    }
+
     if (changes.length === 0) {
-      setError("No changes detected. Please modify at least one field.");
+      setError("No changes detected. Please modify at least one field or suggest a status.");
       setSubmitting(false);
       return;
     }
@@ -477,6 +498,26 @@ export default function EventSuggestionForm({ event }: Props) {
                   className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Phase 4.37: Event Status Suggestion */}
+          <div className="mb-6">
+            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3 uppercase tracking-wide">Event Status</h4>
+            <p className="text-[var(--color-text-tertiary)] text-sm mb-3">
+              Is this event still happening? Help us keep our listings accurate.
+            </p>
+            <div className="max-w-md">
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Status Suggestion</label>
+              <select
+                value={suggestedStatus}
+                onChange={(e) => setSuggestedStatus(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
+              >
+                {STATUS_SUGGESTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
           </div>
 

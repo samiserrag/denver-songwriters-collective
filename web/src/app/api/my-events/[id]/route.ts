@@ -260,7 +260,7 @@ export async function PATCH(
 
   if (isNewPublish && body.host_publish_confirmed !== true) {
     return NextResponse.json(
-      { error: "Publish confirmation required. Please confirm this event is real and happening." },
+      { error: "Publish confirmation required. Please confirm you're ready to publish." },
       { status: 400 }
     );
   }

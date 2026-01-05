@@ -8,12 +8,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   "all-acts": "bg-yellow-900/40 text-yellow-300",
 };
 
+// Phase 4.37: Updated labels to use "Unconfirmed" instead of "Schedule TBD"
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   active: { bg: "bg-emerald-900/60", text: "text-emerald-300", label: "Active" },
   inactive: { bg: "bg-red-900/60", text: "text-red-300", label: "Inactive" },
   cancelled: { bg: "bg-red-900/60", text: "text-red-300", label: "Cancelled" },
-  unverified: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Schedule TBD" },
-  needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Schedule TBD" },
+  unverified: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Unconfirmed" },
+  needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Unconfirmed" },
   seasonal: { bg: "bg-sky-900/60", text: "text-sky-300", label: "Seasonal" },
 };
 

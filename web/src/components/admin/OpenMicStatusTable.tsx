@@ -226,17 +226,17 @@ export default function OpenMicStatusTable({ events: initialEvents }: Props) {
         ))}
       </div>
 
-      {/* Status Legend */}
+      {/* Status Legend - Phase 4.37: Updated terminology */}
       <div className="mb-4 p-3 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-tertiary)]">
         <span className="font-medium text-[var(--color-text-secondary)]">Status Legend:</span>{" "}
         <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Active = visible on public page
+          <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Active = Confirmed, visible on public page
         </span>
         <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-2 h-2 rounded-full bg-amber-600"></span> Needs Verification = imported, needs review
+          <span className="w-2 h-2 rounded-full bg-amber-600"></span> Needs Verification = Unconfirmed (imported)
         </span>
         <span className="inline-flex items-center gap-1 mr-3">
-          <span className="w-2 h-2 rounded-full bg-yellow-700"></span> Unverified = community submitted
+          <span className="w-2 h-2 rounded-full bg-yellow-700"></span> Unverified = Unconfirmed (community)
         </span>
         <span className="inline-flex items-center gap-1 mr-3">
           <span className="w-2 h-2 rounded-full bg-gray-600"></span> Inactive = temporarily hidden
