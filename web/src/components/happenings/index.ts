@@ -7,3 +7,4 @@ export { DateSection } from "./DateSection";
 export { StickyControls } from "./StickyControls";
 export { BetaBanner } from "./BetaBanner";
 export { CancelledDisclosureRow } from "./CancelledDisclosureRow";
+export { BackToTop } from "./BackToTop";
