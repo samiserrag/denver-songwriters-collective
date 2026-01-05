@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.38):** Lint warnings = 0. All tests passing (760). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.39):** Lint warnings = 0. All tests passing (766). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -226,6 +226,47 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.39 — Lockdown Fixes: Signup Banners + Verification Logic (January 2026)
+
+**Signup Banner False-Positive Fix:**
+- Fixed 6 queries in event detail page that used route param (slug) instead of `event.id` (UUID)
+- This caused false "No sign-up method configured" banners when accessing events via slug URLs
+- Affected queries: event_hosts (x2), event_timeslots, event_rsvps, gallery_images, event_claims
+
+**Seeded Events Verification Logic:**
+- Seeded events (source=import/admin) now remain "Unconfirmed" even if claimed by a host
+- Only become "Confirmed" when `last_verified_at` is explicitly set by admin
+- Prevents imported data from appearing verified just because someone claimed it
+- Reason text: "Claimed event awaiting admin verification" for claimed seeded events
+
+**Detail Page Verification Pills:**
+- Added always-visible verification badges to both event detail pages
+- `/events/[id]`: Badge in row with event type and DSC badges
+- `/open-mics/[slug]`: Badge row above title with "Open Mic" type badge
+- Uses same theme tokens as HappeningCard (green/amber/red pills)
+
+**Slug Audit Utility:**
+- New admin script: `web/scripts/slug-audit.ts`
+- Reports: NULL slugs in events/profiles, duplicate slugs
+- Usage: `cd web && npx tsx scripts/slug-audit.ts`
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/app/events/[id]/page.tsx` | Fixed 6 queries + verification pill |
+| `web/src/app/open-mics/[slug]/page.tsx` | Verification state + pill |
+| `web/src/lib/events/verification.ts` | Seeded+claimed stays unconfirmed |
+| `web/scripts/slug-audit.ts` | Admin slug audit utility |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/verification-state.test.ts` | 32 tests (+8 new for Phase 4.39) |
 
 ---
 

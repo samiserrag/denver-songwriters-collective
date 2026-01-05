@@ -162,6 +162,16 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
 
   const hasDescription = Boolean(event.description?.trim());
 
+  // Phase 4.39: Compute verification state for display
+  const verificationResult = getPublicVerificationState({
+    status: (event as any).status,
+    host_id: (event as any).host_id,
+    source: (event as any).source,
+    last_verified_at: (event as any).last_verified_at,
+    verified_by: (event as any).verified_by,
+  });
+  const verificationState = verificationResult.state;
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <Link href="/happenings?type=open_mic" className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors mb-6">
@@ -219,6 +229,31 @@ export default async function EventBySlugPage({ params, searchParams }: EventPag
         )}
 
         <div className="p-6 md:p-8">
+          {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
+              <span>🎤</span> Open Mic
+            </span>
+            {verificationState === "confirmed" && (
+              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
+                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Confirmed
+              </span>
+            )}
+            {verificationState === "unconfirmed" && (
+              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
+                Unconfirmed
+              </span>
+            )}
+            {verificationState === "cancelled" && (
+              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                Cancelled
+              </span>
+            )}
+          </div>
+
           <h1
             className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4"
             dangerouslySetInnerHTML={{ __html: titleHtml }}
@@ -382,3 +417,4 @@ import EventSuggestionForm from "@/components/events/EventSuggestionForm";
 import ReportChangeForm from "@/components/events/ReportChangeForm";
 import { OpenMicComments } from "@/components/events";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
+import { getPublicVerificationState } from "@/lib/events/verification";
