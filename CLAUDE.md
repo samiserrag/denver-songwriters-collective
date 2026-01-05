@@ -228,10 +228,57 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.37 — Verification Status UX + Speed Insights (January 2026)
+
+**Verification State Helper:**
+- Created `getPublicVerificationState()` helper for consistent verification logic
+- Returns `confirmed` | `unconfirmed` | `cancelled` state
+- Logic: cancelled status → cancelled; needs_verification/unverified → unconfirmed; unclaimed + seeded + not verified → unconfirmed; else confirmed
+
+**Card Badge Updates:**
+- Changed "Schedule TBD" → "Unconfirmed" in HappeningCard and CompactListItem
+- Seeded events clearly marked as "may still be happening but not verified"
+
+**Event Detail Verification Block:**
+- Added verification block showing Cancelled (red), Unconfirmed (amber), Confirmed (green)
+- Always shows green block for confirmed events (even without verification date)
+- Admin users see "Manage status" link
+
+**Submit Update Form:**
+- Added status suggestion dropdown: Confirmed / Unconfirmed / Cancelled
+- Stored as `field: "suggested_status"` in event_update_suggestions table
+
+**Publish Checkbox Wording:**
+- Changed from "I confirm this event is real and happening" → "Ready to publish"
+- Removes implication that events might be fake
+
+**Vercel Speed Insights:**
+- Added `@vercel/speed-insights` package for performance monitoring
+- SpeedInsights component added to root layout
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/lib/events/verification.ts` | Verification state helper |
+| `web/src/app/events/[id]/page.tsx` | Detail page verification block |
+| `web/src/components/happenings/HappeningCard.tsx` | Card badge updates |
+| `web/src/components/events/EventSuggestionForm.tsx` | Status suggestion field |
+| `web/src/app/layout.tsx` | SpeedInsights component |
+| `docs/investigation/phase4-37-seeded-verification-status-system.md` | Investigation doc |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/verification-state.test.ts` | 26 tests - verification logic + detail page block |
+
+---
+
 ### Phase 4.36 — Publish Confirmation + Attendee Update Notifications (January 2026)
 
 **Publish Confirmation Gate:**
-- Hosts must check "I confirm this event is real and happening" checkbox before publishing
+- Hosts must check "Ready to publish" checkbox before publishing (updated wording in 4.37)
 - Applies to new events going from draft → published
 - Inline validation error if checkbox unchecked when toggling publish ON
 - Helps prevent accidental publication of incomplete events
@@ -710,6 +757,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/occurrence-overrides.test.ts` | Occurrence override model (17 tests) |
 | `__tests__/signup-lane-detection.test.ts` | Signup lane detection + banner visibility (16 tests) |
 | `__tests__/cancelled-ux-refinement.test.ts` | Cancelled disclosure behavior (9 tests) |
+| `__tests__/verification-state.test.ts` | Verification state helper + detail page block (26 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
