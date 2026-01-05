@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
@@ -42,6 +42,11 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
   if (error || !profile) {
     notFound();
+  }
+
+  // Phase 4.38: Canonical slug redirect - if accessed by UUID and profile has slug, redirect to canonical
+  if (isUUID(id) && profile.slug) {
+    redirect(`/songwriters/${profile.slug}`);
   }
 
   const songwriter = profile as DBProfile;

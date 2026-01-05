@@ -483,7 +483,9 @@ export function HappeningCard({
   // - recurrence: Tier 2 (pattern pills) - neutral fill + readable fg
   // - default/muted: Tier 3 (type/context) - outline + muted fg
   // - warning: Missing details badge - amber with explicit tokens
-  const Chip = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "accent" | "muted" | "recurrence" | "warning" }) => (
+  // - success: Confirmed/verified - green
+  // - danger: Cancelled - red
+  const Chip = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "accent" | "muted" | "recurrence" | "warning" | "success" | "danger" }) => (
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 text-sm font-medium rounded-full border whitespace-nowrap",
@@ -495,7 +497,11 @@ export function HappeningCard({
         variant === "default" && "bg-[var(--color-accent-muted)] text-[var(--pill-fg-on-neutral)] border-[var(--color-border-default)]",
         variant === "muted" && "bg-[var(--color-bg-tertiary)] text-[var(--pill-fg-on-neutral)] border-[var(--color-border-subtle)]",
         // Warning: Tokenized amber for theme safety
-        variant === "warning" && "bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border-[var(--pill-border-warning)]"
+        variant === "warning" && "bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border-[var(--pill-border-warning)]",
+        // Success: Confirmed/verified - green
+        variant === "success" && "bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border-[var(--pill-border-success)]",
+        // Danger: Cancelled - red
+        variant === "danger" && "bg-red-500/20 text-red-400 border-red-500/30"
       )}
     >
       {children}
@@ -687,6 +693,21 @@ export function HappeningCard({
 
           {/* Chips row - Tier 3 type/context pills */}
           <div className="flex items-center gap-1 flex-wrap">
+            {/* Phase 4.38: Always-visible verification status pill */}
+            {verificationState === "confirmed" && (
+              <Chip variant="success">
+                <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Confirmed
+              </Chip>
+            )}
+            {verificationState === "unconfirmed" && (
+              <Chip variant="warning">Unconfirmed</Chip>
+            )}
+            {verificationState === "cancelled" && (
+              <Chip variant="danger">Cancelled</Chip>
+            )}
             <Chip variant="default">{eventTypeLabel}</Chip>
             {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}
             {signupChip.show && <Chip variant="muted">Sign-up: {signupChip.label}</Chip>}

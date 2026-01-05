@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { ServiceCard } from "@/components/studios";
@@ -52,6 +52,11 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
 
   if (error || !profile) {
     notFound();
+  }
+
+  // Phase 4.38: Canonical slug redirect - if accessed by UUID and profile has slug, redirect to canonical
+  if (isUUID(id) && profile.slug) {
+    redirect(`/studios/${profile.slug}`);
   }
 
   const studio = profile as DBProfile;

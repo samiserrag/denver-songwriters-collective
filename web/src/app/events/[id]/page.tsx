@@ -152,6 +152,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     notFound();
   }
 
+  // Phase 4.38: Canonical slug redirect - if accessed by UUID and event has slug, redirect to canonical
+  if (isUUID(id) && event.slug) {
+    redirect(`/events/${event.slug}`);
+  }
+
   // Draft protection: only hosts/admins can view unpublished events
   if (!event.is_published) {
     const { data: { session } } = await supabase.auth.getSession();

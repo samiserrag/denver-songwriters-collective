@@ -84,10 +84,13 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
 
   describe('Status Badges', () => {
     // Phase 4.37: Changed from "Schedule TBD" to "Unconfirmed" for needs_verification status
+    // Phase 4.38: Now shows in both overlay and chips row
     it('should display Unconfirmed for needs_verification status', () => {
       const unverifiedEvent = { ...mockOpenMicEvent, status: 'needs_verification' };
       render(<HappeningCard event={unverifiedEvent} />);
-      expect(screen.getByText('Unconfirmed')).toBeInTheDocument();
+      // Multiple Unconfirmed badges (poster overlay + chips row)
+      const badges = screen.getAllByText('Unconfirmed');
+      expect(badges.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should display Ended for past events', () => {

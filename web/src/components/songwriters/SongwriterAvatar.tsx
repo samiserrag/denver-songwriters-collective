@@ -45,7 +45,8 @@ export function SongwriterAvatar({
           alt={alt}
           width={sizePixels[size]}
           height={sizePixels[size]}
-          className="h-full w-full object-cover"
+          // Phase 4.38: Use object-top to prioritize showing head/face, preventing top crop
+          className="h-full w-full object-cover object-top"
           draggable={false}
         />
       ) : (
