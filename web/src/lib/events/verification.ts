@@ -2,6 +2,7 @@
  * Public Verification State Helper
  *
  * Phase 4.37: Determines the public-facing verification state of an event.
+ * Phase 4.39: Seeded events MUST have last_verified_at to be confirmed.
  *
  * Three states:
  * - confirmed: Event is verified as happening
@@ -10,12 +11,13 @@
  *
  * Rules:
  * 1. Cancelled: status === 'cancelled'
- * 2. Unconfirmed: Active event that is seeded/imported and not yet verified
- *    - status === 'active' (or needs_verification/unverified)
- *    - host_id is null (unclaimed/seeded)
- *    - source in ('import', 'admin') OR status in ('needs_verification', 'unverified')
- *    - last_verified_at is null
+ * 2. Unconfirmed: Event needs verification:
+ *    - Has a "needs verification" status (needs_verification/unverified), OR
+ *    - Is from seeded source (import/admin) AND not yet verified (last_verified_at is null)
+ *      Note: Seeded events remain unconfirmed even if claimed (host_id set)
  * 3. Confirmed: Everything else that's active
+ *    - Host-created events (source=community/venue) are confirmed by default
+ *    - Seeded events become confirmed only when last_verified_at is set
  */
 
 export type VerificationState = "confirmed" | "unconfirmed" | "cancelled";
@@ -72,7 +74,7 @@ export function getPublicVerificationState(
 
   // Unconfirmed if:
   // - Has a "needs verification" status, OR
-  // - Is unclaimed AND from seeded source AND not verified
+  // - Is from seeded source AND not yet verified (regardless of claim status)
   if (hasNeedsVerificationStatus) {
     return {
       state: "unconfirmed",
@@ -82,10 +84,14 @@ export function getPublicVerificationState(
     };
   }
 
-  if (isUnclaimed && isSeededSource && isNotVerified) {
+  // Phase 4.39: Seeded events stay unconfirmed until explicitly verified,
+  // even if they've been claimed by a host
+  if (isSeededSource && isNotVerified) {
     return {
       state: "unconfirmed",
-      reason: "Event imported from external source, not yet verified",
+      reason: isUnclaimed
+        ? "Event imported from external source, not yet verified"
+        : "Claimed event awaiting admin verification",
       lastVerifiedAt: event.last_verified_at,
       verifiedBy: event.verified_by,
     };

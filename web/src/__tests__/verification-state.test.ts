@@ -283,6 +283,90 @@ describe("formatVerifiedDate", () => {
   });
 });
 
+describe("Phase 4.39: Seeded events with host_id stay unconfirmed", () => {
+  it("returns unconfirmed for seeded event claimed by host but not verified", () => {
+    // Phase 4.39: Seeded events MUST have last_verified_at to be confirmed,
+    // even if they have a host_id (claimed)
+    const event: VerificationInput = {
+      status: "active",
+      host_id: "user-123", // Claimed by a host
+      source: "import", // Seeded source
+      last_verified_at: null, // Not yet verified
+    };
+
+    const result = getPublicVerificationState(event);
+    expect(result.state).toBe("unconfirmed");
+    expect(result.reason).toContain("awaiting admin verification");
+  });
+
+  it("returns unconfirmed for admin-seeded event claimed by host but not verified", () => {
+    const event: VerificationInput = {
+      status: "active",
+      host_id: "user-456",
+      source: "admin", // Admin-seeded source
+      last_verified_at: null,
+    };
+
+    const result = getPublicVerificationState(event);
+    expect(result.state).toBe("unconfirmed");
+    expect(result.reason).toContain("awaiting admin verification");
+  });
+
+  it("returns confirmed for seeded event claimed by host AND verified", () => {
+    const event: VerificationInput = {
+      status: "active",
+      host_id: "user-789",
+      source: "import",
+      last_verified_at: "2026-01-15T12:00:00Z",
+      verified_by: "admin-123",
+    };
+
+    const result = getPublicVerificationState(event);
+    expect(result.state).toBe("confirmed");
+    expect(result.reason).toContain("Verified by admin");
+  });
+
+  it("returns unconfirmed for unclaimed seeded event without verification", () => {
+    const event: VerificationInput = {
+      status: "active",
+      host_id: null, // Unclaimed
+      source: "import",
+      last_verified_at: null,
+    };
+
+    const result = getPublicVerificationState(event);
+    expect(result.state).toBe("unconfirmed");
+    expect(result.reason).toContain("imported");
+  });
+
+  it("returns confirmed for community-sourced event even if unclaimed", () => {
+    // Community source is NOT a seeded source, so it's trusted
+    const event: VerificationInput = {
+      status: "active",
+      host_id: null,
+      source: "community",
+      last_verified_at: null,
+    };
+
+    const result = getPublicVerificationState(event);
+    expect(result.state).toBe("confirmed");
+  });
+
+  it("returns confirmed for community-sourced event with host", () => {
+    // Community-created events with host are always confirmed
+    const event: VerificationInput = {
+      status: "active",
+      host_id: "user-123",
+      source: "community",
+      last_verified_at: null,
+    };
+
+    const result = getPublicVerificationState(event);
+    expect(result.state).toBe("confirmed");
+    expect(result.reason).toContain("Published by host");
+  });
+});
+
 describe("Event Detail Page Verification Block", () => {
   it("confirmed renders green block even when last_verified_at is null", () => {
     // Simulating the event detail page logic:

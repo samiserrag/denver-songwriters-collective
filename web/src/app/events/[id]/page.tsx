@@ -168,10 +168,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     const isAdmin = await checkAdminRole(supabase, session.user.id);
 
     // Check if user is an event host
+    // Phase 4.39: Use event.id (UUID) not route param which could be a slug
     const { data: hostEntry } = await supabase
       .from("event_hosts")
       .select("id")
-      .eq("event_id", id)
+      .eq("event_id", event.id)
       .eq("user_id", session.user.id)
       .eq("invitation_status", "accepted")
       .maybeSingle();
@@ -238,10 +239,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const venueAddress = locationAddress;
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
+  // Phase 4.39: Use event.id (UUID) not route param which could be a slug
   const { data: eventHosts } = await supabase
     .from("event_hosts")
     .select("user_id")
-    .eq("event_id", id);
+    .eq("event_id", event.id);
 
   // Fetch host profiles if there are hosts
   let hosts: Array<{ id: string; slug: string | null; full_name: string | null; avatar_url: string | null }> = [];
@@ -256,6 +258,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
   // Get attendance count - use timeslot_claims for timeslot events, event_rsvps otherwise
   // Also track timeslot count for Phase 4.32 signup lane detection
+  // Phase 4.39: Use event.id (UUID) not route param which could be a slug
   let attendanceCount = 0;
   let timeslotCount = 0;
   if (event.has_timeslots) {
@@ -263,7 +266,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     const { data: timeslots } = await supabase
       .from("event_timeslots")
       .select("id")
-      .eq("event_id", id);
+      .eq("event_id", event.id);
 
     timeslotCount = timeslots?.length || 0;
 
@@ -277,19 +280,21 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       attendanceCount = count || 0;
     }
   } else {
+    // Phase 4.39: Use event.id (UUID) not route param which could be a slug
     const { count: rsvpCount } = await supabase
       .from("event_rsvps")
       .select("*", { count: "exact", head: true })
-      .eq("event_id", id)
+      .eq("event_id", event.id)
       .eq("status", "confirmed");
     attendanceCount = rsvpCount || 0;
   }
 
   // Fetch approved gallery photos linked to this event
+  // Phase 4.39: Use event.id (UUID) not route param which could be a slug
   const { data: eventPhotos } = await supabase
     .from("gallery_images")
     .select("id, image_url, caption")
-    .eq("event_id", id)
+    .eq("event_id", event.id)
     .eq("is_approved", true)
     .order("created_at", { ascending: false })
     .limit(12);
@@ -302,10 +307,11 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   let userClaim: { status: "pending" | "approved" | "rejected"; rejection_reason?: string | null } | null = null;
 
   if (session && isUnclaimed) {
+    // Phase 4.39: Use event.id (UUID) not route param which could be a slug
     const { data: existingClaim } = await supabase
       .from("event_claims")
       .select("status, rejection_reason")
-      .eq("event_id", id)
+      .eq("event_id", event.id)
       .eq("requester_id", session.user.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -476,14 +482,33 @@ export default async function EventDetailPage({ params }: EventPageProps) {
         />
 
         <div className="p-6 md:p-8">
-          {/* Event type and DSC badges */}
-          <div className="flex items-center gap-2 mb-4">
+          {/* Event type, DSC, and verification badges */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
               <span>{config.icon}</span> {config.label}
             </span>
             {event.is_dsc_event && (
               <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
                 DSC Event
+              </span>
+            )}
+            {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
+            {verificationState === "confirmed" && (
+              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
+                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Confirmed
+              </span>
+            )}
+            {verificationState === "unconfirmed" && (
+              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
+                Unconfirmed
+              </span>
+            )}
+            {verificationState === "cancelled" && (
+              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                Cancelled
               </span>
             )}
           </div>
@@ -536,18 +561,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </div>
             </div>
           )}
-          {verificationState === "confirmed" && (
-            <div className="mb-4 text-sm text-emerald-600 flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>
-                {verificationResult.lastVerifiedAt
-                  ? `Verified ${formatVerifiedDate(verificationResult.lastVerifiedAt)}`
-                  : "Confirmed"}
-              </span>
-            </div>
-          )}
+          {/* Phase 4.39: Removed old confirmed text block - pill in badges row is now the canonical display */}
 
           {/* Phase 4.1: Missing details indicator */}
           {hasMissingDetails({
