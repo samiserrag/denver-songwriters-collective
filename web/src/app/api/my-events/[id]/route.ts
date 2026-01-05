@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
+import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -240,16 +241,33 @@ export async function PATCH(
     }
   }
 
+  // Get current event state before update (for first publish check, timeslot regeneration, and notifications)
+  const { data: prevEvent } = await supabase
+    .from("events")
+    .select(`
+      is_published, published_at, status,
+      has_timeslots, total_slots, slot_duration_minutes,
+      event_date, start_time, end_time, venue_id, location_mode, day_of_week,
+      title, venue_name, venue_address, slug
+    `)
+    .eq("id", eventId)
+    .single();
+
+  // Phase 4.36: Require publish confirmation when transitioning from unpublished to published
+  const wasPublished = prevEvent?.is_published ?? false;
+  const willPublish = body.is_published === true;
+  const isNewPublish = willPublish && !wasPublished;
+
+  if (isNewPublish && body.host_publish_confirmed !== true) {
+    return NextResponse.json(
+      { error: "Publish confirmation required. Please confirm this event is real and happening." },
+      { status: 400 }
+    );
+  }
+
   // Track first publish
   if (body.is_published === true) {
-    // Only set published_at if not already published
-    const { data: existingEvent } = await supabase
-      .from("events")
-      .select("published_at")
-      .eq("id", eventId)
-      .single();
-
-    if (!existingEvent?.published_at) {
+    if (!prevEvent?.published_at) {
       updates.published_at = now;
     }
     // Also set status to active when publishing
@@ -258,12 +276,8 @@ export async function PATCH(
     }
   }
 
-  // Get current event state before update (for timeslot regeneration decision)
-  const { data: currentEvent } = await supabase
-    .from("events")
-    .select("has_timeslots, total_slots, slot_duration_minutes")
-    .eq("id", eventId)
-    .single();
+  // Alias for backward compat with timeslot logic
+  const currentEvent = prevEvent;
 
   // Determine if this update requires timeslot regeneration
   const timeslotsNowEnabled = body.has_timeslots === true;
@@ -333,6 +347,71 @@ export async function PATCH(
       } else {
         console.log(`[PATCH /api/my-events/${eventId}] Timeslots generated (${body.total_slots} slots)`);
       }
+    }
+  }
+
+  // Phase 4.36: Send event updated notifications if major fields changed
+  // Skip if: first publish (no attendees yet), or cancellation (handled by DELETE)
+  const statusBecomingCancelled = body.status === "cancelled" && prevEvent?.status !== "cancelled";
+  const shouldNotifyUpdate = hasMajorChange && wasPublished && !isNewPublish && !statusBecomingCancelled;
+
+  if (shouldNotifyUpdate && prevEvent) {
+    // Build changes object comparing prev to new values
+    const changes: {
+      date?: { old: string; new: string };
+      time?: { old: string; new: string };
+      venue?: { old: string; new: string };
+      address?: { old: string; new: string };
+    } = {};
+
+    // Only include fields that actually changed
+    if (body.event_date !== undefined && body.event_date !== prevEvent.event_date) {
+      changes.date = {
+        old: prevEvent.event_date || "TBD",
+        new: body.event_date || "TBD"
+      };
+    }
+
+    if (body.start_time !== undefined && body.start_time !== prevEvent.start_time) {
+      changes.time = {
+        old: prevEvent.start_time || "TBD",
+        new: body.start_time || "TBD"
+      };
+    }
+
+    if (body.day_of_week !== undefined && body.day_of_week !== prevEvent.day_of_week) {
+      // Treat day change as a date change
+      changes.date = {
+        old: prevEvent.day_of_week || prevEvent.event_date || "TBD",
+        new: body.day_of_week || body.event_date || "TBD"
+      };
+    }
+
+    // Venue change - use venue_name for display
+    const prevVenueName = prevEvent.venue_name || "TBD";
+    const newVenueName = (updates.venue_name as string) || prevVenueName;
+    if (body.venue_id !== undefined && body.venue_id !== prevEvent.venue_id) {
+      changes.venue = {
+        old: prevVenueName,
+        new: newVenueName
+      };
+    }
+
+    // Only notify if there are actual visible changes
+    if (Object.keys(changes).length > 0) {
+      // Fire-and-forget - don't block the response
+      sendEventUpdatedNotifications(supabase, {
+        eventId,
+        eventSlug: prevEvent.slug,
+        eventTitle: prevEvent.title || "Event",
+        changes,
+        eventDate: body.event_date || prevEvent.event_date || body.day_of_week || prevEvent.day_of_week || "",
+        eventTime: body.start_time || prevEvent.start_time || "",
+        venueName: newVenueName,
+        venueAddress: (updates.venue_address as string) || prevEvent.venue_address || undefined
+      }).catch((err) => {
+        console.error(`[PATCH /api/my-events/${eventId}] Failed to send update notifications:`, err);
+      });
     }
   }
 
