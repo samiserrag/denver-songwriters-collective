@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { HappeningsCard, DateSection, StickyControls } from "@/components/happenings";
+import { HappeningsCard, DateSection, StickyControls, BackToTop } from "@/components/happenings";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
 import { BetaBanner } from "@/components/happenings/BetaBanner";
@@ -553,6 +553,9 @@ export default async function HappeningsPage({
             </p>
           </div>
         )}
+
+        {/* Phase 4.38: Back to top button - appears when scrolling down */}
+        <BackToTop />
       </PageContainer>
     </>
   );
