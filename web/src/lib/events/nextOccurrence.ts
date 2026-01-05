@@ -1,9 +1,10 @@
 /**
  * Phase 4.18: Occurrence Computation & Expansion
+ * Phase 4.42c: Recurrence Unification Fix
  *
  * Computes occurrence dates for events, handling:
- * - One-time events (event_date)
- * - Weekly recurring events (day_of_week)
+ * - One-time events (event_date without recurrence)
+ * - Weekly recurring events (day_of_week + recurrence_rule)
  * - Single nth weekday of month (RRULE BYDAY=2TH or legacy "2nd")
  * - Multi-ordinal monthly (RRULE BYDAY=1TH,3TH or legacy "2nd/3rd", "1st & 3rd")
  *
@@ -12,11 +13,21 @@
  * - Occurrence expansion within a 90-day window
  * - One event can appear on multiple dates (e.g., every Wednesday)
  *
+ * Phase 4.42c CRITICAL FIX:
+ * - event_date now defines the START of a series, NOT the only date
+ * - Recurring events ALWAYS expand to multiple occurrences
+ * - Uses shared recurrence contract (interpretRecurrence) for consistency
+ *
  * IMPORTANT: All date keys are in America/Denver timezone.
  * Never use toISOString().split("T")[0] for date keys (that's UTC).
  */
 
 import { parseRRule } from "@/lib/recurrenceHumanizer";
+import {
+  interpretRecurrence,
+  assertRecurrenceInvariant,
+  type RecurrenceInput,
+} from "@/lib/events/recurrenceContract";
 
 /**
  * Denver timezone formatter for producing YYYY-MM-DD date keys.
@@ -509,6 +520,10 @@ export interface ExpandedOccurrence {
  * Expand all occurrences for an event within a date window.
  * Weekly events generate weekly dates, monthly events generate monthly dates.
  *
+ * Phase 4.42c: Now uses the unified recurrence contract.
+ * - event_date defines the START of a series, NOT the only date
+ * - Recurring events ALWAYS expand to multiple occurrences
+ *
  * @param event - Event with timing fields
  * @param options - Expansion options (window, max occurrences)
  * @returns Array of occurrence date keys within window
@@ -523,74 +538,65 @@ export function expandOccurrencesForEvent(
 
   const occurrences: ExpandedOccurrence[] = [];
 
-  // Case 1: One-time event
-  if (event.event_date) {
-    if (event.event_date >= startKey && event.event_date <= endKey) {
+  // Phase 4.42c: Use shared recurrence contract
+  const recurrence = interpretRecurrence(event as RecurrenceInput);
+
+  // Case 1: One-time event (NOT recurring)
+  if (!recurrence.isRecurring) {
+    if (event.event_date && event.event_date >= startKey && event.event_date <= endKey) {
       occurrences.push({ dateKey: event.event_date, isConfident: true });
     }
     return occurrences;
   }
 
-  // Case 2: RRULE with MONTHLY + BYDAY
-  const parsed = parseRRule(event.recurrence_rule ?? null);
-  if (parsed && parsed.freq === "MONTHLY" && parsed.byday.length > 0) {
-    const withOrdinals = parsed.byday.filter((d) => d.ordinal !== null);
-    if (withOrdinals.length > 0) {
-      const dayAbbrev = withOrdinals[0].day;
-      const targetDayIndex = DAY_ABBREV_TO_INDEX[dayAbbrev];
-      if (targetDayIndex !== undefined) {
-        const ordinals = withOrdinals.map((d) => d.ordinal!);
-        expandMonthlyOrdinals(ordinals, targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
-        return occurrences;
-      }
-    }
+  // Case 2: Recurring event - MUST expand to multiple occurrences
+  const targetDayIndex = recurrence.dayOfWeekIndex;
+
+  // If we don't have a confident day, return empty (unknown schedule)
+  if (targetDayIndex === null || !recurrence.isConfident) {
+    return [];
   }
 
-  // Case 2.5: Legacy format with day_of_week
-  if (event.recurrence_rule && event.day_of_week) {
-    const rule = event.recurrence_rule.toLowerCase().trim();
-    const dayAbbrev = DAY_NAME_TO_ABBREV[event.day_of_week.toLowerCase().trim()];
-    const targetDayIndex = dayAbbrev ? DAY_ABBREV_TO_INDEX[dayAbbrev] : undefined;
+  // Determine effective start: use event_date as anchor if specified, else startKey
+  const effectiveStart = event.event_date && event.event_date >= startKey
+    ? event.event_date
+    : startKey;
 
-    if (targetDayIndex !== undefined) {
-      // Multi-ordinal pattern
-      if (isMultiOrdinalPattern(rule)) {
-        const ordinals = parseMultiOrdinal(rule);
-        if (ordinals && ordinals.length > 0) {
-          expandMonthlyOrdinals(ordinals, targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
-          return occurrences;
-        }
-        // Couldn't parse - return empty (unknown)
-        return [];
+  // Handle different recurrence frequencies
+  switch (recurrence.frequency) {
+    case "monthly":
+      if (recurrence.ordinals.length > 0) {
+        // Monthly with ordinals (1st Tuesday, 2nd/4th Thursday, etc.)
+        expandMonthlyOrdinals(
+          recurrence.ordinals,
+          targetDayIndex,
+          effectiveStart,
+          endKey,
+          maxOccurrences,
+          occurrences
+        );
+      } else {
+        // Monthly without ordinals - just expand weekly (fallback)
+        expandWeekly(targetDayIndex, effectiveStart, endKey, maxOccurrences, occurrences);
       }
+      break;
 
-      // Single ordinal
-      const legacyOrdinal = LEGACY_ORDINAL_TO_NUMBER[rule];
-      if (legacyOrdinal !== undefined) {
-        expandMonthlyOrdinals([legacyOrdinal], targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
-        return occurrences;
-      }
+    case "biweekly":
+      // Biweekly - every other week
+      expandBiweekly(targetDayIndex, effectiveStart, endKey, maxOccurrences, occurrences);
+      break;
 
-      // "weekly", "none", etc. - expand as weekly
-      if (rule === "weekly" || rule === "none" || rule === "") {
-        expandWeekly(targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
-        return occurrences;
-      }
-    }
+    case "weekly":
+    default:
+      // Weekly expansion
+      expandWeekly(targetDayIndex, effectiveStart, endKey, maxOccurrences, occurrences);
+      break;
   }
 
-  // Case 3: Weekly with day_of_week only
-  if (event.day_of_week && !isMultiOrdinalPattern(event.recurrence_rule)) {
-    const dayAbbrev = DAY_NAME_TO_ABBREV[event.day_of_week.toLowerCase().trim()];
-    const targetDayIndex = dayAbbrev ? DAY_ABBREV_TO_INDEX[dayAbbrev] : undefined;
-    if (targetDayIndex !== undefined) {
-      expandWeekly(targetDayIndex, startKey, endKey, maxOccurrences, occurrences);
-      return occurrences;
-    }
-  }
+  // Phase 4.42c: Invariant check - recurring events should produce multiple occurrences
+  assertRecurrenceInvariant(recurrence, occurrences.length);
 
-  // Unknown schedule - return empty
-  return [];
+  return occurrences;
 }
 
 /**
@@ -615,6 +621,32 @@ function expandWeekly(
   while (current <= endKey && occurrences.length < maxOccurrences) {
     occurrences.push({ dateKey: current, isConfident: true });
     current = addDaysDenver(current, 7);
+  }
+}
+
+/**
+ * Expand biweekly (every other week) occurrences within window.
+ * Phase 4.42c: Added for proper biweekly support.
+ */
+function expandBiweekly(
+  dayOfWeek: number,
+  startKey: string,
+  endKey: string,
+  maxOccurrences: number,
+  occurrences: ExpandedOccurrence[]
+): void {
+  const startDate = dateFromDenverKey(startKey);
+  const startDayIndex = startDate.getUTCDay();
+
+  // Find first occurrence >= startKey
+  let daysUntil = dayOfWeek - startDayIndex;
+  if (daysUntil < 0) daysUntil += 7;
+
+  let current = addDaysDenver(startKey, daysUntil);
+
+  while (current <= endKey && occurrences.length < maxOccurrences) {
+    occurrences.push({ dateKey: current, isConfident: true });
+    current = addDaysDenver(current, 14); // Every 14 days = biweekly
   }
 }
 

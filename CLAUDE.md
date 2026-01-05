@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.40):** Lint warnings = 0. All tests passing (766). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.42c):** Lint warnings = 0. All tests passing (808). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -95,6 +95,7 @@ All must pass before merge:
 | Footer | `web/src/components/navigation/footer.tsx` |
 | Event form | `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` |
 | Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
+| Recurrence contract | `web/src/lib/events/recurrenceContract.ts` |
 | CommentThread (shared) | `web/src/components/comments/CommentThread.tsx` |
 | ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
 | GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
@@ -226,6 +227,64 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42c — Recurrence Unification Fix (January 2026)
+
+**Goal:** Fix critical bug where recurring events with `event_date` only showed one occurrence.
+
+**Root Cause:**
+- `expandOccurrencesForEvent()` short-circuited when `event_date` was set
+- Labels used `day_of_week` ("Every Monday") but generator used `event_date` (single Tuesday)
+- Result: Label said "Every Monday" but only one Tuesday showed in happenings
+
+**Solution: Unified Recurrence Contract**
+
+Created `recurrenceContract.ts` as the SINGLE source of truth:
+- Both generator (`nextOccurrence.ts`) and label path (`recurrenceHumanizer.ts`) consume this
+- `event_date` now defines the START of a series, not the ONLY date
+- Recurring events ALWAYS expand to multiple occurrences
+
+**Key Invariants (Enforced):**
+1. Labels MUST match what the generator produces
+2. `day_of_week` is authoritative for recurrence pattern
+3. `event_date` is the anchor point, not the short-circuit
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `lib/events/recurrenceContract.ts` | Unified recurrence interpretation (NEW) |
+| `lib/events/nextOccurrence.ts` | Generator now uses shared contract |
+| `lib/recurrenceHumanizer.ts` | Labels now use shared contract |
+
+**Functions Added:**
+- `interpretRecurrence(event)` → Normalized recurrence object
+- `labelFromRecurrence(rec)` → Human-readable label
+- `shouldExpandToMultiple(rec)` → Invariant check
+- `assertRecurrenceInvariant()` → Dev/test warning on violations
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/recurrence-unification.test.ts` | 24 tests - contract, expansion, label-generator consistency |
+
+**Before/After:**
+```
+BEFORE: event_date="2026-01-06" (Tuesday), day_of_week="Monday", recurrence_rule="weekly"
+        → Label: "Every Monday"
+        → Generator: 1 occurrence (Jan 6 - Tuesday)
+
+AFTER:  Same data
+        → Label: "Every Monday"
+        → Generator: 12 occurrences (all Mondays starting Jan 12)
+```
+
+**Documentation:**
+- `docs/recurrence/RECURRENCE-CONTRACT.md` — Full recurrence system contract
+- `docs/recurrence/RECURRENCE-TEST-MATRIX.md` — Test coverage matrix
 
 ---
 
