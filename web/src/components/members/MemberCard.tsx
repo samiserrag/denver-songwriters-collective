@@ -121,7 +121,8 @@ export function MemberCard({ member, className }: MemberCardProps) {
               alt={member.name}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover"
+              // Phase 4.38: Use object-top to prioritize showing head/face, preventing top crop
+              className="object-cover object-top"
             />
           ) : (
             <ImagePlaceholder
