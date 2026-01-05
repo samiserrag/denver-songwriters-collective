@@ -325,9 +325,9 @@ export function HappeningCard({
   const verificationState = verificationResult.state;
   const isUnconfirmed = verificationState === "unconfirmed";
 
-  // Legacy: showScheduleTBD is now replaced by isUnconfirmed for badge display
-  const showScheduleTBD = isUnconfirmed;
-  const showEnded = !showScheduleTBD && dateInfo.isPast;
+  // Phase 4.40: Show "Ended" for all past events regardless of verification
+  // "Ended" takes priority over "Unconfirmed" since the event already happened
+  const showEnded = dateInfo.isPast;
 
   // Cost display - NA standardization
   const getCostDisplay = (): string => {
@@ -630,19 +630,20 @@ export function HappeningCard({
           </button>
 
           {/* Status badge overlay - top left */}
-          {/* Phase 4.37: Show verification state badges */}
-          {(isCancelled || isUnconfirmed || showEnded) && (
+          {/* Phase 4.37/4.40: Show verification state badges */}
+          {/* Priority: cancelled > ended (past) > unconfirmed */}
+          {(isCancelled || showEnded || isUnconfirmed) && (
             <div className="absolute top-2.5 left-2.5 z-10">
               <span
                 className={cn(
                   "px-2 py-1 text-xs font-bold uppercase tracking-wide rounded-full",
                   "bg-black/50 backdrop-blur-sm",
                   isCancelled && "text-red-400",
-                  !isCancelled && isUnconfirmed && "text-amber-300",
-                  !isCancelled && !isUnconfirmed && showEnded && "text-white/70"
+                  !isCancelled && showEnded && "text-white/70",
+                  !isCancelled && !showEnded && isUnconfirmed && "text-amber-300"
                 )}
               >
-                {isCancelled ? "CANCELLED" : isUnconfirmed ? "Unconfirmed" : "Ended"}
+                {isCancelled ? "CANCELLED" : showEnded ? "Ended" : "Unconfirmed"}
               </span>
             </div>
           )}

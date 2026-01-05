@@ -1,23 +1,20 @@
 /**
  * Public Verification State Helper
  *
- * Phase 4.37: Determines the public-facing verification state of an event.
- * Phase 4.39: Seeded events MUST have last_verified_at to be confirmed.
+ * Phase 4.40: ALL events start as Unconfirmed until admin explicitly verifies.
  *
  * Three states:
- * - confirmed: Event is verified as happening
- * - unconfirmed: Event exists but hasn't been verified (seeded/imported events)
+ * - confirmed: Admin has verified this event (last_verified_at is set)
+ * - unconfirmed: Event exists but hasn't been verified yet
  * - cancelled: Event has been cancelled
  *
- * Rules:
- * 1. Cancelled: status === 'cancelled'
- * 2. Unconfirmed: Event needs verification:
- *    - Has a "needs verification" status (needs_verification/unverified), OR
- *    - Is from seeded source (import/admin) AND not yet verified (last_verified_at is null)
- *      Note: Seeded events remain unconfirmed even if claimed (host_id set)
- * 3. Confirmed: Everything else that's active
- *    - Host-created events (source=community/venue) are confirmed by default
- *    - Seeded events become confirmed only when last_verified_at is set
+ * Rules (in order):
+ * 1. Cancelled: status === 'cancelled' → always cancelled
+ * 2. Confirmed: last_verified_at is not null → verified by admin
+ * 3. Unconfirmed: Everything else (default state for all new events)
+ *
+ * This replaces the previous source-based logic. Now verification is purely
+ * based on whether an admin has explicitly verified the event.
  */
 
 export type VerificationState = "confirmed" | "unconfirmed" | "cancelled";
@@ -39,17 +36,10 @@ export interface VerificationInput {
 }
 
 /**
- * Seeded sources - events imported by admin or from external data
- */
-const SEEDED_SOURCES = ["import", "admin"];
-
-/**
- * Statuses that indicate an event needs verification
- */
-const NEEDS_VERIFICATION_STATUSES = ["needs_verification", "unverified"];
-
-/**
  * Get the public-facing verification state of an event
+ *
+ * Phase 4.40: Simplified logic - all events are unconfirmed until
+ * an admin sets last_verified_at.
  */
 export function getPublicVerificationState(
   event: VerificationInput
@@ -62,49 +52,22 @@ export function getPublicVerificationState(
     };
   }
 
-  // Rule 2: Check if event is unconfirmed (seeded/imported and not verified)
-  const isSeededSource = event.source
-    ? SEEDED_SOURCES.includes(event.source)
-    : false;
-  const hasNeedsVerificationStatus = event.status
-    ? NEEDS_VERIFICATION_STATUSES.includes(event.status)
-    : false;
-  const isUnclaimed = event.host_id === null;
-  const isNotVerified = event.last_verified_at === null;
-
-  // Unconfirmed if:
-  // - Has a "needs verification" status, OR
-  // - Is from seeded source AND not yet verified (regardless of claim status)
-  if (hasNeedsVerificationStatus) {
+  // Rule 2: Confirmed if last_verified_at is set
+  if (event.last_verified_at !== null && event.last_verified_at !== undefined) {
     return {
-      state: "unconfirmed",
-      reason: "Event schedule has not been confirmed",
+      state: "confirmed",
+      reason: "Verified by admin",
       lastVerifiedAt: event.last_verified_at,
       verifiedBy: event.verified_by,
     };
   }
 
-  // Phase 4.39: Seeded events stay unconfirmed until explicitly verified,
-  // even if they've been claimed by a host
-  if (isSeededSource && isNotVerified) {
-    return {
-      state: "unconfirmed",
-      reason: isUnclaimed
-        ? "Event imported from external source, not yet verified"
-        : "Claimed event awaiting admin verification",
-      lastVerifiedAt: event.last_verified_at,
-      verifiedBy: event.verified_by,
-    };
-  }
-
-  // Rule 3: Everything else is confirmed
+  // Rule 3: Everything else is unconfirmed (default state)
   return {
-    state: "confirmed",
-    reason: event.last_verified_at
-      ? "Verified by admin"
-      : "Published by host",
-    lastVerifiedAt: event.last_verified_at,
-    verifiedBy: event.verified_by,
+    state: "unconfirmed",
+    reason: "Awaiting admin verification",
+    lastVerifiedAt: null,
+    verifiedBy: null,
   };
 }
 

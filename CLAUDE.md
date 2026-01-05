@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.39):** Lint warnings = 0. All tests passing (766). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.40):** Lint warnings = 0. All tests passing (766). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -226,6 +226,38 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.40 — Everything Starts Unconfirmed (January 2026)
+
+**Simplified Verification Logic:**
+- ALL events now default to "Unconfirmed" until an admin explicitly verifies them
+- Verification is purely based on `last_verified_at` field:
+  - `status === 'cancelled'` → Cancelled
+  - `last_verified_at IS NOT NULL` → Confirmed
+  - Everything else → Unconfirmed
+- Removed source-based logic (no more special handling for "import"/"admin" sources)
+- This ensures consistent behavior: no event shows as Confirmed unless admin verified it
+
+**One-Time Reset Script:**
+- Added `web/scripts/reset-event-verification.ts`
+- Clears `last_verified_at` and `verified_by` for all events
+- Run once on prod after deploying Phase 4.40
+- Usage: `cd web && npx tsx scripts/reset-event-verification.ts`
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/lib/events/verification.ts` | Simplified: cancelled → confirmed (if verified) → unconfirmed |
+| `web/scripts/reset-event-verification.ts` | One-time admin script to reset all verifications |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/verification-state.test.ts` | 32 tests (rewritten for Phase 4.40 logic) |
 
 ---
 
