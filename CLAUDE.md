@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.40):** Lint warnings = 0. All tests passing (766). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.42):** Lint warnings = 0. All tests passing (801). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -226,6 +226,41 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42 — Recurrence Correctness (January 2026)
+
+**Root Cause:** Events with `day_of_week = "Monday"` but `event_date = "2026-01-06"` (Tuesday) showed label "Every Monday" but generated only one occurrence on Tuesday.
+
+**The Bug:**
+- Label path uses `day_of_week` → "Every Monday"
+- Generator path uses `event_date` when set → returns Jan 6 (Tuesday)
+- No validation to ensure these fields match
+
+**Fix: Write-Time Validation**
+- Added `validateDayOfWeekMatch()` helper to both create and edit endpoints
+- Rejects events where `event_date` weekday doesn't match `day_of_week`
+- Uses Denver timezone for consistency with occurrence expansion
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/app/api/my-events/route.ts` | Create validation |
+| `web/src/app/api/my-events/[id]/route.ts` | Edit validation |
+| `docs/investigation/phase4-42-recurrence-correctness.md` | Full investigation |
+
+**Recurrence Contract (Documented):**
+- `event_date` is authoritative for concrete dates
+- `day_of_week` must match `event_date` weekday when both are set
+- Label and generator share same source of truth after validation
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/recurrence-correctness.test.ts` | 17 tests - validation, label/generator alignment |
 
 ---
 

@@ -4,6 +4,39 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 
+/**
+ * Phase 4.42: Validate that event_date matches day_of_week
+ *
+ * Prevents mismatch where label says "Every Monday" but dates are Tuesdays.
+ * Uses Denver timezone for consistency with occurrence expansion.
+ */
+function validateDayOfWeekMatch(
+  eventDate: string,
+  dayOfWeek: string | null | undefined
+): { valid: boolean; error?: string; actualDay?: string } {
+  if (!dayOfWeek) {
+    // No day_of_week specified - no validation needed
+    return { valid: true };
+  }
+
+  // Parse date at noon to avoid timezone edge cases
+  const date = new Date(`${eventDate}T12:00:00`);
+  const actualDay = date.toLocaleDateString("en-US", {
+    weekday: "long",
+    timeZone: "America/Denver",
+  });
+
+  if (actualDay.toLowerCase() !== dayOfWeek.toLowerCase()) {
+    return {
+      valid: false,
+      error: `Event date ${eventDate} is ${actualDay}, but day_of_week is ${dayOfWeek}. These must match.`,
+      actualDay,
+    };
+  }
+
+  return { valid: true, actualDay };
+}
+
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
   // Check admin (using profiles.role, not app_metadata)
@@ -139,6 +172,14 @@ export async function PATCH(
   // Validate mutual exclusivity
   if (hasVenue && hasCustomLocation) {
     return NextResponse.json({ error: "Cannot have both venue_id and custom_location_name" }, { status: 400 });
+  }
+
+  // Phase 4.42: Validate day_of_week matches event_date when both are being updated
+  if (body.event_date !== undefined && body.day_of_week !== undefined) {
+    const dayValidation = validateDayOfWeekMatch(body.event_date, body.day_of_week);
+    if (!dayValidation.valid) {
+      return NextResponse.json({ error: dayValidation.error }, { status: 400 });
+    }
   }
 
   // Only allow updating specific fields
