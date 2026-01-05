@@ -229,6 +229,38 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.41 — Admin Verification Queue UX (January 2026)
+
+**Goal:** Fast, safe admin workflow to verify or delete events before launch.
+
+**Improved Admin Queue Page (`/dashboard/admin/open-mics`):**
+- Default filter: Unconfirmed events (need admin verification)
+- High-signal filters: status (unconfirmed/confirmed/cancelled), date (upcoming/past/all), venue, search
+- Row-level quick actions: Verify (one-click), Cancel (confirm dialog), Delete (guardrails)
+- Inline context: event title + public link, venue, schedule, time, verification pill
+
+**Hard Delete Guardrails:**
+- Delete blocked if event has RSVPs (409 Conflict with reason)
+- Delete blocked if event has timeslot claims
+- Confirm dialog with explicit warning before deletion
+- Button disabled with tooltip when blocked
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `components/admin/VerificationQueueTable.tsx` | Client component with filters and actions |
+| `app/api/admin/open-mics/[id]/route.ts` | DELETE endpoint with guardrails |
+| `app/api/admin/open-mics/[id]/status/route.ts` | POST endpoint for status updates |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/admin-verification-queue.test.ts` | 18 tests - filter logic, verify/cancel/delete behavior |
+
+---
+
 ### Phase 4.40 — Everything Starts Unconfirmed (January 2026)
 
 **Simplified Verification Logic:**
