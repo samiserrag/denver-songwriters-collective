@@ -243,7 +243,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 **One-Time Reset Script:**
 - Added `web/scripts/reset-event-verification.ts`
 - Clears `last_verified_at` and `verified_by` for all events
-- Run once on prod after deploying Phase 4.40
+- **Executed 2026-01-04:** Reset 19 verified events to Unconfirmed
 - Usage: `cd web && npx tsx scripts/reset-event-verification.ts`
 
 **Key Files:**
