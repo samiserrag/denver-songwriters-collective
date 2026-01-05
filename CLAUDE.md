@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.35):** Lint warnings = 0. All tests passing (686). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.36):** Lint warnings = 0. All tests passing (719). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -225,6 +225,43 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.36 — Publish Confirmation + Attendee Update Notifications (January 2026)
+
+**Publish Confirmation Gate:**
+- Hosts must check "I confirm this event is real and happening" checkbox before publishing
+- Applies to new events going from draft → published
+- Inline validation error if checkbox unchecked when toggling publish ON
+- Helps prevent accidental publication of incomplete events
+
+**Attendee Update Notifications:**
+- When major fields change on published events, all signed-up users receive notifications
+- Dashboard notification always created (canonical)
+- Email sent via `eventUpdated` template, respecting user preferences
+- Major fields that trigger notifications: `event_date`, `start_time`, `end_time`, `venue_id`, `location_mode`, `day_of_week`
+
+**Skip Conditions (No Notification):**
+- First publish (no attendees yet)
+- Cancellation (handled by DELETE handler)
+- Non-major changes (title, description, host_notes, etc.)
+- Draft event changes (not published)
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` | Publish confirmation checkbox UI |
+| `web/src/app/api/my-events/[id]/route.ts` | API gate + notification trigger |
+| `web/src/lib/notifications/eventUpdated.ts` | Attendee enumeration + preference-gated sending |
+| `docs/investigation/phase4-36-publish-confirm-and-attendee-updates.md` | Investigation doc |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/publish-confirmation-and-updates.test.ts` | 33 tests - publish gate + notification logic |
 
 ---
 

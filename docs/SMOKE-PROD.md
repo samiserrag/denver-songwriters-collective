@@ -79,6 +79,49 @@ Quick verification checklist for production deployments. Run after each deploy t
 
 ---
 
+### 6. Publish Confirmation Gate (Phase 4.36)
+
+**Precondition:** Logged in as host
+
+**Steps:**
+1. Create a new event OR edit an existing draft event
+2. Toggle "Published" ON without checking the confirmation checkbox
+3. Click Save
+
+**Expected:**
+- Inline error appears: "Please confirm you are ready to publish"
+- Save is blocked
+
+4. Check the "I confirm this event is real and happening" checkbox
+5. Click Save
+
+**Expected:**
+- Event publishes successfully
+- No error
+
+**Pass Criteria:** Publish blocked without confirmation, succeeds with confirmation
+
+---
+
+### 7. Event Updated Notifications (Phase 4.36)
+
+**Precondition:**
+- Logged in as host
+- Pick a **published** event with at least 1 RSVP or 1 timeslot claim
+
+**Steps:**
+1. Edit the event and change a "major" field (start_time, venue, event_date, etc.)
+2. Save the event
+
+**Expected:**
+- Dashboard notification created for each signed-up attendee
+- If attendee has event update emails enabled → email arrives (uses `eventUpdated` template)
+- If attendee disabled event update emails → NO email, but dashboard notification still appears
+
+**Pass Criteria:** Dashboard notification exists; email respects user preference
+
+---
+
 ## Quick Verification Script
 
 Run from repo root:
