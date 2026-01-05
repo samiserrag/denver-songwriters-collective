@@ -310,7 +310,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     const isNewPublish = willPublish && !wasPublished;
 
     if (isNewPublish && !publishConfirmed) {
-      setError("Please confirm that this event is real and happening before publishing.");
+      setError("Please confirm you're ready to publish before making this event visible.");
       setLoading(false);
       return;
     }
@@ -1104,7 +1104,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </button>
         </div>
 
-        {/* Phase 4.36: Publish confirmation checkbox - only show when publishing a new/draft event */}
+        {/* Phase 4.36/4.37: Publish confirmation checkbox - only show when publishing a new/draft event */}
         {formData.is_published && !(event?.is_published) && (
           <label className="flex items-start gap-3 cursor-pointer p-3 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
             <input
@@ -1115,10 +1115,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             />
             <div>
               <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                I confirm this event is real and happening
+                Ready to publish
               </span>
               <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                By publishing, you confirm that this event will take place as described and attendees can sign up.
+                This will make your event visible to the community. You can unpublish at any time.
               </p>
             </div>
           </label>
