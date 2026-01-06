@@ -110,6 +110,10 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Great news! You're confirmed for <strong>${safeTitle}</strong>.`)}
 
+<p style="margin: 12px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; font-style: italic;">
+  RSVP means you plan to attend. It is not a performer sign-up.
+</p>
+
 <div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
@@ -142,6 +146,8 @@ ${createSecondaryLink("I can't make it anymore", cancelUrl)}
   const textContent = `${userName?.trim() ? `Hi ${userName.trim()},` : "Hi there,"}
 
 Great news! You're confirmed for ${eventTitle}.
+
+(RSVP means you plan to attend. It is not a performer sign-up.)
 
 WHEN: ${safeDate} at ${safeTime}
 WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
@@ -186,6 +192,10 @@ ${paragraph(`Thanks for your interest in <strong>${safeTitle}</strong>!`)}
 
 ${paragraph(positionText)}
 
+<p style="margin: 12px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; font-style: italic;">
+  RSVP means you plan to attend. It is not a performer sign-up.
+</p>
+
 <div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
@@ -226,6 +236,8 @@ ${createSecondaryLink("Remove me from the waitlist", cancelUrl)}
 Thanks for your interest in ${eventTitle}!
 
 ${waitlistPosition !== undefined ? `You're #${waitlistPosition} on the waitlist.` : "You're on the waitlist."}
+
+(RSVP means you plan to attend. It is not a performer sign-up.)
 
 WHEN: ${safeDate} at ${safeTime}
 WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}

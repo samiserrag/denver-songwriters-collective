@@ -16,6 +16,9 @@ interface VenueSelectorProps {
   selectedVenueId: string;
   onVenueChange: (venueId: string) => void;
   onVenueCreated?: (venue: Venue) => void;
+  onCustomLocationSelect?: () => void;
+  showCustomLocationOption?: boolean;
+  isCustomLocationSelected?: boolean;
   required?: boolean;
   disabled?: boolean;
 }
@@ -36,6 +39,9 @@ export default function VenueSelector({
   selectedVenueId,
   onVenueChange,
   onVenueCreated,
+  onCustomLocationSelect,
+  showCustomLocationOption = false,
+  isCustomLocationSelected = false,
   required = false,
   disabled = false,
 }: VenueSelectorProps) {
@@ -102,22 +108,41 @@ export default function VenueSelector({
     const value = e.target.value;
     if (value === "__new__") {
       setShowNewVenueForm(true);
+    } else if (value === "__custom__") {
+      setShowNewVenueForm(false);
+      if (onCustomLocationSelect) {
+        onCustomLocationSelect();
+      }
     } else {
       onVenueChange(value);
       setShowNewVenueForm(false);
     }
   };
 
+  // Determine the current dropdown value
+  const getSelectValue = () => {
+    if (showNewVenueForm) return "__new__";
+    if (isCustomLocationSelected) return "__custom__";
+    return selectedVenueId;
+  };
+
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Venue {required && "*"}
+        <label className="block text-sm font-medium mb-2">
+          {required ? (
+            <>
+              <span className="text-red-500">Location</span>
+              <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+            </>
+          ) : (
+            <span className="text-[var(--color-text-secondary)]">Location</span>
+          )}
         </label>
         <select
-          value={showNewVenueForm ? "__new__" : selectedVenueId}
+          value={getSelectValue()}
           onChange={handleSelectChange}
-          required={required && !showNewVenueForm}
+          required={required && !showNewVenueForm && !isCustomLocationSelected}
           disabled={disabled || creating}
           className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
         >
@@ -128,7 +153,11 @@ export default function VenueSelector({
               {v.city && v.city !== "UNKNOWN" ? ` — ${v.city}` : ""}
             </option>
           ))}
-          <option value="__new__">+ Add New Venue</option>
+          <option disabled className="text-[var(--color-text-secondary)]">──────────────</option>
+          <option value="__new__">+ Add new venue...</option>
+          {showCustomLocationOption && (
+            <option value="__custom__">✎ Enter custom location...</option>
+          )}
         </select>
       </div>
 

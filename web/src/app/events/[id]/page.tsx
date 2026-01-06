@@ -11,6 +11,7 @@ import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
 import { TimeslotSection } from "@/components/events/TimeslotSection";
 import { HostControls } from "@/components/events/HostControls";
 import { ClaimEventButton } from "@/components/events/ClaimEventButton";
+import { AttendeeList } from "@/components/events/AttendeeList";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
@@ -107,21 +108,28 @@ function formatTime(time: string | null): string | null {
 }
 
 /**
- * Phase 4.32: Determines if an event has a functioning signup lane.
- * - Timeslot events need actual timeslot rows to exist
- * - RSVP events need capacity to be set
+ * Phase 4.43: Determines if an event has a functioning signup lane.
+ *
+ * RSVP is now always available for published, non-cancelled events.
+ * - RSVP lane is always present (capacity=null means unlimited)
+ * - Timeslot lane exists only if has_timeslots=true AND timeslot rows exist
+ *
+ * This function is used to detect "no signup method set" for host warnings.
+ * Since RSVP is always available, this now returns true for any published event.
  */
 function hasSignupLane(
-  event: { has_timeslots?: boolean | null; capacity?: number | null },
+  event: { has_timeslots?: boolean | null; capacity?: number | null; is_published?: boolean },
   timeslotCount: number
 ): boolean {
-  if (event.has_timeslots) {
-    // Timeslot lane exists only if timeslot rows exist
-    return timeslotCount > 0;
-  } else {
-    // RSVP lane exists only if capacity is set
-    return event.capacity !== null && event.capacity !== undefined;
+  // RSVP is always available for published events (capacity=null means unlimited)
+  // The only "no signup" scenario is when timeslots are enabled but no slots exist
+  if (event.has_timeslots && timeslotCount === 0) {
+    // Timeslots enabled but no slots configured - missing performer lane
+    // But RSVP still works, so return true
+    return true;
   }
+  // RSVP is always available
+  return true;
 }
 
 export default async function EventDetailPage({ params }: EventPageProps) {
@@ -256,13 +264,23 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     hosts = profiles || [];
   }
 
-  // Get attendance count - use timeslot_claims for timeslot events, event_rsvps otherwise
-  // Also track timeslot count for Phase 4.32 signup lane detection
-  // Phase 4.39: Use event.id (UUID) not route param which could be a slug
-  let attendanceCount = 0;
+  // Phase 4.43: Count RSVP attendees AND performer claims separately
+  // RSVP = audience "planning to attend" (always available)
+  // Timeslot claims = performers (when has_timeslots=true)
+  let rsvpCount = 0;
+  let performerCount = 0;
   let timeslotCount = 0;
+
+  // Always count RSVPs (RSVP is always available)
+  const { count: rsvpCountResult } = await supabase
+    .from("event_rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", event.id)
+    .eq("status", "confirmed");
+  rsvpCount = rsvpCountResult || 0;
+
+  // Count performer claims if timeslots are enabled
   if (event.has_timeslots) {
-    // First get the timeslot IDs for this event
     const { data: timeslots } = await supabase
       .from("event_timeslots")
       .select("id")
@@ -277,17 +295,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
         .select("*", { count: "exact", head: true })
         .in("timeslot_id", slotIds)
         .in("status", ["confirmed", "performed"]);
-      attendanceCount = count || 0;
+      performerCount = count || 0;
     }
-  } else {
-    // Phase 4.39: Use event.id (UUID) not route param which could be a slug
-    const { count: rsvpCount } = await supabase
-      .from("event_rsvps")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", event.id)
-      .eq("status", "confirmed");
-    attendanceCount = rsvpCount || 0;
   }
+
+  // For RSVPSection, pass the RSVP count (not combined)
+  const attendanceCount = rsvpCount;
 
   // Fetch approved gallery photos linked to this event
   // Phase 4.39: Use event.id (UUID) not route param which could be a slug
@@ -660,8 +673,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
           {/* Action buttons row */}
           <div className="flex flex-wrap items-start gap-4 mb-8">
-            {/* Show RSVP button only for non-timeslot DSC events that can still accept RSVPs */}
-            {canRSVP && event.is_dsc_event && !(event as { has_timeslots?: boolean }).has_timeslots && (
+            {/* Phase 4.43: RSVP is always available for DSC events (even with timeslots) */}
+            {/* RSVP = audience/supporters "planning to attend", not performer signup */}
+            {canRSVP && event.is_dsc_event && (
               <Suspense fallback={
                 <div className="animate-pulse">
                   <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
@@ -729,6 +743,15 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 disabled={!canRSVP}
               />
             </div>
+          )}
+
+          {/* Phase 4.43: Attendee list (RSVP'd members) */}
+          {event.is_dsc_event && (
+            <AttendeeList
+              eventId={event.id}
+              hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
+              performerCount={performerCount}
+            />
           )}
 
           {hosts.length > 0 && (
