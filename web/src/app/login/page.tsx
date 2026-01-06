@@ -157,7 +157,12 @@ function LoginForm() {
 
       <button
         type="button"
-        onClick={signInWithGoogle}
+        onClick={async () => {
+          const result = await signInWithGoogle();
+          if (!result.ok) {
+            setError(result.error || "Unable to sign in with Google.");
+          }
+        }}
         className="w-full mt-4 bg-[var(--color-bg-input)] text-[var(--color-text-primary)] py-2 rounded border border-[var(--color-border-input)] hover:bg-[var(--color-bg-secondary)]"
       >
         Continue with Google

@@ -59,7 +59,7 @@ const nextConfig: NextConfig = {
               "frame-src 'self' https://open.spotify.com https://www.youtube.com https://youtube.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://*.supabase.co https://*.supabase.in https://accounts.google.com",
             ].join("; "),
           },
         ],
