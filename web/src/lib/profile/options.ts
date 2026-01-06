@@ -14,6 +14,7 @@ export const INSTRUMENT_OPTIONS = [
   "Banjo",
   "Violin / Fiddle",
   "Cello",
+  "Accordion",
   "Lyricist",
   "Poet / Spoken Word",
   "Producer",
