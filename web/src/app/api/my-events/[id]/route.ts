@@ -418,7 +418,12 @@ export async function PATCH(
   return NextResponse.json(event);
 }
 
-// DELETE - Cancel/hide event (soft delete)
+// DELETE - Cancel/hide event (soft delete) OR hard delete drafts
+//
+// Phase 4.42l: Users can hard delete their own draft events.
+// - Drafts (is_published=false) with no RSVPs/claims: hard delete allowed
+// - Published events: soft delete (cancel) only
+// - Pass ?hard=true query param to request hard delete
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -436,13 +441,81 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Get event title and RSVPed users before cancelling
-  const { data: event } = await supabase
+  // Check if hard delete requested via query param
+  const url = new URL(request.url);
+  const hardDelete = url.searchParams.get("hard") === "true";
+
+  // Get event details including publish status
+  const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("title")
+    .select("id, title, is_published, host_id")
     .eq("id", eventId)
     .single();
 
+  if (eventError || !event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
+
+  // Phase 4.42l: Hard delete for drafts only
+  if (hardDelete) {
+    // Only allow hard delete for unpublished (draft) events
+    if (event.is_published) {
+      return NextResponse.json(
+        { error: "Cannot delete published events. Cancel them instead." },
+        { status: 400 }
+      );
+    }
+
+    // Check for RSVPs (shouldn't exist for drafts, but be safe)
+    const { count: rsvpCount } = await supabase
+      .from("event_rsvps")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId);
+
+    if (rsvpCount && rsvpCount > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete: event has ${rsvpCount} RSVP${rsvpCount > 1 ? "s" : ""}` },
+        { status: 409 }
+      );
+    }
+
+    // Check for timeslot claims
+    const { data: eventTimeslots } = await supabase
+      .from("event_timeslots")
+      .select("id")
+      .eq("event_id", eventId);
+
+    const timeslotIds = (eventTimeslots || []).map((t) => t.id);
+
+    if (timeslotIds.length > 0) {
+      const { count: claimCount } = await supabase
+        .from("timeslot_claims")
+        .select("id", { count: "exact", head: true })
+        .in("timeslot_id", timeslotIds);
+
+      if (claimCount && claimCount > 0) {
+        return NextResponse.json(
+          { error: `Cannot delete: event has ${claimCount} timeslot claim${claimCount > 1 ? "s" : ""}` },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Safe to hard delete
+    const { error: deleteError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventId);
+
+    if (deleteError) {
+      console.error(`[DELETE /api/my-events/${eventId}] Hard delete error:`, deleteError);
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, deleted: true });
+  }
+
+  // Soft delete (cancel) - existing behavior for published events
   const { data: rsvpUsers } = await supabase
     .from("event_rsvps")
     .select("user_id")

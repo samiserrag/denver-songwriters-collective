@@ -23,7 +23,9 @@ interface Event {
   series_id: string | null;
 }
 
-interface CancelDraftModalProps {
+// Phase 4.42l: Renamed from CancelDraftModal to DeleteDraftModal
+// Drafts are now hard deleted (permanently removed) instead of soft-cancelled
+interface DeleteDraftModalProps {
   isOpen: boolean;
   eventTitle: string;
   onConfirm: () => void;
@@ -31,7 +33,7 @@ interface CancelDraftModalProps {
   isLoading: boolean;
 }
 
-function CancelDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }: CancelDraftModalProps) {
+function DeleteDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }: DeleteDraftModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -44,10 +46,10 @@ function CancelDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }
       {/* Modal */}
       <div className="relative bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
-          Cancel this draft?
+          Delete this draft?
         </h2>
         <p className="text-[var(--color-text-secondary)] text-sm mb-6">
-          This hides &ldquo;{eventTitle}&rdquo; from your drafts. You can recreate it later.
+          &ldquo;{eventTitle}&rdquo; will be permanently deleted. This cannot be undone.
         </p>
         <div className="flex gap-3 justify-end">
           <button
@@ -56,7 +58,7 @@ function CancelDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }
             disabled={isLoading}
             className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors disabled:opacity-50"
           >
-            Cancel
+            Keep Draft
           </button>
           <button
             type="button"
@@ -64,7 +66,7 @@ function CancelDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }
             disabled={isLoading}
             className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
-            {isLoading ? "Cancelling..." : "Yes, cancel draft"}
+            {isLoading ? "Deleting..." : "Delete Draft"}
           </button>
         </div>
       </div>
@@ -96,58 +98,58 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
   const [events, setEvents] = useState<Event[]>(initialEvents);
   // Phase 4.33: Cancelled section is collapsed by default
   const [showCancelled, setShowCancelled] = useState(false);
-  const [cancelModalState, setCancelModalState] = useState<{
+  // Phase 4.42l: Renamed from cancelModalState to deleteModalState
+  const [deleteModalState, setDeleteModalState] = useState<{
     isOpen: boolean;
     eventId: string;
     eventTitle: string;
   }>({ isOpen: false, eventId: "", eventTitle: "" });
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleCancelDraftClick = useCallback((e: React.MouseEvent, event: Event) => {
+  // Phase 4.42l: Renamed from handleCancelDraftClick to handleDeleteDraftClick
+  const handleDeleteDraftClick = useCallback((e: React.MouseEvent, event: Event) => {
     e.preventDefault(); // Prevent navigation to event detail
     e.stopPropagation();
-    setCancelModalState({
+    setDeleteModalState({
       isOpen: true,
       eventId: event.id,
       eventTitle: event.title,
     });
   }, []);
 
-  const handleCancelConfirm = useCallback(async () => {
-    const { eventId } = cancelModalState;
-    setIsCancelling(true);
+  // Phase 4.42l: Hard delete draft instead of soft-cancel
+  const handleDeleteConfirm = useCallback(async () => {
+    const { eventId } = deleteModalState;
+    setIsDeleting(true);
 
     try {
-      const res = await fetch(`/api/my-events/${eventId}`, {
+      // Phase 4.42l: Use ?hard=true to permanently delete draft
+      const res = await fetch(`/api/my-events/${eventId}?hard=true`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-        // Optimistic update: move event to cancelled status
-        setEvents((prev) =>
-          prev.map((e) =>
-            e.id === eventId ? { ...e, status: "cancelled" } : e
-          )
-        );
-        setCancelModalState({ isOpen: false, eventId: "", eventTitle: "" });
-        // Phase 4.33: Expand cancelled section to show the moved event
-        setShowCancelled(true);
+        // Optimistic update: remove event from list entirely
+        setEvents((prev) => prev.filter((e) => e.id !== eventId));
+        setDeleteModalState({ isOpen: false, eventId: "", eventTitle: "" });
         router.refresh();
       } else {
-        console.error("Failed to cancel draft");
+        const data = await res.json();
+        console.error("Failed to delete draft:", data.error);
+        // Could show error toast here in future
       }
     } catch (err) {
-      console.error("Failed to cancel draft:", err);
+      console.error("Failed to delete draft:", err);
     } finally {
-      setIsCancelling(false);
+      setIsDeleting(false);
     }
-  }, [cancelModalState, router]);
+  }, [deleteModalState, router]);
 
-  const handleCancelModalClose = useCallback(() => {
-    if (!isCancelling) {
-      setCancelModalState({ isOpen: false, eventId: "", eventTitle: "" });
+  const handleDeleteModalClose = useCallback(() => {
+    if (!isDeleting) {
+      setDeleteModalState({ isOpen: false, eventId: "", eventTitle: "" });
     }
-  }, [isCancelling]);
+  }, [isDeleting]);
 
   // Compute counts for each tab
   const counts = useMemo(() => {
@@ -317,14 +319,14 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
                         {event.capacity ? `of ${event.capacity}` : "RSVPs"}
                       </div>
                     </div>
-                    {/* Cancel draft button - only show for drafts */}
+                    {/* Phase 4.42l: Delete draft button - only show for drafts */}
                     {!event.is_published && event.status !== "cancelled" && (
                       <button
                         type="button"
-                        onClick={(e) => handleCancelDraftClick(e, event)}
+                        onClick={(e) => handleDeleteDraftClick(e, event)}
                         className="flex-shrink-0 p-2 text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Cancel draft"
-                        aria-label="Cancel draft"
+                        title="Delete draft"
+                        aria-label="Delete draft"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -337,7 +339,7 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
+                            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
                           />
                         </svg>
                       </button>
@@ -416,13 +418,13 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
         </div>
       )}
 
-      {/* Cancel Draft Modal */}
-      <CancelDraftModal
-        isOpen={cancelModalState.isOpen}
-        eventTitle={cancelModalState.eventTitle}
-        onConfirm={handleCancelConfirm}
-        onCancel={handleCancelModalClose}
-        isLoading={isCancelling}
+      {/* Phase 4.42l: Delete Draft Modal */}
+      <DeleteDraftModal
+        isOpen={deleteModalState.isOpen}
+        eventTitle={deleteModalState.eventTitle}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteModalClose}
+        isLoading={isDeleting}
       />
     </div>
   );
