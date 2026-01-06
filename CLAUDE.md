@@ -264,6 +264,32 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Hotfix: Signup Flow Broken (January 2026)
+
+**Goal:** Fix both Google OAuth and email signup silently failing with "no action taken" behavior.
+
+**Root Causes:**
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| CSP blocking OAuth | `form-action 'self'` blocked redirects to Supabase/Google | Added Supabase + Google domains to form-action |
+| Silent failures | No try/catch in auth functions; exceptions swallowed | Added error handling + user-visible error messages |
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `next.config.ts` | Added `https://*.supabase.co https://*.supabase.in https://accounts.google.com` to CSP form-action |
+| `lib/auth/google.ts` | Added try/catch, returns `{ ok, error }` result |
+| `lib/auth/signUp.ts` | Added try/catch for exception handling |
+| `lib/auth/magic.ts` | Added try/catch for exception handling |
+| `app/signup/page.tsx` | Google button now displays errors to user |
+| `app/login/page.tsx` | Google button now displays errors to user |
+
+**Verification:** Lint 0 warnings, all 924 tests passing.
+
+---
+
 ### Phase 4.42l — User Draft Delete (January 2026)
 
 **Goal:** Allow users to permanently delete their own draft events from the My Events dashboard.

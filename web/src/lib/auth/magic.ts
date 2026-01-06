@@ -2,22 +2,34 @@
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export async function sendMagicLink(email: string) {
-  const supabase = createSupabaseBrowserClient();
+interface MagicLinkResult {
+  ok: boolean;
+  error?: string;
+}
 
-  const redirectTo =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/auth/callback?type=magic`
-      : undefined;
+export async function sendMagicLink(email: string): Promise<MagicLinkResult> {
+  try {
+    const supabase = createSupabaseBrowserClient();
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo },
-  });
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth/callback?type=magic`
+        : undefined;
 
-  if (error) {
-    return { ok: false, error: error.message };
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo },
+    });
+
+    if (error) {
+      console.error("Magic link error:", error.message);
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unable to send magic link.";
+    console.error("Magic link exception:", message);
+    return { ok: false, error: message };
   }
-
-  return { ok: true };
 }
