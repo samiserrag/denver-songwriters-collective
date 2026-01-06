@@ -16,6 +16,11 @@ import {
 } from "@/types/events";
 import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+// Phase 4.42e: Import Mountain Time date helpers for series date alignment
+import {
+  getNextDayOfWeekMT,
+  weekdayNameFromDateMT,
+} from "@/lib/events/formDateHelpers";
 
 // Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
 const TIME_OPTIONS: { value: string; label: string }[] = [];
@@ -96,21 +101,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [success, setSuccess] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
 
-  // Get next occurrence of a day of week from today
-  const getNextDayOfWeek = (dayName: string): string => {
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const today = new Date();
-    const targetDay = days.indexOf(dayName);
-    if (targetDay === -1) return "";
-
-    const currentDay = today.getDay();
-    let daysUntil = targetDay - currentDay;
-    if (daysUntil <= 0) daysUntil += 7; // Next week if today or past
-
-    const nextDate = new Date(today);
-    nextDate.setDate(today.getDate() + daysUntil);
-    return nextDate.toISOString().split("T")[0];
-  };
 
   // Publish confirmation state - only needed when transitioning from unpublished to published
   const [publishConfirmed, setPublishConfirmed] = useState(false);
@@ -335,7 +325,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         slot_duration_minutes: slotConfig.has_timeslots ? slotConfig.slot_duration_minutes : null,
         allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
         // Series configuration (for create mode)
-        start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeek(formData.day_of_week) : null),
+        start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
         occurrence_count: parseInt(formData.occurrence_count) || 1,
         // Phase 3 fields
         timezone: formData.timezone,
@@ -731,9 +721,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             value={formData.day_of_week}
             onChange={(e) => {
               updateField("day_of_week", e.target.value);
-              // Auto-set start date when day is selected
+              // Phase 4.42e: Auto-snap start date to selected weekday (Mountain Time)
               if (e.target.value) {
-                updateField("start_date", getNextDayOfWeek(e.target.value));
+                updateField("start_date", getNextDayOfWeekMT(e.target.value));
               }
             }}
             required
@@ -777,6 +767,82 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </select>
         </div>
       </div>
+
+      {/* ============ EVENT SERIES SECTION ============ */}
+      {/* Phase 4.42e: Moved closer to schedule controls for better UX */}
+      {mode === "create" && formData.day_of_week && (
+        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
+              Create Event Series
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Create multiple events for a recurring series. Each event will have its own page and signups.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                First Event Date *
+              </label>
+              <input
+                type="date"
+                value={formData.start_date || getNextDayOfWeekMT(formData.day_of_week)}
+                onChange={(e) => {
+                  updateField("start_date", e.target.value);
+                  // Phase 4.42e: Bi-directional sync - update Day of Week to match selected date
+                  if (e.target.value) {
+                    updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+                  }
+                }}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Number of Events *
+              </label>
+              <select
+                value={formData.occurrence_count}
+                onChange={(e) => updateField("occurrence_count", e.target.value)}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                  <option key={n} value={n.toString()}>
+                    {n} {n === 1 ? "event" : "events"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Preview of dates */}
+          {formData.start_date && parseInt(formData.occurrence_count) > 1 && (
+            <div className="pt-2 border-t border-[var(--color-border-default)]">
+              <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Events will be created for:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: Math.min(parseInt(formData.occurrence_count), 12) }, (_, i) => {
+                  const startDate = new Date(formData.start_date + "T00:00:00");
+                  const eventDate = new Date(startDate);
+                  eventDate.setDate(startDate.getDate() + (i * 7)); // Weekly
+                  return (
+                    <span
+                      key={i}
+                      className="px-2 py-1 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-primary)]"
+                    >
+                      {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ============ TIMEZONE SECTION ============ */}
       <div>
@@ -978,75 +1044,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             min="1"
             className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           />
-        </div>
-      )}
-
-      {/* Recurring Event Series - Only show in create mode */}
-      {mode === "create" && formData.day_of_week && (
-        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
-          <div>
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Create Event Series
-            </h3>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Create multiple events for a recurring series. Each event will have its own page and signups.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                First Event Date *
-              </label>
-              <input
-                type="date"
-                value={formData.start_date || getNextDayOfWeek(formData.day_of_week)}
-                onChange={(e) => updateField("start_date", e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Number of Events *
-              </label>
-              <select
-                value={formData.occurrence_count}
-                onChange={(e) => updateField("occurrence_count", e.target.value)}
-                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                  <option key={n} value={n.toString()}>
-                    {n} {n === 1 ? "event" : "events"}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Preview of dates */}
-          {formData.start_date && parseInt(formData.occurrence_count) > 1 && (
-            <div className="pt-2 border-t border-[var(--color-border-default)]">
-              <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Events will be created for:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: Math.min(parseInt(formData.occurrence_count), 12) }, (_, i) => {
-                  const startDate = new Date(formData.start_date + "T00:00:00");
-                  const eventDate = new Date(startDate);
-                  eventDate.setDate(startDate.getDate() + (i * 7)); // Weekly
-                  return (
-                    <span
-                      key={i}
-                      className="px-2 py-1 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-primary)]"
-                    >
-                      {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
