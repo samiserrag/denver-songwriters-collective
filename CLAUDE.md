@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.42k):** Lint warnings = 0. All tests passing (897). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.42l):** Lint warnings = 0. All tests passing (924). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -228,6 +228,45 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42l — User Draft Delete (January 2026)
+
+**Goal:** Allow users to permanently delete their own draft events from the My Events dashboard.
+
+**Changes:**
+
+| Component | Change |
+|-----------|--------|
+| API | `DELETE /api/my-events/[id]?hard=true` permanently deletes draft events |
+| Guardrails | Returns 409 if event has RSVPs or timeslot claims |
+| Published events | Returns 400 — must use soft-cancel instead |
+| UI Modal | "Delete this draft?" with permanent deletion warning |
+| Button | Trash icon with "Delete draft" tooltip |
+| Optimistic update | Event removed from list immediately on delete |
+
+**Behavior Matrix:**
+
+| Event State | Delete Action | Result |
+|-------------|---------------|--------|
+| Draft (unpublished) | Hard delete | Permanently removed from DB |
+| Published | Soft cancel | Moved to Cancelled section |
+| Has RSVPs | Blocked | 409 Conflict |
+| Has timeslot claims | Blocked | 409 Conflict |
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `app/api/my-events/[id]/route.ts` | DELETE endpoint with ?hard=true support |
+| `MyEventsFilteredList.tsx` | DeleteDraftModal + trash icon button |
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/draft-delete.test.ts` | 27 tests - API contract, UI, permissions, edge cases |
 
 ---
 
