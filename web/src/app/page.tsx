@@ -273,16 +273,16 @@ export default async function HomePage() {
       </HeroSection>
 
       {/* Join Us If... Strip */}
-      <section className="py-8 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-6">
+      <section className="py-10 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-8">
             Join us if you&apos;re…
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="text-[var(--color-text-secondary)]">🎸 a songwriter looking to play, improve, or connect</div>
-            <div className="text-[var(--color-text-secondary)]">🎤 an open mic host or venue</div>
-            <div className="text-[var(--color-text-secondary)]">🎶 a songwriting group or collective</div>
-            <div className="text-[var(--color-text-secondary)]">🎭 a showcase or event promoter</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎸 a songwriter looking to play, improve, or connect</div>
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎤 an open mic host or venue</div>
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎶 a songwriting group or collective</div>
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎭 a showcase or event promoter</div>
           </div>
         </div>
       </section>

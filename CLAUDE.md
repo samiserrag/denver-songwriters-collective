@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.42l):** Lint warnings = 0. All tests passing (924). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.43):** Lint warnings = 0. All tests passing (967). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -274,6 +274,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 |-------|-------|-----|
 | CSP blocking OAuth | `form-action 'self'` blocked redirects to Supabase/Google | Added Supabase + Google domains to form-action |
 | Silent failures | No try/catch in auth functions; exceptions swallowed | Added error handling + user-visible error messages |
+| **Missing DB function** | `generate_profile_slug` function not in production DB | Migration not applied; added `SECURITY DEFINER` to migration |
 
 **Changes:**
 
@@ -285,8 +286,56 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 | `lib/auth/magic.ts` | Added try/catch for exception handling |
 | `app/signup/page.tsx` | Google button now displays errors to user |
 | `app/login/page.tsx` | Google button now displays errors to user |
+| `app/auth/callback/route.ts` | Added OAuth error param handling + debug logging |
+| `migrations/20260103000001_add_profile_slug.sql` | Added `SECURITY DEFINER` to functions for auth context |
+
+**Database Fix Applied:**
+
+The profile slug migration was never applied to production. The trigger on `profiles` table called `generate_profile_slug()` which didn't exist, causing "Database error saving new user" on every signup attempt.
+
+**Critical:** Functions called by auth triggers MUST use `SECURITY DEFINER` to run with elevated permissions.
+
+```sql
+-- Required pattern for functions called by auth triggers:
+CREATE FUNCTION public.my_function(...)
+RETURNS ... AS $$ ... $$
+LANGUAGE plpgsql SECURITY DEFINER;
+```
 
 **Verification:** Lint 0 warnings, all 924 tests passing.
+
+---
+
+### Phase 4.43 — RSVP Always + Event Form UX (January 2026)
+
+**Goal:** RSVP always available for DSC events + UI improvements to event creation form.
+
+**RSVP System Changes:**
+- RSVP = audience planning to attend (NOT performer signup)
+- RSVP always available for public, non-cancelled DSC events
+- Capacity is optional (`null` = unlimited RSVP)
+- RSVP and timeslots can coexist on same event
+
+**Event Form UX Changes:**
+
+| Component | Change |
+|-----------|--------|
+| Required fields | Red label text + "*Required" suffix |
+| Signup Mode | Card-style radio buttons with descriptions |
+| Venue dropdown | Integrated "Enter custom location..." option |
+| Defaults | Open Mic/Showcase auto-select Performance Slots |
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `EventForm.tsx` | Required indicators, venue dropdown integration |
+| `SlotConfigSection.tsx` | Card-style radio options for signup mode |
+| `VenueSelector.tsx` | Integrated custom location option |
+| `RSVPSection.tsx` | Updated RSVP availability logic |
+| `AttendeeList.tsx` | New component for displaying attendees |
+
+**Test Coverage:** 43 new tests for RSVP coexistence scenarios.
 
 ---
 
