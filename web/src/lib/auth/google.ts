@@ -18,6 +18,7 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult> {
       provider: "google",
       options: {
         redirectTo,
+        skipBrowserRedirect: false,
       },
     });
 
@@ -27,7 +28,14 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult> {
     }
 
     // Log successful OAuth URL generation
-    console.log("[Google OAuth] OAuth URL generated:", data?.url ? "yes" : "no");
+    console.log("[Google OAuth] Response data:", data);
+    console.log("[Google OAuth] OAuth URL:", data?.url);
+
+    // If we have a URL but browser didn't redirect, manually redirect
+    if (data?.url) {
+      console.log("[Google OAuth] Manually redirecting to:", data.url);
+      window.location.href = data.url;
+    }
 
     // If successful, browser will redirect to Google OAuth
     return { ok: true };
