@@ -106,6 +106,106 @@ function generateSeriesDates(startDate: string, count: number): string[] {
   return dates;
 }
 
+/**
+ * Phase 4.42d: Unified event insert builder.
+ *
+ * This function builds the base insert payload for events, ensuring all
+ * RLS-required fields are consistently set for both single events and series.
+ *
+ * RLS Policy: host_manage_own_events requires (auth.uid() = host_id)
+ * Therefore host_id MUST be set to the session user's ID.
+ */
+interface EventInsertParams {
+  userId: string;
+  body: Record<string, unknown>;
+  isDSCEvent: boolean;
+  eventStatus: string;
+  publishedAt: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+  finalVenueId: string | null;
+  customLocationFields: {
+    custom_location_name: string | null;
+    custom_address: string | null;
+    custom_city: string | null;
+    custom_state: string | null;
+    custom_latitude: number | null;
+    custom_longitude: number | null;
+    location_notes: string | null;
+  };
+  eventDate: string;
+  seriesId: string | null;
+  seriesIndex: number | null;
+}
+
+function buildEventInsert(params: EventInsertParams) {
+  const {
+    userId,
+    body,
+    isDSCEvent,
+    eventStatus,
+    publishedAt,
+    venueName,
+    venueAddress,
+    finalVenueId,
+    customLocationFields,
+    eventDate,
+    seriesId,
+    seriesIndex,
+  } = params;
+
+  return {
+    // CRITICAL: host_id is required by RLS policy host_manage_own_events
+    // WITH CHECK: (auth.uid() = host_id) OR is_admin()
+    host_id: userId,
+    title: body.title as string,
+    description: (body.description as string) || null,
+    event_type: body.event_type as string,
+    is_dsc_event: isDSCEvent,
+    capacity: body.has_timeslots ? (body.total_slots as number) : ((body.capacity as number) || null),
+    host_notes: (body.host_notes as string) || null,
+    // Venue fields (mutually exclusive with custom location)
+    venue_id: finalVenueId,
+    venue_name: venueName,
+    venue_address: venueAddress,
+    // Custom location fields (mutually exclusive with venue)
+    custom_location_name: customLocationFields.custom_location_name,
+    custom_address: customLocationFields.custom_address,
+    custom_city: customLocationFields.custom_city,
+    custom_state: customLocationFields.custom_state,
+    custom_latitude: customLocationFields.custom_latitude,
+    custom_longitude: customLocationFields.custom_longitude,
+    location_notes: customLocationFields.location_notes,
+    day_of_week: (body.day_of_week as string) || null,
+    start_time: body.start_time as string,
+    end_time: (body.end_time as string) || null,
+    recurrence_rule: (body.recurrence_rule as string) || null,
+    cover_image_url: (body.cover_image_url as string) || null,
+    status: eventStatus,
+    is_published: (body.is_published as boolean) ?? false,
+    published_at: publishedAt,
+    has_timeslots: (body.has_timeslots as boolean) ?? false,
+    total_slots: body.has_timeslots ? (body.total_slots as number) : null,
+    slot_duration_minutes: body.has_timeslots ? (body.slot_duration_minutes as number) : null,
+    allow_guest_slots: body.has_timeslots ? ((body.allow_guests as boolean) ?? false) : false,
+    // Series fields
+    event_date: eventDate,
+    series_id: seriesId,
+    series_index: seriesIndex,
+    // Additional fields
+    timezone: (body.timezone as string) || "America/Denver",
+    location_mode: (body.location_mode as string) || "venue",
+    online_url: (body.online_url as string) || null,
+    is_free: (body.is_free as boolean) ?? null,
+    cost_label: (body.cost_label as string) || null,
+    signup_mode: (body.signup_mode as string) || null,
+    signup_url: (body.signup_url as string) || null,
+    signup_deadline: (body.signup_deadline as string) || null,
+    age_policy: (body.age_policy as string) || (isDSCEvent ? "18+ only" : null),
+    source: "community",
+  };
+}
+
 // POST - Create new DSC event (or series of events)
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -233,57 +333,31 @@ export async function POST(request: Request) {
     const eventStatus = body.is_published === true ? "active" : "draft";
     const publishedAt = body.is_published === true ? new Date().toISOString() : null;
 
+    // Phase 4.42d: Use unified insert builder to ensure host_id is always set
+    // This fixes RLS violation for series creation where host_id was missing
+    const insertPayload = buildEventInsert({
+      userId: session.user.id,
+      body,
+      isDSCEvent,
+      eventStatus,
+      publishedAt,
+      venueName,
+      venueAddress,
+      finalVenueId,
+      customLocationFields,
+      eventDate,
+      seriesId,
+      seriesIndex: seriesId ? i : null,
+    });
+
+    // Diagnostic logging for RLS debugging (dev only)
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[POST /api/my-events] Insert payload host_id:", insertPayload.host_id);
+    }
+
     const { data: event, error: eventError } = await supabase
       .from("events")
-      .insert({
-        title: body.title,
-        description: body.description || null,
-        event_type: body.event_type,
-        // Only approved hosts/admins can create DSC events
-        is_dsc_event: isDSCEvent,
-        capacity: body.has_timeslots ? body.total_slots : (body.capacity || null),
-        host_notes: body.host_notes || null,
-        // Phase 4.0: Venue fields (mutually exclusive with custom location)
-        venue_id: finalVenueId,
-        venue_name: venueName,
-        venue_address: venueAddress,
-        // Phase 4.0: Custom location fields (mutually exclusive with venue)
-        custom_location_name: customLocationFields.custom_location_name,
-        custom_address: customLocationFields.custom_address,
-        custom_city: customLocationFields.custom_city,
-        custom_state: customLocationFields.custom_state,
-        custom_latitude: customLocationFields.custom_latitude,
-        custom_longitude: customLocationFields.custom_longitude,
-        location_notes: customLocationFields.location_notes,
-        day_of_week: body.day_of_week || null,
-        start_time: body.start_time,
-        end_time: body.end_time || null,
-        recurrence_rule: body.recurrence_rule || null,
-        cover_image_url: body.cover_image_url || null,
-        // Status defaults to draft; publish is explicit action
-        status: eventStatus,
-        is_published: body.is_published ?? false,
-        published_at: publishedAt,
-        has_timeslots: body.has_timeslots ?? false,
-        total_slots: body.has_timeslots ? body.total_slots : null,
-        slot_duration_minutes: body.has_timeslots ? body.slot_duration_minutes : null,
-        allow_guest_slots: body.has_timeslots ? (body.allow_guests ?? false) : false,
-        // Series fields
-        event_date: eventDate,
-        series_id: seriesId,
-        series_index: seriesId ? i : null,
-        // Phase 3 scan-first fields
-        timezone: body.timezone || "America/Denver",
-        location_mode: body.location_mode || "venue",
-        online_url: body.online_url || null,
-        is_free: body.is_free ?? null,
-        cost_label: body.cost_label || null,
-        signup_mode: body.signup_mode || null,
-        signup_url: body.signup_url || null,
-        signup_deadline: body.signup_deadline || null,
-        age_policy: body.age_policy || (isDSCEvent ? "18+ only" : null),
-        source: "community",
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

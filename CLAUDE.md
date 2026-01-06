@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.42c):** Lint warnings = 0. All tests passing (808). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.42d):** Lint warnings = 0. All tests passing (819). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -227,6 +227,54 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42d — Series Creation RLS Fix (January 2026)
+
+**Goal:** Fix "Create Event Series" failing with RLS policy violation error.
+
+**Root Cause:**
+- Event INSERT in `/api/my-events` did NOT include `host_id`
+- RLS policy `host_manage_own_events` requires `(auth.uid() = host_id)` on INSERT
+- Result: All series creation failed with `new row violates row-level security policy for table "events"`
+
+**Solution: Unified Insert Builder**
+
+Created `buildEventInsert()` helper function that ALWAYS sets `host_id`:
+- `host_id: userId` is set as the FIRST field (critical for RLS)
+- Same builder used for both single events and series
+- Ensures consistent RLS compliance across all event creation paths
+
+**Key Changes:**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/route.ts` | Added `buildEventInsert()` helper, replaced inline insert |
+
+**Fix Pattern:**
+```typescript
+// BEFORE: Missing host_id caused RLS violation
+.insert({
+  title: body.title,
+  event_type: body.event_type,
+  // ... NO host_id!
+})
+
+// AFTER: host_id is always set
+const insertPayload = buildEventInsert({
+  userId: session.user.id,  // Critical for RLS
+  body,
+  ...
+});
+.insert(insertPayload)
+```
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/series-creation-rls.test.ts` | 11 tests - host_id consistency, series fields, RLS compliance |
 
 ---
 
@@ -969,6 +1017,8 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/cancelled-ux-refinement.test.ts` | Cancelled disclosure behavior (9 tests) |
 | `__tests__/verification-state.test.ts` | Verification state helper + detail page block (26 tests) |
 | `__tests__/slug-routing.test.ts` | Slug routing + verification pills (15 tests) |
+| `__tests__/series-creation-rls.test.ts` | Series creation RLS fix (11 tests) |
+| `__tests__/recurrence-unification.test.ts` | Recurrence contract + label-generator consistency (24 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
