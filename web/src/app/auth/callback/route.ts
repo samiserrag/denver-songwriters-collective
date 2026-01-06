@@ -8,6 +8,24 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const type = searchParams.get("type");
   const provider = searchParams.get("provider") ?? undefined;
+  const errorParam = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+
+  console.log("[Auth Callback] Received request:", {
+    hasCode: !!code,
+    type,
+    provider,
+    error: errorParam,
+    errorDescription,
+  });
+
+  // Handle OAuth errors (e.g., user denied access, provider error)
+  if (errorParam) {
+    console.error("[Auth Callback] OAuth error:", errorParam, errorDescription);
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(errorDescription || errorParam)}`
+    );
+  }
 
   if (code) {
     const cookieStore = await cookies();
@@ -33,7 +51,7 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      console.error("Auth callback error:", error.message, error);
+      console.error("[Auth Callback] Exchange code error:", error.message, error);
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
     }
 

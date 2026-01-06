@@ -20,7 +20,9 @@ export async function signUpWithEmail(
         ? `${window.location.origin}/auth/callback?type=signup`
         : undefined;
 
-    const { error } = await supabase.auth.signUp({
+    console.log("[Email Signup] Starting signup for:", email, "redirect:", redirectTo);
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -29,9 +31,12 @@ export async function signUpWithEmail(
     });
 
     if (error) {
-      console.error("Sign up error:", error.message);
+      console.error("[Email Signup] Error:", error.message, error);
       return { ok: false, error: error.message ?? "Unable to create account." };
     }
+
+    // Log the result - user will be null if email already exists (Supabase anti-enumeration)
+    console.log("[Email Signup] Success - user created:", !!data?.user, "session:", !!data?.session);
 
     return {
       ok: true,
@@ -39,7 +44,7 @@ export async function signUpWithEmail(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unable to create account.";
-    console.error("Sign up exception:", message);
+    console.error("[Email Signup] Exception:", message, err);
     return { ok: false, error: message };
   }
 }
