@@ -152,7 +152,9 @@ function buildEventInsert(params: EventInsertParams) {
     description: (body.description as string) || null,
     event_type: body.event_type as string,
     is_dsc_event: isDSCEvent,
-    capacity: body.has_timeslots ? (body.total_slots as number) : ((body.capacity as number) || null),
+    // Phase 4.43: capacity is independent of timeslots (RSVP always available)
+    // capacity=null means unlimited RSVP, not "RSVP disabled"
+    capacity: (body.capacity as number) || null,
     host_notes: (body.host_notes as string) || null,
     // Venue fields (mutually exclusive with custom location)
     venue_id: finalVenueId,

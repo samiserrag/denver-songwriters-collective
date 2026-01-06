@@ -233,12 +233,16 @@ export function RSVPSection({
   }
 
   return (
-    <>
+    <div className="space-y-2">
       <RSVPButton
         eventId={eventId}
         capacity={capacity}
         initialConfirmedCount={initialConfirmedCount}
       />
+      {/* Phase 4.43: RSVP meaning clarification */}
+      <p className="text-xs text-[var(--color-text-secondary)]">
+        RSVP means you plan to attend. It is not a performer sign-up.
+      </p>
       <CancelRSVPModal
         eventId={eventId}
         eventTitle={eventTitle}
@@ -246,6 +250,6 @@ export function RSVPSection({
         onClose={() => setShowCancelModal(false)}
         onSuccess={handleCancelSuccess}
       />
-    </>
+    </div>
   );
 }

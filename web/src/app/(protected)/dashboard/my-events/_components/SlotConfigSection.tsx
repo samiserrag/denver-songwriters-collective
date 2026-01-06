@@ -17,6 +17,9 @@ interface SlotConfigSectionProps {
   config: SlotConfig;
   onChange: (config: SlotConfig) => void;
   disabled?: boolean;
+  /** Optional attendance capacity (null = unlimited) */
+  capacity: number | null;
+  onCapacityChange: (capacity: number | null) => void;
 }
 
 export default function SlotConfigSection({
@@ -24,6 +27,8 @@ export default function SlotConfigSection({
   config,
   onChange,
   disabled = false,
+  capacity,
+  onCapacityChange,
 }: SlotConfigSectionProps) {
   // Auto-enable timeslots for open_mic and showcase
   // Note: We intentionally only depend on eventType to avoid loops when onChange updates config
@@ -37,7 +42,7 @@ export default function SlotConfigSection({
         slot_duration_minutes: eventType === "open_mic" ? 10 : 15,
       });
     } else if (!shouldEnableTimeslots && config.has_timeslots) {
-      // When switching away from timeslot types, reset to RSVP mode
+      // When switching away from timeslot types, disable timeslots
       onChange({
         ...config,
         has_timeslots: false,
@@ -46,11 +51,22 @@ export default function SlotConfigSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventType]);
 
-  const handleToggle = () => {
-    onChange({
-      ...config,
-      has_timeslots: !config.has_timeslots,
-    });
+  const handleTimeslotsToggle = () => {
+    if (config.has_timeslots) {
+      // Turning off
+      onChange({
+        ...config,
+        has_timeslots: false,
+      });
+    } else {
+      // Turning on
+      onChange({
+        ...config,
+        has_timeslots: true,
+        total_slots: eventType === "open_mic" ? 10 : 8,
+        slot_duration_minutes: eventType === "open_mic" ? 10 : 15,
+      });
+    }
   };
 
   const handleChange = (field: keyof SlotConfig, value: number | boolean) => {
@@ -63,33 +79,84 @@ export default function SlotConfigSection({
   const isTimeslotType = TIMESLOT_EVENT_TYPES.includes(eventType);
 
   return (
-    <div className="space-y-4">
-      {/* Mode Toggle */}
-      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Phase 4.43: RSVP Meaning Clarification */}
+      <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+            <svg className="w-4 h-4 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           <div>
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
-              {config.has_timeslots ? "Performance Slots" : "RSVP Mode"}
-            </h3>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-              {config.has_timeslots
-                ? "Performers claim individual time slots to perform."
-                : "Attendees RSVP for attendance, no performance slots."}
+            <h4 className="text-sm font-medium text-[var(--color-text-primary)]">
+              About RSVPs
+            </h4>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              RSVP means you plan to attend. It is not a performer sign-up.
             </p>
-            {isTimeslotType && (
-              <p className="text-sm text-[var(--color-accent-primary)] mt-1">
-                Recommended for {eventType === "open_mic" ? "Open Mic" : "Showcase"} events
-              </p>
-            )}
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              RSVPs are always available for your event. Attendees can RSVP to let you know they&apos;re coming.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Attendance Cap (Optional) */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Attendance Cap (optional)
+        </label>
+        <input
+          type="number"
+          value={capacity ?? ""}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === "") {
+              onCapacityChange(null);
+            } else {
+              const num = parseInt(val);
+              if (!isNaN(num) && num > 0) {
+                onCapacityChange(num);
+              }
+            }
+          }}
+          placeholder="Leave blank for unlimited"
+          min="1"
+          disabled={disabled}
+          className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+        />
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+          Maximum number of RSVPs allowed. Leave blank for unlimited attendance.
+        </p>
+      </div>
+
+      {/* Performer Slots Toggle */}
+      <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-sm font-medium text-[var(--color-text-primary)]">
+                Enable Performer Slots
+              </h4>
+              {isTimeslotType && (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/30">
+                  Recommended for {eventType === "open_mic" ? "Open Mic" : "Showcase"}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Allow performers to claim time slots to perform. Great for open mics and showcases.
+            </p>
           </div>
           <button
             type="button"
-            onClick={handleToggle}
+            onClick={handleTimeslotsToggle}
             disabled={disabled}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-4 ${
               config.has_timeslots
                 ? "bg-[var(--color-accent-primary)]"
-                : "bg-[var(--color-bg-secondary)]"
+                : "bg-[var(--color-bg-tertiary)]"
             } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             role="switch"
             aria-checked={config.has_timeslots}

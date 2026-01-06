@@ -72,6 +72,10 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Good news! A spot just opened up at <strong>${safeTitle}</strong>, and you're next in line.`)}
 
+<p style="margin: 12px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; font-style: italic;">
+  RSVP means you plan to attend. It is not a performer sign-up.
+</p>
+
 <div style="background-color: ${EMAIL_COLORS.warningBg}; border: 1px solid ${EMAIL_COLORS.warningBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
   <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.warning}; font-size: 15px; font-weight: 600;">
     Confirm by ${escapeHtml(formattedExpiry)} to lock in your spot.
@@ -112,6 +116,8 @@ ${createSecondaryLink("I can't make it", cancelUrl)}
   const textContent = `${userName?.trim() ? `Hi ${userName.trim()},` : "Hi there,"}
 
 Good news! A spot just opened up at ${eventTitle}, and you're next in line.
+
+(RSVP means you plan to attend. It is not a performer sign-up.)
 
 CONFIRM BY ${formattedExpiry} to lock in your spot.
 ${expiryMessage}

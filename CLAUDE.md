@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.42l):** Lint warnings = 0. All tests passing (924). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.43):** Lint warnings = 0. All tests passing (967). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -261,6 +261,55 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42m — Event Form UX Improvements (January 2026)
+
+**Goal:** UI-only improvements to the event creation/edit form for better usability.
+
+**Changes:**
+
+| Component | Change |
+|-----------|--------|
+| Required fields | Red label text + "*Required" suffix (replaces plain asterisk) |
+| Signup Mode | Card-style radio buttons with descriptions (replaces toggle switch) |
+| Venue dropdown | Integrated "Enter custom location..." option in dropdown |
+| Defaults | Open Mic/Showcase auto-select Performance Slots; others auto-select RSVP Mode |
+
+**Required Field Pattern:**
+```tsx
+<label className="block text-sm font-medium mb-2">
+  <span className="text-red-500">Field Name</span>
+  <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+</label>
+```
+
+**Signup Mode UI:**
+- Two card-style radio options with clear descriptions
+- RSVP Mode: "Attendees RSVP to confirm attendance. Set a capacity limit or leave unlimited."
+- Performance Slots: "Performers claim individual time slots to perform. Great for open mics and showcases."
+- "Recommended for Open Mic/Showcase" badge shows when event type matches
+
+**Venue Dropdown Integration:**
+- Single dropdown with all venues
+- "+ Add new venue..." option opens inline form
+- "✎ Enter custom location..." option expands custom location form below
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `EventForm.tsx` | Required indicators, venue dropdown integration |
+| `SlotConfigSection.tsx` | Card-style radio options for signup mode |
+| `VenueSelector.tsx` | Integrated custom location option in dropdown |
+
+**Constraints Preserved:**
+- All existing API contracts unchanged
+- `has_timeslots` boolean behavior unchanged
+- Timeslot regeneration guards unchanged
+- `hasSignupLane()` detection unchanged
+- All 924 tests passing
 
 ---
 

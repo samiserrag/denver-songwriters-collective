@@ -340,7 +340,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       const body = {
         ...formData,
-        capacity: slotConfig.has_timeslots ? slotConfig.total_slots : (formData.capacity ? parseInt(formData.capacity) : null),
+        // Phase 4.43: capacity is independent of timeslots (RSVP always available)
+        capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: coverImageUrl,
         is_published: formData.is_published,
         // Phase 4.36: Include publish confirmation flag when publishing
@@ -445,8 +446,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* Event Type */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Event Type *
+        <label className="block text-sm font-medium mb-2">
+          <span className="text-red-500">Event Type</span>
+          <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
@@ -475,8 +477,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Event Title *
+        <label className="block text-sm font-medium mb-2">
+          <span className="text-red-500">Event Title</span>
+          <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
         </label>
         <input
           type="text"
@@ -502,12 +505,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         />
       </div>
 
-      {/* Slot Configuration (Performance Slots vs RSVP Mode) */}
+      {/* Phase 4.43: Slot Configuration + Attendance Cap */}
+      {/* RSVP is always available; capacity is optional; timeslots are toggleable */}
       <SlotConfigSection
         eventType={formData.event_type}
         config={slotConfig}
         onChange={setSlotConfig}
         disabled={loading}
+        capacity={formData.capacity ? parseInt(formData.capacity) : null}
+        onCapacityChange={(cap) => updateField("capacity", cap?.toString() || "")}
       />
 
       {/* Warning: Timeslot duration exceeds event duration */}
@@ -524,119 +530,94 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      {/* Phase 4.0: Location Selection - Only show for venue/hybrid modes */}
+      {/* Phase 4.42m: Integrated Location Selection - Single dropdown with venue + custom option */}
       {(formData.location_mode === "venue" || formData.location_mode === "hybrid") && (
         <div className="space-y-4">
-          {/* Location Selection Mode Toggle */}
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Location Type *
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setLocationSelectionMode("venue")}
-                className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  locationSelectionMode === "venue"
-                    ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-accent)]"
-                    : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
-                }`}
-              >
-                Choose existing venue
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocationSelectionMode("custom")}
-                className={`flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  locationSelectionMode === "custom"
-                    ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-accent)]"
-                    : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
-                }`}
-              >
-                Use custom location
-              </button>
-            </div>
-          </div>
+          {/* Venue Dropdown with integrated custom location option */}
+          <VenueSelector
+            venues={venues}
+            selectedVenueId={formData.venue_id}
+            onVenueChange={(venueId) => {
+              updateField("venue_id", venueId);
+              setLocationSelectionMode("venue");
+            }}
+            onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
+            onCustomLocationSelect={() => {
+              updateField("venue_id", "");
+              setLocationSelectionMode("custom");
+            }}
+            showCustomLocationOption={true}
+            isCustomLocationSelected={locationSelectionMode === "custom"}
+            required
+            disabled={loading}
+          />
 
-          {/* Venue Selection + Summary Panel */}
-          {locationSelectionMode === "venue" && (
-            <>
-              <VenueSelector
-                venues={venues}
-                selectedVenueId={formData.venue_id}
-                onVenueChange={(venueId) => updateField("venue_id", venueId)}
-                onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
-                required
-                disabled={loading}
-              />
+          {/* Venue Summary Panel - shows when venue is selected */}
+          {locationSelectionMode === "venue" && formData.venue_id && (() => {
+            const selectedVenue = venues.find(v => v.id === formData.venue_id);
+            if (!selectedVenue) return null;
 
-              {/* Venue Summary Panel - shows when venue is selected */}
-              {formData.venue_id && (() => {
-                const selectedVenue = venues.find(v => v.id === formData.venue_id);
-                if (!selectedVenue) return null;
+            const hasUnknownAddress = isPlaceholderValue(selectedVenue.address);
+            const hasUnknownCity = isPlaceholderValue(selectedVenue.city);
+            const hasAnyUnknown = hasUnknownAddress || hasUnknownCity;
+            const mapsUrl = selectedVenue.google_maps_url || selectedVenue.map_link;
 
-                const hasUnknownAddress = isPlaceholderValue(selectedVenue.address);
-                const hasUnknownCity = isPlaceholderValue(selectedVenue.city);
-                const hasAnyUnknown = hasUnknownAddress || hasUnknownCity;
-                const mapsUrl = selectedVenue.google_maps_url || selectedVenue.map_link;
-
-                return (
-                  <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-900/10 border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
-                    <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                      Venue Details
-                    </h4>
-                    <dl className="space-y-1 text-sm">
-                      <div className="flex gap-2">
-                        <dt className="text-[var(--color-text-secondary)] w-16">Name:</dt>
-                        <dd className="text-[var(--color-text-primary)]">{selectedVenue.name}</dd>
-                      </div>
-                      <div className="flex gap-2">
-                        <dt className="text-[var(--color-text-secondary)] w-16">Address:</dt>
-                        <dd className={hasUnknownAddress ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
-                          {hasUnknownAddress ? "Unknown" : selectedVenue.address}
-                        </dd>
-                      </div>
-                      <div className="flex gap-2">
-                        <dt className="text-[var(--color-text-secondary)] w-16">City:</dt>
-                        <dd className={hasUnknownCity ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
-                          {hasUnknownCity ? "Unknown" : `${selectedVenue.city}, ${selectedVenue.state || "CO"}`}
-                        </dd>
-                      </div>
-                      {mapsUrl && (
-                        <div className="flex gap-2">
-                          <dt className="text-[var(--color-text-secondary)] w-16">Map:</dt>
-                          <dd>
-                            <a
-                              href={mapsUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[var(--color-link)] hover:underline"
-                            >
-                              View on Google Maps ↗
-                            </a>
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                    {hasAnyUnknown && (
-                      <p className="mt-3 text-sm text-amber-400">
-                        This venue record is incomplete. Consider using a custom location or updating the venue details.
-                      </p>
-                    )}
+            return (
+              <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-900/10 border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
+                <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                  Venue Details
+                </h4>
+                <dl className="space-y-1 text-sm">
+                  <div className="flex gap-2">
+                    <dt className="text-[var(--color-text-secondary)] w-16">Name:</dt>
+                    <dd className="text-[var(--color-text-primary)]">{selectedVenue.name}</dd>
                   </div>
-                );
-              })()}
-            </>
-          )}
+                  <div className="flex gap-2">
+                    <dt className="text-[var(--color-text-secondary)] w-16">Address:</dt>
+                    <dd className={hasUnknownAddress ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                      {hasUnknownAddress ? "Unknown" : selectedVenue.address}
+                    </dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-[var(--color-text-secondary)] w-16">City:</dt>
+                    <dd className={hasUnknownCity ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                      {hasUnknownCity ? "Unknown" : `${selectedVenue.city}, ${selectedVenue.state || "CO"}`}
+                    </dd>
+                  </div>
+                  {mapsUrl && (
+                    <div className="flex gap-2">
+                      <dt className="text-[var(--color-text-secondary)] w-16">Map:</dt>
+                      <dd>
+                        <a
+                          href={mapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--color-link)] hover:underline"
+                        >
+                          View on Google Maps ↗
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+                {hasAnyUnknown && (
+                  <p className="mt-3 text-sm text-amber-400">
+                    This venue record is incomplete. Consider using a custom location or updating the venue details.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
-          {/* Custom Location Fields */}
+          {/* Custom Location Fields - shown inline when custom location selected */}
           {locationSelectionMode === "custom" && (
             <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
               <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location</h4>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                  Location Name *
+                <label className="block text-sm font-medium mb-1">
+                  <span className="text-red-500">Location Name</span>
+                  <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
                 </label>
                 <input
                   type="text"
@@ -740,8 +721,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* Schedule */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Day of Week *
+          <label className="block text-sm font-medium mb-2">
+            <span className="text-red-500">Day of Week</span>
+            <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
           </label>
           <select
             value={formData.day_of_week}
@@ -762,8 +744,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Start Time *
+          <label className="block text-sm font-medium mb-2">
+            <span className="text-red-500">Start Time</span>
+            <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
           </label>
           <select
             value={formData.start_time}
@@ -809,8 +792,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                First Event Date *
+              <label className="block text-sm font-medium mb-2">
+                <span className="text-red-500">First Event Date</span>
+                <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
               </label>
               <input
                 type="date"
@@ -827,8 +811,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Number of Events *
+              <label className="block text-sm font-medium mb-2">
+                <span className="text-red-500">Number of Events</span>
+                <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
               </label>
               <select
                 value={formData.occurrence_count}
@@ -907,8 +892,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
         {(formData.location_mode === "online" || formData.location_mode === "hybrid") && (
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Online URL *
+            <label className="block text-sm font-medium mb-2">
+              <span className="text-red-500">Online URL</span>
+              <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
             </label>
             <input
               type="url"
@@ -1055,23 +1041,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      {/* Only show capacity when NOT using timeslots (timeslots have their own slot count) */}
-      {!slotConfig.has_timeslots && (
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Capacity
-            <span className="text-[var(--color-text-secondary)] font-normal ml-1">(leave empty for unlimited)</span>
-          </label>
-          <input
-            type="number"
-            value={formData.capacity}
-            onChange={(e) => updateField("capacity", e.target.value)}
-            placeholder="e.g., 12"
-            min="1"
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          />
-        </div>
-      )}
+      {/* Phase 4.43: Capacity field moved to SlotConfigSection */}
+      {/* RSVP is always available; capacity is optional and independent of timeslots */}
 
       {/* Host Notes (private) */}
       <div>
