@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.42d):** Lint warnings = 0. All tests passing (819). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.42e):** Lint warnings = 0. All tests passing (862). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -96,6 +96,7 @@ All must pass before merge:
 | Event form | `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` |
 | Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
 | Recurrence contract | `web/src/lib/events/recurrenceContract.ts` |
+| Form date helpers | `web/src/lib/events/formDateHelpers.ts` |
 | CommentThread (shared) | `web/src/components/comments/CommentThread.tsx` |
 | ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
 | GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
@@ -227,6 +228,50 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42e — Event Creation UX + Post-Create 404 Fix (January 2026)
+
+**Goal:** Fix post-create 404 errors and ensure weekday/date alignment in series preview.
+
+**Problems Fixed:**
+
+1. **Post-Create 404** — After creating a community event, navigating to edit page showed 404
+   - Root cause: Edit page query filtered by `is_dsc_event = true`, excluding community events
+   - Fix: Removed filter, added `isEventOwner` authorization check
+
+2. **Weekday/Date Mismatch** — Day of Week and series preview dates could disagree
+   - Root cause: `getNextDayOfWeek` used local time instead of Mountain Time
+   - Fix: Created `formDateHelpers.ts` with MT-aware date utilities
+
+3. **Layout Issue** — "Create Event Series" panel was far from schedule controls
+   - Fix: Moved section directly under Day of Week / Start Time / End Time
+
+**Key Changes:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/[id]/page.tsx` | Removed `is_dsc_event` filter, added `isEventOwner` check |
+| `lib/events/formDateHelpers.ts` | New Mountain Time date helpers |
+| `dashboard/my-events/_components/EventForm.tsx` | Bi-directional weekday/date sync, layout improvements |
+
+**New Date Helpers (`formDateHelpers.ts`):**
+- `getNextDayOfWeekMT(dayName)` — Next occurrence of weekday from today in MT
+- `weekdayNameFromDateMT(dateKey)` — Derive weekday name from date in MT
+- `weekdayIndexFromDateMT(dateKey)` — Weekday index (0-6) in MT
+- `snapDateToWeekdayMT(dateKey, targetDayIndex)` — Snap date to target weekday
+- `generateSeriesDates(startDate, count)` — Generate weekly series dates
+
+**Bi-directional Sync:**
+- Day of Week change → First Event Date snaps to that weekday
+- First Event Date change → Day of Week updates to match
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/event-creation-ux.test.ts` | 43 tests - date helpers, authorization, sync behavior |
 
 ---
 
@@ -1019,6 +1064,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/slug-routing.test.ts` | Slug routing + verification pills (15 tests) |
 | `__tests__/series-creation-rls.test.ts` | Series creation RLS fix (11 tests) |
 | `__tests__/recurrence-unification.test.ts` | Recurrence contract + label-generator consistency (24 tests) |
+| `__tests__/event-creation-ux.test.ts` | Event creation UX, 404 fix, date helpers (43 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests

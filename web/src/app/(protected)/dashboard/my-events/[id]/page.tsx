@@ -51,6 +51,7 @@ export default async function EditEventPage({
   // Fetch event with venue
   // Note: event_hosts.user_id references auth.users, not profiles
   // So we fetch hosts separately and join with profiles manually
+  // Phase 4.42e: Removed is_dsc_event filter to allow editing all events (DSC and community)
   const { data: event, error } = await supabase
     .from("events")
     .select(`
@@ -59,7 +60,6 @@ export default async function EditEventPage({
       event_hosts(id, user_id, role, invitation_status)
     `)
     .eq("id", eventId)
-    .eq("is_dsc_event", true)
     .single();
 
   if (error) {
@@ -68,7 +68,7 @@ export default async function EditEventPage({
   }
 
   if (!event) {
-    console.error("[EditEventPage] Event not found for ID:", eventId, "- query returned null (may not be DSC event)");
+    console.error("[EditEventPage] Event not found for ID:", eventId, "- query returned null");
     notFound();
   }
 
@@ -91,11 +91,13 @@ export default async function EditEventPage({
   }
 
   // Check authorization
+  // Phase 4.42e: Also allow event owner (host_id) to edit, not just event_hosts entries
   const userHost = hostsWithProfiles.find(
     (h) => h.user_id === session.user.id && h.invitation_status === "accepted"
   );
+  const isEventOwner = event.host_id === session.user.id;
 
-  if (!isAdmin && !userHost) {
+  if (!isAdmin && !userHost && !isEventOwner) {
     redirect("/dashboard");
   }
 
@@ -108,7 +110,8 @@ export default async function EditEventPage({
   const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
     || EVENT_TYPE_CONFIG.other;
 
-  const isPrimaryHost = userHost?.role === "host" || isAdmin;
+  // Phase 4.42e: Event owner (host_id) is also a primary host
+  const isPrimaryHost = userHost?.role === "host" || isAdmin || isEventOwner;
 
   // Get venue name from the joined relation
   const venueName = (event.venues as { name: string } | null)?.name ?? "TBA";
