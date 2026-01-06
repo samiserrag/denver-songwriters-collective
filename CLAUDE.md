@@ -4,7 +4,40 @@
 
 > **For product philosophy, UX rules, and design decisions, see [PRODUCT_NORTH_STAR.md](./docs/PRODUCT_NORTH_STAR.md)**
 
+> **For governance workflow and stop-gate protocol, see [GOVERNANCE.md](./docs/GOVERNANCE.md)**
+
 This file contains **repo-specific operational knowledge** for agents working in this codebase.
+
+---
+
+## Governance: Stop-Gate Workflow (Required)
+
+All non-trivial changes must follow the stop-gate protocol. See [docs/GOVERNANCE.md](./docs/GOVERNANCE.md) for full details.
+
+### Quick Reference
+
+1. **Step A: Investigate** — Repo agent gathers evidence (file paths, line ranges, migrations)
+2. **Step B: Critique** — Repo agent documents risks, coupling, rollback plan
+3. **Step C: Wait** — Repo agent STOPS. Only after Sami approves does execution begin.
+
+### Definition of Done (PR Checklist)
+
+Before any PR merges:
+
+- [ ] Investigation document exists (for non-trivial changes)
+- [ ] Stop-gate approval received from Sami
+- [ ] Contract updates included (if behavior changed)
+- [ ] Tests added/updated (regression coverage)
+- [ ] Lint passes (0 errors, 0 warnings)
+- [ ] Tests pass (all green)
+- [ ] Build succeeds
+- [ ] Smoke checklist updated (if new subsystem)
+- [ ] CLAUDE.md "Recent Changes" updated
+- [ ] No unresolved UNKNOWNs for core invariants
+
+### Investigation-Only PRs
+
+PRs containing only documentation (e.g., `docs/investigation/*.md`) are allowed without full execution approval, but must not include code, migration, or config changes.
 
 ---
 

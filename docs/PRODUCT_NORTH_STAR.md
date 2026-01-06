@@ -62,6 +62,15 @@ These are **system laws**, not preferences.
 * Fonts, spacing, contrast must be verified in production
 * Assumptions without UI proof are invalid
 
+### 2.4 Stop-Gate Governance
+
+* All non-trivial changes require investigation before execution
+* Evidence required; speculation forbidden
+* Sami approval required before any execution prompt
+* Root-cause fixes only; no band-aids
+
+See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full workflow.
+
 ---
 
 ## 3. UX North Star

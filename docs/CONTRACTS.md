@@ -24,12 +24,24 @@ If documents conflict:
 
 Any contradiction must be resolved explicitly; silent drift is not allowed.
 
-## Change Control
+## Change Control + Stop-Gate
 
 Changes to contracts require:
 - A short rationale ("why")
 - Reference to user feedback or a concrete failure mode
 - Updating related tests when applicable
+- **Orchestrator approval before execution** (see [GOVERNANCE.md](./GOVERNANCE.md))
+
+### Contract Update Requirements
+
+When UI behavior changes:
+1. Update the relevant contract in this document
+2. Update or add tests that enforce the contract
+3. Update CLAUDE.md "Recent Changes" section
+
+**Contracts and tests must stay synchronized. Silent drift is not allowed.**
+
+See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 

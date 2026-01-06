@@ -39,9 +39,19 @@ npm run dev
 | Document | Purpose |
 |----------|---------|
 | [CLAUDE.md](./CLAUDE.md) | Repo operations (start here for agents) |
+| [docs/GOVERNANCE.md](./docs/GOVERNANCE.md) | Stop-gate workflow & shipping process |
 | [docs/PRODUCT_NORTH_STAR.md](./docs/PRODUCT_NORTH_STAR.md) | Philosophy & UX laws |
 | [docs/CONTRACTS.md](./docs/CONTRACTS.md) | Enforceable UI/data contracts |
 | [docs/theme-system.md](./docs/theme-system.md) | Tokens & visual system |
+
+## How This Repo Is Operated
+
+This repository follows a **stop-gate workflow** where all non-trivial changes require:
+1. Investigation with evidence (no speculation)
+2. Risk/coupling/rollback critique
+3. Explicit approval from Sami before execution
+
+See [docs/GOVERNANCE.md](./docs/GOVERNANCE.md) for the full protocol.
 
 ## Contributing
 

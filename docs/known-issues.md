@@ -1,5 +1,26 @@
 # Known Issues (Non-Blocking)
 
+> **Policy:** Issues become "Guarded" only when a regression test exists that would catch reintroduction. Otherwise, issues remain "Known Issue" until fixed and guarded.
+
+See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the stop-gate workflow and quality gates.
+
+---
+
+## Issue Format
+
+When adding new issues, use this format:
+
+```markdown
+### X. Issue Title
+
+- **Symptoms:** What the user sees / what fails
+- **Root Cause:** Why this happens (if known), or "UNKNOWN" with next investigation step
+- **Mitigation:** Current workaround (if any)
+- **Guard Test:** Test file that prevents regression (if exists)
+- **Status:** Known Issue | Guarded | Resolved
+- **Priority:** P1 (fix now) | P2 (fix soon) | P3 (nice to fix) | P4 (low priority)
+```
+
 ---
 
 ## Resolved / Guarded (Phase 4.30 — Gallery + Comments Track)

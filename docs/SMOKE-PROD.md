@@ -1,6 +1,10 @@
 # Production Smoke Test Checklist
 
+> **Required:** Any execution phase must end by running this checklist. Add new items when new subsystems ship.
+
 Quick verification checklist for production deployments. Run after each deploy to `main`.
+
+See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full quality gates and stop-gate workflow.
 
 ## Prerequisites
 
@@ -184,3 +188,15 @@ If any check fails:
 2. Check browser console for JS errors
 3. Check Supabase logs for database errors
 4. Create GitHub issue with reproduction steps
+
+---
+
+## Gallery Smoke Checks (To Be Added in Gallery Track)
+
+_Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._
+
+---
+
+## Profiles Smoke Checks (To Be Added in Profiles Track)
+
+_Placeholder: Profile-specific smoke tests will be added when the Profiles track ships._
