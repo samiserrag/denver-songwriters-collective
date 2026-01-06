@@ -22,14 +22,23 @@ interface SeriesEditingNoticeProps {
     day_of_week?: string | null;
     event_date?: string | null;
     is_recurring?: boolean | null;
+    /** Phase 4.42k C3: series_id links events created as a series */
+    series_id?: string | null;
   };
   /** Whether to show the override editor link (admin only) */
   showOverrideLink?: boolean;
+  /** Sibling events in the same series (for "Other events in series" section) */
+  seriesSiblings?: Array<{
+    id: string;
+    event_date: string | null;
+    title: string;
+  }>;
 }
 
 export function SeriesEditingNotice({
   event,
   showOverrideLink = false,
+  seriesSiblings = [],
 }: SeriesEditingNoticeProps) {
   const recurrenceSummary = getRecurrenceSummary(
     event.recurrence_rule,
@@ -37,10 +46,15 @@ export function SeriesEditingNotice({
     event.event_date
   );
 
+  // Phase 4.42k C3: Also recognize series_id as indicating a recurring/series event
   const isRecurring =
     event.is_recurring ||
     event.recurrence_rule ||
+    event.series_id ||
     (event.day_of_week && !event.event_date);
+
+  // Filter out current event from siblings list
+  const otherSeriesEvents = seriesSiblings.filter(e => e.id !== event.id);
 
   return (
     <div className="p-4 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg mb-6">
@@ -79,6 +93,39 @@ export function SeriesEditingNotice({
               </Link>
               .
             </p>
+          )}
+
+          {/* Phase 4.42k C3: Show other events in this series */}
+          {otherSeriesEvents.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-[var(--color-border-default)]">
+              <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Other events in this series:
+              </p>
+              <ul className="space-y-1">
+                {otherSeriesEvents.slice(0, 5).map((siblingEvent) => (
+                  <li key={siblingEvent.id}>
+                    <Link
+                      href={`/dashboard/my-events/${siblingEvent.id}`}
+                      className="text-sm text-[var(--color-link)] hover:text-[var(--color-link-hover)] hover:underline"
+                    >
+                      {siblingEvent.event_date
+                        ? new Date(siblingEvent.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            timeZone: "America/Denver",
+                          })
+                        : "Date TBD"}{" "}
+                      — {siblingEvent.title}
+                    </Link>
+                  </li>
+                ))}
+                {otherSeriesEvents.length > 5 && (
+                  <li className="text-sm text-[var(--color-text-tertiary)]">
+                    +{otherSeriesEvents.length - 5} more
+                  </li>
+                )}
+              </ul>
+            </div>
           )}
         </div>
       ) : (

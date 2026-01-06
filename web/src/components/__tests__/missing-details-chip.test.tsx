@@ -28,15 +28,17 @@ describe('MissingDetailsChip', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render when cost is unknown', () => {
+  // Phase 4.42k B1: is_free is optional, no longer triggers missing details
+  it('should NOT render when only cost is unknown (Phase 4.42k B1)', () => {
     const event = {
       id: 'event-123',
       venue_id: 'venue-456',
       is_free: null,
     };
 
-    render(<MissingDetailsChip event={event} />);
-    expect(screen.getByText('Missing details')).toBeInTheDocument();
+    const { container } = render(<MissingDetailsChip event={event} />);
+    // B1: is_free being null should NOT render the chip
+    expect(container.firstChild).toBeNull();
   });
 
   it('should render when DSC event lacks age policy', () => {
@@ -145,17 +147,23 @@ describe('MissingDetailsChipStatic', () => {
     expect(chip?.tagName).toBe('SPAN');
   });
 
-  it('should include reasons in tooltip', () => {
+  // Phase 4.42k B1: is_free no longer triggers missing details
+  it('should include reasons in tooltip (B1: excludes cost)', () => {
     const event = {
       is_free: null,
       is_dsc_event: true,
       age_policy: null,
+      // Need another missing field since is_free no longer counts
+      venue_id: null,
+      location_mode: 'venue',
     };
 
     render(<MissingDetailsChipStatic event={event} />);
     const chip = screen.getByText('Missing details').parentElement;
     expect(chip).toHaveAttribute('title');
-    expect(chip?.getAttribute('title')).toContain('Cost information unknown');
+    // B1: is_free no longer triggers, so we check for other reasons
+    expect(chip?.getAttribute('title')).not.toContain('Cost information unknown');
     expect(chip?.getAttribute('title')).toContain('DSC event missing age policy');
+    expect(chip?.getAttribute('title')).toContain('Missing venue information');
   });
 });

@@ -279,17 +279,43 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     setError("");
     setSuccess("");
 
-    // Client-side validation
-    if ((formData.location_mode === "online" || formData.location_mode === "hybrid") && !formData.online_url) {
-      setError("Online URL is required for online or hybrid events");
-      setLoading(false);
-      return;
+    // Phase 4.42k: Comprehensive validation with error summary
+    // This replaces silent HTML5 validation scrolling with explicit error messages
+    const missingFields: string[] = [];
+
+    // Required fields validation
+    if (!formData.title.trim()) {
+      missingFields.push("Title");
+    }
+    if (!formData.day_of_week) {
+      missingFields.push("Day of Week");
+    }
+    if (!formData.start_time) {
+      missingFields.push("Start Time");
     }
 
-    // Phase 4.0: Validate custom location name if using custom location mode
-    if (locationSelectionMode === "custom" && formData.location_mode !== "online" && !formData.custom_location_name.trim()) {
-      setError("Location name is required for custom locations");
+    // Location validation (conditional based on mode)
+    if (formData.location_mode !== "online") {
+      if (locationSelectionMode === "venue" && !formData.venue_id) {
+        missingFields.push("Venue");
+      }
+      if (locationSelectionMode === "custom" && !formData.custom_location_name.trim()) {
+        missingFields.push("Location Name");
+      }
+    }
+
+    // Online URL validation (conditional)
+    if ((formData.location_mode === "online" || formData.location_mode === "hybrid") && !formData.online_url) {
+      missingFields.push("Online URL");
+    }
+
+    // If any required fields are missing, show error summary and scroll to form top
+    if (missingFields.length > 0) {
+      const fieldList = missingFields.join(", ");
+      setError(`Please fill in required fields: ${fieldList}`);
       setLoading(false);
+      // Scroll to the error message at top of form
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -382,7 +408,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600">
           {error}

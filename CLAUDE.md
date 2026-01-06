@@ -54,7 +54,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.42e):** Lint warnings = 0. All tests passing (862). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.42k):** Lint warnings = 0. All tests passing (897). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -228,6 +228,57 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.42k — Event Creation System Fixes (January 2026)
+
+**Goal:** Fix the complete event creation → listing → series management flow with 6 targeted fixes.
+
+**Fixes Implemented:**
+
+| Fix | Issue | Solution |
+|-----|-------|----------|
+| A1b | New events showed "unconfirmed" even though user created them | Auto-set `last_verified_at` on publish (community events auto-confirm) |
+| B1 | "Missing details" banner appeared for complete events | Removed `is_free` from missing details check (cost is optional) |
+| D2 | Monday series displayed as Sunday (timezone bug) | Replaced `toISOString().split("T")[0]` with MT-safe `T12:00:00Z` pattern |
+| C3 | Series panel disappeared after creation | Added `series_id` to SeriesEditingNotice + "Other events in series" links |
+| Banner | "Imported from external source" shown for user-created events | Source-aware copy: shows "imported" only for `source=import` |
+| Form | Silent HTML5 validation (user saw nothing on submit) | Added `noValidate` + custom error summary with field list |
+
+**Key Changes:**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/route.ts` | Added `last_verified_at: publishedAt` to auto-confirm; imported MT-safe `generateSeriesDates` |
+| `lib/events/missingDetails.ts` | Removed `is_free` null check from missing details |
+| `app/events/[id]/page.tsx` | Source-aware banner copy for unconfirmed events |
+| `app/events/[id]/display/page.tsx` | Fixed date parsing with `T12:00:00Z` pattern |
+| `MyEventsFilteredList.tsx` | Fixed date parsing with `T12:00:00Z` pattern |
+| `api/search/route.ts` | Added `T12:00:00Z` suffix to date parsing |
+| `components/events/SeriesEditingNotice.tsx` | Added `series_id` detection + series siblings list |
+| `dashboard/my-events/[id]/page.tsx` | Fetches series siblings, passes to SeriesEditingNotice |
+| `EventForm.tsx` | Added `noValidate` + comprehensive validation with error summary |
+
+**Date Handling Contract:**
+
+The canonical pattern for parsing date-only strings is now:
+```typescript
+new Date(dateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+  day: "numeric",
+  timeZone: "America/Denver"
+})
+```
+
+This ensures the calendar date is preserved regardless of user's local timezone.
+
+**Test Coverage:**
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/phase4-42k-event-creation-fixes.test.ts` | 35 tests - all fixes |
+| `__tests__/missing-details.test.ts` | Updated for B1 decision |
+| `components/__tests__/missing-details-chip.test.tsx` | Updated for B1 decision |
 
 ---
 

@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
+import { generateSeriesDates } from "@/lib/events/formDateHelpers";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -92,19 +93,8 @@ export async function GET() {
   return NextResponse.json(eventsWithCounts);
 }
 
-// Generate dates for a recurring series (weekly)
-function generateSeriesDates(startDate: string, count: number): string[] {
-  const dates: string[] = [];
-  const start = new Date(startDate + "T00:00:00");
-
-  for (let i = 0; i < count; i++) {
-    const eventDate = new Date(start);
-    eventDate.setDate(start.getDate() + (i * 7)); // Weekly
-    dates.push(eventDate.toISOString().split("T")[0]);
-  }
-
-  return dates;
-}
+// Series dates are now generated via MT-safe helper from formDateHelpers.ts
+// See: import { generateSeriesDates } from "@/lib/events/formDateHelpers"
 
 /**
  * Phase 4.42d: Unified event insert builder.
@@ -203,6 +193,10 @@ function buildEventInsert(params: EventInsertParams) {
     signup_deadline: (body.signup_deadline as string) || null,
     age_policy: (body.age_policy as string) || (isDSCEvent ? "18+ only" : null),
     source: "community",
+    // Phase 4.42k A1b: Auto-confirm community events when published
+    // Set last_verified_at to mark as confirmed, but leave verified_by null
+    // (verified_by null means auto-confirmed, not admin-verified)
+    last_verified_at: publishedAt, // null for drafts, timestamp for published
   };
 }
 

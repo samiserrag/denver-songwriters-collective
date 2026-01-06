@@ -116,6 +116,18 @@ export default async function EditEventPage({
   // Get venue name from the joined relation
   const venueName = (event.venues as { name: string } | null)?.name ?? "TBA";
 
+  // Phase 4.42k C3: Fetch series siblings if this event is part of a series
+  let seriesSiblings: Array<{ id: string; event_date: string | null; title: string }> = [];
+  if (event.series_id) {
+    const { data: siblings } = await supabase
+      .from("events")
+      .select("id, event_date, title")
+      .eq("series_id", event.series_id)
+      .neq("id", eventId)
+      .order("event_date", { ascending: true });
+    seriesSiblings = siblings ?? [];
+  }
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
@@ -180,7 +192,7 @@ export default async function EditEventPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Series Editing Notice - Phase 4.22.1 */}
+            {/* Series Editing Notice - Phase 4.22.1, updated 4.42k C3 */}
             <SeriesEditingNotice
               event={{
                 id: event.id,
@@ -188,8 +200,10 @@ export default async function EditEventPage({
                 day_of_week: event.day_of_week,
                 event_date: event.event_date,
                 is_recurring: event.is_recurring,
+                series_id: event.series_id,
               }}
               showOverrideLink={isAdmin}
+              seriesSiblings={seriesSiblings}
             />
 
             {/* Event Details */}

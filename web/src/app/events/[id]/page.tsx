@@ -537,7 +537,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <div>
                 <span className="font-medium">Happening (not confirmed)</span>
                 <span className="block text-sm mt-0.5">
-                  This event was imported from an external source and hasn&apos;t been verified yet.
+                  {/* Phase 4.42k: Source-aware copy for unconfirmed events */}
+                  {(event as { source?: string }).source === "import" ? (
+                    <>This event was imported from an external source and hasn&apos;t been verified yet.</>
+                  ) : (
+                    <>This event is awaiting admin verification.</>
+                  )}
                   {verificationResult.lastVerifiedAt && (
                     <span className="ml-1">Last verified: {formatVerifiedDate(verificationResult.lastVerifiedAt)}</span>
                   )}

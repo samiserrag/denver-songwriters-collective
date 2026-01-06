@@ -9,8 +9,10 @@
  * 2. Hybrid events (location_mode='hybrid') need: online_url + (venue_id OR custom_location_name)
  * 3. Venue events need: venue_id OR custom_location_name (not both venue_name alone)
  * 4. DSC events need: age_policy
- * 5. All events benefit from: is_free (cost clarity)
- * 6. "Orphan" events: have venue_name but no venue_id and no custom location
+ * 5. "Orphan" events: have venue_name but no venue_id and no custom location
+ *
+ * Phase 4.42k B1: Removed is_free check - cost is optional, not "missing" if unset.
+ * The form doesn't require is_free, so it shouldn't trigger "missing details" banner.
  */
 
 export interface MissingDetailsInput {
@@ -77,12 +79,9 @@ export function computeMissingDetails(event: MissingDetailsInput): MissingDetail
     reasons.push("DSC event missing age policy");
   }
 
-  // Rule 5: Unknown cost (is_free is null)
-  if (event.is_free === null || event.is_free === undefined) {
-    reasons.push("Cost information unknown");
-  }
+  // Rule 5 (removed in Phase 4.42k B1): is_free is optional, not "missing"
 
-  // Rule 6: Orphan venue (has name but no proper reference)
+  // Rule 5 (was Rule 6): Orphan venue (has name but no proper reference)
   // This is informational - the venue exists but isn't linked
   if (hasVenueNameOnly) {
     reasons.push("Venue not linked to database");

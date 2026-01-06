@@ -143,25 +143,28 @@ describe('computeMissingDetails', () => {
     });
   });
 
-  describe('Cost information', () => {
-    it('should flag events with unknown cost (is_free = null)', () => {
+  // Phase 4.42k B1: is_free is optional, not required for "missing details"
+  describe('Cost information (B1: optional, no longer triggers missing)', () => {
+    it('should NOT flag events with unknown cost (is_free = null) - Phase 4.42k B1', () => {
       const result = computeMissingDetails({
         is_free: null,
         venue_id: 'some-venue',
       });
 
-      expect(result.missing).toBe(true);
-      expect(result.reasons).toContain('Cost information unknown');
+      // B1 decision: is_free is optional, should not trigger missing details
+      expect(result.missing).toBe(false);
+      expect(result.reasons).not.toContain('Cost information unknown');
     });
 
-    it('should flag events with undefined cost', () => {
+    it('should NOT flag events with undefined cost - Phase 4.42k B1', () => {
       const result = computeMissingDetails({
         is_free: undefined,
         venue_id: 'some-venue',
       });
 
-      expect(result.missing).toBe(true);
-      expect(result.reasons).toContain('Cost information unknown');
+      // B1 decision: is_free is optional, should not trigger missing details
+      expect(result.missing).toBe(false);
+      expect(result.reasons).not.toContain('Cost information unknown');
     });
 
     it('should not flag free events', () => {
@@ -232,7 +235,7 @@ describe('computeMissingDetails', () => {
   });
 
   describe('Multiple missing fields', () => {
-    it('should report all missing fields', () => {
+    it('should report all missing fields (Phase 4.42k: excludes is_free)', () => {
       const result = computeMissingDetails({
         location_mode: 'hybrid',
         online_url: null,
@@ -244,10 +247,12 @@ describe('computeMissingDetails', () => {
       });
 
       expect(result.missing).toBe(true);
-      expect(result.reasons.length).toBeGreaterThanOrEqual(4);
+      // Phase 4.42k B1: is_free is no longer checked, so only 3 fields trigger missing
+      expect(result.reasons.length).toBeGreaterThanOrEqual(3);
       expect(result.reasons).toContain('Hybrid event missing online URL');
       expect(result.reasons).toContain('Hybrid event missing physical location');
-      expect(result.reasons).toContain('Cost information unknown');
+      // B1: is_free no longer triggers missing details
+      expect(result.reasons).not.toContain('Cost information unknown');
       expect(result.reasons).toContain('DSC event missing age policy');
     });
   });

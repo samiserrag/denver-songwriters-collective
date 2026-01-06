@@ -280,10 +280,10 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
                   {event.event_date && (
                     <div className="flex-shrink-0 w-14 h-14 bg-[var(--color-accent-primary)] rounded-lg flex flex-col items-center justify-center text-[var(--color-text-on-accent)]">
                       <span className="text-xs font-medium uppercase">
-                        {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                        {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
                       </span>
                       <span className="text-xl font-bold leading-none">
-                        {new Date(event.event_date + "T00:00:00").getDate()}
+                        {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
                       </span>
                     </div>
                   )}
@@ -388,10 +388,10 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
                       {event.event_date && (
                         <div className="flex-shrink-0 w-12 h-12 bg-[var(--color-bg-tertiary)] rounded-lg flex flex-col items-center justify-center text-[var(--color-text-secondary)]">
                           <span className="text-xs font-medium uppercase">
-                            {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                            {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
                           </span>
                           <span className="text-lg font-bold leading-none">
-                            {new Date(event.event_date + "T00:00:00").getDate()}
+                            {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
                           </span>
                         </div>
                       )}

@@ -198,13 +198,13 @@ export default function EventDisplayPage() {
           {event?.event_date && (
             <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black">
               <span className="text-sm font-semibold uppercase tracking-wide">
-                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
               </span>
               <span className="text-4xl font-bold leading-none">
-                {new Date(event.event_date + "T00:00:00").getDate()}
+                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
               </span>
               <span className="text-xs font-medium uppercase">
-                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
+                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
               </span>
             </div>
           )}
@@ -217,7 +217,7 @@ export default function EventDisplayPage() {
             )}
             {event?.event_date && (
               <p className="text-sm text-gray-500 mt-1">
-                {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
+                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
                   day: "numeric",
