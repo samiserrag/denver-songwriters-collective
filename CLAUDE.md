@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.49b):** Lint warnings = 0. All tests passing (1107). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.50b):** Lint warnings = 0. All tests passing (1126). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -262,6 +262,44 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.50b — Past Tab Fix (January 2026)
+
+**Goal:** Fix Happenings "Past" tab showing 0 events.
+
+**Root Cause:** Occurrence expansion and overrides query used hardcoded forward-looking window (`today → today+90`) regardless of `timeFilter`.
+
+**Solution:**
+
+| Change | Implementation |
+|--------|----------------|
+| Date-aware windows | Window bounds depend on timeFilter (upcoming/past/all) |
+| MIN(event_date) query | Past/all modes query earliest event_date for window start |
+| Progressive loading | Past mode uses chunked loading (90 days per chunk) |
+| Past ordering | DESC (newest-first) instead of ASC |
+| Dynamic label | `(next 90 days)` / `(past events)` / `(all time)` |
+| DateJumpControl | Now supports past date selection |
+
+**Window Bounds by Mode:**
+
+| Mode | Window Start | Window End |
+|------|--------------|------------|
+| `upcoming` | today | today+90 |
+| `past` | yesterday-90 (or minEventDate) | yesterday |
+| `all` | minEventDate | today+90 |
+
+**Key Files:**
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Window calculation, MIN query, progressive loading, ordering, label |
+| `components/happenings/StickyControls.tsx` | New props: `windowStartKey`, `timeFilter` |
+| `components/happenings/DateJumpControl.tsx` | Support for past date selection |
+| `__tests__/phase4-50b-past-tab-fix.test.ts` | 19 new tests |
+
+**Test Coverage:** 19 new tests covering window bounds, ordering, dynamic labels, progressive loading, and DateJumpControl.
 
 ---
 

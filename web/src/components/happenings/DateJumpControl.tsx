@@ -7,8 +7,13 @@
  * - Preset dropdown: Today, Tomorrow, This Weekend, Pick a date...
  * - Synchronized Month/Day/Year dropdowns when "Pick a date" selected
  * - Smooth scroll to date headers using existing id="date-YYYY-MM-DD" anchors
- * - Shows warning if date is outside 90-day window
+ * - Shows warning if date is outside window
  * - Preserves existing URL filters
+ *
+ * Phase 4.50b: Support past dates
+ * - When timeFilter="past", window goes backward from yesterday
+ * - Date picker allows selecting dates within past window
+ * - Presets adapt to timeFilter context
  */
 
 import * as React from "react";
@@ -17,8 +22,12 @@ import { cn } from "@/lib/utils";
 interface DateJumpControlProps {
   /** Today's date key (YYYY-MM-DD in Denver timezone) */
   todayKey: string;
-  /** End of 90-day window (YYYY-MM-DD) */
+  /** Start of the current window (YYYY-MM-DD) */
+  windowStartKey: string;
+  /** End of the current window (YYYY-MM-DD) */
   windowEndKey: string;
+  /** Current time filter (upcoming/past/all) */
+  timeFilter: string;
   /** Additional CSS classes */
   className?: string;
 }
@@ -158,70 +167,77 @@ function formatDateRange(startKey: string, endKey: string): string {
 
 export function DateJumpControl({
   todayKey,
+  windowStartKey,
   windowEndKey,
+  timeFilter,
   className,
 }: DateJumpControlProps) {
   const [selectedPreset, setSelectedPreset] = React.useState<PresetValue | "">("");
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [warningMessage, setWarningMessage] = React.useState<string | null>(null);
 
-  // Date picker state
-  const todayParsed = parseDateKey(todayKey);
+  // Phase 4.50b: Determine if we're in past mode
+  const isPastMode = timeFilter === "past";
+
+  // Date picker state - use window bounds instead of today
+  const windowStartParsed = parseDateKey(windowStartKey);
   const windowEndParsed = parseDateKey(windowEndKey);
 
-  const [pickerYear, setPickerYear] = React.useState(todayParsed.year);
-  const [pickerMonth, setPickerMonth] = React.useState(todayParsed.month);
-  const [pickerDay, setPickerDay] = React.useState(todayParsed.day);
+  // Initialize picker to the appropriate default based on mode
+  const defaultDate = isPastMode ? windowEndParsed : parseDateKey(todayKey);
+  const [pickerYear, setPickerYear] = React.useState(defaultDate.year);
+  const [pickerMonth, setPickerMonth] = React.useState(defaultDate.month);
+  const [pickerDay, setPickerDay] = React.useState(defaultDate.day);
 
   // Generate available years (within window)
   const availableYears = React.useMemo(() => {
     const years: number[] = [];
-    for (let y = todayParsed.year; y <= windowEndParsed.year; y++) {
+    for (let y = windowStartParsed.year; y <= windowEndParsed.year; y++) {
       years.push(y);
     }
     return years;
-  }, [todayParsed.year, windowEndParsed.year]);
+  }, [windowStartParsed.year, windowEndParsed.year]);
 
   // Generate available months for selected year
   const availableMonths = React.useMemo(() => {
     const months: { value: number; label: string }[] = [];
-    const startMonth = pickerYear === todayParsed.year ? todayParsed.month : 0;
+    const startMonth = pickerYear === windowStartParsed.year ? windowStartParsed.month : 0;
     const endMonth = pickerYear === windowEndParsed.year ? windowEndParsed.month : 11;
     for (let m = startMonth; m <= endMonth; m++) {
       months.push({ value: m, label: MONTH_NAMES[m] });
     }
     return months;
-  }, [pickerYear, todayParsed.year, todayParsed.month, windowEndParsed.year, windowEndParsed.month]);
+  }, [pickerYear, windowStartParsed.year, windowStartParsed.month, windowEndParsed.year, windowEndParsed.month]);
 
   // Generate available days for selected year/month
   const availableDays = React.useMemo(() => {
     const days: number[] = [];
     const daysInMonth = getDaysInMonth(pickerYear, pickerMonth);
-    const startDay = (pickerYear === todayParsed.year && pickerMonth === todayParsed.month)
-      ? todayParsed.day : 1;
+    const startDay = (pickerYear === windowStartParsed.year && pickerMonth === windowStartParsed.month)
+      ? windowStartParsed.day : 1;
     const endDay = (pickerYear === windowEndParsed.year && pickerMonth === windowEndParsed.month)
       ? windowEndParsed.day : daysInMonth;
     for (let d = startDay; d <= Math.min(endDay, daysInMonth); d++) {
       days.push(d);
     }
     return days;
-  }, [pickerYear, pickerMonth, todayParsed, windowEndParsed]);
+  }, [pickerYear, pickerMonth, windowStartParsed, windowEndParsed]);
 
   // Clamp day when month/year changes
   React.useEffect(() => {
     if (!availableDays.includes(pickerDay)) {
-      const closestDay = availableDays[availableDays.length - 1] || todayParsed.day;
+      const closestDay = availableDays[availableDays.length - 1] || defaultDate.day;
       setPickerDay(closestDay);
     }
-  }, [availableDays, pickerDay, todayParsed.day]);
+  }, [availableDays, pickerDay, defaultDate.day]);
 
   // Clamp month when year changes
   React.useEffect(() => {
     const monthValues = availableMonths.map(m => m.value);
     if (!monthValues.includes(pickerMonth)) {
-      setPickerMonth(monthValues[0] ?? todayParsed.month);
+      setPickerMonth(monthValues[0] ?? defaultDate.month);
     }
-  }, [availableMonths, pickerMonth, todayParsed.month]);
+  }, [availableMonths, pickerMonth, defaultDate.month]);
 
   // Get day of week label for current picker selection
   const pickerDayOfWeek = React.useMemo(() => {
@@ -247,11 +263,18 @@ export function DateJumpControl({
     }
 
     setShowDatePicker(false);
+
+    // Phase 4.50b: Skip presets that don't apply in past mode
+    if (isPastMode && (value === "today" || value === "tomorrow" || value === "this-weekend")) {
+      setWarningMessage("This preset is for upcoming events. Use the date picker.");
+      return;
+    }
+
     const { dateKey, outOfWindow } = getPresetTargetDate(value, todayKey, windowEndKey);
 
     if (dateKey) {
       if (outOfWindow) {
-        setWarningMessage(`Not in current range (${formatDateRange(todayKey, windowEndKey)})`);
+        setWarningMessage(`Not in current range (${formatDateRange(windowStartKey, windowEndKey)})`);
       } else {
         const found = scrollToDateHeader(dateKey);
         if (!found) {
@@ -266,8 +289,9 @@ export function DateJumpControl({
     const dateKey = formatDateKey(pickerYear, pickerMonth, pickerDay);
     setWarningMessage(null);
 
-    if (dateKey < todayKey || dateKey > windowEndKey) {
-      setWarningMessage(`Not in current range (${formatDateRange(todayKey, windowEndKey)})`);
+    // Phase 4.50b: Validate against window bounds (not today)
+    if (dateKey < windowStartKey || dateKey > windowEndKey) {
+      setWarningMessage(`Not in current range (${formatDateRange(windowStartKey, windowEndKey)})`);
       return;
     }
 

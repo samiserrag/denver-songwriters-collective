@@ -33,6 +33,7 @@ export const dynamic = "force-dynamic";
  * - cost: free|paid|unknown
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
+ * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -45,6 +46,7 @@ interface HappeningsSearchParams {
   days?: string;
   debugDates?: string;
   showCancelled?: string;
+  pastOffset?: string;
 }
 
 export default async function HappeningsPage({
@@ -69,10 +71,56 @@ export default async function HappeningsPage({
   const debugDates = params.debugDates === "1";
   // Show cancelled occurrences (default: hidden)
   const showCancelled = params.showCancelled === "1";
+  // Progressive loading offset for past events (each offset = 90 days further back)
+  const pastOffset = parseInt(params.pastOffset || "0", 10) || 0;
 
   const today = getTodayDenver();
-  // 90-day window for occurrence expansion
-  const windowEnd = addDaysDenver(today, 90);
+  const yesterday = addDaysDenver(today, -1);
+
+  // Phase 4.50b: Compute window bounds based on timeFilter
+  // - upcoming: today → today+90
+  // - past: minEventDate → yesterday (with progressive loading via pastOffset)
+  // - all: minEventDate → today+90
+  let windowStart = today;
+  let windowEnd = addDaysDenver(today, 90);
+  let hasMorePastEvents = false;
+
+  if (timeFilter === "past" || timeFilter === "all") {
+    // Query MIN(event_date) to find the oldest event
+    const { data: minDateResult } = await supabase
+      .from("events")
+      .select("event_date")
+      .eq("is_published", true)
+      .in("status", ["active", "needs_verification"])
+      .not("event_date", "is", null)
+      .order("event_date", { ascending: true })
+      .limit(1)
+      .single();
+
+    const minDate = minDateResult?.event_date || addDaysDenver(today, -365); // Fallback to 1 year ago
+
+    if (timeFilter === "past") {
+      // Past: from minEventDate to yesterday
+      // Progressive loading: show 90 days at a time, starting from yesterday going backward
+      windowEnd = yesterday;
+
+      // Calculate window start based on pastOffset
+      // pastOffset=0 means yesterday-90 to yesterday
+      // pastOffset=1 means yesterday-180 to yesterday-90
+      const chunkStart = addDaysDenver(yesterday, -(pastOffset + 1) * 90);
+      const chunkEnd = pastOffset === 0 ? yesterday : addDaysDenver(yesterday, -pastOffset * 90);
+
+      windowStart = chunkStart < minDate ? minDate : chunkStart;
+      windowEnd = chunkEnd;
+
+      // Check if there are more past events beyond this window
+      hasMorePastEvents = windowStart > minDate;
+    } else {
+      // All: from minEventDate to today+90
+      windowStart = minDate;
+      windowEnd = addDaysDenver(today, 90);
+    }
+  }
 
   // Build base query with venue join for search
   let query = supabase
@@ -89,7 +137,7 @@ export default async function HappeningsPage({
   const { data: overridesData } = await supabase
     .from("occurrence_overrides")
     .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes")
-    .gte("date_key", today)
+    .gte("date_key", windowStart)
     .lte("date_key", windowEnd);
 
   const overrideMap = buildOverrideMap(
@@ -151,11 +199,18 @@ export default async function HappeningsPage({
     query = query.is("is_free", null);
   }
 
-  // For "past" filter, only get events with event_date < today
-  // For "upcoming" and "all", we filter client-side based on occurrence expansion
+  // Phase 4.50b: Time-based filtering
+  // For "past", get events with event_date in the past window
+  // For "upcoming", get events with event_date from today onwards OR recurring events
+  // For "all", get all events (no date filter)
   if (timeFilter === "past") {
-    query = query.lt("event_date", today);
+    // Past: event_date must be in the past window (or null for recurring)
+    query = query.or(`event_date.gte.${windowStart},event_date.lte.${windowEnd},event_date.is.null`);
+  } else if (timeFilter === "upcoming") {
+    // Upcoming: event_date from today onwards OR recurring (null event_date with day_of_week)
+    query = query.or(`event_date.gte.${today},event_date.is.null`);
   }
+  // For "all", no additional date filter needed
 
   const { data: events, error } = await query;
 
@@ -231,7 +286,7 @@ export default async function HappeningsPage({
     });
   }
 
-  // Phase 4.21: Expand occurrences within 90-day window with override support
+  // Phase 4.21/4.50b: Expand occurrences within window with override support
   // This allows one event to appear on multiple dates (e.g., every Wednesday)
   // Cancelled occurrences are tracked separately for toggle control
   const {
@@ -242,18 +297,35 @@ export default async function HappeningsPage({
   } = expandAndGroupEvents(
     list as any[],
     {
-      startKey: today,
+      startKey: windowStart,
       endKey: windowEnd,
       maxOccurrences: 40,
       overrideMap,
     }
   );
 
-  // Filter to only upcoming occurrences for "upcoming" view
+  // Phase 4.50b: Sort date groups based on timeFilter
+  // - upcoming/all: chronological (ASC) - earliest first
+  // - past: reverse chronological (DESC) - most recent first
   let filteredGroups = expandedGroups;
   if (timeFilter === "upcoming") {
+    // Filter to only upcoming occurrences
     filteredGroups = new Map(
-      [...expandedGroups.entries()].filter(([dateKey]) => dateKey >= today)
+      [...expandedGroups.entries()]
+        .filter(([dateKey]) => dateKey >= today)
+        .sort(([a], [b]) => a.localeCompare(b)) // ASC
+    );
+  } else if (timeFilter === "past") {
+    // Sort in reverse chronological order (newest first)
+    filteredGroups = new Map(
+      [...expandedGroups.entries()]
+        .filter(([dateKey]) => dateKey < today)
+        .sort(([a], [b]) => b.localeCompare(a)) // DESC
+    );
+  } else {
+    // "all" - sort chronologically
+    filteredGroups = new Map(
+      [...expandedGroups.entries()].sort(([a], [b]) => a.localeCompare(b))
     );
   }
 
@@ -405,7 +477,9 @@ export default async function HappeningsPage({
         <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
           <StickyControls
             todayKey={today}
+            windowStartKey={windowStart}
             windowEndKey={windowEnd}
+            timeFilter={timeFilter}
             cancelledCount={expansionMetrics.cancelledCount}
           />
         </Suspense>
@@ -418,7 +492,15 @@ export default async function HappeningsPage({
           {" "}across{" "}
           <span className="font-medium text-[var(--color-text-primary)]">{totalDates}</span>
           {" "}{totalDates === 1 ? "date" : "dates"}
-          {" "}(next 90 days)
+          {/* Phase 4.50b: Dynamic window label based on timeFilter */}
+          {" "}
+          {timeFilter === "past" ? (
+            <span>(past events{pastOffset > 0 ? `, showing older` : ""})</span>
+          ) : timeFilter === "all" ? (
+            <span>(all time)</span>
+          ) : (
+            <span>(next 90 days)</span>
+          )}
           {filterSummary.length > 0 && (
             <span className="ml-2 text-[var(--color-text-tertiary)]">
               · Filtered by: {filterSummary.join(", ")}
@@ -542,6 +624,26 @@ export default async function HappeningsPage({
                   />
                 ))}
               </DateSection>
+            )}
+
+            {/* Phase 4.50b: "Load older" button for progressive past loading */}
+            {timeFilter === "past" && hasMorePastEvents && (
+              <div className="py-6 text-center">
+                <Link
+                  href={`/happenings?${new URLSearchParams({
+                    ...Object.fromEntries(
+                      Object.entries(params).filter(([, v]) => v !== undefined && v !== "")
+                    ),
+                    pastOffset: String(pastOffset + 1),
+                  }).toString()}`}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] font-medium hover:border-[var(--color-border-accent)] hover:bg-[var(--color-bg-tertiary)] transition"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Load older events
+                </Link>
+              </div>
             )}
           </div>
         ) : (

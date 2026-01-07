@@ -18,12 +18,14 @@ import { DateJumpControl } from "./DateJumpControl";
 
 interface StickyControlsProps {
   todayKey: string;
+  windowStartKey: string;
   windowEndKey: string;
+  timeFilter: string;
   cancelledCount?: number;
   className?: string;
 }
 
-export function StickyControls({ todayKey, windowEndKey, cancelledCount = 0, className }: StickyControlsProps) {
+export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFilter, cancelledCount = 0, className }: StickyControlsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const showCancelled = searchParams.get("showCancelled") === "1";
@@ -55,7 +57,12 @@ export function StickyControls({ todayKey, windowEndKey, cancelledCount = 0, cla
       {/* Date Jump Control + Cancelled Toggle Row */}
       <div className="flex flex-wrap items-center gap-3">
         <Suspense fallback={null}>
-          <DateJumpControl todayKey={todayKey} windowEndKey={windowEndKey} />
+          <DateJumpControl
+            todayKey={todayKey}
+            windowStartKey={windowStartKey}
+            windowEndKey={windowEndKey}
+            timeFilter={timeFilter}
+          />
         </Suspense>
 
         {/* Phase 4.21: Show Cancelled Toggle */}
