@@ -155,7 +155,7 @@ export default function VenueSelector({
             <option value="__new__">+ Add new venue...</option>
           )}
           {showCustomLocationOption && (
-            <option value="__custom__">✎ Enter custom location...</option>
+            <option value="__custom__">✎ Custom location (this event only)...</option>
           )}
           {(canCreateVenue || showCustomLocationOption) && (
             <option disabled className="text-[var(--color-text-secondary)]">──────────────</option>

@@ -80,65 +80,76 @@ export default function SlotConfigSection({
 
   return (
     <div className="space-y-6">
-      {/* Phase 4.43: RSVP Meaning Clarification */}
-      <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-            <svg className="w-4 h-4 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-[var(--color-text-primary)]">
-              About RSVPs
-            </h4>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              RSVP means you plan to attend. It is not a performer sign-up.
-            </p>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              RSVPs are always available for your event. Attendees can RSVP to let you know they&apos;re coming.
-            </p>
-          </div>
+      {/* Phase 4.46: Section Header - "Join & Signup" */}
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-2xl">🎤</span>
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            Join &amp; Signup
+          </h3>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            How attendees and performers interact with your event
+          </p>
         </div>
       </div>
 
-      {/* Attendance Cap (Optional) */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Attendance Cap (optional)
-        </label>
-        <input
-          type="number"
-          value={capacity ?? ""}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === "") {
-              onCapacityChange(null);
-            } else {
-              const num = parseInt(val);
-              if (!isNaN(num) && num > 0) {
-                onCapacityChange(num);
-              }
-            }
-          }}
-          placeholder="Leave blank for unlimited"
-          min="1"
-          disabled={disabled}
-          className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
-        />
-        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Maximum number of RSVPs allowed. Leave blank for unlimited attendance.
+      {/* Phase 4.46: Audience RSVP Subsection (always visible) */}
+      <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">👥</span>
+          <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Audience RSVP
+          </h4>
+          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Always Available
+          </span>
+        </div>
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          RSVPs let attendees say they&apos;re coming. This is not a performer sign-up.
         </p>
+
+        {/* Attendance Cap */}
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            Attendance Cap (optional)
+          </label>
+          <input
+            type="number"
+            value={capacity ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "") {
+                onCapacityChange(null);
+              } else {
+                const num = parseInt(val);
+                if (!isNaN(num) && num > 0) {
+                  onCapacityChange(num);
+                }
+              }
+            }}
+            placeholder="Leave blank for unlimited"
+            min="1"
+            disabled={disabled}
+            className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+          />
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+            Maximum RSVPs allowed. Leave blank for unlimited attendance.
+          </p>
+        </div>
       </div>
 
-      {/* Performer Slots Toggle */}
+      {/* Phase 4.46: Performer Slots Subsection (optional) */}
       <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-sm font-medium text-[var(--color-text-primary)]">
-                Enable Performer Slots
+              <span className="text-lg">🎸</span>
+              <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                Performer Slots
               </h4>
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
+                Optional
+              </span>
               {isTimeslotType && (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/30">
                   Recommended for {eventType === "open_mic" ? "Open Mic" : "Showcase"}
@@ -146,7 +157,7 @@ export default function SlotConfigSection({
               )}
             </div>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Allow performers to claim time slots to perform. Great for open mics and showcases.
+              Allow performers to claim time slots. Great for open mics and showcases.
             </p>
           </div>
           <button
@@ -168,103 +179,117 @@ export default function SlotConfigSection({
             />
           </button>
         </div>
+
+        {/* Slot Configuration (only shown when timeslots enabled) */}
+        {config.has_timeslots && (
+          <div className="mt-4 pt-4 border-t border-[var(--color-border-default)] space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Total Slots */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                  Number of Slots
+                </label>
+                <input
+                  type="number"
+                  value={config.total_slots}
+                  onChange={(e) =>
+                    handleChange("total_slots", Math.max(1, parseInt(e.target.value) || 1))
+                  }
+                  min="1"
+                  max="50"
+                  disabled={disabled}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+                />
+              </div>
+
+              {/* Slot Duration */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                  Slot Duration
+                </label>
+                <select
+                  value={config.slot_duration_minutes}
+                  onChange={(e) =>
+                    handleChange("slot_duration_minutes", parseInt(e.target.value))
+                  }
+                  disabled={disabled}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+                >
+                  <option value="5">5 minutes</option>
+                  <option value="10">10 minutes</option>
+                  <option value="15">15 minutes</option>
+                  <option value="20">20 minutes</option>
+                  <option value="30">30 minutes</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Allow Guests Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h5 className="text-sm font-medium text-[var(--color-text-primary)]">
+                  Allow Guest Sign-ups
+                </h5>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  Non-members can claim slots via email verification
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleChange("allow_guests", !config.allow_guests)}
+                disabled={disabled}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  config.allow_guests
+                    ? "bg-[var(--color-accent-primary)]"
+                    : "bg-[var(--color-bg-tertiary)]"
+                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                role="switch"
+                aria-checked={config.allow_guests}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    config.allow_guests ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Slot Configuration (only shown when timeslots enabled) */}
-      {config.has_timeslots && (
-        <div className="space-y-4 p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-          <h4 className="text-sm font-medium text-[var(--color-text-primary)]">
-            Slot Configuration
+      {/* Phase 4.46: Mini Preview */}
+      <div className="p-4 bg-[var(--color-accent-primary)]/5 border border-[var(--color-border-accent)] rounded-lg">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-lg">📋</span>
+          <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Preview: What attendees will see
           </h4>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Total Slots */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Number of Slots
-              </label>
-              <input
-                type="number"
-                value={config.total_slots}
-                onChange={(e) =>
-                  handleChange("total_slots", Math.max(1, parseInt(e.target.value) || 1))
-                }
-                min="1"
-                max="50"
-                disabled={disabled}
-                className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
-              />
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Total performance slots available
-              </p>
-            </div>
-
-            {/* Slot Duration */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Slot Duration (minutes)
-              </label>
-              <select
-                value={config.slot_duration_minutes}
-                onChange={(e) =>
-                  handleChange("slot_duration_minutes", parseInt(e.target.value))
-                }
-                disabled={disabled}
-                className="w-full px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
-              >
-                <option value="5">5 minutes</option>
-                <option value="10">10 minutes</option>
-                <option value="15">15 minutes</option>
-                <option value="20">20 minutes</option>
-                <option value="30">30 minutes</option>
-              </select>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Time per performer
-              </p>
-            </div>
-          </div>
-
-          {/* Allow Guests Toggle */}
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              <h5 className="text-sm font-medium text-[var(--color-text-primary)]">
-                Allow Guest Sign-ups
-              </h5>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                Non-members can claim slots via email verification
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleChange("allow_guests", !config.allow_guests)}
-              disabled={disabled}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                config.allow_guests
-                  ? "bg-[var(--color-accent-primary)]"
-                  : "bg-[var(--color-bg-tertiary)]"
-              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-              role="switch"
-              aria-checked={config.allow_guests}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  config.allow_guests ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Info Box */}
-          <div className="p-3 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              <strong className="text-[var(--color-text-primary)]">How it works:</strong>{" "}
-              {config.total_slots} slots × {config.slot_duration_minutes} minutes ={" "}
-              {config.total_slots * config.slot_duration_minutes} minutes of performances.
-              Slots are first-come, first-served. Each performer can claim one slot.
-            </p>
-          </div>
         </div>
-      )}
+        <div className="space-y-2">
+          {/* RSVP availability line */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-emerald-400">✓</span>
+            <span className="text-[var(--color-text-primary)]">
+              RSVP Available
+              {capacity ? (
+                <span className="text-[var(--color-text-secondary)]"> ({capacity} spots)</span>
+              ) : (
+                <span className="text-[var(--color-text-secondary)]"> (unlimited)</span>
+              )}
+            </span>
+          </div>
+          {/* Performer slots line (only if enabled) */}
+          {config.has_timeslots && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-[var(--color-accent-primary)]">🎤</span>
+              <span className="text-[var(--color-text-primary)]">
+                {config.total_slots} performer slots
+                <span className="text-[var(--color-text-secondary)]"> ({config.slot_duration_minutes} min each)</span>
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

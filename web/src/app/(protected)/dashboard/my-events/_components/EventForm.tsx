@@ -771,6 +771,27 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                       This venue record is incomplete. Consider using a custom location or updating the venue details.
                     </p>
                   )}
+                  {/* Phase 4.46: "Venue wrong?" link */}
+                  <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+                    Venue info wrong?{" "}
+                    {canCreateVenue ? (
+                      <a
+                        href="/dashboard/admin/venues"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--color-link)] hover:underline"
+                      >
+                        Edit this venue (Admin)
+                      </a>
+                    ) : (
+                      <a
+                        href={`mailto:hello@denversongwriterscollective.org?subject=${encodeURIComponent(`Venue Issue: ${selectedVenue.name}`)}&body=${encodeURIComponent(`Venue: ${selectedVenue.name} (${selectedVenue.id})\n\nPlease describe the issue:\n`)}`}
+                        className="text-[var(--color-link)] hover:underline"
+                      >
+                        Report an issue
+                      </a>
+                    )}
+                  </p>
                 </div>
               );
             })()}
@@ -778,7 +799,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             {/* Custom Location Fields */}
             {locationSelectionMode === "custom" && (
               <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
-                <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location</h4>
+                <div>
+                  <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location (this event only)</h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                    This location applies only to this event and won&apos;t be added to the venue list.
+                  </p>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">

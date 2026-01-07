@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.45b):** Lint warnings = 0. All tests passing (1026). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.46):** Lint warnings = 0. All tests passing (1039). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -262,6 +262,39 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.46 — Join & Signup UX Spotlight (January 2026)
+
+**Goal:** Make "Join & Signup" the star differentiator vs Meetup with clear RSVP + performer slots presentation.
+
+**Changes:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Section header | "🎤 Join & Signup" with descriptive subtitle |
+| Audience RSVP | Always visible subsection with "Always Available" badge |
+| Performer Slots | Optional subsection with explicit "Optional" badge + toggle |
+| Mini preview | Shows what attendees will see (RSVP + slots if enabled) |
+| Custom location copy | Now explicitly says "(this event only)" everywhere |
+| Venue wrong? link | Non-admin: mailto / Admin: link to `/dashboard/admin/venues` |
+
+**Key Files:**
+
+| File | Change |
+|------|--------|
+| `components/ui/VenueSelector.tsx` | Custom location dropdown text updated |
+| `dashboard/my-events/_components/EventForm.tsx` | Custom location header + helper text + "Venue wrong?" link |
+| `dashboard/my-events/_components/SlotConfigSection.tsx` | Restructured as "Join & Signup" section with mini preview |
+| `__tests__/phase4-46-join-signup-ux.test.tsx` | 13 new tests |
+| `docs/investigation/phase4-46-join-signup-ux-spotlight.md` | Investigation document |
+
+**Mini Preview Shows:**
+- "✓ RSVP Available (unlimited)" or "✓ RSVP Available (X spots)"
+- "🎤 N performer slots (M min each)" — only when enabled
+
+**Test Coverage:** 13 new tests covering custom location copy, venue wrong link behavior, section structure, mini preview content, and authorization.
 
 ---
 
@@ -1385,6 +1418,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/recurrence-unification.test.ts` | Recurrence contract + label-generator consistency (24 tests) |
 | `__tests__/event-creation-ux.test.ts` | Event creation UX, 404 fix, date helpers (43 tests) |
 | `__tests__/venue-selector-phase445b.test.tsx` | Venue selector UX, authorization, dropdown order (17 tests) |
+| `__tests__/phase4-46-join-signup-ux.test.tsx` | Join & Signup section, mini preview, custom location (13 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
