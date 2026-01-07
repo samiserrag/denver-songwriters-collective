@@ -53,6 +53,7 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
     async function fetchAttendees() {
       try {
         // Fetch confirmed RSVPs with profile info (members) and guest fields
+        // Uses event_rsvps_user_id_profiles_fkey (FK to profiles, not auth.users)
         const { data, error: fetchError } = await supabase
           .from("event_rsvps")
           .select(`
@@ -60,7 +61,7 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
             status,
             guest_name,
             guest_email,
-            user:profiles!event_rsvps_user_id_fkey (
+            user:profiles!event_rsvps_user_id_profiles_fkey (
               id,
               slug,
               full_name,
