@@ -66,8 +66,9 @@ function getTokenSecret(): Uint8Array {
  */
 export interface ActionTokenPayload {
   email: string;
-  claim_id: string;
-  action: "confirm" | "cancel";
+  claim_id?: string;      // For timeslot claims
+  rsvp_id?: string;       // For RSVP actions
+  action: "confirm" | "cancel" | "cancel_rsvp";
   verification_id: string;
   [key: string]: unknown; // Index signature for JWTPayload compatibility
 }
@@ -102,18 +103,25 @@ export async function verifyActionToken(
     // Validate required fields
     if (
       typeof payload.email !== "string" ||
-      typeof payload.claim_id !== "string" ||
       typeof payload.action !== "string" ||
       typeof payload.verification_id !== "string" ||
-      !["confirm", "cancel"].includes(payload.action)
+      !["confirm", "cancel", "cancel_rsvp"].includes(payload.action)
     ) {
+      return null;
+    }
+
+    // Must have either claim_id or rsvp_id
+    const hasClaim = typeof payload.claim_id === "string";
+    const hasRsvp = typeof payload.rsvp_id === "string";
+    if (!hasClaim && !hasRsvp) {
       return null;
     }
 
     return {
       email: payload.email,
-      claim_id: payload.claim_id,
-      action: payload.action as "confirm" | "cancel",
+      claim_id: hasClaim ? (payload.claim_id as string) : undefined,
+      rsvp_id: hasRsvp ? (payload.rsvp_id as string) : undefined,
+      action: payload.action as "confirm" | "cancel" | "cancel_rsvp",
       verification_id: payload.verification_id,
     };
   } catch {

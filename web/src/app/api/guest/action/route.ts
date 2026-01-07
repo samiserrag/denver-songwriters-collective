@@ -9,7 +9,7 @@ import { sendEmail, getWaitlistOfferEmail } from "@/lib/email";
 
 interface ActionBody {
   token: string;
-  action: "confirm" | "cancel";
+  action: "confirm" | "cancel" | "cancel_rsvp";
 }
 
 /**
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!["confirm", "cancel"].includes(action)) {
+    if (!["confirm", "cancel", "cancel_rsvp"].includes(action)) {
       return NextResponse.json(
         { error: "Invalid action" },
         { status: 400 }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Check if token has been used (single-use)
     const { data: verification, error: verificationError } = await supabase
       .from("guest_verifications")
-      .select("id, token_used, claim_id")
+      .select("id, token_used, claim_id, rsvp_id")
       .eq("id", payload.verification_id)
       .single();
 
@@ -79,6 +79,25 @@ export async function POST(request: NextRequest) {
     if (verification.token_used) {
       return NextResponse.json(
         { error: "Token has already been used" },
+        { status: 400 }
+      );
+    }
+
+    // Handle RSVP cancellation (different from timeslot actions)
+    if (action === "cancel_rsvp") {
+      if (!payload.rsvp_id) {
+        return NextResponse.json(
+          { error: "Invalid RSVP cancellation token" },
+          { status: 400 }
+        );
+      }
+      return await handleCancelRsvp(supabase, payload.rsvp_id, payload.email, verification.id);
+    }
+
+    // Timeslot claim actions require claim_id
+    if (!payload.claim_id) {
+      return NextResponse.json(
+        { error: "Invalid claim token" },
         { status: 400 }
       );
     }
@@ -300,5 +319,107 @@ async function handleCancel(
   return NextResponse.json({
     success: true,
     message: "Claim cancelled",
+  });
+}
+
+/**
+ * Handle cancel_rsvp action - cancel a guest RSVP
+ */
+async function handleCancelRsvp(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  rsvpId: string,
+  email: string,
+  verificationId: string
+): Promise<NextResponse> {
+  // Fetch the RSVP
+  const { data: rsvp, error: rsvpError } = await supabase
+    .from("event_rsvps")
+    .select("id, status, guest_email, event_id")
+    .eq("id", rsvpId)
+    .single();
+
+  if (rsvpError || !rsvp) {
+    return NextResponse.json(
+      { error: "RSVP not found" },
+      { status: 404 }
+    );
+  }
+
+  // Verify email matches
+  if (rsvp.guest_email !== email) {
+    return NextResponse.json(
+      { error: "Token does not match RSVP" },
+      { status: 403 }
+    );
+  }
+
+  // Can only cancel if not already cancelled
+  if (rsvp.status === "cancelled") {
+    return NextResponse.json(
+      { error: "RSVP is already cancelled" },
+      { status: 400 }
+    );
+  }
+
+  const wasConfirmedOrOffered = ["confirmed", "offered"].includes(rsvp.status);
+
+  // Update RSVP to cancelled
+  const { error: updateError } = await supabase
+    .from("event_rsvps")
+    .update({
+      status: "cancelled",
+      offer_expires_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", rsvpId);
+
+  if (updateError) {
+    console.error("Cancel RSVP update error:", updateError);
+    return NextResponse.json(
+      { error: "Failed to cancel RSVP" },
+      { status: 500 }
+    );
+  }
+
+  // Mark token as used
+  await supabase
+    .from("guest_verifications")
+    .update({ token_used: true })
+    .eq("id", verificationId);
+
+  // If this was a confirmed/offered RSVP, promote from waitlist
+  if (wasConfirmedOrOffered) {
+    // Import and use the existing waitlist promotion logic
+    const { promoteNextWaitlistPerson, sendOfferNotifications } = await import("@/lib/waitlistOffer");
+
+    const promotedRsvpId = await promoteNextWaitlistPerson(supabase, rsvp.event_id);
+
+    if (promotedRsvpId) {
+      // Get the promoted RSVP with offer_expires_at that promoteNextWaitlistPerson just set
+      const { data: promotedRsvp } = await supabase
+        .from("event_rsvps")
+        .select("user_id, guest_email, offer_expires_at")
+        .eq("id", promotedRsvpId)
+        .single();
+
+      if (promotedRsvp) {
+        // For members, use the existing notification flow
+        if (promotedRsvp.user_id && promotedRsvp.offer_expires_at) {
+          await sendOfferNotifications(
+            supabase,
+            rsvp.event_id,
+            promotedRsvp.user_id,
+            promotedRsvp.offer_expires_at
+          );
+        }
+        // TODO: For guest waitlist promotion, send guest-specific offer email
+        // This is deferred - guests on RSVP waitlist is an edge case
+      }
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "RSVP cancelled",
   });
 }

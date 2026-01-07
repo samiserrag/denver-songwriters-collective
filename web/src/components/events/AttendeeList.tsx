@@ -5,16 +5,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-interface Attendee {
+interface MemberAttendee {
   id: string;
   status: string;
+  guest_name: null;
+  guest_email: null;
   user: {
     id: string;
     slug: string | null;
     full_name: string | null;
     avatar_url: string | null;
-  } | null;
+  };
 }
+
+interface GuestAttendee {
+  id: string;
+  status: string;
+  guest_name: string;
+  guest_email: string;
+  user: null;
+}
+
+type Attendee = MemberAttendee | GuestAttendee;
 
 interface AttendeeListProps {
   eventId: string;
@@ -40,12 +52,14 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
   useEffect(() => {
     async function fetchAttendees() {
       try {
-        // Fetch confirmed RSVPs with profile info
+        // Fetch confirmed RSVPs with profile info (members) and guest fields
         const { data, error: fetchError } = await supabase
           .from("event_rsvps")
           .select(`
             id,
             status,
+            guest_name,
+            guest_email,
             user:profiles!event_rsvps_user_id_fkey (
               id,
               slug,
@@ -115,16 +129,20 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
 
       <div className="flex flex-wrap gap-2">
         {attendees.map((attendee) => {
+          // Check if this is a guest RSVP (no user, has guest_name)
+          const isGuest = attendee.user === null && attendee.guest_name !== null;
           const profile = attendee.user;
-          const name = profile?.full_name || "Anonymous";
+          const name = isGuest
+            ? attendee.guest_name
+            : (profile?.full_name || "Anonymous");
           const initial = name.charAt(0).toUpperCase();
-          const profileUrl = profile?.id
+          const profileUrl = !isGuest && profile?.id
             ? `/songwriters/${profile.slug || profile.id}`
             : null;
 
           const content = (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-full hover:border-[var(--color-border-accent)] transition-colors">
-              {profile?.avatar_url ? (
+            <div className={`flex items-center gap-2 px-3 py-1.5 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-full ${profileUrl ? "hover:border-[var(--color-border-accent)]" : ""} transition-colors`}>
+              {!isGuest && profile?.avatar_url ? (
                 <Image
                   src={profile.avatar_url}
                   alt=""
@@ -140,9 +158,13 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
               <span className="text-sm text-[var(--color-text-primary)]">
                 {name}
               </span>
+              {isGuest && (
+                <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+              )}
             </div>
           );
 
+          // Members with profiles get links, guests don't
           if (profileUrl) {
             return (
               <Link key={attendee.id} href={profileUrl}>

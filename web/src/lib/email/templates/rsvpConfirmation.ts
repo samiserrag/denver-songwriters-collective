@@ -31,6 +31,10 @@ export interface RsvpConfirmationEmailParams {
   eventSlug?: string | null;
   isWaitlist: boolean;
   waitlistPosition?: number;
+  /** Guest name (for guest RSVPs without account) */
+  guestName?: string;
+  /** Direct cancel URL for guests (bypasses dashboard) */
+  cancelUrl?: string;
 }
 
 export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
@@ -49,6 +53,8 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
     eventSlug,
     isWaitlist,
     waitlistPosition,
+    guestName,
+    cancelUrl: providedCancelUrl,
   } = params;
 
   const safeTitle = escapeHtml(eventTitle);
@@ -57,14 +63,19 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
   const safeDate = escapeHtml(eventDate);
   const safeTime = escapeHtml(eventTime);
 
+  // Use guest name if provided (for guest RSVPs), otherwise use userName
+  const displayName = guestName || userName;
+  const isGuest = !!guestName;
+
   // Prefer slug for SEO-friendly URLs, fallback to id
   const eventIdentifier = eventSlug || eventId;
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
-  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
+  // Use provided cancel URL for guests, otherwise default to dashboard cancel
+  const cancelUrl = providedCancelUrl || `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
 
   if (isWaitlist) {
     return getWaitlistVariant({
-      userName,
+      userName: displayName,
       safeTitle,
       eventTitle,
       safeDate,
@@ -74,11 +85,12 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
       eventUrl,
       cancelUrl,
       waitlistPosition,
+      isGuest,
     });
   }
 
   return getConfirmedVariant({
-    userName,
+    userName: displayName,
     safeTitle,
     eventTitle,
     safeDate,
@@ -87,6 +99,7 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
     safeAddress,
     eventUrl,
     cancelUrl,
+    isGuest,
   });
 }
 
@@ -100,8 +113,9 @@ function getConfirmedVariant(params: {
   safeAddress: string | null;
   eventUrl: string;
   cancelUrl: string;
+  isGuest?: boolean;
 }): { subject: string; html: string; text: string } {
-  const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl } = params;
+  const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl, isGuest } = params;
 
   const subject = `You're going to ${eventTitle} — The Denver Songwriters Collective`;
 
@@ -136,7 +150,7 @@ ${successBox("✓", "You're all set! See you there.")}
 
 ${eventCard(eventTitle, eventUrl)}
 
-${rsvpsDashboardLink()}
+${isGuest ? "" : rsvpsDashboardLink()}
 
 ${createSecondaryLink("I can't make it anymore", cancelUrl)}
 `;
@@ -155,9 +169,7 @@ WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 You're all set! See you there.
 
 View event: ${eventUrl}
-
-View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
-
+${isGuest ? "" : `\nView all your RSVPs: ${SITE_URL}/dashboard/my-rsvps\n`}
 Can't make it? Cancel here: ${cancelUrl}`;
 
   const text = wrapEmailText(textContent);
@@ -176,8 +188,9 @@ function getWaitlistVariant(params: {
   eventUrl: string;
   cancelUrl: string;
   waitlistPosition?: number;
+  isGuest?: boolean;
 }): { subject: string; html: string; text: string } {
-  const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl, waitlistPosition } = params;
+  const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl, waitlistPosition, isGuest } = params;
 
   const subject = `You're on the waitlist for ${eventTitle} — The Denver Songwriters Collective`;
 
@@ -224,7 +237,7 @@ ${paragraph("Spots open up more often than you'd think—keep an eye on your inb
 
 ${eventCard(eventTitle, eventUrl)}
 
-${rsvpsDashboardLink()}
+${isGuest ? "" : rsvpsDashboardLink()}
 
 ${createSecondaryLink("Remove me from the waitlist", cancelUrl)}
 `;
@@ -247,9 +260,7 @@ We'll email you right away if a spot opens up.
 Spots open up more often than you'd think—keep an eye on your inbox!
 
 View event: ${eventUrl}
-
-View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
-
+${isGuest ? "" : `\nView all your RSVPs: ${SITE_URL}/dashboard/my-rsvps\n`}
 Remove me from the waitlist: ${cancelUrl}`;
 
   const text = wrapEmailText(textContent);

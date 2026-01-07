@@ -539,3 +539,78 @@ An override applies only to:
 | Test File | Contracts Enforced |
 |-----------|-------------------|
 | `__tests__/event-claims.test.ts` | Visibility rules, duplicate prevention, approval/rejection flow, RLS behavior |
+
+---
+
+## Contract: RSVP System (Phase 4.48b)
+
+> **Track Status:** January 2026
+
+### Core Principles
+
+- RSVP = audience planning to attend (NOT performer signup)
+- RSVP is available for ALL public events (no is_dsc_event gate)
+- Both members and guests can RSVP
+- Guests verify via email code before RSVP is confirmed
+
+### Member vs Guest RSVPs
+
+| Type | user_id | guest_name | guest_email | Profile Link |
+|------|---------|------------|-------------|--------------|
+| Member RSVP | Required | NULL | NULL | Yes (to /songwriters/[slug]) |
+| Guest RSVP | NULL | Required | Required | No (plain text) |
+
+### Schema Contract
+
+```sql
+-- event_rsvps table enforces member OR guest
+CONSTRAINT member_or_guest_rsvp CHECK (
+  user_id IS NOT NULL OR
+  (guest_name IS NOT NULL AND guest_email IS NOT NULL)
+)
+```
+
+### Guest Verification Flow
+
+1. Guest enters name + email
+2. System sends 6-digit verification code
+3. Guest enters code to verify email
+4. RSVP created on successful verification
+5. Confirmation email includes cancel URL (action token)
+
+### Attendee List Display
+
+| Attendee Type | Display |
+|---------------|---------|
+| Member | Avatar + Name (linked to profile) |
+| Guest | Initial + Name + "(guest)" label (no link) |
+
+### Capacity & Waitlist
+
+| Condition | Behavior |
+|-----------|----------|
+| `capacity IS NULL` | Unlimited RSVPs (confirmed status) |
+| `confirmedCount < capacity` | New RSVP gets confirmed status |
+| `confirmedCount >= capacity` | New RSVP gets waitlist status |
+| Spot opens (cancel/decline) | Promote next waitlist person with offer |
+
+### Theme Contrast Contract
+
+Success banner must use theme tokens, not hardcoded colors:
+
+| Element | Token |
+|---------|-------|
+| Background | `--pill-bg-success` |
+| Foreground | `--pill-fg-success` |
+| Border | `--pill-border-success` |
+
+**Forbidden patterns:**
+- `bg-emerald-100`, `bg-emerald-900/30`
+- `text-emerald-800`, `text-emerald-300`
+- `border-emerald-300`, `border-emerald-700`
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/phase4-48b-guest-rsvp.test.ts` | Schema, verification flow, AttendeeList, theme tokens |

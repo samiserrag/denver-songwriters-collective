@@ -221,6 +221,69 @@ If any check fails:
 
 ---
 
+### 10. Guest RSVP Flow (Phase 4.48b)
+
+**Precondition:** NOT logged in (incognito window recommended)
+
+**URL:** `/events/{event-id}` (any public event)
+
+**Steps:**
+1. Find the RSVP section
+2. Click "RSVP as guest (no account needed)"
+
+**Expected:**
+- Guest form expands with Name + Email fields
+- "Send Code" button appears
+
+3. Enter test name and email, click "Send Code"
+
+**Expected:**
+- Form changes to code entry view
+- Message shows email was sent
+
+4. Enter 6-digit code from email (or check dev console logs)
+
+**Expected:**
+- Success message: "You're going!" or "You're on the waitlist!"
+- Check email for RSVP confirmation (includes cancel link)
+
+**Pass Criteria:** Guest can RSVP without account; receives confirmation email with cancel URL
+
+---
+
+### 11. AttendeeList Shows Guests (Phase 4.48b)
+
+**Precondition:** Event has at least one guest RSVP and one member RSVP
+
+**URL:** `/events/{event-id}` (event with mixed RSVPs)
+
+**Expected:**
+- "Who's Coming" section appears
+- Member names are clickable (link to profile)
+- Guest names have "(guest)" label and are NOT clickable
+- Both show avatar or initial
+
+**Pass Criteria:** Members are linked, guests are plain text with "(guest)" label
+
+---
+
+### 12. Success Banner Contrast (Phase 4.48b)
+
+**Precondition:** Logged in OR guest RSVP completed
+
+**URL:** `/events/{event-id}` after confirming RSVP
+
+**Theme:** Switch to Sunrise (light) theme
+
+**Expected:**
+- Success banner ("You're going!") has readable contrast
+- Text is dark (not green-on-green)
+- Badge uses theme tokens (not hardcoded emerald)
+
+**Pass Criteria:** Success banner is readable in both Night and Sunrise themes
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._

@@ -606,31 +606,46 @@ export type Database = {
         Row: {
           created_at: string | null
           event_id: string
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean | null
           id: string
           notes: string | null
+          offer_expires_at: string | null
           status: string
           updated_at: string | null
-          user_id: string
+          user_id: string | null
           waitlist_position: number | null
         }
         Insert: {
           created_at?: string | null
           event_id: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean | null
           id?: string
           notes?: string | null
+          offer_expires_at?: string | null
           status?: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
           waitlist_position?: number | null
         }
         Update: {
           created_at?: string | null
           event_id?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean | null
           id?: string
           notes?: string | null
+          offer_expires_at?: string | null
           status?: string
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
           waitlist_position?: number | null
         }
         Relationships: [
@@ -646,6 +661,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
             referencedColumns: ["id"]
           },
         ]
@@ -1421,6 +1443,7 @@ export type Database = {
           guest_name: string
           id: string
           locked_until: string | null
+          rsvp_id: string | null
           timeslot_id: string | null
           token_expires_at: string | null
           token_used: boolean | null
@@ -1440,6 +1463,7 @@ export type Database = {
           guest_name: string
           id?: string
           locked_until?: string | null
+          rsvp_id?: string | null
           timeslot_id?: string | null
           token_expires_at?: string | null
           token_used?: boolean | null
@@ -1459,6 +1483,7 @@ export type Database = {
           guest_name?: string
           id?: string
           locked_until?: string | null
+          rsvp_id?: string | null
           timeslot_id?: string | null
           token_expires_at?: string | null
           token_used?: boolean | null
@@ -1485,6 +1510,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_rsvp_id_fkey"
+            columns: ["rsvp_id"]
+            isOneToOne: false
+            referencedRelation: "event_rsvps"
             referencedColumns: ["id"]
           },
           {

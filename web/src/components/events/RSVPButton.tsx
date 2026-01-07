@@ -18,6 +18,9 @@ interface RSVPData {
   offer_expires_at: string | null;
 }
 
+// Guest RSVP flow states
+type GuestFlowState = "idle" | "form" | "verification" | "success";
+
 export function RSVPButton({
   eventId,
   capacity,
@@ -33,6 +36,14 @@ export function RSVPButton({
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Guest RSVP state
+  const [guestFlow, setGuestFlow] = useState<GuestFlowState>("idle");
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [verificationId, setVerificationId] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [guestRsvpStatus, setGuestRsvpStatus] = useState<"confirmed" | "waitlist" | null>(null);
 
   const remaining =
     capacity !== null ? Math.max(0, capacity - confirmedCount) : null;
@@ -150,6 +161,84 @@ export function RSVPButton({
     }
   };
 
+  // Guest RSVP: Request verification code
+  const handleGuestRequestCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/guest/rsvp/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: eventId,
+          guest_name: guestName.trim(),
+          guest_email: guestEmail.trim().toLowerCase(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send code");
+      }
+
+      setVerificationId(data.verification_id);
+      setGuestFlow("verification");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send verification code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Guest RSVP: Verify code and create RSVP
+  const handleGuestVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/guest/rsvp/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verification_id: verificationId,
+          code: verificationCode.trim().toUpperCase(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to verify code");
+      }
+
+      setGuestRsvpStatus(data.rsvp.status);
+      setGuestFlow("success");
+      if (data.rsvp.status === "confirmed") {
+        setConfirmedCount((prev) => prev + 1);
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to verify code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset guest flow
+  const resetGuestFlow = () => {
+    setGuestFlow("idle");
+    setGuestName("");
+    setGuestEmail("");
+    setVerificationId("");
+    setVerificationCode("");
+    setGuestRsvpStatus(null);
+    setError("");
+  };
+
   if (isLoggedIn === null) {
     return (
       <div className="animate-pulse">
@@ -180,25 +269,25 @@ export function RSVPButton({
       {rsvp?.status === "confirmed" ? (
         <div className="space-y-2">
           <div
-            className={`flex items-center gap-3 p-4 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700/50 rounded-xl transition-all duration-300 ${
-              showSuccess ? "ring-2 ring-emerald-500 dark:ring-emerald-400 ring-offset-2 ring-offset-[var(--color-background)]" : ""
+            className={`flex items-center gap-3 p-4 bg-[var(--pill-bg-success)] border border-[var(--pill-border-success)] rounded-xl transition-all duration-300 ${
+              showSuccess ? "ring-2 ring-[var(--pill-border-success)] ring-offset-2 ring-offset-[var(--color-background)]" : ""
             }`}
           >
-            <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-emerald-200 dark:bg-emerald-500/20 flex items-center justify-center ${
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-[var(--pill-bg-success)] flex items-center justify-center ${
               showSuccess ? "animate-bounce" : ""
             }`}>
-              <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[var(--pill-fg-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div>
-              <p className="text-emerald-800 dark:text-emerald-300 font-semibold">You&apos;re going!</p>
-              <p className="text-emerald-700 dark:text-emerald-400/70 text-sm">We&apos;ll see you there</p>
+              <p className="text-[var(--pill-fg-success)] font-semibold">You&apos;re going!</p>
+              <p className="text-[var(--color-text-secondary)] text-sm">We&apos;ll see you there</p>
             </div>
           </div>
 
           {showSuccess && (
-            <p className="text-emerald-600 dark:text-emerald-400 text-sm animate-fade-in">
+            <p className="text-[var(--pill-fg-success)] text-sm animate-fade-in">
               ✨ RSVP confirmed! Check your email for details.
             </p>
           )}
@@ -386,8 +475,114 @@ export function RSVPButton({
         </button>
       )}
 
-      {!isLoggedIn && (
-        <p className="text-[var(--color-text-tertiary)] text-xs">You&apos;ll need to log in to RSVP</p>
+      {/* Guest RSVP flow (when not logged in) */}
+      {!isLoggedIn && guestFlow === "idle" && !rsvp && (
+        <div className="space-y-2">
+          <button
+            onClick={() => setGuestFlow("form")}
+            className="text-sm text-[var(--color-accent-primary)] hover:underline"
+          >
+            RSVP as guest (no account needed)
+          </button>
+        </div>
+      )}
+
+      {!isLoggedIn && guestFlow === "form" && (
+        <form onSubmit={handleGuestRequestCode} className="space-y-3 p-4 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border)]">
+          <div className="text-sm font-medium text-[var(--color-text-primary)]">RSVP as Guest</div>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder="Your name"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              required
+              minLength={2}
+              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+            />
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+              required
+              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+            />
+          </div>
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            We&apos;ll send a verification code to confirm your email.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={loading || !guestName.trim() || !guestEmail.trim()}
+              className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg text-sm transition-colors disabled:opacity-50"
+            >
+              {loading ? "Sending..." : "Send Code"}
+            </button>
+            <button
+              type="button"
+              onClick={resetGuestFlow}
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] rounded-lg text-sm transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!isLoggedIn && guestFlow === "verification" && (
+        <form onSubmit={handleGuestVerifyCode} className="space-y-3 p-4 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border)]">
+          <div className="text-sm font-medium text-[var(--color-text-primary)]">Enter Verification Code</div>
+          <p className="text-xs text-[var(--color-text-secondary)]">
+            We sent a 6-digit code to <span className="font-medium">{guestEmail}</span>
+          </p>
+          <input
+            type="text"
+            placeholder="000000"
+            value={verificationCode}
+            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            required
+            maxLength={6}
+            className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] text-center tracking-widest font-mono placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+          />
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={loading || verificationCode.length !== 6}
+              className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg text-sm transition-colors disabled:opacity-50"
+            >
+              {loading ? "Verifying..." : "Verify & RSVP"}
+            </button>
+            <button
+              type="button"
+              onClick={resetGuestFlow}
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] rounded-lg text-sm transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!isLoggedIn && guestFlow === "success" && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 p-4 bg-[var(--pill-bg-success)] border border-[var(--pill-border-success)] rounded-xl">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--pill-bg-success)] flex items-center justify-center">
+              <svg className="w-5 h-5 text-[var(--pill-fg-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[var(--pill-fg-success)] font-semibold">
+                {guestRsvpStatus === "waitlist" ? "You're on the waitlist!" : "You're going!"}
+              </p>
+              <p className="text-[var(--color-text-secondary)] text-sm">
+                Check your email for confirmation.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
