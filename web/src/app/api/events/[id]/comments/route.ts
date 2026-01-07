@@ -13,6 +13,7 @@ export async function GET(
 
   // Fetch all visible comments (top-level and replies)
   // Client-side will organize into threads
+  // Note: Uses event_comments_user_id_profiles_fkey for PostgREST join
   const { data, error } = await supabase
     .from("event_comments")
     .select(
@@ -26,7 +27,7 @@ export async function GET(
       guest_verified,
       is_deleted,
       is_hidden,
-      user:profiles!event_comments_user_id_fkey(id, full_name, avatar_url, slug)
+      user:profiles!event_comments_user_id_profiles_fkey(id, full_name, avatar_url, slug)
     `
     )
     .eq("event_id", eventId)
@@ -125,7 +126,7 @@ export async function POST(
       guest_verified,
       is_deleted,
       is_hidden,
-      user:profiles!event_comments_user_id_fkey(id, full_name, avatar_url, slug)
+      user:profiles!event_comments_user_id_profiles_fkey(id, full_name, avatar_url, slug)
     `
     )
     .single();
