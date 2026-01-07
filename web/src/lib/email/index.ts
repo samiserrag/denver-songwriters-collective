@@ -149,3 +149,9 @@ export {
   getOccurrenceModifiedHostEmail,
   type OccurrenceModifiedHostEmailParams,
 } from "./templates/occurrenceModifiedHost";
+
+// Comment notification template
+export {
+  getEventCommentNotificationEmail,
+  type EventCommentNotificationEmailParams,
+} from "./templates/eventCommentNotification";

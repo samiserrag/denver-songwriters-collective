@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.47):** Lint warnings = 0. All tests passing (1045). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.49b):** Lint warnings = 0. All tests passing (1107). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -262,6 +262,78 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.49b — Event Comments Everywhere (January 2026)
+
+**Goal:** Enable comments on ALL event pages (DSC + community) with guest support and notifications.
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Comments on all events | Removed DSC-only gate from `/api/events/[id]/comments` |
+| Guest comment support | Email verification flow via request-code/verify-code endpoints |
+| Host notifications | Dashboard + email when someone comments on their event |
+| Reply notifications | Dashboard + email when someone replies to your comment |
+| Threaded display | 1-level threading with reply forms inline |
+
+**Schema Changes (Migration `20260107000002`):**
+
+| Change | Details |
+|--------|---------|
+| `user_id` nullable | Guest comments have `user_id = null` |
+| `guest_name` | Display name for guest commenters |
+| `guest_email` | Private, used for verification |
+| `guest_verified` | Whether email was verified |
+| `guest_verification_id` | FK to `guest_verifications` |
+| `is_deleted` | Soft delete for moderation |
+| CHECK constraint | Must have `user_id` OR `(guest_name AND guest_email)` |
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260107000002_event_comments_guest_support.sql` | Schema changes |
+| `app/api/events/[id]/comments/route.ts` | GET/POST with notifications |
+| `app/api/guest/event-comment/request-code/route.ts` | Guest verification request |
+| `app/api/guest/event-comment/verify-code/route.ts` | Guest verification + comment creation |
+| `lib/email/templates/eventCommentNotification.ts` | Email template |
+| `components/events/EventComments.tsx` | UI with threading + guest form |
+| `app/events/[id]/page.tsx` | Mounted EventComments component |
+
+**Notification Flow:**
+
+| Trigger | Recipients | Category |
+|---------|------------|----------|
+| Top-level comment | Event host(s) | `event_updates` |
+| Reply | Parent comment author | `event_updates` |
+| Guest comments | No notifications (verification email only) | — |
+
+**Test Coverage:** 34 new tests in `__tests__/phase4-49b-event-comments.test.ts`
+
+---
+
+### Phase 4.48c — AttendeeList FK Fix (January 2026)
+
+**Goal:** Fix FK relationship hint for AttendeeList user profile lookups.
+
+**Problem:** AttendeeList was failing to fetch user profiles due to incorrect FK hint.
+
+**Solution:** Updated PostgREST FK hint from generic to explicit `!event_rsvps_user_id_fkey`.
+
+---
+
+### Phase 4.48b — Guest RSVP Support (January 2026)
+
+**Goal:** Allow guests to RSVP to events without an account via email verification.
+
+**Key Features:**
+- Guest RSVP via email verification (6-digit code)
+- Reuses `guest_verifications` table pattern
+- Guest RSVPs appear in AttendeeList with "(guest)" label
+- Cancel link sent via email for guest RSVPs
 
 ---
 
@@ -1458,6 +1530,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/event-creation-ux.test.ts` | Event creation UX, 404 fix, date helpers (43 tests) |
 | `__tests__/venue-selector-phase445b.test.tsx` | Venue selector UX, authorization, dropdown order (17 tests) |
 | `__tests__/phase4-46-join-signup-ux.test.tsx` | Join & Signup section, mini preview, custom location (13 tests) |
+| `__tests__/phase4-49b-event-comments.test.ts` | Event comments everywhere, guest support, notifications (34 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests

@@ -27,7 +27,7 @@ export interface Comment {
 
 export interface CommentThreadProps {
   /** Table name for comments */
-  tableName: "gallery_photo_comments" | "gallery_album_comments" | "blog_comments" | "open_mic_comments" | "profile_comments";
+  tableName: "gallery_photo_comments" | "gallery_album_comments" | "blog_comments" | "open_mic_comments" | "profile_comments" | "event_comments";
   /** Foreign key column name (e.g., "image_id", "album_id", "post_id", "event_id", "profile_id") */
   foreignKey: string;
   /** ID of the entity being commented on */

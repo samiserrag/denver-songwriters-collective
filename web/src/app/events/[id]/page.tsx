@@ -12,6 +12,7 @@ import { TimeslotSection } from "@/components/events/TimeslotSection";
 import { HostControls } from "@/components/events/HostControls";
 import { ClaimEventButton } from "@/components/events/ClaimEventButton";
 import { AttendeeList } from "@/components/events/AttendeeList";
+import { EventComments } from "@/components/events/EventComments";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
@@ -821,6 +822,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </p>
             </div>
           )}
+
+          {/* Phase 4.49b: Event Comments - shown for all events */}
+          <EventComments
+            eventId={event.id}
+            hostId={event.host_id ?? undefined}
+          />
 
           <div className="p-4 rounded-xl bg-[var(--color-bg-tertiary)]/30 border border-[var(--color-border-default)]">
             <p className="text-[var(--color-text-secondary)] text-sm">

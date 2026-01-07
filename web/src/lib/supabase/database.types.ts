@@ -445,37 +445,52 @@ export type Database = {
           content: string
           created_at: string | null
           event_id: string
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean | null
           hidden_by: string | null
           id: string
+          is_deleted: boolean | null
           is_hidden: boolean | null
           is_host_only: boolean | null
           parent_id: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
           created_at?: string | null
           event_id: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean | null
           hidden_by?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_hidden?: boolean | null
           is_host_only?: boolean | null
           parent_id?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
           created_at?: string | null
           event_id?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean | null
           hidden_by?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_hidden?: boolean | null
           is_host_only?: boolean | null
           parent_id?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -490,6 +505,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_comments_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
             referencedColumns: ["id"]
           },
           {
@@ -668,6 +690,13 @@ export type Database = {
             columns: ["guest_verification_id"]
             isOneToOne: false
             referencedRelation: "guest_verifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1437,6 +1466,7 @@ export type Database = {
           code: string | null
           code_attempts: number | null
           code_expires_at: string | null
+          comment_id: string | null
           created_at: string | null
           email: string
           event_id: string
@@ -1457,6 +1487,7 @@ export type Database = {
           code?: string | null
           code_attempts?: number | null
           code_expires_at?: string | null
+          comment_id?: string | null
           created_at?: string | null
           email: string
           event_id: string
@@ -1477,6 +1508,7 @@ export type Database = {
           code?: string | null
           code_attempts?: number | null
           code_expires_at?: string | null
+          comment_id?: string | null
           created_at?: string | null
           email?: string
           event_id?: string
@@ -1496,6 +1528,13 @@ export type Database = {
             columns: ["claim_id"]
             isOneToOne: false
             referencedRelation: "timeslot_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "event_comments"
             referencedColumns: ["id"]
           },
           {
