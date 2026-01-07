@@ -164,8 +164,8 @@ All must pass before merge:
 
 ### Valid Detail Routes
 
-- `/open-mics/[slug]`
-- `/events/[id]`
+- `/events/[id]` — Canonical event detail page (supports both UUID and slug)
+- `/open-mics/[slug]` — Legacy entrypoint, redirects to `/events/[id]`
 
 ---
 
@@ -264,26 +264,39 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Phase 4.43d — Open Mics Redirect to Events (January 2026) — CLOSED
+### Phase 4.43c/d — RSVP for All Public Events (January 2026) — CLOSED
 
-**Goal:** Enable RSVP for community open mics by redirecting `/open-mics/[slug]` to `/events/[id]`.
+**Goal:** Enable RSVP for ALL public events, not just DSC events.
 
-**Problem:** The `/open-mics/[slug]` page had no RSVP UI. Only DSC events redirected to `/events/[id]` which has RSVP. Community open mics stayed on the simpler `/open-mics/[slug]` page without RSVP functionality.
+**Problem:** RSVPSection and AttendeeList were gated by `is_dsc_event`. All seeded/community open mics have `is_dsc_event=false`, so RSVP never appeared for them. Additionally, `/open-mics/[slug]` had no RSVP UI at all.
 
-**Solution:** All events now redirect from `/open-mics/[slug]` to `/events/[id]`:
+**Solution (Phase 4.43c):** Removed `is_dsc_event` gates:
+- RSVPSection now renders for any `canRSVP` event (published, not cancelled, not past)
+- AttendeeList renders for all events (component handles empty state internally)
+- RSVP API accepts RSVPs for all public events
+
+**Solution (Phase 4.43d):** All events redirect from `/open-mics/[slug]` to `/events/[id]`:
 - `/open-mics/[slug]` serves as the slug entrypoint for legacy URLs and SEO
 - `/events/[id]` is the canonical detail page with RSVP, attendee list, etc.
-- Metadata still generates proper SEO with canonical URL pointing to `/events/`
 
 **Key Changes:**
 
 | File | Change |
 |------|--------|
-| `app/open-mics/[slug]/page.tsx` | Simplified to redirect-only; removed 300+ lines of rendering code |
+| `app/events/[id]/page.tsx` | Removed `is_dsc_event` gate from RSVPSection (line 678) and AttendeeList (line 749) |
+| `app/api/events/[id]/rsvp/route.ts` | Removed `is_dsc_event` restriction from RSVP API |
+| `app/open-mics/[slug]/page.tsx` | Simplified to redirect-only (~300 lines removed) |
+| `__tests__/phase4-43-rsvp-always.test.ts` | 13 new tests for Phase 4.43c |
 | `__tests__/open-mics-redirect.test.ts` | 12 new tests for redirect behavior |
 
+**What Remains DSC-Only:**
+- HostControls (host management features)
+- TimeslotSection (performer signup slots)
+- "No signup method" warning banner
+
 **Verification:**
-- Visit `/open-mics/words-open-mic` → ends at `/events/{slug}` with RSVP visible
+- Visit `/events/words-open-mic` → RSVP button visible for community open mic
+- Visit `/open-mics/words-open-mic` → redirects to `/events/words-open-mic`
 - All 979 tests passing
 
 ---
