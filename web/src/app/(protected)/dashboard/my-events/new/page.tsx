@@ -39,7 +39,7 @@ export default async function NewEventPage() {
             : "Set up a new community event"}
         </p>
 
-        <EventForm mode="create" venues={venues ?? []} canCreateDSC={canCreateDSC} />
+        <EventForm mode="create" venues={venues ?? []} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} />
       </div>
     </main>
   );

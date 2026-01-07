@@ -57,6 +57,8 @@ interface EventFormProps {
   mode: "create" | "edit";
   venues: Venue[];
   canCreateDSC?: boolean; // Whether user can create DSC-branded events
+  /** Phase 4.45b: Whether user can create new venues (admin only) */
+  canCreateVenue?: boolean;
   event?: {
     id: string;
     title: string;
@@ -93,7 +95,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -716,6 +718,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               }}
               showCustomLocationOption={true}
               isCustomLocationSelected={locationSelectionMode === "custom"}
+              canCreateVenue={canCreateVenue}
               required
               disabled={loading}
             />

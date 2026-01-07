@@ -21,6 +21,8 @@ interface VenueSelectorProps {
   isCustomLocationSelected?: boolean;
   required?: boolean;
   disabled?: boolean;
+  /** Phase 4.45b: Only show "Add new venue" if user can create venues (admin only) */
+  canCreateVenue?: boolean;
 }
 
 const initialNewVenue = {
@@ -44,6 +46,7 @@ export default function VenueSelector({
   isCustomLocationSelected = false,
   required = false,
   disabled = false,
+  canCreateVenue = false,
 }: VenueSelectorProps) {
   const [showNewVenueForm, setShowNewVenueForm] = useState(false);
   const [newVenue, setNewVenue] = useState(initialNewVenue);
@@ -147,24 +150,47 @@ export default function VenueSelector({
           className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
         >
           <option value="">Select a venue...</option>
+          {/* Phase 4.45b: Actions at TOP of dropdown for discoverability */}
+          {canCreateVenue && (
+            <option value="__new__">+ Add new venue...</option>
+          )}
+          {showCustomLocationOption && (
+            <option value="__custom__">✎ Enter custom location...</option>
+          )}
+          {(canCreateVenue || showCustomLocationOption) && (
+            <option disabled className="text-[var(--color-text-secondary)]">──────────────</option>
+          )}
+          {/* Venues list (A-Z) */}
           {venues.map((v) => (
             <option key={v.id} value={v.id}>
               {v.name}
               {v.city && v.city !== "UNKNOWN" ? ` — ${v.city}` : ""}
             </option>
           ))}
-          <option disabled className="text-[var(--color-text-secondary)]">──────────────</option>
-          <option value="__new__">+ Add new venue...</option>
-          {showCustomLocationOption && (
-            <option value="__custom__">✎ Enter custom location...</option>
-          )}
         </select>
+        {/* Phase 4.45b: Helper text for non-admins */}
+        {!canCreateVenue && showCustomLocationOption && (
+          <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
+            Can&apos;t find your venue? Use <strong>Custom Location</strong> for one-time or approximate locations.{" "}
+            <a
+              href="mailto:hello@denversongwriterscollective.org?subject=Venue%20Issue%20Report"
+              className="text-[var(--color-link)] hover:underline"
+            >
+              Report a venue issue
+            </a>
+          </p>
+        )}
       </div>
 
       {showNewVenueForm && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-accent)]/20 rounded-lg space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">New Venue</h4>
+            <div>
+              <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">New Venue</h4>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                Creates a reusable venue for future events
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => {

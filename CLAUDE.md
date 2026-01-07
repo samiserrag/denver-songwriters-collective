@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.44c):** Lint warnings = 0. All tests passing (1009). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.45b):** Lint warnings = 0. All tests passing (1026). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -127,6 +127,7 @@ All must pass before merge:
 | Header nav | `web/src/components/navigation/header.tsx` |
 | Footer | `web/src/components/navigation/footer.tsx` |
 | Event form | `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` |
+| VenueSelector | `web/src/components/ui/VenueSelector.tsx` |
 | Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
 | Recurrence contract | `web/src/lib/events/recurrenceContract.ts` |
 | Form date helpers | `web/src/lib/events/formDateHelpers.ts` |
@@ -261,6 +262,55 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.45b — Venue Selector UX Improvements (January 2026)
+
+**Goal:** Improve venue dropdown UX by moving action items to top and fixing RLS mismatch.
+
+**Problems Fixed:**
+
+1. **Action items buried at bottom** — With 65+ venues, "Add new venue" and "Enter custom location" were at the bottom of a long scrollable list
+2. **RLS mismatch** — VenueSelector allowed any user to try creating venues, but RLS blocked non-admins (silent failure)
+3. **No venue issue reporting** — Users had no way to report incorrect venue data
+
+**Solution:**
+
+| Change | Implementation |
+|--------|----------------|
+| Reorder dropdown | Actions at TOP: placeholder → + Add new venue → ✎ Enter custom location → separator → venues A-Z |
+| Authorization gate | `canCreateVenue` prop controls "Add new venue" visibility (admin-only) |
+| Helper text | Non-admins see: "Can't find your venue? Use Custom Location for one-time or approximate locations." |
+| Report link | "Report a venue issue" mailto link for non-admins |
+| Microcopy | New venue form shows "Creates a reusable venue for future events" |
+
+**Key Files:**
+
+| File | Change |
+|------|--------|
+| `components/ui/VenueSelector.tsx` | Reordered dropdown, added `canCreateVenue` prop, helper text, microcopy |
+| `dashboard/my-events/_components/EventForm.tsx` | Added `canCreateVenue` prop, passes to VenueSelector |
+| `dashboard/my-events/new/page.tsx` | Passes `canCreateVenue={isAdmin}` |
+| `dashboard/my-events/[id]/page.tsx` | Passes `canCreateVenue={isAdmin}` |
+| `__tests__/venue-selector-phase445b.test.tsx` | 17 new tests for Phase 4.45b |
+| `docs/investigation/phase4-45a-venue-dropdown-location-workflow.md` | Investigation document |
+
+**Authorization Matrix:**
+
+| Role | Can Create Venue | Can Use Custom Location |
+|------|------------------|-------------------------|
+| Admin | Yes | Yes |
+| Approved Host | No | Yes |
+| Member | No | Yes |
+
+**Deferred (Future Phases):**
+- Venue lat/lng columns (schema migration)
+- Map picker UI
+- Geocoding integration
+- Combobox refactor (searchable dropdown)
+
+**Test Coverage:** 17 new tests covering dropdown order, authorization, helper text visibility, and venue vs custom location distinction.
 
 ---
 
@@ -1334,6 +1384,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/series-creation-rls.test.ts` | Series creation RLS fix (11 tests) |
 | `__tests__/recurrence-unification.test.ts` | Recurrence contract + label-generator consistency (24 tests) |
 | `__tests__/event-creation-ux.test.ts` | Event creation UX, 404 fix, date helpers (43 tests) |
+| `__tests__/venue-selector-phase445b.test.tsx` | Venue selector UX, authorization, dropdown order (17 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
