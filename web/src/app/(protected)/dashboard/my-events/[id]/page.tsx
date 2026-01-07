@@ -176,14 +176,26 @@ export default async function EditEventPage({
               status={event.status}
             />
 
-            {event.is_published && event.status === "active" && (
-              <Link
-                href={`/events/${event.slug || eventId}`}
-                className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
-                target="_blank"
-              >
-                View Public Page →
-              </Link>
+            {/* Phase 4.44c: Preview/View links based on event state */}
+            {event.status === "active" && (
+              event.is_published ? (
+                <Link
+                  href={`/events/${event.slug || eventId}`}
+                  className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
+                  target="_blank"
+                >
+                  View Public Page →
+                </Link>
+              ) : (
+                <Link
+                  href={`/events/${event.slug || eventId}`}
+                  className="px-3 py-1 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm rounded border border-[var(--color-border-default)]"
+                  target="_blank"
+                  title="Preview how this event will appear when published (only visible to you)"
+                >
+                  Preview as visitor →
+                </Link>
+              )
             )}
           </div>
         </div>

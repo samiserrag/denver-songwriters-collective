@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.43d):** Lint warnings = 0. All tests passing (979). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.44c):** Lint warnings = 0. All tests passing (1009). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -261,6 +261,40 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.44c — Event Form UX Improvements (January 2026)
+
+**Goal:** Improve event creation UX with intent-first form structure and progressive disclosure.
+
+**Changes:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Intent-first ordering | Form sections reordered: Type → Title → Schedule → Location → Description/Cover → Attendance → Advanced → Publish |
+| Auto-timeslot notification | Inline alert below Event Type when switching to open_mic/showcase: "Performer slots enabled" |
+| Progressive disclosure | Advanced Options section collapsed by default, expands on click |
+| Preview draft link | Edit page shows "Preview as visitor →" for unpublished events |
+
+**Key Files:**
+
+| File | Change |
+|------|--------|
+| `EventForm.tsx` | Restructured section order, added `showAdvanced` state, auto-timeslot detection |
+| `dashboard/my-events/[id]/page.tsx` | Added "Preview as visitor" link for draft events |
+| `__tests__/event-form-ux-phase444c.test.tsx` | 17 new tests for form UX contract |
+| `docs/SMOKE-PROD.md` | Added Phase 4.44c smoke test section |
+
+**Advanced Section Contents:**
+- Timezone
+- Cost (is_free, ticket_price)
+- External Signup URL
+- Age Policy
+- DSC Toggle (for approved hosts only)
+- Host Notes
+
+**Test Coverage:** 17 new tests covering form order, auto-timeslot logic, advanced collapse, and preview link visibility.
 
 ---
 

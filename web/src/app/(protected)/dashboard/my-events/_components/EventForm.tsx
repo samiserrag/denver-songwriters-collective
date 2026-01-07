@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
@@ -105,6 +105,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   // Publish confirmation state - only needed when transitioning from unpublished to published
   const [publishConfirmed, setPublishConfirmed] = useState(false);
 
+  // Phase 4.44c: Advanced section collapse state (collapsed by default)
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Phase 4.44c: Track when timeslots were auto-enabled to show notification
+  const [timeslotsAutoEnabled, setTimeslotsAutoEnabled] = useState(false);
+  const previousEventTypeRef = useRef<string | null>(null);
+
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
@@ -157,6 +164,27 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   });
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
+
+  // Phase 4.44c: Detect when timeslots auto-enable and show notification
+  useEffect(() => {
+    const currentType = formData.event_type;
+    const previousType = previousEventTypeRef.current;
+
+    // Only show notification when switching TO a timeslot type FROM a non-timeslot type
+    if (previousType !== null && previousType !== currentType) {
+      const wasTimeslotType = TIMESLOT_EVENT_TYPES.includes(previousType);
+      const isTimeslotType = TIMESLOT_EVENT_TYPES.includes(currentType);
+
+      if (!wasTimeslotType && isTimeslotType) {
+        setTimeslotsAutoEnabled(true);
+      } else if (wasTimeslotType && !isTimeslotType) {
+        // Clear notification when switching away from timeslot type
+        setTimeslotsAutoEnabled(false);
+      }
+    }
+
+    previousEventTypeRef.current = currentType;
+  }, [formData.event_type]);
 
   // Calculate event duration in minutes (if both start and end times are set)
   const calculateEventDurationMinutes = (): number | null => {
@@ -422,29 +450,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      {/* Cover Image */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Cover Image
-          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
-        </label>
-        <div className="max-w-xs">
-          <ImageUpload
-            currentImageUrl={coverImageUrl}
-            onUpload={handleImageUpload}
-            onRemove={handleImageRemove}
-            aspectRatio={4/3}
-            shape="square"
-            placeholderText="Add Cover Photo"
-            maxSizeMB={5}
-          />
-        </div>
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          Recommended: 1200×900px (4:3). Most phone photos are already 4:3.
-        </p>
-      </div>
-
-      {/* Event Type */}
+      {/* ============ SECTION 1: EVENT TYPE ============ */}
+      {/* Phase 4.44c: Intent-first - What kind of event is this? */}
       <div>
         <label className="block text-sm font-medium mb-2">
           <span className="text-red-500">Event Type</span>
@@ -475,7 +482,35 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
       </div>
 
-      {/* Title */}
+      {/* Phase 4.44c: Auto-timeslot notification - shown when switching to open_mic/showcase */}
+      {timeslotsAutoEnabled && (
+        <div className="p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                Performer slots auto-enabled for {formData.event_type === "open_mic" ? "Open Mic" : "Showcase"}
+              </p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                This event type typically includes performer sign-ups. You can turn this off in the Attendance &amp; Signup section below.
+              </p>
+              <button
+                type="button"
+                onClick={() => setTimeslotsAutoEnabled(false)}
+                className="mt-2 text-sm text-[var(--color-text-accent)] hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============ SECTION 2: TITLE ============ */}
       <div>
         <label className="block text-sm font-medium mb-2">
           <span className="text-red-500">Event Title</span>
@@ -491,234 +526,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         />
       </div>
 
-      {/* Description */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Description <span className="font-normal">(optional)</span>
-        </label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => updateField("description", e.target.value)}
-          placeholder="What should attendees expect? Any requirements?"
-          rows={4}
-          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
-        />
-      </div>
-
-      {/* Phase 4.43: Slot Configuration + Attendance Cap */}
-      {/* RSVP is always available; capacity is optional; timeslots are toggleable */}
-      <SlotConfigSection
-        eventType={formData.event_type}
-        config={slotConfig}
-        onChange={setSlotConfig}
-        disabled={loading}
-        capacity={formData.capacity ? parseInt(formData.capacity) : null}
-        onCapacityChange={(cap) => updateField("capacity", cap?.toString() || "")}
-      />
-
-      {/* Warning: Timeslot duration exceeds event duration */}
-      {slotDurationExceedsEvent && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <p className="text-sm text-amber-600">
-            <strong>Warning:</strong> Total slot time ({totalSlotDuration} min) exceeds event duration ({eventDurationMinutes} min).
-            {totalSlotDuration > eventDurationMinutes! && (
-              <span className="block mt-1 text-sm text-[var(--color-text-secondary)]">
-                Consider reducing slots to {Math.floor(eventDurationMinutes! / slotConfig.slot_duration_minutes)} or shortening slot duration.
-              </span>
-            )}
-          </p>
-        </div>
-      )}
-
-      {/* Phase 4.42m: Integrated Location Selection - Single dropdown with venue + custom option */}
-      {(formData.location_mode === "venue" || formData.location_mode === "hybrid") && (
-        <div className="space-y-4">
-          {/* Venue Dropdown with integrated custom location option */}
-          <VenueSelector
-            venues={venues}
-            selectedVenueId={formData.venue_id}
-            onVenueChange={(venueId) => {
-              updateField("venue_id", venueId);
-              setLocationSelectionMode("venue");
-            }}
-            onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
-            onCustomLocationSelect={() => {
-              updateField("venue_id", "");
-              setLocationSelectionMode("custom");
-            }}
-            showCustomLocationOption={true}
-            isCustomLocationSelected={locationSelectionMode === "custom"}
-            required
-            disabled={loading}
-          />
-
-          {/* Venue Summary Panel - shows when venue is selected */}
-          {locationSelectionMode === "venue" && formData.venue_id && (() => {
-            const selectedVenue = venues.find(v => v.id === formData.venue_id);
-            if (!selectedVenue) return null;
-
-            const hasUnknownAddress = isPlaceholderValue(selectedVenue.address);
-            const hasUnknownCity = isPlaceholderValue(selectedVenue.city);
-            const hasAnyUnknown = hasUnknownAddress || hasUnknownCity;
-            const mapsUrl = selectedVenue.google_maps_url || selectedVenue.map_link;
-
-            return (
-              <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-900/10 border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
-                <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                  Venue Details
-                </h4>
-                <dl className="space-y-1 text-sm">
-                  <div className="flex gap-2">
-                    <dt className="text-[var(--color-text-secondary)] w-16">Name:</dt>
-                    <dd className="text-[var(--color-text-primary)]">{selectedVenue.name}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-[var(--color-text-secondary)] w-16">Address:</dt>
-                    <dd className={hasUnknownAddress ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
-                      {hasUnknownAddress ? "Unknown" : selectedVenue.address}
-                    </dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-[var(--color-text-secondary)] w-16">City:</dt>
-                    <dd className={hasUnknownCity ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
-                      {hasUnknownCity ? "Unknown" : `${selectedVenue.city}, ${selectedVenue.state || "CO"}`}
-                    </dd>
-                  </div>
-                  {mapsUrl && (
-                    <div className="flex gap-2">
-                      <dt className="text-[var(--color-text-secondary)] w-16">Map:</dt>
-                      <dd>
-                        <a
-                          href={mapsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[var(--color-link)] hover:underline"
-                        >
-                          View on Google Maps ↗
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-                {hasAnyUnknown && (
-                  <p className="mt-3 text-sm text-amber-400">
-                    This venue record is incomplete. Consider using a custom location or updating the venue details.
-                  </p>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Custom Location Fields - shown inline when custom location selected */}
-          {locationSelectionMode === "custom" && (
-            <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
-              <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location</h4>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  <span className="text-red-500">Location Name</span>
-                  <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Back room at Joe's Coffee"
-                  value={formData.custom_location_name}
-                  onChange={(e) => updateField("custom_location_name", e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                  Street Address <span className="font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="123 Main St"
-                  value={formData.custom_address}
-                  onChange={(e) => updateField("custom_address", e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    City <span className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Denver"
-                    value={formData.custom_city}
-                    onChange={(e) => updateField("custom_city", e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    State <span className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="CO"
-                    value={formData.custom_state}
-                    onChange={(e) => updateField("custom_state", e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    Latitude <span className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="39.7392"
-                    value={formData.custom_latitude}
-                    onChange={(e) => updateField("custom_latitude", e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    Longitude <span className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="-104.9903"
-                    value={formData.custom_longitude}
-                    onChange={(e) => updateField("custom_longitude", e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                  Location Notes <span className="font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Back room, Meet at north entrance, etc."
-                  value={formData.location_notes}
-                  onChange={(e) => updateField("location_notes", e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                />
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                  Additional instructions for finding the location
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Schedule */}
+      {/* ============ SECTION 3: SCHEDULE ============ */}
+      {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium mb-2">
@@ -777,8 +586,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       </div>
 
-      {/* ============ EVENT SERIES SECTION ============ */}
-      {/* Phase 4.42e: Moved closer to schedule controls for better UX */}
+      {/* ============ SECTION 3b: EVENT SERIES (Progressive Disclosure) ============ */}
+      {/* Phase 4.44c: Only shown when day_of_week is selected in create mode */}
       {mode === "create" && formData.day_of_week && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <div>
@@ -855,25 +664,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      {/* ============ TIMEZONE SECTION ============ */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Timezone <span className="font-normal">(optional)</span>
-        </label>
-        <select
-          value={formData.timezone}
-          onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
-          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-        >
-          <option value="America/Denver">Mountain Time (Denver)</option>
-          <option value="America/Los_Angeles">Pacific Time</option>
-          <option value="America/Chicago">Central Time</option>
-          <option value="America/New_York">Eastern Time</option>
-        </select>
-        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Times will be displayed in this timezone</p>
-      </div>
-
-      {/* ============ LOCATION MODE SECTION ============ */}
+      {/* ============ SECTION 4: LOCATION ============ */}
+      {/* Phase 4.44c: Where is this event? */}
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
@@ -906,160 +698,444 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             />
           </div>
         )}
-      </div>
 
-      {/* ============ COST SECTION ============ */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Cost <span className="font-normal">(optional)</span>
-          </label>
-          <select
-            value={formData.is_free === null ? "unknown" : formData.is_free ? "free" : "paid"}
-            onChange={(e) => {
-              const val = e.target.value;
-              setFormData(prev => ({
-                ...prev,
-                is_free: val === "unknown" ? null : val === "free",
-                cost_label: val === "free" ? "Free" : prev.cost_label
-              }));
-            }}
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            <option value="unknown">Not specified</option>
-            <option value="free">Free</option>
-            <option value="paid">Paid / Donation</option>
-          </select>
-        </div>
-
-        {formData.is_free === false && (
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Cost Details <span className="font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="$10, Donation, $5-15, etc."
-              value={formData.cost_label}
-              onChange={(e) => setFormData(prev => ({ ...prev, cost_label: e.target.value }))}
-              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* ============ SIGNUP SECTION ============ */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Signup Method <span className="font-normal">(optional)</span>
-          </label>
-          <select
-            value={formData.signup_mode}
-            onChange={(e) => setFormData(prev => ({ ...prev, signup_mode: e.target.value }))}
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            <option value="">Not specified</option>
-            <option value="walk_in">Walk-in only (no signup)</option>
-            <option value="in_person">Sign up in person at venue</option>
-            <option value="online">Online signup</option>
-            <option value="both">Both (in person + online)</option>
-          </select>
-        </div>
-
-        {(formData.signup_mode === "online" || formData.signup_mode === "both") && (
+        {/* Venue / Custom Location Selection */}
+        {(formData.location_mode === "venue" || formData.location_mode === "hybrid") && (
           <>
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Signup URL <span className="font-normal">(optional)</span>
-              </label>
-              <input
-                type="url"
-                placeholder="https://..."
-                value={formData.signup_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, signup_url: e.target.value }))}
-                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Signup Deadline
-                <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={formData.signup_deadline}
-                onChange={(e) => setFormData(prev => ({ ...prev, signup_deadline: e.target.value }))}
-                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              />
-            </div>
+            <VenueSelector
+              venues={venues}
+              selectedVenueId={formData.venue_id}
+              onVenueChange={(venueId) => {
+                updateField("venue_id", venueId);
+                setLocationSelectionMode("venue");
+              }}
+              onVenueCreated={(newVenue) => setVenues(prev => [...prev, newVenue].sort((a, b) => a.name.localeCompare(b.name)))}
+              onCustomLocationSelect={() => {
+                updateField("venue_id", "");
+                setLocationSelectionMode("custom");
+              }}
+              showCustomLocationOption={true}
+              isCustomLocationSelected={locationSelectionMode === "custom"}
+              required
+              disabled={loading}
+            />
+
+            {/* Venue Summary Panel */}
+            {locationSelectionMode === "venue" && formData.venue_id && (() => {
+              const selectedVenue = venues.find(v => v.id === formData.venue_id);
+              if (!selectedVenue) return null;
+
+              const hasUnknownAddress = isPlaceholderValue(selectedVenue.address);
+              const hasUnknownCity = isPlaceholderValue(selectedVenue.city);
+              const hasAnyUnknown = hasUnknownAddress || hasUnknownCity;
+              const mapsUrl = selectedVenue.google_maps_url || selectedVenue.map_link;
+
+              return (
+                <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-900/10 border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
+                  <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                    Venue Details
+                  </h4>
+                  <dl className="space-y-1 text-sm">
+                    <div className="flex gap-2">
+                      <dt className="text-[var(--color-text-secondary)] w-16">Name:</dt>
+                      <dd className="text-[var(--color-text-primary)]">{selectedVenue.name}</dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-[var(--color-text-secondary)] w-16">Address:</dt>
+                      <dd className={hasUnknownAddress ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                        {hasUnknownAddress ? "Unknown" : selectedVenue.address}
+                      </dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="text-[var(--color-text-secondary)] w-16">City:</dt>
+                      <dd className={hasUnknownCity ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                        {hasUnknownCity ? "Unknown" : `${selectedVenue.city}, ${selectedVenue.state || "CO"}`}
+                      </dd>
+                    </div>
+                    {mapsUrl && (
+                      <div className="flex gap-2">
+                        <dt className="text-[var(--color-text-secondary)] w-16">Map:</dt>
+                        <dd>
+                          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--color-link)] hover:underline">
+                            View on Google Maps ↗
+                          </a>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                  {hasAnyUnknown && (
+                    <p className="mt-3 text-sm text-amber-400">
+                      This venue record is incomplete. Consider using a custom location or updating the venue details.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Custom Location Fields */}
+            {locationSelectionMode === "custom" && (
+              <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
+                <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location</h4>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">Location Name</span>
+                    <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Back room at Joe's Coffee"
+                    value={formData.custom_location_name}
+                    onChange={(e) => updateField("custom_location_name", e.target.value)}
+                    required
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    Street Address <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="123 Main St"
+                    value={formData.custom_address}
+                    onChange={(e) => updateField("custom_address", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                      City <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Denver"
+                      value={formData.custom_city}
+                      onChange={(e) => updateField("custom_city", e.target.value)}
+                      className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                      State <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="CO"
+                      value={formData.custom_state}
+                      onChange={(e) => updateField("custom_state", e.target.value)}
+                      className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                      Latitude <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="39.7392"
+                      value={formData.custom_latitude}
+                      onChange={(e) => updateField("custom_latitude", e.target.value)}
+                      className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                      Longitude <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="-104.9903"
+                      value={formData.custom_longitude}
+                      onChange={(e) => updateField("custom_longitude", e.target.value)}
+                      className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    Location Notes <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Back room, Meet at north entrance, etc."
+                    value={formData.location_notes}
+                    onChange={(e) => updateField("location_notes", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    Additional instructions for finding the location
+                  </p>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* ============ AGE POLICY SECTION ============ */}
+      {/* ============ SECTION 5: DESCRIPTION + COVER IMAGE ============ */}
+      {/* Phase 4.44c: Add details about the event */}
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Age Policy <span className="font-normal">(optional)</span>
-        </label>
-        <input
-          type="text"
-          placeholder="21+, All ages, 18+ only, etc."
-          value={formData.age_policy}
-          onChange={(e) => setFormData(prev => ({ ...prev, age_policy: e.target.value }))}
-          className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-        />
-        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Leave blank if unknown</p>
-      </div>
-
-      {/* ============ DSC TOGGLE (ONLY IF PERMITTED) ============ */}
-      {canCreateDSC && (
-        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.is_dsc_event}
-              onChange={(e) => {
-                const isDSC = e.target.checked;
-                setFormData(prev => ({
-                  ...prev,
-                  is_dsc_event: isDSC,
-                  age_policy: isDSC && !prev.age_policy ? "18+ only" : prev.age_policy
-                }));
-              }}
-              className="w-5 h-5 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
-            />
-            <div>
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                This is an official DSC event
-              </span>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                DSC events are curated and represent the Denver Songwriters Collective brand
-              </p>
-            </div>
-          </label>
-        </div>
-      )}
-
-      {/* Phase 4.43: Capacity field moved to SlotConfigSection */}
-      {/* RSVP is always available; capacity is optional and independent of timeslots */}
-
-      {/* Host Notes (private) */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Host Notes
-          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(private, only visible to hosts)</span>
+          Description <span className="font-normal">(optional)</span>
         </label>
         <textarea
-          value={formData.host_notes}
-          onChange={(e) => updateField("host_notes", e.target.value)}
-          placeholder="Internal notes, setup reminders, etc."
-          rows={3}
+          value={formData.description}
+          onChange={(e) => updateField("description", e.target.value)}
+          placeholder="What should attendees expect? Any requirements?"
+          rows={4}
           className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
         />
       </div>
 
-      {/* Publish Toggle */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Cover Image
+          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
+        </label>
+        <div className="max-w-xs">
+          <ImageUpload
+            currentImageUrl={coverImageUrl}
+            onUpload={handleImageUpload}
+            onRemove={handleImageRemove}
+            aspectRatio={4/3}
+            shape="square"
+            placeholderText="Add Cover Photo"
+            maxSizeMB={5}
+          />
+        </div>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+          Recommended: 1200×900px (4:3). Most phone photos are already 4:3.
+        </p>
+      </div>
+
+      {/* ============ SECTION 6: ATTENDANCE & SIGNUP ============ */}
+      {/* Phase 4.44c: Who can attend and how do performers sign up? */}
+      <SlotConfigSection
+        eventType={formData.event_type}
+        config={slotConfig}
+        onChange={setSlotConfig}
+        disabled={loading}
+        capacity={formData.capacity ? parseInt(formData.capacity) : null}
+        onCapacityChange={(cap) => updateField("capacity", cap?.toString() || "")}
+      />
+
+      {/* Warning: Timeslot duration exceeds event duration */}
+      {slotDurationExceedsEvent && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <p className="text-sm text-amber-600">
+            <strong>Warning:</strong> Total slot time ({totalSlotDuration} min) exceeds event duration ({eventDurationMinutes} min).
+            {totalSlotDuration > eventDurationMinutes! && (
+              <span className="block mt-1 text-sm text-[var(--color-text-secondary)]">
+                Consider reducing slots to {Math.floor(eventDurationMinutes! / slotConfig.slot_duration_minutes)} or shortening slot duration.
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
+      {/* ============ SECTION 7: ADVANCED OPTIONS (Collapsed by default) ============ */}
+      {/* Phase 4.44c: Progressive disclosure - less common options */}
+      <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full px-4 py-3 flex items-center justify-between bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+        >
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+            Advanced Options
+          </span>
+          <svg
+            className={`w-5 h-5 text-[var(--color-text-secondary)] transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showAdvanced && (
+          <div className="p-4 space-y-6 bg-[var(--color-bg-primary)]">
+            {/* Timezone */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Timezone <span className="font-normal">(optional)</span>
+              </label>
+              <select
+                value={formData.timezone}
+                onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              >
+                <option value="America/Denver">Mountain Time (Denver)</option>
+                <option value="America/Los_Angeles">Pacific Time</option>
+                <option value="America/Chicago">Central Time</option>
+                <option value="America/New_York">Eastern Time</option>
+              </select>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Times will be displayed in this timezone</p>
+            </div>
+
+            {/* Cost */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                  Cost <span className="font-normal">(optional)</span>
+                </label>
+                <select
+                  value={formData.is_free === null ? "unknown" : formData.is_free ? "free" : "paid"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      is_free: val === "unknown" ? null : val === "free",
+                      cost_label: val === "free" ? "Free" : prev.cost_label
+                    }));
+                  }}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                >
+                  <option value="unknown">Not specified</option>
+                  <option value="free">Free</option>
+                  <option value="paid">Paid / Donation</option>
+                </select>
+              </div>
+
+              {formData.is_free === false && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                    Cost Details <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="$10, Donation, $5-15, etc."
+                    value={formData.cost_label}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cost_label: e.target.value }))}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* External Signup Method */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                  External Signup Method <span className="font-normal">(optional)</span>
+                </label>
+                <select
+                  value={formData.signup_mode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, signup_mode: e.target.value }))}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                >
+                  <option value="">Not specified</option>
+                  <option value="walk_in">Walk-in only (no signup)</option>
+                  <option value="in_person">Sign up in person at venue</option>
+                  <option value="online">Online signup (external)</option>
+                  <option value="both">Both (in person + online)</option>
+                </select>
+              </div>
+
+              {(formData.signup_mode === "online" || formData.signup_mode === "both") && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                      Signup URL <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={formData.signup_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, signup_url: e.target.value }))}
+                      className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                      Signup Deadline <span className="font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formData.signup_deadline}
+                      onChange={(e) => setFormData(prev => ({ ...prev, signup_deadline: e.target.value }))}
+                      className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Age Policy */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Age Policy <span className="font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="21+, All ages, 18+ only, etc."
+                value={formData.age_policy}
+                onChange={(e) => setFormData(prev => ({ ...prev, age_policy: e.target.value }))}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Leave blank if unknown</p>
+            </div>
+
+            {/* DSC Toggle */}
+            {canCreateDSC && (
+              <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_dsc_event}
+                    onChange={(e) => {
+                      const isDSC = e.target.checked;
+                      setFormData(prev => ({
+                        ...prev,
+                        is_dsc_event: isDSC,
+                        age_policy: isDSC && !prev.age_policy ? "18+ only" : prev.age_policy
+                      }));
+                    }}
+                    className="w-5 h-5 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                      This is an official DSC event
+                    </span>
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+                      DSC events are curated and represent the Denver Songwriters Collective brand
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
+
+            {/* Host Notes */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Host Notes
+                <span className="text-[var(--color-text-secondary)] font-normal ml-1">(private, only visible to hosts)</span>
+              </label>
+              <textarea
+                value={formData.host_notes}
+                onChange={(e) => updateField("host_notes", e.target.value)}
+                placeholder="Internal notes, setup reminders, etc."
+                rows={3}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none resize-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ============ SECTION 8: PUBLISH ============ */}
+      {/* Phase 4.44c: Always at bottom, always visible */}
       <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
         <div className="flex items-center justify-between">
           <div>

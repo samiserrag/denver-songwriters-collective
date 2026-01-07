@@ -160,6 +160,36 @@ See `scripts/smoke-prod.sh` for automated checks.
 
 ---
 
+### 9. Event Form UX (Phase 4.44c)
+
+**Precondition:** Logged in as host
+
+**Steps:**
+1. Navigate to `/dashboard/my-events` and click "Create Event"
+2. Verify Event Type is the FIRST section (above Title)
+3. Select "Open Mic" as event type
+
+**Expected:**
+- Inline notification appears below Event Type: "Performer slots enabled"
+- Notification has info icon and explains slots were auto-enabled
+
+4. Scroll down to find "Advanced Options"
+
+**Expected:**
+- Advanced Options section is COLLAPSED by default
+- Click to expand reveals: Timezone, Cost, External Signup URL, Age Policy, DSC Toggle, Host Notes
+
+5. Create a draft event (do NOT publish)
+6. On edit page, find header buttons
+
+**Expected:**
+- "Preview as visitor →" link appears (styled muted, not primary)
+- Clicking opens `/events/{slug}` in new tab showing preview
+
+**Pass Criteria:** Form structure is intent-first; Advanced collapsed; Preview link works for drafts
+
+---
+
 ## Manual Browser Checks
 
 For UI verification that requires authentication or visual inspection:
