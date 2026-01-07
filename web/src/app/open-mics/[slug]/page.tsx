@@ -1,12 +1,17 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import type { EventWithVenue } from "@/types/db";
-import Link from "next/link";
-import { highlight, escapeHtml, linkifyUrls } from "@/lib/highlight";
-import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
-import PlaceholderImage from "@/components/ui/PlaceholderImage";
-import { PosterMedia } from "@/components/media";
+import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+
+/**
+ * Phase 4.43d: Open Mics Slug Route
+ *
+ * This route serves as the slug entrypoint for legacy URLs and SEO crawlers.
+ * All requests immediately redirect to /events/[id] which is the canonical
+ * detail page with full functionality (RSVP, attendee list, timeslots, etc.)
+ *
+ * The metadata function still provides proper SEO for the redirect.
+ */
 
 // Generate dynamic metadata for SEO and social sharing
 export async function generateMetadata({
@@ -41,7 +46,8 @@ export async function generateMetadata({
     : `Join ${event.title} at ${venueName}${dayText ? ` every ${dayText}` : ""}${timeText ? ` at ${timeText}` : ""}. Find open mics in Denver with the Denver Songwriters Collective.`;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
-  const canonicalUrl = `${siteUrl}/open-mics/${event.slug || slug}`;
+  // Canonical URL points to /events/ since that's where users land
+  const canonicalUrl = `${siteUrl}/events/${event.slug || event.id}`;
 
   return {
     title,
@@ -65,356 +71,28 @@ export async function generateMetadata({
   };
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "comedy": "bg-pink-900/40 text-pink-300",
-  "poetry": "bg-purple-900/40 text-purple-300",
-  "all-acts": "bg-yellow-900/40 text-yellow-300",
-  "music": "bg-emerald-900/40 text-emerald-300",
-  "mixed": "bg-sky-900/40 text-sky-300",
-};
-
-function isValidMapUrl(url?: string | null): boolean {
-  if (!url) return false;
-  // Must be a proper HTTP(S) URL
-  if (!url.startsWith("http://") && !url.startsWith("https://")) return false;
-  // goo.gl and maps.app.goo.gl shortened URLs are broken (Dynamic Link Not Found)
-  if (url.includes("goo.gl")) return false;
-  return true;
-}
-
-function resolveMapUrl(googleMapsUrl?: string | null, mapLink?: string | null, venueName?: string | null, venueAddress?: string): string | undefined {
-  // Prefer explicit google_maps_url if valid
-  if (isValidMapUrl(googleMapsUrl) && googleMapsUrl) return googleMapsUrl;
-  // Fall back to map_link if it's not a broken goo.gl URL
-  if (isValidMapUrl(mapLink) && mapLink) return mapLink;
-  // Otherwise construct from venue name + address
-  const parts: string[] = [];
-  if (venueName && venueName !== "TBA" && venueName !== "Venue") parts.push(venueName);
-  if (venueAddress) parts.push(venueAddress);
-  if (parts.length > 0) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
-  }
-  return undefined;
-}
-
 export const dynamic = "force-dynamic";
 
 interface EventPageProps {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ search?: string }>;
 }
 
-export default async function EventBySlugPage({ params, searchParams }: EventPageProps) {
+export default async function OpenMicSlugRedirect({ params }: EventPageProps) {
   const { slug } = await params;
-  const searchParamsObj = searchParams ? await searchParams : undefined;
   const supabase = await createSupabaseServerClient();
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
-  const { data, error } = isUUID
-    ? await supabase.from("events").select("*, venue:venues(*)").eq("id", slug).single<EventWithVenue>()
-    : await supabase.from("events").select("*, venue:venues(*)").eq("slug", slug).single<EventWithVenue>();
+  const { data: event, error } = isUUID
+    ? await supabase.from("events").select("id, slug").eq("id", slug).single()
+    : await supabase.from("events").select("id, slug").eq("slug", slug).single();
 
-  if (error || !data) {
+  if (error || !event) {
     notFound();
   }
 
-  const event = data;
-  if (!event) {
-    notFound();
-  }
-
-  // DSC events should be viewed at /events/[id] which supports timeslots and RSVP
-  if ((event as { is_dsc_event?: boolean }).is_dsc_event) {
-    redirect(`/events/${event.id}`);
-  }
-
-  if (isUUID && event.slug) {
-    // If the user accessed by UUID and the event has a canonical slug, redirect there.
-    redirect(`/open-mics/${event.slug}`);
-  }
-
-  if (!isUUID && (!event.slug || event.slug !== slug)) {
-    notFound();
-  }
-
-  const venue = event.venue;
-  const venueAddress = [venue?.address, venue?.city, venue?.state].filter(Boolean).join(", ");
-  const mapUrl = resolveMapUrl(
-    venue?.google_maps_url,
-    venue?.map_link,
-    venue?.name,
-    venueAddress || undefined
-  );
-
-  const recurrenceText = humanizeRecurrence(event.recurrence_rule ?? null, event.day_of_week ?? null);
-  const startFormatted = formatTimeToAMPM(event.start_time ?? null);
-  const endFormatted = formatTimeToAMPM((event as any).end_time ?? null);
-  const signupFormatted = formatTimeToAMPM((event as any).signup_time ?? null);
-
-  const searchQuery = (searchParamsObj?.search ?? "").trim();
-  // Prepare highlighted HTML (safe — highlight/escapeHtml escape input)
-  const titleHtml = searchQuery ? highlight(event.title ?? "", searchQuery) : escapeHtml(event.title ?? "");
-  const descriptionHtml = event.description ? linkifyUrls(searchQuery ? highlight(event.description, searchQuery) : escapeHtml(event.description)) : "";
-  const venueNameHtml = venue?.name ? (searchQuery ? highlight(venue.name, searchQuery) : escapeHtml(venue.name)) : "";
-  const venueAddressHtml = venue?.address ? (searchQuery ? highlight(venue.address, searchQuery) : escapeHtml(venue.address)) : "";
-  // NOTE: event.notes is internal admin metadata (sources, verification dates, etc.) - never render on public pages
-
-  const hasDescription = Boolean(event.description?.trim());
-
-  // Phase 4.39: Compute verification state for display
-  const verificationResult = getPublicVerificationState({
-    status: (event as any).status,
-    host_id: (event as any).host_id,
-    source: (event as any).source,
-    last_verified_at: (event as any).last_verified_at,
-    verified_by: (event as any).verified_by,
-  });
-  const verificationState = verificationResult.state;
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <Link href="/happenings?type=open_mic" className="inline-flex items-center gap-2 text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] transition-colors mb-6">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Directory
-      </Link>
-
-      {/* Hero section - Phase 3.1: poster first if exists, else placeholder */}
-      <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
-        {event.cover_image_url ? (
-          /* Poster - Phase 3.1: full width, natural height, no cropping */
-          <div className="relative">
-            <PosterMedia
-              src={event.cover_image_url}
-              alt={event.title ?? "Open Mic"}
-              variant="detail"
-              priority={true}
-            />
-            {/* Day badge */}
-            {event.day_of_week && (
-              <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
-                <span className="text-[var(--color-text-accent)] font-semibold">{event.day_of_week}s</span>
-              </div>
-            )}
-            {/* Category badge */}
-            {event.category && (
-              <div className="absolute top-4 right-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[(event.category as string)] || "bg-slate-900/60 text-slate-300"}`}>
-                  {event.category}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Fallback placeholder when no poster exists */
-          <div className="h-48 md:h-64 relative">
-            <PlaceholderImage type="open-mic" className="w-full h-full" alt={event.title ?? "Open Mic"} />
-            {/* Day badge */}
-            {event.day_of_week && (
-              <div className="absolute top-4 left-4 px-4 py-2 bg-black/70 backdrop-blur rounded-lg">
-                <span className="text-[var(--color-text-accent)] font-semibold">{event.day_of_week}s</span>
-              </div>
-            )}
-            {/* Category badge */}
-            {event.category && (
-              <div className="absolute top-4 right-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[(event.category as string)] || "bg-slate-900/60 text-slate-300"}`}>
-                  {event.category}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="p-6 md:p-8">
-          {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
-              <span>🎤</span> Open Mic
-            </span>
-            {verificationState === "confirmed" && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
-                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Confirmed
-              </span>
-            )}
-            {verificationState === "unconfirmed" && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
-                Unconfirmed
-              </span>
-            )}
-            {verificationState === "cancelled" && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                Cancelled
-              </span>
-            )}
-          </div>
-
-          <h1
-            className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4"
-            dangerouslySetInnerHTML={{ __html: titleHtml }}
-          />
-
-          {/* Phase 4.1: Missing details indicator */}
-          {hasMissingDetails({
-            location_mode: (event as any).location_mode,
-            venue_id: event.venue_id,
-            venue_name: venue?.name ?? (event as any).venue_name,
-            custom_location_name: (event as any).custom_location_name,
-            online_url: (event as any).online_url,
-            is_free: (event as any).is_free,
-            age_policy: (event as any).age_policy,
-            is_dsc_event: (event as any).is_dsc_event,
-            event_type: (event as any).event_type
-          }) && (
-            <a
-              href="#suggest-update"
-              className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span className="font-medium">Missing details</span>
-              <span className="text-sm">— Know more? Help complete this listing!</span>
-            </a>
-          )}
-
-          {/* Quick info cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {/* Time Card */}
-            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-[var(--color-border-subtle)]">
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <span>🕐</span> Time
-              </div>
-              <p className="text-[var(--color-text-primary)] font-medium">
-                {startFormatted}{endFormatted && endFormatted !== "TBD" ? ` — ${endFormatted}` : ""}
-              </p>
-              {signupFormatted && signupFormatted !== "TBD" && (
-                <p className="text-[var(--color-text-accent)] text-sm mt-1">Signup: {signupFormatted}</p>
-              )}
-            </div>
-
-            {/* Venue Card */}
-            {venue && (
-              <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-[var(--color-border-subtle)]">
-                <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                  <span>📍</span> Venue
-                </div>
-                <p className="text-[var(--color-text-primary)] font-medium" dangerouslySetInnerHTML={{ __html: venueNameHtml }} />
-                <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                  {venue.city}{venue.state ? `, ${venue.state}` : ""}
-                </p>
-              </div>
-            )}
-
-            {/* Schedule Card */}
-            <div className="p-4 rounded-xl bg-[var(--color-background)]/50 border border-[var(--color-border-subtle)]">
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)] text-sm mb-1">
-                <span>📅</span> Schedule
-              </div>
-              <p className="text-[var(--color-text-primary)] font-medium">
-                {recurrenceText || "Weekly"}
-              </p>
-              {event.status && (
-                <p className={`text-sm mt-1 ${event.status === "active" ? "text-green-400" : "text-[var(--color-text-secondary)]"}`}>
-                  {event.status === "active" ? "✓ Active" : event.status}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-3 mb-8">
-            {mapUrl && (
-              <a
-                href={mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Get Directions
-              </a>
-            )}
-            {venue?.website_url && (
-              <a
-                href={venue.website_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border-2 border-white/20 hover:border-white/40 text-[var(--color-text-primary)] font-semibold transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Venue Website
-              </a>
-            )}
-          </div>
-
-          {/* About This Open Mic - description only (notes are internal admin metadata) */}
-          {hasDescription && (
-            <div className="mb-8">
-              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Open Mic</h2>
-              <div
-                className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-              />
-            </div>
-          )}
-
-          {/* Address */}
-          {venueAddressHtml && (
-            <div className="mb-8">
-              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">Location</h2>
-              <p className="text-[var(--color-text-secondary)]" dangerouslySetInnerHTML={{ __html: venueAddressHtml }} />
-              {venue && (
-                <p className="text-[var(--color-text-secondary)]">
-                  {venue.city}{venue.state ? `, ${venue.state}` : ""}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Community Comments */}
-      <OpenMicComments eventId={event.id} />
-
-      {/* Community feedback section */}
-      <div id="suggest-update" className="mt-8 space-y-4 scroll-mt-24">
-        {/* Quick report change form */}
-        <ReportChangeForm eventId={event.id} eventTitle={event.title ?? "Open Mic"} />
-
-        {/* Full suggestion form for logged-in users */}
-        <EventSuggestionForm
-          event={{
-            id: event.id,
-            title: event.title ?? "",
-            venue_name: venue?.name ?? (event as any).venue_name ?? null,
-            day_of_week: event.day_of_week ?? null,
-            start_time: event.start_time ?? null,
-            end_time: (event as any).end_time ?? null,
-            signup_time: (event as any).signup_time ?? null,
-            recurrence_rule: event.recurrence_rule ?? null,
-            category: event.category ?? null,
-            description: event.description ?? null,
-            slug: event.slug ?? null,
-          }}
-        />
-      </div>
-    </div>
-  );
+  // Phase 4.43d: /open-mics/[slug] is the slug entrypoint for legacy URLs and SEO.
+  // /events/[id] is the canonical detail page with RSVP, attendee list, timeslots, etc.
+  // ALL events (DSC + community) redirect to the canonical page for full functionality.
+  redirect(`/events/${event.slug || event.id}`);
 }
-
-import EventSuggestionForm from "@/components/events/EventSuggestionForm";
-import ReportChangeForm from "@/components/events/ReportChangeForm";
-import { OpenMicComments } from "@/components/events";
-import { hasMissingDetails } from "@/lib/events/missingDetails";
-import { getPublicVerificationState } from "@/lib/events/verification";
