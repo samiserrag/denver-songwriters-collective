@@ -81,7 +81,7 @@ export async function POST(
     return NextResponse.json({ error: "Already RSVP'd to this event" }, { status: 400 });
   }
 
-  // Get event - must be DSC event, active, and published
+  // Get event - must be active and published (Phase 4.43c: RSVP available for all events)
   const { data: event, error: eventError } = await supabase
     .from("events")
     .select("id, slug, title, capacity, is_dsc_event, status, is_published, event_date, start_time, venue_name, venue_address")
@@ -92,9 +92,7 @@ export async function POST(
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  if (!event.is_dsc_event) {
-    return NextResponse.json({ error: "RSVPs only available for DSC events" }, { status: 400 });
-  }
+  // Phase 4.43c: Removed is_dsc_event check - RSVP available for all public events
 
   if (!event.is_published) {
     return NextResponse.json({ error: "This event is not yet published" }, { status: 400 });

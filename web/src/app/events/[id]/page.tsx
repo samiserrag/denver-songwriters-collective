@@ -673,9 +673,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
           {/* Action buttons row */}
           <div className="flex flex-wrap items-start gap-4 mb-8">
-            {/* Phase 4.43: RSVP is always available for DSC events (even with timeslots) */}
+            {/* Phase 4.43c: RSVP is always available for all published events (DSC + community) */}
             {/* RSVP = audience/supporters "planning to attend", not performer signup */}
-            {canRSVP && event.is_dsc_event && (
+            {canRSVP && (
               <Suspense fallback={
                 <div className="animate-pulse">
                   <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
@@ -745,14 +745,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             </div>
           )}
 
-          {/* Phase 4.43: Attendee list (RSVP'd members) */}
-          {event.is_dsc_event && (
-            <AttendeeList
-              eventId={event.id}
-              hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
-              performerCount={performerCount}
-            />
-          )}
+          {/* Phase 4.43c: Attendee list (RSVP'd members) - shown for all events */}
+          <AttendeeList
+            eventId={event.id}
+            hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
+            performerCount={performerCount}
+          />
 
           {hosts.length > 0 && (
             <div className="mb-8">

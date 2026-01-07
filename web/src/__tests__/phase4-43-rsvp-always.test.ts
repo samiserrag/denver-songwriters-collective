@@ -81,8 +81,8 @@ describe("Phase 4.43: RSVP + Timeslots Coexistence", () => {
     }): boolean {
       const isCancelled = event.status === "cancelled";
       const canRSVP = !isCancelled && event.is_published !== false;
-      // Phase 4.43: RSVP shows for all DSC events (removed !has_timeslots gate)
-      return canRSVP && event.is_dsc_event;
+      // Phase 4.43c: RSVP shows for ALL events (removed is_dsc_event gate)
+      return canRSVP;
     }
 
     it("shows RSVP for DSC event without timeslots", () => {
@@ -109,11 +109,11 @@ describe("Phase 4.43: RSVP + Timeslots Coexistence", () => {
       })).toBe(false);
     });
 
-    it("hides RSVP for non-DSC events", () => {
+    it("shows RSVP for non-DSC (community) events (Phase 4.43c)", () => {
       expect(shouldShowRsvpSection({
         is_dsc_event: false,
         is_published: true,
-      })).toBe(false);
+      })).toBe(true);
     });
 
     it("hides RSVP for unpublished events", () => {
@@ -121,6 +121,15 @@ describe("Phase 4.43: RSVP + Timeslots Coexistence", () => {
         is_dsc_event: true,
         is_published: false,
       })).toBe(false);
+    });
+
+    it("shows RSVP for community open mic events (Phase 4.43c)", () => {
+      // This is the key test for seeded events
+      expect(shouldShowRsvpSection({
+        is_dsc_event: false,
+        is_published: true,
+        has_timeslots: false,
+      })).toBe(true);
     });
   });
 });
@@ -425,6 +434,154 @@ describe("Phase 4.43: Attendee List", () => {
 
     it("shows 'Who\\'s Coming' for RSVP-only events", () => {
       expect(getSectionTitle(false)).toBe("Who's Coming");
+    });
+  });
+
+  describe("privacy handling", () => {
+    function getDisplayName(profile: { full_name: string | null } | null): string {
+      return profile?.full_name || "Anonymous";
+    }
+
+    it("shows full name for public profiles", () => {
+      expect(getDisplayName({ full_name: "John Doe" })).toBe("John Doe");
+    });
+
+    it("shows Anonymous when profile join is null (private profile)", () => {
+      expect(getDisplayName(null)).toBe("Anonymous");
+    });
+
+    it("shows Anonymous when full_name is null", () => {
+      expect(getDisplayName({ full_name: null })).toBe("Anonymous");
+    });
+  });
+});
+
+// =============================================================================
+// PHASE 4.43c: RSVP FOR ALL EVENTS (NOT JUST DSC)
+// =============================================================================
+
+describe("Phase 4.43c: RSVP for all public events", () => {
+  describe("RSVP API validation", () => {
+    // Simulating the API validation logic after Phase 4.43c changes
+    function validateRsvpRequest(event: {
+      is_dsc_event: boolean;
+      is_published: boolean;
+      status: string;
+    }): { valid: boolean; error?: string } {
+      // Phase 4.43c: Removed is_dsc_event check
+      // RSVP is now available for all public events
+
+      if (!event.is_published) {
+        return { valid: false, error: "This event is not yet published" };
+      }
+
+      if (event.status !== "active") {
+        return { valid: false, error: "This event is no longer accepting RSVPs" };
+      }
+
+      return { valid: true };
+    }
+
+    it("allows RSVP for DSC events", () => {
+      const result = validateRsvpRequest({
+        is_dsc_event: true,
+        is_published: true,
+        status: "active",
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it("allows RSVP for non-DSC (community) events (Phase 4.43c)", () => {
+      const result = validateRsvpRequest({
+        is_dsc_event: false,
+        is_published: true,
+        status: "active",
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it("rejects RSVP for unpublished events", () => {
+      const result = validateRsvpRequest({
+        is_dsc_event: false,
+        is_published: false,
+        status: "active",
+      });
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe("This event is not yet published");
+    });
+
+    it("rejects RSVP for cancelled events", () => {
+      const result = validateRsvpRequest({
+        is_dsc_event: false,
+        is_published: true,
+        status: "cancelled",
+      });
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe("This event is no longer accepting RSVPs");
+    });
+  });
+
+  describe("DSC-only features remain gated", () => {
+    // These elements should still check is_dsc_event
+    function shouldShowHostControls(event: { is_dsc_event: boolean }): boolean {
+      return event.is_dsc_event;
+    }
+
+    function shouldShowTimeslotSection(event: {
+      is_dsc_event: boolean;
+      has_timeslots: boolean;
+    }): boolean {
+      return event.is_dsc_event && event.has_timeslots;
+    }
+
+    function shouldShowNoSignupWarning(event: {
+      is_dsc_event: boolean;
+      canManageEvent: boolean;
+      signupLaneExists: boolean;
+    }): boolean {
+      return event.canManageEvent && event.is_dsc_event && !event.signupLaneExists;
+    }
+
+    it("HostControls only shows for DSC events", () => {
+      expect(shouldShowHostControls({ is_dsc_event: true })).toBe(true);
+      expect(shouldShowHostControls({ is_dsc_event: false })).toBe(false);
+    });
+
+    it("TimeslotSection only shows for DSC events with timeslots", () => {
+      expect(shouldShowTimeslotSection({ is_dsc_event: true, has_timeslots: true })).toBe(true);
+      expect(shouldShowTimeslotSection({ is_dsc_event: true, has_timeslots: false })).toBe(false);
+      expect(shouldShowTimeslotSection({ is_dsc_event: false, has_timeslots: true })).toBe(false);
+    });
+
+    it("No signup warning only shows for DSC events", () => {
+      expect(shouldShowNoSignupWarning({
+        is_dsc_event: true,
+        canManageEvent: true,
+        signupLaneExists: false
+      })).toBe(true);
+      expect(shouldShowNoSignupWarning({
+        is_dsc_event: false,
+        canManageEvent: true,
+        signupLaneExists: false
+      })).toBe(false);
+    });
+  });
+
+  describe("AttendeeList shows for all events", () => {
+    // Phase 4.43c: AttendeeList is no longer gated by is_dsc_event
+    function shouldShowAttendeeList(): boolean {
+      // Component internally handles empty state (returns null if no attendees)
+      // The render condition is now unconditional
+      return true;
+    }
+
+    it("AttendeeList renders for DSC events", () => {
+      expect(shouldShowAttendeeList()).toBe(true);
+    });
+
+    it("AttendeeList renders for community events (Phase 4.43c)", () => {
+      // The component handles empty states internally
+      expect(shouldShowAttendeeList()).toBe(true);
     });
   });
 });
