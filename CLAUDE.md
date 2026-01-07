@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.43):** Lint warnings = 0. All tests passing (967). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.43d):** Lint warnings = 0. All tests passing (979). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -261,6 +261,30 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.43d — Open Mics Redirect to Events (January 2026) — CLOSED
+
+**Goal:** Enable RSVP for community open mics by redirecting `/open-mics/[slug]` to `/events/[id]`.
+
+**Problem:** The `/open-mics/[slug]` page had no RSVP UI. Only DSC events redirected to `/events/[id]` which has RSVP. Community open mics stayed on the simpler `/open-mics/[slug]` page without RSVP functionality.
+
+**Solution:** All events now redirect from `/open-mics/[slug]` to `/events/[id]`:
+- `/open-mics/[slug]` serves as the slug entrypoint for legacy URLs and SEO
+- `/events/[id]` is the canonical detail page with RSVP, attendee list, etc.
+- Metadata still generates proper SEO with canonical URL pointing to `/events/`
+
+**Key Changes:**
+
+| File | Change |
+|------|--------|
+| `app/open-mics/[slug]/page.tsx` | Simplified to redirect-only; removed 300+ lines of rendering code |
+| `__tests__/open-mics-redirect.test.ts` | 12 new tests for redirect behavior |
+
+**Verification:**
+- Visit `/open-mics/words-open-mic` → ends at `/events/{slug}` with RSVP visible
+- All 979 tests passing
 
 ---
 
