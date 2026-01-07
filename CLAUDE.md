@@ -87,7 +87,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.46):** Lint warnings = 0. All tests passing (1039). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.47):** Lint warnings = 0. All tests passing (1045). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -262,6 +262,45 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.47 — Performer Slots Opt-In + Value Framing (January 2026)
+
+**Goal:** Make performer slots fully opt-in for ALL event types — no auto-enable based on event type.
+
+**Key Decisions:**
+
+| Decision | Implementation |
+|----------|----------------|
+| No auto-enable | Removed `TIMESLOT_EVENT_TYPES` constant and all references |
+| Default state | ALL event types start with `has_timeslots: false` |
+| Manual opt-in | Host must explicitly toggle to enable performer slots |
+| Value framing | When slots are OFF, show benefits to encourage opt-in |
+
+**What Was Removed:**
+- `TIMESLOT_EVENT_TYPES` export from SlotConfigSection
+- `useEffect` that auto-enabled timeslots based on eventType in EventForm
+- Auto-notification UI ("Performer slots auto-enabled for Open Mic")
+- `timeslotsAutoEnabled` state and `previousEventTypeRef` ref
+
+**Value Framing Copy (when slots are OFF):**
+> **Enable performer slots to:**
+> - Let performers sign up in advance
+> - Get automatic lineup management
+> - Reduce day-of coordination
+>
+> *You can turn this on or off anytime.*
+
+**Key Files:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/SlotConfigSection.tsx` | Removed TIMESLOT_EVENT_TYPES, added value framing copy |
+| `dashboard/my-events/_components/EventForm.tsx` | Removed import, useEffect, auto-notification UI |
+| `__tests__/phase4-47-performer-slots-opt-in.test.ts` | 6 new tests |
+
+**Test Coverage:** 6 new tests covering no auto-enable behavior, value framing copy, and manual opt-in requirement.
 
 ---
 

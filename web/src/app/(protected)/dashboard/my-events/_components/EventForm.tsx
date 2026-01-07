@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import VenueSelector from "@/components/ui/VenueSelector";
 import SlotConfigSection, {
-  TIMESLOT_EVENT_TYPES,
   type SlotConfig,
 } from "./SlotConfigSection";
 import {
@@ -110,10 +109,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   // Phase 4.44c: Advanced section collapse state (collapsed by default)
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Phase 4.44c: Track when timeslots were auto-enabled to show notification
-  const [timeslotsAutoEnabled, setTimeslotsAutoEnabled] = useState(false);
-  const previousEventTypeRef = useRef<string | null>(null);
-
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
@@ -156,37 +151,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     event?.custom_location_name ? "custom" : "venue"
   );
 
-  // Slot configuration state - defaults based on event type
-  const defaultEventType = event?.event_type || "song_circle";
+  // Phase 4.47: Slot configuration state - always defaults to no performer slots
+  // Performer slots are fully opt-in, no event type auto-enables them
   const [slotConfig, setSlotConfig] = useState<SlotConfig>({
-    has_timeslots: TIMESLOT_EVENT_TYPES.includes(defaultEventType),
-    total_slots: defaultEventType === "open_mic" ? 10 : 8,
-    slot_duration_minutes: defaultEventType === "open_mic" ? 10 : 15,
+    has_timeslots: false,
+    total_slots: 10,
+    slot_duration_minutes: 10,
     allow_guests: true,
   });
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
-
-  // Phase 4.44c: Detect when timeslots auto-enable and show notification
-  useEffect(() => {
-    const currentType = formData.event_type;
-    const previousType = previousEventTypeRef.current;
-
-    // Only show notification when switching TO a timeslot type FROM a non-timeslot type
-    if (previousType !== null && previousType !== currentType) {
-      const wasTimeslotType = TIMESLOT_EVENT_TYPES.includes(previousType);
-      const isTimeslotType = TIMESLOT_EVENT_TYPES.includes(currentType);
-
-      if (!wasTimeslotType && isTimeslotType) {
-        setTimeslotsAutoEnabled(true);
-      } else if (wasTimeslotType && !isTimeslotType) {
-        // Clear notification when switching away from timeslot type
-        setTimeslotsAutoEnabled(false);
-      }
-    }
-
-    previousEventTypeRef.current = currentType;
-  }, [formData.event_type]);
 
   // Calculate event duration in minutes (if both start and end times are set)
   const calculateEventDurationMinutes = (): number | null => {
@@ -483,34 +457,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
       </div>
-
-      {/* Phase 4.44c: Auto-timeslot notification - shown when switching to open_mic/showcase */}
-      {timeslotsAutoEnabled && (
-        <div className="p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-[var(--color-accent-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                Performer slots auto-enabled for {formData.event_type === "open_mic" ? "Open Mic" : "Showcase"}
-              </p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                This event type typically includes performer sign-ups. You can turn this off in the Attendance &amp; Signup section below.
-              </p>
-              <button
-                type="button"
-                onClick={() => setTimeslotsAutoEnabled(false)}
-                className="mt-2 text-sm text-[var(--color-text-accent)] hover:underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ============ SECTION 2: TITLE ============ */}
       <div>

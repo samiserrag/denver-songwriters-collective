@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-
-// Event types that default to timeslot mode
-const TIMESLOT_EVENT_TYPES = ["open_mic", "showcase"];
+// Phase 4.47: Removed TIMESLOT_EVENT_TYPES - no event type auto-enables performer slots
+// All event types default to RSVP only; performer slots are fully opt-in
 
 interface SlotConfig {
   has_timeslots: boolean;
@@ -23,33 +21,14 @@ interface SlotConfigSectionProps {
 }
 
 export default function SlotConfigSection({
-  eventType,
   config,
   onChange,
   disabled = false,
   capacity,
   onCapacityChange,
 }: SlotConfigSectionProps) {
-  // Auto-enable timeslots for open_mic and showcase
-  // Note: We intentionally only depend on eventType to avoid loops when onChange updates config
-  useEffect(() => {
-    const shouldEnableTimeslots = TIMESLOT_EVENT_TYPES.includes(eventType);
-    if (shouldEnableTimeslots && !config.has_timeslots) {
-      onChange({
-        ...config,
-        has_timeslots: true,
-        total_slots: eventType === "open_mic" ? 10 : 8,
-        slot_duration_minutes: eventType === "open_mic" ? 10 : 15,
-      });
-    } else if (!shouldEnableTimeslots && config.has_timeslots) {
-      // When switching away from timeslot types, disable timeslots
-      onChange({
-        ...config,
-        has_timeslots: false,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventType]);
+  // Phase 4.47: Removed useEffect that auto-enabled timeslots based on eventType
+  // Performer slots are now fully opt-in for ALL event types
 
   const handleTimeslotsToggle = () => {
     if (config.has_timeslots) {
@@ -59,12 +38,12 @@ export default function SlotConfigSection({
         has_timeslots: false,
       });
     } else {
-      // Turning on
+      // Turning on with sensible defaults
       onChange({
         ...config,
         has_timeslots: true,
-        total_slots: eventType === "open_mic" ? 10 : 8,
-        slot_duration_minutes: eventType === "open_mic" ? 10 : 15,
+        total_slots: 10,
+        slot_duration_minutes: 10,
       });
     }
   };
@@ -75,8 +54,6 @@ export default function SlotConfigSection({
       [field]: value,
     });
   };
-
-  const isTimeslotType = TIMESLOT_EVENT_TYPES.includes(eventType);
 
   return (
     <div className="space-y-6">
@@ -138,7 +115,7 @@ export default function SlotConfigSection({
         </div>
       </div>
 
-      {/* Phase 4.46: Performer Slots Subsection (optional) */}
+      {/* Phase 4.47: Performer Slots Subsection - Fully Opt-In with Value Framing */}
       <div className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -150,14 +127,9 @@ export default function SlotConfigSection({
               <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
                 Optional
               </span>
-              {isTimeslotType && (
-                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/30">
-                  Recommended for {eventType === "open_mic" ? "Open Mic" : "Showcase"}
-                </span>
-              )}
             </div>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Allow performers to claim time slots. Great for open mics and showcases.
+              Great if you want performers to sign up in advance and keep your event running smoothly.
             </p>
           </div>
           <button
@@ -171,6 +143,7 @@ export default function SlotConfigSection({
             } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             role="switch"
             aria-checked={config.has_timeslots}
+            aria-label="Enable performer sign-ups with time slots"
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -179,6 +152,24 @@ export default function SlotConfigSection({
             />
           </button>
         </div>
+
+        {/* Phase 4.47: Value proposition when slots are OFF */}
+        {!config.has_timeslots && (
+          <div className="mt-3 pt-3 border-t border-[var(--color-border-default)]">
+            <p className="text-xs text-[var(--color-text-secondary)] mb-2">
+              Why hosts use performer slots:
+            </p>
+            <ul className="text-xs text-[var(--color-text-secondary)] space-y-1 ml-4 list-disc">
+              <li>Fill your lineup before the event</li>
+              <li>Avoid walk-in confusion</li>
+              <li>Let performers see availability in real time</li>
+              <li>Ideal for open mics, showcases, and curated nights</li>
+            </ul>
+            <p className="mt-2 text-xs text-[var(--color-text-tertiary)] italic">
+              You can turn this on or off anytime.
+            </p>
+          </div>
+        )}
 
         {/* Slot Configuration (only shown when timeslots enabled) */}
         {config.has_timeslots && (
@@ -253,6 +244,11 @@ export default function SlotConfigSection({
                 />
               </button>
             </div>
+
+            {/* Micro-reassurance */}
+            <p className="text-xs text-[var(--color-text-tertiary)] italic">
+              You can turn this on or off anytime.
+            </p>
           </div>
         )}
       </div>
@@ -294,5 +290,5 @@ export default function SlotConfigSection({
   );
 }
 
-export { TIMESLOT_EVENT_TYPES };
+// Phase 4.47: Removed TIMESLOT_EVENT_TYPES export - no longer used
 export type { SlotConfig };
