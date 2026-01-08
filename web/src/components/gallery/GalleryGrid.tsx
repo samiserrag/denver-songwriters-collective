@@ -206,12 +206,12 @@ export default function GalleryGrid({ images, albumOwnerId }: Props) {
 
           {/* Image container with comments */}
           <div
-            className="max-w-5xl max-h-[90vh] flex flex-col lg:flex-row gap-4 items-start"
+            className="w-full max-w-6xl max-h-[90vh] flex flex-col lg:flex-row gap-4 items-start"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image section */}
-            <div className="flex-1 flex flex-col items-center">
-              <div className="relative w-full max-w-4xl" style={{ height: "min(60vh, 600px)" }}>
+            <div className="flex-1 min-w-0 flex flex-col items-center">
+              <div className="relative w-full" style={{ height: "min(70vh, 700px)" }}>
                 <Image
                   src={selectedImage.image_url}
                   alt={selectedImage.caption ?? "Gallery image"}
