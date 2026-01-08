@@ -27,9 +27,9 @@ export const GUEST_VERIFICATION_CONFIG = {
   CODE_CHARSET: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", // No 0/O, 1/I for readability
 
   // Rate limiting
-  MAX_CODES_PER_EMAIL_PER_HOUR: 3,
+  MAX_CODES_PER_EMAIL_PER_HOUR: 10, // Generous limit for legitimate use
   MAX_CODE_ATTEMPTS: 5,
-  LOCKOUT_MINUTES: 30,
+  LOCKOUT_MINUTES: 15, // Shorter lockout
 
   // Action token settings
   ACTION_TOKEN_EXPIRES_HOURS: 24,
