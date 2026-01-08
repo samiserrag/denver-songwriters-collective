@@ -50,6 +50,8 @@ export default function NotificationsList({ notifications, compact = false }: No
 
   const getIcon = (type: string) => {
     switch (type) {
+      case "event_rsvp": return "✅";           // RSVP confirmation
+      case "event_comment": return "💬";        // Comment/reply
       case "waitlist_promotion": return "🎉";
       case "cohost_invitation": return "📬";
       case "invitation_response": return "✉️";
