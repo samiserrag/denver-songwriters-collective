@@ -439,7 +439,53 @@ export function RSVPButton({
             </button>
           )}
         </div>
-      ) : (
+      ) : !isLoggedIn && guestFlow === "idle" ? (
+        /* Guest-first CTA when logged out (Phase 4.51c) */
+        <div className="space-y-3">
+          {/* PRIMARY: Guest RSVP button */}
+          <button
+            onClick={() => setGuestFlow("form")}
+            disabled={loading}
+            className={`inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl transition-all disabled:opacity-50 shadow-sm ${
+              isFull
+                ? "bg-amber-600 hover:bg-amber-500 text-[var(--color-text-primary)]"
+                : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
+            }`}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Processing...
+              </>
+            ) : isFull ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Join Waitlist as Guest
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                RSVP as Guest
+              </>
+            )}
+          </button>
+          {/* SECONDARY: Login link */}
+          <button
+            onClick={handleRSVP}
+            className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline transition-colors"
+          >
+            Have an account? Log in
+          </button>
+        </div>
+      ) : isLoggedIn ? (
+        /* Member RSVP button when logged in */
         <button
           onClick={handleRSVP}
           disabled={loading}
@@ -473,19 +519,7 @@ export function RSVPButton({
             </>
           )}
         </button>
-      )}
-
-      {/* Guest RSVP flow (when not logged in) */}
-      {!isLoggedIn && guestFlow === "idle" && !rsvp && (
-        <div className="space-y-2">
-          <button
-            onClick={() => setGuestFlow("form")}
-            className="text-sm text-[var(--color-accent-primary)] hover:underline"
-          >
-            RSVP as guest (no account needed)
-          </button>
-        </div>
-      )}
+      ) : null}
 
       {!isLoggedIn && guestFlow === "form" && (
         <form onSubmit={handleGuestRequestCode} className="space-y-3 p-4 bg-[var(--color-bg-secondary)] rounded-xl border border-[var(--color-border)]">
