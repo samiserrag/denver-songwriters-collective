@@ -206,51 +206,40 @@ export default function GalleryGrid({ images, albumOwnerId }: Props) {
 
           {/* Image container with comments */}
           <div
-            className="w-full max-w-6xl max-h-[90vh] flex flex-col lg:flex-row gap-4 items-start"
+            className="w-full max-w-6xl max-h-[90vh] flex flex-col lg:flex-row gap-4 items-center px-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image section */}
-            <div className="flex-1 min-w-0 flex flex-col items-center">
-              <div className="relative w-full" style={{ height: "min(70vh, 700px)" }}>
+            {/* Image section - use explicit width on large screens */}
+            <div className="w-full lg:flex-1 flex flex-col items-center">
+              <div className="relative w-full max-w-4xl h-[60vh] lg:h-[70vh]">
                 <Image
                   src={selectedImage.image_url}
                   alt={selectedImage.caption ?? "Gallery image"}
                   fill
-                  sizes="(max-width: 1024px) 100vw, 1024px"
+                  sizes="(max-width: 1024px) 100vw, 800px"
                   className="object-contain rounded-lg"
                   priority
                 />
               </div>
               <div className="mt-4 text-center">
-                {selectedImage.caption && (
-                  <p className="text-[var(--color-text-primary)] text-lg mb-2">{selectedImage.caption}</p>
+                {selectedImage.uploader?.full_name && (
+                  <span className="text-[var(--color-text-tertiary)] text-sm">Photo by {selectedImage.uploader.full_name}</span>
                 )}
-                <div className="flex flex-wrap items-center justify-center gap-4 text-[var(--color-text-tertiary)] text-sm">
-                  {selectedImage.uploader?.full_name && (
-                    <span>Photo by {selectedImage.uploader.full_name}</span>
-                  )}
-                  {selectedImage.event?.title && (
-                    <span>@ {selectedImage.event.title}</span>
-                  )}
-                  {selectedImage.venue?.name && !selectedImage.event && (
-                    <span>@ {selectedImage.venue.name}</span>
-                  )}
-                </div>
                 {/* Image counter */}
                 {normalizedImages.length > 1 && (
-                  <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
+                  <p className="text-[var(--color-text-tertiary)] text-sm mt-1">
                     {selectedIndex + 1} / {normalizedImages.length}
                   </p>
                 )}
                 {/* Keyboard hint */}
-                <p className="text-neutral-600 text-sm mt-2 hidden sm:block">
+                <p className="text-neutral-600 text-sm mt-1 hidden sm:block">
                   Use arrow keys to navigate, Escape to close
                 </p>
               </div>
             </div>
 
             {/* Comments section */}
-            <div className="w-full lg:w-80 bg-[var(--color-bg-secondary)] rounded-xl p-4 max-h-[50vh] lg:max-h-[70vh] overflow-y-auto">
+            <div className="w-full lg:w-80 lg:flex-shrink-0 bg-[var(--color-bg-secondary)] rounded-xl p-4 max-h-[40vh] lg:max-h-[70vh] overflow-y-auto">
               <GalleryComments
                 key={selectedImage.id}
                 type="photo"
