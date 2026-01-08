@@ -392,11 +392,11 @@ async function notifyHostsOfGuestRsvp(
     // NO RETURN - continue to check watchers
   }
 
-  // 3. Also notify event_watchers (if not already notified)
-  const { data: watchers, error: watchersError } = await supabase
-    .from("event_watchers" as "events")
+  // 3. Also notify event_watchers (if not already notified, not in generated types yet)
+  const { data: watchers, error: watchersError } = await (supabase as any)
+    .from("event_watchers")
     .select("user_id")
-    .eq("event_id", eventId) as unknown as { data: { user_id: string }[] | null; error: { message: string } | null };
+    .eq("event_id", eventId);
 
   console.log("[Guest RSVP Notify] event_watchers:", watchers?.length ?? 0, "error:", watchersError?.message);
 

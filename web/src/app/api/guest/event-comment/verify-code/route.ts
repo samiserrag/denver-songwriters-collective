@@ -320,12 +320,11 @@ async function notifyEventHosts(
     // NO RETURN - continue to check watchers
   }
 
-  // 3. Also notify event_watchers (if not already notified)
-  // Note: event_watchers table exists but not in generated types yet
-  const { data: watchers } = await supabase
-    .from("event_watchers" as "events")
+  // 3. Also notify event_watchers (if not already notified, not in generated types yet)
+  const { data: watchers } = await (supabase as any)
+    .from("event_watchers")
     .select("user_id")
-    .eq("event_id", eventId) as unknown as { data: { user_id: string }[] | null };
+    .eq("event_id", eventId);
 
   if (watchers && watchers.length > 0) {
     for (const watcher of watchers) {

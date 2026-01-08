@@ -20,14 +20,13 @@ export async function GET(
     return NextResponse.json({ watching: false });
   }
 
-  // Query event_watchers table
-  // Note: Table exists but not in generated types yet, using type cast
-  const { data } = await supabase
-    .from("event_watchers" as "events")
+  // Query event_watchers table (not in generated types yet)
+  const { data } = await (supabase as any)
+    .from("event_watchers")
     .select("user_id")
     .eq("event_id", eventId)
     .eq("user_id", session.user.id)
-    .maybeSingle() as unknown as { data: { user_id: string } | null };
+    .maybeSingle();
 
   return NextResponse.json({ watching: !!data });
 }
@@ -67,11 +66,10 @@ export async function POST(
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  // Insert watcher entry
-  // Note: Table exists but not in generated types yet, using type cast
-  const { error } = await supabase
-    .from("event_watchers" as "events")
-    .insert({ event_id: eventId, user_id: session.user.id } as unknown as Record<string, unknown>)
+  // Insert watcher entry (not in generated types yet)
+  const { error } = await (supabase as any)
+    .from("event_watchers")
+    .insert({ event_id: eventId, user_id: session.user.id })
     .select()
     .single();
 
@@ -106,9 +104,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Note: Table exists but not in generated types yet, using type cast
-  await supabase
-    .from("event_watchers" as "events")
+  // Delete watcher entry (not in generated types yet)
+  await (supabase as any)
+    .from("event_watchers")
     .delete()
     .eq("event_id", eventId)
     .eq("user_id", session.user.id);
