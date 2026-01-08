@@ -45,8 +45,57 @@ PRs containing only documentation (e.g., `docs/investigation/*.md`) are allowed 
 
 A community platform for Denver-area songwriters to discover open mics, connect with musicians, and stay informed about local music events.
 
-**Live Site:** https://denversongwriterscollective.org  
+**Live Site:** https://denversongwriterscollective.org
 **Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS v4, Supabase (PostgreSQL + Auth + RLS), Vercel
+
+---
+
+## Vercel API Access (IMPORTANT)
+
+**The repo agent has direct access to Vercel deployment logs and status via the Vercel REST API.**
+
+### Available Capabilities
+
+| Capability | API Endpoint | Status |
+|------------|--------------|--------|
+| List deployments | `GET /v6/deployments` | ✅ Working |
+| Deployment status | `GET /v13/deployments/{id}` | ✅ Working |
+| Build logs | `GET /v3/deployments/{id}/events` | ✅ Working |
+| Project info | `GET /v9/projects` | ✅ Working |
+| Runtime logs | Streaming endpoint | ⚠️ Requires Log Drains |
+
+### How to Use
+
+The agent can query Vercel directly to debug production issues:
+
+```bash
+# Get latest deployment
+curl -s "https://api.vercel.com/v6/deployments?limit=1" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" | jq '.deployments[0]'
+
+# Get deployment status
+curl -s "https://api.vercel.com/v13/deployments/{deployment_id}" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" | jq '{readyState, url, createdAt}'
+
+# Get build logs
+curl -s "https://api.vercel.com/v3/deployments/{deployment_id}/events" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" | jq '.[].text'
+```
+
+### Token Location
+
+The Vercel API token is available in the conversation context. If the agent needs to debug production issues:
+1. Query deployment status to confirm latest deploy
+2. Check build logs for compilation errors
+3. Test endpoints directly with `curl`
+
+### Runtime Logs (Not Yet Available)
+
+Runtime logs (function invocations, errors) require either:
+1. **Log Drains** — Configure a webhook URL in Vercel dashboard to receive logs
+2. **Vercel CLI** — `vercel logs <url> --follow` (requires interactive terminal)
+
+**To enable runtime logs:** Set up a Log Drain in Vercel Dashboard → Project → Settings → Log Drains. This would allow the agent to see actual 500 errors, request/response details, and console.log output from production.
 
 ---
 
@@ -87,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.50b):** Lint warnings = 0. All tests passing (1126). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51b):** Lint warnings = 0. All tests passing (1173). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -265,7 +314,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Phase 4.51b — Guest Verification Always-On (January 2026)
+### Phase 4.51b — Guest Verification Always-On + Hotfixes (January 2026)
 
 **Goal:** Remove feature flag gating from guest endpoints. Guest RSVP + Guest Comments work in Production by default with zero manual Vercel env vars.
 
@@ -281,6 +330,28 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Returns: `{ enabled: true, mode: "always-on", timestamp: "..." }`
 - No authentication required
 
+**Hotfix 1: Database Constraint (commit `1002d67`)**
+
+Production guest comments were failing with 500 error:
+```
+new row for relation "guest_verifications" violates check constraint "valid_action_type"
+```
+
+**Root Cause:** Original constraint only allowed `('confirm', 'cancel')` but guest comments use `action_type = 'comment'`.
+
+**Fix:** Migration `20260107000005_fix_guest_verification_action_type.sql` expands constraint:
+```sql
+CHECK (action_type IS NULL OR action_type IN ('confirm', 'cancel', 'comment', 'cancel_rsvp'))
+```
+
+**Hotfix 2: Alphanumeric Verification Codes (commit `7dd7b65`)**
+
+Users could only type 1 character in verification code input.
+
+**Root Cause:** Input used `/\D/g` regex (digits only) but codes contain letters (e.g., `5GGRYK`).
+
+**Fix:** Changed to `/[^A-Za-z0-9]/g` regex with auto-uppercase. Updated placeholder from `000000` to `ABC123`.
+
 **Files Changed:**
 
 | File | Change |
@@ -288,10 +359,15 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 | `lib/guest-verification/config.ts` | Renamed to `isGuestVerificationDisabled()`, 503 response |
 | `app/api/guest/*/route.ts` | Updated to use kill switch (7 files) |
 | `app/api/health/guest-verification/route.ts` | NEW health endpoint |
-| `__tests__/phase4-51b-guest-always-on.test.ts` | 20 tests for always-on behavior |
+| `migrations/20260107000005_fix_guest_verification_action_type.sql` | Expanded valid_action_type constraint |
+| `components/events/EventComments.tsx` | Alphanumeric code input fix |
+| `components/events/RSVPButton.tsx` | Alphanumeric code input fix |
+| `__tests__/phase4-51b-guest-always-on.test.ts` | 22 tests for always-on behavior |
 | `docs/SMOKE-PROD.md` | Added smoke tests #13, #14, #15 |
 
-**Test Coverage:** 20 new tests proving guest endpoints work without any env var set.
+**Test Coverage:** 22 new tests proving guest endpoints work without any env var set.
+
+**Debugging Note:** These issues were diagnosed using direct Vercel API access (build logs, deployment status) and production database queries via psql. See "Vercel API Access" section above.
 
 ---
 
