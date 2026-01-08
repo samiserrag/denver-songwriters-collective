@@ -10,7 +10,9 @@ import {
   createActionToken,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail } from "@/lib/email";
+import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getRsvpConfirmationEmail } from "@/lib/emailTemplates";
+import { getRsvpHostNotificationEmail } from "@/lib/email/templates/rsvpHostNotification";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -149,10 +151,10 @@ export async function POST(request: NextRequest) {
     // Code is valid - verify the email
     const verifiedAt = new Date().toISOString();
 
-    // Fetch event details
+    // Fetch event details (include host_id for notification fan-out)
     const { data: event } = await supabase
       .from("events")
-      .select("id, slug, title, capacity, status, event_date, start_time, venue_name, venue_address")
+      .select("id, slug, title, capacity, status, event_date, start_time, venue_name, venue_address, host_id")
       .eq("id", verification.event_id)
       .single();
 
@@ -300,6 +302,18 @@ export async function POST(request: NextRequest) {
       text: emailContent.text,
     });
 
+    // Phase 4.51c: Notify hosts/watchers about guest RSVP (fire and forget)
+    const eventUrl = `/events/${event.slug || event.id}`;
+    notifyHostsOfGuestRsvp(
+      supabase,
+      verification.event_id,
+      verification.guest_name || "A guest",
+      event.title || "Event",
+      eventUrl,
+      status === "waitlist",
+      event.host_id
+    ).catch((err) => console.error("Failed to notify hosts of guest RSVP:", err));
+
     return NextResponse.json({
       success: true,
       rsvp: {
@@ -318,4 +332,138 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Phase 4.51c: Notify hosts/watchers about a guest RSVP
+ * Fan-out order: event_hosts → events.host_id → event_watchers (fallback)
+ * Mirrors the member RSVP notification logic exactly.
+ */
+async function notifyHostsOfGuestRsvp(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  eventId: string,
+  guestName: string,
+  eventTitle: string,
+  eventUrl: string,
+  isWaitlist: boolean,
+  fallbackHostId: string | null
+) {
+  const notifiedUserIds = new Set<string>();
+
+  // 1. Check event_hosts table for accepted hosts
+  const { data: hosts } = await supabase
+    .from("event_hosts")
+    .select("user_id")
+    .eq("event_id", eventId)
+    .eq("invitation_status", "accepted");
+
+  if (hosts && hosts.length > 0) {
+    for (const host of hosts) {
+      await notifyUserOfGuestRsvp(
+        supabase,
+        host.user_id,
+        guestName,
+        eventTitle,
+        eventUrl,
+        isWaitlist
+      );
+      notifiedUserIds.add(host.user_id);
+    }
+    return; // Hosts exist - don't fall through to watchers
+  }
+
+  // 2. Check events.host_id (legacy)
+  if (fallbackHostId) {
+    await notifyUserOfGuestRsvp(
+      supabase,
+      fallbackHostId,
+      guestName,
+      eventTitle,
+      eventUrl,
+      isWaitlist
+    );
+    notifiedUserIds.add(fallbackHostId);
+    return; // Host exists - don't fall through to watchers
+  }
+
+  // 3. Fallback to event_watchers (only if no hosts)
+  const { data: watchers } = await supabase
+    .from("event_watchers" as "events")
+    .select("user_id")
+    .eq("event_id", eventId) as unknown as { data: { user_id: string }[] | null };
+
+  if (watchers && watchers.length > 0) {
+    for (const watcher of watchers) {
+      if (!notifiedUserIds.has(watcher.user_id)) {
+        await notifyUserOfGuestRsvp(
+          supabase,
+          watcher.user_id,
+          guestName,
+          eventTitle,
+          eventUrl,
+          isWaitlist
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Send dashboard notification + email to a user about guest RSVP
+ * Uses EXACT same type/templateKey as member RSVP notifications.
+ */
+async function notifyUserOfGuestRsvp(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+  guestName: string,
+  eventTitle: string,
+  eventUrl: string,
+  isWaitlist: boolean
+) {
+  const title = isWaitlist
+    ? `${guestName} (guest) joined the waitlist`
+    : `${guestName} (guest) is going`;
+
+  const message = isWaitlist
+    ? `${guestName} (guest) joined the waitlist for "${eventTitle}"`
+    : `${guestName} (guest) RSVP'd to "${eventTitle}"`;
+
+  // Get user's email via auth admin
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const userEmail = userData?.user?.email;
+
+  // Build email content
+  const emailData = getRsvpHostNotificationEmail({
+    eventTitle,
+    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+    rsvpUserName: `${guestName} (guest)`,
+    isWaitlist,
+  });
+
+  // Send notification + email with preferences
+  // Uses EXACT same type ("event_rsvp") and templateKey ("rsvpHostNotification") as member RSVP
+  await sendEmailWithPreferences({
+    supabase,
+    userId,
+    templateKey: "rsvpHostNotification",
+    payload: userEmail
+      ? {
+          to: userEmail,
+          subject: emailData.subject,
+          html: emailData.html,
+          text: emailData.text,
+        }
+      : {
+          to: "",
+          subject: "",
+          html: "",
+          text: "",
+        },
+    notification: {
+      type: "event_rsvp",
+      title,
+      message,
+      link: eventUrl,
+    },
+  });
 }
