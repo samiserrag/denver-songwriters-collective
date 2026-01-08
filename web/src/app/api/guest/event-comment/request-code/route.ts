@@ -210,6 +210,7 @@ export async function POST(request: NextRequest) {
       eventTitle: event.title || "Event",
       code,
       expiresInMinutes: CODE_EXPIRES_MINUTES,
+      purpose: "comment",
     });
 
     await sendEmail({
