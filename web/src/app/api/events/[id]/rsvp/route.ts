@@ -9,6 +9,8 @@ import {
   confirmOffer,
   isOfferExpired,
 } from "@/lib/waitlistOffer";
+import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
+import { getRsvpHostNotificationEmail } from "@/lib/email/templates/rsvpHostNotification";
 
 // GET - Get current user's RSVP status for this event
 export async function GET(
@@ -174,6 +176,23 @@ export async function POST(
     // Don't fail the RSVP if email fails
   }
 
+  // Phase 4.51a: Notify hosts/watchers about new RSVP (fire and forget)
+  const { data: rsvpUserProfile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", session.user.id)
+    .single();
+
+  notifyHostsOfRsvp(
+    supabase,
+    eventId,
+    session.user.id,
+    rsvpUserProfile?.full_name || "A member",
+    event.title || "Event",
+    `/events/${event.slug || eventId}`,
+    status === "waitlist"
+  ).catch(err => console.error("Failed to notify hosts of RSVP:", err));
+
   return NextResponse.json(rsvp);
 }
 
@@ -277,4 +296,120 @@ export async function PATCH(
     .single();
 
   return NextResponse.json(rsvp);
+}
+
+/**
+ * Phase 4.51a: Notify hosts/watchers about new RSVP
+ * Fan-out order: event_hosts → events.host_id → event_watchers (fallback)
+ */
+async function notifyHostsOfRsvp(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  eventId: string,
+  rsvpUserId: string,
+  rsvpUserName: string,
+  eventTitle: string,
+  eventUrl: string,
+  isWaitlist: boolean
+) {
+  const notifiedUserIds = new Set<string>();
+
+  // 1. Check event_hosts table for accepted hosts
+  const { data: hosts } = await supabase
+    .from("event_hosts")
+    .select("user_id")
+    .eq("event_id", eventId)
+    .eq("invitation_status", "accepted");
+
+  if (hosts && hosts.length > 0) {
+    for (const host of hosts) {
+      if (host.user_id !== rsvpUserId) {
+        await notifyUserOfRsvp(supabase, host.user_id, rsvpUserName, eventTitle, eventUrl, isWaitlist);
+        notifiedUserIds.add(host.user_id);
+      }
+    }
+    return; // Hosts exist - don't fall through to watchers
+  }
+
+  // 2. Check events.host_id
+  const { data: event } = await supabase
+    .from("events")
+    .select("host_id")
+    .eq("id", eventId)
+    .single();
+
+  if (event?.host_id && event.host_id !== rsvpUserId) {
+    await notifyUserOfRsvp(supabase, event.host_id, rsvpUserName, eventTitle, eventUrl, isWaitlist);
+    notifiedUserIds.add(event.host_id);
+    return; // Host exists - don't fall through to watchers
+  }
+
+  // 3. Fallback to event_watchers (only if no hosts)
+  const { data: watchers } = await supabase
+    .from("event_watchers")
+    .select("user_id")
+    .eq("event_id", eventId);
+
+  if (watchers && watchers.length > 0) {
+    for (const watcher of watchers) {
+      if (watcher.user_id !== rsvpUserId && !notifiedUserIds.has(watcher.user_id)) {
+        await notifyUserOfRsvp(supabase, watcher.user_id, rsvpUserName, eventTitle, eventUrl, isWaitlist);
+      }
+    }
+  }
+}
+
+/**
+ * Send dashboard notification + email to a user about RSVP
+ */
+async function notifyUserOfRsvp(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string,
+  rsvpUserName: string,
+  eventTitle: string,
+  eventUrl: string,
+  isWaitlist: boolean
+) {
+  const title = isWaitlist
+    ? `${rsvpUserName} joined the waitlist`
+    : `${rsvpUserName} is going`;
+
+  const message = isWaitlist
+    ? `${rsvpUserName} joined the waitlist for "${eventTitle}"`
+    : `${rsvpUserName} RSVP'd to "${eventTitle}"`;
+
+  // Get user's email
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const userEmail = userData?.user?.email;
+
+  // Build email content
+  const emailData = getRsvpHostNotificationEmail({
+    eventTitle,
+    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+    rsvpUserName,
+    isWaitlist,
+  });
+
+  // Send notification + email with preferences
+  await sendEmailWithPreferences({
+    supabase,
+    userId,
+    templateKey: "rsvpHostNotification",
+    payload: userEmail ? {
+      to: userEmail,
+      subject: emailData.subject,
+      html: emailData.html,
+      text: emailData.text,
+    } : {
+      to: "",
+      subject: "",
+      html: "",
+      text: "",
+    },
+    notification: {
+      type: "event_rsvp",
+      title,
+      message,
+      link: eventUrl,
+    },
+  });
 }

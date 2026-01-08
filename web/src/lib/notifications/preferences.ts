@@ -115,6 +115,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
   rsvpConfirmation: "event_updates",
   waitlistPromotion: "event_updates",
   eventCommentNotification: "event_updates",
+  rsvpHostNotification: "event_updates",
 
   // Admin-related templates
   adminEventClaimNotification: "admin_notifications",
