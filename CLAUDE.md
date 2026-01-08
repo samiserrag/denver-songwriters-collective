@@ -352,22 +352,62 @@ Users could only type 1 character in verification code input.
 
 **Fix:** Changed to `/[^A-Za-z0-9]/g` regex with auto-uppercase. Updated placeholder from `000000` to `ABC123`.
 
+**Hotfix 3: Context-Aware Verification Emails (commit `f2a774b`)**
+
+Guest comment verification emails incorrectly said "claim a slot" instead of "post a comment".
+
+**Fix:** Added `purpose` parameter to `getVerificationCodeEmail()` template:
+- `slot`: "claim a slot at" (default)
+- `rsvp`: "RSVP to"
+- `comment`: "post a comment on"
+
+**Hotfix 4: Guest Comments Notify Watchers (commit `68ef1e7`)**
+
+Guest comments weren't notifying event watchers (only checked hosts).
+
+**Fix:** Added event_watchers fallback to `/api/guest/event-comment/verify-code` notification flow.
+
+**Hotfix 5: Notification Function Broken (commit `1a6db3f`)**
+
+ALL dashboard notifications were silently failing with "type notifications does not exist".
+
+**Root Cause:** `create_user_notification` function had `SET search_path TO ''` (empty), so it couldn't resolve the `public.notifications` type.
+
+**Fix:** Migration `20260108000001_fix_notification_function_search_path.sql`:
+```sql
+SET search_path TO 'public'  -- was ''
+```
+
+This affected ALL 5 places that create notifications:
+- `sendWithPreferences.ts` (comments, RSVPs, etc.)
+- `waitlistOffer.ts`
+- `invitations/[id]/route.ts`
+- `my-events/[id]/route.ts`
+- `my-events/[id]/cohosts/route.ts`
+
 **Files Changed:**
 
 | File | Change |
 |------|--------|
-| `lib/guest-verification/config.ts` | Renamed to `isGuestVerificationDisabled()`, 503 response |
+| `lib/guest-verification/config.ts` | Renamed to `isGuestVerificationDisabled()`, 503 response, relaxed rate limits |
 | `app/api/guest/*/route.ts` | Updated to use kill switch (7 files) |
 | `app/api/health/guest-verification/route.ts` | NEW health endpoint |
 | `migrations/20260107000005_fix_guest_verification_action_type.sql` | Expanded valid_action_type constraint |
+| `migrations/20260108000001_fix_notification_function_search_path.sql` | Fixed search_path |
 | `components/events/EventComments.tsx` | Alphanumeric code input fix |
 | `components/events/RSVPButton.tsx` | Alphanumeric code input fix |
+| `lib/email/templates/verificationCode.ts` | Added `purpose` parameter |
+| `app/api/guest/event-comment/request-code/route.ts` | Pass `purpose: "comment"` |
+| `app/api/guest/rsvp/request-code/route.ts` | Pass `purpose: "rsvp"` |
+| `app/api/guest/event-comment/verify-code/route.ts` | Added watcher fallback |
 | `__tests__/phase4-51b-guest-always-on.test.ts` | 22 tests for always-on behavior |
 | `docs/SMOKE-PROD.md` | Added smoke tests #13, #14, #15 |
 
 **Test Coverage:** 22 new tests proving guest endpoints work without any env var set.
 
 **Debugging Note:** These issues were diagnosed using direct Vercel API access (build logs, deployment status) and production database queries via psql. See "Vercel API Access" section above.
+
+**Known Issue (Deferred):** 60 files use `supabase.auth.getSession()` which Supabase warns is insecure (reads from cookies without server verification). Should migrate to `supabase.auth.getUser()` for sensitive operations. This is a larger refactor to be planned separately.
 
 ---
 
