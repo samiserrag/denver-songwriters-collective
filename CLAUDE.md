@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51c):** Lint warnings = 0. All tests passing (1209). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51c):** Lint warnings = 0. All tests passing (1244). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -314,9 +314,9 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Phase 4.51c — Guest-First CTA + Guest RSVP Notifications (January 2026)
+### Phase 4.51c — Guest-First CTA + Guest RSVP Notifications + Functional Notifications (January 2026)
 
-**Goal:** Improve guest RSVP discoverability and fix missing host/watcher notifications for guest RSVPs.
+**Goal:** Improve guest RSVP discoverability, fix missing host/watcher notifications for guest RSVPs, and add functional notification controls.
 
 **Problem 1: Guest RSVP CTA was not discoverable**
 
@@ -337,20 +337,47 @@ Guest RSVP verify-code endpoint created the RSVP but did NOT send any host/watch
 - Fan-out order: `event_hosts` → `events.host_id` → `event_watchers` (fallback)
 - Guest name includes "(guest)" label in notification title/message
 
+**Problem 3: RSVP and Comment notifications looked identical**
+
+Both notification types displayed the same default bell icon (🔔), making it impossible to distinguish them at a glance.
+
+**Fix:** Added distinct emoji icons per notification type:
+- `event_rsvp` → ✅ (checkmark)
+- `event_comment` → 💬 (speech bubble)
+- `waitlist_promotion` → 🎉 (celebration)
+- Default → 🔔 (bell)
+
+**Problem 4: Notifications had no user controls**
+
+Notifications auto-marked as read on mount, no way to mark all read, no way to filter read/unread, and no deep-links to specific sections.
+
+**Fix:** Functional notification controls:
+- **Click to mark read:** Notifications only mark as read when clicked (removed auto-mark on mount)
+- **Mark all read:** Button to mark all unread notifications as read with optimistic UI
+- **Hide read toggle:** Client-side filter to show only unread notifications
+- **Deep-links:** RSVP notifications link to `#attendees`, Comment notifications link to `#comments`
+
 **Files Changed:**
 
 | File | Change |
 |------|--------|
 | `components/events/RSVPButton.tsx` | Guest-first CTA when logged out |
-| `app/api/guest/rsvp/verify-code/route.ts` | Add host/watcher notification logic |
+| `app/api/guest/rsvp/verify-code/route.ts` | Host/watcher notification logic + `#attendees` deep-link |
+| `app/api/events/[id]/rsvp/route.ts` | RSVP notification link includes `#attendees` |
+| `dashboard/notifications/NotificationsList.tsx` | Distinct icons, mark-on-click, mark-all, hide-read |
+| `components/events/AttendeeList.tsx` | Added `id="attendees"` anchor for deep-linking |
 | `__tests__/phase4-51c-guest-rsvp-discoverability.test.ts` | 17 tests for guest-first CTA |
 | `__tests__/phase4-51c-guest-rsvp-notifications.test.ts` | 19 tests for notification parity |
+| `__tests__/notification-icons.test.ts` | 14 tests for distinct icons |
+| `__tests__/notification-interactions.test.ts` | 21 tests for functional controls |
 
-**Test Coverage:** 36 new tests (17 CTA + 19 notifications).
+**Test Coverage:** 71 new tests (17 CTA + 19 notifications + 14 icons + 21 interactions).
 
 **Commits:**
 - `34d8d69` — Guest-first CTA (Phase 4.51c)
 - `544336c` — Guest RSVP host/watcher notifications
+- `81b9fe5` — Distinct icons for RSVP vs Comment notifications
+- `cc01914` — Functional notifications (mark-on-click, mark-all, hide-read, deep-links)
 
 ---
 
@@ -1790,6 +1817,8 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/venue-selector-phase445b.test.tsx` | Venue selector UX, authorization, dropdown order (17 tests) |
 | `__tests__/phase4-46-join-signup-ux.test.tsx` | Join & Signup section, mini preview, custom location (13 tests) |
 | `__tests__/phase4-49b-event-comments.test.ts` | Event comments everywhere, guest support, notifications (34 tests) |
+| `__tests__/notification-icons.test.ts` | Distinct notification icons by type (14 tests) |
+| `__tests__/notification-interactions.test.ts` | Notification controls: mark-on-click, mark-all, hide-read, deep-links (21 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
