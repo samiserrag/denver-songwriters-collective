@@ -90,7 +90,7 @@ function SortableThumbnail({
       <img
         src={uploadFile.preview}
         alt={`Preview ${index + 1}`}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover object-top"
       />
 
       {/* Drag Handle - only for pending files */}

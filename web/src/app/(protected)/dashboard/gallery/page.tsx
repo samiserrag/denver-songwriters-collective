@@ -170,7 +170,7 @@ export default async function UserGalleryPage() {
                         alt={album.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-[1.02] transition-transform"
+                        className="object-cover object-top group-hover:scale-[1.02] transition-transform"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -256,7 +256,7 @@ export default async function UserGalleryPage() {
                     alt={photo.caption || "Gallery photo"}
                     fill
                     sizes="100px"
-                    className="object-cover"
+                    className="object-cover object-top"
                   />
                   {photo.is_hidden && (
                     <div className="absolute top-1 right-1">

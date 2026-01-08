@@ -126,7 +126,7 @@ export default function GalleryGrid({ images, albumOwnerId }: Props) {
                   width={800}
                   height={600}
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover object-top"
                   loading="lazy"
                 />
                 {image.is_featured && (

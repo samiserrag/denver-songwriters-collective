@@ -84,7 +84,7 @@ function SortablePhotoCard({
           alt={photo.caption || "Gallery image"}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16vw"
-          className="object-cover"
+          className="object-cover object-top"
         />
 
         {/* Drag handle */}

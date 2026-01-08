@@ -93,7 +93,7 @@ function SortablePhotoCard({
         alt={image.caption || "Album photo"}
         fill
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-        className="object-cover"
+        className="object-cover object-top"
       />
 
       {/* Drag handle */}
@@ -386,7 +386,7 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
                   alt={album.name}
                   fill
                   sizes="200px"
-                  className="object-cover"
+                  className="object-cover object-top"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-[var(--color-text-tertiary)]">

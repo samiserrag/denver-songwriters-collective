@@ -123,7 +123,7 @@ function SortableThumbnail({
       <img
         src={file.previewUrl}
         alt=""
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover object-top"
       />
 
       {/* Drag Handle - only for pending files */}
