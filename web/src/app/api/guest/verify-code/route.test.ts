@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock feature flag
-let mockFeatureFlagEnabled = false;
+// Mock feature flag - uses kill switch (true = disabled, false = enabled)
+let mockFeatureFlagDisabled = false;
 
 vi.mock("@/lib/guest-verification/config", () => ({
-  isGuestVerificationEnabled: () => mockFeatureFlagEnabled,
+  isGuestVerificationDisabled: () => mockFeatureFlagDisabled,
   featureDisabledResponse: () =>
-    new Response(JSON.stringify({ error: "Not found" }), {
-      status: 404,
+    new Response(JSON.stringify({ error: "Guest verification temporarily unavailable" }), {
+      status: 503,
       headers: { "Content-Type": "application/json" },
     }),
   GUEST_VERIFICATION_CONFIG: {
@@ -168,7 +168,7 @@ import { POST } from "./route";
 describe("POST /api/guest/verify-code", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
     mockCodeValid = true;
     mockVerification = {
       id: "v-1",
@@ -192,8 +192,8 @@ describe("POST /api/guest/verify-code", () => {
     };
   });
 
-  it("returns 404 when feature flag is OFF", async () => {
-    mockFeatureFlagEnabled = false;
+  it("returns 503 when kill switch is ON", async () => {
+    mockFeatureFlagDisabled = true;
 
     const req = new Request("http://localhost/api/guest/verify-code", {
       method: "POST",
@@ -205,7 +205,9 @@ describe("POST /api/guest/verify-code", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error).toBe("Guest verification temporarily unavailable");
   });
 
   it("returns 400 for missing required fields", async () => {
@@ -390,7 +392,7 @@ describe("POST /api/guest/verify-code", () => {
 
 describe("verify-code claim creation", () => {
   beforeEach(() => {
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
     mockCodeValid = true;
     mockVerification = {
       id: "v-1",

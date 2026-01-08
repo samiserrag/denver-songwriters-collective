@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock feature flag - set before importing route
-let mockFeatureFlagEnabled = false;
+// Now uses isGuestVerificationDisabled (true = disabled, false = enabled)
+let mockFeatureFlagDisabled = false;
 
 vi.mock("@/lib/guest-verification/config", () => ({
-  isGuestVerificationEnabled: () => mockFeatureFlagEnabled,
+  isGuestVerificationDisabled: () => mockFeatureFlagDisabled,
   featureDisabledResponse: () =>
-    new Response(JSON.stringify({ error: "Not found" }), {
-      status: 404,
+    new Response(JSON.stringify({ error: "Guest verification temporarily unavailable" }), {
+      status: 503,
       headers: { "Content-Type": "application/json" },
     }),
   GUEST_VERIFICATION_CONFIG: {
@@ -148,7 +149,7 @@ import { POST } from "./route";
 describe("POST /api/guest/request-code", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false; // Guest verification enabled by default
     mockEvent = null;
     mockTimeslot = null;
     mockExistingClaims = [];
@@ -157,8 +158,8 @@ describe("POST /api/guest/request-code", () => {
     mockInsertResult = { data: { id: "verification-1" }, error: null };
   });
 
-  it("returns 404 when feature flag is OFF", async () => {
-    mockFeatureFlagEnabled = false;
+  it("returns 503 when kill switch is ON", async () => {
+    mockFeatureFlagDisabled = true; // Kill switch activated
 
     const req = new Request("http://localhost/api/guest/request-code", {
       method: "POST",
@@ -172,7 +173,9 @@ describe("POST /api/guest/request-code", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error).toBe("Guest verification temporarily unavailable");
   });
 
   it("returns 400 for missing required fields", async () => {
@@ -346,7 +349,7 @@ describe("POST /api/guest/request-code", () => {
 
 describe("request-code validation", () => {
   it("validates slot index is non-negative", async () => {
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
 
     const req = new Request("http://localhost/api/guest/request-code", {
       method: "POST",
@@ -366,7 +369,7 @@ describe("request-code validation", () => {
   });
 
   it("validates guest name minimum length", async () => {
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
 
     const req = new Request("http://localhost/api/guest/request-code", {
       method: "POST",

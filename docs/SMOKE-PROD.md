@@ -284,6 +284,88 @@ If any check fails:
 
 ---
 
+### 13. Guest Verification Health Check (Phase 4.51b)
+
+**URL:** `https://denversongwriterscollective.org/api/health/guest-verification`
+
+**Expected Response:**
+```json
+{
+  "enabled": true,
+  "mode": "always-on",
+  "timestamp": "2026-01-07T..."
+}
+```
+
+**Quick curl check:**
+```bash
+curl -s https://denversongwriterscollective.org/api/health/guest-verification | jq
+```
+
+**Pass Criteria:** `enabled: true` and `mode: "always-on"`
+
+---
+
+### 14. Guest Comment Flow (Phase 4.49b + 4.51b)
+
+**Precondition:** NOT logged in (incognito window recommended)
+
+**URL:** `/events/{event-id}` (any public event)
+
+**Steps:**
+1. Scroll to Comments section
+2. Click "Comment as guest (no account needed)" or similar guest toggle
+
+**Expected:**
+- Guest form expands with Name + Email + Comment fields
+- "Send Verification Code" button appears
+
+3. Enter test name, email, and comment text, click "Send Verification Code"
+
+**Expected:**
+- Response is 200 (NOT 404 or 503)
+- Form changes to code entry view
+- Message shows email was sent
+
+4. Enter 6-digit code from email
+
+**Expected:**
+- Comment appears in thread with "(guest)" label
+- Comment shows as verified
+
+**Quick curl check (request-code endpoint):**
+```bash
+# Replace EVENT_ID with a real published event UUID
+curl -s -X POST https://denversongwriterscollective.org/api/guest/event-comment/request-code \
+  -H "Content-Type: application/json" \
+  -d '{"event_id":"EVENT_ID","guest_name":"Test","guest_email":"test@example.com","content":"Test comment"}' \
+  | jq '.success, .error'
+```
+
+**Pass Criteria:**
+- Returns `{ success: true, verification_id: "...", ... }` (NOT `{ error: "Not found" }`)
+- No 404s from feature gating
+- Guest can comment without account
+
+---
+
+### 15. Guest RSVP Request-Code (Phase 4.48b + 4.51b)
+
+**Quick curl check:**
+```bash
+# Replace EVENT_ID with a real published event UUID
+curl -s -X POST https://denversongwriterscollective.org/api/guest/rsvp/request-code \
+  -H "Content-Type: application/json" \
+  -d '{"event_id":"EVENT_ID","guest_name":"Test","guest_email":"test@example.com"}' \
+  | jq '.success, .error'
+```
+
+**Expected:** `{ success: true, ... }` (NOT 404 or 503)
+
+**Pass Criteria:** Guest RSVP endpoints work with zero Vercel env var configuration
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._

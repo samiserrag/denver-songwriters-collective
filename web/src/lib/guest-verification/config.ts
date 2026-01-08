@@ -1,16 +1,20 @@
 /**
  * Guest Verification Configuration
  *
- * Feature flag and configuration for Progressive Identity system.
- * All guest verification endpoints check this flag and return 404 when disabled.
+ * Configuration for Progressive Identity system.
+ * Guest verification is ALWAYS ENABLED in production (no feature flag gating).
+ *
+ * Kill Switch (EMERGENCY ONLY):
+ * Set DISABLE_GUEST_VERIFICATION=true to disable with 503 response.
+ * This should only be used if there's a critical issue with the guest system.
  */
 
 /**
- * Feature flag for guest verification system.
- * Set ENABLE_GUEST_VERIFICATION=true in environment to enable.
+ * Check if guest verification is disabled (emergency kill switch).
+ * Returns true if DISABLE_GUEST_VERIFICATION=true is set.
  */
-export function isGuestVerificationEnabled(): boolean {
-  return process.env.ENABLE_GUEST_VERIFICATION === "true";
+export function isGuestVerificationDisabled(): boolean {
+  return process.env.DISABLE_GUEST_VERIFICATION === "true";
 }
 
 /**
@@ -35,11 +39,18 @@ export const GUEST_VERIFICATION_CONFIG = {
 } as const;
 
 /**
- * Response for disabled feature flag
+ * Response for emergency kill switch (503 Service Unavailable)
+ * Only returned when DISABLE_GUEST_VERIFICATION=true is set.
  */
 export function featureDisabledResponse(): Response {
-  return new Response(JSON.stringify({ error: "Not found" }), {
-    status: 404,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({
+      error: "Guest verification temporarily unavailable",
+      message: "Please try again later or sign in with an account.",
+    }),
+    {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import {
-  isGuestVerificationEnabled,
+  isGuestVerificationDisabled,
   featureDisabledResponse,
   GUEST_VERIFICATION_CONFIG,
 } from "@/lib/guest-verification/config";
@@ -23,8 +23,8 @@ interface VerifyCodeBody {
  * On success, creates an event_comment for the guest.
  */
 export async function POST(request: NextRequest) {
-  // Feature flag check
-  if (!isGuestVerificationEnabled()) {
+  // Emergency kill switch only (guest verification is always enabled)
+  if (isGuestVerificationDisabled()) {
     return featureDisabledResponse();
   }
 

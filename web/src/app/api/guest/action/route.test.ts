@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock feature flag
-let mockFeatureFlagEnabled = false;
+// Mock feature flag - uses kill switch (true = disabled, false = enabled)
+let mockFeatureFlagDisabled = false;
 
 vi.mock("@/lib/guest-verification/config", () => ({
-  isGuestVerificationEnabled: () => mockFeatureFlagEnabled,
+  isGuestVerificationDisabled: () => mockFeatureFlagDisabled,
   featureDisabledResponse: () =>
-    new Response(JSON.stringify({ error: "Not found" }), {
-      status: 404,
+    new Response(JSON.stringify({ error: "Guest verification temporarily unavailable" }), {
+      status: 503,
       headers: { "Content-Type": "application/json" },
     }),
 }));
@@ -119,7 +119,7 @@ import { POST } from "./route";
 describe("POST /api/guest/action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
     mockTokenPayload = {
       email: "test@example.com",
       claim_id: "claim-1",
@@ -143,8 +143,8 @@ describe("POST /api/guest/action", () => {
     mockRpcCalled = false;
   });
 
-  it("returns 404 when feature flag is OFF", async () => {
-    mockFeatureFlagEnabled = false;
+  it("returns 503 when kill switch is ON", async () => {
+    mockFeatureFlagDisabled = true;
 
     const req = new Request("http://localhost/api/guest/action", {
       method: "POST",
@@ -156,7 +156,9 @@ describe("POST /api/guest/action", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error).toBe("Guest verification temporarily unavailable");
   });
 
   it("returns 400 for missing required fields", async () => {
@@ -264,7 +266,7 @@ describe("POST /api/guest/action", () => {
 
 describe("confirm action", () => {
   beforeEach(() => {
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
     mockTokenPayload = {
       email: "test@example.com",
       claim_id: "claim-1",
@@ -356,7 +358,7 @@ describe("confirm action", () => {
 
 describe("cancel action", () => {
   beforeEach(() => {
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
     mockTokenPayload = {
       email: "test@example.com",
       claim_id: "claim-1",
@@ -445,7 +447,7 @@ describe("cancel action", () => {
 
 describe("public data protection", () => {
   it("never exposes full email in success responses", async () => {
-    mockFeatureFlagEnabled = true;
+    mockFeatureFlagDisabled = false;
     mockTokenPayload = {
       email: "test@example.com",
       claim_id: "claim-1",

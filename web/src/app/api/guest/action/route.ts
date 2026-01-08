@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import {
-  isGuestVerificationEnabled,
+  isGuestVerificationDisabled,
   featureDisabledResponse,
 } from "@/lib/guest-verification/config";
 import { verifyActionToken, createActionToken } from "@/lib/guest-verification/crypto";
@@ -19,8 +19,8 @@ interface ActionBody {
  * Token is validated for signature, expiry, and single-use.
  */
 export async function POST(request: NextRequest) {
-  // Feature flag check
-  if (!isGuestVerificationEnabled()) {
+  // Emergency kill switch only (guest verification is always enabled)
+  if (isGuestVerificationDisabled()) {
     return featureDisabledResponse();
   }
 

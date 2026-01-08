@@ -265,6 +265,71 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.51b — Guest Verification Always-On (January 2026)
+
+**Goal:** Remove feature flag gating from guest endpoints. Guest RSVP + Guest Comments work in Production by default with zero manual Vercel env vars.
+
+**Key Change:** Guest verification is now **always enabled**. No `ENABLE_GUEST_VERIFICATION` env var required.
+
+**Emergency Kill Switch (if needed):**
+- Set `DISABLE_GUEST_VERIFICATION=true` to disable guest verification
+- Returns 503 (not 404) with clear message
+- Only use for emergencies - guest features are core UX
+
+**Health Endpoint:**
+- `GET /api/health/guest-verification`
+- Returns: `{ enabled: true, mode: "always-on", timestamp: "..." }`
+- No authentication required
+
+**Files Changed:**
+
+| File | Change |
+|------|--------|
+| `lib/guest-verification/config.ts` | Renamed to `isGuestVerificationDisabled()`, 503 response |
+| `app/api/guest/*/route.ts` | Updated to use kill switch (7 files) |
+| `app/api/health/guest-verification/route.ts` | NEW health endpoint |
+| `__tests__/phase4-51b-guest-always-on.test.ts` | 20 tests for always-on behavior |
+| `docs/SMOKE-PROD.md` | Added smoke tests #13, #14, #15 |
+
+**Test Coverage:** 20 new tests proving guest endpoints work without any env var set.
+
+---
+
+### Phase 4.51a — Event Watchers (January 2026)
+
+**Goal:** Notification backstop for unowned events using a "watcher" model.
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| `event_watchers` table | Composite PK `(event_id, user_id)` |
+| Auto-cleanup trigger | Removes watchers when `host_id` assigned |
+| Comment notifications | Falls back to watchers if no hosts |
+| RSVP notifications (NEW) | Hosts/watchers notified on RSVP |
+| Email template | `rsvpHostNotification.ts` created |
+| Backfill | Sami watching all 97 unowned events |
+
+**Notification Fan-Out Order:**
+1. `event_hosts` (accepted hosts)
+2. `events.host_id` (legacy host)
+3. `event_watchers` (fallback only when no hosts exist)
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260107000004_event_watchers.sql` | Schema + trigger + backfill |
+| `app/api/events/[id]/comments/route.ts` | Watcher fallback for comments |
+| `app/api/events/[id]/rsvp/route.ts` | Host/watcher RSVP notifications |
+| `lib/email/templates/rsvpHostNotification.ts` | RSVP notification email |
+| `lib/notifications/preferences.ts` | Added rsvpHostNotification mapping |
+| `__tests__/phase4-51a-event-watchers.test.ts` | 25 tests |
+
+**Test Coverage:** 25 tests covering schema, fan-out logic, auto-cleanup, and RLS policies.
+
+---
+
 ### Phase 4.50b — Past Tab Fix (January 2026)
 
 **Goal:** Fix Happenings "Past" tab showing 0 events.
