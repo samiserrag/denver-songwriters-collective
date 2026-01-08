@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51b):** Lint warnings = 0. All tests passing (1173). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51c):** Lint warnings = 0. All tests passing (1209). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,46 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.51c — Guest-First CTA + Guest RSVP Notifications (January 2026)
+
+**Goal:** Improve guest RSVP discoverability and fix missing host/watcher notifications for guest RSVPs.
+
+**Problem 1: Guest RSVP CTA was not discoverable**
+
+When logged out, the prominent "RSVP Now" button redirected to `/login`, while the guest RSVP option was a small text link below that users missed.
+
+**Fix:** Guest-first CTA pattern when logged out:
+- Primary button: "RSVP as Guest" (same styling as member button)
+- Secondary link: "Have an account? Log in" (subtle text below)
+- When logged in: "RSVP Now" unchanged
+
+**Problem 2: Guest RSVPs didn't notify hosts/watchers**
+
+Guest RSVP verify-code endpoint created the RSVP but did NOT send any host/watcher notifications. Member RSVPs did.
+
+**Fix:** Added `notifyHostsOfGuestRsvp()` to guest verify-code endpoint:
+- Uses EXACT same notification type (`"event_rsvp"`) as member RSVP
+- Uses EXACT same templateKey (`"rsvpHostNotification"`) as member RSVP
+- Fan-out order: `event_hosts` → `events.host_id` → `event_watchers` (fallback)
+- Guest name includes "(guest)" label in notification title/message
+
+**Files Changed:**
+
+| File | Change |
+|------|--------|
+| `components/events/RSVPButton.tsx` | Guest-first CTA when logged out |
+| `app/api/guest/rsvp/verify-code/route.ts` | Add host/watcher notification logic |
+| `__tests__/phase4-51c-guest-rsvp-discoverability.test.ts` | 17 tests for guest-first CTA |
+| `__tests__/phase4-51c-guest-rsvp-notifications.test.ts` | 19 tests for notification parity |
+
+**Test Coverage:** 36 new tests (17 CTA + 19 notifications).
+
+**Commits:**
+- `34d8d69` — Guest-first CTA (Phase 4.51c)
+- `544336c` — Guest RSVP host/watcher notifications
 
 ---
 
