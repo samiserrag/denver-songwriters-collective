@@ -279,9 +279,9 @@ function GuestCommentForm({ eventId, onSuccess }: { eventId: string; onSuccess: 
 
         <input
           type="text"
-          placeholder="000000"
+          placeholder="ABC123"
           value={verificationCode}
-          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          onChange={(e) => setVerificationCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6))}
           required
           maxLength={6}
           autoFocus
