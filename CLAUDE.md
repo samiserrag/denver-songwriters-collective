@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51d):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51e):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -314,6 +314,63 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.51e — Notification Management UX (January 2026)
+
+**Goal:** Add full notification management for users who may accumulate hundreds/thousands of notifications.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Type filtering | Dropdown to filter by notification type (RSVPs, Comments, Waitlist, etc.) |
+| Unread only toggle | Checkbox to show only unread notifications |
+| Mark all read | Bulk action to mark all notifications as read |
+| Delete read | Bulk action to delete all read notifications |
+| Delete older than 30 days | Bulk action to clean up old notifications |
+| Cursor pagination | Load more button with server-side pagination |
+| Total/unread counts | Shows total count and unread count in header |
+| Email preferences link | Direct link to `/dashboard/settings` for email preference management |
+| Dashboard link | "Manage all →" link always visible in dashboard notification widget |
+
+**Comment Notification Title Fix:**
+
+Comment notifications now show who made the comment instead of generic "New comment on...":
+- Member comments: `"{name} commented on "{event}""` or `"{name} replied to your comment"`
+- Guest comments: `"{name} (guest) commented on "{event}""`
+
+**Type Cast Fix:**
+
+Fixed intermittent query failures for `event_watchers` table:
+- Changed from `.from("event_watchers" as "events")` aggressive cast
+- To `(supabase as any).from("event_watchers")` simple cast (matches working routes)
+
+**Files Changed:**
+
+| File | Change |
+|------|--------|
+| `app/api/notifications/route.ts` | Added cursor pagination, type filter, DELETE endpoint |
+| `dashboard/notifications/NotificationsList.tsx` | Complete rewrite with filters, pagination, bulk actions |
+| `dashboard/notifications/page.tsx` | Added initialCursor and initialTotal props |
+| `dashboard/page.tsx` | "Manage all →" link always visible |
+| `app/api/events/[id]/comments/route.ts` | Comment notification title shows commenter name |
+| `app/api/guest/event-comment/verify-code/route.ts` | Guest comment notification title shows name |
+| `app/api/guest/rsvp/verify-code/route.ts` | Fixed type cast for event_watchers query |
+| `app/api/events/[id]/watch/route.ts` | Fixed type cast for event_watchers queries |
+
+**Email Preferences Coverage:**
+
+Verified the 3 email preference categories cover all notification types:
+
+| Category | Templates |
+|----------|-----------|
+| `claim_updates` | eventClaimSubmitted, eventClaimApproved, eventClaimRejected |
+| `event_updates` | eventReminder, eventUpdated, eventCancelled, rsvpConfirmation, waitlistPromotion, eventCommentNotification, rsvpHostNotification, occurrenceCancelledHost, occurrenceModifiedHost |
+| `admin_notifications` | adminEventClaimNotification, contactNotification |
+
+**Test Coverage:** All 1281 tests passing.
+
+---
+
 ### Phase 4.51d — Union Fan-out + Admin Watch/Unwatch (January 2026)
 
 **Goal:** Change notification fan-out from fallback pattern to union pattern, and add admin-only Watch/Unwatch button.
@@ -349,7 +406,7 @@ When admin was in `event_watchers` for an event that also had a `host_id` set, t
 | `app/events/[id]/page.tsx` | Watcher status query + WatchEventButton |
 | `__tests__/phase4-51d-union-fanout-watch.test.ts` | 37 tests for fan-out, dedupe, watch API |
 
-**Type Cast Note:** `event_watchers` table exists but not in generated TypeScript types. Uses `from("event_watchers" as "events")` type cast in all files that query it.
+**Type Cast Note:** `event_watchers` table exists but not in generated TypeScript types. Uses `(supabase as any).from("event_watchers")` type cast in all files that query it (fixed in Phase 4.51e).
 
 **Test Coverage:** 37 new tests.
 

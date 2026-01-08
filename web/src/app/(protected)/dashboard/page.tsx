@@ -230,14 +230,12 @@ export default async function DashboardPage() {
                   </span>
                 )}
               </h2>
-              {(notifications?.length ?? 0) > 5 && (
-                <Link
-                  href="/dashboard/notifications"
-                  className="text-sm text-[var(--color-accent-primary)] hover:underline"
-                >
-                  View all →
-                </Link>
-              )}
+              <Link
+                href="/dashboard/notifications"
+                className="text-sm text-[var(--color-text-accent)] hover:underline"
+              >
+                Manage all →
+              </Link>
             </div>
             {notifications && notifications.length > 0 ? (
               <NotificationsList notifications={notifications.slice(0, 5)} compact />
