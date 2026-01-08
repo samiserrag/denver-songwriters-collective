@@ -112,7 +112,7 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
   }
 
   return (
-    <div className="mb-8">
+    <section id="attendees" className="mb-8">
       <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
         {hasTimeslots ? "Audience" : "Who's Coming"}
         <span className="ml-2 text-sm font-normal text-[var(--color-text-secondary)]">
@@ -177,6 +177,6 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
           return <div key={attendee.id}>{content}</div>;
         })}
       </div>
-    </div>
+    </section>
   );
 }

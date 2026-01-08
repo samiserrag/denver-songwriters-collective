@@ -409,7 +409,7 @@ async function notifyUserOfRsvp(
       type: "event_rsvp",
       title,
       message,
-      link: eventUrl,
+      link: `${eventUrl}#attendees`,
     },
   });
 }
