@@ -369,6 +369,19 @@ Verified the 3 email preference categories cover all notification types:
 
 **Test Coverage:** All 1281 tests passing.
 
+**Data Seeding (One-Time):**
+
+Seeded default open mic image to 97 events without cover images:
+- Image URL: Supabase signed URL (expires 2036)
+- All 105 events now have `cover_image_url` set
+
+**HappeningCard Image Fix:**
+
+Changed Tier 2 image rendering from blurred letterbox to standard cover:
+- Removed blur background effect (`filter: blur(12px) brightness(0.7)`)
+- Changed `object-contain` to `object-cover` (fills card, crops if needed)
+- Now consistent with Tier 1 and Tier 3 rendering
+
 ---
 
 ### Phase 4.51d — Union Fan-out + Admin Watch/Unwatch (January 2026)

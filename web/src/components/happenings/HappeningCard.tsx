@@ -547,28 +547,16 @@ export function HappeningCard({
             />
           )}
 
-          {/* Tier 2: Full poster with blurred background */}
+          {/* Tier 2: Full cover image */}
           {hasFullPoster && fullPosterUrl && (
-            <>
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${fullPosterUrl})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  filter: 'blur(12px) brightness(0.7)',
-                }}
-                aria-hidden="true"
-              />
-              <Image
-                src={fullPosterUrl}
-                alt=""
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-contain transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-                data-testid="full-poster-contained"
-              />
-            </>
+            <Image
+              src={fullPosterUrl}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              data-testid="full-poster-contained"
+            />
           )}
 
           {/* Tier 3: Default image by event type */}
