@@ -386,7 +386,7 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
                   alt={album.name}
                   fill
                   sizes="200px"
-                  className="object-cover object-top"
+                  className="object-contain"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-[var(--color-text-tertiary)]">
