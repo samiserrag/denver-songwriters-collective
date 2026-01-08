@@ -382,6 +382,21 @@ Changed Tier 2 image rendering from blurred letterbox to standard cover:
 - Changed `object-contain` to `object-cover` (fills card, crops if needed)
 - Now consistent with Tier 1 and Tier 3 rendering
 
+**Image Cropping Alignment (object-top):**
+
+Added `object-top` to all image displays so cropping shows top of image (cuts bottom):
+- HappeningCard: All 3 tiers (card image, cover image, default image)
+- EventCard: Deprecated but updated for consistency
+- ImageUpload: Preview thumbnail matches card display
+- This preserves faces/heads in photos with people
+
+**Empty Time Field Error Fix:**
+
+Fixed "invalid input syntax for type time: ''" error when using "Use Original Image":
+- PATCH `/api/my-events/[id]` now converts empty strings to null for time fields
+- Affected fields: `start_time`, `end_time`
+- Root cause: PostgreSQL time type cannot accept empty string ""
+
 ---
 
 ### Phase 4.51d — Union Fan-out + Admin Watch/Unwatch (January 2026)
