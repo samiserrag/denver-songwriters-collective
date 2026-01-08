@@ -204,50 +204,50 @@ export default function GalleryGrid({ images, albumOwnerId }: Props) {
             </button>
           )}
 
-          {/* Image container with comments */}
+          {/* Main image - centered and large, with right padding for comments panel on lg+ */}
           <div
-            className="w-full max-w-6xl max-h-[90vh] flex flex-col lg:flex-row gap-4 items-center px-4"
+            className="flex items-center justify-center w-full h-full px-16 lg:pl-24 lg:pr-[22rem]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Image section - use explicit width on large screens */}
-            <div className="w-full lg:flex-1 flex flex-col items-center">
-              <div className="relative w-full max-w-4xl h-[60vh] lg:h-[70vh]">
-                <Image
-                  src={selectedImage.image_url}
-                  alt={selectedImage.caption ?? "Gallery image"}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 800px"
-                  className="object-contain rounded-lg"
-                  priority
-                />
-              </div>
-              <div className="mt-4 text-center">
-                {selectedImage.uploader?.full_name && (
-                  <span className="text-[var(--color-text-tertiary)] text-sm">Photo by {selectedImage.uploader.full_name}</span>
-                )}
-                {/* Image counter */}
-                {normalizedImages.length > 1 && (
-                  <p className="text-[var(--color-text-tertiary)] text-sm mt-1">
-                    {selectedIndex + 1} / {normalizedImages.length}
-                  </p>
-                )}
-                {/* Keyboard hint */}
-                <p className="text-neutral-600 text-sm mt-1 hidden sm:block">
-                  Use arrow keys to navigate, Escape to close
-                </p>
-              </div>
-            </div>
-
-            {/* Comments section */}
-            <div className="w-full lg:w-80 lg:flex-shrink-0 bg-[var(--color-bg-secondary)] rounded-xl p-4 max-h-[40vh] lg:max-h-[70vh] overflow-y-auto">
-              <GalleryComments
-                key={selectedImage.id}
-                type="photo"
-                targetId={selectedImage.id}
-                imageUploaderId={selectedImage.uploaded_by || selectedImage.uploader?.id}
-                albumOwnerId={albumOwnerId || selectedImage.album?.created_by}
+            <div className="relative w-full max-w-4xl" style={{ height: "80vh" }}>
+              <Image
+                src={selectedImage.image_url}
+                alt={selectedImage.caption ?? "Gallery image"}
+                fill
+                sizes="(max-width: 1024px) 100vw, 70vw"
+                className="object-contain"
+                priority
               />
             </div>
+          </div>
+
+          {/* Info overlay - bottom left */}
+          <div className="absolute bottom-4 left-4 text-left z-10">
+            {selectedImage.uploader?.full_name && (
+              <p className="text-white/80 text-sm">Photo by {selectedImage.uploader.full_name}</p>
+            )}
+            {normalizedImages.length > 1 && (
+              <p className="text-white/60 text-sm">
+                {selectedIndex + 1} / {normalizedImages.length}
+              </p>
+            )}
+            <p className="text-white/40 text-xs mt-1 hidden sm:block">
+              Use arrow keys to navigate, Escape to close
+            </p>
+          </div>
+
+          {/* Comments panel - right side */}
+          <div
+            className="absolute top-16 right-4 w-80 max-h-[calc(100vh-8rem)] bg-[var(--color-bg-secondary)] rounded-xl p-4 overflow-y-auto hidden lg:block"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GalleryComments
+              key={selectedImage.id}
+              type="photo"
+              targetId={selectedImage.id}
+              imageUploaderId={selectedImage.uploaded_by || selectedImage.uploader?.id}
+              albumOwnerId={albumOwnerId || selectedImage.album?.created_by}
+            />
           </div>
         </div>
       )}
