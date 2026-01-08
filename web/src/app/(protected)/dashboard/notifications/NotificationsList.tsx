@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -16,16 +16,39 @@ interface Notification {
 
 interface NotificationsListProps {
   notifications: Notification[];
+  initialCursor?: string | null;
+  initialTotal?: number;
   compact?: boolean; // For embedding in dashboard
 }
 
-export default function NotificationsList({ notifications, compact = false }: NotificationsListProps) {
+// Notification type options for filtering
+const NOTIFICATION_TYPES = [
+  { value: "", label: "All types" },
+  { value: "event_rsvp", label: "RSVPs" },
+  { value: "event_comment", label: "Comments" },
+  { value: "waitlist_promotion", label: "Waitlist" },
+  { value: "cohost_invitation", label: "Co-host invites" },
+  { value: "invitation_response", label: "Invite responses" },
+  { value: "host_approved", label: "Host approved" },
+  { value: "event_cancelled", label: "Cancellations" },
+];
+
+export default function NotificationsList({
+  notifications,
+  initialCursor = null,
+  initialTotal = 0,
+  compact = false
+}: NotificationsListProps) {
   const [items, setItems] = useState(notifications);
   const [hideRead, setHideRead] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("");
   const [markingAll, setMarkingAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
+  const [hasMore, setHasMore] = useState(!!initialCursor);
+  const [total, setTotal] = useState(initialTotal);
   const router = useRouter();
-
-  // Phase 4.51c: Removed auto-mark-read on mount - users control read state explicitly
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -42,8 +65,8 @@ export default function NotificationsList({ notifications, compact = false }: No
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "event_rsvp": return "✅";           // RSVP confirmation
-      case "event_comment": return "💬";        // Comment/reply
+      case "event_rsvp": return "✅";
+      case "event_comment": return "💬";
       case "waitlist_promotion": return "🎉";
       case "cohost_invitation": return "📬";
       case "invitation_response": return "✉️";
@@ -54,15 +77,78 @@ export default function NotificationsList({ notifications, compact = false }: No
     }
   };
 
+  // Load more notifications
+  const loadMore = useCallback(async () => {
+    if (!cursor || loading) return;
+
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        cursor,
+        limit: "50",
+      });
+      if (typeFilter) params.set("type", typeFilter);
+      if (hideRead) params.set("unread", "true");
+
+      const res = await fetch(`/api/notifications?${params}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        setItems(prev => [...prev, ...data.notifications]);
+        setCursor(data.nextCursor);
+        setHasMore(data.hasMore);
+        setTotal(data.total);
+      }
+    } catch (err) {
+      console.error("Failed to load more notifications:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [cursor, loading, typeFilter, hideRead]);
+
+  // Refresh with filters
+  const refreshWithFilters = useCallback(async (newTypeFilter: string, newHideRead: boolean) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "50" });
+      if (newTypeFilter) params.set("type", newTypeFilter);
+      if (newHideRead) params.set("unread", "true");
+
+      const res = await fetch(`/api/notifications?${params}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        setItems(data.notifications);
+        setCursor(data.nextCursor);
+        setHasMore(data.hasMore);
+        setTotal(data.total);
+      }
+    } catch (err) {
+      console.error("Failed to refresh notifications:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Handle type filter change
+  const handleTypeFilterChange = (newType: string) => {
+    setTypeFilter(newType);
+    refreshWithFilters(newType, hideRead);
+  };
+
+  // Handle hide read toggle
+  const handleHideReadChange = (newHideRead: boolean) => {
+    setHideRead(newHideRead);
+    refreshWithFilters(typeFilter, newHideRead);
+  };
+
   // Mark a single notification as read and navigate
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read optimistically
     if (!notification.is_read) {
       setItems(prev => prev.map(n =>
         n.id === notification.id ? { ...n, is_read: true } : n
       ));
 
-      // Fire and forget - mark as read on server
       fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +156,6 @@ export default function NotificationsList({ notifications, compact = false }: No
       }).catch(err => console.error("Failed to mark notification as read:", err));
     }
 
-    // Navigate to link if present
     if (notification.link) {
       router.push(notification.link);
     }
@@ -82,8 +167,6 @@ export default function NotificationsList({ notifications, compact = false }: No
     if (unreadIds.length === 0) return;
 
     setMarkingAll(true);
-
-    // Optimistically update UI
     setItems(prev => prev.map(n => ({ ...n, is_read: true })));
 
     try {
@@ -94,27 +177,103 @@ export default function NotificationsList({ notifications, compact = false }: No
       });
     } catch (err) {
       console.error("Failed to mark all as read:", err);
-      // Revert on error
       setItems(notifications);
     } finally {
       setMarkingAll(false);
     }
   };
 
-  // Filter items based on hideRead toggle
+  // Delete all read notifications
+  const handleDeleteAllRead = async () => {
+    const readCount = items.filter(n => n.is_read).length;
+    if (readCount === 0) return;
+
+    if (!confirm(`Delete ${readCount} read notification${readCount === 1 ? "" : "s"}? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(true);
+    const readIds = items.filter(n => n.is_read).map(n => n.id);
+    setItems(prev => prev.filter(n => !n.is_read));
+
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleteAllRead: true })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTotal(prev => prev - (data.deletedCount || 0));
+      }
+    } catch (err) {
+      console.error("Failed to delete read notifications:", err);
+      // Restore on error
+      setItems(prev => [...prev, ...notifications.filter(n => readIds.includes(n.id))]);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Delete notifications older than 30 days
+  const handleDeleteOld = async () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const oldCount = items.filter(n => new Date(n.created_at) < thirtyDaysAgo).length;
+
+    if (oldCount === 0) {
+      alert("No notifications older than 30 days.");
+      return;
+    }
+
+    if (!confirm(`Delete ${oldCount} notification${oldCount === 1 ? "" : "s"} older than 30 days? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(true);
+    setItems(prev => prev.filter(n => new Date(n.created_at) >= thirtyDaysAgo));
+
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ olderThan: thirtyDaysAgo.toISOString() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTotal(prev => prev - (data.deletedCount || 0));
+      }
+    } catch (err) {
+      console.error("Failed to delete old notifications:", err);
+      refreshWithFilters(typeFilter, hideRead);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Filter items based on hideRead toggle (for local filtering when not using API)
   const visibleItems = hideRead ? items.filter(n => !n.is_read) : items;
   const unreadCount = items.filter(n => !n.is_read).length;
   const readCount = items.filter(n => n.is_read).length;
 
-  if (items.length === 0) {
+  if (items.length === 0 && !loading) {
     if (compact) {
-      return null; // Parent handles empty state in compact mode
+      return null;
     }
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">🔔</div>
         <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No notifications</h2>
-        <p className="text-[var(--color-text-secondary)]">You&apos;re all caught up!</p>
+        <p className="text-[var(--color-text-secondary)]">
+          {typeFilter ? "No notifications of this type." : "You&apos;re all caught up!"}
+        </p>
+        {typeFilter && (
+          <button
+            onClick={() => handleTypeFilterChange("")}
+            className="mt-4 text-[var(--color-text-accent)] hover:underline"
+          >
+            Clear filter
+          </button>
+        )}
       </div>
     );
   }
@@ -123,9 +282,44 @@ export default function NotificationsList({ notifications, compact = false }: No
     <div>
       {/* Controls - only show in full mode */}
       {!compact && (
-        <div className="flex items-center justify-between mb-4 pb-4 border-b border-[var(--color-border-default)]">
-          <div className="flex items-center gap-4">
-            {/* Mark all read button */}
+        <div className="space-y-4 mb-6">
+          {/* Filter row */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Type filter */}
+            <select
+              value={typeFilter}
+              onChange={(e) => handleTypeFilterChange(e.target.value)}
+              className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+            >
+              {NOTIFICATION_TYPES.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+
+            {/* Hide read toggle */}
+            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hideRead}
+                onChange={(e) => handleHideReadChange(e.target.checked)}
+                className="rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+              />
+              Unread only
+            </label>
+
+            {/* Count summary */}
+            <div className="text-sm text-[var(--color-text-secondary)] ml-auto">
+              {total > 0 && <span>{total} total</span>}
+              {unreadCount > 0 && (
+                <span className="ml-2 text-[var(--color-text-accent)] font-medium">
+                  ({unreadCount} unread)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Actions row */}
+          <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-[var(--color-border-default)]">
             <button
               onClick={handleMarkAllRead}
               disabled={markingAll || unreadCount === 0}
@@ -134,38 +328,42 @@ export default function NotificationsList({ notifications, compact = false }: No
               {markingAll ? "Marking..." : "Mark all read"}
             </button>
 
-            {/* Hide read toggle */}
-            <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={hideRead}
-                onChange={(e) => setHideRead(e.target.checked)}
-                className="rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
-              />
-              Hide read
-            </label>
-          </div>
+            <span className="text-[var(--color-border-default)]">|</span>
 
-          {/* Count summary */}
-          <div className="text-sm text-[var(--color-text-secondary)]">
-            {unreadCount > 0 && (
-              <span className="text-[var(--color-text-accent)] font-medium">{unreadCount} unread</span>
-            )}
-            {unreadCount > 0 && readCount > 0 && " · "}
-            {readCount > 0 && hideRead && (
-              <span>{readCount} hidden</span>
-            )}
+            <button
+              onClick={handleDeleteAllRead}
+              disabled={deleting || readCount === 0}
+              className="text-sm text-[var(--color-text-secondary)] hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {deleting ? "Deleting..." : "Delete read"}
+            </button>
+
+            <button
+              onClick={handleDeleteOld}
+              disabled={deleting}
+              className="text-sm text-[var(--color-text-secondary)] hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Delete older than 30 days
+            </button>
+
+            {/* Settings link */}
+            <Link
+              href="/dashboard/settings"
+              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] ml-auto transition-colors"
+            >
+              Email preferences →
+            </Link>
           </div>
         </div>
       )}
 
       {/* Empty state when all filtered out */}
-      {visibleItems.length === 0 && hideRead && (
+      {visibleItems.length === 0 && hideRead && !loading && (
         <div className="text-center py-8">
           <p className="text-[var(--color-text-secondary)]">
             No unread notifications.{" "}
             <button
-              onClick={() => setHideRead(false)}
+              onClick={() => handleHideReadChange(false)}
               className="text-[var(--color-text-accent)] hover:underline"
             >
               Show all
@@ -200,13 +398,12 @@ export default function NotificationsList({ notifications, compact = false }: No
               {notification.link && (
                 <Link
                   href={notification.link}
-                  onClick={(e) => e.stopPropagation()} // Prevent double navigation
+                  onClick={(e) => e.stopPropagation()}
                   className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-sm shrink-0"
                 >
                   View →
                 </Link>
               )}
-              {/* Unread indicator dot */}
               {!notification.is_read && (
                 <div className="w-2 h-2 rounded-full bg-[var(--color-accent-primary)] shrink-0 mt-2" />
               )}
@@ -214,6 +411,19 @@ export default function NotificationsList({ notifications, compact = false }: No
           </div>
         ))}
       </div>
+
+      {/* Load more button */}
+      {hasMore && !compact && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={loadMore}
+            disabled={loading}
+            className="px-6 py-2 text-sm font-medium text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
+          >
+            {loading ? "Loading..." : "Load more"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

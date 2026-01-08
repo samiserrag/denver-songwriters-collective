@@ -393,7 +393,7 @@ async function notifyUser(
 ) {
   const title = isReply
     ? `${commenterName} replied to your comment`
-    : `New comment on "${eventTitle}"`;
+    : `${commenterName} (guest) commented on "${eventTitle}"`;
 
   const message = isReply
     ? `${commenterName} replied to your comment on "${eventTitle}"`

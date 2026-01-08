@@ -14,18 +14,27 @@ export default async function NotificationsPage() {
 
   if (!session) redirect("/login");
 
-  const { data: notifications } = await supabase
+  const { data: notifications, count } = await supabase
     .from("notifications")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("user_id", session.user.id)
     .order("created_at", { ascending: false })
     .limit(50);
+
+  // Determine next cursor for pagination
+  const nextCursor = notifications && notifications.length === 50
+    ? notifications[notifications.length - 1].created_at
+    : null;
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-2xl mx-auto">
         <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-8">Notifications</h1>
-        <NotificationsList notifications={notifications || []} />
+        <NotificationsList
+          notifications={notifications || []}
+          initialCursor={nextCursor}
+          initialTotal={count || 0}
+        />
       </div>
     </main>
   );

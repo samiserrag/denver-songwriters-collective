@@ -348,17 +348,14 @@ async function notifyHostsOfGuestRsvp(
   isWaitlist: boolean,
   fallbackHostId: string | null
 ) {
-  console.log("[Guest RSVP Notify] Starting fan-out for event:", eventId, "guest:", guestName);
   const notifiedUserIds = new Set<string>();
 
   // 1. Notify event_hosts (accepted)
-  const { data: hosts, error: hostsError } = await supabase
+  const { data: hosts } = await supabase
     .from("event_hosts")
     .select("user_id")
     .eq("event_id", eventId)
     .eq("invitation_status", "accepted");
-
-  console.log("[Guest RSVP Notify] event_hosts:", hosts?.length ?? 0, "error:", hostsError?.message);
 
   if (hosts && hosts.length > 0) {
     for (const host of hosts) {
@@ -378,7 +375,6 @@ async function notifyHostsOfGuestRsvp(
   }
 
   // 2. Notify events.host_id (if not already notified)
-  console.log("[Guest RSVP Notify] fallbackHostId:", fallbackHostId);
   if (fallbackHostId && !notifiedUserIds.has(fallbackHostId)) {
     await notifyUserOfGuestRsvp(
       supabase,
@@ -393,16 +389,13 @@ async function notifyHostsOfGuestRsvp(
   }
 
   // 3. Also notify event_watchers (if not already notified, not in generated types yet)
-  const { data: watchers, error: watchersError } = await (supabase as any)
+  const { data: watchers } = await (supabase as any)
     .from("event_watchers")
     .select("user_id")
     .eq("event_id", eventId);
 
-  console.log("[Guest RSVP Notify] event_watchers:", watchers?.length ?? 0, "error:", watchersError?.message);
-
   if (watchers && watchers.length > 0) {
     for (const watcher of watchers) {
-      console.log("[Guest RSVP Notify] Checking watcher:", watcher.user_id, "already notified:", notifiedUserIds.has(watcher.user_id));
       if (!notifiedUserIds.has(watcher.user_id)) {
         await notifyUserOfGuestRsvp(
           supabase,
@@ -413,12 +406,9 @@ async function notifyHostsOfGuestRsvp(
           isWaitlist
         );
         notifiedUserIds.add(watcher.user_id);
-        console.log("[Guest RSVP Notify] Notified watcher:", watcher.user_id);
       }
     }
   }
-
-  console.log("[Guest RSVP Notify] Total notified:", notifiedUserIds.size);
 }
 
 /**
