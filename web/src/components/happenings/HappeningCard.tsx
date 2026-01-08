@@ -542,19 +542,19 @@ export function HappeningCard({
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              className="object-cover object-top transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               data-testid="card-image"
             />
           )}
 
-          {/* Tier 2: Full cover image */}
+          {/* Tier 2: Full cover image - object-top preserves top of image when cropping */}
           {hasFullPoster && fullPosterUrl && (
             <Image
               src={fullPosterUrl}
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              className="object-cover object-top transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               data-testid="full-poster-contained"
             />
           )}
@@ -566,7 +566,7 @@ export function HappeningCard({
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              className="object-cover object-top transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               data-testid="default-type-image"
             />
           )}

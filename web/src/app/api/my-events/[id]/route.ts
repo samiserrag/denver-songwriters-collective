@@ -156,9 +156,17 @@ export async function PATCH(
   const now = new Date().toISOString();
   const updates: Record<string, unknown> = { updated_at: now };
 
+  // Fields that should convert empty strings to null (database type constraints)
+  const nullableTimeFields = ["start_time", "end_time"];
+
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
-      updates[field] = body[field];
+      // Convert empty strings to null for time fields (PostgreSQL time type can't accept "")
+      if (nullableTimeFields.includes(field) && body[field] === "") {
+        updates[field] = null;
+      } else {
+        updates[field] = body[field];
+      }
     }
   }
 

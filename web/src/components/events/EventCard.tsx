@@ -109,7 +109,7 @@ export function EventCard({ event, onClick, className, compact = false, variant 
                 alt={event.title}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="object-cover"
+                className="object-cover object-top"
               />
             ) : (
               <ImagePlaceholder
