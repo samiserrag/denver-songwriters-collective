@@ -13,6 +13,7 @@ import { HostControls } from "@/components/events/HostControls";
 import { ClaimEventButton } from "@/components/events/ClaimEventButton";
 import { AttendeeList } from "@/components/events/AttendeeList";
 import { EventComments } from "@/components/events/EventComments";
+import { WatchEventButton } from "@/components/events/WatchEventButton";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
@@ -351,6 +352,19 @@ export default async function EventDetailPage({ params }: EventPageProps) {
     canManageEvent = isUserTheHost || isEventHost || isAdminUser;
   }
 
+  // Phase 4.51d: Check if admin is watching this event
+  let isWatching = false;
+  if (session && isAdminUser) {
+    // Note: event_watchers table exists but not in generated types yet
+    const { data: watcherEntry } = await supabase
+      .from("event_watchers" as "events")
+      .select("user_id")
+      .eq("event_id", event.id)
+      .eq("user_id", session.user.id)
+      .maybeSingle() as unknown as { data: { user_id: string } | null };
+    isWatching = !!watcherEntry;
+  }
+
   // Phase 4.32: Check if signup lane exists (only shown to managers)
   const signupLaneExists = hasSignupLane(event, timeslotCount);
 
@@ -569,12 +583,15 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                     Suggest an update
                   </Link>
                   {isAdminUser && (
-                    <Link
-                      href="/dashboard/admin/open-mics"
-                      className="text-sm underline hover:no-underline"
-                    >
-                      Admin: Manage status
-                    </Link>
+                    <>
+                      <Link
+                        href="/dashboard/admin/open-mics"
+                        className="text-sm underline hover:no-underline"
+                      >
+                        Admin: Manage status
+                      </Link>
+                      <WatchEventButton eventId={event.id} initialWatching={isWatching} />
+                    </>
                   )}
                 </div>
               </div>

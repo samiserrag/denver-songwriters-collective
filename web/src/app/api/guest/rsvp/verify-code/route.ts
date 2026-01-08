@@ -335,9 +335,9 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Phase 4.51c: Notify hosts/watchers about a guest RSVP
- * Fan-out order: event_hosts → events.host_id → event_watchers (fallback)
- * Mirrors the member RSVP notification logic exactly.
+ * Phase 4.51d: Notify hosts AND watchers about a guest RSVP
+ * Fan-out: event_hosts ∪ events.host_id ∪ event_watchers (union with dedupe)
+ * Watchers are always notified regardless of host existence (opt-in monitoring).
  */
 async function notifyHostsOfGuestRsvp(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -350,7 +350,7 @@ async function notifyHostsOfGuestRsvp(
 ) {
   const notifiedUserIds = new Set<string>();
 
-  // 1. Check event_hosts table for accepted hosts
+  // 1. Notify event_hosts (accepted)
   const { data: hosts } = await supabase
     .from("event_hosts")
     .select("user_id")
@@ -359,21 +359,23 @@ async function notifyHostsOfGuestRsvp(
 
   if (hosts && hosts.length > 0) {
     for (const host of hosts) {
-      await notifyUserOfGuestRsvp(
-        supabase,
-        host.user_id,
-        guestName,
-        eventTitle,
-        eventUrl,
-        isWaitlist
-      );
-      notifiedUserIds.add(host.user_id);
+      if (!notifiedUserIds.has(host.user_id)) {
+        await notifyUserOfGuestRsvp(
+          supabase,
+          host.user_id,
+          guestName,
+          eventTitle,
+          eventUrl,
+          isWaitlist
+        );
+        notifiedUserIds.add(host.user_id);
+      }
     }
-    return; // Hosts exist - don't fall through to watchers
+    // NO RETURN - continue to check host_id and watchers
   }
 
-  // 2. Check events.host_id (legacy)
-  if (fallbackHostId) {
+  // 2. Notify events.host_id (if not already notified)
+  if (fallbackHostId && !notifiedUserIds.has(fallbackHostId)) {
     await notifyUserOfGuestRsvp(
       supabase,
       fallbackHostId,
@@ -383,10 +385,10 @@ async function notifyHostsOfGuestRsvp(
       isWaitlist
     );
     notifiedUserIds.add(fallbackHostId);
-    return; // Host exists - don't fall through to watchers
+    // NO RETURN - continue to check watchers
   }
 
-  // 3. Fallback to event_watchers (only if no hosts)
+  // 3. Also notify event_watchers (if not already notified)
   const { data: watchers } = await supabase
     .from("event_watchers" as "events")
     .select("user_id")
@@ -403,6 +405,7 @@ async function notifyHostsOfGuestRsvp(
           eventUrl,
           isWaitlist
         );
+        notifiedUserIds.add(watcher.user_id);
       }
     }
   }

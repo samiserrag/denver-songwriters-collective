@@ -166,8 +166,9 @@ export async function POST(
 }
 
 /**
- * Notify event host(s) about a new comment
- * Phase 4.51a: Fan-out order: event_hosts → events.host_id → event_watchers (fallback)
+ * Notify event host(s) AND watchers about a new comment
+ * Phase 4.51d: Fan-out: event_hosts ∪ events.host_id ∪ event_watchers (union with dedupe)
+ * Watchers are always notified regardless of host existence (opt-in monitoring).
  */
 async function notifyEventHosts(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
@@ -180,7 +181,7 @@ async function notifyEventHosts(
 ) {
   const notifiedUserIds = new Set<string>();
 
-  // 1. Check event_hosts table for accepted hosts
+  // 1. Notify event_hosts (accepted)
   const { data: hosts } = await supabase
     .from("event_hosts")
     .select("user_id")
@@ -188,32 +189,29 @@ async function notifyEventHosts(
     .eq("invitation_status", "accepted");
 
   if (hosts && hosts.length > 0) {
-    // Notify each host (except the commenter)
     for (const host of hosts) {
-      if (host.user_id !== commenterId) {
+      if (host.user_id !== commenterId && !notifiedUserIds.has(host.user_id)) {
         await notifyUser(supabase, host.user_id, commenterName, eventTitle, eventUrl, commentPreview, false);
         notifiedUserIds.add(host.user_id);
       }
     }
-    // Hosts exist - don't fall through to watchers
-    return;
+    // NO RETURN - continue to check host_id and watchers
   }
 
-  // 2. Check events.host_id
+  // 2. Notify events.host_id (if not already notified)
   const { data: event } = await supabase
     .from("events")
     .select("host_id")
     .eq("id", eventId)
     .single();
 
-  if (event?.host_id && event.host_id !== commenterId) {
+  if (event?.host_id && event.host_id !== commenterId && !notifiedUserIds.has(event.host_id)) {
     await notifyUser(supabase, event.host_id, commenterName, eventTitle, eventUrl, commentPreview, false);
     notifiedUserIds.add(event.host_id);
-    // Host exists - don't fall through to watchers
-    return;
+    // NO RETURN - continue to check watchers
   }
 
-  // 3. Fallback to event_watchers (only if no hosts)
+  // 3. Also notify event_watchers (if not already notified)
   const { data: watchers } = await supabase
     .from("event_watchers")
     .select("user_id")
@@ -223,6 +221,7 @@ async function notifyEventHosts(
     for (const watcher of watchers) {
       if (watcher.user_id !== commenterId && !notifiedUserIds.has(watcher.user_id)) {
         await notifyUser(supabase, watcher.user_id, commenterName, eventTitle, eventUrl, commentPreview, false);
+        notifiedUserIds.add(watcher.user_id);
       }
     }
   }

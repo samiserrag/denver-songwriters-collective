@@ -299,8 +299,9 @@ export async function PATCH(
 }
 
 /**
- * Phase 4.51a: Notify hosts/watchers about new RSVP
- * Fan-out order: event_hosts → events.host_id → event_watchers (fallback)
+ * Phase 4.51d: Notify hosts AND watchers about new RSVP
+ * Fan-out: event_hosts ∪ events.host_id ∪ event_watchers (union with dedupe)
+ * Watchers are always notified regardless of host existence (opt-in monitoring).
  */
 async function notifyHostsOfRsvp(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
@@ -313,7 +314,7 @@ async function notifyHostsOfRsvp(
 ) {
   const notifiedUserIds = new Set<string>();
 
-  // 1. Check event_hosts table for accepted hosts
+  // 1. Notify event_hosts (accepted)
   const { data: hosts } = await supabase
     .from("event_hosts")
     .select("user_id")
@@ -322,28 +323,28 @@ async function notifyHostsOfRsvp(
 
   if (hosts && hosts.length > 0) {
     for (const host of hosts) {
-      if (host.user_id !== rsvpUserId) {
+      if (host.user_id !== rsvpUserId && !notifiedUserIds.has(host.user_id)) {
         await notifyUserOfRsvp(supabase, host.user_id, rsvpUserName, eventTitle, eventUrl, isWaitlist);
         notifiedUserIds.add(host.user_id);
       }
     }
-    return; // Hosts exist - don't fall through to watchers
+    // NO RETURN - continue to check host_id and watchers
   }
 
-  // 2. Check events.host_id
+  // 2. Notify events.host_id (if not already notified)
   const { data: event } = await supabase
     .from("events")
     .select("host_id")
     .eq("id", eventId)
     .single();
 
-  if (event?.host_id && event.host_id !== rsvpUserId) {
+  if (event?.host_id && event.host_id !== rsvpUserId && !notifiedUserIds.has(event.host_id)) {
     await notifyUserOfRsvp(supabase, event.host_id, rsvpUserName, eventTitle, eventUrl, isWaitlist);
     notifiedUserIds.add(event.host_id);
-    return; // Host exists - don't fall through to watchers
+    // NO RETURN - continue to check watchers
   }
 
-  // 3. Fallback to event_watchers (only if no hosts)
+  // 3. Also notify event_watchers (if not already notified)
   const { data: watchers } = await supabase
     .from("event_watchers")
     .select("user_id")
@@ -353,6 +354,7 @@ async function notifyHostsOfRsvp(
     for (const watcher of watchers) {
       if (watcher.user_id !== rsvpUserId && !notifiedUserIds.has(watcher.user_id)) {
         await notifyUserOfRsvp(supabase, watcher.user_id, rsvpUserName, eventTitle, eventUrl, isWaitlist);
+        notifiedUserIds.add(watcher.user_id);
       }
     }
   }
