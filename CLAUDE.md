@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51c):** Lint warnings = 0. All tests passing (1244). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51d):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,49 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.51d — Union Fan-out + Admin Watch/Unwatch (January 2026)
+
+**Goal:** Change notification fan-out from fallback pattern to union pattern, and add admin-only Watch/Unwatch button.
+
+**Problem: Admin not receiving notifications for events they watch**
+
+When admin was in `event_watchers` for an event that also had a `host_id` set, the admin didn't receive notifications. The fan-out pattern was `hosts OR watchers (fallback)` - watchers were only notified when no hosts existed.
+
+**Fix:** Changed to union pattern with deduplication:
+- Fan-out order: `event_hosts` ∪ `events.host_id` ∪ `event_watchers` (union with dedupe)
+- All three sources are checked regardless of whether previous sources had entries
+- Uses `Set<string>` to deduplicate (user in multiple categories gets ONE notification)
+- Actor suppression preserved (don't notify the person who triggered the action)
+
+**Admin Watch/Unwatch Feature:**
+- New API endpoint: `GET/POST/DELETE /api/events/[id]/watch`
+- GET: Check if current user is watching (returns `{ watching: boolean }`)
+- POST: Add watcher (admin-only, returns 403 for non-admins)
+- DELETE: Remove watcher (any authenticated user)
+- New `WatchEventButton` client component
+- Button appears in admin section of event detail page
+
+**Files Changed:**
+
+| File | Change |
+|------|--------|
+| `app/api/events/[id]/rsvp/route.ts` | Union fan-out for member RSVP notifications |
+| `app/api/guest/rsvp/verify-code/route.ts` | Union fan-out for guest RSVP notifications |
+| `app/api/events/[id]/comments/route.ts` | Union fan-out for member comment notifications |
+| `app/api/guest/event-comment/verify-code/route.ts` | Union fan-out for guest comment notifications |
+| `app/api/events/[id]/watch/route.ts` | NEW: Watch API endpoint (GET/POST/DELETE) |
+| `components/events/WatchEventButton.tsx` | NEW: Admin-only watch toggle button |
+| `app/events/[id]/page.tsx` | Watcher status query + WatchEventButton |
+| `__tests__/phase4-51d-union-fanout-watch.test.ts` | 37 tests for fan-out, dedupe, watch API |
+
+**Type Cast Note:** `event_watchers` table exists but not in generated TypeScript types. Uses `from("event_watchers" as "events")` type cast in all files that query it.
+
+**Test Coverage:** 37 new tests.
+
+**Commit:** `859e42f`
 
 ---
 
