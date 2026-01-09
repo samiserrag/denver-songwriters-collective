@@ -29,6 +29,9 @@ export function GalleryComments({
   const entityOwnerId = type === "photo" ? imageUploaderId : albumOwnerId;
   const secondaryOwnerId = type === "photo" ? albumOwnerId : undefined;
 
+  // Map type to guest comment type
+  const guestCommentType = type === "photo" ? "gallery_photo" : "gallery_album";
+
   return (
     <CommentThread
       tableName={tableName}
@@ -38,6 +41,7 @@ export function GalleryComments({
       secondaryOwnerId={secondaryOwnerId}
       showAvatars={false}
       maxHeight="max-h-48"
+      guestCommentType={guestCommentType}
     />
   );
 }

@@ -314,6 +314,84 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.51f — Guest Comments Everywhere + Guest Timeslot Claiming (January 2026)
+
+**Goal:** Enable guest commenting (with email verification) on all content types: gallery photos, gallery albums, blog posts, and member profiles. Also enable guests to claim timeslots at events.
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Guest gallery photo comments | Email verification → comment creation → notify uploader |
+| Guest gallery album comments | Email verification → comment creation → notify album owner |
+| Guest blog comments | Email verification → comment creation → notify blog author |
+| Guest profile comments | Email verification → comment creation → notify profile owner |
+| Guest timeslot claiming | Email verification → slot claim → notify event host |
+| Reply notifications | Parent comment author notified when guest replies |
+| Shared GuestCommentForm | Reusable component for all guest comment flows |
+
+**Database Migration (`20260108100000_guest_comments_everywhere.sql`):**
+
+| Table | Changes |
+|-------|---------|
+| `gallery_photo_comments` | Added `guest_name`, `guest_email`, `guest_verified`, `guest_verification_id`; made `user_id` nullable |
+| `gallery_album_comments` | Added `guest_name`, `guest_email`, `guest_verified`, `guest_verification_id`; made `user_id` nullable |
+| `blog_comments` | Added `guest_name`, `guest_email`, `guest_verified`, `guest_verification_id`; made `author_id` nullable |
+| `profile_comments` | Added `guest_name`, `guest_email`, `guest_verified`, `guest_verification_id`; made `author_id` nullable |
+| `guest_verifications` | Added `gallery_image_id`, `gallery_album_id`, `blog_post_id`, `profile_id` target columns |
+| `guest_verifications` | Extended `valid_action_type` constraint to include new action types |
+
+**New API Endpoints:**
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/guest/gallery-photo-comment/request-code` | Request verification for photo comment |
+| `POST /api/guest/gallery-photo-comment/verify-code` | Verify & create photo comment |
+| `POST /api/guest/gallery-album-comment/request-code` | Request verification for album comment |
+| `POST /api/guest/gallery-album-comment/verify-code` | Verify & create album comment |
+| `POST /api/guest/blog-comment/request-code` | Request verification for blog comment |
+| `POST /api/guest/blog-comment/verify-code` | Verify & create blog comment |
+| `POST /api/guest/profile-comment/request-code` | Request verification for profile comment |
+| `POST /api/guest/profile-comment/verify-code` | Verify & create profile comment |
+| `POST /api/guest/timeslot-claim/request-code` | Request verification for timeslot claim |
+| `POST /api/guest/timeslot-claim/verify-code` | Verify & create timeslot claim |
+
+**New Components:**
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| GuestCommentForm | `components/comments/GuestCommentForm.tsx` | Shared guest comment UI with email verification flow |
+| GuestTimeslotClaimForm | `components/events/GuestTimeslotClaimForm.tsx` | Guest timeslot claim UI with verification |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/templates/contentCommentNotification.ts` | Added "event" content type |
+| `lib/email/templates/verificationCode.ts` | Added new verification purposes |
+| `components/comments/CommentThread.tsx` | Guest comment support via `guestCommentType` prop |
+| `components/blog/BlogComments.tsx` | Integrated GuestCommentForm for logged-out users |
+| `components/events/TimeslotSection.tsx` | Guest timeslot claiming UI |
+
+**Notification Flow:**
+
+| Trigger | Recipient | Notification Type |
+|---------|-----------|-------------------|
+| Guest comments on photo | Photo uploader | `gallery_comment` |
+| Guest comments on album | Album owner | `gallery_comment` |
+| Guest comments on blog | Blog author | `blog_comment` |
+| Guest comments on profile | Profile owner | `profile_comment` |
+| Guest claims timeslot | Event host | `event_signup` |
+| Guest replies to comment | Parent comment author | Same type as parent |
+
+**Type Casting Note:**
+
+New database columns (`gallery_image_id`, `gallery_album_id`, `blog_post_id`, `profile_id`, `guest_*` columns) are not yet in generated Supabase types. All routes use `(supabase as any)` type casts until types are regenerated.
+
+**Build Status:** Passing. Migration must be applied with `npx supabase db push` before deploy.
+
+---
+
 ### Phase 4.51e — Notification Management UX (January 2026)
 
 **Goal:** Add full notification management for users who may accumulate hundreds/thousands of notifications.

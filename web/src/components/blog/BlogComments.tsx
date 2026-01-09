@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { GuestCommentForm } from "@/components/comments/GuestCommentForm";
 
 interface Comment {
   id: string;
@@ -14,6 +15,9 @@ interface Comment {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
+  // Guest comment fields
+  guest_name?: string | null;
+  guest_verified?: boolean;
   replies?: Comment[];
 }
 
@@ -91,6 +95,8 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
         content,
         created_at,
         parent_id,
+        guest_name,
+        guest_verified,
         author:profiles!blog_comments_author_id_fkey(id, full_name, avatar_url)
       `)
       .eq("post_id", postId)
@@ -106,6 +112,8 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
         created_at: c.created_at,
         parent_id: c.parent_id,
         author: Array.isArray(c.author) ? c.author[0] : c.author,
+        guest_name: c.guest_name,
+        guest_verified: c.guest_verified ?? false,
       }));
       const threaded = organizeIntoThreads(normalized);
       setComments(threaded);
@@ -197,10 +205,18 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
 
   // Render a single comment
   function renderComment(comment: Comment, isReply = false) {
+    const isGuestComment = !comment.author && comment.guest_name;
+    const displayName = isGuestComment
+      ? `${comment.guest_name} (guest)`
+      : comment.author?.full_name ?? "Member";
+    const avatarInitial = isGuestComment
+      ? comment.guest_name?.[0] ?? "G"
+      : comment.author?.full_name?.[0] ?? "?";
+
     return (
       <div key={comment.id} className={`group ${isReply ? "ml-6 pl-4 border-l-2 border-[var(--color-border-default)]" : ""}`}>
         <div className="flex items-start gap-3">
-          {comment.author?.avatar_url ? (
+          {comment.author?.avatar_url && !isGuestComment ? (
             <Image
               src={comment.author.avatar_url}
               alt={comment.author.full_name ?? "Member"}
@@ -211,14 +227,14 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
           ) : (
             <div className={`${isReply ? "w-8 h-8" : "w-10 h-10"} rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0`}>
               <span className="text-[var(--color-text-accent)]">
-                {comment.author?.full_name?.[0] ?? "?"}
+                {avatarInitial}
               </span>
             </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2">
               <span className="text-[var(--color-text-primary)] font-medium">
-                {comment.author?.full_name ?? "Member"}
+                {displayName}
               </span>
               <span className="text-[var(--color-text-tertiary)] text-sm">
                 {formatDate(comment.created_at)}
@@ -327,14 +343,12 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
           </div>
         </form>
       ) : (
-        <div className="mb-8 p-4 bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg text-center">
-          <p className="text-[var(--color-text-tertiary)] mb-3">Sign in to join the conversation</p>
-          <a
-            href={`/login?redirectTo=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "")}`}
-            className="inline-block px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-primary)] rounded-lg font-medium hover:bg-[var(--color-accent-primary)]/90 transition-colors"
-          >
-            Sign In
-          </a>
+        <div className="mb-8">
+          <GuestCommentForm
+            type="blog"
+            targetId={postId}
+            onSuccess={fetchComments}
+          />
         </div>
       )}
 

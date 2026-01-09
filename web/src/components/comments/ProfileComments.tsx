@@ -22,6 +22,7 @@ export function ProfileComments({ profileId, profileOwnerId }: ProfileCommentsPr
         entityOwnerId={profileOwnerId}
         showAvatars={true}
         maxHeight="max-h-[500px]"
+        guestCommentType="profile"
       />
     </section>
   );

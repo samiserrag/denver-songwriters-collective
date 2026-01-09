@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/supabase/database.types";
+import { GuestTimeslotClaimForm } from "./GuestTimeslotClaimForm";
 
 type DBTimeslot = Database["public"]["Tables"]["event_timeslots"]["Row"];
 type DBTimeslotClaim = Database["public"]["Tables"]["timeslot_claims"]["Row"];
@@ -50,6 +51,7 @@ export function TimeslotSection({
   const [loading, setLoading] = React.useState(true);
   const [pendingSlotId, setPendingSlotId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [guestClaimingSlotId, setGuestClaimingSlotId] = React.useState<string | null>(null);
 
   // Fetch timeslots and claims
   React.useEffect(() => {
@@ -74,7 +76,7 @@ export function TimeslotSection({
         return;
       }
 
-      // Fetch claims for these timeslots
+      // Fetch claims for these timeslots (including guest claims)
       const slotIds = slots.map((s: DBTimeslot) => s.id);
       const { data: claims, error: claimsError } = await supabase
         .from("timeslot_claims")
@@ -283,20 +285,11 @@ export function TimeslotSection({
       )}
 
       {/* Open slots CTA - show once at top if there are open slots and user doesn't have one */}
-      {openCount > 0 && !userHasSlot && !authLoading && (
+      {openCount > 0 && !userHasSlot && !authLoading && !guestClaimingSlotId && (
         <div className="text-center py-3 px-4 rounded-lg border-2 border-dashed border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5">
           <p className="text-lg font-medium text-[var(--color-text-primary)]">
             Want to perform? Claim a slot below!
           </p>
-          {!user && (
-            <button
-              type="button"
-              onClick={handleRequireAuth}
-              className="text-sm text-[var(--color-text-accent)] hover:underline font-medium mt-1"
-            >
-              Sign in to claim a slot →
-            </button>
-          )}
         </div>
       )}
 
@@ -307,8 +300,12 @@ export function TimeslotSection({
           const isMine = user && slot.claim?.member_id === user.id;
           const isPending = pendingSlotId === slot.id;
 
+          // Check if this is a guest claim (no member, but has guest_name)
+          const isGuestClaim = isClaimed && !slot.claim?.member_id && slot.claim?.guest_name;
+          const displayName = slot.claim?.member?.full_name || slot.claim?.guest_name;
+
           // Claimed slots - celebrate the performer
-          if (isClaimed && slot.claim?.member?.full_name) {
+          if (isClaimed && displayName) {
             return (
               <div
                 key={slot.id}
@@ -341,47 +338,79 @@ export function TimeslotSection({
                       {isPending ? "..." : "Release"}
                     </Button>
                   </div>
-                ) : (
+                ) : isGuestClaim ? (
+                  // Guest claim - show name with (guest) label, no link
+                  <p className="text-base font-semibold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic">
+                    {displayName}
+                    <span className="text-xs font-normal text-[var(--color-text-tertiary)]"> (guest)</span>
+                  </p>
+                ) : slot.claim?.member ? (
                   <Link
                     href={`/songwriters/${slot.claim.member.slug || slot.claim.member.id}`}
                     className="group block"
                   >
                     <p className="text-base font-semibold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic group-hover:underline">
-                      {slot.claim.member.full_name}
+                      {displayName}
                     </p>
                   </Link>
-                )}
+                ) : null}
               </div>
             );
           }
 
           // Open slots - simple and compact
+          const isGuestClaiming = guestClaimingSlotId === slot.id;
+
           return (
             <div
               key={slot.id}
               className={cn(
-                "rounded-lg border border-dashed p-3 text-center transition-all",
-                "border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/30",
-                "hover:border-[var(--color-accent-primary)]/50 hover:bg-[var(--color-bg-secondary)]",
-                userHasSlot && "opacity-40"
+                "rounded-lg border p-3 text-center transition-all",
+                isGuestClaiming
+                  ? "border-[var(--color-accent-primary)] bg-[var(--color-bg-surface)]"
+                  : "border-dashed border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/30 hover:border-[var(--color-accent-primary)]/50 hover:bg-[var(--color-bg-secondary)]",
+                userHasSlot && !isGuestClaiming && "opacity-40"
               )}
             >
-              {/* Time - prominent */}
-              <p className="text-lg font-bold text-[var(--color-text-secondary)] mb-2">
-                {formatSlotTime(slot).split(" - ")[0]}
-              </p>
+              {isGuestClaiming ? (
+                <GuestTimeslotClaimForm
+                  eventId={eventId}
+                  timeslotId={slot.id}
+                  slotLabel={formatSlotTime(slot).split(" - ")[0]}
+                  onClaimSuccess={() => {
+                    setGuestClaimingSlotId(null);
+                    // Refetch timeslots to show the new claim
+                    window.location.reload();
+                  }}
+                  onCancel={() => setGuestClaimingSlotId(null)}
+                />
+              ) : (
+                <>
+                  {/* Time - prominent */}
+                  <p className="text-lg font-bold text-[var(--color-text-secondary)] mb-2">
+                    {formatSlotTime(slot).split(" - ")[0]}
+                  </p>
 
-              {/* Claim button */}
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                disabled={disabled || isPending || userHasSlot || !user}
-                onClick={() => user ? handleClaim(slot.id) : handleRequireAuth()}
-                className="w-full text-xs"
-              >
-                {isPending ? "..." : disabled ? "Unavailable" : "Claim"}
-              </Button>
+                  {/* Claim button */}
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={disabled || isPending || userHasSlot}
+                    onClick={() => {
+                      if (user) {
+                        handleClaim(slot.id);
+                      } else {
+                        // Show guest claim form instead of redirecting to login
+                        setGuestClaimingSlotId(slot.id);
+                      }
+                    }}
+                    className="w-full text-xs"
+                  >
+                    {isPending ? "..." : disabled ? "Unavailable" : "Claim"}
+                  </Button>
+                </>
+              )}
             </div>
           );
         })}

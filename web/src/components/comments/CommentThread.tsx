@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { GuestCommentForm, type GuestCommentType } from "./GuestCommentForm";
 
 const MAX_COMMENT_LENGTH = 500;
 const POST_COOLDOWN_MS = 2000;
@@ -22,6 +23,9 @@ export interface Comment {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
+  // Guest comment fields
+  guest_name?: string | null;
+  guest_verified?: boolean;
   replies?: Comment[];
 }
 
@@ -40,6 +44,8 @@ export interface CommentThreadProps {
   showAvatars?: boolean;
   /** Max height of comment container */
   maxHeight?: string;
+  /** Guest comment type for enabling guest comments (optional, disables guest comments if not provided) */
+  guestCommentType?: GuestCommentType;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -95,6 +101,7 @@ export function CommentThread({
   secondaryOwnerId,
   showAvatars = false,
   maxHeight = "max-h-96",
+  guestCommentType,
 }: CommentThreadProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +156,8 @@ export function CommentThread({
         parent_id,
         is_deleted,
         is_hidden,
+        guest_name,
+        guest_verified,
         author:profiles!${profileJoinKey}(id, full_name, avatar_url)
       `)
       .eq(foreignKey, targetId)
@@ -175,6 +184,8 @@ export function CommentThread({
       is_deleted: c.is_deleted ?? false,
       is_hidden: c.is_hidden ?? false,
       author: Array.isArray(c.author) ? c.author[0] ?? null : c.author,
+      guest_name: c.guest_name,
+      guest_verified: c.guest_verified ?? false,
     }));
 
     // Filter visible comments (show deleted/hidden only to managers)
@@ -315,13 +326,20 @@ export function CommentThread({
     const isAuthor = authorId === currentUserId;
     const isDeleted = comment.is_deleted;
     const isHidden = comment.is_hidden;
+    const isGuestComment = !authorId && comment.guest_name;
+    const displayName = isGuestComment
+      ? `${comment.guest_name} (guest)`
+      : comment.author?.full_name || "Member";
+    const avatarInitial = isGuestComment
+      ? comment.guest_name?.[0] ?? "G"
+      : comment.author?.full_name?.[0] ?? "?";
 
     return (
       <div key={comment.id} className={`group ${isReply ? "ml-6 pl-3 border-l-2 border-[var(--color-border-default)]" : ""}`}>
         <div className={`flex gap-2 text-sm ${isDeleted || isHidden ? "opacity-50" : ""}`}>
           {showAvatars && (
             <div className="flex-shrink-0">
-              {comment.author?.avatar_url ? (
+              {comment.author?.avatar_url && !isGuestComment ? (
                 <Image
                   src={comment.author.avatar_url}
                   alt={comment.author.full_name ?? "Member"}
@@ -332,7 +350,7 @@ export function CommentThread({
               ) : (
                 <div className="w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
                   <span className="text-[var(--color-text-accent)] text-xs">
-                    {comment.author?.full_name?.[0] ?? "?"}
+                    {avatarInitial}
                   </span>
                 </div>
               )}
@@ -341,7 +359,7 @@ export function CommentThread({
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="font-medium text-[var(--color-text-primary)]">
-                {comment.author?.full_name || "Member"}
+                {displayName}
               </span>
               <span className="text-[var(--color-text-tertiary)] text-xs">
                 {formatTimeAgo(comment.created_at)}
@@ -474,6 +492,14 @@ export function CommentThread({
             {submitting ? "..." : cooldown ? "Wait" : "Post"}
           </button>
         </form>
+      ) : guestCommentType ? (
+        <div className="mt-3">
+          <GuestCommentForm
+            type={guestCommentType}
+            targetId={targetId}
+            onSuccess={fetchComments}
+          />
+        </div>
       ) : (
         <p className="mt-3 text-sm text-[var(--color-text-tertiary)]">
           <a href="/login" className="text-[var(--color-text-accent)] hover:underline">Sign in</a> to leave a comment.

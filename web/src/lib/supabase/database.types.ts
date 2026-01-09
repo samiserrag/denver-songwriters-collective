@@ -521,6 +521,13 @@ export type Database = {
             referencedRelation: "event_comments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_comments_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_hosts: {
@@ -860,6 +867,46 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_watchers: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_watchers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_watchers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_watchers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
