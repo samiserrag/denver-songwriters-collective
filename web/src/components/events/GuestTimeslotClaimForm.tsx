@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui";
 
 type FormState = "idle" | "form" | "verification" | "success";
 
@@ -103,12 +102,12 @@ export function GuestTimeslotClaimForm({
 
   if (formState === "success") {
     return (
-      <div className="p-4 text-center">
-        <div className="text-2xl mb-2">🎤</div>
-        <p className="text-[var(--color-text-accent)] font-medium">
+      <div className="text-center py-2">
+        <div className="text-xl mb-1">🎤</div>
+        <p className="text-[var(--color-text-accent)] font-medium text-sm">
           You&apos;re on the lineup!
         </p>
-        <p className="text-sm text-[var(--color-text-secondary)]">
+        <p className="text-xs text-[var(--color-text-secondary)]">
           {slotLabel} is yours.
         </p>
       </div>
@@ -117,15 +116,13 @@ export function GuestTimeslotClaimForm({
 
   if (formState === "verification") {
     return (
-      <form onSubmit={handleVerifyCode} className="p-4 space-y-3">
-        <div className="text-center mb-2">
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Check your email for a verification code
-          </p>
-        </div>
+      <form onSubmit={handleVerifyCode} className="space-y-2">
+        <p className="text-xs text-[var(--color-text-secondary)] text-center">
+          Check your email for a code
+        </p>
 
         {error && (
-          <p className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg text-center">
+          <p className="text-xs text-red-500 bg-red-500/10 px-2 py-1 rounded text-center">
             {error}
           </p>
         )}
@@ -137,47 +134,43 @@ export function GuestTimeslotClaimForm({
           placeholder="ABC123"
           maxLength={6}
           autoComplete="one-time-code"
-          className="w-full px-3 py-2 text-center text-xl tracking-widest font-mono bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30"
+          className="w-full px-2 py-1.5 text-center text-base tracking-widest font-mono bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30"
         />
 
-        <div className="flex gap-2">
-          <Button
+        <div className="flex gap-1.5">
+          <button
             type="button"
-            variant="outline"
-            size="sm"
             onClick={() => setFormState("form")}
             disabled={loading}
-            className="flex-1"
+            className="flex-1 px-2 py-1.5 text-xs font-medium rounded border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] disabled:opacity-50"
           >
             Back
-          </Button>
-          <Button
+          </button>
+          <button
             type="submit"
-            variant="primary"
-            size="sm"
             disabled={loading || code.length < 6}
-            className="flex-1"
+            className="flex-1 px-2 py-1.5 text-xs font-medium rounded bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
           >
-            {loading ? "Verifying..." : "Verify"}
-          </Button>
+            {loading ? "..." : "Verify"}
+          </button>
         </div>
       </form>
     );
   }
 
   return (
-    <form onSubmit={handleRequestCode} className="p-4 space-y-3">
-      <div className="text-center mb-2">
-        <p className="font-medium text-[var(--color-text-primary)]">
+    <form onSubmit={handleRequestCode} className="space-y-2">
+      <div className="text-center">
+        <p className="font-medium text-sm text-[var(--color-text-primary)]">
           Claim {slotLabel}
         </p>
         <p className="text-xs text-[var(--color-text-secondary)]">
-          We&apos;ll email you a code to confirm
+          We&apos;ll email you a code
         </p>
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg text-center">
+        <p className="text-xs text-red-500 bg-red-500/10 px-2 py-1 rounded text-center">
           {error}
         </p>
       )}
@@ -189,7 +182,7 @@ export function GuestTimeslotClaimForm({
         placeholder="Your name"
         required
         minLength={2}
-        className="w-full px-3 py-2 text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30"
+        className="w-full px-2 py-1.5 text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30"
       />
 
       <input
@@ -198,32 +191,28 @@ export function GuestTimeslotClaimForm({
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Your email"
         required
-        className="w-full px-3 py-2 text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30"
+        className="w-full px-2 py-1.5 text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30"
       />
 
-      <div className="flex gap-2">
-        <Button
+      <div className="flex gap-1.5">
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={onCancel}
           disabled={loading}
-          className="flex-1"
+          className="flex-1 px-2 py-1.5 text-xs font-medium rounded border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] disabled:opacity-50"
         >
           Cancel
-        </Button>
-        <Button
+        </button>
+        <button
           type="submit"
-          variant="primary"
-          size="sm"
           disabled={loading || !name.trim() || !email.trim()}
-          className="flex-1"
+          className="flex-1 px-2 py-1.5 text-xs font-medium rounded bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
         >
-          {loading ? "Sending..." : "Send Code"}
-        </Button>
+          {loading ? "..." : "Send Code"}
+        </button>
       </div>
 
-      <p className="text-xs text-[var(--color-text-tertiary)] text-center">
+      <p className="text-[10px] text-[var(--color-text-tertiary)] text-center">
         Have an account?{" "}
         <a href="/login" className="text-[var(--color-text-accent)] hover:underline">
           Sign in
