@@ -113,14 +113,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for lockout
-    const { data: lockedVerification } = await supabase
+    // Use type cast since migration adds blog_post_id column not yet in generated types
+    const { data: lockedVerification } = await (supabase as any)
       .from("guest_verifications")
       .select("id, locked_until")
       .eq("email", normalizedEmail)
       .eq("blog_post_id", post_id)
       .not("locked_until", "is", null)
       .gt("locked_until", new Date().toISOString())
-      .maybeSingle();
+      .maybeSingle() as { data: { id: string; locked_until: string | null } | null };
 
     if (lockedVerification) {
       const lockedUntil = new Date(lockedVerification.locked_until!);
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + CODE_EXPIRES_MINUTES * 60 * 1000).toISOString();
 
     // Delete any existing unverified verifications
-    await supabase
+    await (supabase as any)
       .from("guest_verifications")
       .delete()
       .eq("email", normalizedEmail)
