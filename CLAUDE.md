@@ -314,6 +314,67 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.53 — Comment Editing + Guest Comment Deletion (January 2026)
+
+**Goal:** Enable comment editing for all logged-in users and allow guests to delete their own comments via email verification.
+
+**Comment Editing:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Edit endpoint | `PATCH /api/comments/[id]` for all comment types |
+| Authorization | Only comment author can edit (not admin, not moderator) |
+| UI | Edit button appears on hover, inline textarea with Save/Cancel |
+| Indicator | "(edited)" shown next to timestamp for edited comments |
+| Guest comments | Cannot be edited (no way to re-authenticate) |
+
+**Guest Comment Deletion:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Request code | `POST /api/guest/comment-delete/request-code` |
+| Verify code | `POST /api/guest/comment-delete/verify-code` |
+| Validation | Guest must enter same email used when posting comment |
+| Action | Soft-delete (`is_deleted = true`) preserves data |
+| UI | Modal with email input → verification code input |
+
+**Database Migrations:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260110200000_add_comment_edited_at.sql` | Adds `edited_at` column to all 5 comment tables |
+| `20260110210000_add_delete_comment_action_type.sql` | Adds `delete_comment` to valid action types |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `app/api/comments/[id]/route.ts` | PATCH endpoint for editing comments |
+| `app/api/guest/comment-delete/request-code/route.ts` | Guest deletion verification request |
+| `app/api/guest/comment-delete/verify-code/route.ts` | Guest deletion verification + soft-delete |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/comments/CommentThread.tsx` | Edit UI, guest delete modal, `edited_at` display |
+
+**Comment Tables Supported:**
+- `blog_comments`
+- `gallery_photo_comments`
+- `gallery_album_comments`
+- `profile_comments`
+- `event_comments`
+
+**Permission Matrix:**
+
+| Action | Logged-in Author | Admin | Guest (via email) |
+|--------|------------------|-------|-------------------|
+| Edit | Yes | No | No |
+| Delete | Yes | Yes | Yes (soft-delete) |
+
+---
+
 ### Phase 4.51j — Page Scroll Reset (January 2026)
 
 **Goal:** Fix pages loading scrolled down instead of at the top.
