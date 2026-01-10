@@ -323,9 +323,10 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 **Root Cause:** Browser scroll restoration combined with `scroll-behavior: smooth` could cause pages to restore a previous scroll position from navigation history.
 
 **Solution:** Created `ScrollReset` client component that:
-1. Disables browser's automatic scroll restoration (`window.history.scrollRestoration = 'manual'`)
-2. Scrolls to top on initial mount (unless URL has a hash anchor)
-3. Scrolls to top on pathname changes (unless URL has a hash anchor)
+1. Tracks back/forward navigation via `popstate` event listener
+2. Fresh navigation (clicking links): Scrolls to top
+3. Back/forward buttons: Allows browser to restore previous scroll position
+4. Hash anchors (e.g., `#comments`): Browser handles natively
 
 **Files Added:**
 

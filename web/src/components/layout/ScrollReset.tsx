@@ -1,34 +1,45 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 /**
- * ScrollReset - Ensures pages load with scroll at the top
+ * ScrollReset - Ensures fresh page loads start at the top while preserving
+ * back/forward navigation scroll positions.
  *
- * Addresses browser scroll restoration behavior that can cause pages
- * to load scrolled down. This component:
- * 1. Disables browser's automatic scroll restoration
- * 2. Scrolls to top on initial mount (unless URL has a hash anchor)
- * 3. Scrolls to top on navigation (unless URL has a hash anchor)
+ * Behavior:
+ * - Fresh navigation (clicking links): Scrolls to top
+ * - Back/forward buttons: Restores previous scroll position
+ * - Hash anchors (e.g., #comments): Browser handles natively
  */
 export function ScrollReset() {
   const pathname = usePathname();
+  const isPopState = useRef(false);
 
   useEffect(() => {
-    // Disable browser's automatic scroll restoration
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
-    }
+    // Track back/forward navigation via popstate event
+    const handlePopState = () => {
+      isPopState.current = true;
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   useEffect(() => {
     // Don't scroll to top if URL has a hash anchor (e.g., #comments)
     if (window.location.hash) {
+      isPopState.current = false;
       return;
     }
 
-    // Scroll to top on pathname change
+    // Don't scroll to top on back/forward navigation - let browser restore position
+    if (isPopState.current) {
+      isPopState.current = false;
+      return;
+    }
+
+    // Fresh navigation: scroll to top
     window.scrollTo(0, 0);
   }, [pathname]);
 
