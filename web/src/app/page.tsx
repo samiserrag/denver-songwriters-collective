@@ -138,8 +138,7 @@ export default async function HomePage() {
       .eq("is_published", true)
       .eq("is_approved", true)
       .order("published_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(2),
     // Monthly highlights for the homepage
     supabase
       .from("monthly_highlights")
@@ -214,12 +213,14 @@ export default async function HomePage() {
     );
   }
 
-  const latestBlog = latestBlogRes.data;
-  const latestBlogAuthor = latestBlog?.author
-    ? Array.isArray(latestBlog.author)
-      ? latestBlog.author[0]
-      : latestBlog.author
-    : null;
+  // Latest blog posts (array of up to 2)
+  const latestBlogPosts = latestBlogRes.data ?? [];
+
+  // Helper to get author from a blog post
+  const getBlogAuthor = (post: typeof latestBlogPosts[0]) => {
+    if (!post?.author) return null;
+    return Array.isArray(post.author) ? post.author[0] : post.author;
+  };
 
   // Monthly highlights
   interface Highlight {
@@ -237,7 +238,7 @@ export default async function HomePage() {
   const hasTonightsHappenings = tonightsHappenings.length > 0;
   const hasFeaturedMembers = featuredMembers.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
-  const hasLatestBlog = !!latestBlog;
+  const hasLatestBlog = latestBlogPosts.length > 0;
   const hasHighlights = highlights.length > 0;
 
   return (
@@ -589,80 +590,86 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Blog Card + Share Your Story CTA */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* Latest Blog Post */}
-              <Link
-                href={`/blog/${latestBlog.slug}`}
-                className="block group focus-visible:outline-none"
-              >
-              <article className="h-full overflow-hidden card-spotlight transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]">
-                {/* Image Section - aspect-[4/3] */}
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  {latestBlog.cover_image_url ? (
-                    <Image
-                      src={latestBlog.cover_image_url}
-                      alt={latestBlog.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
-                      <svg className="w-16 h-16 text-[var(--color-text-accent)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                      </svg>
-                    </div>
-                  )}
-                  {/* Gradient overlay */}
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                </div>
-
-                {/* Content Section */}
-                <div className="p-5 space-y-3 text-center">
-                  {latestBlog.tags && latestBlog.tags.length > 0 && (
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {latestBlog.tags.slice(0, 2).map((tag: string) => (
-                        <span
-                          key={tag}
-                          className="text-sm tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <h3 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
-                    {latestBlog.title}
-                  </h3>
-                  {latestBlog.excerpt && (
-                    <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 text-left mx-auto max-w-prose">
-                      {latestBlog.excerpt}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    {latestBlogAuthor?.avatar_url ? (
-                      <Image
-                        src={latestBlogAuthor.avatar_url}
-                        alt={latestBlogAuthor.full_name ?? "Author"}
-                        width={24}
-                        height={24}
-                        className="rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-                        <span className="text-[var(--color-text-accent)] text-sm">
-                          {latestBlogAuthor?.full_name?.[0] ?? "?"}
-                        </span>
+            {/* Blog Cards + Share Your Story CTA */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Latest Blog Posts */}
+              {latestBlogPosts.map((post) => {
+                const author = getBlogAuthor(post);
+                return (
+                  <Link
+                    key={post.id}
+                    href={`/blog/${post.slug}`}
+                    className="block group focus-visible:outline-none"
+                  >
+                    <article className="h-full overflow-hidden card-spotlight transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]">
+                      {/* Image Section - aspect-[4/3] */}
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        {post.cover_image_url ? (
+                          <Image
+                            src={post.cover_image_url}
+                            alt={post.title}
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
+                            <svg className="w-16 h-16 text-[var(--color-text-accent)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                            </svg>
+                          </div>
+                        )}
+                        {/* Gradient overlay */}
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                       </div>
-                    )}
-                    <p className="text-sm text-[var(--color-text-tertiary)]">
-                      {latestBlogAuthor?.full_name ?? "Anonymous"}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </Link>
+
+                      {/* Content Section */}
+                      <div className="p-5 space-y-3 text-center">
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {post.tags.slice(0, 2).map((tag: string) => (
+                              <span
+                                key={tag}
+                                className="text-sm tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <h3 className="text-lg md:text-xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors">
+                          {post.title}
+                        </h3>
+                        {post.excerpt && (
+                          <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 text-left mx-auto max-w-prose">
+                            {post.excerpt}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-center gap-2 pt-2">
+                          {author?.avatar_url ? (
+                            <Image
+                              src={author.avatar_url}
+                              alt={author.full_name ?? "Author"}
+                              width={24}
+                              height={24}
+                              className="rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                              <span className="text-[var(--color-text-accent)] text-sm">
+                                {author?.full_name?.[0] ?? "?"}
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-sm text-[var(--color-text-tertiary)]">
+                            {author?.full_name ?? "Anonymous"}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
 
               {/* Share Your Story CTA Card */}
               <Link
