@@ -117,6 +117,14 @@ export function CommentThread({
   const [isAdmin, setIsAdmin] = useState(false);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Guest delete state
+  const [guestDeleteComment, setGuestDeleteComment] = useState<Comment | null>(null);
+  const [guestDeleteEmail, setGuestDeleteEmail] = useState("");
+  const [guestDeleteCode, setGuestDeleteCode] = useState("");
+  const [guestDeleteStep, setGuestDeleteStep] = useState<"email" | "code">("email");
+  const [guestDeleteVerificationId, setGuestDeleteVerificationId] = useState<string | null>(null);
+  const [guestDeleteLoading, setGuestDeleteLoading] = useState(false);
+
   const supabase = createClient();
 
   // Determine user ID column based on table
@@ -358,6 +366,86 @@ export function CommentThread({
     setEditContent("");
   }
 
+  // Guest delete functions
+  function openGuestDeleteModal(comment: Comment) {
+    setGuestDeleteComment(comment);
+    setGuestDeleteEmail("");
+    setGuestDeleteCode("");
+    setGuestDeleteStep("email");
+    setGuestDeleteVerificationId(null);
+  }
+
+  function closeGuestDeleteModal() {
+    setGuestDeleteComment(null);
+    setGuestDeleteEmail("");
+    setGuestDeleteCode("");
+    setGuestDeleteStep("email");
+    setGuestDeleteVerificationId(null);
+  }
+
+  async function handleGuestDeleteRequestCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!guestDeleteComment || !guestDeleteEmail.trim()) return;
+
+    setGuestDeleteLoading(true);
+    try {
+      const response = await fetch("/api/guest/comment-delete/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          comment_id: guestDeleteComment.id,
+          table_name: tableName,
+          guest_email: guestDeleteEmail.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to send verification code");
+      } else {
+        toast.success("Verification code sent to your email");
+        setGuestDeleteVerificationId(data.verification_id);
+        setGuestDeleteStep("code");
+      }
+    } catch (error) {
+      console.error("Guest delete request error:", error);
+      toast.error("Failed to send verification code");
+    }
+    setGuestDeleteLoading(false);
+  }
+
+  async function handleGuestDeleteVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!guestDeleteVerificationId || !guestDeleteCode.trim()) return;
+
+    setGuestDeleteLoading(true);
+    try {
+      const response = await fetch("/api/guest/comment-delete/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verification_id: guestDeleteVerificationId,
+          code: guestDeleteCode.trim().toUpperCase(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Invalid code");
+      } else {
+        toast.success("Comment deleted");
+        closeGuestDeleteModal();
+        fetchComments();
+      }
+    } catch (error) {
+      console.error("Guest delete verify error:", error);
+      toast.error("Failed to verify code");
+    }
+    setGuestDeleteLoading(false);
+  }
+
   // Check permissions
   function canDelete(comment: Comment): boolean {
     if (!currentUserId) return false;
@@ -365,6 +453,15 @@ export function CommentThread({
     if (authorId === currentUserId) return true;
     if (isAdmin) return true;
     return false;
+  }
+
+  function canGuestDelete(comment: Comment): boolean {
+    // Guest comments can be deleted by the guest (via email verification)
+    // Only show if not logged in OR if the logged-in user isn't the admin
+    const authorId = comment.user_id || comment.author_id;
+    if (authorId) return false; // Not a guest comment
+    if (!comment.guest_name) return false; // No guest name
+    return true;
   }
 
   function canEdit(comment: Comment): boolean {
@@ -480,7 +577,7 @@ export function CommentThread({
             )}
 
             {/* Actions row - hide if editing */}
-            {!isDeleted && currentUserId && editingId !== comment.id && (
+            {!isDeleted && editingId !== comment.id && (currentUserId || canGuestDelete(comment)) && (
               <div className="flex items-center gap-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {/* Edit button - shows first for author's own comments */}
                 {canEdit(comment) && (
@@ -492,7 +589,7 @@ export function CommentThread({
                   </button>
                 )}
                 {/* Reply button */}
-                {!isReply && (
+                {!isReply && currentUserId && (
                   <button
                     onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
                     className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)]"
@@ -509,10 +606,19 @@ export function CommentThread({
                     {isHidden ? "Unhide" : "Hide"}
                   </button>
                 )}
-                {/* Delete button */}
+                {/* Delete button for logged-in users */}
                 {canDelete(comment) && (
                   <button
                     onClick={() => handleDelete(comment.id)}
+                    className="text-xs text-[var(--color-text-tertiary)] hover:text-red-400"
+                  >
+                    Delete
+                  </button>
+                )}
+                {/* Delete button for guest comments (opens verification modal) */}
+                {canGuestDelete(comment) && !canDelete(comment) && (
+                  <button
+                    onClick={() => openGuestDeleteModal(comment)}
                     className="text-xs text-[var(--color-text-tertiary)] hover:text-red-400"
                   >
                     Delete
@@ -617,6 +723,83 @@ export function CommentThread({
         <p className="mt-3 text-sm text-[var(--color-text-tertiary)]">
           <a href="/login" className="text-[var(--color-text-accent)] hover:underline">Sign in</a> to leave a comment.
         </p>
+      )}
+
+      {/* Guest Delete Modal */}
+      {guestDeleteComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--color-bg-secondary)] rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
+              Delete Your Comment
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              {guestDeleteStep === "email"
+                ? "Enter the email you used when posting this comment. We'll send you a verification code."
+                : "Enter the 6-digit code sent to your email."}
+            </p>
+
+            {guestDeleteStep === "email" ? (
+              <form onSubmit={handleGuestDeleteRequestCode} className="space-y-4">
+                <input
+                  type="email"
+                  value={guestDeleteEmail}
+                  onChange={(e) => setGuestDeleteEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  disabled={guestDeleteLoading}
+                  autoFocus
+                  className="w-full px-3 py-2 text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 disabled:opacity-50"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={closeGuestDeleteModal}
+                    disabled={guestDeleteLoading}
+                    className="px-4 py-2 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={guestDeleteLoading || !guestDeleteEmail.trim()}
+                    className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {guestDeleteLoading ? "Sending..." : "Send Code"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleGuestDeleteVerifyCode} className="space-y-4">
+                <input
+                  type="text"
+                  value={guestDeleteCode}
+                  onChange={(e) => setGuestDeleteCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6))}
+                  placeholder="ABC123"
+                  disabled={guestDeleteLoading}
+                  autoFocus
+                  maxLength={6}
+                  className="w-full px-3 py-2 text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 disabled:opacity-50 text-center tracking-widest font-mono text-lg"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setGuestDeleteStep("email")}
+                    disabled={guestDeleteLoading}
+                    className="px-4 py-2 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={guestDeleteLoading || guestDeleteCode.length !== 6}
+                    className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {guestDeleteLoading ? "Deleting..." : "Delete Comment"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
