@@ -368,25 +368,24 @@ describe("Phase 4.51d: Event Detail Page Integration", () => {
 // Type Cast Documentation Tests
 // ============================================================================
 
-describe("Phase 4.51d: Type Cast Rationale", () => {
-  it("documents why event_watchers uses type cast", () => {
-    // event_watchers table exists in the database but not in generated TypeScript types
-    // Rather than regenerate database.types.ts (which could cause other issues),
-    // we use a type cast: `from("event_watchers" as "events")`
-    //
-    // This is documented in each file that uses it:
+describe("Phase 4.51d: Type Cast Rationale (RESOLVED)", () => {
+  it("documents that event_watchers type casts have been removed", () => {
+    // event_watchers table now exists in generated TypeScript types
+    // The types were regenerated and all type casts have been removed from:
     // - app/api/events/[id]/watch/route.ts
     // - app/api/events/[id]/rsvp/route.ts
     // - app/api/events/[id]/comments/route.ts
     // - app/api/guest/rsvp/verify-code/route.ts
     // - app/api/guest/event-comment/verify-code/route.ts
     // - app/events/[id]/page.tsx
+    //
+    // All files now use: supabase.from("event_watchers") without casts
 
-    const reason = "Table exists but not in generated types yet";
-    const workaround = 'from("event_watchers" as "events")';
+    const status = "Type casts removed - event_watchers in generated types";
+    const correctUsage = 'from("event_watchers")';
 
-    expect(workaround).toContain("as");
-    expect(reason).toContain("not in generated types");
+    expect(correctUsage).not.toContain("as");
+    expect(status).toContain("removed");
   });
 });
 

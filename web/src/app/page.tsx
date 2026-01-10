@@ -310,11 +310,12 @@ export default async function HomePage() {
           <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-8">
             Join us if you&apos;re…
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎸 a songwriter looking to play, improve, or connect</div>
-            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎤 an open mic host or venue</div>
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎤 an open mic host or live music venue</div>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎶 a songwriting group or collective</div>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎭 a showcase or event promoter</div>
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">🌀 a fan of songs and songwriters</div>
           </div>
         </div>
       </section>

@@ -357,7 +357,7 @@ async function notifyEventHost(
       type: "event_signup",
       title,
       message,
-      link: eventUrl,
+      link: `${eventUrl}#lineup`,
     },
   });
 }

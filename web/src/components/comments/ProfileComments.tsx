@@ -13,7 +13,7 @@ interface ProfileCommentsProps {
  */
 export function ProfileComments({ profileId, profileOwnerId }: ProfileCommentsProps) {
   return (
-    <section className="mt-12 pt-8 border-t border-[var(--color-border-default)]">
+    <section id="comments" className="mt-12 pt-8 border-t border-[var(--color-border-default)]">
       <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Comments</h2>
       <CommentThread
         tableName="profile_comments"

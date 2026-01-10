@@ -266,7 +266,7 @@ async function notifyBlogAuthor(
       type: "blog_comment",
       title,
       message,
-      link: postUrl,
+      link: `${postUrl}#comments`,
     },
   });
 }
@@ -315,7 +315,7 @@ async function notifyParentCommentAuthor(
         type: "blog_comment",
         title,
         message,
-        link: postUrl,
+        link: `${postUrl}#comments`,
       },
     });
   }

@@ -263,7 +263,7 @@ async function notifyProfileOwner(
       type: "profile_comment",
       title,
       message,
-      link: profileUrl,
+      link: `${profileUrl}#comments`,
     },
   });
 }
@@ -312,7 +312,7 @@ async function notifyParentCommentAuthor(
         type: "profile_comment",
         title,
         message,
-        link: profileUrl,
+        link: `${profileUrl}#comments`,
       },
     });
   }

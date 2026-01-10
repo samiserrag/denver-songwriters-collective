@@ -20,8 +20,7 @@ export async function GET(
     return NextResponse.json({ watching: false });
   }
 
-  // Query event_watchers table (not in generated types yet)
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("event_watchers")
     .select("user_id")
     .eq("event_id", eventId)
@@ -66,8 +65,7 @@ export async function POST(
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  // Insert watcher entry (not in generated types yet)
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("event_watchers")
     .insert({ event_id: eventId, user_id: session.user.id })
     .select()
@@ -104,8 +102,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Delete watcher entry (not in generated types yet)
-  await (supabase as any)
+  await supabase
     .from("event_watchers")
     .delete()
     .eq("event_id", eventId)

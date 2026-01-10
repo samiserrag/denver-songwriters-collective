@@ -129,9 +129,13 @@ export type Database = {
       }
       blog_comments: {
         Row: {
-          author_id: string
+          author_id: string | null
           content: string
           created_at: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean
           id: string
           is_approved: boolean | null
           parent_id: string | null
@@ -139,9 +143,13 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           content: string
           created_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           id?: string
           is_approved?: boolean | null
           parent_id?: string | null
@@ -149,9 +157,13 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           content?: string
           created_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           id?: string
           is_approved?: boolean | null
           parent_id?: string | null
@@ -164,6 +176,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
             referencedColumns: ["id"]
           },
           {
@@ -262,6 +281,7 @@ export type Database = {
           excerpt: string | null
           id: string
           is_approved: boolean | null
+          is_featured: boolean
           is_published: boolean | null
           published_at: string | null
           slug: string
@@ -277,6 +297,7 @@ export type Database = {
           excerpt?: string | null
           id?: string
           is_approved?: boolean | null
+          is_featured?: boolean
           is_published?: boolean | null
           published_at?: string | null
           slug: string
@@ -292,6 +313,7 @@ export type Database = {
           excerpt?: string | null
           id?: string
           is_approved?: boolean | null
+          is_featured?: boolean
           is_published?: boolean | null
           published_at?: string | null
           slug?: string
@@ -1193,34 +1215,46 @@ export type Database = {
           album_id: string
           content: string
           created_at: string
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean
           hidden_by: string | null
           id: string
           is_deleted: boolean
           is_hidden: boolean
           parent_id: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           album_id: string
           content: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           hidden_by?: string | null
           id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           parent_id?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           album_id?: string
           content?: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           hidden_by?: string | null
           id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           parent_id?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1228,6 +1262,13 @@ export type Database = {
             columns: ["album_id"]
             isOneToOne: false
             referencedRelation: "gallery_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_album_comments_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
             referencedColumns: ["id"]
           },
           {
@@ -1444,37 +1485,56 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean
           hidden_by: string | null
           id: string
           image_id: string
           is_deleted: boolean
           is_hidden: boolean
           parent_id: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           hidden_by?: string | null
           id?: string
           image_id: string
           is_deleted?: boolean
           is_hidden?: boolean
           parent_id?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           hidden_by?: string | null
           id?: string
           image_id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           parent_id?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "gallery_photo_comments_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gallery_photo_comments_hidden_by_fkey"
             columns: ["hidden_by"]
@@ -1509,6 +1569,7 @@ export type Database = {
         Row: {
           action_token: string | null
           action_type: string | null
+          blog_post_id: string | null
           claim_id: string | null
           code: string | null
           code_attempts: number | null
@@ -1517,9 +1578,12 @@ export type Database = {
           created_at: string | null
           email: string
           event_id: string
+          gallery_album_id: string | null
+          gallery_image_id: string | null
           guest_name: string
           id: string
           locked_until: string | null
+          profile_id: string | null
           rsvp_id: string | null
           timeslot_id: string | null
           token_expires_at: string | null
@@ -1530,6 +1594,7 @@ export type Database = {
         Insert: {
           action_token?: string | null
           action_type?: string | null
+          blog_post_id?: string | null
           claim_id?: string | null
           code?: string | null
           code_attempts?: number | null
@@ -1538,9 +1603,12 @@ export type Database = {
           created_at?: string | null
           email: string
           event_id: string
+          gallery_album_id?: string | null
+          gallery_image_id?: string | null
           guest_name: string
           id?: string
           locked_until?: string | null
+          profile_id?: string | null
           rsvp_id?: string | null
           timeslot_id?: string | null
           token_expires_at?: string | null
@@ -1551,6 +1619,7 @@ export type Database = {
         Update: {
           action_token?: string | null
           action_type?: string | null
+          blog_post_id?: string | null
           claim_id?: string | null
           code?: string | null
           code_attempts?: number | null
@@ -1559,9 +1628,12 @@ export type Database = {
           created_at?: string | null
           email?: string
           event_id?: string
+          gallery_album_id?: string | null
+          gallery_image_id?: string | null
           guest_name?: string
           id?: string
           locked_until?: string | null
+          profile_id?: string | null
           rsvp_id?: string | null
           timeslot_id?: string | null
           token_expires_at?: string | null
@@ -1570,6 +1642,13 @@ export type Database = {
           verified_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "guest_verifications_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "guest_verifications_claim_id_fkey"
             columns: ["claim_id"]
@@ -1596,6 +1675,27 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_gallery_album_id_fkey"
+            columns: ["gallery_album_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_gallery_image_id_fkey"
+            columns: ["gallery_image_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_verifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2019,9 +2119,13 @@ export type Database = {
       }
       profile_comments: {
         Row: {
-          author_id: string
+          author_id: string | null
           content: string
           created_at: string
+          guest_email: string | null
+          guest_name: string | null
+          guest_verification_id: string | null
+          guest_verified: boolean
           hidden_by: string | null
           id: string
           is_deleted: boolean
@@ -2031,9 +2135,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           content: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           hidden_by?: string | null
           id?: string
           is_deleted?: boolean
@@ -2043,9 +2151,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           content?: string
           created_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_verification_id?: string | null
+          guest_verified?: boolean
           hidden_by?: string | null
           id?: string
           is_deleted?: boolean
@@ -2060,6 +2172,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_comments_guest_verification_id_fkey"
+            columns: ["guest_verification_id"]
+            isOneToOne: false
+            referencedRelation: "guest_verifications"
             referencedColumns: ["id"]
           },
           {

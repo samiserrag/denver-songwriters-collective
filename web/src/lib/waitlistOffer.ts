@@ -152,7 +152,7 @@ export async function sendOfferNotifications(
     p_type: "waitlist_offer",
     p_title: "A Spot Opened Up!",
     p_message: `A spot is available for "${eventData.title}". Confirm within 24 hours to secure it!`,
-    p_link: `/events/${eventIdentifier}?confirm=true`,
+    p_link: `/events/${eventIdentifier}?confirm=true#rsvp`,
   });
 
   if (notifyError) {

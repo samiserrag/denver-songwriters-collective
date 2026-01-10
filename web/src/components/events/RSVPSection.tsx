@@ -233,7 +233,7 @@ export function RSVPSection({
   }
 
   return (
-    <div className="space-y-2">
+    <section id="rsvp" className="space-y-2">
       <RSVPButton
         eventId={eventId}
         capacity={capacity}
@@ -250,6 +250,6 @@ export function RSVPSection({
         onClose={() => setShowCancelModal(false)}
         onSuccess={handleCancelSuccess}
       />
-    </div>
+    </section>
   );
 }

@@ -33,15 +33,17 @@ export function GalleryComments({
   const guestCommentType = type === "photo" ? "gallery_photo" : "gallery_album";
 
   return (
-    <CommentThread
-      tableName={tableName}
-      foreignKey={foreignKey}
-      targetId={targetId}
-      entityOwnerId={entityOwnerId}
-      secondaryOwnerId={secondaryOwnerId}
-      showAvatars={false}
-      maxHeight="max-h-48"
-      guestCommentType={guestCommentType}
-    />
+    <section id="comments">
+      <CommentThread
+        tableName={tableName}
+        foreignKey={foreignKey}
+        targetId={targetId}
+        entityOwnerId={entityOwnerId}
+        secondaryOwnerId={secondaryOwnerId}
+        showAvatars={false}
+        maxHeight="max-h-48"
+        guestCommentType={guestCommentType}
+      />
+    </section>
   );
 }

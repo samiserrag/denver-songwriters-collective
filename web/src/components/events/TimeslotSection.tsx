@@ -261,7 +261,7 @@ export function TimeslotSection({
   const openCount = timeslots.length - claimedCount;
 
   return (
-    <div className="space-y-4">
+    <section id="lineup" className="space-y-4">
       {/* Header */}
       <div className="text-center">
         <h2 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-text-primary)]">
@@ -419,6 +419,6 @@ export function TimeslotSection({
       <p className="text-xs text-[var(--color-text-secondary)] text-center">
         {slotDuration} min each • First come, first served
       </p>
-    </div>
+    </section>
   );
 }

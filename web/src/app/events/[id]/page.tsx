@@ -217,17 +217,22 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   let locationAddress: string | null = event.venue_address;
   let isCustomLocation = false;
 
-  if (!locationName && event.venue_id) {
-    // Fetch from venues table if venue_name wasn't denormalized
+  // Fetch venue details if we have a venue_id but missing name OR address
+  if (event.venue_id && (!locationName || !locationAddress)) {
     const { data: venue } = await supabase
       .from("venues")
       .select("name, address, city, state")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
-      locationName = venue.name;
-      const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
-      locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+      // Only override if the event field is missing
+      if (!locationName) {
+        locationName = venue.name;
+      }
+      if (!locationAddress) {
+        const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
+        locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+      }
     }
   }
 
@@ -355,13 +360,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   // Phase 4.51d: Check if admin is watching this event
   let isWatching = false;
   if (session && isAdminUser) {
-    // Note: event_watchers table exists but not in generated types yet
     const { data: watcherEntry } = await supabase
-      .from("event_watchers" as "events")
+      .from("event_watchers")
       .select("user_id")
       .eq("event_id", event.id)
       .eq("user_id", session.user.id)
-      .maybeSingle() as unknown as { data: { user_id: string } | null };
+      .maybeSingle();
     isWatching = !!watcherEntry;
   }
 

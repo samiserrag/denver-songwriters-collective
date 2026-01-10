@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51h):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51i):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,84 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.51i — Homepage Copy, Notification Deep-Linking, Supabase Types & Maps Fix (January 2026)
+
+**Goal:** Homepage copy updates, notification deep-linking for all notification types, Supabase type regeneration, and Google Maps link fix.
+
+**Homepage Copy Updates:**
+
+| Change | Details |
+|--------|---------|
+| New audience segment | Added "🌀 a fan of songs and songwriters" to "Join us if you're..." section |
+| Live music venue | Changed "an open mic host or venue" → "an open mic host or live music venue" |
+| Grid layout | Changed from 4 to 5 columns to accommodate new item |
+
+**Notification Deep-Linking:**
+
+All notification types now include hash anchors so users land directly on the relevant content:
+
+| Notification Type | Deep-Link Target |
+|-------------------|------------------|
+| Event RSVP | `#attendees` |
+| Event Comment | `#comments` |
+| Timeslot Claim | `#lineup` |
+| Gallery Photo Comment | `#comments` |
+| Gallery Album Comment | `#comments` |
+| Blog Comment | `#comments` |
+| Profile Comment | `#comments` |
+| Waitlist Offer | `#rsvp` |
+
+**Anchor IDs Added to Components:**
+
+| Component | Anchor ID |
+|-----------|-----------|
+| `TimeslotSection.tsx` | `id="lineup"` |
+| `RSVPSection.tsx` | `id="rsvp"` |
+| `BlogComments.tsx` | `id="comments"` |
+| `GalleryComments.tsx` | `id="comments"` |
+| `ProfileComments.tsx` | `id="comments"` |
+
+**Supabase Type Regeneration:**
+
+- Regenerated `database.types.ts` with `event_watchers` table now included
+- Removed all `(supabase as any)` type casts from:
+  - `app/api/events/[id]/watch/route.ts`
+  - `app/api/events/[id]/rsvp/route.ts`
+  - `app/api/events/[id]/comments/route.ts`
+  - `app/api/guest/rsvp/verify-code/route.ts`
+  - `app/api/guest/event-comment/verify-code/route.ts`
+  - `app/events/[id]/page.tsx`
+- Updated test documentation in `phase4-51d-union-fanout-watch.test.ts`
+
+**Google Maps Link Fix:**
+
+Fixed "Get Directions" button not appearing when event had `venue_id` but NULL `venue_address`:
+
+| Before | After |
+|--------|-------|
+| Only fetched venue if `venue_name` was NULL | Fetches venue if `venue_name` OR `venue_address` is NULL |
+| Events with name but no address showed no maps link | Maps link now appears for all events with venue |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Homepage copy updates |
+| `app/events/[id]/page.tsx` | Venue fetch fix, type cast removal |
+| `app/api/guest/timeslot-claim/verify-code/route.ts` | `#lineup` deep-link |
+| `app/api/guest/gallery-*/verify-code/route.ts` | `#comments` deep-links |
+| `app/api/guest/blog-comment/verify-code/route.ts` | `#comments` deep-links |
+| `app/api/guest/profile-comment/verify-code/route.ts` | `#comments` deep-links |
+| `lib/waitlistOffer.ts` | `#rsvp` deep-link |
+| `components/events/TimeslotSection.tsx` | Added `id="lineup"` |
+| `components/events/RSVPSection.tsx` | Added `id="rsvp"` |
+| `components/blog/BlogComments.tsx` | Added `id="comments"` |
+| `components/gallery/GalleryComments.tsx` | Added `id="comments"` |
+| `components/comments/ProfileComments.tsx` | Added `id="comments"` |
+| `lib/supabase/database.types.ts` | Regenerated with event_watchers |
 
 ---
 

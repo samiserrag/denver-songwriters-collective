@@ -312,7 +312,7 @@ async function notifyPhotoUploader(
       type: "gallery_comment",
       title,
       message,
-      link: photoUrl,
+      link: `${photoUrl}#comments`,
     },
   });
 }
@@ -379,7 +379,7 @@ async function notifyParentCommentAuthor(
         type: "gallery_comment",
         title,
         message,
-        link: photoUrl,
+        link: `${photoUrl}#comments`,
       },
     });
   }

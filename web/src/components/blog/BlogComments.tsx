@@ -295,7 +295,7 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
   }
 
   return (
-    <div className="mt-12 pt-8 border-t border-white/10">
+    <section id="comments" className="mt-12 pt-8 border-t border-white/10">
       <h3 className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-6">
         Comments ({totalCount})
       </h3>
@@ -364,6 +364,6 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
           {comments.map((comment) => renderComment(comment))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

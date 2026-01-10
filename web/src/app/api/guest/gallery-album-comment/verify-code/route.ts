@@ -264,7 +264,7 @@ async function notifyAlbumOwner(
       type: "gallery_comment",
       title,
       message,
-      link: albumUrl,
+      link: `${albumUrl}#comments`,
     },
   });
 }
@@ -313,7 +313,7 @@ async function notifyParentCommentAuthor(
         type: "gallery_comment",
         title,
         message,
-        link: albumUrl,
+        link: `${albumUrl}#comments`,
       },
     });
   }
