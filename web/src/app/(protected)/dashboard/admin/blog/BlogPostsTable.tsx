@@ -12,6 +12,7 @@ interface BlogPost {
   excerpt: string | null;
   is_published: boolean;
   is_approved: boolean;
+  is_featured: boolean;
   published_at: string | null;
   created_at: string;
   tags: string[];
@@ -31,6 +32,7 @@ export default function BlogPostsTable({ posts }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [isFeaturing, setIsFeaturing] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "published" | "draft">("all");
 
   const getAuthorName = (author: BlogPost["author"]) => {
@@ -84,6 +86,28 @@ export default function BlogPostsTable({ posts }: Props) {
       .eq("id", post.id);
 
     setIsApproving(null);
+    router.refresh();
+  };
+
+  const handleToggleFeatured = async (post: BlogPost) => {
+    setIsFeaturing(post.id);
+    const supabase = createClient();
+
+    if (!post.is_featured) {
+      // When featuring a post, unfeature all others first
+      await supabase
+        .from("blog_posts")
+        .update({ is_featured: false })
+        .eq("is_featured", true);
+    }
+
+    // Toggle this post's featured status
+    await supabase
+      .from("blog_posts")
+      .update({ is_featured: !post.is_featured })
+      .eq("id", post.id);
+
+    setIsFeaturing(null);
     router.refresh();
   };
 
@@ -172,6 +196,7 @@ export default function BlogPostsTable({ posts }: Props) {
             <tr>
               <th className="py-3 px-4">Title</th>
               <th className="py-3 px-4">Author</th>
+              <th className="py-3 px-4">Featured</th>
               <th className="py-3 px-4">Approval</th>
               <th className="py-3 px-4">Status</th>
               <th className="py-3 px-4">Tags</th>
@@ -190,6 +215,23 @@ export default function BlogPostsTable({ posts }: Props) {
                 </td>
                 <td className="py-3 px-4 text-[var(--color-text-secondary)]">
                   {getAuthorName(post.author)}
+                </td>
+                <td className="py-3 px-4">
+                  <button
+                    onClick={() => handleToggleFeatured(post)}
+                    disabled={isFeaturing === post.id}
+                    className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                      post.is_featured
+                        ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                        : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)]"
+                    }`}
+                  >
+                    {isFeaturing === post.id
+                      ? "..."
+                      : post.is_featured
+                      ? "★ Featured"
+                      : "Feature"}
+                  </button>
                 </td>
                 <td className="py-3 px-4">
                   <button
@@ -273,7 +315,7 @@ export default function BlogPostsTable({ posts }: Props) {
 
             {filteredPosts.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 px-4 text-center text-[var(--color-text-tertiary)]">
+                <td colSpan={8} className="py-8 px-4 text-center text-[var(--color-text-tertiary)]">
                   {filterStatus === "all"
                     ? "No blog posts yet. Create your first post!"
                     : `No ${filterStatus} posts found.`}

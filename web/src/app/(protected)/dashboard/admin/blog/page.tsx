@@ -39,6 +39,7 @@ export default async function AdminBlogPage() {
       excerpt,
       is_published,
       is_approved,
+      is_featured,
       published_at,
       created_at,
       tags,

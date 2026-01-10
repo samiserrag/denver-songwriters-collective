@@ -72,7 +72,7 @@ export default async function HomePage() {
     data: { session: _session },
   } = await supabase.auth.getSession();
 
-  const [upcomingEventsRes, tonightsHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, latestBlogRes, highlightsRes] = await Promise.all([
+  const [upcomingEventsRes, tonightsHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)
     supabase
       .from("events")
@@ -123,6 +123,7 @@ export default async function HomePage() {
       .order("featured_rank", { ascending: true })
       .order("day_of_week", { ascending: true })
       .limit(6),
+    // Featured blog post (if any)
     supabase
       .from("blog_posts")
       .select(`
@@ -133,10 +134,31 @@ export default async function HomePage() {
         cover_image_url,
         published_at,
         tags,
+        is_featured,
         author:profiles!blog_posts_author_id_fkey(full_name, avatar_url)
       `)
       .eq("is_published", true)
       .eq("is_approved", true)
+      .eq("is_featured", true)
+      .limit(1)
+      .maybeSingle(),
+    // Latest non-featured blog posts
+    supabase
+      .from("blog_posts")
+      .select(`
+        id,
+        slug,
+        title,
+        excerpt,
+        cover_image_url,
+        published_at,
+        tags,
+        is_featured,
+        author:profiles!blog_posts_author_id_fkey(full_name, avatar_url)
+      `)
+      .eq("is_published", true)
+      .eq("is_approved", true)
+      .neq("is_featured", true)
       .order("published_at", { ascending: false })
       .limit(2),
     // Monthly highlights for the homepage
@@ -213,11 +235,20 @@ export default async function HomePage() {
     );
   }
 
-  // Latest blog posts (array of up to 2)
+  // Featured blog post (single, may be null)
+  const featuredBlogPost = featuredBlogRes.data;
+
+  // Latest non-featured blog posts (array of up to 2)
   const latestBlogPosts = latestBlogRes.data ?? [];
 
+  // Combine: featured first (if any), then latest non-featured
+  const allBlogPosts = featuredBlogPost
+    ? [featuredBlogPost, ...latestBlogPosts]
+    : latestBlogPosts;
+
   // Helper to get author from a blog post
-  const getBlogAuthor = (post: typeof latestBlogPosts[0]) => {
+  type BlogPost = NonNullable<typeof featuredBlogPost>;
+  const getBlogAuthor = (post: BlogPost) => {
     if (!post?.author) return null;
     return Array.isArray(post.author) ? post.author[0] : post.author;
   };
@@ -238,7 +269,7 @@ export default async function HomePage() {
   const hasTonightsHappenings = tonightsHappenings.length > 0;
   const hasFeaturedMembers = featuredMembers.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
-  const hasLatestBlog = latestBlogPosts.length > 0;
+  const hasLatestBlog = allBlogPosts.length > 0;
   const hasHighlights = highlights.length > 0;
 
   return (
@@ -591,10 +622,11 @@ export default async function HomePage() {
             </div>
 
             {/* Blog Cards + Share Your Story CTA */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Latest Blog Posts */}
-              {latestBlogPosts.map((post) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Blog Posts (featured first if any, then latest) */}
+              {allBlogPosts.map((post) => {
                 const author = getBlogAuthor(post);
+                const isFeatured = post.is_featured;
                 return (
                   <Link
                     key={post.id}
@@ -609,7 +641,7 @@ export default async function HomePage() {
                             src={post.cover_image_url}
                             alt={post.title}
                             fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                             className="object-cover"
                           />
                         ) : (
@@ -617,6 +649,12 @@ export default async function HomePage() {
                             <svg className="w-16 h-16 text-[var(--color-text-accent)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                             </svg>
+                          </div>
+                        )}
+                        {/* Featured badge */}
+                        {isFeatured && (
+                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-purple-600 text-white text-xs font-medium">
+                            ★ Featured
                           </div>
                         )}
                         {/* Gradient overlay */}
