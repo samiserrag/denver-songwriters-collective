@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51e):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51h):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,85 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.51h — Featured Blog Posts + Homepage Layout (January 2026)
+
+**Goal:** Allow admin to feature a blog post on the homepage, creating a 4-card layout for the blog section.
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Featured blog toggle | Admin can mark one blog post as "featured" (only one at a time) |
+| Homepage 4-card layout | Featured post + 2 latest non-featured posts + Share Your Story CTA |
+| Featured badge | ★ Featured badge displayed on featured post cards |
+| Auto-unfeaturing | When featuring a post, all others are automatically unfeatured |
+
+**Database Migration (`20260110100000_add_blog_featured.sql`):**
+
+| Table | Changes |
+|-------|---------|
+| `blog_posts` | Added `is_featured` boolean column (default false) |
+| Index | Added partial index on `is_featured WHERE is_featured = true` |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/(protected)/dashboard/admin/blog/BlogPostsTable.tsx` | Added Featured column with toggle button |
+| `app/(protected)/dashboard/admin/blog/page.tsx` | Added `is_featured` to query select |
+| `app/page.tsx` | Separate queries for featured + latest, 4-column grid layout |
+
+**Homepage Blog Section Logic:**
+1. Query featured blog post (if any)
+2. Query latest 2 non-featured, published posts
+3. Combine: featured first (if exists) + latest posts
+4. Display in 4-column grid with Share Your Story CTA as final card
+
+---
+
+### Phase 4.51g — Guest Timeslot Claim Confirmation Emails (January 2026)
+
+**Goal:** Send proper confirmation emails to guests who claim timeslots, and fix host notification messaging.
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Guest confirmation email | Sent to guest after successful timeslot claim |
+| Host notification email | Properly says "signed up for slot X" (not "left a comment") |
+| Cancel link | Guest confirmation includes cancel URL |
+| Slot details | Shows slot number, time, venue, event info |
+
+**New Email Templates:**
+
+| Template | Path | Purpose |
+|----------|------|---------|
+| timeslotClaimConfirmation | `lib/email/templates/timeslotClaimConfirmation.ts` | Confirmation sent to guest after claim |
+| timeslotSignupHostNotification | `lib/email/templates/timeslotSignupHostNotification.ts` | Notification to host when someone claims slot |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/guest/timeslot-claim/verify-code/route.ts` | Uses new email templates, added helper functions |
+
+**Guest Confirmation Email Contents:**
+- Performer name greeting
+- Slot number and time
+- Event title, date, time
+- Venue name and address
+- Link to event page
+- Cancel booking link
+
+**Host Notification Email Contents:**
+- Performer name with "(guest)" label if applicable
+- Slot number and time
+- Event title
+- "View Lineup" button
+- Notification preference reminder
 
 ---
 
