@@ -7,7 +7,9 @@ import {
 } from "@/lib/guest-verification/config";
 import { verifyCodeHash } from "@/lib/guest-verification/crypto";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
-import { getContentCommentNotificationEmail } from "@/lib/email/templates/contentCommentNotification";
+import { sendEmail } from "@/lib/email/mailer";
+import { getTimeslotClaimConfirmationEmail } from "@/lib/email/templates/timeslotClaimConfirmation";
+import { getTimeslotSignupHostNotificationEmail } from "@/lib/email/templates/timeslotSignupHostNotification";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -146,13 +148,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get event and timeslot info
+    // Get event and timeslot info with full event details
     const { data: timeslot } = await supabase
       .from("event_timeslots")
       .select(`
         id,
         slot_index,
-        event:events!inner(id, title, slug, host_id)
+        start_offset_minutes,
+        duration_minutes,
+        event:events!inner(
+          id,
+          title,
+          slug,
+          host_id,
+          event_date,
+          start_time,
+          venue_name,
+          venue_address
+        )
       `)
       .eq("id", verification.timeslot_id)
       .single();
@@ -197,19 +210,76 @@ export async function POST(request: NextRequest) {
       .update({ verified_at: verifiedAt, claim_id: claim.id })
       .eq("id", verification.id);
 
-    // Notify event host about the guest signup
-    const event = timeslot.event as { id: string; title: string; slug: string | null; host_id: string | null };
-    if (event.host_id) {
-      const eventUrl = `/events/${event.slug || event.id}`;
-      const guestName = verification.guest_name || "A guest";
+    // Extract event data with proper typing
+    const event = timeslot.event as {
+      id: string;
+      title: string;
+      slug: string | null;
+      host_id: string | null;
+      event_date: string | null;
+      start_time: string | null;
+      venue_name: string | null;
+      venue_address: string | null;
+    };
+    const eventUrl = `/events/${event.slug || event.id}`;
+    const guestName = verification.guest_name || "A guest";
+    const guestEmail = verification.email;
 
+    // Calculate slot time
+    const slotTime = formatSlotTime(event.start_time, timeslot.start_offset_minutes);
+    const slotNumber = timeslot.slot_index + 1;
+
+    // Format event date for display
+    const eventDate = event.event_date
+      ? new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          timeZone: "America/Denver",
+        })
+      : "TBD";
+
+    // Format event time for display
+    const eventTime = event.start_time
+      ? formatTimeForDisplay(event.start_time)
+      : "TBD";
+
+    // Send confirmation email to guest
+    if (guestEmail) {
+      const cancelUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/guest/action?type=cancel_timeslot&id=${verification.id}`;
+
+      const confirmationEmail = getTimeslotClaimConfirmationEmail({
+        performerName: guestName,
+        eventTitle: event.title || "Event",
+        eventDate,
+        eventTime,
+        venueName: event.venue_name || "TBD",
+        venueAddress: event.venue_address || undefined,
+        slotTime: slotTime || `Slot ${slotNumber}`,
+        slotNumber,
+        eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+        cancelUrl,
+        isGuest: true,
+      });
+
+      sendEmail({
+        to: guestEmail,
+        subject: confirmationEmail.subject,
+        html: confirmationEmail.html,
+        text: confirmationEmail.text,
+      }).catch((err) => console.error("Failed to send guest confirmation email:", err));
+    }
+
+    // Notify event host about the guest signup
+    if (event.host_id) {
       notifyEventHost(
         supabase,
         event.host_id,
         guestName,
         event.title || "Event",
         eventUrl,
-        timeslot.slot_index
+        slotNumber,
+        slotTime
       ).catch((err) => console.error("Failed to notify event host:", err));
     }
 
@@ -231,35 +301,57 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to format slot time
+function formatSlotTime(eventStartTime: string | null, offsetMinutes: number | null): string | null {
+  if (!eventStartTime || offsetMinutes === null) return null;
+
+  const [hours, minutes] = eventStartTime.split(":").map(Number);
+  const totalMinutes = hours * 60 + minutes + offsetMinutes;
+  const h = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  const period = h >= 12 ? "PM" : "AM";
+  const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayHour}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+// Helper function to format event time for display
+function formatTimeForDisplay(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
 async function notifyEventHost(
   supabase: ReturnType<typeof createServiceRoleClient>,
   hostId: string,
   guestName: string,
   eventTitle: string,
   eventUrl: string,
-  slotIndex: number
+  slotNumber: number,
+  slotTime: string | null
 ) {
-  const title = `${guestName} (guest) signed up for slot ${slotIndex + 1}`;
-  const message = `${guestName} (guest) claimed slot ${slotIndex + 1} for "${eventTitle}"`;
+  const title = `${guestName} (guest) signed up for slot ${slotNumber}`;
+  const message = `${guestName} (guest) claimed slot ${slotNumber} for "${eventTitle}"`;
 
   const { data: userData } = await supabase.auth.admin.getUserById(hostId);
   const userEmail = userData?.user?.email;
 
-  const emailData = getContentCommentNotificationEmail({
-    contentType: "event",
-    contentTitle: eventTitle,
-    contentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
-    commenterName: guestName,
-    commentPreview: `Claimed slot ${slotIndex + 1}`,
-    isReply: false,
+  const emailData = getTimeslotSignupHostNotificationEmail({
+    eventTitle,
+    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+    performerName: guestName,
+    slotNumber,
+    slotTime: slotTime || undefined,
+    isGuest: true,
   });
 
   await sendEmailWithPreferences({
     supabase,
     userId: hostId,
-    templateKey: "eventCommentNotification",
+    templateKey: "eventCommentNotification", // Reuse event_updates category
     payload: userEmail
-      ? { to: userEmail, subject: `Guest signup for ${eventTitle}`, html: emailData.html, text: emailData.text }
+      ? { to: userEmail, subject: emailData.subject, html: emailData.html, text: emailData.text }
       : { to: "", subject: "", html: "", text: "" },
     notification: {
       type: "event_signup",
