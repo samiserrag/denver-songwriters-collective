@@ -4,6 +4,7 @@ import { Playfair_Display, Inter, Fraunces } from "next/font/google";
 import { Header, Footer } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ScrollReset } from "@/components/layout/ScrollReset";
 import { getSiteSettings } from "@/lib/site-settings";
 import { ThemeInitializer } from "@/components/ui/ThemeInitializer";
 import "./globals.css";
@@ -204,6 +205,7 @@ export default async function RootLayout({
         suppressHydrationWarning={true}
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${inter.variable} ${fraunces.variable} antialiased`}
       >
+        <ScrollReset />
         <ThemeInitializer
           defaultTheme={siteSettings.themePreset}
           defaultFont={siteSettings.fontPreset}

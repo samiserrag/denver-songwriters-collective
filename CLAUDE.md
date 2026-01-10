@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.51i):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.51j):** Lint warnings = 0. All tests passing (1281). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,33 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.51j — Page Scroll Reset (January 2026)
+
+**Goal:** Fix pages loading scrolled down instead of at the top.
+
+**Problem:** Pages (especially profile pages like `/songwriters/[id]`) were loading with a slight scroll offset instead of starting at the top.
+
+**Root Cause:** Browser scroll restoration combined with `scroll-behavior: smooth` could cause pages to restore a previous scroll position from navigation history.
+
+**Solution:** Created `ScrollReset` client component that:
+1. Disables browser's automatic scroll restoration (`window.history.scrollRestoration = 'manual'`)
+2. Scrolls to top on initial mount (unless URL has a hash anchor)
+3. Scrolls to top on pathname changes (unless URL has a hash anchor)
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/layout/ScrollReset.tsx` | Client component to reset scroll position |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/layout.tsx` | Added `<ScrollReset />` to root layout |
 
 ---
 
