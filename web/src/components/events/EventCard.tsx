@@ -11,6 +11,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/types";
 import { ImagePlaceholder } from "@/components/ui";
+import { VenueLink } from "@/components/venue/VenueLink";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "comedy": "bg-pink-900/40 text-pink-300",
@@ -75,6 +76,14 @@ export function EventCard({ event, onClick, className, compact = false, variant 
   const venueDisplay: string = typeof event.venue === "object" && event.venue && "name" in event.venue
     ? (event.venue as any).name ?? ""
     : (typeof event.venue === "string" ? event.venue : "") ?? "";
+
+  // Phase 4.52: Extract venue URLs for VenueLink component
+  const venueForLink = typeof event.venue === "object" && event.venue
+    ? {
+        google_maps_url: (event.venue as any).google_maps_url ?? null,
+        website_url: (event.venue as any).website_url ?? (event.venue as any).website ?? null,
+      }
+    : null;
 
   // Get location display (address or location field)
   const locationDisplay = event.location || event.venue_address ||
@@ -188,7 +197,7 @@ export function EventCard({ event, onClick, className, compact = false, variant 
               "text-[var(--color-text-primary)] font-medium line-clamp-1",
               compact ? "text-base" : "text-lg"
             )}>
-              {venueDisplay}
+              <VenueLink name={venueDisplay} venue={venueForLink} />
             </div>
           )}
 

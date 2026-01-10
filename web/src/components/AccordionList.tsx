@@ -150,6 +150,8 @@ export default function AccordionList({
                       signup_time={ev.signup_time ?? undefined}
                       category={(ev as any).category ?? undefined}
                       map_url={(ev as any).mapUrl ?? undefined}
+                      venue_google_maps_url={(ev.venue as any)?.google_maps_url ?? undefined}
+                      venue_website_url={(ev.venue as any)?.website_url ?? undefined}
                       searchQuery={searchQuery ?? undefined}
                       status={(ev as any).status ?? undefined}
                       last_verified_at={(ev as any).last_verified_at ?? undefined}

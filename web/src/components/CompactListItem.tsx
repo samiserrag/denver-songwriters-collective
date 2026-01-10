@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
+import { VenueLink } from "@/components/venue/VenueLink";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "comedy": "bg-pink-900/40 text-pink-300",
@@ -38,6 +39,9 @@ type Props = {
   start_time?: string | null;
   end_time?: string | null;
   map_url?: string | null;
+  // Phase 4.52: Venue URLs for clickable venue name links
+  venue_google_maps_url?: string | null;
+  venue_website_url?: string | null;
   // optional searchQuery for future highlighting (not required)
   searchQuery?: string | null;
   signup_time?: string | null;
@@ -84,6 +88,8 @@ export default function CompactListItem({
   start_time,
   end_time,
   map_url,
+  venue_google_maps_url,
+  venue_website_url,
   signup_time,
   category,
   status,
@@ -174,7 +180,13 @@ export default function CompactListItem({
         <div className="text-right">
           <div className="text-sm text-[var(--color-text-primary)] font-medium">{start}{end && end !== "TBD" ? ` — ${end}` : ""}</div>
           <div className="text-xs text-[var(--color-text-accent)]">Signup: {signupDisplay}</div>
-          <div className="text-xs text-[var(--color-text-secondary)]">{venue_name}</div>
+          {venue_name && (
+            <VenueLink
+              name={venue_name}
+              venue={{ google_maps_url: venue_google_maps_url, website_url: venue_website_url }}
+              className="text-xs"
+            />
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">

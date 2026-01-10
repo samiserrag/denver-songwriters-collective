@@ -13,6 +13,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { highlight } from "@/lib/highlight";
 import { humanizeRecurrence, formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
+import { VenueLink } from "@/components/venue/VenueLink";
 
 const CATEGORY_COLORS: Record<string, string> = {
   music: "bg-emerald-900/60 text-emerald-200 border-emerald-500/40",
@@ -55,6 +56,16 @@ function getVenueMapsUrl(v: MaybeVenue) {
   return undefined;
 }
 
+// Phase 4.52: Extract venue URLs for VenueLink component
+function getVenueForLink(v: MaybeVenue): { google_maps_url?: string | null; website_url?: string | null } | null {
+  if (!v) return null;
+  if (typeof v === "string") return null;
+  return {
+    google_maps_url: v.google_maps_url,
+    website_url: v.website_url ?? v.website,
+  };
+}
+
 function getMapUrl(venueName: string, address?: string) {
   const query = address
     ? `${venueName}, ${address}`
@@ -72,6 +83,7 @@ interface EventCardProps {
 export default function EventCard({ event, searchQuery, variant = "grid" }: EventCardProps) {
   const venueObj: MaybeVenue = event.venue ?? undefined;
   const venueName = getVenueName(venueObj) ?? "";
+  const venueForLink = getVenueForLink(venueObj);
 
   const eventMapUrl = ((): string | undefined => {
     // prefer explicit mapUrl field if present on event (but only if valid)
@@ -270,10 +282,18 @@ export default function EventCard({ event, searchQuery, variant = "grid" }: Even
 
         <div className="text-base text-[var(--color-text-secondary)] flex items-center gap-2">
           <span>📍</span>
-          <span
-            className="break-words"
-            dangerouslySetInnerHTML={{ __html: highlight(venueText ?? "TBA", searchQuery ?? "") }}
-          />
+          {searchQuery ? (
+            <span
+              className="break-words"
+              dangerouslySetInnerHTML={{ __html: highlight(venueText ?? "TBA", searchQuery ?? "") }}
+            />
+          ) : (
+            <VenueLink
+              name={venueText ?? "TBA"}
+              venue={venueForLink}
+              className="break-words"
+            />
+          )}
         </div>
 
         {displayLocation && (

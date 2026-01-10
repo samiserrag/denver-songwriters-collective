@@ -30,6 +30,7 @@ import {
   type NextOccurrenceResult,
   type OccurrenceOverride,
 } from "@/lib/events/nextOccurrence";
+import { VenueLink } from "@/components/venue/VenueLink";
 
 // ============================================================
 // Types
@@ -65,6 +66,9 @@ export interface HappeningEvent {
     address?: string | null;
     city?: string | null;
     state?: string | null;
+    // Phase 4.52: Venue link URLs
+    google_maps_url?: string | null;
+    website_url?: string | null;
   } | string | null;
 
   // Phase 4.0: Custom location fields
@@ -234,6 +238,26 @@ function getVenueName(event: HappeningEvent): string | null {
   return null;
 }
 
+/**
+ * Phase 4.52: Get venue object with URLs for VenueLink component
+ * Returns null if:
+ * - No venue (custom location or online-only)
+ * - Venue is a string (legacy data without URLs)
+ */
+function getVenueForLink(event: HappeningEvent): {
+  google_maps_url?: string | null;
+  website_url?: string | null;
+} | null {
+  // Only return venue object if it has URL data
+  if (event.venue && typeof event.venue === "object") {
+    return {
+      google_maps_url: event.venue.google_maps_url,
+      website_url: event.venue.website_url,
+    };
+  }
+  return null;
+}
+
 function getDetailHref(event: HappeningEvent): string {
   // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
   const identifier = event.slug || event.id;
@@ -307,12 +331,15 @@ export function HappeningCard({
   // Derived values - use pre-computed occurrence if available
   const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
   const venueName = getVenueName(event);
+  const venueForLink = getVenueForLink(event);
   const detailHref = getDetailHref(event);
   const startTime = formatTimeToAMPM(effectiveStartTime ?? null);
   const signupTime = event.signup_time ? formatTimeToAMPM(event.signup_time) : null;
 
   const isOnlineOnly = event.location_mode === "online";
   const isHybrid = event.location_mode === "hybrid";
+  // Phase 4.52: Custom locations don't get venue links
+  const isCustomLocation = !event.venue_id && !!event.custom_location_name;
 
   // Phase 4.37: Use verification state helper for consistent badge logic
   const verificationResult = getPublicVerificationState({
@@ -333,14 +360,6 @@ export function HappeningCard({
   const getCostDisplay = (): string => {
     if (event.is_free === true) return "Free";
     if (event.is_free === false && event.cost_label) return event.cost_label;
-    return "NA";
-  };
-
-  // Location display - NA standardization
-  const getLocationDisplay = (): string => {
-    if (isOnlineOnly) return "Online";
-    if (isHybrid && venueName) return `${venueName} + Online`;
-    if (venueName) return venueName;
     return "NA";
   };
 
@@ -676,8 +695,28 @@ export function HappeningCard({
           </div>
 
           {/* Meta line: Time · Venue · Cost - promoted visibility */}
+          {/* Phase 4.52: Venue name is linkable when venue has google_maps_url or website_url */}
           <p className="text-sm md:text-base text-[var(--color-text-secondary)] truncate">
-            {startTime || "NA"} · {getLocationDisplay()} · {getCostDisplay()}
+            {startTime || "NA"} ·{" "}
+            {isOnlineOnly ? (
+              "Online"
+            ) : isHybrid && venueName ? (
+              <>
+                <VenueLink
+                  name={venueName}
+                  venue={isCustomLocation ? null : venueForLink}
+                />
+                {" + Online"}
+              </>
+            ) : venueName ? (
+              <VenueLink
+                name={venueName}
+                venue={isCustomLocation ? null : venueForLink}
+              />
+            ) : (
+              "NA"
+            )}{" "}
+            · {getCostDisplay()}
           </p>
 
           {/* Chips row - Tier 3 type/context pills */}

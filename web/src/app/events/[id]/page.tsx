@@ -18,6 +18,7 @@ import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, formatVerifiedDate } from "@/lib/events/verification";
+import { VenueLink } from "@/components/venue/VenueLink";
 
 export const dynamic = "force-dynamic";
 
@@ -216,12 +217,16 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   let locationName: string | null = event.venue_name;
   let locationAddress: string | null = event.venue_address;
   let isCustomLocation = false;
+  // Phase 4.52: Venue URLs for VenueLink
+  let venueGoogleMapsUrl: string | null = null;
+  let venueWebsiteUrl: string | null = null;
 
   // Fetch venue details if we have a venue_id but missing name OR address
+  // Phase 4.52: Also fetch google_maps_url and website_url for venue links
   if (event.venue_id && (!locationName || !locationAddress)) {
     const { data: venue } = await supabase
       .from("venues")
-      .select("name, address, city, state")
+      .select("name, address, city, state, google_maps_url, website_url")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
@@ -233,6 +238,20 @@ export default async function EventDetailPage({ params }: EventPageProps) {
         const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
         locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
       }
+      // Phase 4.52: Store venue URLs
+      venueGoogleMapsUrl = venue.google_maps_url;
+      venueWebsiteUrl = venue.website_url;
+    }
+  } else if (event.venue_id) {
+    // We have name and address but still need URLs for venue links
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("google_maps_url, website_url")
+      .eq("id", event.venue_id)
+      .single();
+    if (venue) {
+      venueGoogleMapsUrl = venue.google_maps_url;
+      venueWebsiteUrl = venue.website_url;
     }
   }
 
@@ -658,7 +677,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               {venueName && (
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">📍</span>
-                  <span>{venueName}</span>
+                  <VenueLink
+                    name={venueName}
+                    venue={isCustomLocation ? null : { google_maps_url: venueGoogleMapsUrl, website_url: venueWebsiteUrl }}
+                  />
                 </div>
               )}
 
