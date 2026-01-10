@@ -13,6 +13,7 @@ export interface Comment {
   id: string;
   content: string;
   created_at: string;
+  edited_at?: string | null;
   user_id?: string;
   author_id?: string;
   parent_id: string | null;
@@ -110,6 +111,8 @@ export function CommentThread({
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const cooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -152,6 +155,7 @@ export function CommentThread({
         id,
         content,
         created_at,
+        edited_at,
         ${userIdColumn},
         parent_id,
         is_deleted,
@@ -178,6 +182,7 @@ export function CommentThread({
       id: c.id,
       content: c.content,
       created_at: c.created_at,
+      edited_at: c.edited_at ?? null,
       user_id: c[userIdColumn],
       author_id: c[userIdColumn],
       parent_id: c.parent_id,
@@ -300,12 +305,75 @@ export function CommentThread({
     }
   }
 
+  // Edit a comment
+  async function handleEdit(e: React.FormEvent, commentId: string) {
+    e.preventDefault();
+    const content = editContent.trim();
+    if (!content || !currentUserId) return;
+
+    if (content.length > MAX_COMMENT_LENGTH) {
+      toast.error(`Comment too long (max ${MAX_COMMENT_LENGTH} characters)`);
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tableName, content }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to edit comment");
+      } else {
+        toast.success("Comment updated");
+        setEditingId(null);
+        setEditContent("");
+        fetchComments();
+      }
+    } catch (error) {
+      console.error("Error editing comment:", error);
+      toast.error("Failed to edit comment");
+    }
+
+    setSubmitting(false);
+  }
+
+  // Start editing a comment
+  function startEditing(comment: Comment) {
+    setEditingId(comment.id);
+    setEditContent(comment.content);
+    // Cancel any reply in progress
+    setReplyingTo(null);
+    setReplyContent("");
+  }
+
+  // Cancel editing
+  function cancelEditing() {
+    setEditingId(null);
+    setEditContent("");
+  }
+
   // Check permissions
   function canDelete(comment: Comment): boolean {
     if (!currentUserId) return false;
     const authorId = comment.user_id || comment.author_id;
     if (authorId === currentUserId) return true;
     if (isAdmin) return true;
+    return false;
+  }
+
+  function canEdit(comment: Comment): boolean {
+    if (!currentUserId) return false;
+    const authorId = comment.user_id || comment.author_id;
+    // Only the author can edit (not admin, not moderator)
+    // Guest comments cannot be edited (no way to re-authenticate)
+    if (!authorId) return false; // Guest comment
+    if (authorId === currentUserId) return true;
     return false;
   }
 
@@ -364,6 +432,9 @@ export function CommentThread({
               <span className="text-[var(--color-text-tertiary)] text-xs">
                 {formatTimeAgo(comment.created_at)}
               </span>
+              {comment.edited_at && !isDeleted && (
+                <span className="text-xs text-[var(--color-text-tertiary)] italic">(edited)</span>
+              )}
               {isDeleted && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">deleted</span>
               )}
@@ -371,13 +442,55 @@ export function CommentThread({
                 <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">hidden</span>
               )}
             </div>
-            <p className={`text-[var(--color-text-secondary)] break-words ${isDeleted ? "line-through" : ""}`}>
-              {isDeleted ? "[deleted]" : comment.content}
-            </p>
 
-            {/* Actions row */}
-            {!isDeleted && currentUserId && (
+            {/* Show edit form or content */}
+            {editingId === comment.id ? (
+              <form onSubmit={(e) => handleEdit(e, comment.id)} className="mt-1">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value.slice(0, MAX_COMMENT_LENGTH))}
+                  maxLength={MAX_COMMENT_LENGTH}
+                  disabled={submitting}
+                  autoFocus
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 disabled:opacity-50 resize-none"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="submit"
+                    disabled={submitting || !editContent.trim()}
+                    className="px-3 py-1.5 text-sm bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] rounded-lg font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {submitting ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    disabled={submitting}
+                    className="px-3 py-1.5 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className={`text-[var(--color-text-secondary)] break-words ${isDeleted ? "line-through" : ""}`}>
+                {isDeleted ? "[deleted]" : comment.content}
+              </p>
+            )}
+
+            {/* Actions row - hide if editing */}
+            {!isDeleted && currentUserId && editingId !== comment.id && (
               <div className="flex items-center gap-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Edit button - shows first for author's own comments */}
+                {canEdit(comment) && (
+                  <button
+                    onClick={() => startEditing(comment)}
+                    className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-accent)]"
+                  >
+                    Edit
+                  </button>
+                )}
                 {/* Reply button */}
                 {!isReply && (
                   <button
