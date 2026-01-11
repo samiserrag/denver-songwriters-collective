@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.60):** Lint warnings = 0. All tests passing (1379). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.60):** Lint warnings = 0. All tests passing (1403). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -327,18 +327,39 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Fallback now searches "Venue Name Address" (e.g., "Tavern on 26th 10040 W 26th Ave")
 - Google Maps finds the actual place with reviews, hours, photos
 
+**Priority Order:**
+1. `venue.google_maps_url` (valid http/https)
+2. lat/lng (for custom locations)
+3. venue name + address search
+4. address-only search
+5. name-only search
+6. null (disabled)
+
 **Files Modified:**
 
 | File | Change |
 |------|--------|
-| `app/events/[id]/page.tsx` | `getGoogleMapsUrl()` now accepts `venueName` parameter |
-| `app/venues/[id]/page.tsx` | Fallback URL includes venue name |
+| `app/events/[id]/page.tsx` | `getGoogleMapsUrl()` now accepts `venueName` parameter, handles all edge cases |
+| `app/venues/[id]/page.tsx` | Fallback URL includes venue name, handles name-only case |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase4-60-google-maps-fallback.test.ts` | 24 tests for URL generation priority and edge cases |
 
 **Before/After:**
 - Before: `maps.google.com/search/?query=10040+W+26th+Ave` (shows building)
 - After: `maps.google.com/search/?query=Tavern+on+26th+10040+W+26th+Ave` (shows venue)
 
-**Test Coverage:** 1379 tests passing.
+**Edge Cases Handled:**
+- Name-only search when address is null
+- Address-only search when name is null
+- Unicode venue names (properly encoded)
+- Special characters (apostrophes, ampersands)
+- Custom locations use lat/lng when available
+
+**Test Coverage:** 1403 tests passing (24 new tests).
 
 ---
 
