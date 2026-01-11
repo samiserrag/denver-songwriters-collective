@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.64):** Lint warnings = 0. All tests passing (1591). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.65):** Lint warnings = 0. All tests passing (1604). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,39 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.65 — Venue Profile Buttons Fix (January 2026)
+
+**Goal:** Fix "Get Directions" and "View on Maps" buttons opening the same URL, and add Website button.
+
+**Problem 1:** When venue has `google_maps_url`, both "Get Directions" and "View on Maps" opened the same place page URL. "Get Directions" should open Google Maps in directions mode.
+
+**Problem 2:** When venue has both `google_maps_url` AND `website_url`, only the Maps button showed. Website button was missing.
+
+**Solution:**
+
+| Button | Behavior |
+|--------|----------|
+| Get Directions | Always uses `/maps/dir/?api=1&destination=...` (directions mode) |
+| View on Maps | Uses `google_maps_url` (place page with reviews, hours, photos) |
+| Website | Shows when venue has `website_url` AND `google_maps_url` |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/venue/getDirectionsUrl.ts` | Pure helper for Google Maps Directions URL |
+| `__tests__/venue-directions-url.test.ts` | 13 tests for URL generation |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/venues/[id]/page.tsx` | Uses `getVenueDirectionsUrl()`, added Website button |
+
+**Test Coverage:** 1604 tests passing (13 new).
 
 ---
 

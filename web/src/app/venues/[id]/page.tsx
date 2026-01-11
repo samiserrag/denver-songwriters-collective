@@ -4,7 +4,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HappeningCard, type HappeningEvent } from "@/components/happenings";
 import { PageContainer } from "@/components/layout";
-import { chooseVenueLink } from "@/lib/venue/chooseVenueLink";
+import { chooseVenueLink, isValidUrl } from "@/lib/venue/chooseVenueLink";
+import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
 import { getTodayDenver } from "@/lib/events/nextOccurrence";
 
 interface VenueDetailParams {
@@ -132,15 +133,9 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
   const externalLink = chooseVenueLink(venue);
 
   // Build Google Maps directions URL
-  // Phase 4.60: Include venue name in fallback search to find the actual place, not just the building
-  // Priority: google_maps_url > name+address > name-only > null
-  const getDirectionsUrl = venue.google_maps_url || (
-    fullAddress
-      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${venue.name} ${fullAddress}`)}`
-      : venue.name
-        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.name)}`
-        : null
-  );
+  // Phase 4.65: Always use directions URL format, never google_maps_url
+  // google_maps_url is for "View on Maps" button (place page), not directions
+  const getDirectionsUrl = getVenueDirectionsUrl(venue);
 
   return (
     <PageContainer>
@@ -202,6 +197,24 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
                 {venue.google_maps_url ? "View on Maps" : "Website"}
+              </a>
+            )}
+
+            {/* Separate Website button when venue has both google_maps_url AND website_url */}
+            {venue.website_url && isValidUrl(venue.website_url) && !!venue.google_maps_url && (
+              <a
+                href={venue.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.6 9h16.8" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.6 15h16.8" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3c2.5 2.7 3.9 5.8 3.9 9s-1.4 6.3-3.9 9c-2.5-2.7-3.9-5.8-3.9-9S9.5 5.7 12 3z" />
+                </svg>
+                Website
               </a>
             )}
 
