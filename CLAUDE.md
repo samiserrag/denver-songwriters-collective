@@ -314,6 +314,84 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase ABC4 — Venue Pages Series View Fix (January 2026)
+
+**Goal:** Fix venue detail pages not showing happenings, implement Series View for recurring events.
+
+**Problem:** Venue pages (`/venues/[id]`) showed "No upcoming happenings" even when events existed in the database. The query filtered by `event_date >= today`, which excluded recurring events with past anchor dates.
+
+**Root Cause:** The recurrence model uses `event_date` as an anchor (first occurrence), not a filter. A weekly event with `event_date=2025-12-01` should still appear on future Mondays.
+
+**Solution:**
+
+| Change | Implementation |
+|--------|----------------|
+| Remove date filter | Removed `.or(\`event_date.gte.${today},event_date.is.null\`)` |
+| Add occurrence expansion | Use `groupEventsAsSeriesView()` from `nextOccurrence.ts` |
+| Query overrides | Fetch `occurrence_overrides` for cancellation support |
+| Series rendering | Use existing `SeriesCard` component from happenings |
+
+**UI Structure:**
+
+```
+Happenings at [Venue Name]
+├── Recurring Series (shows "Every Monday" with expandable dates)
+├── One-Time Events (or "Upcoming Events" if no recurring)
+└── Schedule Unknown (if any)
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/venues/[id]/page.tsx` | Removed date filter, added series view, uses SeriesCard |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/venue-series-view.test.ts` | 10 tests for series categorization and expansion |
+
+**Test Coverage:** 1624 tests passing (10 new).
+
+**Investigation Doc:** `docs/investigation/phase-abc4-venue-happenings.md` (RESOLVED)
+
+---
+
+### Phase ABC3 — Duplicate Venue Merge + Admin Data Quality (January 2026)
+
+**Goal:** Merge duplicate venue records and add data quality indicators to admin table.
+
+**Duplicate Venue Merges (4 pairs):**
+
+| Canonical | Duplicate | Events Moved |
+|-----------|-----------|--------------|
+| Brewery Rickoli | (dup) | 1 → 2 total |
+| Second Dawn Brewing | (dup) | 1 → 3 total |
+| Rails End Beer Company | Rails End | 1 → 2 total |
+| The Pearl / Mercury Cafe | Mercury Cafe | 1 → 2 total |
+
+**Admin Venues Data Column:**
+- Added "Data" column with quality indicators: `M✓ W— P✓ A✓`
+- M = Maps URL, W = Website, P = Phone, A = Address (city+state)
+- Tooltip on header explains abbreviations
+
+**GOVERNANCE.md Updates:**
+- Added "Database Change Rules" section
+- Migrations required for policy/GRANT/schema changes
+- Direct SQL allowed only for data corrections with audit logging
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/admin/venues/AdminVenuesClient.tsx` | Added Data column with quality indicators |
+| `docs/GOVERNANCE.md` | Added Database Change Rules section (v1.1) |
+
+**Audit Log:** `docs/investigation/phase-abc3-duplicate-venue-merge.md` Section 8
+
+---
+
 ### Phase 4.65 — Venue Profile Buttons Fix (January 2026)
 
 **Goal:** Fix "Get Directions" and "View on Maps" buttons opening the same URL, and add Website button.
