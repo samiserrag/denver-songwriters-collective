@@ -94,6 +94,24 @@ function MusicIcon({ className }: { className?: string }) {
   );
 }
 
+// Heart icon for Kindred Songwriter Groups
+function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>
+  );
+}
+
+// Guitar icon for Jam Sessions
+function GuitarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
+    </svg>
+  );
+}
+
 // Filter icon for collapsed section
 function FilterIcon({ className }: { className?: string }) {
   return (
@@ -119,6 +137,7 @@ const TYPE_OPTIONS = [
   { value: "song_circle", label: "Song Circles" },
   { value: "gig", label: "Gigs" },
   { value: "kindred_group", label: "Kindred Songwriter Groups" },
+  { value: "jam_session", label: "Jam Sessions" },
   { value: "other", label: "Other" },
 ] as const;
 
@@ -291,6 +310,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const isOpenMicsActive = type === "open_mic";
   const isDscActive = dsc;
   const isShowsActive = type === "shows";
+  const isKindredActive = type === "kindred_group";
+  const isJamSessionsActive = type === "jam_session";
 
   // Build active filter summary for collapsed state
   const activeFilterSummary: string[] = [];
@@ -307,7 +328,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const advancedFilterCount = [
     selectedDays.length > 0,
     time !== "upcoming" && time !== "",
-    type && !isOpenMicsActive && !isShowsActive,
+    type && !isOpenMicsActive && !isShowsActive && !isKindredActive && !isJamSessionsActive,
     location,
     cost,
     verify,
@@ -315,8 +336,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Quick Filter Cards - 3 engaging buttons */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      {/* Quick Filter Cards - 5 engaging buttons in flexible wrap layout */}
+      <div className="flex flex-wrap gap-2 sm:gap-3">
         <button
           onClick={() => {
             // If already active, clear it; otherwise set it
@@ -328,7 +349,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             }
           }}
           className={cn(
-            "py-3 px-3 rounded-xl text-center font-medium transition-all",
+            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
             isOpenMicsActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
@@ -348,14 +369,14 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             }
           }}
           className={cn(
-            "py-3 px-3 rounded-xl text-center font-medium transition-all",
+            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
             isDscActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
           )}
         >
           <StarIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">DSC Happenings</span>
+          <span className="text-sm">DSC</span>
         </button>
 
         <button
@@ -368,7 +389,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             }
           }}
           className={cn(
-            "py-3 px-3 rounded-xl text-center font-medium transition-all",
+            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
             isShowsActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
@@ -376,6 +397,46 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         >
           <MusicIcon className="w-5 h-5 mx-auto mb-0.5" />
           <span className="text-sm">Shows</span>
+        </button>
+
+        <button
+          onClick={() => {
+            if (isKindredActive) {
+              updateFilter("type", null);
+            } else {
+              // Clear dsc if setting type
+              router.push(buildUrl({ type: "kindred_group", dsc: null }));
+            }
+          }}
+          className={cn(
+            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
+            isKindredActive
+              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
+          )}
+        >
+          <HeartIcon className="w-5 h-5 mx-auto mb-0.5" />
+          <span className="text-sm">Kindred</span>
+        </button>
+
+        <button
+          onClick={() => {
+            if (isJamSessionsActive) {
+              updateFilter("type", null);
+            } else {
+              // Clear dsc if setting type
+              router.push(buildUrl({ type: "jam_session", dsc: null }));
+            }
+          }}
+          className={cn(
+            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
+            isJamSessionsActive
+              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
+          )}
+        >
+          <GuitarIcon className="w-5 h-5 mx-auto mb-0.5" />
+          <span className="text-sm">Jams</span>
         </button>
       </div>
 

@@ -174,6 +174,8 @@ export default async function HappeningsPage({
     query = query.eq("event_type", "gig");
   } else if (typeFilter === "kindred_group") {
     query = query.eq("event_type", "kindred_group");
+  } else if (typeFilter === "jam_session") {
+    query = query.eq("event_type", "jam_session");
   } else if (typeFilter === "other") {
     query = query.eq("event_type", "other");
   }
@@ -407,6 +409,7 @@ export default async function HappeningsPage({
     if (typeFilter === "song_circle") return "Song Circles";
     if (typeFilter === "gig") return "Gigs";
     if (typeFilter === "kindred_group") return "Kindred Songwriter Groups";
+    if (typeFilter === "jam_session") return "Jam Sessions";
     if (dscFilter) return "DSC Events";
     return null;
   };
@@ -426,6 +429,7 @@ export default async function HappeningsPage({
         song_circle: "Song Circles",
         gig: "Gigs",
         kindred_group: "Kindred Songwriter Groups",
+        jam_session: "Jam Sessions",
         other: "Other",
       };
       parts.push(labels[typeFilter] || typeFilter);
