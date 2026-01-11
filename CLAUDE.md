@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.59):** Lint warnings = 0. All tests passing (1379). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.60):** Lint warnings = 0. All tests passing (1379). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,34 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.60 — Get Directions Venue Name Fallback (January 2026)
+
+**Goal:** Fix "Get Directions" to find the actual venue on Google Maps, not just the building address.
+
+**Problem:**
+- 76 of 91 venues don't have `google_maps_url` set
+- Fallback searched by address only (e.g., "10040 W 26th Ave")
+- Google Maps showed the building, not the venue (Tavern on 26th)
+
+**Solution:**
+- Fallback now searches "Venue Name Address" (e.g., "Tavern on 26th 10040 W 26th Ave")
+- Google Maps finds the actual place with reviews, hours, photos
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | `getGoogleMapsUrl()` now accepts `venueName` parameter |
+| `app/venues/[id]/page.tsx` | Fallback URL includes venue name |
+
+**Before/After:**
+- Before: `maps.google.com/search/?query=10040+W+26th+Ave` (shows building)
+- After: `maps.google.com/search/?query=Tavern+on+26th+10040+W+26th+Ave` (shows venue)
+
+**Test Coverage:** 1379 tests passing.
 
 ---
 
