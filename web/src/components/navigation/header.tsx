@@ -16,6 +16,7 @@ import { ThemePicker } from "@/components/ui/ThemePicker";
 // Phase 4.2: Open Mics link removed - use /happenings with type filter instead
 const navLinks = [
   { href: "/happenings", label: "Happenings" },
+  { href: "/venues", label: "Venues" },
   { href: "/members", label: "Members" },
   { href: "/gallery", label: "Gallery" },
   { href: "/blog", label: "Blog" },

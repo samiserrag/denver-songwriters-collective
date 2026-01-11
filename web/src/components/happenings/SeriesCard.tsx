@@ -24,7 +24,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import { getPublicVerificationState } from "@/lib/events/verification";
-import { VenueLink } from "@/components/venue/VenueLink";
 import {
   type SeriesEntry,
   type EventForOccurrence,
@@ -83,15 +82,17 @@ function getVenueName(event: SeriesEvent): string | null {
   return null;
 }
 
-function getVenueForLink(event: SeriesEvent): {
-  google_maps_url?: string | null;
-  website_url?: string | null;
-} | null {
-  if (event.venue && typeof event.venue === "object") {
-    return {
-      google_maps_url: event.venue.google_maps_url,
-      website_url: event.venue.website_url,
-    };
+/**
+ * Phase 4.58: Get venue ID for internal linking to /venues/[id]
+ * Returns null for custom locations and online-only events
+ */
+function getVenueIdForLink(event: SeriesEvent): string | null {
+  // Prefer venue.id from joined venue object, fallback to venue_id
+  if (event.venue && typeof event.venue === "object" && event.venue.id) {
+    return event.venue.id;
+  }
+  if (event.venue_id) {
+    return event.venue_id;
   }
   return null;
 }
@@ -208,7 +209,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
   const { event, nextOccurrence, upcomingOccurrences, recurrenceSummary, isOneTime, totalUpcomingCount } = series;
 
   const venueName = getVenueName(event);
-  const venueForLink = getVenueForLink(event);
+  const venueIdForLink = getVenueIdForLink(event);
   const detailHref = getDetailHref(event);
   const startTime = formatTimeToAMPM(event.start_time ?? null);
   const isOnlineOnly = event.location_mode === "online";
@@ -304,15 +305,24 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               </div>
             </div>
 
-            {/* Venue */}
+            {/* Venue - Phase 4.58: Internal link to /venues/[id] when venue_id exists */}
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 truncate">
               {isOnlineOnly ? (
                 "Online"
               ) : venueName ? (
-                <VenueLink
-                  name={venueName}
-                  venue={isCustomLocation ? null : venueForLink}
-                />
+                venueIdForLink && !isCustomLocation ? (
+                  // Internal link to venue detail page
+                  <Link
+                    href={`/venues/${venueIdForLink}`}
+                    className="hover:underline text-[var(--color-link)]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {venueName}
+                  </Link>
+                ) : (
+                  // Plain text for custom locations (no venue_id)
+                  <span>{venueName}</span>
+                )
               ) : (
                 "Location TBD"
               )}
