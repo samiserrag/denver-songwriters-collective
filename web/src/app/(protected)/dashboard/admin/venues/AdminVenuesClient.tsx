@@ -24,6 +24,26 @@ function isValidUrl(url: string | null | undefined): boolean {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
+/** Generate compact data quality indicators for a venue */
+function getDataQualityIndicators(venue: Venue): string {
+  const indicators: string[] = [];
+
+  // Maps: valid google_maps_url
+  indicators.push(isValidUrl(venue.google_maps_url) ? "M✓" : "M—");
+
+  // Web: valid website_url
+  indicators.push(isValidUrl(venue.website_url) ? "W✓" : "W—");
+
+  // Phone: has phone
+  indicators.push(venue.phone ? "P✓" : "P—");
+
+  // Address: has address + city + state (zip optional)
+  const hasAddress = venue.address && venue.city && venue.state;
+  indicators.push(hasAddress ? "A✓" : "A—");
+
+  return indicators.join(" ");
+}
+
 export default function AdminVenuesClient() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -390,6 +410,7 @@ export default function AdminVenuesClient() {
                 <th className="px-3 py-2">Address</th>
                 <th className="px-3 py-2">City</th>
                 <th className="px-3 py-2">State</th>
+                <th className="px-3 py-2" title="M=Maps W=Website P=Phone A=Address">Data</th>
                 <th className="px-3 py-2">Website</th>
                 <th className="px-3 py-2">Happenings</th>
                 <th className="px-3 py-2">View</th>
@@ -411,6 +432,10 @@ export default function AdminVenuesClient() {
                   </td>
                   <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                     {venue.state || "—"}
+                  </td>
+                  {/* Data quality indicators column */}
+                  <td className="px-3 py-2 text-xs text-[var(--color-text-secondary)] font-mono whitespace-nowrap">
+                    {getDataQualityIndicators(venue)}
                   </td>
                   {/* Website column */}
                   <td className="px-3 py-2">

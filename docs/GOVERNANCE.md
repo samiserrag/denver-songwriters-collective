@@ -105,6 +105,27 @@ Examples of deviations requiring stop:
 
 ---
 
+## Database Change Rules
+
+### Migrations Required
+
+Any **policy / GRANT / schema** change must ship via a **migration file** in `supabase/migrations/`.
+
+**Never apply structural changes via direct SQL without a corresponding migration.**
+
+### Direct SQL Allowed (Data Corrections Only)
+
+Direct SQL is allowed **only for one-time data corrections** (e.g., merging duplicates, backfilling values).
+
+Each direct SQL execution must be logged in an investigation doc with:
+- Exact SQL executed
+- Verification queries and results
+- Date and operator (who ran it)
+
+Example: `docs/investigation/phase-abc3-duplicate-venue-merge.md` Section 8 (Merge Audit Log)
+
+---
+
 ## Evidence Standard
 
 All investigation claims must be backed by evidence. No speculation.
@@ -264,4 +285,4 @@ For any new subsystem or major feature track:
 
 ---
 
-**END — Governance Workflow v1.0**
+**END — Governance Workflow v1.1**
