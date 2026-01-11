@@ -53,17 +53,17 @@ export default async function OpsConsolePage() {
           </span>
         </Link>
 
-        {/* Event Bulk Management */}
+        {/* Happening Bulk Management */}
         <Link
           href="/dashboard/admin/ops/events"
           className="block p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-accent-primary)] transition-colors"
         >
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-            Event Bulk Management
+            Happening Bulk Management
           </h2>
           <p className="text-[var(--color-text-secondary)] text-sm">
-            Export events to CSV, update data offline, import changes back.
-            Bulk verify/unverify events.
+            Export happenings to CSV, update data offline, import changes back.
+            Bulk verify/unverify happenings.
           </p>
           <span className="inline-block mt-4 text-[var(--color-accent-primary)] text-sm font-medium">
             Open →
@@ -79,7 +79,7 @@ export default async function OpsConsolePage() {
             Occurrence Overrides
           </h2>
           <p className="text-[var(--color-text-secondary)] text-sm">
-            Manage per-date overrides for recurring events. Cancel or modify
+            Manage per-date overrides for recurring happenings. Cancel or modify
             specific occurrences without changing the series.
           </p>
           <span className="inline-block mt-4 text-[var(--color-accent-primary)] text-sm font-medium">

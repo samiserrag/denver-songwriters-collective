@@ -50,7 +50,7 @@ export default async function OverrideOpsPage() {
         Occurrence Overrides
       </h1>
       <p className="text-[var(--color-text-secondary)] mb-2">
-        Manage per-date modifications to recurring events. Override specific
+        Manage per-date modifications to recurring happenings. Override specific
         occurrences without changing the series template.
       </p>
 
@@ -83,7 +83,7 @@ export default async function OverrideOpsPage() {
           href="/dashboard/admin/ops/events"
           className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm"
         >
-          ← Events Ops
+          ← Happenings Ops
         </Link>
         <span className="text-[var(--color-text-tertiary)]">|</span>
         <Link

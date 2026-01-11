@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface Venue {
   id: string;
@@ -153,9 +154,17 @@ export default function AdminVenuesClient() {
 
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
-      <h1 className="text-4xl font-bold text-[var(--color-accent-primary)] mb-2">Venue Management</h1>
+      <div className="flex items-baseline justify-between mb-2">
+        <h1 className="text-4xl font-bold text-[var(--color-accent-primary)]">Venue Management</h1>
+        <Link
+          href="/dashboard/admin/ops/venues"
+          className="text-[var(--color-accent-primary)] hover:underline text-sm"
+        >
+          Bulk operations →
+        </Link>
+      </div>
       <p className="text-[var(--color-text-secondary)] mb-6">
-        Manage venues for events. ({venues.length} venues)
+        Manage venues for happenings. ({venues.length} venues)
       </p>
 
       {error && (

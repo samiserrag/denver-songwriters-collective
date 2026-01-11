@@ -91,7 +91,7 @@ export default async function AdminDashboardPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Link href="/dashboard/admin/events" className="text-center p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors">
               <div className="text-2xl font-bold text-[var(--color-text-primary)]">{eventsCount}</div>
-              <div className="text-sm text-[var(--color-text-secondary)]">Events</div>
+              <div className="text-sm text-[var(--color-text-secondary)]">Happenings</div>
             </Link>
             <Link href="/dashboard/admin/users" className="text-center p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors">
               <div className="text-2xl font-bold text-[var(--color-text-primary)]">{usersCount}</div>
@@ -164,8 +164,8 @@ export default async function AdminDashboardPage() {
               className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
             >
               <div>
-                <span className="text-[var(--color-text-primary)] font-medium">Manage Events</span>
-                <p className="text-sm text-[var(--color-text-secondary)]">Edit event details, status, and verification</p>
+                <span className="text-[var(--color-text-primary)] font-medium">Manage Happenings</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Edit happening details, status, and verification</p>
               </div>
               <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
             </Link>
@@ -216,6 +216,23 @@ export default async function AdminDashboardPage() {
               <div>
                 <span className="text-[var(--color-text-primary)] font-medium">Monthly Highlights</span>
                 <p className="text-sm text-[var(--color-text-secondary)]">Feature content on the homepage</p>
+              </div>
+              <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
+            </Link>
+          </div>
+        </section>
+
+        {/* Operations */}
+        <section className="mb-8 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Operations</h2>
+          <div className="space-y-2">
+            <Link
+              href="/dashboard/admin/ops"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
+            >
+              <div>
+                <span className="text-[var(--color-text-primary)] font-medium">Ops Console</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Bulk CSV operations for happenings, venues, and overrides</p>
               </div>
               <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
             </Link>

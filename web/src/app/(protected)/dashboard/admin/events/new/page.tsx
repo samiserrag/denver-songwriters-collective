@@ -36,10 +36,10 @@ export default async function NewEventPage() {
     <div className="min-h-screen w-full px-6 py-12 max-w-3xl mx-auto">
       <div className="mb-6">
         <Link href="/dashboard/admin/events" className="text-[var(--color-text-accent)] hover:underline">
-          ← Back to Events
+          ← Back to Happenings
         </Link>
       </div>
-      <h1 className="text-3xl font-bold text-[var(--color-text-accent)] mb-8">Add New Event</h1>
+      <h1 className="text-3xl font-bold text-[var(--color-text-accent)] mb-8">Add New Happening</h1>
       <EventCreateForm venues={venues ?? []} />
     </div>
   );

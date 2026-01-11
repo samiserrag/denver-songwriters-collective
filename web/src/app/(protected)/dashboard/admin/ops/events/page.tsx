@@ -48,17 +48,17 @@ export default async function EventOpsPage() {
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold text-[var(--color-accent-primary)] mb-2">
-        Events Bulk Management
+        Happenings Bulk Management
       </h1>
       <p className="text-[var(--color-text-secondary)] mb-2">
-        Export, edit, and import event data via CSV. Verification is managed via
+        Export, edit, and import happening data via CSV. Verification is managed via
         bulk actions (not CSV).
       </p>
 
       {/* Stats */}
       <div className="flex flex-wrap gap-4 mb-8 text-sm">
         <span className="text-[var(--color-text-tertiary)]">
-          {totalEvents} total events
+          {totalEvents} total happenings
         </span>
         <span className="text-[var(--color-text-tertiary)]">•</span>
         <span className="text-[var(--color-text-tertiary)]">
@@ -91,7 +91,7 @@ export default async function EventOpsPage() {
           href="/dashboard/admin/ops/overrides"
           className="text-[var(--color-accent-primary)] hover:underline text-sm"
         >
-          Occurrence Overrides Ops →
+          Occurrence Overrides →
         </Link>
         <span className="text-[var(--color-text-tertiary)]">|</span>
         <Link
