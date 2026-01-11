@@ -22,16 +22,41 @@ export async function GET() {
   // Use service role client for admin operations that bypass RLS
   const serviceClient = createServiceRoleClient();
 
-  const { data, error } = await serviceClient
+  // Fetch all venues
+  const { data: venues, error: venuesError } = await serviceClient
     .from("venues")
     .select("*")
     .order("name", { ascending: true });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (venuesError) {
+    return NextResponse.json({ error: venuesError.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  // Fetch event counts per venue (active, published only)
+  const { data: eventCounts } = await serviceClient
+    .from("events")
+    .select("venue_id")
+    .not("venue_id", "is", null)
+    .neq("status", "cancelled")
+    .eq("is_published", true);
+
+  // Build count map
+  const countMap = new Map<string, number>();
+  if (eventCounts) {
+    for (const event of eventCounts) {
+      if (event.venue_id) {
+        countMap.set(event.venue_id, (countMap.get(event.venue_id) || 0) + 1);
+      }
+    }
+  }
+
+  // Merge counts into venues
+  const venuesWithCounts = (venues ?? []).map((venue) => ({
+    ...venue,
+    happenings_count: countMap.get(venue.id) || 0,
+  }));
+
+  return NextResponse.json(venuesWithCounts);
 }
 
 // POST - Create a new venue (admin only)

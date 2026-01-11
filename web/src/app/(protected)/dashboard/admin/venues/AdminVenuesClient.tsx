@@ -15,6 +15,13 @@ interface Venue {
   google_maps_url?: string;
   created_at: string;
   updated_at: string;
+  happenings_count?: number;
+}
+
+/** Check if a string is a valid URL starting with http:// or https:// */
+function isValidUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return url.startsWith("http://") || url.startsWith("https://");
 }
 
 export default function AdminVenuesClient() {
@@ -383,6 +390,9 @@ export default function AdminVenuesClient() {
                 <th className="px-3 py-2">Address</th>
                 <th className="px-3 py-2">City</th>
                 <th className="px-3 py-2">State</th>
+                <th className="px-3 py-2">Website</th>
+                <th className="px-3 py-2">Happenings</th>
+                <th className="px-3 py-2">View</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
@@ -401,6 +411,36 @@ export default function AdminVenuesClient() {
                   </td>
                   <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                     {venue.state || "—"}
+                  </td>
+                  {/* Website column */}
+                  <td className="px-3 py-2">
+                    {isValidUrl(venue.website_url) ? (
+                      <a
+                        href={venue.website_url!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--color-text-accent)] hover:underline text-xs"
+                      >
+                        Website ↗
+                      </a>
+                    ) : (
+                      <span className="text-[var(--color-text-tertiary)]">—</span>
+                    )}
+                  </td>
+                  {/* Happenings count column */}
+                  <td className="px-3 py-2 text-[var(--color-text-secondary)]">
+                    {venue.happenings_count ?? 0}
+                  </td>
+                  {/* View link column */}
+                  <td className="px-3 py-2">
+                    <Link
+                      href={`/venues/${venue.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[var(--color-text-accent)] hover:underline text-xs"
+                    >
+                      View →
+                    </Link>
                   </td>
                   <td className="px-3 py-2 space-x-2">
                     <button
