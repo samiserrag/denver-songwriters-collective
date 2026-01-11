@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.62):** Lint warnings = 0. All tests passing (1572). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.64):** Lint warnings = 0. All tests passing (1591). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,40 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.64 — Venue CSV Quote-Safe Parsing Fix (January 2026)
+
+**Goal:** Fix venue CSV re-upload validation failure when fields contain commas.
+
+**Bug:** Admin → Ops Console → Venues → Export CSV → re-upload same file failed with "expected 10 columns, got 11/12/14" on rows containing commas inside quoted fields (e.g., notes like "Great venue, friendly staff").
+
+**Root Cause:** `venueCsvParser.ts` used naive `line.split(",")` which ignored RFC 4180 quoting rules. The serializer correctly quoted commas, but the parser didn't respect those quotes.
+
+**Fix:** Added `parseCsvLine()` helper (same pattern as `eventCsvParser.ts`) that properly handles:
+- Quoted fields containing commas: `"Foo, Bar"` → `Foo, Bar`
+- Escaped quotes: `"He said ""hello"""` → `He said "hello"`
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/ops/venueCsvParser.ts` | Added `parseCsvLine()` helper, replaced `split(",")` calls |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/venue-csv-quote-safe.test.ts` | 19 tests for round-trip, quoted commas, edge cases |
+
+**Test Coverage:** 1591 tests passing (19 new).
+
+**Invariants Preserved:**
+- Schema unchanged (10 columns in same order)
+- Row numbering unchanged (1-indexed for display)
+- CRLF/LF handling preserved
+- Multi-line cell STOP-GATE preserved
 
 ---
 
