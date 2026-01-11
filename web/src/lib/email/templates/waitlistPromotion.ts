@@ -129,7 +129,7 @@ CONFIRM MY SPOT: ${confirmUrl}
 
 If you can't make it, no worries—just let us know so we can offer the spot to someone else.
 
-View event: ${SITE_URL}/events/${eventIdentifier}
+View happening: ${SITE_URL}/events/${eventIdentifier}
 
 View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 

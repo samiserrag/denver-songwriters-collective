@@ -168,7 +168,7 @@ WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 
 You're all set! See you there.
 
-View event: ${eventUrl}
+View happening: ${eventUrl}
 ${isGuest ? "" : `\nView all your RSVPs: ${SITE_URL}/dashboard/my-rsvps\n`}
 Can't make it? Cancel here: ${cancelUrl}`;
 
@@ -259,7 +259,7 @@ We'll email you right away if a spot opens up.
 
 Spots open up more often than you'd think—keep an eye on your inbox!
 
-View event: ${eventUrl}
+View happening: ${eventUrl}
 ${isGuest ? "" : `\nView all your RSVPs: ${SITE_URL}/dashboard/my-rsvps\n`}
 Remove me from the waitlist: ${cancelUrl}`;
 

@@ -201,7 +201,7 @@ export function RSVPSection({
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-xl">
           <p className="text-[var(--color-text-primary)] font-medium mb-1">No Pending Offer</p>
           <p className="text-[var(--color-text-secondary)] text-sm">
-            You don&apos;t have a pending spot offer for this event. The offer may have expired or been used.
+            You don&apos;t have a pending spot offer for this happening. The offer may have expired or been used.
           </p>
         </div>
         <RSVPButton
@@ -220,7 +220,7 @@ export function RSVPSection({
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-xl">
           <p className="text-[var(--color-text-primary)] font-medium mb-1">No RSVP Found</p>
           <p className="text-[var(--color-text-secondary)] text-sm">
-            You don&apos;t have an active RSVP for this event. You may have already cancelled.
+            You don&apos;t have an active RSVP for this happening. You may have already cancelled.
           </p>
         </div>
         <RSVPButton

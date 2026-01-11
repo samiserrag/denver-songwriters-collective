@@ -48,7 +48,7 @@ ${paragraph(getGreeting(userName))}
 
 <div style="background-color: ${EMAIL_COLORS.errorBg}; border: 1px solid ${EMAIL_COLORS.errorBorder}; border-radius: 8px; padding: 16px; margin: 20px 0;">
   <p style="margin: 0; color: ${EMAIL_COLORS.error}; font-size: 15px; font-weight: 600;">
-    Event cancelled
+    Happening cancelled
   </p>
   <p style="margin: 8px 0 0 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px;">
     <strong>${safeTitle}</strong> on ${safeDate} at ${safeVenue}
@@ -57,7 +57,7 @@ ${paragraph(getGreeting(userName))}
 
 ${reason ? quoteBlock(hostName ? `Note from ${hostName}` : "Host's note", reason) : ""}
 
-${paragraph("We're sorry for any inconvenience. We hope to see you at another event soon!", { muted: true })}
+${paragraph("We're sorry for any inconvenience. We hope to see you at another happening soon!", { muted: true })}
 
 ${infoBox("🎵", "Looking for something else this week?")}
 
@@ -72,7 +72,7 @@ ${rsvpsDashboardLink()}
 
 Unfortunately, ${eventTitle} scheduled for ${safeDate} at ${safeVenue} has been cancelled.
 ${reason ? `\n${hostName ? `Note from ${hostName}` : "Host's note"}: ${reason}\n` : ""}
-We're sorry for any inconvenience. We hope to see you at another event soon!
+We're sorry for any inconvenience. We hope to see you at another happening soon!
 
 Looking for something else this week?
 Browse happenings: ${happeningsUrl}

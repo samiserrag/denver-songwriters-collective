@@ -39,9 +39,9 @@ export function WatchEventButton({ eventId, initialWatching }: WatchEventButtonP
       onClick={handleToggle}
       disabled={loading}
       className="text-sm text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
-      title={watching ? "Stop receiving notifications for this event" : "Receive notifications for this event"}
+      title={watching ? "Stop receiving notifications for this happening" : "Receive notifications for this happening"}
     >
-      {loading ? "..." : watching ? "Unwatch event" : "Watch event"}
+      {loading ? "..." : watching ? "Unwatch happening" : "Watch happening"}
     </button>
   );
 }

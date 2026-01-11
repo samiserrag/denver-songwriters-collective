@@ -115,7 +115,7 @@ WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 
 Should be a good one. See you soon!
 
-View event: ${eventUrl}
+View happening: ${eventUrl}
 
 View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 

@@ -83,7 +83,7 @@ export function HostControls({ eventId, hasTimeslots }: HostControlsProps) {
         <h3 className="font-semibold text-[var(--color-text-primary)]">Host Controls</h3>
       </div>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        You&apos;re a host for this event. Use these tools to manage the lineup.
+        You&apos;re a host for this happening. Use these tools to manage the lineup.
       </p>
       <div className="flex flex-wrap gap-3">
         {hasTimeslots && (

@@ -64,13 +64,13 @@ export function getTimeslotSignupHostNotificationEmail(params: TimeslotSignupHos
       `<strong>${safePerformerName}${guestLabel}</strong> just claimed <strong>${slotInfo}</strong> for <strong>"${safeTitle}"</strong>.`
     )}
 
-    ${paragraph(`They're ready to perform at your event!`)}
+    ${paragraph(`They're ready to perform at your happening!`)}
 
     ${createButton("View Lineup", eventUrl)}
 
     ${paragraph(
       `<span style="color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
-        You're receiving this because you're the event host.
+        You're receiving this because you're the host.
         You can adjust your notification preferences in your <a href="${SITE_URL}/dashboard/settings" style="color: ${EMAIL_COLORS.accent};">account settings</a>.
       </span>`
     )}
@@ -84,12 +84,12 @@ ${performerName}${guestLabel} signed up for slot ${slotNumber}
 
 ${performerName}${guestLabel} just claimed ${slotInfo} for "${eventTitle}".
 
-They're ready to perform at your event!
+They're ready to perform at your happening!
 
 View lineup: ${eventUrl}
 
 ---
-You're receiving this because you're the event host.
+You're receiving this because you're the host.
 Manage notifications: ${SITE_URL}/dashboard/settings
 `;
 

@@ -52,8 +52,8 @@ export async function generateMetadata({
 
   if (!event) {
     return {
-      title: "Event Not Found | Denver Songwriters Collective",
-      description: "This event could not be found.",
+      title: "Happening Not Found | Denver Songwriters Collective",
+      description: "This happening could not be found.",
     };
   }
 
@@ -448,7 +448,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           <div className="flex items-center gap-2">
             <span className="text-lg">🚫</span>
             <div>
-              <p className="font-semibold">This event has been cancelled</p>
+              <p className="font-semibold">This happening has been cancelled</p>
               <p className="text-sm text-red-300/80">RSVP and signups are no longer available.</p>
             </div>
           </div>
@@ -470,8 +470,8 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           <div className="flex items-center gap-2">
             <span className="text-lg">📅</span>
             <div>
-              <p className="font-semibold">This event has ended</p>
-              <p className="text-sm text-slate-300/80">Check out upcoming happenings for future events.</p>
+              <p className="font-semibold">This happening has ended</p>
+              <p className="text-sm text-slate-300/80">Check out upcoming happenings for future happenings.</p>
             </div>
           </div>
         </div>
@@ -482,7 +482,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             <span className="text-lg">📝</span>
             <div>
               <p className="font-semibold">Draft Preview</p>
-              <p className="text-sm text-amber-300/80">This event is not published yet. Only you and admins can see it.</p>
+              <p className="text-sm text-amber-300/80">This happening is not published yet. Only you and admins can see it.</p>
             </div>
           </div>
         </div>
@@ -576,7 +576,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </svg>
               <span>
                 <span className="font-medium">Cancelled</span>
-                <span className="ml-1">— This event has been cancelled.</span>
+                <span className="ml-1">— This happening has been cancelled.</span>
               </span>
             </div>
           )}
@@ -590,9 +590,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 <span className="block text-sm mt-0.5">
                   {/* Phase 4.42k: Source-aware copy for unconfirmed events */}
                   {(event as { source?: string }).source === "import" ? (
-                    <>This event was imported from an external source and hasn&apos;t been verified yet.</>
+                    <>This happening was imported from an external source and hasn&apos;t been verified yet.</>
                   ) : (
-                    <>This event is awaiting admin verification.</>
+                    <>This happening is awaiting admin verification.</>
                   )}
                   {verificationResult.lastVerifiedAt && (
                     <span className="ml-1">Last verified: {formatVerifiedDate(verificationResult.lastVerifiedAt)}</span>
@@ -640,7 +640,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </svg>
               <span>
                 <span className="font-medium">Missing details</span>
-                <span className="ml-1">— Know more about this event? Contact an admin to help complete this listing.</span>
+                <span className="ml-1">— Know more about this happening? Contact an admin to help complete this listing.</span>
               </span>
             </div>
           )}
@@ -855,7 +855,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 ))}
               </div>
               <p className="mt-3 text-sm text-[var(--color-text-secondary)]">
-                Have photos from this event?{" "}
+                Have photos from this happening?{" "}
                 <Link
                   href="/dashboard/gallery"
                   className="text-[var(--color-text-accent)] hover:underline"
@@ -884,9 +884,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <div className="flex items-center gap-3">
                 <span className="text-emerald-400 text-lg">✓</span>
                 <div>
-                  <p className="font-medium text-emerald-400">You are the host of this event</p>
+                  <p className="font-medium text-emerald-400">You are the host of this happening</p>
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    Manage this event from your{" "}
+                    Manage this happening from your{" "}
                     <Link href="/dashboard/my-events" className="text-[var(--color-text-accent)] hover:underline">
                       dashboard
                     </Link>
@@ -898,10 +898,10 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           {session && isUnclaimed && (
             <div className="mt-8">
               <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
-                Claim This Event
+                Claim This Happening
               </h2>
               <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                Are you the organizer of this event? Request ownership to manage details and updates.
+                Are you the organizer of this happening? Request ownership to manage details and updates.
               </p>
               <ClaimEventButton
                 eventId={event.id}

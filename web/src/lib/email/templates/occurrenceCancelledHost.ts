@@ -62,7 +62,7 @@ ${reason ? quoteBlock(hostName ? `Note from ${hostName}` : "Host's note", reason
 
 ${infoBox("📅", `This is for ${safeDate} only. The regular series continues as scheduled.`)}
 
-${paragraph("We're sorry for any inconvenience. We hope to see you at another event soon!", { muted: true })}
+${paragraph("We're sorry for any inconvenience. We hope to see you at another happening soon!", { muted: true })}
 
 ${createButton("Browse Happenings", happeningsUrl)}
 
@@ -79,10 +79,10 @@ Unfortunately, ${eventTitle} scheduled for ${occurrenceDate} at ${venueName} has
 ${safeReason && safeHostName ? `\nNote from ${safeHostName}: ${safeReason}\n` : safeReason ? `\n${safeReason}\n` : ""}
 This is for ${occurrenceDate} only. The regular series continues as scheduled.
 
-We're sorry for any inconvenience. We hope to see you at another event soon!
+We're sorry for any inconvenience. We hope to see you at another happening soon!
 
 Browse happenings: ${happeningsUrl}
-View event series: ${eventUrl}
+View happening series: ${eventUrl}
 
 View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps`;
 

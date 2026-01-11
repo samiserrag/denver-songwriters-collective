@@ -117,7 +117,7 @@ WHERE: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 
 You're on the lineup! See you on stage.
 
-View event: ${eventUrl}
+View happening: ${eventUrl}
 ${cancelUrl ? `\nCan't make it? Cancel here: ${cancelUrl}` : ""}`;
 
   const text = wrapEmailText(textContent);

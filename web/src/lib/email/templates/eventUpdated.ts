@@ -149,7 +149,7 @@ Where: ${safeVenue}${safeAddress ? `\n${safeAddress}` : ""}
 
 Your spot is still reserved. If the new details don't work for you, just let us know.
 
-View event: ${eventUrl}
+View happening: ${eventUrl}
 
 View all your RSVPs: ${SITE_URL}/dashboard/my-rsvps
 

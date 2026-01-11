@@ -62,14 +62,14 @@ export function getRsvpHostNotificationEmail(params: RsvpHostNotificationEmailPa
     ${paragraph(
       isWaitlist
         ? `They'll be notified if a spot opens up.`
-        : `They're planning to attend your event!`
+        : `They're planning to attend your happening!`
     )}
 
     ${createButton("View Attendees", eventUrl)}
 
     ${paragraph(
       `<span style="color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
-        You're receiving this because you're associated with this event.
+        You're receiving this because you're associated with this happening.
         You can adjust your notification preferences in your <a href="${SITE_URL}/dashboard/settings" style="color: ${EMAIL_COLORS.accent};">account settings</a>.
       </span>`
     )}
@@ -87,12 +87,12 @@ ${isWaitlist
 
 ${isWaitlist
   ? `They'll be notified if a spot opens up.`
-  : `They're planning to attend your event!`}
+  : `They're planning to attend your happening!`}
 
 View attendees: ${eventUrl}
 
 ---
-You're receiving this because you're associated with this event.
+You're receiving this because you're associated with this happening.
 Manage notifications: ${SITE_URL}/dashboard/settings
 `;
 

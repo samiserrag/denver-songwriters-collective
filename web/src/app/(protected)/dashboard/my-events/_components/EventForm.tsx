@@ -746,9 +746,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             {locationSelectionMode === "custom" && (
               <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
                 <div>
-                  <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location (this event only)</h4>
+                  <h4 className="text-sm font-semibold text-[var(--color-text-accent)]">Custom Location (this happening only)</h4>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                    This location applies only to this event and won&apos;t be added to the venue list.
+                    This location applies only to this happening and won&apos;t be added to the venue list.
                   </p>
                 </div>
 
@@ -1119,8 +1119,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               {formData.is_published
-                ? "This event is visible to the public and accepting signups."
-                : "This event is hidden from the public. Publish when ready."}
+                ? "This happening is visible to the public and accepting signups."
+                : "This happening is hidden from the public. Publish when ready."}
             </p>
           </div>
           <button
@@ -1163,7 +1163,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 Ready to publish
               </span>
               <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                This will make your event visible to the community. You can unpublish at any time.
+                This will make your happening visible to the community. You can unpublish at any time.
               </p>
             </div>
           </label>
@@ -1179,7 +1179,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         {/* Card Preview */}
         <div className="mb-6">
           <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-            How your event will appear in listings:
+            How your happening will appear in listings:
           </p>
           <div className="pointer-events-none select-none" aria-hidden="true">
             <HappeningCard
@@ -1192,7 +1192,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         {/* Detail Header Preview */}
         <div>
           <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-            Event detail page header:
+            Happening detail page header:
           </p>
           <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
             <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">

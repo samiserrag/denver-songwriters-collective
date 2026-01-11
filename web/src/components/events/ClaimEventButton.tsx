@@ -38,7 +38,7 @@ export function ClaimEventButton({ eventId, eventTitle, existingClaim }: Props) 
               Claim Status
             </p>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              You&apos;ve requested to claim this event
+              You&apos;ve requested to claim this happening
             </p>
           </div>
           <span
@@ -85,7 +85,7 @@ export function ClaimEventButton({ eventId, eventTitle, existingClaim }: Props) 
       if (insertError) {
         if (insertError.code === "23505") {
           // Unique constraint violation
-          setError("You already have a pending claim for this event.");
+          setError("You already have a pending claim for this happening.");
         } else {
           setError(insertError.message);
         }
@@ -136,7 +136,7 @@ export function ClaimEventButton({ eventId, eventTitle, existingClaim }: Props) 
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        Claim This Event
+        Claim This Happening
       </button>
 
       {/* Modal */}
@@ -152,7 +152,7 @@ export function ClaimEventButton({ eventId, eventTitle, existingClaim }: Props) 
           <div className="relative w-full max-w-md bg-[var(--color-bg-primary)] border border-[var(--color-border-default)] rounded-xl shadow-2xl">
             <div className="p-6 border-b border-[var(--color-border-default)]">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                Claim Event
+                Claim Happening
               </h2>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                 Request ownership of &quot;{eventTitle}&quot;
@@ -167,7 +167,7 @@ export function ClaimEventButton({ eventId, eventTitle, existingClaim }: Props) 
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Tell us why you're claiming this event (e.g., 'I'm the venue owner' or 'I organize this open mic')"
+                  placeholder="Tell us why you're claiming this happening (e.g., 'I'm the venue owner' or 'I organize this open mic')"
                   rows={4}
                   maxLength={500}
                   className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] resize-none placeholder:text-[var(--color-text-tertiary)]"

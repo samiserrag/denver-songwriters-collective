@@ -60,7 +60,7 @@ export function getEventCommentNotificationEmail(params: EventCommentNotificatio
     ${paragraph(
       isReply
         ? `<strong>${safeCommenter}</strong> replied to your comment on <strong>"${safeTitle}"</strong>:`
-        : `<strong>${safeCommenter}</strong> left a comment on your event <strong>"${safeTitle}"</strong>:`
+        : `<strong>${safeCommenter}</strong> left a comment on your happening <strong>"${safeTitle}"</strong>:`
     )}
 
     <!-- Comment preview box -->
@@ -78,7 +78,7 @@ export function getEventCommentNotificationEmail(params: EventCommentNotificatio
 
     ${paragraph(
       `<span style="color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
-        You're receiving this email because you ${isReply ? "commented on this event" : "are a host of this event"}.
+        You're receiving this email because you ${isReply ? "commented on this happening" : "are a host of this happening"}.
         You can adjust your notification preferences in your <a href="${SITE_URL}/dashboard/settings" style="color: ${EMAIL_COLORS.accent};">account settings</a>.
       </span>`
     )}
@@ -92,14 +92,14 @@ ${isReply ? `${commenterName} replied to your comment` : `New comment on "${even
 
 ${isReply
   ? `${commenterName} replied to your comment on "${eventTitle}":`
-  : `${commenterName} left a comment on your event "${eventTitle}":`}
+  : `${commenterName} left a comment on your happening "${eventTitle}":`}
 
 "${commentPreview}${commentPreview.length >= 200 ? "..." : ""}"
 
 View the comment: ${eventUrl}
 
 ---
-You're receiving this email because you ${isReply ? "commented on this event" : "are a host of this event"}.
+You're receiving this email because you ${isReply ? "commented on this happening" : "are a host of this happening"}.
 Manage notifications: ${SITE_URL}/dashboard/settings
 `;
 

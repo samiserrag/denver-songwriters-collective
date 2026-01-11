@@ -44,7 +44,7 @@ ${paragraph(getGreeting(userName))}
 
 ${paragraph(`Great news! Your claim for <strong>${safeTitle}</strong> has been approved.`)}
 
-${successBox("🎉", "You're now the official host of this event!")}
+${successBox("🎉", "You're now the official host of this happening!")}
 
 ${paragraph("As the host, you can:")}
 
@@ -56,10 +56,10 @@ ${paragraph("As the host, you can:")}
 
 ${paragraph("Welcome to the table. We're glad you're here.", { muted: true })}
 
-${createButton("Manage your event", dashboardUrl)}
+${createButton("Manage your happening", dashboardUrl)}
 
 <p style="margin: 24px 0 0 0; color: ${EMAIL_COLORS.textMuted}; font-size: 14px;">
-  <a href="${eventUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">View event page</a>
+  <a href="${eventUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">View happening page</a>
 </p>
 `;
 
@@ -69,7 +69,7 @@ ${createButton("Manage your event", dashboardUrl)}
 
 Great news! Your claim for ${eventTitle} has been approved.
 
-You're now the official host of this event!
+You're now the official host of this happening!
 
 As the host, you can:
 - Edit event details (time, location, description)
@@ -78,9 +78,9 @@ As the host, you can:
 
 Welcome to the table. We're glad you're here.
 
-Manage your event: ${dashboardUrl}
+Manage your happening: ${dashboardUrl}
 
-View event page: ${eventUrl}`;
+View happening page: ${eventUrl}`;
 
   const text = wrapEmailText(textContent);
 
