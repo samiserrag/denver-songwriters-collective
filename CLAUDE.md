@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.60):** Lint warnings = 0. All tests passing (1403). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.61):** Lint warnings = 0. All tests passing (1474). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,47 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.61 — Ops Console v1: Venue Bulk Management (January 2026)
+
+**Goal:** Admin-only bulk management for venues via CSV export/import.
+
+**How to Use Ops Console v1:**
+1. Navigate to `/dashboard/admin/ops/venues`
+2. **Export:** Click "Download CSV" to get all venues
+3. **Edit:** Open CSV in Excel/Sheets, update `google_maps_url` or other fields
+4. **Preview:** Upload edited CSV, review diff before applying
+5. **Apply:** Confirm changes to update database
+
+**Google Maps URL Helper:**
+- Select venue missing `google_maps_url` from dropdown
+- Click generated search URL to find venue on Google Maps
+- Copy the place URL and paste into CSV
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `scripts/data-health.ts` | CLI health report (`cd web && npx tsx scripts/data-health.ts`) |
+| `lib/ops/venueValidation.ts` | Row-level CSV validation |
+| `lib/ops/venueCsvParser.ts` | CSV parse/serialize |
+| `lib/ops/venueDiff.ts` | Diff computation |
+| `lib/ops/googleMapsHelper.ts` | URL generation helper |
+| `lib/audit/opsAudit.ts` | Audit logging for ops actions |
+| `api/admin/ops/venues/export/route.ts` | GET - CSV download |
+| `api/admin/ops/venues/preview/route.ts` | POST - Preview diff |
+| `api/admin/ops/venues/apply/route.ts` | POST - Apply changes |
+| `dashboard/admin/ops/page.tsx` | Ops Console landing |
+| `dashboard/admin/ops/venues/page.tsx` | Venue bulk management UI |
+
+**Test Coverage:** 71 new tests (1474 total).
+
+**Constraints:**
+- Update-only (no venue creation via CSV)
+- Admin-only (uses `checkAdminRole()`)
+- Simple CSV parser (no multi-line cells)
 
 ---
 
