@@ -172,6 +172,8 @@ export default async function HappeningsPage({
     query = query.eq("event_type", "song_circle");
   } else if (typeFilter === "gig") {
     query = query.eq("event_type", "gig");
+  } else if (typeFilter === "kindred_group") {
+    query = query.eq("event_type", "kindred_group");
   } else if (typeFilter === "other") {
     query = query.eq("event_type", "other");
   }
@@ -404,6 +406,7 @@ export default async function HappeningsPage({
     if (typeFilter === "workshop") return "Workshops";
     if (typeFilter === "song_circle") return "Song Circles";
     if (typeFilter === "gig") return "Gigs";
+    if (typeFilter === "kindred_group") return "Kindred Songwriter Groups";
     if (dscFilter) return "DSC Events";
     return null;
   };
@@ -422,6 +425,7 @@ export default async function HappeningsPage({
         workshop: "Workshops",
         song_circle: "Song Circles",
         gig: "Gigs",
+        kindred_group: "Kindred Songwriter Groups",
         other: "Other",
       };
       parts.push(labels[typeFilter] || typeFilter);
@@ -494,6 +498,12 @@ export default async function HappeningsPage({
               Correction
             </Link>
           </div>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+            Do you host one of these happenings?{" "}
+            <span className="text-[var(--color-text-secondary)]">
+              Click on it to claim it as host and manage it on our platform.
+            </span>
+          </p>
         </div>
 
         {/* Page header with title */}

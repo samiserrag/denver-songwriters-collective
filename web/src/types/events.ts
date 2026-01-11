@@ -7,6 +7,7 @@ export type EventType =
   | "showcase"
   | "open_mic"
   | "gig"
+  | "kindred_group"
   | "other";
 
 export type RSVPStatus = "confirmed" | "waitlist" | "cancelled";
@@ -189,6 +190,12 @@ export const EVENT_TYPE_CONFIG: Record<EventType, {
     label: "Gig / Performance",
     description: "A scheduled performance or concert by an artist or band",
     icon: "🎸",
+    defaultCapacity: null
+  },
+  kindred_group: {
+    label: "Kindred Songwriter Groups",
+    description: "Happenings hosted by other local songwriter communities",
+    icon: "🤝",
     defaultCapacity: null
   },
   other: {

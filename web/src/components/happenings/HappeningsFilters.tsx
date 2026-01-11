@@ -118,6 +118,7 @@ const TYPE_OPTIONS = [
   { value: "workshop", label: "Workshops" },
   { value: "song_circle", label: "Song Circles" },
   { value: "gig", label: "Gigs" },
+  { value: "kindred_group", label: "Kindred Songwriter Groups" },
   { value: "other", label: "Other" },
 ] as const;
 
