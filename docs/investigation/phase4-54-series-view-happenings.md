@@ -293,4 +293,30 @@ Add `view` param to search params:
 - [x] Test plan outlined
 - [x] No auth/admin uncertainty
 
-**Awaiting Sami approval before execution.**
+**Approved and Implemented.**
+
+---
+
+## 9. Implementation Notes
+
+**Implemented:** January 2026
+
+**Approved Decisions:**
+1. Toggle in StickyControls next to date jump control
+2. Expand/collapse via chevron only (row click navigates to event detail)
+3. Date links use base event URL without `?date=` param (deferred feature)
+4. Timeline remains default, Series view via `?view=series`
+5. Cap expanded dates at 12 (SERIES_VIEW_MAX_UPCOMING)
+
+**Deferred:**
+- `?date=YYYY-MM-DD` param support for event detail pages (would show occurrence-specific overrides)
+
+**Files Created:**
+- `components/happenings/SeriesCard.tsx` - Individual series row component
+- `components/happenings/SeriesView.tsx` - Container for series mode
+- `__tests__/phase4-54-series-view.test.ts` - Test suite (27 tests)
+
+**Files Modified:**
+- `lib/events/nextOccurrence.ts` - Added `groupEventsAsSeriesView()`, `SeriesEntry`, `SeriesViewResult`
+- `components/happenings/StickyControls.tsx` - Added Timeline/Series toggle
+- `app/happenings/page.tsx` - Conditional rendering based on view mode

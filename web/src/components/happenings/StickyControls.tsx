@@ -7,6 +7,7 @@
  * Phase 4.21: Added showCancelled toggle for displaying cancelled occurrences
  * Phase 4.38: Removed sticky behavior - filters now scroll with content
  *             Added BackToTop floating button for quick navigation
+ * Phase 4.54: Added view toggle (Timeline / Series)
  */
 
 import * as React from "react";
@@ -16,16 +17,19 @@ import { cn } from "@/lib/utils";
 import { HappeningsFilters } from "./HappeningsFilters";
 import { DateJumpControl } from "./DateJumpControl";
 
+export type HappeningsViewMode = "timeline" | "series";
+
 interface StickyControlsProps {
   todayKey: string;
   windowStartKey: string;
   windowEndKey: string;
   timeFilter: string;
   cancelledCount?: number;
+  viewMode?: HappeningsViewMode;
   className?: string;
 }
 
-export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFilter, cancelledCount = 0, className }: StickyControlsProps) {
+export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFilter, cancelledCount = 0, viewMode = "timeline", className }: StickyControlsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const showCancelled = searchParams.get("showCancelled") === "1";
@@ -37,6 +41,17 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
       params.delete("showCancelled");
     } else {
       params.set("showCancelled", "1");
+    }
+    router.push(`/happenings?${params.toString()}`, { scroll: false });
+  };
+
+  // Phase 4.54: Toggle view mode
+  const setViewMode = (mode: HappeningsViewMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (mode === "timeline") {
+      params.delete("view"); // timeline is default, no param needed
+    } else {
+      params.set("view", mode);
     }
     router.push(`/happenings?${params.toString()}`, { scroll: false });
   };
@@ -54,7 +69,7 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
         <HappeningsFilters />
       </Suspense>
 
-      {/* Date Jump Control + Cancelled Toggle Row */}
+      {/* Date Jump Control + View Toggle + Cancelled Toggle Row */}
       <div className="flex flex-wrap items-center gap-3">
         <Suspense fallback={null}>
           <DateJumpControl
@@ -65,8 +80,40 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
           />
         </Suspense>
 
-        {/* Phase 4.21: Show Cancelled Toggle */}
-        {cancelledCount > 0 && (
+        {/* Phase 4.54: View Mode Toggle */}
+        <div
+          className="inline-flex rounded-lg border border-[var(--color-border-default)] overflow-hidden"
+          role="group"
+          aria-label="View mode"
+        >
+          <button
+            onClick={() => setViewMode("timeline")}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium transition-colors",
+              viewMode === "timeline"
+                ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            )}
+            aria-pressed={viewMode === "timeline"}
+          >
+            Timeline
+          </button>
+          <button
+            onClick={() => setViewMode("series")}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium transition-colors border-l border-[var(--color-border-default)]",
+              viewMode === "series"
+                ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            )}
+            aria-pressed={viewMode === "series"}
+          >
+            Series
+          </button>
+        </div>
+
+        {/* Phase 4.21: Show Cancelled Toggle - only show in timeline mode */}
+        {viewMode === "timeline" && cancelledCount > 0 && (
           <button
             onClick={toggleShowCancelled}
             className={cn(

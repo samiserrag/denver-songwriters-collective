@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HappeningsCard, DateSection, StickyControls, BackToTop } from "@/components/happenings";
+import { SeriesView, type SeriesEvent } from "@/components/happenings/SeriesView";
+import { type HappeningsViewMode } from "@/components/happenings/StickyControls";
 import { PageContainer } from "@/components/layout/page-container";
 import { HeroSection } from "@/components/layout/hero-section";
 import { BetaBanner } from "@/components/happenings/BetaBanner";
@@ -34,6 +36,7 @@ export const dynamic = "force-dynamic";
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
+ * - view: timeline|series (Phase 4.54, default: timeline)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -47,6 +50,7 @@ interface HappeningsSearchParams {
   debugDates?: string;
   showCancelled?: string;
   pastOffset?: string;
+  view?: string;
 }
 
 export default async function HappeningsPage({
@@ -73,6 +77,8 @@ export default async function HappeningsPage({
   const showCancelled = params.showCancelled === "1";
   // Progressive loading offset for past events (each offset = 90 days further back)
   const pastOffset = parseInt(params.pastOffset || "0", 10) || 0;
+  // Phase 4.54: View mode (timeline = grouped by date, series = grouped by event)
+  const viewMode: HappeningsViewMode = params.view === "series" ? "series" : "timeline";
 
   const today = getTodayDenver();
   const yesterday = addDaysDenver(today, -1);
@@ -482,6 +488,7 @@ export default async function HappeningsPage({
             windowEndKey={windowEnd}
             timeFilter={timeFilter}
             cancelledCount={expansionMetrics.cancelledCount}
+            viewMode={viewMode}
           />
         </Suspense>
 
@@ -509,49 +516,127 @@ export default async function HappeningsPage({
           )}
         </div>
 
-        {/* Phase 4.19: Date-grouped list with collapsible sections */}
-        {totalDisplayableEvents > 0 ? (
-          <div className="space-y-0">
-            {/* Dated occurrences grouped by date */}
-            {[...filteredGroups].map(([dateStr, entriesForDate]) => {
-              // Phase 4.23: For Today/Tomorrow, pass cancelled occurrences for disclosure
-              const isTodayOrTomorrow = dateStr === today || dateStr === tomorrow;
-              const cancelledForDate = showCancelled && isTodayOrTomorrow
-                ? cancelledByDate.get(dateStr) || []
-                : [];
+        {/* Phase 4.54: Conditional rendering based on view mode */}
+        {viewMode === "series" ? (
+          /* Series View - one row per event/series */
+          list.length > 0 ? (
+            <SeriesView
+              events={list as SeriesEvent[]}
+              overrideMap={overrideMap}
+              startKey={windowStart}
+              endKey={windowEnd}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-[var(--color-text-secondary)]">
+                {searchQuery || hasFilters
+                  ? "No happenings match your filters. Try adjusting your search."
+                  : "No happenings found. Check back soon!"}
+              </p>
+            </div>
+          )
+        ) : (
+          /* Timeline View - grouped by date (default) */
+          totalDisplayableEvents > 0 ? (
+            <div className="space-y-0">
+              {/* Dated occurrences grouped by date */}
+              {[...filteredGroups].map(([dateStr, entriesForDate]) => {
+                // Phase 4.23: For Today/Tomorrow, pass cancelled occurrences for disclosure
+                const isTodayOrTomorrow = dateStr === today || dateStr === tomorrow;
+                const cancelledForDate = showCancelled && isTodayOrTomorrow
+                  ? cancelledByDate.get(dateStr) || []
+                  : [];
 
-              return (
+                return (
+                  <DateSection
+                    key={dateStr}
+                    dateKey={dateStr}
+                    headerText={formatDateGroupHeader(dateStr, today)}
+                    eventCount={entriesForDate.length}
+                    cancelledCount={cancelledForDate.length}
+                    cancelledChildren={
+                      cancelledForDate.length > 0
+                        ? cancelledForDate.map((entry: EventOccurrenceEntry<any>) => (
+                            <HappeningsCard
+                              key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                              event={entry.event}
+                              searchQuery={searchQuery}
+                              debugDates={debugDates}
+                              occurrence={{
+                                date: entry.dateKey,
+                                isToday: entry.dateKey === today,
+                                isTomorrow: entry.dateKey === tomorrow,
+                                isConfident: entry.isConfident,
+                              }}
+                              todayKey={today}
+                              override={entry.override}
+                              isCancelled={true}
+                            />
+                          ))
+                        : undefined
+                    }
+                  >
+                    {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
+                      <HappeningsCard
+                        key={`${entry.event.id}-${entry.dateKey}`}
+                        event={entry.event}
+                        searchQuery={searchQuery}
+                        debugDates={debugDates}
+                        occurrence={{
+                          date: entry.dateKey,
+                          isToday: entry.dateKey === today,
+                          isTomorrow: entry.dateKey === tomorrow,
+                          isConfident: entry.isConfident,
+                        }}
+                        todayKey={today}
+                        override={entry.override}
+                        isCancelled={entry.isCancelled}
+                      />
+                    ))}
+                  </DateSection>
+                );
+              })}
+
+              {/* Schedule Unknown section - appears after all dated sections */}
+              {sortedUnknownEvents.length > 0 && (
                 <DateSection
-                  key={dateStr}
-                  dateKey={dateStr}
-                  headerText={formatDateGroupHeader(dateStr, today)}
-                  eventCount={entriesForDate.length}
-                  cancelledCount={cancelledForDate.length}
-                  cancelledChildren={
-                    cancelledForDate.length > 0
-                      ? cancelledForDate.map((entry: EventOccurrenceEntry<any>) => (
-                          <HappeningsCard
-                            key={`${entry.event.id}-${entry.dateKey}-cancelled`}
-                            event={entry.event}
-                            searchQuery={searchQuery}
-                            debugDates={debugDates}
-                            occurrence={{
-                              date: entry.dateKey,
-                              isToday: entry.dateKey === today,
-                              isTomorrow: entry.dateKey === tomorrow,
-                              isConfident: entry.isConfident,
-                            }}
-                            todayKey={today}
-                            override={entry.override}
-                            isCancelled={true}
-                          />
-                        ))
-                      : undefined
-                  }
+                  dateKey="unknown"
+                  headerText="Schedule unknown"
+                  eventCount={sortedUnknownEvents.length}
+                  isUnknown
+                  description="These events are missing schedule information. Please verify with the venue."
                 >
-                  {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
+                  {sortedUnknownEvents.map((event: any) => (
                     <HappeningsCard
-                      key={`${entry.event.id}-${entry.dateKey}`}
+                      key={event.id}
+                      event={event}
+                      searchQuery={searchQuery}
+                      debugDates={debugDates}
+                      occurrence={{
+                        date: today,
+                        isToday: true,
+                        isTomorrow: false,
+                        isConfident: false,
+                      }}
+                      todayKey={today}
+                    />
+                  ))}
+                </DateSection>
+              )}
+
+              {/* Phase 4.21/4.23: Cancelled occurrences section - only for non-Today/Tomorrow */}
+              {/* Today/Tomorrow cancelled are shown inline via disclosure rows */}
+              {showCancelled && otherCancelledOccurrences.length > 0 && (
+                <DateSection
+                  dateKey="cancelled"
+                  headerText="Cancelled"
+                  eventCount={otherCancelledOccurrences.length}
+                  isCancelled
+                  description="These occurrences have been cancelled. They may be rescheduled in the future."
+                >
+                  {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => (
+                    <HappeningsCard
+                      key={`${entry.event.id}-${entry.dateKey}-cancelled`}
                       event={entry.event}
                       searchQuery={searchQuery}
                       debugDates={debugDates}
@@ -563,98 +648,41 @@ export default async function HappeningsPage({
                       }}
                       todayKey={today}
                       override={entry.override}
-                      isCancelled={entry.isCancelled}
+                      isCancelled={true}
                     />
                   ))}
                 </DateSection>
-              );
-            })}
+              )}
 
-            {/* Schedule Unknown section - appears after all dated sections */}
-            {sortedUnknownEvents.length > 0 && (
-              <DateSection
-                dateKey="unknown"
-                headerText="Schedule unknown"
-                eventCount={sortedUnknownEvents.length}
-                isUnknown
-                description="These events are missing schedule information. Please verify with the venue."
-              >
-                {sortedUnknownEvents.map((event: any) => (
-                  <HappeningsCard
-                    key={event.id}
-                    event={event}
-                    searchQuery={searchQuery}
-                    debugDates={debugDates}
-                    occurrence={{
-                      date: today,
-                      isToday: true,
-                      isTomorrow: false,
-                      isConfident: false,
-                    }}
-                    todayKey={today}
-                  />
-                ))}
-              </DateSection>
-            )}
-
-            {/* Phase 4.21/4.23: Cancelled occurrences section - only for non-Today/Tomorrow */}
-            {/* Today/Tomorrow cancelled are shown inline via disclosure rows */}
-            {showCancelled && otherCancelledOccurrences.length > 0 && (
-              <DateSection
-                dateKey="cancelled"
-                headerText="Cancelled"
-                eventCount={otherCancelledOccurrences.length}
-                isCancelled
-                description="These occurrences have been cancelled. They may be rescheduled in the future."
-              >
-                {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => (
-                  <HappeningsCard
-                    key={`${entry.event.id}-${entry.dateKey}-cancelled`}
-                    event={entry.event}
-                    searchQuery={searchQuery}
-                    debugDates={debugDates}
-                    occurrence={{
-                      date: entry.dateKey,
-                      isToday: entry.dateKey === today,
-                      isTomorrow: entry.dateKey === tomorrow,
-                      isConfident: entry.isConfident,
-                    }}
-                    todayKey={today}
-                    override={entry.override}
-                    isCancelled={true}
-                  />
-                ))}
-              </DateSection>
-            )}
-
-            {/* Phase 4.50b: "Load older" button for progressive past loading */}
-            {timeFilter === "past" && hasMorePastEvents && (
-              <div className="py-6 text-center">
-                <Link
-                  href={`/happenings?${new URLSearchParams({
-                    ...Object.fromEntries(
-                      Object.entries(params).filter(([, v]) => v !== undefined && v !== "")
-                    ),
-                    pastOffset: String(pastOffset + 1),
-                  }).toString()}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] font-medium hover:border-[var(--color-border-accent)] hover:bg-[var(--color-bg-tertiary)] transition"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Load older events
-                </Link>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-[var(--color-text-secondary)]">
-              {searchQuery || hasFilters
-                ? "No happenings match your filters. Try adjusting your search."
-                : "No happenings found. Check back soon!"}
-            </p>
-          </div>
+              {/* Phase 4.50b: "Load older" button for progressive past loading */}
+              {timeFilter === "past" && hasMorePastEvents && (
+                <div className="py-6 text-center">
+                  <Link
+                    href={`/happenings?${new URLSearchParams({
+                      ...Object.fromEntries(
+                        Object.entries(params).filter(([, v]) => v !== undefined && v !== "")
+                      ),
+                      pastOffset: String(pastOffset + 1),
+                    }).toString()}`}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] font-medium hover:border-[var(--color-border-accent)] hover:bg-[var(--color-bg-tertiary)] transition"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Load older events
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-[var(--color-text-secondary)]">
+                {searchQuery || hasFilters
+                  ? "No happenings match your filters. Try adjusting your search."
+                  : "No happenings found. Check back soon!"}
+              </p>
+            </div>
+          )
         )}
 
         {/* Phase 4.38: Back to top button - appears when scrolling down */}

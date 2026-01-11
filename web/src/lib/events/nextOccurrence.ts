@@ -25,6 +25,7 @@
 import { parseRRule } from "@/lib/recurrenceHumanizer";
 import {
   interpretRecurrence,
+  labelFromRecurrence,
   assertRecurrenceInvariant,
   type RecurrenceInput,
 } from "@/lib/events/recurrenceContract";
@@ -979,6 +980,143 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
       eventsSkipped,
       totalOccurrences,
       cancelledCount,
+      wasCapped,
+    },
+  };
+}
+
+// ============================================================
+// Phase 4.54: Series View Support
+// ============================================================
+
+/**
+ * Maximum upcoming occurrences to show in series view expand.
+ * Per approved constraint: cap expanded dates at 12.
+ */
+export const SERIES_VIEW_MAX_UPCOMING = 12;
+
+/**
+ * Represents a single series (recurring event) in series view.
+ */
+export interface SeriesEntry<T extends EventForOccurrence = EventForOccurrence> {
+  /** The event (series) itself */
+  event: T;
+  /** Next occurrence result (date, isToday, etc.) */
+  nextOccurrence: NextOccurrenceResult;
+  /** Upcoming occurrences in window (capped at SERIES_VIEW_MAX_UPCOMING, excludes cancelled) */
+  upcomingOccurrences: ExpandedOccurrence[];
+  /** Human-readable recurrence label (e.g., "Every Monday") */
+  recurrenceSummary: string;
+  /** Whether this is a one-time event (not recurring) */
+  isOneTime: boolean;
+  /** Count of total upcoming in window (may exceed upcomingOccurrences.length due to cap) */
+  totalUpcomingCount: number;
+}
+
+export interface SeriesViewResult<T extends EventForOccurrence = EventForOccurrence> {
+  /** Series entries sorted by next occurrence date */
+  series: SeriesEntry<T>[];
+  /** Events with uncomputable schedules */
+  unknownEvents: T[];
+  /** Performance metrics */
+  metrics: {
+    eventsProcessed: number;
+    wasCapped: boolean;
+  };
+}
+
+/**
+ * Group events as series for series view.
+ * Each event becomes one series entry with next occurrence and upcoming dates.
+ *
+ * Phase 4.54: Series view alternative to timeline view.
+ * - Uses event.id as series key (each event = one series)
+ * - Computes next occurrence and upcoming occurrences
+ * - Generates recurrence summary label
+ * - Sorts by next occurrence date (ascending)
+ *
+ * @param events - Events to group as series
+ * @param options - Expansion options (window bounds, override map)
+ * @returns Series entries sorted by next occurrence date
+ */
+export function groupEventsAsSeriesView<T extends EventForOccurrence & { id: string }>(
+  events: T[],
+  options?: ExpansionOptions
+): SeriesViewResult<T> {
+  const startKey = options?.startKey ?? getTodayDenver();
+  const endKey = options?.endKey ?? addDaysDenver(startKey, EXPANSION_CAPS.DEFAULT_WINDOW_DAYS);
+  const maxEvents = options?.maxEvents ?? EXPANSION_CAPS.MAX_EVENTS;
+  const overrideMap = options?.overrideMap ?? new Map<string, OccurrenceOverride>();
+
+  const seriesEntries: SeriesEntry<T>[] = [];
+  const unknownEvents: T[] = [];
+  let eventsProcessed = 0;
+  let wasCapped = false;
+
+  // Apply event cap
+  const eventsToProcess = events.slice(0, maxEvents);
+  if (events.length > maxEvents) {
+    wasCapped = true;
+  }
+
+  for (const event of eventsToProcess) {
+    eventsProcessed++;
+
+    // Get next occurrence
+    const nextOcc = computeNextOccurrence(event);
+
+    // Expand all occurrences in window
+    const allOccurrences = expandOccurrencesForEvent(event, {
+      startKey,
+      endKey,
+      maxOccurrences: SERIES_VIEW_MAX_UPCOMING + 5, // Buffer for cancelled filtering
+    });
+
+    if (allOccurrences.length === 0 && !nextOcc.isConfident) {
+      // No computable occurrences
+      unknownEvents.push(event);
+      continue;
+    }
+
+    // Filter out cancelled occurrences
+    const activeOccurrences = allOccurrences.filter((occ) => {
+      const overrideKey = buildOverrideKey(event.id, occ.dateKey);
+      const override = overrideMap.get(overrideKey);
+      return override?.status !== "cancelled";
+    });
+
+    // Get recurrence summary using the contract
+    const recurrence = interpretRecurrence(event);
+    const recurrenceSummary = labelFromRecurrence(recurrence);
+    const isOneTime = !recurrence.isRecurring || recurrence.frequency === "one-time";
+
+    // Cap upcoming occurrences
+    const upcomingOccurrences = activeOccurrences.slice(0, SERIES_VIEW_MAX_UPCOMING);
+
+    seriesEntries.push({
+      event,
+      nextOccurrence: nextOcc,
+      upcomingOccurrences,
+      recurrenceSummary,
+      isOneTime,
+      totalUpcomingCount: activeOccurrences.length,
+    });
+  }
+
+  // Sort by next occurrence date (ascending)
+  // Events with no confident next occurrence sort to end
+  seriesEntries.sort((a, b) => {
+    if (!a.nextOccurrence.isConfident && !b.nextOccurrence.isConfident) return 0;
+    if (!a.nextOccurrence.isConfident) return 1;
+    if (!b.nextOccurrence.isConfident) return -1;
+    return a.nextOccurrence.date.localeCompare(b.nextOccurrence.date);
+  });
+
+  return {
+    series: seriesEntries,
+    unknownEvents,
+    metrics: {
+      eventsProcessed,
       wasCapped,
     },
   };
