@@ -314,6 +314,66 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.58 — Venue Directory MVP (January 2026)
+
+**Goal:** Public venue directory pages for discovering venues hosting happenings.
+
+**New Routes:**
+
+| Route | Purpose |
+|-------|---------|
+| `/venues` | Index page showing all venues in alphabetical grid |
+| `/venues/[id]` | Detail page with venue info + happenings at venue |
+
+**New Components:**
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| VenueCard | `components/venue/VenueCard.tsx` | Card with name, location, event count, link icons |
+| VenueGrid | `components/venue/VenueGrid.tsx` | Responsive grid layout (1/2/3/4 cols) |
+
+**Features:**
+- Event count badge shows upcoming happenings per venue ("0 upcoming", "1 happening", "12 happenings")
+- Get Directions button (prefers `google_maps_url`, falls back to address-based Google Maps link)
+- Website/phone links when available
+- Accessibility notes and parking notes displayed on detail page
+- HappeningCard grid for venue's upcoming events
+- Uses existing `card-spotlight` surface pattern
+
+**Security:**
+- `venues.notes` field NOT exposed on public pages (admin-only)
+- No new RLS needed (public SELECT already exists on venues table)
+
+**Data:**
+- 91 venues in database
+- 15/91 (16%) have `google_maps_url`
+- 45/91 (49%) have `website_url`
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `app/venues/page.tsx` | Index page |
+| `app/venues/[id]/page.tsx` | Detail page |
+| `components/venue/VenueCard.tsx` | Card component |
+| `components/venue/VenueGrid.tsx` | Grid wrapper |
+| `docs/investigation/venue-directory-mvp.md` | Investigation doc |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `types/index.ts` | Added `zip`, `neighborhood`, `contact_link`, `accessibility_notes`, `parking_notes` to Venue type |
+
+**Test Coverage:** 1368 tests passing.
+
+**Deferred:**
+- "Venues" link in main nav (separate PR after UX confirmation)
+- Search/filter on venues index
+- Map view (requires lat/lng migration)
+
+---
+
 ### Phase 4.57 — Series View Sliding Day Headers (January 2026)
 
 **Goal:** Add sticky day-of-week headers to Series view, matching the Timeline view's DateSection behavior.
