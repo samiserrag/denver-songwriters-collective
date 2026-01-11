@@ -314,6 +314,45 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.63 — ABC Track Completion: Ops Console Discoverability + Events→Happenings (January 2026)
+
+**Goal:** Make Ops Console discoverable from Admin Hub and align admin terminology with "Happenings" branding.
+
+**Changes:**
+
+| Area | Change |
+|------|--------|
+| Admin Hub | Added "Operations" section with Ops Console link |
+| Manage Happenings | "Bulk operations →" cross-link to `/dashboard/admin/ops/events` |
+| Venue Management | "Bulk operations →" cross-link to `/dashboard/admin/ops/venues` |
+| Terminology | "Events" → "Happenings" in admin UI copy (not URLs/DB/types) |
+| Legacy cleanup | Deleted `/dashboard/admin/dsc-events` page (superseded by events page) |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `/dashboard/admin/page.tsx` | Operations section, Happenings terminology |
+| `/dashboard/admin/events/page.tsx` | "Manage Happenings" heading + bulk ops link |
+| `/dashboard/admin/events/new/page.tsx` | "Back to Happenings", "Add New Happening" |
+| `/dashboard/admin/venues/AdminVenuesClient.tsx` | Bulk ops link, "venues for happenings" |
+| `/dashboard/admin/ops/page.tsx` | "Happening Bulk Management" card |
+| `/dashboard/admin/ops/events/page.tsx` | "Happenings Bulk Management" heading/stats |
+| `/dashboard/admin/ops/overrides/page.tsx` | "← Happenings Ops" nav link |
+
+**Deleted:**
+- `/dashboard/admin/dsc-events/page.tsx` — Legacy DSC-only event list (zero code references)
+
+**Navigation Path:**
+- Admin Hub → Operations → Ops Console
+- Manage Happenings → Bulk operations → Happenings Ops
+- Venue Management → Bulk operations → Venue Ops
+
+**Terminology Note:**
+"Happenings" is used in user-facing copy only. URLs remain `/events/`, DB tables remain `events`, TypeScript types remain `Event*`. This is a copy-only change for brand consistency.
+
+---
+
 ### Phase 4.62 — Ops Console v1: Events + Overrides Bulk Management (January 2026)
 
 **Goal:** Admin-only bulk management for events and occurrence overrides via CSV export/import.
