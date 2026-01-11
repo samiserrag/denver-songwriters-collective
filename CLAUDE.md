@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.57):** Lint warnings = 0. All tests passing (1368). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.58):** Lint warnings = 0. All tests passing (1379). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -365,12 +365,29 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 |------|--------|
 | `types/index.ts` | Added `zip`, `neighborhood`, `contact_link`, `accessibility_notes`, `parking_notes` to Venue type |
 
-**Test Coverage:** 1368 tests passing.
+**Test Coverage:** 1379 tests passing (11 new for series venue links).
+
+**Series → Venue Cross-Linking:**
+- SeriesCard venue names now link to `/venues/[id]` when `venue_id` exists
+- Custom locations render as plain text (no venue_id to link)
+- Uses internal `<Link>` component, not external VenueLink
+
+**Navigation:**
+- Added "Venues" to main navigation (desktop + mobile)
+- Positioned after "Happenings" in nav order
+
+**Files Modified (Cross-Linking):**
+
+| File | Change |
+|------|--------|
+| `components/happenings/SeriesCard.tsx` | Venue names link to /venues/[id] |
+| `components/navigation/header.tsx` | Added Venues to navLinks array |
+| `__tests__/phase4-58-series-venue-links.test.ts` | 11 new tests for venue link logic |
 
 **Deferred:**
-- "Venues" link in main nav (separate PR after UX confirmation)
 - Search/filter on venues index
 - Map view (requires lat/lng migration)
+- Venue engagement v1 (claims, tags, photos) - STOP-GATE for later
 
 ---
 
