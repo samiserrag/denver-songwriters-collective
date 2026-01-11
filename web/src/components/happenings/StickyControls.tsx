@@ -8,6 +8,7 @@
  * Phase 4.38: Removed sticky behavior - filters now scroll with content
  *             Added BackToTop floating button for quick navigation
  * Phase 4.54: Added view toggle (Timeline / Series)
+ * Phase 4.55: Moved view toggle to ViewModeSelector component (hero-level cards)
  */
 
 import * as React from "react";
@@ -16,8 +17,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { HappeningsFilters } from "./HappeningsFilters";
 import { DateJumpControl } from "./DateJumpControl";
+import { ViewModeSelector, type HappeningsViewMode } from "./ViewModeSelector";
 
-export type HappeningsViewMode = "timeline" | "series";
+export type { HappeningsViewMode };
 
 interface StickyControlsProps {
   todayKey: string;
@@ -45,31 +47,25 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
     router.push(`/happenings?${params.toString()}`, { scroll: false });
   };
 
-  // Phase 4.54: Toggle view mode
-  const setViewMode = (mode: HappeningsViewMode) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (mode === "timeline") {
-      params.delete("view"); // timeline is default, no param needed
-    } else {
-      params.set("view", mode);
-    }
-    router.push(`/happenings?${params.toString()}`, { scroll: false });
-  };
-
   return (
     <div
       className={cn(
         // Phase 4.38: Removed sticky positioning - filters scroll with content
-        "py-3 space-y-3",
+        "py-3 space-y-6",
         className
       )}
     >
+      {/* Phase 4.55: Hero-level View Mode Selector */}
+      <Suspense fallback={<div className="h-32 bg-[var(--color-bg-secondary)] rounded-2xl animate-pulse" />}>
+        <ViewModeSelector viewMode={viewMode} />
+      </Suspense>
+
       {/* Filter bar */}
       <Suspense fallback={<div className="h-20 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
         <HappeningsFilters />
       </Suspense>
 
-      {/* Date Jump Control + View Toggle + Cancelled Toggle Row */}
+      {/* Date Jump Control + Cancelled Toggle Row */}
       <div className="flex flex-wrap items-center gap-3">
         <Suspense fallback={null}>
           <DateJumpControl
@@ -79,38 +75,6 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
             timeFilter={timeFilter}
           />
         </Suspense>
-
-        {/* Phase 4.54: View Mode Toggle */}
-        <div
-          className="inline-flex rounded-lg border border-[var(--color-border-default)] overflow-hidden"
-          role="group"
-          aria-label="View mode"
-        >
-          <button
-            onClick={() => setViewMode("timeline")}
-            className={cn(
-              "px-3 py-1.5 text-sm font-medium transition-colors",
-              viewMode === "timeline"
-                ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            )}
-            aria-pressed={viewMode === "timeline"}
-          >
-            Timeline
-          </button>
-          <button
-            onClick={() => setViewMode("series")}
-            className={cn(
-              "px-3 py-1.5 text-sm font-medium transition-colors border-l border-[var(--color-border-default)]",
-              viewMode === "series"
-                ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            )}
-            aria-pressed={viewMode === "series"}
-          >
-            Series
-          </button>
-        </div>
 
         {/* Phase 4.21: Show Cancelled Toggle - only show in timeline mode */}
         {viewMode === "timeline" && cancelledCount > 0 && (

@@ -369,6 +369,29 @@ export default async function HappeningsPage({
   const totalDisplayableEvents = totalOccurrences + sortedUnknownEvents.length;
   const totalDates = filteredGroups.size + (sortedUnknownEvents.length > 0 ? 1 : 0);
 
+  // Phase 4.55: Count happenings by time period for humanized summary
+  const thisWeekEnd = addDaysDenver(today, 7);
+  let tonightCount = 0;
+  let thisWeekendCount = 0;
+  let thisWeekCount = 0;
+
+  for (const [dateKey, entries] of filteredGroups.entries()) {
+    if (dateKey === today) {
+      tonightCount += entries.length;
+    }
+    // Weekend check: Saturday (6) or Sunday (0)
+    const date = new Date(dateKey + "T12:00:00Z");
+    const dayOfWeek = date.getUTCDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      if (dateKey >= today && dateKey <= thisWeekEnd) {
+        thisWeekendCount += entries.length;
+      }
+    }
+    if (dateKey >= today && dateKey < thisWeekEnd) {
+      thisWeekCount += entries.length;
+    }
+  }
+
   // Hero only shows on unfiltered /happenings (no filters active)
   const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
   const showHero = !hasFilters;
@@ -461,7 +484,7 @@ export default async function HappeningsPage({
                 href="/dashboard/my-events/new"
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
               >
-                + Add Event
+                + Add Happening
               </Link>
             )}
             <Link
@@ -492,27 +515,55 @@ export default async function HappeningsPage({
           />
         </Suspense>
 
-        {/* Results summary - under sticky controls */}
-        <div className="py-3 text-sm text-[var(--color-text-secondary)]">
-          <span className="font-medium text-[var(--color-text-primary)]">
-            {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "event" : "events"}
-          </span>
-          {" "}across{" "}
-          <span className="font-medium text-[var(--color-text-primary)]">{totalDates}</span>
-          {" "}{totalDates === 1 ? "date" : "dates"}
-          {/* Phase 4.50b: Dynamic window label based on timeFilter */}
-          {" "}
-          {timeFilter === "past" ? (
-            <span>(past events{pastOffset > 0 ? `, showing older` : ""})</span>
-          ) : timeFilter === "all" ? (
-            <span>(all time)</span>
+        {/* Results summary - humanized, Phase 4.55 */}
+        <div className="py-3">
+          {timeFilter === "upcoming" && !hasFilters ? (
+            /* Humanized summary for default view */
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              {tonightCount > 0 && (
+                <span>
+                  <span className="font-bold text-[var(--color-text-primary)]">{tonightCount}</span>
+                  <span className="text-[var(--color-text-secondary)]"> tonight</span>
+                </span>
+              )}
+              {thisWeekendCount > 0 && (
+                <span>
+                  <span className="font-bold text-[var(--color-text-primary)]">{thisWeekendCount}</span>
+                  <span className="text-[var(--color-text-secondary)]"> this weekend</span>
+                </span>
+              )}
+              <span>
+                <span className="font-bold text-[var(--color-text-primary)]">{thisWeekCount}</span>
+                <span className="text-[var(--color-text-secondary)]"> this week</span>
+              </span>
+              <span className="text-[var(--color-text-tertiary)]">•</span>
+              <span>
+                <span className="font-bold text-[var(--color-text-primary)]">{totalDisplayableEvents}</span>
+                <span className="text-[var(--color-text-secondary)]"> in the next 3 months</span>
+              </span>
+            </div>
           ) : (
-            <span>(next 90 days)</span>
-          )}
-          {filterSummary.length > 0 && (
-            <span className="ml-2 text-[var(--color-text-tertiary)]">
-              · Filtered by: {filterSummary.join(", ")}
-            </span>
+            /* Detailed summary for filtered views */
+            <div className="text-sm text-[var(--color-text-secondary)]">
+              <span className="font-medium text-[var(--color-text-primary)]">
+                {totalDisplayableEvents} {totalDisplayableEvents === 1 ? "happening" : "happenings"}
+              </span>
+              {" "}across{" "}
+              <span className="font-medium text-[var(--color-text-primary)]">{totalDates}</span>
+              {" "}{totalDates === 1 ? "date" : "dates"}
+              {/* Phase 4.50b: Dynamic window label based on timeFilter */}
+              {" "}
+              {timeFilter === "past" ? (
+                <span>(past{pastOffset > 0 ? ", showing older" : ""})</span>
+              ) : timeFilter === "all" ? (
+                <span>(all time)</span>
+              ) : null}
+              {filterSummary.length > 0 && (
+                <span className="ml-2 text-[var(--color-text-tertiary)]">
+                  · {filterSummary.join(", ")}
+                </span>
+              )}
+            </div>
           )}
         </div>
 

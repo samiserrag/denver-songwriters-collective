@@ -409,13 +409,13 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* DSC Events - Sponsored happenings only */}
+      {/* DSC Happenings - Sponsored happenings only */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
-                DSC Events
+                DSC Happenings
               </h2>
               <p className="text-[var(--color-text-secondary)]">
                 Song circles, showcases, and gatherings sponsored by Denver Songwriters Collective.
@@ -425,7 +425,7 @@ export default async function HomePage() {
               href="/happenings?dsc=1"
               className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              See all DSC events
+              See all DSC happenings
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

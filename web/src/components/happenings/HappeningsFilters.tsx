@@ -5,7 +5,11 @@
  *
  * Phase 4.2: Provides search + filter controls with shareable URLs.
  * Phase 4.8: Added day-of-week filter for pattern discovery.
- * Design: Flyer-like aesthetic, no emoji, SVG icons only (sparse).
+ * Phase 4.55: Redesigned with progressive disclosure:
+ *             - Quick filter cards (Open Mics, DSC Happenings, Shows)
+ *             - Polished search bar
+ *             - All other filters collapsed by default
+ * Design: Poster-board aesthetic, engaging cards, no database GUI feel.
  *
  * URL params:
  * - q: search query
@@ -86,6 +90,15 @@ function MusicIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+    </svg>
+  );
+}
+
+// Filter icon for collapsed section
+function FilterIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
     </svg>
   );
 }
@@ -218,22 +231,12 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     router.push("/happenings");
   };
 
-  // Toggle DSC filter
-  const toggleDsc = () => {
-    updateFilter("dsc", dsc ? null : "1");
-  };
-
   // Phase 4.8: Toggle day-of-week filter (multi-select)
   const toggleDay = (day: string) => {
     const newDays = selectedDays.includes(day)
       ? selectedDays.filter((d) => d !== day)
       : [...selectedDays, day];
     updateFilter("days", newDays.length > 0 ? newDays.join(",") : null);
-  };
-
-  // Clear all days
-  const clearDays = () => {
-    updateFilter("days", null);
   };
 
   // Collect active filter pills for display
@@ -288,10 +291,31 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const isDscActive = dsc;
   const isShowsActive = type === "shows";
 
+  // Build active filter summary for collapsed state
+  const activeFilterSummary: string[] = [];
+  if (selectedDays.length > 0) {
+    const dayLabels = selectedDays.map((d) => DAY_OPTIONS.find((o) => o.value === d)?.label || d).join(", ");
+    activeFilterSummary.push(dayLabels);
+  }
+  if (cost === "free") activeFilterSummary.push("Free");
+  if (cost === "paid") activeFilterSummary.push("Paid");
+  if (time === "past") activeFilterSummary.push("Past");
+  if (time === "all") activeFilterSummary.push("All time");
+
+  // Count active filters (excluding quick filters and search)
+  const advancedFilterCount = [
+    selectedDays.length > 0,
+    time !== "upcoming" && time !== "",
+    type && !isOpenMicsActive && !isShowsActive,
+    location,
+    cost,
+    verify,
+  ].filter(Boolean).length;
+
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Quick Filter Buttons - 3 giant buttons */}
-      <div className="grid grid-cols-3 gap-3">
+    <div className={cn("space-y-4", className)}>
+      {/* Quick Filter Cards - 3 engaging buttons */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <button
           onClick={() => {
             // If already active, clear it; otherwise set it
@@ -303,14 +327,14 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             }
           }}
           className={cn(
-            "py-4 px-4 rounded-xl text-center font-semibold text-lg transition-all",
+            "py-3 px-3 rounded-xl text-center font-medium transition-all",
             isOpenMicsActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
           )}
         >
-          <MicIcon className="w-6 h-6 mx-auto mb-1" />
-          Open Mics
+          <MicIcon className="w-5 h-5 mx-auto mb-0.5" />
+          <span className="text-sm">Open Mics</span>
         </button>
 
         <button
@@ -323,14 +347,14 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             }
           }}
           className={cn(
-            "py-4 px-4 rounded-xl text-center font-semibold text-lg transition-all",
+            "py-3 px-3 rounded-xl text-center font-medium transition-all",
             isDscActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
           )}
         >
-          <StarIcon className="w-6 h-6 mx-auto mb-1" />
-          DSC Events
+          <StarIcon className="w-5 h-5 mx-auto mb-0.5" />
+          <span className="text-sm">DSC Happenings</span>
         </button>
 
         <button
@@ -343,173 +367,148 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             }
           }}
           className={cn(
-            "py-4 px-4 rounded-xl text-center font-semibold text-lg transition-all",
+            "py-3 px-3 rounded-xl text-center font-medium transition-all",
             isShowsActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10"
+              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
           )}
         >
-          <MusicIcon className="w-6 h-6 mx-auto mb-1" />
-          Shows
+          <MusicIcon className="w-5 h-5 mx-auto mb-0.5" />
+          <span className="text-sm">Shows</span>
         </button>
       </div>
 
-      {/* Search */}
+      {/* Search - polished */}
       <div className="relative">
         <input
           type="text"
-          placeholder="Search happenings..."
+          placeholder="Search by venue, artist, or keyword..."
           value={searchInput}
           onChange={handleSearchChange}
-          className="w-full px-4 py-2.5 pl-10 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]/50"
+          className="w-full px-4 py-3 pl-11 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)] focus:ring-2 focus:ring-[var(--color-accent-primary)]/20 transition-all"
         />
-        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
+        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-secondary)]" />
         {searchInput && (
           <button
             onClick={clearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
             aria-label="Clear search"
           >
-            <XIcon className="w-4 h-4" />
+            <XIcon className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Phase 4.8: Day-of-week filter bar */}
-      <div className="flex flex-wrap items-center gap-1">
-        <span className="text-sm text-[var(--color-text-secondary)] mr-1">Days:</span>
-        <div className="flex rounded-lg overflow-hidden border border-[var(--color-border-default)]">
-          {DAY_OPTIONS.map((day) => (
-            <button
-              key={day.value}
-              onClick={() => toggleDay(day.value)}
-              title={day.full}
-              className={cn(
-                "px-2 py-1 text-sm font-medium transition-colors",
-                selectedDays.includes(day.value)
-                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
+      {/* Collapsed Filters - Progressive Disclosure */}
+      <details className="group rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
+        <summary className="cursor-pointer px-4 py-3 flex items-center justify-between list-none">
+          <div className="flex items-center gap-2">
+            <FilterIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
+            <span className="text-sm font-medium text-[var(--color-text-primary)]">
+              Filters
+              {advancedFilterCount > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]">
+                  {advancedFilterCount}
+                </span>
               )}
-            >
-              {day.label}
-            </button>
-          ))}
-        </div>
-        {selectedDays.length > 0 && (
-          <button
-            onClick={clearDays}
-            className="ml-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] underline"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Filter Row 1: Time + Type + DSC */}
-      <div className="flex flex-wrap gap-2 items-center">
-        {/* Time tabs */}
-        <div className="flex rounded-lg overflow-hidden border border-[var(--color-border-default)]">
-          {TIME_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => updateFilter("time", option.value === "upcoming" ? null : option.value)}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium transition-colors",
-                time === option.value || (option.value === "upcoming" && !searchParams.get("time"))
-                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Type dropdown */}
-        <select
-          value={type}
-          onChange={(e) => updateFilter("type", e.target.value || null)}
-          className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-        >
-          {TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-
-        {/* DSC toggle - badge style */}
-        <button
-          onClick={toggleDsc}
-          className={cn(
-            "px-2.5 py-1 text-sm font-semibold rounded border transition-colors",
-            dsc
-              ? "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-accent-primary)]/40"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/40"
-          )}
-        >
-          DSC
-        </button>
-      </div>
-
-      {/* Filter Row 2: Location + Cost + Verification (collapsible) */}
-      <details className="group">
-        <summary className="cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] list-none flex items-center gap-1">
-          <span>More filters</span>
-          <ChevronDownIcon className="w-4 h-4 transition-transform group-open:rotate-180" />
+            </span>
+            {activeFilterSummary.length > 0 && (
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                {activeFilterSummary.join(" · ")}
+              </span>
+            )}
+          </div>
+          <ChevronDownIcon className="w-5 h-5 text-[var(--color-text-secondary)] transition-transform group-open:rotate-180" />
         </summary>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {/* Location dropdown */}
-          <div className="flex items-center gap-1.5">
-            <MapPinIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
-            <select
-              value={location}
-              onChange={(e) => updateFilter("location", e.target.value || null)}
-              className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-            >
-              {LOCATION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+
+        <div className="px-4 pb-4 pt-2 space-y-4 border-t border-[var(--color-border-default)]">
+          {/* Days */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Days</label>
+            <div className="flex flex-wrap gap-1">
+              {DAY_OPTIONS.map((day) => (
+                <button
+                  key={day.value}
+                  onClick={() => toggleDay(day.value)}
+                  title={day.full}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
+                    selectedDays.includes(day.value)
+                      ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                      : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                  )}
+                >
+                  {day.label}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
-          {/* Cost dropdown */}
-          <div className="flex items-center gap-1.5">
-            <TagIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
-            <select
-              value={cost}
-              onChange={(e) => updateFilter("cost", e.target.value || null)}
-              className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-            >
-              {COST_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          {/* When + Type + Cost Row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--color-text-secondary)]">When</label>
+              <select
+                value={time}
+                onChange={(e) => updateFilter("time", e.target.value === "upcoming" ? null : e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+              >
+                {TIME_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--color-text-secondary)]">Type</label>
+              <select
+                value={type}
+                onChange={(e) => updateFilter("type", e.target.value || null)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+              >
+                {TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--color-text-secondary)]">Cost</label>
+              <select
+                value={cost}
+                onChange={(e) => updateFilter("cost", e.target.value || null)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+              >
+                {COST_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Verification dropdown */}
-          <select
-            value={verify}
-            onChange={(e) => updateFilter("verify", e.target.value || null)}
-            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-          >
-            {VERIFY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {/* Clear all button */}
+          {(activeFilters.length > 0 || selectedDays.length > 0) && (
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={clearAll}
+                className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
         </div>
       </details>
 
-      {/* Active filter pills */}
+      {/* Active filter pills - compact, below collapsed section */}
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-[var(--color-text-secondary)]">Active:</span>
           {activeFilters.map((filter) => (
             <span
               key={filter.key}
@@ -532,12 +531,6 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
               </button>
             </span>
           ))}
-          <button
-            onClick={clearAll}
-            className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline ml-1"
-          >
-            Clear all
-          </button>
         </div>
       )}
     </div>

@@ -118,11 +118,13 @@ describe('HappeningsFilters Component', () => {
 
     it('should have active filter pills', () => {
       expect(componentContent).toContain('activeFilters');
-      expect(componentContent).toContain('Active:');
+      // Phase 4.55: Active filter pills shown without "Active:" prefix
+      expect(componentContent).toContain('activeFilters.map');
     });
 
-    it('should have collapsible More filters section', () => {
-      expect(componentContent).toContain('More filters');
+    it('should have collapsible Filters section', () => {
+      // Phase 4.55: Renamed from "More filters" to "Filters" with progressive disclosure
+      expect(componentContent).toContain('Collapsed Filters - Progressive Disclosure');
       expect(componentContent).toContain('<details');
     });
   });
@@ -202,10 +204,11 @@ describe('Happenings Page Filter Logic', () => {
 
   describe('Results Display', () => {
     it('should show results count summary', () => {
-      // Phase 4.19 changed to "X events across Y dates (next 90 days)"
+      // Phase 4.55: Humanized summary for default view
       expect(pageContent).toContain('totalDisplayableEvents');
-      expect(pageContent).toContain('totalDates');
-      expect(pageContent).toContain('(next 90 days)');
+      expect(pageContent).toContain('tonightCount');
+      expect(pageContent).toContain('thisWeekCount');
+      expect(pageContent).toContain('in the next 3 months');
     });
 
     it('should show no results message with filter hint', () => {
