@@ -12,7 +12,15 @@ import { createClient } from "@supabase/supabase-js";
 type OpsAction =
   | "venues_csv_export"
   | "venues_csv_preview"
-  | "venues_csv_apply";
+  | "venues_csv_apply"
+  | "events_csv_export"
+  | "events_csv_preview"
+  | "events_csv_apply"
+  | "events_bulk_verify"
+  | "events_bulk_unverify"
+  | "overrides_csv_export"
+  | "overrides_csv_preview"
+  | "overrides_csv_apply";
 
 interface OpsAuditContext {
   rowCount?: number;
@@ -71,6 +79,7 @@ export async function logOpsAction(
  * Convenience methods for specific ops actions.
  */
 export const opsAudit = {
+  // Venues
   venuesCsvExport: (actorId: string, ctx: OpsAuditContext = {}) =>
     logOpsAction("venues_csv_export", actorId, ctx),
 
@@ -79,6 +88,32 @@ export const opsAudit = {
 
   venuesCsvApply: (actorId: string, ctx: OpsAuditContext = {}) =>
     logOpsAction("venues_csv_apply", actorId, ctx),
+
+  // Events
+  eventsCsvExport: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("events_csv_export", actorId, ctx),
+
+  eventsCsvPreview: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("events_csv_preview", actorId, ctx),
+
+  eventsCsvApply: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("events_csv_apply", actorId, ctx),
+
+  eventsBulkVerify: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("events_bulk_verify", actorId, ctx),
+
+  eventsBulkUnverify: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("events_bulk_unverify", actorId, ctx),
+
+  // Overrides
+  overridesCsvExport: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("overrides_csv_export", actorId, ctx),
+
+  overridesCsvPreview: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("overrides_csv_preview", actorId, ctx),
+
+  overridesCsvApply: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("overrides_csv_apply", actorId, ctx),
 };
 
 export default opsAudit;

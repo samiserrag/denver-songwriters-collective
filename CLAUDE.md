@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.61):** Lint warnings = 0. All tests passing (1474). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.62):** Lint warnings = 0. All tests passing (1572). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,79 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.62 — Ops Console v1: Events + Overrides Bulk Management (January 2026)
+
+**Goal:** Admin-only bulk management for events and occurrence overrides via CSV export/import.
+
+**How to Use Events Ops Console:**
+1. Navigate to `/dashboard/admin/ops/events`
+2. **Export:** Filter by status/type/venue/recurring, click "Download CSV"
+3. **Edit:** Open CSV in Excel/Sheets, update fields (title, status, times, etc.)
+4. **Preview:** Upload edited CSV, review diff before applying
+5. **Apply:** Confirm changes to update database
+6. **Bulk Verify:** Select events, click "Verify Selected" to mark as admin-verified
+
+**How to Use Overrides Ops Console:**
+1. Navigate to `/dashboard/admin/ops/overrides`
+2. **Export:** Filter by event_id or date range, click "Download CSV"
+3. **Edit/Create:** Add new rows or edit existing ones (upsert behavior)
+4. **Preview:** Upload CSV, see which overrides will be created vs updated
+5. **Apply:** Confirm to create new overrides and update existing ones
+
+**Events CSV Schema (12 columns):**
+```
+id,title,event_type,status,is_recurring,event_date,day_of_week,start_time,end_time,venue_id,is_published,notes
+```
+- `notes` maps to `host_notes` database column
+- No verification timestamps (verification via UI only)
+- Update-only (no event creation via CSV)
+
+**Overrides CSV Schema (6 columns):**
+```
+event_id,date_key,status,override_start_time,override_notes,override_cover_image_url
+```
+- Upsert behavior: creates new or updates existing
+- Composite key: `(event_id, date_key)` identifies overrides
+- No id column needed
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `docs/OPS_BACKLOG.md` | Deferred features backlog |
+| `lib/ops/eventCsvParser.ts` | Event CSV parse/serialize |
+| `lib/ops/eventValidation.ts` | Event row validation |
+| `lib/ops/eventDiff.ts` | Event diff computation |
+| `lib/ops/overrideCsvParser.ts` | Override CSV parse/serialize |
+| `lib/ops/overrideValidation.ts` | Override row validation |
+| `lib/ops/overrideDiff.ts` | Override diff with upsert support |
+| `api/admin/ops/events/export/route.ts` | GET - Events CSV download |
+| `api/admin/ops/events/preview/route.ts` | POST - Preview diff |
+| `api/admin/ops/events/apply/route.ts` | POST - Apply changes |
+| `api/admin/ops/events/bulk-verify/route.ts` | POST - Bulk verify/unverify |
+| `api/admin/ops/overrides/export/route.ts` | GET - Overrides CSV download |
+| `api/admin/ops/overrides/preview/route.ts` | POST - Preview diff (upsert) |
+| `api/admin/ops/overrides/apply/route.ts` | POST - Apply changes (upsert) |
+| `dashboard/admin/ops/events/page.tsx` | Events bulk management UI |
+| `dashboard/admin/ops/overrides/page.tsx` | Overrides bulk management UI |
+
+**Test Coverage:** 98 new tests (1572 total).
+
+| Test File | Tests |
+|-----------|-------|
+| `ops-event-csv.test.ts` | 21 tests - Event CSV parsing |
+| `ops-event-validation.test.ts` | 26 tests - Event validation |
+| `ops-event-diff.test.ts` | 15 tests - Event diff computation |
+| `ops-override-csv.test.ts` | 36 tests - Override CSV/validation/diff |
+
+**Key Design Decisions:**
+1. **No verification in CSV:** Verification timestamps excluded to prevent spreadsheet mistakes. Use UI bulk actions instead.
+2. **Override upsert:** Creates new overrides if (event_id, date_key) not found, updates if found.
+3. **Notes → host_notes mapping:** CSV uses `notes` column, maps to `host_notes` DB column.
+4. **Event type validation:** Warns on unknown types (forward compatibility) but errors on invalid status.
 
 ---
 
