@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.54):** Lint warnings = 0. All tests passing (1342). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.55):** Lint warnings = 0. All tests passing (1368). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,59 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.55 — Happenings Page UX Redesign (January 2026)
+
+**Goal:** Transform the Happenings page from a "database GUI" feel into an inviting discovery experience for songwriters, music fans, and venues.
+
+**Key Changes:**
+
+| Feature | Implementation |
+|---------|----------------|
+| ViewModeSelector | Hero-level visual cards for Timeline/Series selection |
+| Progressive disclosure | All advanced filters collapsed by default in a card |
+| Quick filter cards | Compact Open Mics, DSC Happenings, Shows buttons |
+| Polished search | Larger (py-3), rounded-xl, improved focus states |
+| Humanized summary | "X tonight · Y this weekend · Z in next 3 months" |
+| Terminology fix | Remaining "event" → "happening" changes |
+
+**ViewModeSelector Component (new):**
+- Two large cards side-by-side (Timeline vs Series)
+- Visual icon + headline + 1-line description
+- Active state: `card-spotlight` styling with gold glow
+- Uses `--shadow-card-hover` for active state
+
+**HappeningsFilters Redesign:**
+- Quick filter cards at top (smaller than before: py-3 vs py-4)
+- Search bar enhanced: py-3, rounded-xl, focus ring
+- Filters collapsed by default in `<details>` element
+- Filter summary in collapsed header (e.g., "Mon, Tue · Free")
+- Active filter count badge on collapsed section
+- Days, When, Type, Cost in organized grid when expanded
+
+**Humanized Results Summary:**
+- Default view: "X tonight · Y this weekend · Z this week · Total in next 3 months"
+- Filtered views: "X happenings across Y dates (context)"
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/happenings/ViewModeSelector.tsx` | Hero-level view mode cards |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningsFilters.tsx` | Redesigned with progressive disclosure |
+| `components/happenings/StickyControls.tsx` | Removed inline toggle, uses ViewModeSelector |
+| `app/happenings/page.tsx` | Humanized results summary, time period counts |
+| `app/page.tsx` | Fixed "DSC Events" → "DSC Happenings" |
+| `__tests__/happenings-filters.test.ts` | Updated for new UI structure |
+
+**Test Coverage:** 1368 tests passing.
 
 ---
 
