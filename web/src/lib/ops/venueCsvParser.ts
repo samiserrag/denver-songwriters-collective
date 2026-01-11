@@ -1,7 +1,8 @@
 /**
  * Venue CSV Parser
  *
- * Ops Console v1: Simple CSV parse/serialize for venue bulk operations.
+ * Ops Console v1: CSV parse/serialize for venue bulk operations.
+ * Supports RFC 4180 quoting: commas and quotes inside quoted fields.
  *
  * IMPORTANT (Tightening Note #2):
  * v1 parser assumes no multi-line cells. If any cell contains newline
@@ -44,6 +45,52 @@ export interface VenueCsvParseResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CSV Line Parser (RFC 4180 quote handling)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Parses a single CSV line, handling quoted values with commas.
+ * Supports:
+ * - Quoted fields containing commas: "Foo, Bar" → "Foo, Bar"
+ * - Escaped quotes: "He said ""hello""" → He said "hello"
+ */
+function parseCsvLine(line: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        // Escaped quote
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        // End of quoted section
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ",") {
+        values.push(current);
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+  }
+
+  values.push(current);
+  return values;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CSV Parsing
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -52,7 +99,7 @@ export interface VenueCsvParseResult {
  *
  * Rules:
  * - First row must be header matching VENUE_CSV_HEADERS exactly
- * - Comma-delimited (no quoted fields in v1)
+ * - Supports quoted fields with commas (RFC 4180)
  * - STOP if any cell contains newline (multi-line not supported)
  */
 export function parseVenueCsv(csvText: string): VenueCsvParseResult {
@@ -71,7 +118,7 @@ export function parseVenueCsv(csvText: string): VenueCsvParseResult {
 
   // Parse header row
   const headerLine = lines[0];
-  const headers = headerLine.split(",").map((h) => h.trim());
+  const headers = parseCsvLine(headerLine).map((h) => h.trim());
 
   // Validate headers match exactly
   if (headers.length !== VENUE_CSV_HEADERS.length) {
@@ -98,10 +145,8 @@ export function parseVenueCsv(csvText: string): VenueCsvParseResult {
     const line = lines[lineIndex];
     const rowNumber = lineIndex + 1; // 1-indexed for user display
 
-    // Check for newlines within cells (STOP-GATE per tightening note #2)
-    // This would only happen if someone manually edited the CSV with quoted multi-line
-    // Since we don't support quotes, this shouldn't occur, but check anyway
-    const cells = line.split(",");
+    // Parse with quote-aware splitter (handles commas inside quoted fields)
+    const cells = parseCsvLine(line);
 
     if (cells.length !== VENUE_CSV_HEADERS.length) {
       errors.push(
