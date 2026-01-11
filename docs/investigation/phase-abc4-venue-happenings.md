@@ -1,6 +1,6 @@
 # Phase ABC #4: Venue Pages Should Show Happenings
 
-**Status:** STOP-GATE (Investigation Only)
+**Status:** RESOLVED (Implemented)
 **Created:** January 2026
 **Purpose:** Fix venue pages not showing happenings, and design series UX for venues
 
@@ -262,12 +262,64 @@ Show "Schedule Unknown" section for events without computable next occurrence.
 
 ---
 
-## 10. Decision Required
+## 10. Implementation Complete
 
-**STOP-GATE:** Awaiting approval to proceed with Option B (Series View).
+**Status:** IMPLEMENTED (January 2026)
 
-Alternative: If Timeline View preferred, specify and I'll adjust implementation plan.
+### Changes Made
+
+**File:** `web/src/app/venues/[id]/page.tsx`
+
+| Change | Description |
+|--------|-------------|
+| Removed date filter | Removed `.or(\`event_date.gte.${today},event_date.is.null\`)` |
+| Added fields | Added `is_recurring`, `ordinal_pattern` to event query |
+| Override query | Query `occurrence_overrides` for venue's events within 90-day window |
+| Series grouping | Use `groupEventsAsSeriesView()` to create series entries |
+| Separate sections | "Recurring Series" and "One-Time Events" sections |
+| Unknown schedule | "Schedule Unknown" section for uncomputable events |
+| SeriesCard render | Uses existing `SeriesCard` component from happenings |
+
+### UI Structure
+
+```
+Happenings at [Venue Name]
+├── Recurring Series
+│   └── [SeriesCard: "Every Monday" with expandable dates]
+├── One-Time Events (or "Upcoming Events" if no recurring)
+│   └── [SeriesCard: specific date]
+└── Schedule Unknown (if any)
+    └── [Simple link cards]
+```
+
+### Test Coverage
+
+**File:** `web/src/__tests__/venue-series-view.test.ts`
+
+| Test | Description |
+|------|-------------|
+| Recurring with past anchor | Weekly event with past event_date appears with future occurrences |
+| Multiple occurrences | Weekly events show ~13 occurrences in 90-day window |
+| One-time future | Future one-time events appear correctly |
+| One-time past | Past one-time events excluded (no upcoming occurrences) |
+| Mixed categorization | Correctly separates recurring from one-time |
+| Sort by next occurrence | Events sorted by soonest upcoming date |
+| Unknown schedule | Events without computable schedule go to unknownEvents |
+| Override support | Function accepts overrideMap for cancellations |
+| Empty venue | Handles venue with no events gracefully |
+| Integration pattern | Validates recurring/one-time filtering pattern |
+
+**Test count:** 10 new tests (1624 total passing)
+
+### Verification Checklist
+
+- [x] Recurring event with past anchor date appears on venue page
+- [x] SeriesCard shows recurrence summary (e.g., "Every Monday")
+- [x] Expand chevron shows upcoming dates
+- [x] One-time events appear in separate section
+- [x] Empty state shows when no happenings
+- [x] Clicking event links to `/events/[slug]` detail page
 
 ---
 
-**END OF INVESTIGATION**
+**END OF INVESTIGATION — RESOLVED**

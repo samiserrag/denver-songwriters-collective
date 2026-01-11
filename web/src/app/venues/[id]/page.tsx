@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { HappeningCard, type HappeningEvent } from "@/components/happenings";
+import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
 import { PageContainer } from "@/components/layout";
 import { chooseVenueLink, isValidUrl } from "@/lib/venue/chooseVenueLink";
 import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
-import { getTodayDenver } from "@/lib/events/nextOccurrence";
+import {
+  getTodayDenver,
+  addDaysDenver,
+  groupEventsAsSeriesView,
+  buildOverrideMap,
+} from "@/lib/events/nextOccurrence";
 
 interface VenueDetailParams {
   params: Promise<{ id: string }>;
@@ -39,6 +44,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const today = getTodayDenver();
+  const windowEnd = addDaysDenver(today, 90);
 
   // Query venue details (excluding admin-only 'notes' field)
   const { data: venue, error: venueError } = await supabase
@@ -65,7 +71,8 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     notFound();
   }
 
-  // Query upcoming events at this venue
+  // Query ALL events at this venue (no date filter - let occurrence expansion handle dates)
+  // Phase ABC4: Recurring events with past anchor dates must still appear if they have future occurrences
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select(`
@@ -78,6 +85,8 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       start_time,
       end_time,
       recurrence_rule,
+      is_recurring,
+      ordinal_pattern,
       status,
       cover_image_url,
       cover_image_card_url,
@@ -97,29 +106,64 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     `)
     .eq("venue_id", id)
     .eq("is_published", true)
-    .in("status", ["active", "needs_verification"])
-    .or(`event_date.gte.${today},event_date.is.null`)
-    .order("event_date", { ascending: true, nullsFirst: false });
+    .in("status", ["active", "needs_verification"]);
 
   if (eventsError) {
     console.error("Error fetching events:", eventsError);
   }
 
-  // Map events to HappeningEvent format
-  const happenings: HappeningEvent[] = (events ?? []).map((event) => ({
+  // Get event IDs for override query
+  const eventIds = (events ?? []).map((e) => e.id);
+
+  // Query occurrence overrides for this venue's events within the window
+  const { data: overridesData } = eventIds.length > 0
+    ? await supabase
+        .from("occurrence_overrides")
+        .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes")
+        .in("event_id", eventIds)
+        .gte("date_key", today)
+        .lte("date_key", windowEnd)
+    : { data: [] };
+
+  const overrideMap = buildOverrideMap(
+    (overridesData || []).map((o) => ({
+      event_id: o.event_id,
+      date_key: o.date_key,
+      status: o.status as "normal" | "cancelled",
+      override_start_time: o.override_start_time,
+      override_cover_image_url: o.override_cover_image_url,
+      override_notes: o.override_notes,
+    }))
+  );
+
+  // Map events to SeriesEvent format with venue info
+  const eventsWithVenue: SeriesEvent[] = (events ?? []).map((event) => ({
     ...event,
     venue_name: event.venue_name || venue.name,
     venue_address: event.venue_address || venue.address,
+    venue_id: id,
     venue: {
       id: venue.id,
       name: venue.name,
       address: venue.address,
-      city: venue.city,
-      state: venue.state,
       google_maps_url: venue.google_maps_url,
       website_url: venue.website_url,
     },
   }));
+
+  // Group events as series view with occurrence expansion
+  const { series, unknownEvents } = groupEventsAsSeriesView(eventsWithVenue, {
+    startKey: today,
+    endKey: windowEnd,
+    overrideMap,
+  });
+
+  // Separate recurring series from one-time events
+  const recurringSeries = series.filter((s) => !s.isOneTime);
+  const oneTimeSeries = series.filter((s) => s.isOneTime);
+
+  // Check if there are any happenings to show
+  const hasHappenings = series.length > 0 || unknownEvents.length > 0;
 
   // Build full address
   const fullAddress = [
@@ -260,7 +304,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
             Happenings at {venue.name}
           </h2>
 
-          {happenings.length === 0 ? (
+          {!hasHappenings ? (
             <div className="text-center py-12 text-[var(--color-text-secondary)] bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
               <p>No upcoming happenings at this venue.</p>
               <p className="text-sm mt-2">
@@ -270,10 +314,61 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {happenings.map((event) => (
-                <HappeningCard key={event.id} event={event} />
-              ))}
+            <div className="space-y-8">
+              {/* Recurring Series */}
+              {recurringSeries.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-4">
+                    Recurring Series
+                  </h3>
+                  <div className="space-y-3">
+                    {recurringSeries.map((entry) => (
+                      <SeriesCard key={entry.event.id} series={entry} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* One-Time Events */}
+              {oneTimeSeries.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-4">
+                    {recurringSeries.length > 0 ? "One-Time Events" : "Upcoming Events"}
+                  </h3>
+                  <div className="space-y-3">
+                    {oneTimeSeries.map((entry) => (
+                      <SeriesCard key={entry.event.id} series={entry} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Unknown Schedule */}
+              {unknownEvents.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-tertiary)] mb-4">
+                    Schedule Unknown
+                  </h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                    These events don&apos;t have a computable next occurrence.
+                  </p>
+                  <div className="space-y-3">
+                    {unknownEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg"
+                      >
+                        <Link
+                          href={`/events/${event.slug || event.id}`}
+                          className="text-[var(--color-text-primary)] hover:text-[var(--color-link)] font-medium"
+                        >
+                          {event.title}
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
