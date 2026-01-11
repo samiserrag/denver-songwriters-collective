@@ -233,6 +233,32 @@ After merging duplicates:
 | SQL Pattern | BEGIN → UPDATE events/gallery_albums/gallery_images/monthly_highlights → DELETE dup → COMMIT |
 | Verification | ✅ Canonical=3 events, Dup=0, Dup row deleted |
 
+### 2026-01-11: Pair #3 — Rails End Beer Company
+
+| Field | Value |
+|-------|-------|
+| Canonical ID | `6634293b-2db8-402e-a8ac-a1d333515d4f` |
+| Canonical Name | Rails End Beer Company |
+| Duplicate ID | `d5986a54-7265-4863-a87e-306b493a9985` |
+| Duplicate Name | Rails End |
+| Events Moved | 1 (dup) → canonical (now 2 total) |
+| Other FKs | 0 gallery_albums, 0 gallery_images, 0 monthly_highlights |
+| SQL Pattern | BEGIN → UPDATE FKs → DELETE dup → COMMIT |
+| Verification | ✅ Canonical=2 events, Dup=0, Dup row deleted |
+
+### 2026-01-11: Pair #4 — The Pearl / Mercury Cafe
+
+| Field | Value |
+|-------|-------|
+| Canonical ID | `954b9585-ee44-49a8-b082-1ca0568db280` |
+| Canonical Name | The Pearl / Mercury Cafe (renamed from "Mercury Cafe / The Pearl") |
+| Duplicate ID | `baf4b4d2-46c0-4b49-94a1-a446a0dc7de3` |
+| Duplicate Name | Mercury Cafe |
+| Events Moved | 1 (dup) → canonical (now 2 total) |
+| Other FKs | 0 gallery_albums, 0 gallery_images, 0 monthly_highlights |
+| SQL Pattern | BEGIN → UPDATE FKs → RENAME canonical → DELETE dup → COMMIT |
+| Verification | ✅ Canonical=2 events, Dup=0, Dup row deleted |
+
 ---
 
 **END OF DOCUMENT**
