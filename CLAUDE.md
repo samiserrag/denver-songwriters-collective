@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.55):** Lint warnings = 0. All tests passing (1368). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.57):** Lint warnings = 0. All tests passing (1368). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,73 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.57 — Series View Sliding Day Headers (January 2026)
+
+**Goal:** Add sticky day-of-week headers to Series view, matching the Timeline view's DateSection behavior.
+
+**Key Changes:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Day grouping | Series entries grouped by `day_of_week` field |
+| Sticky headers | Same styling as DateSection: `sticky top-[120px] z-20` with backdrop blur |
+| Day ordering | Days ordered starting from today (e.g., if Friday, shows Fri → Sat → Sun → Mon...) |
+| Collapsible sections | Each day section has chevron toggle to collapse/expand |
+| One-time events | Events without recurring day grouped as "One-time" |
+| Schedule Unknown | Events with incomplete schedule info shown at bottom with amber accent |
+
+**SeriesView.tsx Restructure:**
+- Added `DaySection` component with sticky header and collapse toggle
+- Added `getDayOrderFromToday()` for relative day ordering
+- Groups series by `day_of_week` using `React.useMemo`
+- Matches DateSection styling exactly
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/SeriesView.tsx` | Complete restructure with day grouping and sticky headers |
+
+**Test Coverage:** 1368 tests passing.
+
+---
+
+### Phase 4.56 — Kindred Songwriter Groups Event Type (January 2026)
+
+**Goal:** Add new event type for happenings hosted by other local songwriter communities (non-DSC groups).
+
+**Key Changes:**
+
+| Feature | Implementation |
+|---------|----------------|
+| New event type | `kindred_group` added to EventType union |
+| Label | "Kindred Songwriter Groups" |
+| Icon | 🤝 (handshake emoji) |
+| Filter support | Added to HappeningsFilters TYPE_OPTIONS dropdown |
+| Card labels | Added to HappeningCard and SeriesCard EVENT_TYPE_LABELS |
+| Default image | Uses song-circle.svg (similar community vibe) |
+| Claim CTA | Help text added: "Do you host one of these happenings? Click to claim as host" |
+
+**Database Migration (`20260111000001_add_event_types.sql`):**
+- Added `gig` to event_type enum
+- Added `meetup` to event_type enum
+- Added `kindred_group` to event_type enum
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `types/events.ts` | Added `kindred_group` to EventType and EVENT_TYPE_CONFIG |
+| `components/happenings/HappeningsFilters.tsx` | Added to TYPE_OPTIONS |
+| `components/happenings/HappeningCard.tsx` | Added to EVENT_TYPE_LABELS and DEFAULT_EVENT_IMAGES |
+| `components/happenings/SeriesCard.tsx` | Added to DEFAULT_EVENT_IMAGES |
+| `app/happenings/page.tsx` | Added filter handling, page title, filter summary, claim CTA |
+| `lib/supabase/database.types.ts` | Regenerated with new enum values |
+
+**Test Coverage:** 1368 tests passing.
 
 ---
 
