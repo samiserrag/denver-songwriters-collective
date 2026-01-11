@@ -96,14 +96,16 @@ function isValidHttpUrl(url: string | null | undefined): boolean {
 }
 
 /**
- * Phase 4.0/4.53: Generate Google Maps URL
- * Priority: venue.google_maps_url > lat/lng > address search > null
+ * Phase 4.0/4.53/4.60: Generate Google Maps URL
+ * Priority: venue.google_maps_url > lat/lng > venue name + address search > address search > null
+ * Phase 4.60: Include venue name in fallback search to find the actual place, not just the building
  */
 function getGoogleMapsUrl(
   address: string | null,
   latitude?: number | null,
   longitude?: number | null,
-  venueGoogleMapsUrl?: string | null
+  venueGoogleMapsUrl?: string | null,
+  venueName?: string | null
 ): string | null {
   // Priority 1: venue's google_maps_url if valid
   if (isValidHttpUrl(venueGoogleMapsUrl)) {
@@ -113,7 +115,11 @@ function getGoogleMapsUrl(
   if (latitude && longitude) {
     return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
   }
-  // Priority 3: address search
+  // Priority 3: venue name + address search (finds the actual place, not just the building)
+  if (venueName && address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venueName} ${address}`)}`;
+  }
+  // Priority 4: address-only search (fallback)
   if (!address) return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
@@ -411,12 +417,14 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   const signupLaneExists = hasSignupLane(event, timeslotCount);
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
-  // Phase 4.0/4.53: Pass venueGoogleMapsUrl as first priority, then lat/lng for custom locations
+  // Phase 4.0/4.53/4.60: Pass venueGoogleMapsUrl as first priority, then lat/lng for custom locations
+  // Phase 4.60: Pass venueName to improve fallback search (finds actual place, not just building)
   const mapsUrl = getGoogleMapsUrl(
     venueAddress,
     isCustomLocation ? event.custom_latitude : null,
     isCustomLocation ? event.custom_longitude : null,
-    isCustomLocation ? null : venueGoogleMapsUrl
+    isCustomLocation ? null : venueGoogleMapsUrl,
+    isCustomLocation ? event.custom_location_name : venueName
   );
   const remaining = event.capacity ? Math.max(0, event.capacity - attendanceCount) : null;
 
