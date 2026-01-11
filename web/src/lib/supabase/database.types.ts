@@ -132,12 +132,16 @@ export type Database = {
           author_id: string | null
           content: string
           created_at: string | null
+          edited_at: string | null
           guest_email: string | null
           guest_name: string | null
           guest_verification_id: string | null
           guest_verified: boolean
+          hidden_by: string | null
           id: string
           is_approved: boolean | null
+          is_deleted: boolean | null
+          is_hidden: boolean | null
           parent_id: string | null
           post_id: string
           updated_at: string | null
@@ -146,12 +150,16 @@ export type Database = {
           author_id?: string | null
           content: string
           created_at?: string | null
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
           guest_verified?: boolean
+          hidden_by?: string | null
           id?: string
           is_approved?: boolean | null
+          is_deleted?: boolean | null
+          is_hidden?: boolean | null
           parent_id?: string | null
           post_id: string
           updated_at?: string | null
@@ -160,12 +168,16 @@ export type Database = {
           author_id?: string | null
           content?: string
           created_at?: string | null
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
           guest_verified?: boolean
+          hidden_by?: string | null
           id?: string
           is_approved?: boolean | null
+          is_deleted?: boolean | null
+          is_hidden?: boolean | null
           parent_id?: string | null
           post_id?: string
           updated_at?: string | null
@@ -183,6 +195,13 @@ export type Database = {
             columns: ["guest_verification_id"]
             isOneToOne: false
             referencedRelation: "guest_verifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -466,6 +485,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          edited_at: string | null
           event_id: string
           guest_email: string | null
           guest_name: string | null
@@ -483,6 +503,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          edited_at?: string | null
           event_id: string
           guest_email?: string | null
           guest_name?: string | null
@@ -500,6 +521,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          edited_at?: string | null
           event_id?: string
           guest_email?: string | null
           guest_name?: string | null
@@ -1215,6 +1237,7 @@ export type Database = {
           album_id: string
           content: string
           created_at: string
+          edited_at: string | null
           guest_email: string | null
           guest_name: string | null
           guest_verification_id: string | null
@@ -1230,6 +1253,7 @@ export type Database = {
           album_id: string
           content: string
           created_at?: string
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
@@ -1245,6 +1269,7 @@ export type Database = {
           album_id?: string
           content?: string
           created_at?: string
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
@@ -1485,6 +1510,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          edited_at: string | null
           guest_email: string | null
           guest_name: string | null
           guest_verification_id: string | null
@@ -1500,6 +1526,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
@@ -1515,6 +1542,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
@@ -2122,6 +2150,7 @@ export type Database = {
           author_id: string | null
           content: string
           created_at: string
+          edited_at: string | null
           guest_email: string | null
           guest_name: string | null
           guest_verification_id: string | null
@@ -2138,6 +2167,7 @@ export type Database = {
           author_id?: string | null
           content: string
           created_at?: string
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
@@ -2154,6 +2184,7 @@ export type Database = {
           author_id?: string | null
           content?: string
           created_at?: string
+          edited_at?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_verification_id?: string | null
@@ -3012,7 +3043,15 @@ export type Database = {
     }
     Enums: {
       appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
-      event_type: "open_mic" | "showcase" | "song_circle" | "workshop" | "other"
+      event_type:
+        | "open_mic"
+        | "showcase"
+        | "song_circle"
+        | "workshop"
+        | "other"
+        | "gig"
+        | "meetup"
+        | "kindred_group"
       notification_type:
         | "new_user"
         | "event_signup"
@@ -3150,7 +3189,16 @@ export const Constants = {
   public: {
     Enums: {
       appointment_status: ["pending", "confirmed", "completed", "cancelled"],
-      event_type: ["open_mic", "showcase", "song_circle", "workshop", "other"],
+      event_type: [
+        "open_mic",
+        "showcase",
+        "song_circle",
+        "workshop",
+        "other",
+        "gig",
+        "meetup",
+        "kindred_group",
+      ],
       notification_type: [
         "new_user",
         "event_signup",
