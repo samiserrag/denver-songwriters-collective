@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.58):** Lint warnings = 0. All tests passing (1379). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.59):** Lint warnings = 0. All tests passing (1379). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,61 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.59 — Kindred Groups + Jam Sessions Filter Pills (January 2026)
+
+**Goal:** Add quick-access filter pills for Kindred Songwriter Groups and new Jam Sessions event type on /happenings page.
+
+**New Event Type:**
+
+| Type | Label | Description | Icon |
+|------|-------|-------------|------|
+| `jam_session` | Jam Session | Casual music gathering for jamming and improvisation | 🎸 |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260111000002_add_jam_session_event_type.sql` | Adds `jam_session` to `event_type` PostgreSQL enum |
+
+**New Filter Pills:**
+
+| Pill | Event Type | Icon |
+|------|------------|------|
+| Kindred | `kindred_group` | HeartIcon (hand-drawn heart) |
+| Jams | `jam_session` | GuitarIcon (electric guitar) |
+
+**Filter Pills Layout:**
+- Changed from 3-column grid to flexible wrap layout
+- 5 pills total: Open Mics, DSC, Shows, Kindred, Jams
+- Responsive: wraps naturally on narrow screens
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260111000002_add_jam_session_event_type.sql` | Enum extension |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningsFilters.tsx` | Added HeartIcon, GuitarIcon, Kindred + Jams pills, flex wrap layout |
+| `app/happenings/page.tsx` | Added `jam_session` query handling and page title |
+| `types/events.ts` | Added `jam_session` to EventType union and EVENT_TYPE_CONFIG |
+| `components/happenings/HappeningCard.tsx` | Added `jam_session` to EVENT_TYPE_LABELS and DEFAULT_EVENT_IMAGES |
+| `components/happenings/SeriesCard.tsx` | Added `jam_session` to DEFAULT_EVENT_IMAGES |
+
+**Event Types Now Supported (9 total):**
+- `song_circle`, `workshop`, `meetup`, `showcase`, `open_mic`, `gig`, `kindred_group`, `jam_session`, `other`
+
+**Dashboard Support:**
+- Event creation form automatically includes new types via `EVENT_TYPE_CONFIG` iteration
+- All dashboards use fallback pattern: `EVENT_TYPE_CONFIG[type] || EVENT_TYPE_CONFIG.other`
+
+**Test Coverage:** 1379 tests passing.
 
 ---
 
