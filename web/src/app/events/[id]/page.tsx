@@ -119,9 +119,15 @@ function getGoogleMapsUrl(
   if (venueName && address) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venueName} ${address}`)}`;
   }
-  // Priority 4: address-only search (fallback)
-  if (!address) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  // Priority 4: address-only search (fallback when no venue name)
+  if (address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+  // Priority 5: name-only search (fallback when no address)
+  if (venueName) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueName)}`;
+  }
+  return null;
 }
 
 /**

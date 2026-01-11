@@ -133,8 +133,13 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
 
   // Build Google Maps directions URL
   // Phase 4.60: Include venue name in fallback search to find the actual place, not just the building
+  // Priority: google_maps_url > name+address > name-only > null
   const getDirectionsUrl = venue.google_maps_url || (
-    fullAddress ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${venue.name} ${fullAddress}`)}` : null
+    fullAddress
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${venue.name} ${fullAddress}`)}`
+      : venue.name
+        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(venue.name)}`
+        : null
   );
 
   return (
