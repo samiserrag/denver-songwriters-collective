@@ -1,10 +1,16 @@
 # Governance: Stop-Gate Workflow
 
 **Status:** CANONICAL
-**Version:** 1.0
+**Version:** 1.1
 **Last Updated:** January 2026
 
 > This document defines how changes ship in this repository. All contributors and agents must follow this workflow.
+
+---
+
+## Purpose
+
+This project uses stop-gates to prevent irreversible errors. However, once an execution pattern is proven safe, repeated work should not require redundant approvals.
 
 ---
 
@@ -13,12 +19,35 @@
 | Role | Responsibility | Authority |
 |------|----------------|-----------|
 | **Sami** | Product owner, final decision-maker | Approves all execution prompts |
-| **Orchestrator** | Coordinates work, interfaces with Sami | Issues execution prompts only after approval |
-| **Repo Agent** | Investigates, documents, edits docs/tests | May NOT execute code changes without approval |
+| **Coordinator** | Defines scope, approves irreversible actions, sets governance mode | Issues execution prompts only after approval |
+| **Repo Executor** | Primary: execution. Secondary: collaborate on investigation, troubleshooting, and architectural discussion when invited | Trusted to carry out approved patterns efficiently |
+
+**Note:** The executor must not work in isolation but is trusted to execute approved patterns without redundant approval.
+
+---
+
+## Investigations
+
+**Always allowed and encouraged at any step.**
+
+- Investigations do not require approval and should be performed proactively
+- Findings should be reported clearly, especially if they affect safety or scope
+- Investigation documents go in `docs/investigation/phase{X}-{name}.md`
 
 ---
 
 ## Stop-Gate Protocol (Required)
+
+**Stop-gates are required when:**
+- A pattern is unproven
+- Schema/FK surface is unknown
+- Data loss or orphaning is possible
+- Architecture or product behavior may change
+
+**Stop-gates are collapsed when:**
+- The same execution pattern has been successfully completed and verified
+- Scope is limited to known tables and fields
+- Canonical decisions (e.g., naming) are pre-approved
 
 All non-trivial changes must follow this three-step protocol. No exceptions.
 
@@ -50,6 +79,29 @@ The repo agent **STOPS** and waits.
 Only after Sami explicitly approves does the orchestrator issue an execution prompt.
 
 **No implicit approvals. Silence is not consent.**
+
+---
+
+## Pattern-Established Mode (PEM)
+
+Once an execution pattern is established (proven safe through successful completion and verification):
+
+**Executor may proceed with multiple similar executions without per-item approval.**
+
+Each execution must still:
+- Run in a transaction
+- Report before/after counts
+- Stop immediately on any anomaly
+
+### Safety Rule (Non-Negotiable)
+
+**If anything deviates from the established pattern, the executor must stop and request guidance.**
+
+Examples of deviations requiring stop:
+- Unexpected row counts
+- New FK relationships discovered
+- Different data shapes than expected
+- Any error or warning during execution
 
 ---
 
