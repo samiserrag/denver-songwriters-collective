@@ -43,7 +43,7 @@ export interface HappeningEvent {
   description?: string | null;
 
   // Event type
-  event_type?: "open_mic" | "showcase" | "song_circle" | "workshop" | "gig" | "kindred_group" | "other" | string;
+  event_type?: "open_mic" | "showcase" | "song_circle" | "workshop" | "gig" | "kindred_group" | "jam_session" | "other" | string;
   is_dsc_event?: boolean | null;
 
   // Timing
@@ -278,6 +278,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   workshop: "Workshop",
   gig: "Gig",
   kindred_group: "Kindred Songwriter Groups",
+  jam_session: "Jam Session",
   other: "Event",
 };
 
@@ -292,6 +293,7 @@ const DEFAULT_EVENT_IMAGES: Record<string, string> = {
   workshop: "/images/event-defaults/workshop.svg",
   gig: "/images/event-defaults/gig.svg",
   kindred_group: "/images/event-defaults/song-circle.svg", // Uses song circle icon (similar community vibe)
+  jam_session: "/images/event-defaults/gig.svg", // Uses gig icon (music/performance vibe)
   other: "/images/event-defaults/event.svg",
 };
 
