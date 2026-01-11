@@ -9,11 +9,17 @@ export interface Venue {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  zip?: string | null;
+  neighborhood?: string | null;
   map_link?: string | null;
   google_maps_url?: string | null;
   website?: string | null;
   website_url?: string | null;
   phone?: string | null;
+  contact_link?: string | null;
+  accessibility_notes?: string | null;
+  parking_notes?: string | null;
+  // Note: 'notes' field is admin-only and NOT exposed on public pages
 }
 
 export interface Event {
