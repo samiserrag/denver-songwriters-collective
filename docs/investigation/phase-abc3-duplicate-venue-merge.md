@@ -209,4 +209,30 @@ After merging duplicates:
 
 ---
 
+## 8. Merge Audit Log
+
+### 2026-01-11: Pair #1 — Brewery Rickoli
+
+| Field | Value |
+|-------|-------|
+| Canonical ID | `0a507605-99bc-446e-87be-ae90ffd9f0fa` |
+| Duplicate ID | `3efbadc5-f505-436d-8797-fc435a8d9632` |
+| Events Moved | 1 (dup) → canonical (now 2 total) |
+| Other FKs | 0 gallery_albums, 0 gallery_images, 0 monthly_highlights |
+| SQL Pattern | BEGIN → UPDATE events/gallery_albums/gallery_images/monthly_highlights → DELETE dup → COMMIT |
+| Verification | ✅ Canonical=2 events, Dup=0, Dup row deleted |
+
+### 2026-01-11: Pair #2 — Second Dawn Brewing
+
+| Field | Value |
+|-------|-------|
+| Canonical ID | `e64e1f40-f792-4195-8723-eac0bff47ed9` |
+| Duplicate ID | `ec3e1bd4-b83f-427e-ad49-b0c1ff8da3d2` |
+| Events Moved | 1 (dup) → canonical (now 3 total) |
+| Other FKs | 0 gallery_albums, 0 gallery_images, 0 monthly_highlights |
+| SQL Pattern | BEGIN → UPDATE events/gallery_albums/gallery_images/monthly_highlights → DELETE dup → COMMIT |
+| Verification | ✅ Canonical=3 events, Dup=0, Dup row deleted |
+
+---
+
 **END OF DOCUMENT**
