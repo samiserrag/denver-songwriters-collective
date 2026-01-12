@@ -97,7 +97,7 @@ export default async function HappeningsPage({
       .from("events")
       .select("event_date")
       .eq("is_published", true)
-      .in("status", ["active", "needs_verification"])
+      .in("status", ["active", "needs_verification", "unverified"])
       .not("event_date", "is", null)
       .order("event_date", { ascending: true })
       .limit(1)
@@ -138,7 +138,7 @@ export default async function HappeningsPage({
       venues!left(id, slug, name, address, city, state, google_maps_url, website_url)
     `)
     .eq("is_published", true)
-    .in("status", ["active", "needs_verification"]);
+    .in("status", ["active", "needs_verification", "unverified"]);
 
   // Fetch occurrence overrides for the window
   // This runs in parallel with the events query

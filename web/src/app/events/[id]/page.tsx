@@ -970,6 +970,14 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
             {/* Phase ABC5: Disable RSVP if this specific occurrence is cancelled */}
             {canRSVP && !isOccurrenceCancelled && (
               <div className="flex flex-col gap-2">
+                {/* Phase ABC5: Series-level RSVP notice for recurring events - shown ABOVE the button */}
+                {recurrence.isRecurring && (
+                  <div className="px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] max-w-sm">
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      <span className="font-medium text-[var(--color-text-primary)]">Series RSVP:</span> Your RSVP applies to all dates in this recurring series, not just the selected date.
+                    </p>
+                  </div>
+                )}
                 <Suspense fallback={
                   <div className="animate-pulse">
                     <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
@@ -982,12 +990,6 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                     initialConfirmedCount={attendanceCount}
                   />
                 </Suspense>
-                {/* Phase ABC5: Series-level RSVP clarification for recurring events */}
-                {recurrence.isRecurring && effectiveSelectedDate && (
-                  <p className="text-xs text-[var(--color-text-tertiary)] max-w-xs">
-                    RSVP is for the series, shown here for <span className="font-medium">{new Date(effectiveSelectedDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}</span>.
-                  </p>
-                )}
               </div>
             )}
             {/* Phase ABC5: Show disabled state if occurrence is cancelled */}
@@ -1042,6 +1044,14 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           {/* Timeslot claiming section for timeslot-enabled events */}
           {event.is_dsc_event && (event as { has_timeslots?: boolean }).has_timeslots && (
             <div className="mb-8">
+              {/* Phase ABC5: Series-level timeslots notice for recurring events */}
+              {recurrence.isRecurring && (
+                <div className="mb-4 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]">
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    <span className="font-medium text-[var(--color-text-primary)]">Series lineup:</span> Performer slots are shared across all dates in this recurring series.
+                  </p>
+                </div>
+              )}
               <TimeslotSection
                 eventId={event.id}
                 eventStartTime={event.start_time}
@@ -1130,6 +1140,14 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           )}
 
           {/* Phase 4.49b: Event Comments - shown for all events */}
+          {/* Phase ABC5: Series-level comments notice for recurring events */}
+          {recurrence.isRecurring && (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]">
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                <span className="font-medium text-[var(--color-text-primary)]">Series comments:</span> Comments are shared across all dates in this recurring series.
+              </p>
+            </div>
+          )}
           <EventComments
             eventId={event.id}
             hostId={event.host_id ?? undefined}

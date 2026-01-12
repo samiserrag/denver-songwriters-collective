@@ -117,7 +117,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     `)
     .eq("venue_id", venue.id)
     .eq("is_published", true)
-    .in("status", ["active", "needs_verification"]);
+    .in("status", ["active", "needs_verification", "unverified"]);
 
   if (eventsError) {
     console.error("Error fetching events:", eventsError);
