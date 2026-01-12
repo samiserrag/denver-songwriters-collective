@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import { formatDateGroupHeader, getTodayDenver } from "@/lib/events/nextOccurrence";
@@ -24,6 +25,7 @@ interface MergedOccurrence {
 
 interface Props {
   eventId: string;
+  eventSlug: string | null;
   eventTitle: string;
   baseStartTime: string | null;
   baseCoverImageUrl: string | null;
@@ -32,11 +34,14 @@ interface Props {
 
 export default function OccurrenceOverrideList({
   eventId,
+  eventSlug,
   eventTitle,
   baseStartTime,
   baseCoverImageUrl,
   occurrences,
 }: Props) {
+  // Phase ABC5: Build preview URL using slug (preferred) or id
+  const eventIdentifier = eventSlug || eventId;
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [editingOccurrence, setEditingOccurrence] = useState<MergedOccurrence | null>(null);
@@ -217,6 +222,15 @@ export default function OccurrenceOverrideList({
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Phase ABC5: Preview link to see occurrence on public site */}
+                  <Link
+                    href={`/events/${eventIdentifier}?date=${occ.dateKey}`}
+                    target="_blank"
+                    className="px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)] transition-colors"
+                    title="Preview on live site"
+                  >
+                    Preview
+                  </Link>
                   {!occ.isCancelled && (
                     <button
                       onClick={() => handleQuickCancel(occ.dateKey)}

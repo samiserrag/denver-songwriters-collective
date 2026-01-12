@@ -182,22 +182,26 @@ const Chip = ({
 function UpcomingDatesList({
   occurrences,
   startTime,
+  eventIdentifier,
 }: {
   occurrences: ExpandedOccurrence[];
   startTime: string | null;
+  eventIdentifier: string;
 }) {
   const timeDisplay = formatTimeToAMPM(startTime);
 
   return (
     <div className="mt-2 pl-4 border-l-2 border-[var(--color-border-default)] space-y-1">
       {occurrences.map((occ) => (
-        <div
+        <Link
           key={occ.dateKey}
-          className="text-sm text-[var(--color-text-secondary)]"
+          href={`/events/${eventIdentifier}?date=${occ.dateKey}`}
+          className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+          onClick={(e) => e.stopPropagation()}
         >
           <span className="mr-1">•</span>
           {formatDateShort(occ.dateKey)} @ {timeDisplay}
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -403,12 +407,13 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
         </div>
       </Link>
 
-      {/* Expandable upcoming dates */}
+      {/* Expandable upcoming dates - Phase ABC5: Link to event page with ?date= */}
       {isExpanded && expandableOccurrences.length > 0 && (
         <div className="px-3 pb-3">
           <UpcomingDatesList
             occurrences={expandableOccurrences}
             startTime={event.start_time ?? null}
+            eventIdentifier={event.slug || event.id}
           />
         </div>
       )}

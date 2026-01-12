@@ -45,6 +45,7 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
     .from("events")
     .select(`
       id,
+      slug,
       title,
       day_of_week,
       recurrence_rule,
@@ -167,6 +168,7 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
       {/* Occurrence List */}
       <OccurrenceOverrideList
         eventId={eventId}
+        eventSlug={event.slug}
         eventTitle={event.title}
         baseStartTime={event.start_time}
         baseCoverImageUrl={event.cover_image_url}

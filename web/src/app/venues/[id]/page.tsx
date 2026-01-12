@@ -83,6 +83,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
 
   // Query ALL events at this venue (no date filter - let occurrence expansion handle dates)
   // Phase ABC4: Recurring events with past anchor dates must still appear if they have future occurrences
+  // IMPORTANT: Use venue.id (UUID) not id (which may be a slug)
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select(`
@@ -114,7 +115,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       venue_name,
       venue_address
     `)
-    .eq("venue_id", id)
+    .eq("venue_id", venue.id)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification"]);
 
@@ -148,11 +149,12 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
 
   // Map events to SeriesEvent format with venue info
   // Phase ABC4: Include venue slug for SeriesCard internal links
+  // Use venue.id (UUID) not id (which may be a slug)
   const eventsWithVenue: SeriesEvent[] = (events ?? []).map((event) => ({
     ...event,
     venue_name: event.venue_name || venue.name,
     venue_address: event.venue_address || venue.address,
-    venue_id: id,
+    venue_id: venue.id,
     venue: {
       id: venue.id,
       slug: venue.slug,

@@ -38,6 +38,25 @@ function isUUID(str: string): boolean {
 
 interface EventPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ date?: string }>;
+}
+
+/**
+ * Phase ABC5: Validate date key format (YYYY-MM-DD)
+ */
+function isValidDateKey(dateKey: string | undefined): dateKey is string {
+  if (!dateKey) return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateKey);
+}
+
+/**
+ * Phase ABC5: Check if a date is in the given occurrences list
+ */
+function isDateInOccurrences(
+  dateKey: string,
+  occurrences: Array<{ dateKey: string }>
+): boolean {
+  return occurrences.some((occ) => occ.dateKey === dateKey);
 }
 
 export async function generateMetadata({
@@ -175,8 +194,9 @@ function hasSignupLane(
   return true;
 }
 
-export default async function EventDetailPage({ params }: EventPageProps) {
+export default async function EventDetailPage({ params, searchParams }: EventPageProps) {
   const { id } = await params;
+  const { date: selectedDateKey } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   // Fetch event with venue join and recurrence info
@@ -342,6 +362,63 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       { startKey: today, endKey: windowEnd, maxOccurrences: 6 }
     );
   }
+
+  // Phase ABC5: Query occurrence override for selected date (if any)
+  let selectedOverride: {
+    status: string;
+    override_start_time: string | null;
+    override_cover_image_url: string | null;
+    override_notes: string | null;
+  } | null = null;
+
+  // Determine the effective selected date:
+  // - If valid date is provided in URL and it's in the occurrences list, use it
+  // - Otherwise use the first upcoming occurrence (or null for non-recurring)
+  let effectiveSelectedDate: string | null = null;
+  let dateSelectionMessage: string | null = null;
+
+  if (isValidDateKey(selectedDateKey)) {
+    if (upcomingOccurrences.length > 0 && isDateInOccurrences(selectedDateKey, upcomingOccurrences)) {
+      effectiveSelectedDate = selectedDateKey;
+    } else if (upcomingOccurrences.length > 0) {
+      // Date not in window - show message and default to first occurrence
+      effectiveSelectedDate = upcomingOccurrences[0].dateKey;
+      dateSelectionMessage = "That date isn't in the next 90 days. Showing next upcoming date.";
+    }
+  } else if (upcomingOccurrences.length > 0) {
+    // No date specified - default to first occurrence for recurring events
+    effectiveSelectedDate = upcomingOccurrences[0].dateKey;
+  }
+
+  // Fetch override for the effective selected date
+  if (effectiveSelectedDate) {
+    const { data: override } = await supabase
+      .from("occurrence_overrides")
+      .select("status, override_start_time, override_cover_image_url, override_notes")
+      .eq("event_id", event.id)
+      .eq("date_key", effectiveSelectedDate)
+      .maybeSingle();
+    selectedOverride = override;
+  }
+
+  // Determine if the selected occurrence is cancelled
+  const isOccurrenceCancelled = selectedOverride?.status === "cancelled";
+
+  // Apply override values (fall back to event defaults)
+  const displayStartTime = selectedOverride?.override_start_time || event.start_time;
+  const displayCoverImage = selectedOverride?.override_cover_image_url || event.cover_image_url;
+  const occurrenceNotes = selectedOverride?.override_notes;
+
+  // Phase ABC5: Format selected date for display
+  const selectedDateDisplay = effectiveSelectedDate
+    ? new Date(effectiveSelectedDate + "T12:00:00Z").toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "America/Denver",
+      })
+    : null;
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
   // Phase 4.39: Use event.id (UUID) not route param which could be a slug
@@ -599,8 +676,9 @@ export default async function EventDetailPage({ params }: EventPageProps) {
 
       <div className="rounded-2xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
         {/* Poster - Phase 3.1: full width, natural height, no cropping */}
+        {/* Phase ABC5: Use occurrence-specific cover image if available */}
         <PosterMedia
-          src={event.cover_image_url}
+          src={displayCoverImage}
           alt={event.title}
           variant="detail"
           priority={true}
@@ -719,11 +797,54 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             </div>
           )}
 
+          {/* Phase ABC5: Date selection message (if user requested invalid date) */}
+          {dateSelectionMessage && (
+            <div className="mb-4 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-700/50 text-amber-300">
+              <p className="text-sm">{dateSelectionMessage}</p>
+            </div>
+          )}
+
+          {/* Phase ABC5: Occurrence cancelled banner */}
+          {isOccurrenceCancelled && effectiveSelectedDate && (
+            <div className="mb-4 px-4 py-3 rounded-lg bg-red-900/30 border border-red-700/50">
+              <div className="flex items-center gap-3">
+                <span className="text-red-400 text-xl">⚠️</span>
+                <div>
+                  <p className="text-red-300 font-semibold">Cancelled for {selectedDateDisplay}</p>
+                  <p className="text-red-400/80 text-sm">This occurrence has been cancelled. The series continues on other dates.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Phase ABC5: Occurrence-specific notes */}
+          {occurrenceNotes && effectiveSelectedDate && (
+            <div className="mb-4 px-4 py-3 rounded-lg bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/30">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[var(--color-accent-primary)]">📋</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">Note for {selectedDateDisplay}:</span>
+              </div>
+              <p className="text-[var(--color-text-secondary)] text-sm pl-6">{occurrenceNotes}</p>
+            </div>
+          )}
+
           {/* Compact info row: Date | Time | Venue | Spots */}
           <div className="mb-6 p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[var(--color-text-primary)]">
-              {/* Date */}
-              {event.event_date && (
+              {/* Date - Phase ABC5: Show selected occurrence date for recurring events */}
+              {recurrence.isRecurring && effectiveSelectedDate ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--color-text-accent)]">📅</span>
+                  <span className="font-medium">
+                    {new Date(effectiveSelectedDate + "T12:00:00Z").toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "America/Denver",
+                    })}
+                  </span>
+                </div>
+              ) : event.event_date && (
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">📅</span>
                   <span className="font-medium">
@@ -737,12 +858,12 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 </div>
               )}
 
-              {/* Time */}
-              {event.start_time && (
+              {/* Time - Phase ABC5: Use override time if available */}
+              {displayStartTime && (
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">🕐</span>
                   <span>
-                    {formatTime(event.start_time)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
+                    {formatTime(displayStartTime)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
                   </span>
                 </div>
               )}
@@ -798,7 +919,7 @@ export default async function EventDetailPage({ params }: EventPageProps) {
             )}
           </div>
 
-          {/* Phase ABC4: Recurrence display with upcoming dates */}
+          {/* Phase ABC4/ABC5: Recurrence display with upcoming dates */}
           {recurrenceSummary && upcomingOccurrences.length > 0 && (
             <div className="mb-6 p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
               <div className="flex items-center gap-2 mb-3">
@@ -808,20 +929,22 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               <div className="pl-6">
                 <p className="text-sm text-[var(--color-text-secondary)] mb-2">Upcoming dates:</p>
                 <div className="flex flex-wrap gap-2">
-                  {upcomingOccurrences.slice(0, 5).map((occ, idx) => {
+                  {upcomingOccurrences.slice(0, 5).map((occ) => {
                     const dateDisplay = new Date(occ.dateKey + "T12:00:00Z").toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
                       timeZone: "America/Denver",
                     });
-                    // Link to happenings page filtered by date
+                    // Phase ABC5: Link to this event's occurrence page for that date
+                    const eventSlug = event.slug || event.id;
+                    const isSelected = occ.dateKey === effectiveSelectedDate;
                     return (
                       <Link
                         key={occ.dateKey}
-                        href={`/happenings?date=${occ.dateKey}`}
+                        href={`/events/${eventSlug}?date=${occ.dateKey}`}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                          idx === 0
+                          isSelected
                             ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
                             : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
                         }`}
@@ -844,19 +967,34 @@ export default async function EventDetailPage({ params }: EventPageProps) {
           <div className="flex flex-wrap items-start gap-4 mb-8">
             {/* Phase 4.43c: RSVP is always available for all published events (DSC + community) */}
             {/* RSVP = audience/supporters "planning to attend", not performer signup */}
-            {canRSVP && (
-              <Suspense fallback={
-                <div className="animate-pulse">
-                  <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
-                </div>
-              }>
-                <RSVPSection
-                  eventId={event.id}
-                  eventTitle={event.title}
-                  capacity={event.capacity}
-                  initialConfirmedCount={attendanceCount}
-                />
-              </Suspense>
+            {/* Phase ABC5: Disable RSVP if this specific occurrence is cancelled */}
+            {canRSVP && !isOccurrenceCancelled && (
+              <div className="flex flex-col gap-2">
+                <Suspense fallback={
+                  <div className="animate-pulse">
+                    <div className="h-12 w-32 bg-[var(--color-bg-tertiary)] rounded-lg"></div>
+                  </div>
+                }>
+                  <RSVPSection
+                    eventId={event.id}
+                    eventTitle={event.title}
+                    capacity={event.capacity}
+                    initialConfirmedCount={attendanceCount}
+                  />
+                </Suspense>
+                {/* Phase ABC5: Series-level RSVP clarification for recurring events */}
+                {recurrence.isRecurring && effectiveSelectedDate && (
+                  <p className="text-xs text-[var(--color-text-tertiary)] max-w-xs">
+                    RSVP is for the series, shown here for <span className="font-medium">{new Date(effectiveSelectedDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}</span>.
+                  </p>
+                )}
+              </div>
+            )}
+            {/* Phase ABC5: Show disabled state if occurrence is cancelled */}
+            {canRSVP && isOccurrenceCancelled && (
+              <div className="px-4 py-3 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]">
+                <p className="text-[var(--color-text-secondary)] text-sm">RSVP unavailable - this date is cancelled</p>
+              </div>
             )}
             {calendarStartDate && (
               <AddToCalendarButton

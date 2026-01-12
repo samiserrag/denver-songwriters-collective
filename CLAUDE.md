@@ -314,6 +314,56 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase ABC5 — Occurrence-aware Event Detail (Option C MVP) (January 2026)
+
+**Goal:** Enable occurrence-specific deep-linking for recurring events without per-occurrence RSVP schema changes.
+
+**Key Feature:** `/events/[slug]?date=YYYY-MM-DD` shows occurrence-specific details while RSVPs and comments remain series-level.
+
+**Event Detail Page (`app/events/[id]/page.tsx`):**
+
+| Feature | Implementation |
+|---------|----------------|
+| Date parameter | `?date=YYYY-MM-DD` selects specific occurrence |
+| Date validation | Invalid dates fall back to next upcoming occurrence with message |
+| Override support | Shows cancelled banner, override time, override notes, override flyer |
+| RSVP behavior | Disabled for cancelled occurrences, series-level clarification text |
+| Date pills | Now link to `/events/${slug}?date=${dateKey}` instead of `/happenings?date=` |
+
+**SeriesCard Date Pills (`components/happenings/SeriesCard.tsx`):**
+
+| Feature | Implementation |
+|---------|----------------|
+| Clickable dates | Each date in expandable list links to `/events/${id}?date=${dateKey}` |
+| Hover states | Visual feedback on hover |
+
+**Override Editor Preview (`dashboard/admin/events/[id]/overrides/`):**
+
+| Feature | Implementation |
+|---------|----------------|
+| Preview link | Each occurrence row has "Preview" link to public site |
+| Uses slug | Prefers event slug over UUID for URLs |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | `searchParams`, occurrence override query, date-aware UI |
+| `components/happenings/SeriesCard.tsx` | `UpcomingDatesList` links to event page with `?date=` |
+| `dashboard/admin/events/[id]/overrides/_components/OccurrenceOverrideList.tsx` | Added `eventSlug` prop, Preview links |
+| `dashboard/admin/events/[id]/overrides/page.tsx` | Query includes `slug`, passes to component |
+
+**Behavior:**
+- `/events/words-open-mic?date=2026-01-18` → shows Jan 18 occurrence details
+- Date not in 90-day window → defaults to next occurrence with message
+- Cancelled occurrence → shows banner, disables RSVP
+- Override time/flyer/notes displayed when present
+- RSVPs + comments remain series-level (no schema changes)
+
+**Test Coverage:** 1624 tests passing (no new tests needed - existing tests cover components).
+
+---
+
 ### Phase ABC4 — Venue Slugs + Series View Fix (January 2026)
 
 **Goal:** Add friendly slugs to venues and fix venue detail pages not showing happenings.
