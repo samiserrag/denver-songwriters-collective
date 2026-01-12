@@ -314,6 +314,50 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase ABC6 — Per-Occurrence RSVPs, Comments, and Timeslots (January 2026) — INVESTIGATION
+
+**Goal:** Make RSVPs, comments, and timeslots apply to **specific occurrence dates** rather than the entire series. When a user RSVPs on `/events/foo?date=2026-01-18`, their RSVP should only apply to January 18th.
+
+**Status:** Investigation complete, awaiting approval for implementation.
+
+**Investigation Document:** `docs/investigation/phase-abc6-per-occurrence-inventory.md`
+
+**Scope Summary:**
+
+| Category | Files |
+|----------|-------|
+| Database tables | 6 (4 primary + 2 related) |
+| API routes | ~15 |
+| UI components | ~17 |
+| Email templates | ~11 |
+| Notification logic | 3 |
+| Test files | 12 |
+| **Total** | **~64 files** |
+
+**Tables in Scope:**
+
+| Table | Rows | Needs date_key |
+|-------|------|----------------|
+| `event_rsvps` | 10 | Yes |
+| `event_comments` | 7 | Yes |
+| `event_timeslots` | 112 | Yes |
+| `timeslot_claims` | 2 | No (inherits via timeslot join) |
+| `guest_verifications` | 18 | **Yes** (STOP-GATE A finding) |
+| `event_lineup_state` | 0 | **Yes** (STOP-GATE A finding) |
+
+**STOP-GATE A Finding:** Two additional tables must be included:
+- `guest_verifications` — Links to rsvps/comments/claims; has `event_id` but no `date_key`
+- `event_lineup_state` — "Now playing" pointer needs date awareness for multi-occurrence lineup display
+
+**Migration Plan (3 migrations):**
+1. **Additive (safe):** Add `date_key TEXT` columns + indexes
+2. **Backfill (idempotent):** Compute date_key using `expandOccurrencesForEvent()`
+3. **Constraints (breaking):** Add NOT NULL + new unique constraints including date_key
+
+**Awaiting approval before proceeding with Step 1 (Schema migration).**
+
+---
+
 ### Phase ABC5 — Occurrence-aware Event Detail (Option C MVP) (January 2026)
 
 **Goal:** Enable occurrence-specific deep-linking for recurring events without per-occurrence RSVP schema changes.
