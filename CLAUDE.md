@@ -348,6 +348,52 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase ABC4 — Event Detail Page Enhancements (January 2026)
+
+**Goal:** Improve event detail pages with internal venue links and recurrence display with clickable date pills.
+
+**Venue Name Internal Links:**
+
+Changed venue names on event detail pages from external links (Google Maps) to internal links (`/venues/[slug|id]`).
+
+| Before | After |
+|--------|-------|
+| Venue name linked to Google Maps | Venue name links to `/venues/[slug]` |
+| External redirect | Internal navigation |
+| Lost users to external site | Keeps users discovering more happenings at venue |
+
+**Recurrence Display with Date Pills:**
+
+Added recurrence information section to event detail pages for recurring events.
+
+| Feature | Implementation |
+|---------|----------------|
+| Recurrence summary | "Every Saturday", "1st & 3rd Thursday" using `labelFromRecurrence()` |
+| Next occurrences | Up to 6 clickable date pills |
+| Date pill links | Each pill links to `/happenings?date=YYYY-MM-DD` |
+| Pill styling | Amber/gold accent matching theme tokens |
+| Non-recurring | Section hidden for one-time events |
+
+**Example Display:**
+```
+Recurrence: Every Saturday
+Upcoming: [Jan 18] [Jan 25] [Feb 1] [Feb 8] [Feb 15] [Feb 22]
+```
+
+Each date pill is clickable and navigates to the happenings page filtered to that date.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | Added recurrence section, venue slug fetch, internal venue link |
+
+**Dependencies:**
+- `lib/events/recurrenceContract.ts` — `interpretRecurrence()`, `labelFromRecurrence()`
+- `lib/events/nextOccurrence.ts` — `expandOccurrencesForEvent()`
+
+---
+
 ### Phase ABC4 — Venue Pages Series View Fix (January 2026)
 
 **Goal:** Fix venue detail pages not showing happenings, implement Series View for recurring events.
