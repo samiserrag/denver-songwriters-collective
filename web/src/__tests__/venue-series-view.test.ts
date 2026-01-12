@@ -119,7 +119,7 @@ describe("Venue Series View - groupEventsAsSeriesView", () => {
         }),
       ];
 
-      const { series, unknownEvents } = groupEventsAsSeriesView(events, {
+      const { series } = groupEventsAsSeriesView(events, {
         startKey: today,
         endKey: windowEnd,
       });

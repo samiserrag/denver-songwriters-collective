@@ -5,6 +5,7 @@ import Link from "next/link";
 
 interface Venue {
   id: string;
+  slug?: string | null;  // Phase ABC4: Add slug for friendly URLs
   name: string;
   address: string;
   city: string;
@@ -456,10 +457,10 @@ export default function AdminVenuesClient() {
                   <td className="px-3 py-2 text-[var(--color-text-secondary)]">
                     {venue.happenings_count ?? 0}
                   </td>
-                  {/* View link column */}
+                  {/* View link column - Phase ABC4: Use slug for friendly URLs */}
                   <td className="px-3 py-2">
                     <Link
-                      href={`/venues/${venue.id}`}
+                      href={`/venues/${venue.slug || venue.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[var(--color-text-accent)] hover:underline text-xs"

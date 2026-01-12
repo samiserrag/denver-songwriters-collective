@@ -2690,6 +2690,7 @@ export type Database = {
           notes: string | null
           parking_notes: string | null
           phone: string | null
+          slug: string | null
           state: string
           updated_at: string | null
           website_url: string | null
@@ -2709,6 +2710,7 @@ export type Database = {
           notes?: string | null
           parking_notes?: string | null
           phone?: string | null
+          slug?: string | null
           state: string
           updated_at?: string | null
           website_url?: string | null
@@ -2728,6 +2730,7 @@ export type Database = {
           notes?: string | null
           parking_notes?: string | null
           phone?: string | null
+          slug?: string | null
           state?: string
           updated_at?: string | null
           website_url?: string | null
@@ -2867,6 +2870,10 @@ export type Database = {
       generate_recurring_event_instances: {
         Args: { p_parent_event_id: string; p_weeks_ahead?: number }
         Returns: number
+      }
+      generate_venue_slug: {
+        Args: { venue_id: string; venue_name: string }
+        Returns: string
       }
       is_admin: { Args: never; Returns: boolean }
       mark_timeslot_no_show: {
@@ -3052,6 +3059,7 @@ export type Database = {
         | "gig"
         | "meetup"
         | "kindred_group"
+        | "jam_session"
       notification_type:
         | "new_user"
         | "event_signup"
@@ -3198,6 +3206,7 @@ export const Constants = {
         "gig",
         "meetup",
         "kindred_group",
+        "jam_session",
       ],
       notification_type: [
         "new_user",

@@ -314,6 +314,40 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase ABC4 — Venue Slugs + Series View Fix (January 2026)
+
+**Goal:** Add friendly slugs to venues and fix venue detail pages not showing happenings.
+
+**Venue Slugs:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Slug column | Added `slug` text column to venues table |
+| Auto-generation | Trigger generates slug from name on insert/update |
+| Collision handling | Appends `-2`, `-3`, etc. for duplicates |
+| Canonical redirect | UUID access redirects to slug URL |
+| Backward compatible | Both UUID and slug URLs work |
+
+**Database Migration:** `supabase/migrations/20260111100000_add_venue_slugs.sql`
+
+**Files Modified for Slugs:**
+
+| File | Change |
+|------|--------|
+| `app/venues/page.tsx` | Query includes slug, passes to VenueGrid |
+| `app/venues/[id]/page.tsx` | UUID/slug routing with canonical redirect |
+| `app/events/[id]/page.tsx` | Venue link uses `slug \|\| venue_id` |
+| `app/happenings/page.tsx` | Venue join includes id + slug |
+| `components/venue/VenueCard.tsx` | Uses `slug \|\| id` for links |
+| `components/happenings/SeriesCard.tsx` | Uses venue slug for links |
+| `dashboard/admin/venues/AdminVenuesClient.tsx` | View links use `slug \|\| id` |
+
+**Example URLs:**
+- `/venues/brewery-rickoli` (friendly slug)
+- `/venues/{uuid}` → redirects to `/venues/brewery-rickoli`
+
+---
+
 ### Phase ABC4 — Venue Pages Series View Fix (January 2026)
 
 **Goal:** Fix venue detail pages not showing happenings, implement Series View for recurring events.

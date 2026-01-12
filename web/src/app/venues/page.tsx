@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 interface VenueRow {
   id: string;
+  slug: string | null;  // Phase ABC4: Add slug for friendly URLs
   name: string;
   city: string;
   state: string;
@@ -25,7 +26,7 @@ export default async function VenuesPage() {
   // Query all venues sorted alphabetically
   const { data: venues, error: venuesError } = await supabase
     .from("venues")
-    .select("id, name, city, state, google_maps_url, website_url")
+    .select("id, slug, name, city, state, google_maps_url, website_url")
     .order("name", { ascending: true });
 
   if (venuesError) {
@@ -59,6 +60,7 @@ export default async function VenuesPage() {
   // Map venues with event counts
   const venuesWithCounts = (venues ?? []).map((venue: VenueRow) => ({
     id: venue.id,
+    slug: venue.slug,
     name: venue.name,
     city: venue.city,
     state: venue.state,

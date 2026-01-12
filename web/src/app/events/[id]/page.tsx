@@ -19,6 +19,15 @@ import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, formatVerifiedDate } from "@/lib/events/verification";
 import { VenueLink } from "@/components/venue/VenueLink";
+import {
+  interpretRecurrence,
+  labelFromRecurrence,
+} from "@/lib/events/recurrenceContract";
+import {
+  expandOccurrencesForEvent,
+  getTodayDenver,
+  addDaysDenver,
+} from "@/lib/events/nextOccurrence";
 
 export const dynamic = "force-dynamic";
 
@@ -175,12 +184,13 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   // Phase 4.22.3: Include host_id for claim functionality
   // Support both UUID and slug lookups
   // Phase 4.37: Added slug, source, last_verified_at, verified_by for verification display
+  // Phase ABC4: Added recurrence_rule for recurrence display + upcoming dates
   const eventSelectQuery = `
       id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
       is_dsc_event, status, created_at, event_date, slug,
       has_timeslots, total_slots, slot_duration_minutes, is_published,
-      is_recurring, recurrence_pattern,
+      is_recurring, recurrence_pattern, recurrence_rule,
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
       is_free, age_policy, host_id,
@@ -249,15 +259,18 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   let locationAddress: string | null = event.venue_address;
   let isCustomLocation = false;
   // Phase 4.52: Venue URLs for VenueLink
+  // Phase ABC4: Venue slug for internal links
   let venueGoogleMapsUrl: string | null = null;
   let venueWebsiteUrl: string | null = null;
+  let venueSlug: string | null = null;
 
   // Fetch venue details if we have a venue_id but missing name OR address
   // Phase 4.52: Also fetch google_maps_url and website_url for venue links
+  // Phase ABC4: Also fetch slug for internal venue links
   if (event.venue_id && (!locationName || !locationAddress)) {
     const { data: venue } = await supabase
       .from("venues")
-      .select("name, address, city, state, google_maps_url, website_url")
+      .select("name, address, city, state, google_maps_url, website_url, slug")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
@@ -272,17 +285,20 @@ export default async function EventDetailPage({ params }: EventPageProps) {
       // Phase 4.52: Store venue URLs
       venueGoogleMapsUrl = venue.google_maps_url;
       venueWebsiteUrl = venue.website_url;
+      // Phase ABC4: Store venue slug
+      venueSlug = venue.slug;
     }
   } else if (event.venue_id) {
     // We have name and address but still need URLs for venue links
     const { data: venue } = await supabase
       .from("venues")
-      .select("google_maps_url, website_url")
+      .select("google_maps_url, website_url, slug")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
       venueGoogleMapsUrl = venue.google_maps_url;
       venueWebsiteUrl = venue.website_url;
+      venueSlug = venue.slug;
     }
   }
 
@@ -302,6 +318,30 @@ export default async function EventDetailPage({ params }: EventPageProps) {
   // Keep legacy variable names for compatibility with rest of file
   const venueName = locationName;
   const venueAddress = locationAddress;
+
+  // Phase ABC4: Compute recurrence and upcoming occurrences for recurring events
+  const recurrence = interpretRecurrence({
+    event_date: event.event_date,
+    day_of_week: event.day_of_week,
+    recurrence_rule: (event as { recurrence_rule?: string | null }).recurrence_rule,
+  });
+  const recurrenceSummary = recurrence.isRecurring ? labelFromRecurrence(recurrence) : null;
+
+  // Get upcoming occurrences (next 5 dates for recurring events)
+  let upcomingOccurrences: Array<{ dateKey: string; isConfident: boolean }> = [];
+  if (recurrence.isRecurring && recurrence.isConfident) {
+    const today = getTodayDenver();
+    const windowEnd = addDaysDenver(today, 90);
+    upcomingOccurrences = expandOccurrencesForEvent(
+      {
+        event_date: event.event_date,
+        day_of_week: event.day_of_week,
+        recurrence_rule: (event as { recurrence_rule?: string | null }).recurrence_rule,
+        start_time: event.start_time,
+      },
+      { startKey: today, endKey: windowEnd, maxOccurrences: 6 }
+    );
+  }
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
   // Phase 4.39: Use event.id (UUID) not route param which could be a slug
@@ -707,14 +747,23 @@ export default async function EventDetailPage({ params }: EventPageProps) {
                 </div>
               )}
 
-              {/* Venue */}
+              {/* Venue - Phase ABC4: Link to internal venue page using slug when available */}
               {venueName && (
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">📍</span>
-                  <VenueLink
-                    name={venueName}
-                    venue={isCustomLocation ? null : { google_maps_url: venueGoogleMapsUrl, website_url: venueWebsiteUrl }}
-                  />
+                  {event.venue_id && !isCustomLocation ? (
+                    <Link
+                      href={`/venues/${venueSlug || event.venue_id}`}
+                      className="hover:underline text-[var(--color-link)]"
+                    >
+                      {venueName}
+                    </Link>
+                  ) : (
+                    <VenueLink
+                      name={venueName}
+                      venue={isCustomLocation ? null : { google_maps_url: venueGoogleMapsUrl, website_url: venueWebsiteUrl }}
+                    />
+                  )}
                 </div>
               )}
 
@@ -748,6 +797,48 @@ export default async function EventDetailPage({ params }: EventPageProps) {
               </p>
             )}
           </div>
+
+          {/* Phase ABC4: Recurrence display with upcoming dates */}
+          {recurrenceSummary && upcomingOccurrences.length > 0 && (
+            <div className="mb-6 p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[var(--color-text-accent)]">🔁</span>
+                <span className="font-medium text-[var(--color-text-primary)]">{recurrenceSummary}</span>
+              </div>
+              <div className="pl-6">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-2">Upcoming dates:</p>
+                <div className="flex flex-wrap gap-2">
+                  {upcomingOccurrences.slice(0, 5).map((occ, idx) => {
+                    const dateDisplay = new Date(occ.dateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "America/Denver",
+                    });
+                    // Link to happenings page filtered by date
+                    return (
+                      <Link
+                        key={occ.dateKey}
+                        href={`/happenings?date=${occ.dateKey}`}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          idx === 0
+                            ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                            : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
+                        }`}
+                      >
+                        {dateDisplay}
+                      </Link>
+                    );
+                  })}
+                  {upcomingOccurrences.length > 5 && (
+                    <span className="px-3 py-1.5 text-sm text-[var(--color-text-secondary)]">
+                      +{upcomingOccurrences.length - 5} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action buttons row */}
           <div className="flex flex-wrap items-start gap-4 mb-8">

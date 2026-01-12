@@ -55,6 +55,7 @@ export interface SeriesEvent extends EventForOccurrence {
   host_id?: string | null;
   venue?: {
     id?: string;
+    slug?: string | null;  // Phase ABC4: Add slug for friendly URLs
     name?: string | null;
     address?: string | null;
     google_maps_url?: string | null;
@@ -83,13 +84,14 @@ function getVenueName(event: SeriesEvent): string | null {
 }
 
 /**
- * Phase 4.58: Get venue ID for internal linking to /venues/[id]
- * Returns null for custom locations and online-only events
+ * Phase 4.58/ABC4: Get venue identifier for internal linking to /venues/[slug|id]
+ * Returns slug if available, otherwise ID. Returns null for custom locations and online-only events.
  */
-function getVenueIdForLink(event: SeriesEvent): string | null {
-  // Prefer venue.id from joined venue object, fallback to venue_id
-  if (event.venue && typeof event.venue === "object" && event.venue.id) {
-    return event.venue.id;
+function getVenueIdentifierForLink(event: SeriesEvent): string | null {
+  // Prefer venue.slug from joined venue object, then venue.id, finally venue_id
+  if (event.venue && typeof event.venue === "object") {
+    if (event.venue.slug) return event.venue.slug;
+    if (event.venue.id) return event.venue.id;
   }
   if (event.venue_id) {
     return event.venue_id;
@@ -210,7 +212,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
   const { event, nextOccurrence, upcomingOccurrences, recurrenceSummary, isOneTime, totalUpcomingCount } = series;
 
   const venueName = getVenueName(event);
-  const venueIdForLink = getVenueIdForLink(event);
+  const venueIdentifier = getVenueIdentifierForLink(event);
   const detailHref = getDetailHref(event);
   const startTime = formatTimeToAMPM(event.start_time ?? null);
   const isOnlineOnly = event.location_mode === "online";
@@ -306,15 +308,15 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               </div>
             </div>
 
-            {/* Venue - Phase 4.58: Internal link to /venues/[id] when venue_id exists */}
+            {/* Venue - Phase 4.58/ABC4: Internal link to /venues/[slug|id] when venue exists */}
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 truncate">
               {isOnlineOnly ? (
                 "Online"
               ) : venueName ? (
-                venueIdForLink && !isCustomLocation ? (
+                venueIdentifier && !isCustomLocation ? (
                   // Internal link to venue detail page
                   <Link
-                    href={`/venues/${venueIdForLink}`}
+                    href={`/venues/${venueIdentifier}`}
                     className="hover:underline text-[var(--color-link)]"
                     onClick={(e) => e.stopPropagation()}
                   >

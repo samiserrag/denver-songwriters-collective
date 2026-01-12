@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
@@ -13,6 +13,11 @@ import {
   buildOverrideMap,
 } from "@/lib/events/nextOccurrence";
 
+// Check if string is a valid UUID
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 interface VenueDetailParams {
   params: Promise<{ id: string }>;
 }
@@ -21,11 +26,10 @@ export async function generateMetadata({ params }: VenueDetailParams): Promise<M
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: venue } = await supabase
-    .from("venues")
-    .select("name, city, state")
-    .eq("id", id)
-    .single();
+  // Phase ABC4: Support both UUID and slug lookups
+  const { data: venue } = isUUID(id)
+    ? await supabase.from("venues").select("name, city, state").eq("id", id).single()
+    : await supabase.from("venues").select("name, city, state").eq("slug", id).single();
 
   if (!venue) {
     return { title: "Venue Not Found | Denver Songwriters Collective" };
@@ -47,10 +51,10 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
   const windowEnd = addDaysDenver(today, 90);
 
   // Query venue details (excluding admin-only 'notes' field)
-  const { data: venue, error: venueError } = await supabase
-    .from("venues")
-    .select(`
+  // Phase ABC4: Support both UUID and slug lookups + add slug field
+  const venueSelectQuery = `
       id,
+      slug,
       name,
       address,
       city,
@@ -63,12 +67,18 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       contact_link,
       accessibility_notes,
       parking_notes
-    `)
-    .eq("id", id)
-    .single();
+    `;
+  const { data: venue, error: venueError } = isUUID(id)
+    ? await supabase.from("venues").select(venueSelectQuery).eq("id", id).single()
+    : await supabase.from("venues").select(venueSelectQuery).eq("slug", id).single();
 
   if (venueError || !venue) {
     notFound();
+  }
+
+  // Phase ABC4: Canonical slug redirect - if accessed by UUID and venue has slug, redirect to canonical
+  if (isUUID(id) && venue.slug) {
+    redirect(`/venues/${venue.slug}`);
   }
 
   // Query ALL events at this venue (no date filter - let occurrence expansion handle dates)
@@ -137,6 +147,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
   );
 
   // Map events to SeriesEvent format with venue info
+  // Phase ABC4: Include venue slug for SeriesCard internal links
   const eventsWithVenue: SeriesEvent[] = (events ?? []).map((event) => ({
     ...event,
     venue_name: event.venue_name || venue.name,
@@ -144,6 +155,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     venue_id: id,
     venue: {
       id: venue.id,
+      slug: venue.slug,
       name: venue.name,
       address: venue.address,
       google_maps_url: venue.google_maps_url,

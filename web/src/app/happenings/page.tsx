@@ -130,11 +130,12 @@ export default async function HappeningsPage({
 
   // Build base query with venue join for search
   // Phase 4.52: Include google_maps_url and website_url for venue links
+  // Phase ABC4: Include slug for venue internal links
   let query = supabase
     .from("events")
     .select(`
       *,
-      venues!left(name, address, city, state, google_maps_url, website_url)
+      venues!left(id, slug, name, address, city, state, google_maps_url, website_url)
     `)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification"]);

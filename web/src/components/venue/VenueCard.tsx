@@ -17,6 +17,7 @@ import { ImagePlaceholder } from "@/components/ui";
 interface VenueCardProps {
   venue: {
     id: string;
+    slug?: string | null;  // Phase ABC4: Add slug for friendly URLs
     name: string;
     city?: string | null;
     state?: string | null;
@@ -36,7 +37,8 @@ function getInitials(name: string): string {
 }
 
 export function VenueCard({ venue, eventCount, className }: VenueCardProps) {
-  const venuePath = `/venues/${venue.id}`;
+  // Phase ABC4: Use slug if available, fall back to id for backward compatibility
+  const venuePath = `/venues/${venue.slug || venue.id}`;
   const externalLink = chooseVenueLink(venue);
   const locationText = [venue.city, venue.state].filter(Boolean).join(", ") || "Denver, CO";
 
