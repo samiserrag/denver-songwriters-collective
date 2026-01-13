@@ -97,7 +97,6 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       end_time,
       recurrence_rule,
       is_recurring,
-      ordinal_pattern,
       status,
       cover_image_url,
       cover_image_card_url,
@@ -170,25 +169,6 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     startKey: today,
     endKey: windowEnd,
     overrideMap,
-  });
-
-  // DEBUG: Log what's happening
-  console.log('[VENUE DEBUG]', {
-    venueId: venue.id,
-    venueSlug: venue.slug,
-    eventsCount: events?.length ?? 0,
-    eventsWithVenueCount: eventsWithVenue.length,
-    seriesCount: series.length,
-    unknownEventsCount: unknownEvents.length,
-    today,
-    windowEnd,
-    eventsData: eventsWithVenue.map(e => ({
-      id: e.id,
-      title: e.title,
-      event_date: e.event_date,
-      day_of_week: e.day_of_week,
-      recurrence_rule: e.recurrence_rule,
-    })),
   });
 
   // Separate recurring series from one-time events
