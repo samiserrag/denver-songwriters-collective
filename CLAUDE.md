@@ -349,6 +349,27 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 **Test Coverage:** 38 new tests in `src/__tests__/phase-abc11-venue-invite-ui.test.ts`
 
+**Operational Runbook:** `docs/runbooks/venue-outreach-smoke-and-migrations.md`
+
+---
+
+### Venue Management Track — Migration & Type Sync (January 2026)
+
+**Issue:** Database types must include `venue_managers`, `venue_claims`, `venue_invites` for TypeScript compilation.
+
+**Type Generation Command:**
+```bash
+npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/lib/supabase/database.types.ts
+```
+
+**Migration Sync Status (2026-01-12):**
+- ✅ `20260111200000` — ABC6 add date_key columns
+- ✅ `20260111210000` — ABC6 enforce constraints
+- ✅ `20260112000000` — ABC8 venue claiming
+- ✅ `20260112100000` — ABC10b RLS tightening
+
+**Guardrail:** If TypeScript fails with `.from("table_name")` not found, regenerate database.types.ts using the command above. See `docs/runbooks/venue-outreach-smoke-and-migrations.md` for full troubleshooting.
+
 ---
 
 ### Phase ABC8 — Venue Claiming + Admin Approval + Invite Links (January 2026) — RESOLVED
