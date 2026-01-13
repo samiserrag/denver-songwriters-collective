@@ -314,11 +314,132 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Phase ABC6 — Per-Occurrence RSVPs, Comments, and Timeslots (January 2026) — INVESTIGATION
+### Phase ABC11 — Admin Venue Invite UI (January 2026) — RESOLVED
+
+**Goal:** Add the missing admin UI for creating and managing venue invites, enabling venue outreach workflow.
+
+**Status:** Implementation complete.
+
+**Investigation Document:** `docs/investigation/phase-abc11-venue-outreach-workflow.md`
+
+**Problem:** ABC8 created the invite API but no UI existed to use it. Admins had to use curl/Postman to create invites.
+
+**UI Components (1 new):**
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| VenueInviteSection | `_components/VenueInviteSection.tsx` | Create + revoke invite UI |
+
+**Features Delivered:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Create Invite | Modal with email restriction, expiry selector (3/7/14/30 days) |
+| One-Time URL Display | Invite URL shown once with copy button |
+| Email Template | Pre-formatted email with copy button |
+| Revoke Invite | Button on each pending invite with confirmation modal |
+| Acceptance Notification | Admin notified when invite is accepted (ABC11c) |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `/dashboard/admin/venues/[id]/page.tsx` | Import VenueInviteSection, fetch invite creator profiles |
+| `/api/venue-invites/accept/route.ts` | Added notification to invite creator |
+
+**Test Coverage:** 38 new tests in `src/__tests__/phase-abc11-venue-invite-ui.test.ts`
+
+---
+
+### Phase ABC8 — Venue Claiming + Admin Approval + Invite Links (January 2026) — RESOLVED
+
+**Goal:** Enable venue ownership claims, admin approval workflow, and invite links for multi-user venue management.
+
+**Status:** Implementation complete.
+
+**Investigation Document:** `docs/investigation/phase-abc8-venue-claiming.md`
+
+**Database Tables (3 new):**
+
+| Table | Purpose |
+|-------|---------|
+| `venue_managers` | Links users to venues with roles (`owner`/`manager`) |
+| `venue_claims` | Tracks claim requests (pending → approved/rejected/cancelled) |
+| `venue_invites` | Token-based invites with SHA-256 hashed tokens |
+
+**API Routes (11 new):**
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/venues/[id]/claim` | Submit venue claim |
+| `DELETE /api/venues/[id]/claim` | Cancel pending claim |
+| `GET /api/admin/venue-claims` | List pending claims (admin) |
+| `POST /api/admin/venue-claims/[id]/approve` | Approve claim → grant owner role |
+| `POST /api/admin/venue-claims/[id]/reject` | Reject claim with optional reason |
+| `POST /api/admin/venues/[id]/invite` | Create invite link (admin) |
+| `DELETE /api/admin/venues/[id]/invite/[inviteId]` | Revoke invite (admin) |
+| `POST /api/venue-invites/accept` | Accept invite → grant manager role |
+| `GET /api/my-venues` | List user's managed venues |
+| `DELETE /api/my-venues/[id]` | Relinquish venue access |
+
+**UI Surfaces (5 new):**
+
+| Surface | Path |
+|---------|------|
+| Claim Venue Button | `components/venue/ClaimVenueButton.tsx` |
+| My Venues Dashboard | `dashboard/my-venues/page.tsx` |
+| Admin Venue Claims | `dashboard/admin/venue-claims/page.tsx` |
+| Venue Claims Table | `dashboard/admin/venue-claims/_components/VenueClaimsTable.tsx` |
+| Venue Invite Accept | `app/venue-invite/page.tsx` |
+
+**Email Templates (2 new):**
+
+| Template | Purpose |
+|----------|---------|
+| `venueClaimApproved` | Sent when admin approves claim |
+| `venueClaimRejected` | Sent when admin rejects claim (includes reason) |
+
+**Key Design Decisions:**
+- Soft-delete pattern: `revoked_at` timestamp for audit trail
+- Token security: SHA-256 hash stored in DB, plaintext shown once
+- Grant methods: `claim` (approved), `invite` (accepted), `admin` (direct)
+- Sole owner guard: Cannot relinquish if last owner
+
+**Test Coverage:** 37 new tests in `src/__tests__/abc8-venue-claiming.test.ts`
+
+---
+
+### Phase ABC7 — Admin/Host Date-Awareness (January 2026) — RESOLVED
+
+**Goal:** Make host and admin surfaces occurrence-correct by enforcing `date_key` scoping. Surfaces that were "series-blended" now properly show/act on specific occurrences.
+
+**Rule:** Host/admin surfaces must be date-scoped; never series-blended.
+
+**Surfaces Fixed:**
+
+| Surface | File | Fix |
+|---------|------|-----|
+| RSVPCard cancel | `RSVPCard.tsx` | Pass `date_key` to DELETE request |
+| My RSVPs page | `my-rsvps/page.tsx` | Include `date_key` in query, display occurrence date |
+| Host RSVP API | `/api/my-events/[id]/rsvps/route.ts` | Accept `date_key` param, filter RSVPs |
+| Lineup control | `/events/[id]/lineup/page.tsx` | Date selector + filter timeslots by date_key |
+| TV display | `/events/[id]/display/page.tsx` | Accept `?date=` param, filter by date_key |
+| My Events counts | `/dashboard/my-events/page.tsx` | Show next-occurrence RSVP count only |
+
+**Key Changes:**
+- `LineupState` interface updated to match actual DB schema: `{now_playing_timeslot_id, updated_at}` (not `current_slot_index`)
+- Lineup state upsert uses composite key `(event_id, date_key)`
+- Date selector UI for recurring events on host surfaces
+
+**Investigation Document:** `docs/investigation/phase-abc7-admin-host-date-awareness.md`
+
+---
+
+### Phase ABC6 — Per-Occurrence RSVPs, Comments, and Timeslots (January 2026) — RESOLVED
 
 **Goal:** Make RSVPs, comments, and timeslots apply to **specific occurrence dates** rather than the entire series. When a user RSVPs on `/events/foo?date=2026-01-18`, their RSVP should only apply to January 18th.
 
-**Status:** Investigation complete, awaiting approval for implementation.
+**Status:** Implementation complete.
 
 **Investigation Document:** `docs/investigation/phase-abc6-per-occurrence-inventory.md`
 
