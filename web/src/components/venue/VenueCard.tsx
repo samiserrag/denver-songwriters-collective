@@ -4,7 +4,7 @@
  * VenueCard - Venue Directory MVP
  *
  * Card component for displaying venue in grid layout.
- * Shows venue name, location, event count, and link icons.
+ * Shows venue name, location, event counts (series + one-offs), and link icons.
  *
  * Uses card-spotlight surface pattern (same as SongwriterCard, StudioCard).
  */
@@ -13,6 +13,10 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { chooseVenueLink } from "@/lib/venue/chooseVenueLink";
 import { ImagePlaceholder } from "@/components/ui";
+import {
+  formatVenueCountsBadge,
+  type VenueEventCounts,
+} from "@/lib/venue/computeVenueCounts";
 
 interface VenueCardProps {
   venue: {
@@ -24,8 +28,8 @@ interface VenueCardProps {
     google_maps_url?: string | null;
     website_url?: string | null;
   };
-  /** Number of events at this venue */
-  eventCount: number;
+  /** Structured event counts (series + one-offs) */
+  counts: VenueEventCounts;
   className?: string;
 }
 
@@ -36,11 +40,12 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function VenueCard({ venue, eventCount, className }: VenueCardProps) {
+export function VenueCard({ venue, counts, className }: VenueCardProps) {
   // Phase ABC4: Use slug if available, fall back to id for backward compatibility
   const venuePath = `/venues/${venue.slug || venue.id}`;
   const externalLink = chooseVenueLink(venue);
   const locationText = [venue.city, venue.state].filter(Boolean).join(", ") || "Denver, CO";
+  const badgeText = formatVenueCountsBadge(counts);
 
   return (
     <Link href={venuePath} className="block h-full group focus-visible:outline-none">
@@ -64,11 +69,7 @@ export function VenueCard({ venue, eventCount, className }: VenueCardProps) {
           {/* Event count badge */}
           <div className="absolute bottom-3 right-3">
             <span className="px-2 py-1 text-sm font-medium rounded-full bg-[var(--color-bg-primary)]/90 text-[var(--color-text-primary)] border border-[var(--color-border-default)]">
-              {eventCount === 0
-                ? "0 upcoming"
-                : eventCount === 1
-                ? "1 happening"
-                : `${eventCount} happenings`}
+              {badgeText}
             </span>
           </div>
         </div>
