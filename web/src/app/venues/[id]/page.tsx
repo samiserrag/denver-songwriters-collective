@@ -120,6 +120,8 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
 
   if (eventsError) {
     console.error("Error fetching events:", eventsError);
+    // Temporary: throw error to see it in production
+    throw new Error(`Events query failed: ${eventsError.message} (code: ${eventsError.code})`);
   }
 
   // Get event IDs for override query
