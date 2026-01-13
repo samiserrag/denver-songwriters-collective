@@ -214,7 +214,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
       is_free, age_policy, host_id,
-      source, last_verified_at, verified_by
+      source, last_verified_at, verified_by,
+      series_id
     `;
   const { data: event, error } = isUUID(id)
     ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
@@ -227,6 +228,29 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase 4.38: Canonical slug redirect - if accessed by UUID and event has slug, redirect to canonical
   if (isUUID(id) && event.slug) {
     redirect(`/events/${event.slug}`);
+  }
+
+  // Phase ABC: Series date routing for many-event series
+  // If event has series_id and ?date= param doesn't match this event's date,
+  // find the sibling event with that date and redirect to it
+  const seriesId = (event as { series_id?: string | null }).series_id;
+  if (seriesId && isValidDateKey(selectedDateKey) && event.event_date !== selectedDateKey) {
+    // Find sibling event in same series with matching event_date
+    const { data: sibling } = await supabase
+      .from("events")
+      .select("id, slug")
+      .eq("series_id", seriesId)
+      .eq("event_date", selectedDateKey)
+      .eq("is_published", true)
+      .maybeSingle();
+
+    if (sibling) {
+      // Redirect to the sibling event (no ?date= needed since it has its own event_date)
+      const siblingUrl = sibling.slug ? `/events/${sibling.slug}` : `/events/${sibling.id}`;
+      redirect(siblingUrl);
+    }
+    // If no sibling found for that date, fall through to show current event
+    // This handles cases where the date doesn't exist in the series
   }
 
   // Draft protection: only hosts/admins can view unpublished events
