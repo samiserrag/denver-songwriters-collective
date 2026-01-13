@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.65):** Lint warnings = 0. All tests passing (1604). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.66):** Lint warnings = 0. All tests passing (1801). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -311,6 +311,64 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.66 — Venue Page Count Fix + Series De-duplication (January 2026) — RESOLVED
+
+**Goal:** Fix venue card counts showing 0 for valid events and duplicate series cards on venue detail pages.
+
+**Status:** Implementation complete.
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| A) `/venues` cards showed 0 upcoming | List page used `.eq("status", "active")` but detail page uses `.in("status", ["active", "needs_verification", "unverified"])` | Aligned status filter + added `is_published` check |
+| B) Duplicate series on venue detail | Two DB records for same event with different completeness | De-duplicate by title, keep record with most complete data |
+| C) Series dates not clickable | Already working in SeriesCard | No changes needed |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/venues/page.tsx` | Changed `.eq("status", "active")` to `.in("status", ["active", "needs_verification", "unverified"])` + added `.eq("is_published", true)` |
+| `app/venues/[id]/page.tsx` | Added de-duplication logic before `groupEventsAsSeriesView()` - scores events by completeness (recurrence_rule=2, start_time=1) |
+
+**De-duplication Logic:**
+```typescript
+// Score completeness: prefer events with recurrence_rule and start_time
+const scoreEvent = (e: SeriesEvent) =>
+  (e.recurrence_rule ? 2 : 0) + (e.start_time ? 1 : 0);
+```
+
+When duplicate titles exist at a venue, the event with higher score wins.
+
+**Test Coverage:** 17 new tests in `src/__tests__/venue-page-fixes.test.ts`
+
+**Smoke Test:**
+- Visit `/venues` — Bar 404 should show "1 upcoming" (not 0)
+- Visit `/venues/blazin-bite-seafood-bbq` — should show only ONE "Blazin Bite Seafood" series card
+
+---
+
+### Phase 4.65b — Venue Page Query Fix (January 2026) — RESOLVED
+
+**Goal:** Fix venue detail page throwing 500 error due to non-existent columns in query.
+
+**Problem:** Venue page query included `cover_image_card_url` and `ordinal_pattern` columns that don't exist in the events table schema, causing silent query failures.
+
+**Root Cause:** Columns were removed/never existed but query wasn't updated.
+
+**Fix:** Removed non-existent columns from venue page events query. Added explicit error throwing instead of silent failure.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/venues/[id]/page.tsx` | Removed `cover_image_card_url` from query, added error throw on query failure |
+
+**Commits:** `ad416cb`, `ea33c57`, `e08f8a6`
 
 ---
 
@@ -3186,6 +3244,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/phase4-49b-event-comments.test.ts` | Event comments everywhere, guest support, notifications (34 tests) |
 | `__tests__/notification-icons.test.ts` | Distinct notification icons by type (14 tests) |
 | `__tests__/notification-interactions.test.ts` | Notification controls: mark-on-click, mark-all, hide-read, deep-links (21 tests) |
+| `__tests__/venue-page-fixes.test.ts` | Venue page count filters + de-duplication logic (17 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
