@@ -485,6 +485,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          date_key: string
           edited_at: string | null
           event_id: string
           guest_email: string | null
@@ -503,6 +504,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          date_key: string
           edited_at?: string | null
           event_id: string
           guest_email?: string | null
@@ -521,6 +523,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          date_key?: string
           edited_at?: string | null
           event_id?: string
           guest_email?: string | null
@@ -627,18 +630,21 @@ export type Database = {
       }
       event_lineup_state: {
         Row: {
+          date_key: string
           event_id: string
           now_playing_timeslot_id: string | null
           updated_at: string | null
           updated_by: string | null
         }
         Insert: {
+          date_key: string
           event_id: string
           now_playing_timeslot_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
         Update: {
+          date_key?: string
           event_id?: string
           now_playing_timeslot_id?: string | null
           updated_at?: string | null
@@ -648,14 +654,14 @@ export type Database = {
           {
             foreignKeyName: "event_lineup_state_event_id_fkey"
             columns: ["event_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "event_venue_match"
             referencedColumns: ["event_id"]
           },
           {
             foreignKeyName: "event_lineup_state_event_id_fkey"
             columns: ["event_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
@@ -678,6 +684,7 @@ export type Database = {
       event_rsvps: {
         Row: {
           created_at: string | null
+          date_key: string
           event_id: string
           guest_email: string | null
           guest_name: string | null
@@ -693,6 +700,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          date_key: string
           event_id: string
           guest_email?: string | null
           guest_name?: string | null
@@ -708,6 +716,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          date_key?: string
           event_id?: string
           guest_email?: string | null
           guest_name?: string | null
@@ -810,6 +819,7 @@ export type Database = {
       event_timeslots: {
         Row: {
           created_at: string | null
+          date_key: string
           duration_minutes: number
           event_id: string
           id: string
@@ -818,6 +828,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          date_key: string
           duration_minutes?: number
           event_id: string
           id?: string
@@ -826,6 +837,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          date_key?: string
           duration_minutes?: number
           event_id?: string
           id?: string
@@ -1604,6 +1616,7 @@ export type Database = {
           code_expires_at: string | null
           comment_id: string | null
           created_at: string | null
+          date_key: string
           email: string
           event_id: string
           gallery_album_id: string | null
@@ -1629,6 +1642,7 @@ export type Database = {
           code_expires_at?: string | null
           comment_id?: string | null
           created_at?: string | null
+          date_key: string
           email: string
           event_id: string
           gallery_album_id?: string | null
@@ -1654,6 +1668,7 @@ export type Database = {
           code_expires_at?: string | null
           comment_id?: string | null
           created_at?: string | null
+          date_key?: string
           email?: string
           event_id?: string
           gallery_album_id?: string | null
@@ -2675,6 +2690,174 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_claims: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          id: string
+          message: string | null
+          rejection_reason: string | null
+          requester_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          venue_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          requester_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          venue_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          requester_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_claims_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["matched_venue_id"]
+          },
+          {
+            foreignKeyName: "venue_claims_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          created_by: string
+          email_restriction: string | null
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          token_hash: string
+          venue_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by: string
+          email_restriction?: string | null
+          expires_at: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          token_hash: string
+          venue_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by?: string
+          email_restriction?: string | null
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          token_hash?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_invites_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["matched_venue_id"]
+          },
+          {
+            foreignKeyName: "venue_invites_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_managers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          grant_method: string
+          id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          role: string
+          user_id: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          grant_method: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          role: string
+          user_id: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          grant_method?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          role?: string
+          user_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_managers_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["matched_venue_id"]
+          },
+          {
+            foreignKeyName: "venue_managers_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           accessibility_notes: string | null
@@ -2850,6 +3033,7 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: {
           created_at: string | null
+          date_key: string
           duration_minutes: number
           event_id: string
           id: string
