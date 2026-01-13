@@ -35,12 +35,14 @@ export default async function VenuesPage() {
 
   // Query event counts per venue (upcoming events only)
   // Count events where event_date >= today OR event_date is null (recurring without fixed date)
+  // Must match venue detail page filters: is_published=true + status in (active, needs_verification, unverified)
   const today = new Date().toISOString().split("T")[0];
   const { data: eventCounts, error: countsError } = await supabase
     .from("events")
     .select("venue_id")
     .not("venue_id", "is", null)
-    .eq("status", "active")
+    .eq("is_published", true)
+    .in("status", ["active", "needs_verification", "unverified"])
     .or(`event_date.gte.${today},event_date.is.null`);
 
   if (countsError) {

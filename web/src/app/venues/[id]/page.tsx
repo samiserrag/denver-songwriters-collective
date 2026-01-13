@@ -165,8 +165,28 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     },
   }));
 
+  // De-duplicate events by title (keep the one with the most complete data)
+  // This handles cases where duplicate DB records exist for the same event at a venue
+  const deduplicatedEvents = Array.from(
+    eventsWithVenue.reduce((map, event) => {
+      const key = event.title.toLowerCase().trim();
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, event);
+      } else {
+        // Score completeness: prefer events with recurrence_rule and start_time
+        const scoreEvent = (e: SeriesEvent) =>
+          (e.recurrence_rule ? 2 : 0) + (e.start_time ? 1 : 0);
+        if (scoreEvent(event) > scoreEvent(existing)) {
+          map.set(key, event);
+        }
+      }
+      return map;
+    }, new Map<string, SeriesEvent>()).values()
+  );
+
   // Group events as series view with occurrence expansion
-  const { series, unknownEvents } = groupEventsAsSeriesView(eventsWithVenue, {
+  const { series, unknownEvents } = groupEventsAsSeriesView(deduplicatedEvents, {
     startKey: today,
     endKey: windowEnd,
     overrideMap,
