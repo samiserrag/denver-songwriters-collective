@@ -172,6 +172,25 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     overrideMap,
   });
 
+  // DEBUG: Log what's happening
+  console.log('[VENUE DEBUG]', {
+    venueId: venue.id,
+    venueSlug: venue.slug,
+    eventsCount: events?.length ?? 0,
+    eventsWithVenueCount: eventsWithVenue.length,
+    seriesCount: series.length,
+    unknownEventsCount: unknownEvents.length,
+    today,
+    windowEnd,
+    eventsData: eventsWithVenue.map(e => ({
+      id: e.id,
+      title: e.title,
+      event_date: e.event_date,
+      day_of_week: e.day_of_week,
+      recurrence_rule: e.recurrence_rule,
+    })),
+  });
+
   // Separate recurring series from one-time events
   const recurringSeries = series.filter((s) => !s.isOneTime);
   const oneTimeSeries = series.filter((s) => s.isOneTime);
