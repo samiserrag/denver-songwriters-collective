@@ -84,6 +84,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
   // Query ALL events at this venue (no date filter - let occurrence expansion handle dates)
   // Phase ABC4: Recurring events with past anchor dates must still appear if they have future occurrences
   // IMPORTANT: Use venue.id (UUID) not id (which may be a slug)
+  // NOTE: Only include columns that exist in the events table schema
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select(`
@@ -99,7 +100,6 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       is_recurring,
       status,
       cover_image_url,
-      cover_image_card_url,
       is_dsc_event,
       is_free,
       cost_label,
@@ -120,7 +120,6 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
 
   if (eventsError) {
     console.error("Error fetching events:", eventsError);
-    // Temporary: throw error to see it in production
     throw new Error(`Events query failed: ${eventsError.message} (code: ${eventsError.code})`);
   }
 
