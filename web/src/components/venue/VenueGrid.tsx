@@ -1,18 +1,20 @@
 import * as React from "react";
 import { VenueCard } from "./VenueCard";
+import type { VenueEventCounts } from "@/lib/venue/computeVenueCounts";
 
-interface VenueWithCount {
+interface VenueWithCounts {
   id: string;
+  slug?: string | null;
   name: string;
   city?: string | null;
   state?: string | null;
   google_maps_url?: string | null;
   website_url?: string | null;
-  eventCount: number;
+  counts: VenueEventCounts;
 }
 
 interface VenueGridProps {
-  venues: VenueWithCount[];
+  venues: VenueWithCounts[];
   className?: string;
 }
 
@@ -28,7 +30,7 @@ export function VenueGrid({ venues, className }: VenueGridProps) {
           <div key={venue.id} role="listitem">
             <VenueCard
               venue={venue}
-              eventCount={venue.eventCount}
+              counts={venue.counts}
             />
           </div>
         ))}

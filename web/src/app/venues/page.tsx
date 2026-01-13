@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { VenueGrid } from "@/components/venue/VenueGrid";
 import { PageContainer, HeroSection } from "@/components/layout";
+import {
+  computeVenueCountsFromEvents,
+  type EventForCounts,
+} from "@/lib/venue/computeVenueCounts";
 
 export const metadata: Metadata = {
   title: "Venues | Denver Songwriters Collective",
@@ -33,43 +37,56 @@ export default async function VenuesPage() {
     console.error("Error fetching venues:", venuesError);
   }
 
-  // Query event counts per venue (upcoming events only)
-  // Count events where event_date >= today OR event_date is null (recurring without fixed date)
+  // Query ALL events with venue_id for series/oneoff count computation
   // Must match venue detail page filters: is_published=true + status in (active, needs_verification, unverified)
-  const today = new Date().toISOString().split("T")[0];
-  const { data: eventCounts, error: countsError } = await supabase
+  // Performance note: Single query, then client-side grouping per venue.
+  // The 90-day window is applied during occurrence expansion, not here.
+  const { data: allEvents, error: eventsError } = await supabase
     .from("events")
-    .select("venue_id")
+    .select(`
+      id,
+      venue_id,
+      title,
+      event_type,
+      event_date,
+      day_of_week,
+      start_time,
+      end_time,
+      recurrence_rule,
+      is_recurring,
+      status
+    `)
     .not("venue_id", "is", null)
     .eq("is_published", true)
-    .in("status", ["active", "needs_verification", "unverified"])
-    .or(`event_date.gte.${today},event_date.is.null`);
+    .in("status", ["active", "needs_verification", "unverified"]);
 
-  if (countsError) {
-    console.error("Error fetching event counts:", countsError);
+  if (eventsError) {
+    console.error("Error fetching events:", eventsError);
   }
 
-  // Build count map
-  const countMap = new Map<string, number>();
-  if (eventCounts) {
-    for (const event of eventCounts) {
-      if (event.venue_id) {
-        countMap.set(event.venue_id, (countMap.get(event.venue_id) || 0) + 1);
-      }
-    }
-  }
+  // Compute series/oneoff counts per venue using same logic as venue detail page
+  const venueCountsMap = computeVenueCountsFromEvents(
+    (allEvents ?? []) as EventForCounts[]
+  );
 
-  // Map venues with event counts
-  const venuesWithCounts = (venues ?? []).map((venue: VenueRow) => ({
-    id: venue.id,
-    slug: venue.slug,
-    name: venue.name,
-    city: venue.city,
-    state: venue.state,
-    google_maps_url: venue.google_maps_url,
-    website_url: venue.website_url,
-    eventCount: countMap.get(venue.id) || 0,
-  }));
+  // Map venues with structured counts
+  const venuesWithCounts = (venues ?? []).map((venue: VenueRow) => {
+    const counts = venueCountsMap.get(venue.id) || {
+      seriesCount: 0,
+      seriesUpcomingTotal: 0,
+      oneoffCount: 0,
+    };
+    return {
+      id: venue.id,
+      slug: venue.slug,
+      name: venue.name,
+      city: venue.city,
+      state: venue.state,
+      google_maps_url: venue.google_maps_url,
+      website_url: venue.website_url,
+      counts,
+    };
+  });
 
   return (
     <>

@@ -371,7 +371,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   });
   const recurrenceSummary = recurrence.isRecurring ? labelFromRecurrence(recurrence) : null;
 
-  // Get upcoming occurrences (next 5 dates for recurring events)
+  // Get upcoming occurrences for recurring events (90-day window, matches venue pages)
+  // We fetch all occurrences in window to get accurate count for "+X more" display
   let upcomingOccurrences: Array<{ dateKey: string; isConfident: boolean }> = [];
   if (recurrence.isRecurring && recurrence.isConfident) {
     const today = getTodayDenver();
@@ -383,7 +384,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         recurrence_rule: (event as { recurrence_rule?: string | null }).recurrence_rule,
         start_time: event.start_time,
       },
-      { startKey: today, endKey: windowEnd, maxOccurrences: 6 }
+      { startKey: today, endKey: windowEnd }
     );
   }
 
