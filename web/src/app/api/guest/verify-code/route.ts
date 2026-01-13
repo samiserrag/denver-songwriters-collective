@@ -149,11 +149,13 @@ export async function POST(request: NextRequest) {
 
     const eventTitle = event?.title || "Open Mic";
 
-    // Check one-guest-per-event: email cannot have active claim in this event
+    // Check one-guest-per-occurrence: email cannot have active claim in this event + date
+    // ABC10b: Fixed to scope by date_key for per-occurrence claims
     const { data: eventTimeslots } = await supabase
       .from("event_timeslots")
       .select("id")
-      .eq("event_id", verification.event_id);
+      .eq("event_id", verification.event_id)
+      .eq("date_key", verification.date_key);
 
     const eventTimeslotIds = eventTimeslots?.map((t) => t.id) || [];
 
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
 
       if (existingClaims && existingClaims.length > 0) {
         return NextResponse.json(
-          { error: "You already have a claim for this event" },
+          { error: "You already have a claim for this occurrence" },
           { status: 409 }
         );
       }

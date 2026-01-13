@@ -11,6 +11,8 @@ interface RSVPSectionProps {
   eventTitle: string;
   capacity: number | null;
   initialConfirmedCount: number;
+  /** Phase ABC6: date_key for per-occurrence RSVP scoping */
+  dateKey?: string;
 }
 
 export function RSVPSection({
@@ -18,6 +20,7 @@ export function RSVPSection({
   eventTitle,
   capacity,
   initialConfirmedCount,
+  dateKey,
 }: RSVPSectionProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -33,6 +36,14 @@ export function RSVPSection({
   const [confirmError, setConfirmError] = useState("");
   const [confirmSuccess, setConfirmSuccess] = useState(false);
 
+  // Phase ABC6: Build API URL with optional date_key
+  const buildRsvpUrl = useCallback((base: string) => {
+    if (dateKey) {
+      return `${base}?date_key=${dateKey}`;
+    }
+    return base;
+  }, [dateKey]);
+
   // Auto-confirm offer when ?confirm=true is present
   const handleAutoConfirm = useCallback(async () => {
     if (confirmTriggered || confirmLoading) return;
@@ -41,7 +52,7 @@ export function RSVPSection({
     setConfirmError("");
 
     try {
-      const res = await fetch(`/api/events/${eventId}/rsvp`, {
+      const res = await fetch(buildRsvpUrl(`/api/events/${eventId}/rsvp`), {
         method: "PATCH",
       });
 
@@ -60,7 +71,7 @@ export function RSVPSection({
     } finally {
       setConfirmLoading(false);
     }
-  }, [eventId, confirmTriggered, confirmLoading, router]);
+  }, [eventId, confirmTriggered, confirmLoading, router, buildRsvpUrl]);
 
   // Check if user has RSVP and if cancel/confirm param is present
   useEffect(() => {
@@ -70,7 +81,8 @@ export function RSVPSection({
 
       if (session) {
         // Check if user has an active RSVP
-        const res = await fetch(`/api/events/${eventId}/rsvp`);
+        // Phase ABC6: Include date_key in query
+        const res = await fetch(buildRsvpUrl(`/api/events/${eventId}/rsvp`));
         if (res.ok) {
           const data = await res.json();
           const hasActiveRsvp = data && (data.status === "confirmed" || data.status === "waitlist" || data.status === "offered");
@@ -95,7 +107,7 @@ export function RSVPSection({
     };
 
     checkRsvpAndParams();
-  }, [eventId, searchParams, supabase.auth, cancelTriggered, confirmTriggered, handleAutoConfirm]);
+  }, [eventId, searchParams, supabase.auth, cancelTriggered, confirmTriggered, handleAutoConfirm, buildRsvpUrl]);
 
   const handleCancelSuccess = () => {
     setHasRsvp(false);
@@ -124,6 +136,7 @@ export function RSVPSection({
           eventId={eventId}
           capacity={capacity}
           initialConfirmedCount={initialConfirmedCount}
+          dateKey={dateKey}
         />
       </div>
     );
@@ -150,6 +163,7 @@ export function RSVPSection({
           eventId={eventId}
           capacity={capacity}
           initialConfirmedCount={initialConfirmedCount}
+          dateKey={dateKey}
         />
       </div>
     );
@@ -167,6 +181,7 @@ export function RSVPSection({
           eventId={eventId}
           capacity={capacity}
           initialConfirmedCount={initialConfirmedCount}
+          dateKey={dateKey}
         />
       </div>
     );
@@ -208,6 +223,7 @@ export function RSVPSection({
           eventId={eventId}
           capacity={capacity}
           initialConfirmedCount={initialConfirmedCount}
+          dateKey={dateKey}
         />
       </div>
     );
@@ -227,6 +243,7 @@ export function RSVPSection({
           eventId={eventId}
           capacity={capacity}
           initialConfirmedCount={initialConfirmedCount}
+          dateKey={dateKey}
         />
       </div>
     );
@@ -238,6 +255,7 @@ export function RSVPSection({
         eventId={eventId}
         capacity={capacity}
         initialConfirmedCount={initialConfirmedCount}
+        dateKey={dateKey}
       />
       {/* Phase 4.43: RSVP meaning clarification */}
       <p className="text-xs text-[var(--color-text-secondary)]">

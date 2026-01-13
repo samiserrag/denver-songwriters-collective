@@ -8,6 +8,7 @@ import {
 import { verifyCodeHash } from "@/lib/guest-verification/crypto";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getEventCommentNotificationEmail } from "@/lib/email/templates/eventCommentNotification";
+import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -146,6 +147,17 @@ export async function POST(request: NextRequest) {
     // Code is valid - verify the email
     const verifiedAt = new Date().toISOString();
 
+    // Phase ABC6: Get date_key from verification record
+    const effectiveDateKey = (verification as { date_key?: string }).date_key;
+
+    if (!effectiveDateKey) {
+      // date_key is required for per-occurrence comments (Phase ABC6)
+      return NextResponse.json(
+        { error: "Missing date_key in verification record" },
+        { status: 400 }
+      );
+    }
+
     // Fetch event details
     const { data: event } = await supabase
       .from("events")
@@ -183,6 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the comment
+    // Phase ABC6: Include date_key for per-occurrence scoping
     const { data: comment, error: commentError } = await supabase
       .from("event_comments")
       .insert({
@@ -194,8 +207,9 @@ export async function POST(request: NextRequest) {
         guest_verification_id: verification.id,
         content: pendingCommentData.content,
         parent_id: pendingCommentData.parent_id || null,
+        date_key: effectiveDateKey,
       })
-      .select("id, content, created_at, parent_id, guest_name, guest_verified")
+      .select("id, content, created_at, parent_id, guest_name, guest_verified, date_key")
       .single();
 
     if (commentError) {
@@ -216,8 +230,14 @@ export async function POST(request: NextRequest) {
       .eq("id", verification.id);
 
     // Send notifications (fire and forget)
-    const eventUrl = `/events/${event.slug || event.id}`;
+    // Phase ABC6: Include date in event URL for per-occurrence deep-linking
+    const eventUrl = effectiveDateKey
+      ? `/events/${event.slug || event.id}?date=${effectiveDateKey}`
+      : `/events/${event.slug || event.id}`;
     const guestName = verification.guest_name || "A guest";
+
+    // Phase ABC6: Short date for notifications
+    const occurrenceDateShort = formatDateKeyShort(effectiveDateKey);
 
     if (pendingCommentData.parent_id) {
       // Reply: notify parent comment author
@@ -227,7 +247,8 @@ export async function POST(request: NextRequest) {
         guestName,
         event.title || "Event",
         eventUrl,
-        pendingCommentData.content
+        pendingCommentData.content,
+        occurrenceDateShort
       ).catch((err) =>
         console.error("Failed to notify parent comment author:", err)
       );
@@ -240,10 +261,12 @@ export async function POST(request: NextRequest) {
         event.title || "Event",
         eventUrl,
         pendingCommentData.content,
-        event.host_id
+        event.host_id,
+        occurrenceDateShort
       ).catch((err) => console.error("Failed to notify event hosts:", err));
     }
 
+    // Phase ABC6: Include date_key in response
     return NextResponse.json({
       success: true,
       comment: {
@@ -253,7 +276,9 @@ export async function POST(request: NextRequest) {
         parent_id: comment.parent_id,
         guest_name: comment.guest_name,
         guest_verified: comment.guest_verified,
+        date_key: effectiveDateKey,
       },
+      date_key: effectiveDateKey,
     });
   } catch (error) {
     console.error("Verify comment code error:", error);
@@ -268,6 +293,7 @@ export async function POST(request: NextRequest) {
  * Notify event host(s) AND watchers about a new comment from a guest
  * Phase 4.51d: Fan-out: event_hosts ∪ events.host_id ∪ event_watchers (union with dedupe)
  * Watchers are always notified regardless of host existence (opt-in monitoring).
+ * Phase ABC6: Now includes occurrenceDate for per-occurrence context in notifications
  */
 async function notifyEventHosts(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -276,7 +302,8 @@ async function notifyEventHosts(
   eventTitle: string,
   eventUrl: string,
   commentPreview: string,
-  fallbackHostId: string | null
+  fallbackHostId: string | null,
+  occurrenceDate?: string
 ) {
   const notifiedUserIds = new Set<string>();
 
@@ -297,7 +324,8 @@ async function notifyEventHosts(
           eventTitle,
           eventUrl,
           commentPreview,
-          false
+          false,
+          occurrenceDate
         );
         notifiedUserIds.add(host.user_id);
       }
@@ -314,7 +342,8 @@ async function notifyEventHosts(
       eventTitle,
       eventUrl,
       commentPreview,
-      false
+      false,
+      occurrenceDate
     );
     notifiedUserIds.add(fallbackHostId);
     // NO RETURN - continue to check watchers
@@ -336,7 +365,8 @@ async function notifyEventHosts(
           eventTitle,
           eventUrl,
           commentPreview,
-          false
+          false,
+          occurrenceDate
         );
         notifiedUserIds.add(watcher.user_id);
       }
@@ -346,6 +376,7 @@ async function notifyEventHosts(
 
 /**
  * Notify parent comment author about a reply from a guest
+ * Phase ABC6: Now includes occurrenceDate for per-occurrence context
  */
 async function notifyParentCommentAuthor(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -353,7 +384,8 @@ async function notifyParentCommentAuthor(
   guestName: string,
   eventTitle: string,
   eventUrl: string,
-  replyPreview: string
+  replyPreview: string,
+  occurrenceDate?: string
 ) {
   // Get parent comment author
   const { data: parentComment } = await supabase
@@ -373,7 +405,8 @@ async function notifyParentCommentAuthor(
       eventTitle,
       eventUrl,
       replyPreview,
-      true
+      true,
+      occurrenceDate
     );
   }
   // Guest comments don't get reply notifications (no account)
@@ -381,6 +414,7 @@ async function notifyParentCommentAuthor(
 
 /**
  * Send dashboard notification + optional email to a user
+ * Phase ABC6: Now includes occurrenceDate for per-occurrence context in messages
  */
 async function notifyUser(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -389,15 +423,19 @@ async function notifyUser(
   eventTitle: string,
   eventUrl: string,
   commentPreview: string,
-  isReply: boolean
+  isReply: boolean,
+  occurrenceDate?: string
 ) {
+  // Phase ABC6: Include occurrence date in notification messages
+  const dateText = occurrenceDate ? ` (${occurrenceDate})` : "";
+
   const title = isReply
     ? `${commenterName} replied to your comment`
-    : `${commenterName} (guest) commented on "${eventTitle}"`;
+    : `${commenterName} (guest) commented on "${eventTitle}"${dateText}`;
 
   const message = isReply
-    ? `${commenterName} replied to your comment on "${eventTitle}"`
-    : `${commenterName} (guest) commented on your event`;
+    ? `${commenterName} replied to your comment on "${eventTitle}"${dateText}`
+    : `${commenterName} (guest) commented on your event${dateText}`;
 
   // Get user's email via auth admin
   const { data: userData } = await supabase.auth.admin.getUserById(userId);
@@ -410,6 +448,7 @@ async function notifyUser(
     commenterName,
     commentPreview: commentPreview.slice(0, 200),
     isReply,
+    occurrenceDate, // Phase ABC6: Pass occurrence date to email
   });
 
   // Send notification + email with preferences

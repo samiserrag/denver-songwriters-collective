@@ -31,6 +31,8 @@ export interface TimeslotSignupHostNotificationEmailParams {
   isGuest: boolean;
   /** Recipient's name (optional) */
   recipientName?: string | null;
+  /** Phase ABC6: Occurrence date for per-occurrence context (e.g., "Sat, Jan 18") */
+  occurrenceDate?: string;
 }
 
 export function getTimeslotSignupHostNotificationEmail(params: TimeslotSignupHostNotificationEmailParams): {
@@ -46,13 +48,16 @@ export function getTimeslotSignupHostNotificationEmail(params: TimeslotSignupHos
     slotTime,
     isGuest,
     recipientName,
+    occurrenceDate,
   } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safePerformerName = escapeHtml(performerName);
   const guestLabel = isGuest ? " (guest)" : "";
+  // Phase ABC6: Include occurrence date in subject and messages
+  const dateText = occurrenceDate ? ` (${occurrenceDate})` : "";
 
-  const subject = `${performerName}${guestLabel} signed up for slot ${slotNumber} at "${eventTitle}"`;
+  const subject = `${performerName}${guestLabel} signed up for slot ${slotNumber} at "${eventTitle}"${dateText}`;
 
   const slotInfo = slotTime ? `Slot ${slotNumber} (${slotTime})` : `Slot ${slotNumber}`;
 
@@ -61,7 +66,7 @@ export function getTimeslotSignupHostNotificationEmail(params: TimeslotSignupHos
     ${getGreeting(recipientName)}
 
     ${paragraph(
-      `<strong>${safePerformerName}${guestLabel}</strong> just claimed <strong>${slotInfo}</strong> for <strong>"${safeTitle}"</strong>.`
+      `<strong>${safePerformerName}${guestLabel}</strong> just claimed <strong>${slotInfo}</strong> for <strong>"${safeTitle}"</strong>${dateText}.`
     )}
 
     ${paragraph(`They're ready to perform at your happening!`)}
@@ -80,9 +85,9 @@ export function getTimeslotSignupHostNotificationEmail(params: TimeslotSignupHos
 
   // Plain text version
   const textContent = `
-${performerName}${guestLabel} signed up for slot ${slotNumber}
+${performerName}${guestLabel} signed up for slot ${slotNumber}${dateText}
 
-${performerName}${guestLabel} just claimed ${slotInfo} for "${eventTitle}".
+${performerName}${guestLabel} just claimed ${slotInfo} for "${eventTitle}"${dateText}.
 
 They're ready to perform at your happening!
 

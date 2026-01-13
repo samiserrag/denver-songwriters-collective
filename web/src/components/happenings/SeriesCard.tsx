@@ -336,16 +336,27 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
             </p>
 
             {/* Next date row with expand toggle */}
+            {/* Phase ABC6: Make next date clickable with ?date= for per-occurrence deep-linking */}
             <div className="flex items-center justify-between mt-1">
               <p className="text-sm text-[var(--color-text-primary)]">
                 {isOneTime ? (
-                  <>
+                  <Link
+                    href={`/events/${event.slug || event.id}?date=${nextOccurrence.date}`}
+                    className="hover:text-[var(--color-text-accent)] transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {nextDateDisplay} @ {startTime}
-                  </>
+                  </Link>
                 ) : (
                   <>
                     <span className="text-[var(--color-text-secondary)]">Next:</span>{" "}
-                    {nextDateDisplay} @ {startTime}
+                    <Link
+                      href={`/events/${event.slug || event.id}?date=${nextOccurrence.date}`}
+                      className="hover:text-[var(--color-text-accent)] transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {nextDateDisplay} @ {startTime}
+                    </Link>
                   </>
                 )}
               </p>

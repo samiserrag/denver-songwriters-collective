@@ -32,6 +32,8 @@ export interface VerificationCodeEmailParams {
   expiresInMinutes: number;
   /** Purpose of verification. Defaults to "slot" for backwards compatibility. */
   purpose?: VerificationPurpose;
+  /** Phase ABC6: Occurrence date for display (e.g., "Sat, Jan 18") when verifying for a specific occurrence */
+  occurrenceDate?: string;
 }
 
 const PURPOSE_COPY: Record<VerificationPurpose, { action: string; confirm: string }> = {
@@ -70,9 +72,11 @@ export function getVerificationCodeEmail(params: VerificationCodeEmailParams): {
   html: string;
   text: string;
 } {
-  const { guestName, eventTitle, code, expiresInMinutes, purpose = "slot" } = params;
+  const { guestName, eventTitle, code, expiresInMinutes, purpose = "slot", occurrenceDate } = params;
   const safeEventTitle = escapeHtml(eventTitle);
   const copy = PURPOSE_COPY[purpose];
+  // Phase ABC6: Include occurrence date in messaging for per-occurrence context
+  const dateText = occurrenceDate ? ` on ${escapeHtml(occurrenceDate)}` : "";
 
   // Subject
   const subject = `Your code for ${eventTitle} — The Denver Songwriters Collective`;
@@ -81,7 +85,7 @@ export function getVerificationCodeEmail(params: VerificationCodeEmailParams): {
   const htmlContent = `
 ${paragraph(getGreeting(guestName))}
 
-${paragraph(`You requested a code to ${copy.action} <strong>${safeEventTitle}</strong>:`)}
+${paragraph(`You requested a code to ${copy.action} <strong>${safeEventTitle}</strong>${dateText}:`)}
 
 ${codeBlock(code)}
 
@@ -97,7 +101,7 @@ ${paragraph("If you didn't request this code, you can safely ignore this email."
   // Plain text
   const textContent = `${guestName?.trim() ? `Hi ${guestName.trim()},` : "Hi there,"}
 
-You requested a code to ${copy.action} ${eventTitle}:
+You requested a code to ${copy.action} ${eventTitle}${occurrenceDate ? ` on ${occurrenceDate}` : ""}:
 
 ${code}
 

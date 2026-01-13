@@ -25,6 +25,8 @@ export interface RSVPCardProps {
     waitlist_position: number | null;
     offer_expires_at?: string | null;
     created_at: string | null;
+    /** Phase ABC7: date_key for per-occurrence RSVP actions */
+    date_key: string;
   };
   event: RSVPCardEvent;
   /** Whether to show the cancel button */
@@ -109,7 +111,8 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
     setError("");
 
     try {
-      const res = await fetch(`/api/events/${event.id}/rsvp`, {
+      // Phase ABC7: Include date_key to cancel correct occurrence's RSVP
+      const res = await fetch(`/api/events/${event.id}/rsvp?date_key=${rsvp.date_key}`, {
         method: "DELETE",
       });
 
@@ -132,7 +135,8 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
     setError("");
 
     try {
-      const res = await fetch(`/api/events/${event.id}/rsvp`, {
+      // Phase ABC7: Include date_key to confirm correct occurrence's offer
+      const res = await fetch(`/api/events/${event.id}/rsvp?date_key=${rsvp.date_key}`, {
         method: "PATCH",
       });
 
@@ -150,11 +154,11 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
     }
   };
 
-  // Build calendar dates if event has a specific date
+  // Phase ABC7: Build calendar dates using rsvp.date_key (the RSVP's occurrence date)
   let calendarStartDate: Date | null = null;
   let calendarEndDate: Date | null = null;
-  if (event.event_date) {
-    const [year, month, day] = event.event_date.split("-").map(Number);
+  if (rsvp.date_key) {
+    const [year, month, day] = rsvp.date_key.split("-").map(Number);
     if (event.start_time) {
       const [startHour, startMin] = event.start_time.split(":").map(Number);
       calendarStartDate = new Date(year, month - 1, day, startHour, startMin);
@@ -171,10 +175,13 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
   }
 
   const venueLocation = [event.venue_name, event.venue_address].filter(Boolean).join(", ");
-  const formattedDate = formatDate(event.event_date);
+  // Phase ABC7: Use rsvp.date_key as the authoritative occurrence date
+  const formattedDate = formatDate(rsvp.date_key);
   const formattedTime = formatTime(event.start_time);
   const isCancelled = rsvp.status === "cancelled";
   const isOffered = rsvp.status === "offered";
+  // Phase ABC7: Link to occurrence-specific page
+  const eventUrl = `/events/${event.slug || event.id}?date=${rsvp.date_key}`;
 
   return (
     <div className={`rounded-xl border bg-[var(--color-bg-secondary)] overflow-hidden ${
@@ -185,7 +192,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
             <Link
-              href={`/events/${event.slug || event.id}`}
+              href={eventUrl}
               className="text-lg font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)] transition-colors line-clamp-2"
             >
               {event.title}
@@ -266,9 +273,9 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
             />
           )}
 
-          {/* View Event link */}
+          {/* View Event link - Phase ABC7: Links to occurrence-specific page */}
           <Link
-            href={`/events/${event.slug || event.id}`}
+            href={eventUrl}
             className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
             View Event

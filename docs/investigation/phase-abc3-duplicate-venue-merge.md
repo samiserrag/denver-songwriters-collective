@@ -22,8 +22,13 @@ This document provides SQL scripts for a one-time cleanup of duplicate venue rec
 | `gallery_albums` | `venue_id` | SET NULL |
 | `gallery_images` | `venue_id` | SET NULL |
 | `monthly_highlights` | `venue_id` | SET NULL |
+| `venue_managers` | `venue_id` | CASCADE |
+| `venue_claims` | `venue_id` | CASCADE |
+| `venue_invites` | `venue_id` | CASCADE |
 
-**Important:** All FKs use SET NULL on delete. If you delete a venue row without first repointing references, those references will become NULL (orphaned).
+**Important:** Most FKs use SET NULL on delete. If you delete a venue row without first repointing references, those references will become NULL (orphaned).
+
+**ABC8 Tables (CASCADE):** The venue ownership tables (`venue_managers`, `venue_claims`, `venue_invites`) use CASCADE delete. When merging duplicates, you must transfer managers to the canonical venue before deleting the duplicate, otherwise manager grants will be lost.
 
 ---
 
@@ -76,6 +81,7 @@ SELECT
   COALESCE(ga.album_count, 0) AS gallery_albums_count,
   COALESCE(gi.image_count, 0) AS gallery_images_count,
   COALESCE(mh.highlight_count, 0) AS monthly_highlights_count,
+  COALESCE(vm.manager_count, 0) AS venue_managers_count,
   COALESCE(e.event_count, 0) + COALESCE(ga.album_count, 0) +
     COALESCE(gi.image_count, 0) + COALESCE(mh.highlight_count, 0) AS total_refs
 FROM venues v
@@ -104,8 +110,16 @@ LEFT JOIN (
   WHERE venue_id IS NOT NULL
   GROUP BY venue_id
 ) mh ON v.id = mh.venue_id
+LEFT JOIN (
+  SELECT venue_id, COUNT(*) AS manager_count
+  FROM venue_managers
+  WHERE revoked_at IS NULL
+  GROUP BY venue_id
+) vm ON v.id = vm.venue_id
 ORDER BY v.created_at ASC;
 ```
+
+**Note:** The `venue_managers_count` shows active (non-revoked) managers. These MUST be transferred before deleting the duplicate venue.
 
 **Output:** Reference counts per venue. Use this to decide which venue to keep (canonical) and which to merge away.
 
@@ -146,19 +160,56 @@ WHERE venue_id = 'DUPLICATE_ID';
 UPDATE monthly_highlights
 SET venue_id = 'CANONICAL_ID'
 WHERE venue_id = 'DUPLICATE_ID';
+
+-- APPLY: Transfer active venue managers to canonical venue (ABC8)
+-- Note: If user already manages canonical venue, this will conflict on UNIQUE(venue_id, user_id)
+-- In that case, revoke the duplicate grant instead of transferring
+UPDATE venue_managers
+SET venue_id = 'CANONICAL_ID'
+WHERE venue_id = 'DUPLICATE_ID'
+  AND revoked_at IS NULL
+  AND user_id NOT IN (
+    SELECT user_id FROM venue_managers
+    WHERE venue_id = 'CANONICAL_ID' AND revoked_at IS NULL
+  );
+
+-- APPLY: Revoke any remaining duplicate grants (user already has canonical grant)
+UPDATE venue_managers
+SET revoked_at = NOW(),
+    revoked_reason = 'Venue merged - duplicate access'
+WHERE venue_id = 'DUPLICATE_ID'
+  AND revoked_at IS NULL;
+
+-- APPLY: Cancel any pending claims on duplicate venue
+UPDATE venue_claims
+SET status = 'cancelled',
+    cancelled_at = NOW()
+WHERE venue_id = 'DUPLICATE_ID'
+  AND status = 'pending';
+
+-- APPLY: Revoke any active invites on duplicate venue
+UPDATE venue_invites
+SET revoked_at = NOW(),
+    revoked_reason = 'Venue merged'
+WHERE venue_id = 'DUPLICATE_ID'
+  AND accepted_at IS NULL
+  AND revoked_at IS NULL;
 ```
 
 ### Step 4b: Verify no references remain
 
 ```sql
--- VERIFY: Confirm duplicate has 0 references before deleting
+-- VERIFY: Confirm duplicate has 0 active references before deleting
 SELECT
   (SELECT COUNT(*) FROM events WHERE venue_id = 'DUPLICATE_ID') AS events_remaining,
   (SELECT COUNT(*) FROM gallery_albums WHERE venue_id = 'DUPLICATE_ID') AS albums_remaining,
   (SELECT COUNT(*) FROM gallery_images WHERE venue_id = 'DUPLICATE_ID') AS images_remaining,
-  (SELECT COUNT(*) FROM monthly_highlights WHERE venue_id = 'DUPLICATE_ID') AS highlights_remaining;
+  (SELECT COUNT(*) FROM monthly_highlights WHERE venue_id = 'DUPLICATE_ID') AS highlights_remaining,
+  (SELECT COUNT(*) FROM venue_managers WHERE venue_id = 'DUPLICATE_ID' AND revoked_at IS NULL) AS active_managers_remaining,
+  (SELECT COUNT(*) FROM venue_claims WHERE venue_id = 'DUPLICATE_ID' AND status = 'pending') AS pending_claims_remaining,
+  (SELECT COUNT(*) FROM venue_invites WHERE venue_id = 'DUPLICATE_ID' AND accepted_at IS NULL AND revoked_at IS NULL) AS active_invites_remaining;
 
--- Expected output: 0, 0, 0, 0
+-- Expected output: 0, 0, 0, 0, 0, 0, 0
 ```
 
 ### Step 4c: Delete the duplicate venue

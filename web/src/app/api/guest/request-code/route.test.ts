@@ -38,6 +38,19 @@ vi.mock("@/lib/email", () => ({
   }),
 }));
 
+// Phase ABC6: Mock dateKeyContract
+vi.mock("@/lib/events/dateKeyContract", () => ({
+  validateDateKeyForWrite: vi.fn().mockResolvedValue({
+    success: true,
+    effectiveDateKey: "2026-01-20",
+  }),
+  dateKeyErrorResponse: () =>
+    new Response(JSON.stringify({ error: "Invalid date" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    }),
+}));
+
 // Mock state
 let mockEvent: { id: string; title: string; is_published: boolean; has_timeslots: boolean } | null = null;
 let mockTimeslot: { id: string } | null = null;
@@ -88,10 +101,20 @@ vi.mock("@/lib/supabase/serviceRoleClient", () => ({
       }
       if (table === "timeslot_claims") {
         return {
-          select: () => createChainable({
-            data: mockExistingClaims,
-            error: null,
-          }),
+          select: () => {
+            // Create chainable that returns proper maybeSingle result
+            // maybeSingle returns null data when no match, not empty array
+            const chainable: Record<string, unknown> = {
+              eq: () => chainable,
+              in: () => chainable,
+              not: () => chainable,
+              maybeSingle: () => ({
+                data: mockExistingClaims.length > 0 ? mockExistingClaims[0] : null,
+                error: null,
+              }),
+            };
+            return chainable;
+          },
         };
       }
       if (table === "guest_verifications") {
@@ -322,7 +345,7 @@ describe("POST /api/guest/request-code", () => {
     expect(json.error).toContain("failed attempts");
   });
 
-  it("returns success with verification_id and expires_at", async () => {
+  it("returns success with verification_id, expires_at, and date_key", async () => {
     mockEvent = { id: "event-1", title: "Test Open Mic", is_published: true, has_timeslots: true };
     mockTimeslot = { id: "slot-1" };
 
@@ -344,6 +367,8 @@ describe("POST /api/guest/request-code", () => {
     expect(json.verification_id).toBe("verification-1");
     expect(json.expires_at).toBeDefined();
     expect(json.message).toContain("code sent");
+    // Phase ABC6: date_key included in response
+    expect(json.date_key).toBe("2026-01-20");
   });
 });
 

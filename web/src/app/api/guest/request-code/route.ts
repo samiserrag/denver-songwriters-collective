@@ -10,6 +10,10 @@ import {
   hashCode,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail, getVerificationCodeEmail } from "@/lib/email";
+import {
+  validateDateKeyForWrite,
+  dateKeyErrorResponse,
+} from "@/lib/events/dateKeyContract";
 
 const {
   CODE_EXPIRES_MINUTES,
@@ -21,6 +25,8 @@ interface RequestCodeBody {
   slot_index: number;
   guest_name: string;
   guest_email: string;
+  /** Phase ABC6: date_key for per-occurrence timeslot claims */
+  date_key?: string;
 }
 
 /**
@@ -37,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as RequestCodeBody;
-    const { event_id, slot_index, guest_name, guest_email } = body;
+    const { event_id, slot_index, guest_name, guest_email, date_key: providedDateKey } = body;
 
     // Validate required fields
     if (!event_id || slot_index === undefined || !guest_name || !guest_email) {
@@ -76,6 +82,13 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient();
     const normalizedEmail = guest_email.toLowerCase().trim();
 
+    // Phase ABC6: Validate date_key and check for cancelled occurrence
+    const dateKeyResult = await validateDateKeyForWrite(event_id, providedDateKey);
+    if (!dateKeyResult.success) {
+      return dateKeyErrorResponse(dateKeyResult.error);
+    }
+    const { effectiveDateKey } = dateKeyResult;
+
     // Fetch event and validate
     const { data: event, error: eventError } = await supabase
       .from("events")
@@ -102,52 +115,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch timeslot
+    // Phase ABC6: Timeslots are scoped by date_key
     const { data: timeslot, error: timeslotError } = await supabase
       .from("event_timeslots")
-      .select("id")
+      .select("id, date_key")
       .eq("event_id", event_id)
       .eq("slot_index", slot_index)
+      .eq("date_key", effectiveDateKey)
       .single();
 
     if (timeslotError || !timeslot) {
-      return NextResponse.json({ error: "Slot not found" }, { status: 404 });
+      return NextResponse.json({ error: "Slot not found for this occurrence" }, { status: 404 });
     }
 
-    // Check for existing active claim by this email on this event
-    const { data: existingClaims } = await supabase
+    // Check for existing active claim by this email on this timeslot (which is already occurrence-scoped)
+    // Phase ABC6: Claims inherit occurrence scoping from timeslot_id (timeslots are per-occurrence)
+    const { data: existingClaim } = await supabase
       .from("timeslot_claims")
       .select("id, status")
       .eq("guest_email", normalizedEmail)
+      .eq("timeslot_id", timeslot.id)
       .in("status", ["confirmed", "offered", "waitlist"])
-      .not("timeslot_id", "is", null);
+      .maybeSingle();
 
-    // Filter to only claims for this event's timeslots
-    if (existingClaims && existingClaims.length > 0) {
-      // Check if any of these claims are for this event
-      const { data: eventTimeslots } = await supabase
-        .from("event_timeslots")
-        .select("id")
-        .eq("event_id", event_id);
-
-      const eventTimeslotIds = new Set(
-        eventTimeslots?.map((t) => t.id) || []
+    if (existingClaim) {
+      return NextResponse.json(
+        { error: "You already have a claim for this slot" },
+        { status: 409 }
       );
-
-      // Get claim timeslot info
-      for (const claim of existingClaims) {
-        const { data: claimTimeslot } = await supabase
-          .from("timeslot_claims")
-          .select("timeslot_id")
-          .eq("id", claim.id)
-          .single();
-
-        if (claimTimeslot && eventTimeslotIds.has(claimTimeslot.timeslot_id)) {
-          return NextResponse.json(
-            { error: "You already have a claim for this event" },
-            { status: 409 }
-          );
-        }
-      }
     }
 
     // Rate limiting: check codes sent in last hour
@@ -203,15 +198,18 @@ export async function POST(request: NextRequest) {
       Date.now() + CODE_EXPIRES_MINUTES * 60 * 1000
     ).toISOString();
 
-    // Delete any existing unverified verification for this email+event
+    // Delete any existing unverified verification for this email+event+date
+    // Phase ABC6: Scoped by date_key
     await supabase
       .from("guest_verifications")
       .delete()
       .eq("email", normalizedEmail)
       .eq("event_id", event_id)
+      .eq("date_key", effectiveDateKey)
       .is("verified_at", null);
 
     // Create new verification record
+    // Phase ABC6: Include date_key for per-occurrence scoping
     const { data: verification, error: insertError } = await supabase
       .from("guest_verifications")
       .insert({
@@ -224,6 +222,7 @@ export async function POST(request: NextRequest) {
         code_attempts: 0,
         locked_until: null,
         verified_at: null,
+        date_key: effectiveDateKey,
       })
       .select("id")
       .single();
@@ -258,11 +257,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Return generic success (avoid email enumeration)
+    // Phase ABC6: Include date_key in response
     return NextResponse.json({
       success: true,
       message: "Verification code sent",
       verification_id: verification.id,
       expires_at: expiresAt,
+      date_key: effectiveDateKey,
     });
   } catch (error) {
     console.error("Request code error:", error);

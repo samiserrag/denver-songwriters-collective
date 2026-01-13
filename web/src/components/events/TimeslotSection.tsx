@@ -33,6 +33,8 @@ interface TimeslotSectionProps {
   slotDuration: number;
   /** When true, prevents claiming (for cancelled/past/draft events) */
   disabled?: boolean;
+  /** Phase ABC6: date_key for per-occurrence timeslot scoping */
+  dateKey?: string;
 }
 
 export function TimeslotSection({
@@ -41,6 +43,7 @@ export function TimeslotSection({
   totalSlots,
   slotDuration,
   disabled = false,
+  dateKey,
 }: TimeslotSectionProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -59,11 +62,17 @@ export function TimeslotSection({
       setLoading(true);
 
       // Fetch timeslots for this event
-      const { data: slots, error: slotsError } = await supabase
+      // Phase ABC6: Filter by date_key when provided for per-occurrence scoping
+      let query = supabase
         .from("event_timeslots")
         .select("*")
-        .eq("event_id", eventId)
-        .order("slot_index", { ascending: true });
+        .eq("event_id", eventId);
+
+      if (dateKey) {
+        query = query.eq("date_key", dateKey);
+      }
+
+      const { data: slots, error: slotsError } = await query.order("slot_index", { ascending: true });
 
       if (slotsError) {
         console.error("Error fetching timeslots:", slotsError);
@@ -110,7 +119,7 @@ export function TimeslotSection({
     }
 
     fetchTimeslots();
-  }, [eventId, supabase]);
+  }, [eventId, supabase, dateKey]);
 
   const handleRequireAuth = React.useCallback(() => {
     const redirectTo = pathname || `/events/${eventId}`;
@@ -383,6 +392,7 @@ export function TimeslotSection({
                     window.location.reload();
                   }}
                   onCancel={() => setGuestClaimingSlotId(null)}
+                  dateKey={dateKey}
                 />
               ) : (
                 <>

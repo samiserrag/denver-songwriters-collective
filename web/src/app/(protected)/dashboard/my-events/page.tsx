@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
 import MyEventsFilteredList from "./_components/MyEventsFilteredList";
+import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 
 export const dynamic = "force-dynamic";
 
@@ -55,10 +56,28 @@ export default async function MyEventsPage() {
     if (eventsData) {
       events = await Promise.all(
         eventsData.map(async (event) => {
+          // Phase ABC7: Compute effective date_key for next occurrence
+          let effectiveDateKey: string;
+
+          if (event.is_recurring) {
+            const occurrences = expandOccurrencesForEvent({
+              event_date: event.event_date,
+              day_of_week: event.day_of_week,
+              recurrence_rule: event.recurrence_rule,
+            });
+            effectiveDateKey = occurrences.length > 0
+              ? occurrences[0].dateKey
+              : event.event_date || new Date().toISOString().split("T")[0];
+          } else {
+            effectiveDateKey = event.event_date || new Date().toISOString().split("T")[0];
+          }
+
+          // Phase ABC7: Count RSVPs for next occurrence only
           const { count } = await supabase
             .from("event_rsvps")
             .select("*", { count: "exact", head: true })
             .eq("event_id", event.id)
+            .eq("date_key", effectiveDateKey)
             .eq("status", "confirmed");
 
           const hostEntry = hostEntries.find(h => h.event_id === event.id);

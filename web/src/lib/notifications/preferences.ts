@@ -101,10 +101,13 @@ export async function shouldSendEmail(
  * Category mapping for email templates
  */
 export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates" | "admin_notifications"> = {
-  // Claim-related templates
+  // Claim-related templates (events)
   eventClaimSubmitted: "claim_updates",
   eventClaimApproved: "claim_updates",
   eventClaimRejected: "claim_updates",
+  // Claim-related templates (venues) - ABC8
+  venueClaimApproved: "claim_updates",
+  venueClaimRejected: "claim_updates",
 
   // Event-related templates
   eventReminder: "event_updates",

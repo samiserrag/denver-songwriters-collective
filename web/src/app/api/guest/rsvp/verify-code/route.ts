@@ -13,6 +13,7 @@ import { sendEmail } from "@/lib/email";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getRsvpConfirmationEmail } from "@/lib/emailTemplates";
 import { getRsvpHostNotificationEmail } from "@/lib/email/templates/rsvpHostNotification";
+import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -151,6 +152,18 @@ export async function POST(request: NextRequest) {
     // Code is valid - verify the email
     const verifiedAt = new Date().toISOString();
 
+    // Phase ABC6: Get date_key from verification record
+    // Note: date_key column added in Phase ABC6 migration, using type assertion until types regenerated
+    const effectiveDateKey = (verification as { date_key?: string }).date_key;
+
+    if (!effectiveDateKey) {
+      // date_key is required for per-occurrence RSVPs (Phase ABC6)
+      return NextResponse.json(
+        { error: "Missing date_key in verification record" },
+        { status: 400 }
+      );
+    }
+
     // Fetch event details (include host_id for notification fan-out)
     const { data: event } = await supabase
       .from("events")
@@ -172,18 +185,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for existing RSVP by this email
+    // Check for existing RSVP by this email on this occurrence
+    // Phase ABC6: RSVPs are scoped by date_key
     const { data: existingRsvp } = await supabase
       .from("event_rsvps")
       .select("id")
       .eq("event_id", verification.event_id)
+      .eq("date_key", effectiveDateKey)
       .eq("guest_email", verification.email)
       .neq("status", "cancelled")
       .maybeSingle();
 
     if (existingRsvp) {
       return NextResponse.json(
-        { error: "You already have an RSVP for this event" },
+        { error: "You already have an RSVP for this occurrence" },
         { status: 409 }
       );
     }
@@ -193,21 +208,25 @@ export async function POST(request: NextRequest) {
     let waitlistPosition: number | null = null;
 
     if (event.capacity !== null) {
-      // Count current confirmed RSVPs
+      // Count current confirmed RSVPs for this occurrence
+      // Phase ABC6: RSVPs are scoped by date_key
       const { count: confirmedCount } = await supabase
         .from("event_rsvps")
         .select("*", { count: "exact", head: true })
         .eq("event_id", verification.event_id)
+        .eq("date_key", effectiveDateKey)
         .eq("status", "confirmed");
 
       if ((confirmedCount || 0) >= event.capacity) {
         status = "waitlist";
 
-        // Get next waitlist position
+        // Get next waitlist position for this occurrence
+        // Phase ABC6: Waitlist is per-occurrence
         const { data: lastWaitlist } = await supabase
           .from("event_rsvps")
           .select("waitlist_position")
           .eq("event_id", verification.event_id)
+          .eq("date_key", effectiveDateKey)
           .eq("status", "waitlist")
           .order("waitlist_position", { ascending: false })
           .limit(1)
@@ -218,6 +237,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the RSVP (no user_id for guests)
+    // Phase ABC6: Include date_key for per-occurrence scoping
     const { data: rsvp, error: rsvpError } = await supabase
       .from("event_rsvps")
       .insert({
@@ -230,6 +250,7 @@ export async function POST(request: NextRequest) {
         status,
         waitlist_position: waitlistPosition,
         notes: null,
+        date_key: effectiveDateKey,
       })
       .select("*")
       .single();
@@ -281,6 +302,7 @@ export async function POST(request: NextRequest) {
     const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}`;
 
     // Send RSVP confirmation email
+    // Phase ABC6: Include dateKey for per-occurrence links in email
     const emailContent = getRsvpConfirmationEmail({
       eventTitle: event.title || "Event",
       eventDate: event.event_date || "TBA",
@@ -293,6 +315,7 @@ export async function POST(request: NextRequest) {
       waitlistPosition: waitlistPosition ?? undefined,
       guestName: verification.guest_name,
       cancelUrl,
+      dateKey: effectiveDateKey,
     });
 
     await sendEmail({
@@ -303,7 +326,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Phase 4.51c: Notify hosts/watchers about guest RSVP (fire and forget)
-    const eventUrl = `/events/${event.slug || event.id}`;
+    // Phase ABC6: Include date in event URL for per-occurrence deep-linking
+    const eventUrl = effectiveDateKey
+      ? `/events/${event.slug || event.id}?date=${effectiveDateKey}`
+      : `/events/${event.slug || event.id}`;
+
+    // Phase ABC6: Short date for notifications
+    const occurrenceDateShort = formatDateKeyShort(effectiveDateKey);
+
     notifyHostsOfGuestRsvp(
       supabase,
       verification.event_id,
@@ -311,9 +341,11 @@ export async function POST(request: NextRequest) {
       event.title || "Event",
       eventUrl,
       status === "waitlist",
-      event.host_id
+      event.host_id,
+      occurrenceDateShort
     ).catch((err) => console.error("Failed to notify hosts of guest RSVP:", err));
 
+    // Phase ABC6: Include date_key in response
     return NextResponse.json({
       success: true,
       rsvp: {
@@ -322,8 +354,10 @@ export async function POST(request: NextRequest) {
         guest_name: rsvp.guest_name,
         waitlist_position: rsvp.waitlist_position,
         created_at: rsvp.created_at,
+        date_key: effectiveDateKey,
       },
       cancel_url: cancelUrl,
+      date_key: effectiveDateKey,
     });
   } catch (error) {
     console.error("Verify RSVP code error:", error);
@@ -338,6 +372,7 @@ export async function POST(request: NextRequest) {
  * Phase 4.51d: Notify hosts AND watchers about a guest RSVP
  * Fan-out: event_hosts ∪ events.host_id ∪ event_watchers (union with dedupe)
  * Watchers are always notified regardless of host existence (opt-in monitoring).
+ * Phase ABC6: Now includes occurrenceDate for per-occurrence context in notifications
  */
 async function notifyHostsOfGuestRsvp(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -346,7 +381,8 @@ async function notifyHostsOfGuestRsvp(
   eventTitle: string,
   eventUrl: string,
   isWaitlist: boolean,
-  fallbackHostId: string | null
+  fallbackHostId: string | null,
+  occurrenceDate?: string
 ) {
   const notifiedUserIds = new Set<string>();
 
@@ -366,7 +402,8 @@ async function notifyHostsOfGuestRsvp(
           guestName,
           eventTitle,
           eventUrl,
-          isWaitlist
+          isWaitlist,
+          occurrenceDate
         );
         notifiedUserIds.add(host.user_id);
       }
@@ -382,7 +419,8 @@ async function notifyHostsOfGuestRsvp(
       guestName,
       eventTitle,
       eventUrl,
-      isWaitlist
+      isWaitlist,
+      occurrenceDate
     );
     notifiedUserIds.add(fallbackHostId);
     // NO RETURN - continue to check watchers
@@ -403,7 +441,8 @@ async function notifyHostsOfGuestRsvp(
           guestName,
           eventTitle,
           eventUrl,
-          isWaitlist
+          isWaitlist,
+          occurrenceDate
         );
         notifiedUserIds.add(watcher.user_id);
       }
@@ -414,6 +453,7 @@ async function notifyHostsOfGuestRsvp(
 /**
  * Send dashboard notification + email to a user about guest RSVP
  * Uses EXACT same type/templateKey as member RSVP notifications.
+ * Phase ABC6: Now includes occurrenceDate for per-occurrence context in messages
  */
 async function notifyUserOfGuestRsvp(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -421,15 +461,19 @@ async function notifyUserOfGuestRsvp(
   guestName: string,
   eventTitle: string,
   eventUrl: string,
-  isWaitlist: boolean
+  isWaitlist: boolean,
+  occurrenceDate?: string
 ) {
+  // Phase ABC6: Include occurrence date in notification messages
+  const dateText = occurrenceDate ? ` (${occurrenceDate})` : "";
+
   const title = isWaitlist
-    ? `${guestName} (guest) joined the waitlist`
-    : `${guestName} (guest) is going`;
+    ? `${guestName} (guest) joined the waitlist${dateText}`
+    : `${guestName} (guest) is going${dateText}`;
 
   const message = isWaitlist
-    ? `${guestName} (guest) joined the waitlist for "${eventTitle}"`
-    : `${guestName} (guest) RSVP'd to "${eventTitle}"`;
+    ? `${guestName} (guest) joined the waitlist for "${eventTitle}"${dateText}`
+    : `${guestName} (guest) RSVP'd to "${eventTitle}"${dateText}`;
 
   // Get user's email via auth admin
   const { data: userData } = await supabase.auth.admin.getUserById(userId);
@@ -441,6 +485,7 @@ async function notifyUserOfGuestRsvp(
     eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
     rsvpUserName: `${guestName} (guest)`,
     isWaitlist,
+    occurrenceDate, // Phase ABC6: Pass occurrence date to email
   });
 
   // Send notification + email with preferences

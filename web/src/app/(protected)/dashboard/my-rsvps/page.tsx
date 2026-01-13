@@ -11,6 +11,8 @@ interface RSVPWithEvent {
   waitlist_position: number | null;
   offer_expires_at: string | null;
   created_at: string | null;
+  /** Phase ABC7: date_key for per-occurrence RSVP */
+  date_key: string;
   event: RSVPCardEvent | null;
 }
 
@@ -44,68 +46,45 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
   let rsvps: RSVPWithEvent[] = [];
 
   if (activeTab === "upcoming") {
-    // Upcoming: confirmed, offered, or waitlist RSVPs for events with event_date >= today (or null date)
+    // Phase ABC7: Upcoming RSVPs filtered by date_key (the RSVP's occurrence date)
+    // RSVPs with date_key >= today are upcoming
     const { data } = await supabase
       .from("event_rsvps")
       .select(`
-        id, status, waitlist_position, offer_expires_at, created_at,
-        event:events(id, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
+        id, status, waitlist_position, offer_expires_at, created_at, date_key,
+        event:events(id, slug, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
       `)
       .eq("user_id", userId)
       .in("status", ["confirmed", "waitlist", "offered"])
-      .order("created_at", { ascending: false })
+      .gte("date_key", today)
+      .order("date_key", { ascending: true })
       .limit(50);
 
-    // Filter to upcoming events (event_date >= today or null)
-    rsvps = ((data as unknown as RSVPWithEvent[]) || []).filter((r) => {
-      if (!r.event) return false;
-      if (!r.event.event_date) return true; // Include events without dates
-      return r.event.event_date >= today;
-    });
-
-    // Sort by event date (soonest first), null dates at the end
-    rsvps.sort((a, b) => {
-      const dateA = a.event?.event_date;
-      const dateB = b.event?.event_date;
-      if (!dateA && !dateB) return 0;
-      if (!dateA) return 1;
-      if (!dateB) return -1;
-      return dateA.localeCompare(dateB);
-    });
+    rsvps = (data as unknown as RSVPWithEvent[]) || [];
 
   } else if (activeTab === "past") {
-    // Past: confirmed or waitlist RSVPs for events with event_date < today
+    // Phase ABC7: Past RSVPs filtered by date_key < today
     const { data } = await supabase
       .from("event_rsvps")
       .select(`
-        id, status, waitlist_position, offer_expires_at, created_at,
-        event:events(id, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
+        id, status, waitlist_position, offer_expires_at, created_at, date_key,
+        event:events(id, slug, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
       `)
       .eq("user_id", userId)
       .in("status", ["confirmed", "waitlist"])
-      .order("created_at", { ascending: false })
+      .lt("date_key", today)
+      .order("date_key", { ascending: false })
       .limit(50);
 
-    // Filter to past events (event_date < today)
-    rsvps = ((data as unknown as RSVPWithEvent[]) || []).filter((r) => {
-      if (!r.event?.event_date) return false;
-      return r.event.event_date < today;
-    });
-
-    // Sort by event date (most recent first)
-    rsvps.sort((a, b) => {
-      const dateA = a.event?.event_date || "";
-      const dateB = b.event?.event_date || "";
-      return dateB.localeCompare(dateA);
-    });
+    rsvps = (data as unknown as RSVPWithEvent[]) || [];
 
   } else {
-    // Cancelled: cancelled RSVPs
+    // Phase ABC7: Cancelled RSVPs with date_key
     const { data } = await supabase
       .from("event_rsvps")
       .select(`
-        id, status, waitlist_position, offer_expires_at, created_at,
-        event:events(id, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
+        id, status, waitlist_position, offer_expires_at, created_at, date_key,
+        event:events(id, slug, title, event_date, start_time, end_time, venue_name, venue_address, cover_image_url)
       `)
       .eq("user_id", userId)
       .eq("status", "cancelled")
@@ -115,13 +94,13 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
     rsvps = (data as unknown as RSVPWithEvent[]) || [];
   }
 
-  // Count for badges
+  // Phase ABC7: Count badges use date_key instead of event.event_date
   const { count: upcomingCount } = await supabase
     .from("event_rsvps")
-    .select("id, events!inner(event_date)", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .in("status", ["confirmed", "waitlist", "offered"])
-    .or(`event_date.gte.${today},event_date.is.null`, { referencedTable: "events" });
+    .gte("date_key", today);
 
   const { count: cancelledCount } = await supabase
     .from("event_rsvps")
@@ -224,6 +203,7 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
                   waitlist_position: rsvp.waitlist_position,
                   offer_expires_at: rsvp.offer_expires_at,
                   created_at: rsvp.created_at,
+                  date_key: rsvp.date_key, // Phase ABC7: Pass date_key for cancel action
                 }}
                 event={rsvp.event}
                 showCancel={activeTab === "upcoming"}

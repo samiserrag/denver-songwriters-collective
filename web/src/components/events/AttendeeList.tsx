@@ -34,6 +34,8 @@ interface AttendeeListProps {
   hasTimeslots?: boolean;
   /** Number of confirmed performers (from timeslot claims) */
   performerCount?: number;
+  /** Phase ABC6: date_key for per-occurrence RSVP scoping */
+  dateKey?: string;
 }
 
 /**
@@ -42,7 +44,7 @@ interface AttendeeListProps {
  * Shows members who have RSVP'd with links to their profiles.
  * RSVP = audience "planning to attend" (not performer signup)
  */
-export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0 }: AttendeeListProps) {
+export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0, dateKey }: AttendeeListProps) {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,8 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
       try {
         // Fetch confirmed RSVPs with profile info (members) and guest fields
         // Uses event_rsvps_user_id_profiles_fkey (FK to profiles, not auth.users)
-        const { data, error: fetchError } = await supabase
+        // Phase ABC6: Filter by date_key when provided for per-occurrence scoping
+        let query = supabase
           .from("event_rsvps")
           .select(`
             id,
@@ -69,8 +72,13 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
             )
           `)
           .eq("event_id", eventId)
-          .eq("status", "confirmed")
-          .order("created_at", { ascending: true });
+          .eq("status", "confirmed");
+
+        if (dateKey) {
+          query = query.eq("date_key", dateKey);
+        }
+
+        const { data, error: fetchError } = await query.order("created_at", { ascending: true });
 
         if (fetchError) {
           throw fetchError;
@@ -88,7 +96,7 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
     }
 
     fetchAttendees();
-  }, [eventId, supabase]);
+  }, [eventId, supabase, dateKey]);
 
   if (loading) {
     return (

@@ -469,6 +469,12 @@ export default function AdminVenuesClient() {
                     </Link>
                   </td>
                   <td className="px-3 py-2 space-x-2">
+                    <Link
+                      href={`/dashboard/admin/venues/${venue.id}`}
+                      className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-xs"
+                    >
+                      Managers
+                    </Link>
                     <button
                       onClick={() => setEditingVenue(venue)}
                       className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] text-xs"

@@ -41,6 +41,7 @@ export default async function AdminDashboardPage() {
     pendingBlogRes,
     pendingGalleryRes,
     hostRequestsRes,
+    pendingVenueClaimsRes,
     siteSettings,
   ] = await Promise.all([
     supabase.from("events").select("*", { count: "exact", head: true }),
@@ -51,6 +52,7 @@ export default async function AdminDashboardPage() {
     supabase.from("blog_posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("gallery_images").select("*", { count: "exact", head: true }).eq("is_approved", false),
     supabase.from("host_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("venue_claims").select("*", { count: "exact", head: true }).eq("status", "pending"),
     getSiteSettings(),
   ]);
 
@@ -62,9 +64,10 @@ export default async function AdminDashboardPage() {
   const pendingBlog = (pendingBlogRes as { count: number | null }).count ?? 0;
   const pendingGallery = (pendingGalleryRes as { count: number | null }).count ?? 0;
   const pendingHostRequests = (hostRequestsRes as { count: number | null }).count ?? 0;
+  const pendingVenueClaims = (pendingVenueClaimsRes as { count: number | null }).count ?? 0;
 
   // Calculate total pending items
-  const totalPending = pendingSuggestions + pendingBlog + pendingGallery + pendingHostRequests;
+  const totalPending = pendingSuggestions + pendingBlog + pendingGallery + pendingHostRequests + pendingVenueClaims;
 
   return (
     <main className="min-h-screen py-12 px-6">
@@ -122,6 +125,15 @@ export default async function AdminDashboardPage() {
                 >
                   <span className="text-[var(--color-text-primary)]">Host Requests</span>
                   <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 text-sm rounded-full">{pendingHostRequests}</span>
+                </Link>
+              )}
+              {pendingVenueClaims > 0 && (
+                <Link
+                  href="/dashboard/admin/venue-claims"
+                  className="flex items-center justify-between p-3 rounded-lg bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] transition-colors"
+                >
+                  <span className="text-[var(--color-text-primary)]">Venue Claims</span>
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 text-sm rounded-full">{pendingVenueClaims}</span>
                 </Link>
               )}
               {pendingBlog > 0 && (
@@ -233,6 +245,16 @@ export default async function AdminDashboardPage() {
               <div>
                 <span className="text-[var(--color-text-primary)] font-medium">Ops Console</span>
                 <p className="text-sm text-[var(--color-text-secondary)]">Bulk CSV operations for happenings, venues, and overrides</p>
+              </div>
+              <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
+            </Link>
+            <Link
+              href="/dashboard/admin/venue-claims"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
+            >
+              <div>
+                <span className="text-[var(--color-text-primary)] font-medium">Venue Claims</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Review and approve venue ownership claims</p>
               </div>
               <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
             </Link>

@@ -10,6 +10,11 @@ import {
   hashCode,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail, getVerificationCodeEmail } from "@/lib/email";
+import {
+  validateDateKeyForWrite,
+  dateKeyErrorResponse,
+  formatDateKeyShort,
+} from "@/lib/events/dateKeyContract";
 
 const {
   CODE_EXPIRES_MINUTES,
@@ -22,6 +27,8 @@ interface RequestCodeBody {
   guest_email: string;
   content: string;
   parent_id?: string | null;
+  /** Phase ABC6: date_key for per-occurrence comments */
+  date_key?: string;
 }
 
 /**
@@ -38,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as RequestCodeBody;
-    const { event_id, guest_name, guest_email, content, parent_id } = body;
+    const { event_id, guest_name, guest_email, content, parent_id, date_key: providedDateKey } = body;
 
     // Validate required fields
     if (!event_id || !guest_name || !guest_email || !content) {
@@ -84,6 +91,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient();
     const normalizedEmail = guest_email.toLowerCase().trim();
+
+    // Phase ABC6: Validate date_key and check for cancelled occurrence
+    const dateKeyResult = await validateDateKeyForWrite(event_id, providedDateKey);
+    if (!dateKeyResult.success) {
+      return dateKeyErrorResponse(dateKeyResult.error);
+    }
+    const { effectiveDateKey } = dateKeyResult;
 
     // Fetch event and validate
     const { data: event, error: eventError } = await supabase
@@ -175,6 +189,7 @@ export async function POST(request: NextRequest) {
       parent_id: parent_id || null,
     });
 
+    // Phase ABC6: Include date_key in verification record
     const { data: verification, error: insertError } = await supabase
       .from("guest_verifications")
       .insert({
@@ -192,6 +207,7 @@ export async function POST(request: NextRequest) {
         // Store pending comment data in action_type field
         action_type: "comment",
         action_token: pendingCommentData,
+        date_key: effectiveDateKey,
       })
       .select("id")
       .single();
@@ -205,12 +221,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Send verification code email
+    // Phase ABC6: Include occurrence date for context
     const emailContent = getVerificationCodeEmail({
       guestName: trimmedName,
       eventTitle: event.title || "Event",
       code,
       expiresInMinutes: CODE_EXPIRES_MINUTES,
       purpose: "comment",
+      occurrenceDate: formatDateKeyShort(effectiveDateKey),
     });
 
     await sendEmail({
@@ -226,12 +244,13 @@ export async function POST(request: NextRequest) {
       console.log(`[DEV] Comment verification code for @${domain}: ${code}`);
     }
 
-    // Return generic success
+    // Phase ABC6: Return generic success with date_key
     return NextResponse.json({
       success: true,
       message: "Verification code sent",
       verification_id: verification.id,
       expires_at: expiresAt,
+      date_key: effectiveDateKey,
     });
   } catch (error) {
     console.error("Request comment code error:", error);

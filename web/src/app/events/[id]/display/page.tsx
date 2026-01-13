@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import QRCode from "qrcode";
+import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 
 interface Performer {
   id: string;
@@ -26,15 +27,19 @@ interface TimeslotWithClaim {
 }
 
 interface LineupState {
-  current_slot_index: number | null;
-  is_live: boolean;
+  now_playing_timeslot_id: string | null;
+  updated_at: string | null;
 }
 
 interface EventInfo {
+  id: string;
   title: string;
   venue_name: string | null;
   start_time: string | null;
   event_date: string | null;
+  is_recurring: boolean;
+  day_of_week: string | null;
+  recurrence_rule: string | null;
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
@@ -59,6 +64,7 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
 
 export default function EventDisplayPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const eventId = params.id as string;
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
 
@@ -69,6 +75,12 @@ export default function EventDisplayPage() {
   const [loading, setLoading] = React.useState(true);
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
+  // Phase ABC7: Track effective date_key for this occurrence
+  const [effectiveDateKey, setEffectiveDateKey] = React.useState<string | null>(null);
+
+  // Get date from URL param
+  const urlDate = searchParams.get("date");
+
   // Update current time every second
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -77,20 +89,55 @@ export default function EventDisplayPage() {
 
   // Fetch event data
   const fetchData = React.useCallback(async () => {
-    // Fetch event info
+    // Fetch event info with recurrence fields for date_key computation
     const { data: eventData } = await supabase
       .from("events")
-      .select("title, venue_name, start_time, event_date")
+      .select("id, title, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
       .eq("id", eventId)
       .single();
 
-    if (eventData) setEvent(eventData);
+    if (!eventData) {
+      setLoading(false);
+      return;
+    }
 
-    // Fetch timeslots with claims
+    setEvent(eventData);
+
+    // Phase ABC7: Compute effective date_key for this occurrence
+    let dateKey: string;
+
+    if (eventData.is_recurring) {
+      // For recurring events, expand occurrences and find valid date
+      const occurrences = expandOccurrencesForEvent({
+        event_date: eventData.event_date,
+        day_of_week: eventData.day_of_week,
+        recurrence_rule: eventData.recurrence_rule,
+      });
+      const dates = occurrences.map(occ => occ.dateKey);
+
+      if (urlDate && dates.includes(urlDate)) {
+        // Use URL-provided date if valid
+        dateKey = urlDate;
+      } else if (dates.length > 0) {
+        // Default to next upcoming occurrence
+        dateKey = dates[0];
+      } else {
+        // Fallback to today if no occurrences (edge case)
+        dateKey = new Date().toISOString().split("T")[0];
+      }
+    } else {
+      // One-time event: date_key is the event_date
+      dateKey = eventData.event_date || new Date().toISOString().split("T")[0];
+    }
+
+    setEffectiveDateKey(dateKey);
+
+    // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
     const { data: slots } = await supabase
       .from("event_timeslots")
       .select("id, slot_index, start_offset_minutes, duration_minutes")
       .eq("event_id", eventId)
+      .eq("date_key", dateKey)
       .order("slot_index", { ascending: true });
 
     if (slots && slots.length > 0) {
@@ -154,17 +201,22 @@ export default function EventDisplayPage() {
       setQrCodes(newQrCodes);
     }
 
-    // Fetch lineup state
+    // Phase ABC7: Fetch lineup state filtered by (event_id, date_key)
     const { data: state } = await supabase
       .from("event_lineup_state")
-      .select("current_slot_index, is_live")
+      .select("now_playing_timeslot_id, updated_at")
       .eq("event_id", eventId)
-      .single();
+      .eq("date_key", dateKey)
+      .maybeSingle();
 
-    if (state) setLineupState(state);
+    if (state) {
+      setLineupState(state);
+    } else {
+      setLineupState(null);
+    }
 
     setLoading(false);
-  }, [eventId, supabase]);
+  }, [eventId, supabase, urlDate]);
 
   // Initial fetch and auto-refresh every 5 seconds
   React.useEffect(() => {
@@ -172,6 +224,17 @@ export default function EventDisplayPage() {
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Phase ABC7: Compute current slot from timeslot ID (must be before early returns for hooks rules)
+  const currentSlotIndex = React.useMemo(() => {
+    if (!lineupState?.now_playing_timeslot_id) return -1;
+    return timeslots.findIndex(s => s.id === lineupState.now_playing_timeslot_id);
+  }, [lineupState, timeslots]);
+
+  const isLive = lineupState?.now_playing_timeslot_id !== null && lineupState?.now_playing_timeslot_id !== undefined;
+  const nowPlayingSlot = isLive && currentSlotIndex >= 0 ? timeslots[currentSlotIndex] : null;
+  const upNextSlots = timeslots.filter((_, idx) => idx > currentSlotIndex).slice(0, 5);
+  const completedSlots = currentSlotIndex >= 0 ? timeslots.filter((_, idx) => idx < currentSlotIndex) : [];
 
   if (loading) {
     return (
@@ -183,28 +246,22 @@ export default function EventDisplayPage() {
     );
   }
 
-  const currentSlotIndex = lineupState?.current_slot_index ?? -1;
-  const isLive = lineupState?.is_live ?? false;
-  const nowPlayingSlot = isLive ? timeslots.find(s => s.slot_index === currentSlotIndex) : null;
-  const upNextSlots = timeslots.filter(s => s.slot_index > currentSlotIndex).slice(0, 5);
-  const completedSlots = timeslots.filter(s => s.slot_index < currentSlotIndex);
-
   return (
     <div className="min-h-screen bg-black text-white p-8 overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
         <div className="flex items-center gap-6">
-          {/* Date Box */}
-          {event?.event_date && (
+          {/* Date Box - Phase ABC7: Use effectiveDateKey for occurrence date */}
+          {effectiveDateKey && (
             <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black">
               <span className="text-sm font-semibold uppercase tracking-wide">
-                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
               </span>
               <span className="text-4xl font-bold leading-none">
-                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
+                {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
               </span>
               <span className="text-xs font-medium uppercase">
-                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
+                {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
               </span>
             </div>
           )}
@@ -215,9 +272,10 @@ export default function EventDisplayPage() {
             {event?.venue_name && (
               <p className="text-xl text-gray-400 mt-1">{event.venue_name}</p>
             )}
-            {event?.event_date && (
+            {/* Phase ABC7: Use effectiveDateKey for occurrence date display */}
+            {effectiveDateKey && (
               <p className="text-sm text-gray-500 mt-1">
-                {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+                {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
                   day: "numeric",

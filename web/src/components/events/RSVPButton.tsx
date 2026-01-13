@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { formatTimeRemaining } from "@/lib/waitlistOfferClient";
@@ -9,6 +9,8 @@ interface RSVPButtonProps {
   eventId: string;
   capacity: number | null;
   initialConfirmedCount?: number;
+  /** Phase ABC6: date_key for per-occurrence RSVP scoping */
+  dateKey?: string;
 }
 
 interface RSVPData {
@@ -25,9 +27,18 @@ export function RSVPButton({
   eventId,
   capacity,
   initialConfirmedCount = 0,
+  dateKey,
 }: RSVPButtonProps) {
   const router = useRouter();
   const supabase = createClient();
+
+  // Phase ABC6: Build API URL with optional date_key
+  const buildRsvpUrl = useCallback((base: string) => {
+    if (dateKey) {
+      return `${base}?date_key=${dateKey}`;
+    }
+    return base;
+  }, [dateKey]);
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [rsvp, setRsvp] = useState<RSVPData | null>(null);
@@ -57,7 +68,8 @@ export function RSVPButton({
       setIsLoggedIn(!!session);
 
       if (session) {
-        const res = await fetch(`/api/events/${eventId}/rsvp`);
+        // Phase ABC6: Include date_key in query
+        const res = await fetch(buildRsvpUrl(`/api/events/${eventId}/rsvp`));
         if (res.ok) {
           const data = await res.json();
           if (data && data.status) {
@@ -67,7 +79,7 @@ export function RSVPButton({
       }
     };
     init();
-  }, [eventId, supabase.auth]);
+  }, [eventId, supabase.auth, buildRsvpUrl]);
 
   const handleRSVP = async () => {
     if (!isLoggedIn) {
@@ -79,10 +91,11 @@ export function RSVPButton({
     setError("");
 
     try {
-      const res = await fetch(`/api/events/${eventId}/rsvp`, {
+      // Phase ABC6: Include date_key in POST body
+      const res = await fetch(buildRsvpUrl(`/api/events/${eventId}/rsvp`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ date_key: dateKey }),
       });
 
       const data = await res.json();
@@ -112,7 +125,8 @@ export function RSVPButton({
     setShowCancelConfirm(false);
 
     try {
-      const res = await fetch(`/api/events/${eventId}/rsvp`, {
+      // Phase ABC6: Include date_key in DELETE
+      const res = await fetch(buildRsvpUrl(`/api/events/${eventId}/rsvp`), {
         method: "DELETE",
       });
 
@@ -139,7 +153,8 @@ export function RSVPButton({
     setError("");
 
     try {
-      const res = await fetch(`/api/events/${eventId}/rsvp`, {
+      // Phase ABC6: Include date_key in PATCH
+      const res = await fetch(buildRsvpUrl(`/api/events/${eventId}/rsvp`), {
         method: "PATCH",
       });
 
@@ -168,6 +183,7 @@ export function RSVPButton({
     setError("");
 
     try {
+      // Phase ABC6: Include date_key in guest RSVP request
       const res = await fetch("/api/guest/rsvp/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -175,6 +191,7 @@ export function RSVPButton({
           event_id: eventId,
           guest_name: guestName.trim(),
           guest_email: guestEmail.trim().toLowerCase(),
+          date_key: dateKey,
         }),
       });
 

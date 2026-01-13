@@ -10,6 +10,7 @@ import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { sendEmail } from "@/lib/email/mailer";
 import { getTimeslotClaimConfirmationEmail } from "@/lib/email/templates/timeslotClaimConfirmation";
 import { getTimeslotSignupHostNotificationEmail } from "@/lib/email/templates/timeslotSignupHostNotification";
+import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -133,7 +134,20 @@ export async function POST(request: NextRequest) {
 
     const verifiedAt = new Date().toISOString();
 
-    // Check if slot is still available
+    // Phase ABC6: Get date_key from verification record
+    // Note: date_key column added in Phase ABC6 migration, using type assertion until types regenerated
+    const effectiveDateKey = (verification as { date_key?: string }).date_key;
+
+    if (!effectiveDateKey) {
+      // date_key is required for per-occurrence claims (Phase ABC6)
+      return NextResponse.json(
+        { error: "Missing date_key in verification record" },
+        { status: 400 }
+      );
+    }
+
+    // Check if slot is still available for this occurrence
+    // Phase ABC6: Claims inherit occurrence scoping from timeslot_id (timeslots are per-occurrence)
     const { data: existingClaim } = await supabase
       .from("timeslot_claims")
       .select("id, status")
@@ -175,6 +189,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the timeslot claim
+    // Phase ABC6: Claims inherit date_key from their timeslot (via timeslot_id FK)
     const { data: claim, error: claimError } = await supabase
       .from("timeslot_claims")
       .insert({
@@ -221,7 +236,10 @@ export async function POST(request: NextRequest) {
       venue_name: string | null;
       venue_address: string | null;
     };
-    const eventUrl = `/events/${event.slug || event.id}`;
+    // Phase ABC6: Include date in event URL for per-occurrence deep-linking
+    const eventUrl = effectiveDateKey
+      ? `/events/${event.slug || event.id}?date=${effectiveDateKey}`
+      : `/events/${event.slug || event.id}`;
     const guestName = verification.guest_name || "A guest";
     const guestEmail = verification.email;
 
@@ -229,15 +247,19 @@ export async function POST(request: NextRequest) {
     const slotTime = formatSlotTime(event.start_time, timeslot.start_offset_minutes);
     const slotNumber = timeslot.slot_index + 1;
 
-    // Format event date for display
-    const eventDate = event.event_date
-      ? new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+    // Phase ABC6: Use date_key for occurrence date, fallback to event_date
+    const dateKeyForDisplay = effectiveDateKey || event.event_date;
+    const eventDate = dateKeyForDisplay
+      ? new Date(dateKeyForDisplay + "T12:00:00Z").toLocaleDateString("en-US", {
           weekday: "long",
           month: "long",
           day: "numeric",
           timeZone: "America/Denver",
         })
       : "TBD";
+
+    // Phase ABC6: Short date for notifications
+    const occurrenceDateShort = effectiveDateKey ? formatDateKeyShort(effectiveDateKey) : undefined;
 
     // Format event time for display
     const eventTime = event.start_time
@@ -279,10 +301,12 @@ export async function POST(request: NextRequest) {
         event.title || "Event",
         eventUrl,
         slotNumber,
-        slotTime
+        slotTime,
+        occurrenceDateShort
       ).catch((err) => console.error("Failed to notify event host:", err));
     }
 
+    // Phase ABC6: Include date_key in response (from verification, not claim)
     return NextResponse.json({
       success: true,
       claim: {
@@ -291,6 +315,7 @@ export async function POST(request: NextRequest) {
         status: claim.status,
         claimed_at: claim.claimed_at,
       },
+      date_key: effectiveDateKey,
     });
   } catch (error) {
     console.error("Verify timeslot claim code error:", error);
@@ -329,10 +354,13 @@ async function notifyEventHost(
   eventTitle: string,
   eventUrl: string,
   slotNumber: number,
-  slotTime: string | null
+  slotTime: string | null,
+  occurrenceDate?: string
 ) {
-  const title = `${guestName} (guest) signed up for slot ${slotNumber}`;
-  const message = `${guestName} (guest) claimed slot ${slotNumber} for "${eventTitle}"`;
+  // Phase ABC6: Include occurrence date in notification messages
+  const dateText = occurrenceDate ? ` (${occurrenceDate})` : "";
+  const title = `${guestName} (guest) signed up for slot ${slotNumber}${dateText}`;
+  const message = `${guestName} (guest) claimed slot ${slotNumber} for "${eventTitle}"${dateText}`;
 
   const { data: userData } = await supabase.auth.admin.getUserById(hostId);
   const userEmail = userData?.user?.email;
@@ -344,6 +372,7 @@ async function notifyEventHost(
     slotNumber,
     slotTime: slotTime || undefined,
     isGuest: true,
+    occurrenceDate, // Phase ABC6: Pass occurrence date to email
   });
 
   await sendEmailWithPreferences({

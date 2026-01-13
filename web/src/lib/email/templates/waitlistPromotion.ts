@@ -29,6 +29,8 @@ export interface WaitlistPromotionEmailParams {
   /** Prefer slug for SEO-friendly URLs, falls back to eventId */
   eventSlug?: string | null;
   offerExpiresAt?: string; // ISO timestamp
+  /** Phase ABC6: Occurrence date key (YYYY-MM-DD) for per-occurrence waitlists */
+  dateKey?: string;
 }
 
 export function getWaitlistPromotionEmail(params: WaitlistPromotionEmailParams): {
@@ -36,7 +38,7 @@ export function getWaitlistPromotionEmail(params: WaitlistPromotionEmailParams):
   html: string;
   text: string;
 } {
-  const { userName, eventTitle, eventDate, eventTime, venueName, eventId, eventSlug, offerExpiresAt } = params;
+  const { userName, eventTitle, eventDate, eventTime, venueName, eventId, eventSlug, offerExpiresAt, dateKey } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeVenue = escapeHtml(venueName);
@@ -45,8 +47,10 @@ export function getWaitlistPromotionEmail(params: WaitlistPromotionEmailParams):
 
   // Prefer slug for SEO-friendly URLs, fallback to id
   const eventIdentifier = eventSlug || eventId;
-  const confirmUrl = `${SITE_URL}/events/${eventIdentifier}?confirm=true`;
-  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
+  // Phase ABC6: Include date_key in URLs for per-occurrence waitlists
+  const dateParam = dateKey ? `date=${dateKey}&` : "";
+  const confirmUrl = `${SITE_URL}/events/${eventIdentifier}?${dateParam}confirm=true`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?${dateParam}cancel=true`;
 
   // Format expiry time for display
   let expiryMessage = "";
@@ -102,7 +106,7 @@ ${paragraph(`Good news! A spot just opened up at <strong>${safeTitle}</strong>, 
 
 ${createButton("Confirm my spot", confirmUrl, "green")}
 
-${eventCard(eventTitle, `${SITE_URL}/events/${eventIdentifier}`)}
+${eventCard(eventTitle, `${SITE_URL}/events/${eventIdentifier}${dateKey ? `?date=${dateKey}` : ""}`)}
 
 ${rsvpsDashboardLink()}
 

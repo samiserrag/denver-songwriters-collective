@@ -10,6 +10,8 @@ interface GuestTimeslotClaimFormProps {
   slotLabel: string;
   onClaimSuccess: () => void;
   onCancel: () => void;
+  /** Phase ABC6: date_key for per-occurrence timeslot claim scoping */
+  dateKey?: string;
 }
 
 export function GuestTimeslotClaimForm({
@@ -18,6 +20,7 @@ export function GuestTimeslotClaimForm({
   slotLabel,
   onClaimSuccess,
   onCancel,
+  dateKey,
 }: GuestTimeslotClaimFormProps) {
   const [formState, setFormState] = useState<FormState>("form");
   const [name, setName] = useState("");
@@ -33,6 +36,7 @@ export function GuestTimeslotClaimForm({
     setLoading(true);
 
     try {
+      // Phase ABC6: Include date_key in guest timeslot claim request
       const res = await fetch("/api/guest/timeslot-claim/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,6 +45,7 @@ export function GuestTimeslotClaimForm({
           timeslot_id: timeslotId,
           guest_name: name.trim(),
           guest_email: email.trim(),
+          date_key: dateKey,
         }),
       });
 

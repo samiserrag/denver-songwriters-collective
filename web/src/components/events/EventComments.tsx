@@ -34,6 +34,8 @@ interface EventCommentsProps {
   eventId: string;
   /** Event host user ID (for moderation) */
   hostId?: string;
+  /** Phase ABC6: date_key for per-occurrence comment scoping */
+  dateKey?: string;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -88,8 +90,9 @@ type GuestFlowState = "idle" | "form" | "verification" | "success";
  * Guest Comment Form Component
  *
  * Handles the email verification flow for guest comments.
+ * Phase ABC6: Added dateKey for per-occurrence comment scoping.
  */
-function GuestCommentForm({ eventId, onSuccess }: { eventId: string; onSuccess: () => void }) {
+function GuestCommentForm({ eventId, dateKey, onSuccess }: { eventId: string; dateKey?: string; onSuccess: () => void }) {
   const [guestFlow, setGuestFlow] = useState<GuestFlowState>("idle");
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -106,6 +109,7 @@ function GuestCommentForm({ eventId, onSuccess }: { eventId: string; onSuccess: 
     setError("");
 
     try {
+      // Phase ABC6: Include date_key in guest comment request
       const res = await fetch("/api/guest/event-comment/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,6 +118,7 @@ function GuestCommentForm({ eventId, onSuccess }: { eventId: string; onSuccess: 
           guest_name: guestName.trim(),
           guest_email: guestEmail.trim().toLowerCase(),
           content: guestComment.trim(),
+          date_key: dateKey,
         }),
       });
 
@@ -338,7 +343,7 @@ function GuestCommentForm({ eventId, onSuccess }: { eventId: string; onSuccess: 
  * Phase 4.49b: Comments for all events (DSC + community)
  * Supports both member comments and guest comments (via verification)
  */
-export function EventComments({ eventId, hostId }: EventCommentsProps) {
+export function EventComments({ eventId, hostId, dateKey }: EventCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -370,11 +375,20 @@ export function EventComments({ eventId, hostId }: EventCommentsProps) {
     fetchUser();
   }, [supabase]);
 
+  // Phase ABC6: Build API URL with optional date_key
+  const buildCommentsUrl = useCallback((base: string) => {
+    if (dateKey) {
+      return `${base}?date_key=${dateKey}`;
+    }
+    return base;
+  }, [dateKey]);
+
   // Fetch comments via API
   const fetchComments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/events/${eventId}/comments`);
+      // Phase ABC6: Include date_key in query
+      const res = await fetch(buildCommentsUrl(`/api/events/${eventId}/comments`));
       const data = await res.json();
 
       if (!res.ok) {
@@ -404,7 +418,7 @@ export function EventComments({ eventId, hostId }: EventCommentsProps) {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, buildCommentsUrl]);
 
   useEffect(() => {
     void fetchComments();
@@ -434,10 +448,11 @@ export function EventComments({ eventId, hostId }: EventCommentsProps) {
     setError(null);
 
     try {
-      const res = await fetch(`/api/events/${eventId}/comments`, {
+      // Phase ABC6: Include date_key in POST request
+      const res = await fetch(buildCommentsUrl(`/api/events/${eventId}/comments`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, parent_id: parentId }),
+        body: JSON.stringify({ content, parent_id: parentId, date_key: dateKey }),
       });
 
       const data = await res.json();
@@ -718,7 +733,7 @@ export function EventComments({ eventId, hostId }: EventCommentsProps) {
           </div>
         </form>
       ) : (
-        <GuestCommentForm eventId={eventId} onSuccess={fetchComments} />
+        <GuestCommentForm eventId={eventId} dateKey={dateKey} onSuccess={fetchComments} />
       )}
     </section>
   );

@@ -27,6 +27,8 @@ export interface RsvpHostNotificationEmailParams {
   isWaitlist: boolean;
   /** Recipient's name (optional) */
   recipientName?: string | null;
+  /** Phase ABC6: Occurrence date for display (e.g., "Sat, Jan 18") */
+  occurrenceDate?: string;
 }
 
 export function getRsvpHostNotificationEmail(params: RsvpHostNotificationEmailParams): {
@@ -40,14 +42,17 @@ export function getRsvpHostNotificationEmail(params: RsvpHostNotificationEmailPa
     rsvpUserName,
     isWaitlist,
     recipientName,
+    occurrenceDate,
   } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeUserName = escapeHtml(rsvpUserName);
 
+  // Phase ABC6: Include occurrence date in subject if provided
+  const dateText = occurrenceDate ? ` on ${occurrenceDate}` : "";
   const subject = isWaitlist
-    ? `${rsvpUserName} joined the waitlist for "${eventTitle}"`
-    : `${rsvpUserName} is going to "${eventTitle}"`;
+    ? `${rsvpUserName} joined the waitlist for "${eventTitle}"${dateText}`
+    : `${rsvpUserName} is going to "${eventTitle}"${dateText}`;
 
   // HTML version
   const htmlContent = `
@@ -55,8 +60,8 @@ export function getRsvpHostNotificationEmail(params: RsvpHostNotificationEmailPa
 
     ${paragraph(
       isWaitlist
-        ? `<strong>${safeUserName}</strong> just joined the waitlist for <strong>"${safeTitle}"</strong>.`
-        : `<strong>${safeUserName}</strong> just RSVP'd to <strong>"${safeTitle}"</strong>.`
+        ? `<strong>${safeUserName}</strong> just joined the waitlist for <strong>"${safeTitle}"</strong>${dateText}.`
+        : `<strong>${safeUserName}</strong> just RSVP'd to <strong>"${safeTitle}"</strong>${dateText}.`
     )}
 
     ${paragraph(
@@ -79,11 +84,11 @@ export function getRsvpHostNotificationEmail(params: RsvpHostNotificationEmailPa
 
   // Plain text version
   const textContent = `
-${isWaitlist ? `${rsvpUserName} joined the waitlist` : `${rsvpUserName} is going`}
+${isWaitlist ? `${rsvpUserName} joined the waitlist${dateText}` : `${rsvpUserName} is going${dateText}`}
 
 ${isWaitlist
-  ? `${rsvpUserName} just joined the waitlist for "${eventTitle}".`
-  : `${rsvpUserName} just RSVP'd to "${eventTitle}".`}
+  ? `${rsvpUserName} just joined the waitlist for "${eventTitle}"${dateText}.`
+  : `${rsvpUserName} just RSVP'd to "${eventTitle}"${dateText}.`}
 
 ${isWaitlist
   ? `They'll be notified if a spot opens up.`

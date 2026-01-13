@@ -35,6 +35,8 @@ export interface RsvpConfirmationEmailParams {
   guestName?: string;
   /** Direct cancel URL for guests (bypasses dashboard) */
   cancelUrl?: string;
+  /** Phase ABC6: Occurrence date key (YYYY-MM-DD) for per-occurrence RSVPs */
+  dateKey?: string;
 }
 
 export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
@@ -55,6 +57,7 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
     waitlistPosition,
     guestName,
     cancelUrl: providedCancelUrl,
+    dateKey,
   } = params;
 
   const safeTitle = escapeHtml(eventTitle);
@@ -69,9 +72,11 @@ export function getRsvpConfirmationEmail(params: RsvpConfirmationEmailParams): {
 
   // Prefer slug for SEO-friendly URLs, fallback to id
   const eventIdentifier = eventSlug || eventId;
-  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
+  // Phase ABC6: Include date_key in URLs for per-occurrence RSVPs
+  const dateParam = dateKey ? `?date=${dateKey}` : "";
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam}`;
   // Use provided cancel URL for guests, otherwise default to dashboard cancel
-  const cancelUrl = providedCancelUrl || `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
+  const cancelUrl = providedCancelUrl || `${SITE_URL}/events/${eventIdentifier}${dateParam ? dateParam + "&" : "?"}cancel=true`;
 
   if (isWaitlist) {
     return getWaitlistVariant({

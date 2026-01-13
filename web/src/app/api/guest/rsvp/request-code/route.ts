@@ -10,6 +10,11 @@ import {
   hashCode,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail, getVerificationCodeEmail } from "@/lib/email";
+import {
+  validateDateKeyForWrite,
+  dateKeyErrorResponse,
+  formatDateKeyShort,
+} from "@/lib/events/dateKeyContract";
 
 const {
   CODE_EXPIRES_MINUTES,
@@ -20,6 +25,8 @@ interface RequestCodeBody {
   event_id: string;
   guest_name: string;
   guest_email: string;
+  /** Phase ABC6: date_key for per-occurrence RSVPs */
+  date_key?: string;
 }
 
 /**
@@ -36,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as RequestCodeBody;
-    const { event_id, guest_name, guest_email } = body;
+    const { event_id, guest_name, guest_email, date_key: providedDateKey } = body;
 
     // Validate required fields
     if (!event_id || !guest_name || !guest_email) {
@@ -67,6 +74,13 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient();
     const normalizedEmail = guest_email.toLowerCase().trim();
 
+    // Phase ABC6: Validate date_key and check for cancelled occurrence
+    const dateKeyResult = await validateDateKeyForWrite(event_id, providedDateKey);
+    if (!dateKeyResult.success) {
+      return dateKeyErrorResponse(dateKeyResult.error);
+    }
+    const { effectiveDateKey } = dateKeyResult;
+
     // Fetch event and validate
     const { data: event, error: eventError } = await supabase
       .from("events")
@@ -92,18 +106,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for existing active RSVP by this email on this event
+    // Check for existing active RSVP by this email on this occurrence
+    // Phase ABC6: RSVPs are scoped by date_key
     const { data: existingRsvp } = await supabase
       .from("event_rsvps")
       .select("id, status")
       .eq("event_id", event_id)
+      .eq("date_key", effectiveDateKey)
       .eq("guest_email", normalizedEmail)
       .neq("status", "cancelled")
       .maybeSingle();
 
     if (existingRsvp) {
       return NextResponse.json(
-        { error: "You already have an RSVP for this event" },
+        { error: "You already have an RSVP for this occurrence" },
         { status: 409 }
       );
     }
@@ -161,17 +177,20 @@ export async function POST(request: NextRequest) {
       Date.now() + CODE_EXPIRES_MINUTES * 60 * 1000
     ).toISOString();
 
-    // Delete any existing unverified verification for this email+event (for RSVP)
+    // Delete any existing unverified verification for this email+event+date (for RSVP)
     // Note: timeslot_id IS NULL distinguishes RSVP verifications from slot verifications
+    // Phase ABC6: Scoped by date_key
     await supabase
       .from("guest_verifications")
       .delete()
       .eq("email", normalizedEmail)
       .eq("event_id", event_id)
+      .eq("date_key", effectiveDateKey)
       .is("timeslot_id", null)
       .is("verified_at", null);
 
     // Create new verification record (no timeslot_id for RSVPs)
+    // Phase ABC6: Include date_key for per-occurrence scoping
     const { data: verification, error: insertError } = await supabase
       .from("guest_verifications")
       .insert({
@@ -184,6 +203,7 @@ export async function POST(request: NextRequest) {
         code_attempts: 0,
         locked_until: null,
         verified_at: null,
+        date_key: effectiveDateKey,
       })
       .select("id")
       .single();
@@ -197,12 +217,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Send verification code email
+    // Phase ABC6: Include occurrence date for context
     const emailContent = getVerificationCodeEmail({
       guestName: trimmedName,
       eventTitle: event.title || "Event",
       code,
       expiresInMinutes: CODE_EXPIRES_MINUTES,
       purpose: "rsvp",
+      occurrenceDate: formatDateKeyShort(effectiveDateKey),
     });
 
     await sendEmail({
@@ -219,11 +241,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Return generic success (avoid email enumeration)
+    // Phase ABC6: Include date_key in response
     return NextResponse.json({
       success: true,
       message: "Verification code sent",
       verification_id: verification.id,
       expires_at: expiresAt,
+      date_key: effectiveDateKey,
     });
   } catch (error) {
     console.error("Request RSVP code error:", error);

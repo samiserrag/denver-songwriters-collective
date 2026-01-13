@@ -29,6 +29,8 @@ export interface EventCommentNotificationEmailParams {
   isReply: boolean;
   /** Recipient's name (optional) */
   recipientName?: string | null;
+  /** Phase ABC6: Occurrence date for per-occurrence context (e.g., "Sat, Jan 18") */
+  occurrenceDate?: string;
 }
 
 export function getEventCommentNotificationEmail(params: EventCommentNotificationEmailParams): {
@@ -43,15 +45,18 @@ export function getEventCommentNotificationEmail(params: EventCommentNotificatio
     commentPreview,
     isReply,
     recipientName,
+    occurrenceDate,
   } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeCommenter = escapeHtml(commenterName);
   const safePreview = escapeHtml(commentPreview);
+  // Phase ABC6: Include occurrence date in subject and message for context
+  const dateText = occurrenceDate ? ` (${occurrenceDate})` : "";
 
   const subject = isReply
     ? `${commenterName} replied to your comment`
-    : `New comment on "${eventTitle}"`;
+    : `New comment on "${eventTitle}"${dateText}`;
 
   // HTML version
   const htmlContent = `
@@ -59,8 +64,8 @@ export function getEventCommentNotificationEmail(params: EventCommentNotificatio
 
     ${paragraph(
       isReply
-        ? `<strong>${safeCommenter}</strong> replied to your comment on <strong>"${safeTitle}"</strong>:`
-        : `<strong>${safeCommenter}</strong> left a comment on your happening <strong>"${safeTitle}"</strong>:`
+        ? `<strong>${safeCommenter}</strong> replied to your comment on <strong>"${safeTitle}"</strong>${dateText}:`
+        : `<strong>${safeCommenter}</strong> left a comment on your happening <strong>"${safeTitle}"</strong>${dateText}:`
     )}
 
     <!-- Comment preview box -->
@@ -88,11 +93,11 @@ export function getEventCommentNotificationEmail(params: EventCommentNotificatio
 
   // Plain text version
   const textContent = `
-${isReply ? `${commenterName} replied to your comment` : `New comment on "${eventTitle}"`}
+${isReply ? `${commenterName} replied to your comment` : `New comment on "${eventTitle}"${dateText}`}
 
 ${isReply
-  ? `${commenterName} replied to your comment on "${eventTitle}":`
-  : `${commenterName} left a comment on your happening "${eventTitle}":`}
+  ? `${commenterName} replied to your comment on "${eventTitle}"${dateText}:`
+  : `${commenterName} left a comment on your happening "${eventTitle}"${dateText}:`}
 
 "${commentPreview}${commentPreview.length >= 200 ? "..." : ""}"
 
