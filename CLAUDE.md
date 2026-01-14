@@ -315,6 +315,22 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Hotfix: Venue Invite RLS Policy (January 2026) — RESOLVED
+
+**Goal:** Fix venue invite creation failing with "Failed to create invite" error.
+
+**Status:** Fixed.
+
+**Root Cause:** The RLS policy `"Admins can manage all venue invites"` had only a `USING` clause but no `WITH CHECK` clause. PostgreSQL RLS requires `WITH CHECK` for INSERT operations - `USING` alone only controls SELECT/UPDATE/DELETE.
+
+**Fix:** Recreated the policy with both `USING` and `WITH CHECK` clauses.
+
+**Migration:** `20260113210000_fix_venue_invites_rls_insert.sql`
+
+**Lesson:** When creating `FOR ALL` RLS policies, always include both `USING` and `WITH CHECK` clauses.
+
+---
+
 ### Phase 4.69 — Event Detail Timeslot Performance Fix (January 2026) — RESOLVED
 
 **Goal:** Fix slow loading of event detail pages with timeslots (~3 seconds).
