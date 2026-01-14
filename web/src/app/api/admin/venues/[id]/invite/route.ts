@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { SITE_URL } from "@/lib/email/render";
 import crypto from "crypto";
 
 export async function POST(
@@ -76,8 +77,7 @@ export async function POST(
     }
 
     // Build the invite URL (token shown only once)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const inviteUrl = `${siteUrl}/venue-invite?token=${token}`;
+    const inviteUrl = `${SITE_URL}/venue-invite?token=${token}`;
 
     return NextResponse.json({
       success: true,

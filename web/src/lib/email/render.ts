@@ -19,7 +19,7 @@
 
 import { escapeHtml } from "@/lib/highlight";
 
-const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
 
 export { SITE_URL };
 
