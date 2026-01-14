@@ -69,14 +69,8 @@ export async function POST(
 
     if (insertError) {
       console.error("[VenueInvite] Insert error:", insertError);
-      // Return detailed error for debugging (RLS or constraint issue)
       return NextResponse.json(
-        {
-          error: "Failed to create invite",
-          details: insertError.message,
-          code: insertError.code,
-          hint: insertError.hint
-        },
+        { error: "Failed to create invite" },
         { status: 500 }
       );
     }
