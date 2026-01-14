@@ -315,6 +315,32 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 4.69 — Event Detail Timeslot Performance Fix (January 2026) — RESOLVED
+
+**Goal:** Fix slow loading of event detail pages with timeslots (~3 seconds).
+
+**Status:** Implementation complete.
+
+**Problem:** Event detail page was fetching ALL timeslots across ALL dates for recurring events. For a weekly event with 10 slots × 13 weeks = 130 rows fetched when only 10 needed for the selected date.
+
+**Solution:** Scope RSVP and timeslot queries by `date_key` (the selected occurrence date):
+- RSVP count query now filters by `date_key` when available
+- Timeslot count query now filters by `date_key` when available
+- Claims query inherits the scoping through slotIds
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | Scoped RSVP and timeslot queries by `date_key` |
+
+**Performance Impact:**
+- Before: ~130 rows fetched for weekly recurring events
+- After: ~10 rows fetched (only for selected date)
+- Expected improvement: ~3s → <1s
+
+---
+
 ### Phase 4.68 — Unified Date Pill Row UI (January 2026) — RESOLVED
 
 **Goal:** Unify venue-series date UI with event-detail pills for visual consistency.

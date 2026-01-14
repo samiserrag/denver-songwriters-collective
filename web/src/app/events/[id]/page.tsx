@@ -471,19 +471,34 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   let timeslotCount = 0;
 
   // Always count RSVPs (RSVP is always available)
-  const { count: rsvpCountResult } = await supabase
+  // Phase 4.69: Scope by date_key for performance - only count RSVPs for selected occurrence
+  let rsvpQuery = supabase
     .from("event_rsvps")
     .select("*", { count: "exact", head: true })
     .eq("event_id", event.id)
     .eq("status", "confirmed");
+
+  if (effectiveSelectedDate) {
+    rsvpQuery = rsvpQuery.eq("date_key", effectiveSelectedDate);
+  }
+
+  const { count: rsvpCountResult } = await rsvpQuery;
   rsvpCount = rsvpCountResult || 0;
 
   // Count performer claims if timeslots are enabled
+  // Phase 4.69: Scope by date_key for performance - only fetch slots for selected occurrence
   if (event.has_timeslots) {
-    const { data: timeslots } = await supabase
+    let timeslotQuery = supabase
       .from("event_timeslots")
       .select("id")
       .eq("event_id", event.id);
+
+    // Scope to selected date if available (recurring events)
+    if (effectiveSelectedDate) {
+      timeslotQuery = timeslotQuery.eq("date_key", effectiveSelectedDate);
+    }
+
+    const { data: timeslots } = await timeslotQuery;
 
     timeslotCount = timeslots?.length || 0;
 
