@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.66):** Lint warnings = 0. All tests passing (1801). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.68):** Lint warnings = 0. All tests passing (1831). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -168,6 +168,7 @@ All must pass before merge:
 |-----------|------|
 | HappeningCard (unified) | `web/src/components/happenings/HappeningCard.tsx` |
 | DateJumpControl | `web/src/components/happenings/DateJumpControl.tsx` |
+| DatePillRow | `web/src/components/happenings/DatePillRow.tsx` |
 | StickyControls | `web/src/components/happenings/StickyControls.tsx` |
 | DateSection | `web/src/components/happenings/DateSection.tsx` |
 | BetaBanner | `web/src/components/happenings/BetaBanner.tsx` |
@@ -311,6 +312,77 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Phase 4.68 — Unified Date Pill Row UI (January 2026) — RESOLVED
+
+**Goal:** Unify venue-series date UI with event-detail pills for visual consistency.
+
+**Status:** Implementation complete.
+
+**New Component:**
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| DatePillRow | `components/happenings/DatePillRow.tsx` | Shared pill row with expand/collapse toggle |
+
+**Features:**
+- 5 visible date pills when collapsed (matches event detail page)
+- "+X more" button with accurate count from `totalUpcomingCount`
+- "Hide dates" when expanded
+- Pills are accessible `<Link>` elements
+- Toggle is accessible `<button>` with `aria-expanded`
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/DatePillRow.tsx` | NEW: Shared pill row component |
+| `components/happenings/SeriesCard.tsx` | Use DatePillRow instead of bullet list |
+
+**Test Coverage:** 12 new tests in `src/__tests__/date-pill-row.test.tsx`
+
+---
+
+### Phase 4.67 — Venue Card Series/One-off Counts (January 2026) — RESOLVED
+
+**Goal:** Replace generic "X happenings" badge on `/venues` cards with detailed series/one-off breakdown.
+
+**Status:** Implementation complete.
+
+**Badge Format:**
+
+| Scenario | Old Badge | New Badge |
+|----------|-----------|-----------|
+| Recurring series only | "1 happening" | "1 series • 12 upcoming" |
+| Both types | "3 happenings" | "2 series • 24 upcoming • 1 one-off" |
+| One-offs only | "2 happenings" | "2 upcoming" |
+| No events | "0 upcoming" | "No upcoming" |
+
+**New Helper:**
+
+| File | Purpose |
+|------|---------|
+| `lib/venue/computeVenueCounts.ts` | Reuses same logic as venue detail page |
+
+**Key Implementation:**
+- Single query for all events, client-side grouping per venue (O(1) queries)
+- De-duplication by title (same scoring algorithm as detail page)
+- `groupEventsAsSeriesView()` for occurrence expansion
+- 90-day window (matches detail page)
+- `totalUpcomingCount` from SeriesEntry gives accurate expanded occurrence counts
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/venues/page.tsx` | Query all event fields, use `computeVenueCountsFromEvents()` |
+| `components/venue/VenueCard.tsx` | Accept `counts` prop, use `formatVenueCountsBadge()` |
+| `components/venue/VenueGrid.tsx` | Pass counts to VenueCard |
+| `app/events/[id]/page.tsx` | Removed `maxOccurrences: 6` limit to align with venue pages |
+
+**Test Coverage:** 18 new tests in `src/__tests__/venue-card-series-counts.test.ts`
 
 ---
 

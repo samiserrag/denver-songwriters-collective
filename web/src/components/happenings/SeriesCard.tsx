@@ -27,8 +27,8 @@ import { getPublicVerificationState } from "@/lib/events/verification";
 import {
   type SeriesEntry,
   type EventForOccurrence,
-  type ExpandedOccurrence,
 } from "@/lib/events/nextOccurrence";
+import { DatePillRow, type DatePillData } from "./DatePillRow";
 
 // ============================================================
 // Types
@@ -175,37 +175,6 @@ const Chip = ({
   </span>
 );
 
-// ============================================================
-// Upcoming Dates List Component
-// ============================================================
-
-function UpcomingDatesList({
-  occurrences,
-  startTime,
-  eventIdentifier,
-}: {
-  occurrences: ExpandedOccurrence[];
-  startTime: string | null;
-  eventIdentifier: string;
-}) {
-  const timeDisplay = formatTimeToAMPM(startTime);
-
-  return (
-    <div className="mt-2 pl-4 border-l-2 border-[var(--color-border-default)] space-y-1">
-      {occurrences.map((occ) => (
-        <Link
-          key={occ.dateKey}
-          href={`/events/${eventIdentifier}?date=${occ.dateKey}`}
-          className="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="mr-1">•</span>
-          {formatDateShort(occ.dateKey)} @ {timeDisplay}
-        </Link>
-      ))}
-    </div>
-  );
-}
 
 // ============================================================
 // Component
@@ -243,16 +212,16 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
     ? formatDateShort(nextOccurrence.date)
     : "Schedule TBD";
 
-  // Calculate how many more dates to show
-  // Skip first occurrence since it's shown as "Next:"
-  const expandableOccurrences = upcomingOccurrences.slice(1);
-  const hasMoreDates = expandableOccurrences.length > 0;
-  const moreCount = totalUpcomingCount - 1; // Subtract the "Next:" date
+  // Build date pill data for DatePillRow
+  const eventIdentifier = event.slug || event.id;
+  const datePills: DatePillData[] = upcomingOccurrences.map((occ) => ({
+    label: formatDateShort(occ.dateKey),
+    href: `/events/${eventIdentifier}?date=${occ.dateKey}`,
+    dateKey: occ.dateKey,
+  }));
 
-  // Handle chevron click (stop propagation to prevent navigation)
-  const handleChevronClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Handle toggle click
+  const handleToggle = () => {
     setIsExpanded(!isExpanded);
   };
 
@@ -335,61 +304,29 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               )}
             </p>
 
-            {/* Next date row with expand toggle */}
-            {/* Phase ABC6: Make next date clickable with ?date= for per-occurrence deep-linking */}
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-sm text-[var(--color-text-primary)]">
-                {isOneTime ? (
-                  <Link
-                    href={`/events/${event.slug || event.id}?date=${nextOccurrence.date}`}
-                    className="hover:text-[var(--color-text-accent)] transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {nextDateDisplay} @ {startTime}
-                  </Link>
-                ) : (
-                  <>
-                    <span className="text-[var(--color-text-secondary)]">Next:</span>{" "}
-                    <Link
-                      href={`/events/${event.slug || event.id}?date=${nextOccurrence.date}`}
-                      className="hover:text-[var(--color-text-accent)] transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {nextDateDisplay} @ {startTime}
-                    </Link>
-                  </>
-                )}
-              </p>
-
-              {/* Expand toggle - only show for recurring with more dates */}
-              {!isOneTime && hasMoreDates && (
-                <button
-                  onClick={handleChevronClick}
-                  className={cn(
-                    "flex items-center gap-1 text-sm text-[var(--color-text-tertiary)]",
-                    "hover:text-[var(--color-text-primary)] transition-colors"
-                  )}
-                  aria-expanded={isExpanded}
-                  aria-label={isExpanded ? "Hide dates" : `Show ${moreCount} more dates`}
+            {/* Date row: one-time events show single date, recurring show pill row */}
+            {isOneTime ? (
+              <p className="text-sm text-[var(--color-text-primary)] mt-1">
+                <Link
+                  href={`/events/${eventIdentifier}?date=${nextOccurrence.date}`}
+                  className="hover:text-[var(--color-text-accent)] transition-colors"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <span className="hidden sm:inline">
-                    {isExpanded ? "Hide dates" : `${moreCount} more`}
-                  </span>
-                  <svg
-                    className={cn(
-                      "w-4 h-4 transition-transform",
-                      isExpanded && "rotate-180"
-                    )}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              )}
-            </div>
+                  {nextDateDisplay} @ {startTime}
+                </Link>
+              </p>
+            ) : (
+              <div className="mt-2">
+                <p className="text-xs text-[var(--color-text-secondary)] mb-1.5">Upcoming dates:</p>
+                <DatePillRow
+                  dates={datePills}
+                  maxVisible={5}
+                  totalCount={totalUpcomingCount}
+                  isExpanded={isExpanded}
+                  onToggle={handleToggle}
+                />
+              </div>
+            )}
 
             {/* Verification status row */}
             <div className="flex items-center gap-1 mt-1 flex-wrap">
@@ -417,17 +354,6 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
           </div>
         </div>
       </Link>
-
-      {/* Expandable upcoming dates - Phase ABC5: Link to event page with ?date= */}
-      {isExpanded && expandableOccurrences.length > 0 && (
-        <div className="px-3 pb-3">
-          <UpcomingDatesList
-            occurrences={expandableOccurrences}
-            startTime={event.start_time ?? null}
-            eventIdentifier={event.slug || event.id}
-          />
-        </div>
-      )}
     </article>
   );
 }
