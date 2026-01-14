@@ -396,17 +396,19 @@ export function EventComments({ eventId, hostId, dateKey }: EventCommentsProps) 
       }
 
       // Normalize the data - handle array author from supabase join
-      const normalized: Comment[] = (data || []).map((c: Record<string, unknown>) => ({
-        id: c.id,
-        content: c.content,
-        created_at: c.created_at,
-        parent_id: c.parent_id,
-        user_id: c.user_id,
-        guest_name: c.guest_name,
-        guest_verified: c.guest_verified ?? false,
-        is_deleted: c.is_deleted ?? false,
-        is_hidden: c.is_hidden ?? false,
-        user: Array.isArray(c.user) ? c.user[0] ?? null : c.user,
+      // API returns { comments: [...], date_key: "..." }, extract comments array
+      const commentsArray = (data as { comments?: Record<string, unknown>[] })?.comments || [];
+      const normalized: Comment[] = commentsArray.map((c) => ({
+        id: c.id as string,
+        content: c.content as string,
+        created_at: c.created_at as string,
+        parent_id: c.parent_id as string | null,
+        user_id: c.user_id as string | null,
+        guest_name: c.guest_name as string | null,
+        guest_verified: (c.guest_verified as boolean) ?? false,
+        is_deleted: (c.is_deleted as boolean) ?? false,
+        is_hidden: (c.is_hidden as boolean) ?? false,
+        user: Array.isArray(c.user) ? (c.user[0] as CommentUser | null) ?? null : (c.user as CommentUser | null),
       }));
 
       // Organize into threads
