@@ -89,13 +89,14 @@ describe("Venue Audit - ABC10a", () => {
         "neighborhood",
         "accessibility_notes",
         "parking_notes",
+        "cover_image_url",
       ];
 
       expect(MANAGER_EDITABLE_VENUE_FIELDS).toEqual(expectedFields);
     });
 
-    it("should have exactly 13 editable fields", () => {
-      expect(MANAGER_EDITABLE_VENUE_FIELDS).toHaveLength(13);
+    it("should have exactly 14 editable fields", () => {
+      expect(MANAGER_EDITABLE_VENUE_FIELDS).toHaveLength(14);
     });
 
     it("should NOT include sensitive fields", () => {
@@ -198,7 +199,7 @@ describe("Venue Audit - ABC10a", () => {
       });
     });
 
-    it("should handle all 13 manager-editable fields in revert", () => {
+    it("should handle all 14 manager-editable fields in revert", () => {
       const previousValues: Record<string, string | null> = {};
       for (const field of MANAGER_EDITABLE_VENUE_FIELDS) {
         previousValues[field] = `original_${field}`;
@@ -206,7 +207,7 @@ describe("Venue Audit - ABC10a", () => {
 
       const sanitized = sanitizeVenuePatch(previousValues);
 
-      expect(Object.keys(sanitized)).toHaveLength(13);
+      expect(Object.keys(sanitized)).toHaveLength(14);
       for (const field of MANAGER_EDITABLE_VENUE_FIELDS) {
         expect(sanitized[field]).toBe(`original_${field}`);
       }

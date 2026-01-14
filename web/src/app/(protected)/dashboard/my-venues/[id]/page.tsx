@@ -37,7 +37,7 @@ export default async function EditVenuePage({
   const { data: venue, error } = await supabase
     .from("venues")
     .select(
-      "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes"
+      "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url"
     )
     .eq("id", venueId)
     .single();

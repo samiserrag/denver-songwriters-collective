@@ -56,6 +56,7 @@ export const MANAGER_EDITABLE_VENUE_FIELDS = [
   "neighborhood",
   "accessibility_notes",
   "parking_notes",
+  "cover_image_url",
 ] as const;
 
 export type ManagerEditableVenueField =

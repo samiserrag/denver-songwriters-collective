@@ -29,7 +29,7 @@ export async function GET(
     const { data: venue, error } = await supabase
       .from("venues")
       .select(
-        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes"
+        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url"
       )
       .eq("id", id)
       .single();
@@ -39,7 +39,7 @@ export async function GET(
       const { data: venueBySlug, error: slugError } = await supabase
         .from("venues")
         .select(
-          "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes"
+          "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url"
         )
         .eq("slug", id)
         .single();
@@ -118,7 +118,8 @@ export async function PATCH(
         const trimmed = value.trim();
         updates[key] = trimmed === "" ? null : trimmed;
       } else {
-        updates[key] = value;
+        // Value is null or undefined from sanitized patch
+        updates[key] = value as string | null;
       }
     }
 
@@ -130,7 +131,7 @@ export async function PATCH(
     const { data: existingVenue, error: checkError } = await serviceClient
       .from("venues")
       .select(
-        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes"
+        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url"
       )
       .eq("id", venueId)
       .single();
@@ -151,7 +152,7 @@ export async function PATCH(
       .update(updates)
       .eq("id", venueId)
       .select(
-        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes"
+        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url"
       )
       .single();
 

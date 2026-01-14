@@ -22,6 +22,7 @@ interface VenueRow {
   state: string;
   google_maps_url: string | null;
   website_url: string | null;
+  cover_image_url: string | null;  // Cover image for thumbnail display
 }
 
 export default async function VenuesPage() {
@@ -30,7 +31,7 @@ export default async function VenuesPage() {
   // Query all venues sorted alphabetically
   const { data: venues, error: venuesError } = await supabase
     .from("venues")
-    .select("id, slug, name, city, state, google_maps_url, website_url")
+    .select("id, slug, name, city, state, google_maps_url, website_url, cover_image_url")
     .order("name", { ascending: true });
 
   if (venuesError) {
@@ -84,6 +85,7 @@ export default async function VenuesPage() {
       state: venue.state,
       google_maps_url: venue.google_maps_url,
       website_url: venue.website_url,
+      cover_image_url: venue.cover_image_url,
       counts,
     };
   });

@@ -5,11 +5,14 @@
  *
  * Client component for editing venue information.
  * Uses the PATCH /api/venues/[id] endpoint.
+ * Includes cover image upload via ImageUpload component.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MANAGER_EDITABLE_VENUE_FIELDS } from "@/lib/venue/managerAuth";
+import { ImageUpload } from "@/components/ui/ImageUpload";
+import { createClient } from "@/lib/supabase/client";
 
 interface VenueData {
   id: string;
@@ -27,6 +30,7 @@ interface VenueData {
   neighborhood: string | null;
   accessibility_notes: string | null;
   parking_notes: string | null;
+  cover_image_url: string | null;
 }
 
 interface VenueEditFormProps {
@@ -38,6 +42,8 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(venue.cover_image_url);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -64,6 +70,71 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
     setError(null);
     setSuccess(false);
   };
+
+  // Handle cover image upload to Supabase storage
+  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
+    setImageError(null);
+    const supabase = createClient();
+
+    // Generate unique filename: venue-covers/{venue_id}/{uuid}.{ext}
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const uuid = crypto.randomUUID();
+    const fileName = `venue-covers/${venue.id}/${uuid}.${fileExt}`;
+
+    // Upload to gallery-images bucket
+    const { error: uploadError } = await supabase.storage
+      .from('gallery-images')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error('[VenueEditForm] Upload error:', uploadError);
+      setImageError(`Upload failed: ${uploadError.message}`);
+      return null;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('gallery-images')
+      .getPublicUrl(fileName);
+
+    // Update venue record via PATCH
+    const response = await fetch(`/api/venues/${venue.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cover_image_url: publicUrl }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setImageError(data.error || 'Failed to update venue');
+      return null;
+    }
+
+    setCoverImageUrl(publicUrl);
+    router.refresh();
+    return publicUrl;
+  }, [venue.id, router]);
+
+  // Handle cover image removal
+  const handleImageRemove = useCallback(async (): Promise<void> => {
+    setImageError(null);
+
+    // Update venue record via PATCH (set cover_image_url to null)
+    const response = await fetch(`/api/venues/${venue.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cover_image_url: null }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setImageError(data.error || 'Failed to remove image');
+      return;
+    }
+
+    setCoverImageUrl(null);
+    router.refresh();
+  }, [venue.id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +209,34 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
           Venue updated successfully!
         </div>
       )}
+
+      {/* Cover Image Section */}
+      <fieldset className="space-y-4">
+        <legend className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">
+          Cover Image
+        </legend>
+        <p className="text-sm text-[var(--color-text-secondary)] -mt-2 mb-4">
+          Upload a cover image for your venue. This will appear on your venue page and cards.
+        </p>
+
+        <div className="max-w-xs">
+          <ImageUpload
+            currentImageUrl={coverImageUrl}
+            onUpload={handleImageUpload}
+            onRemove={handleImageRemove}
+            aspectRatio={16 / 9}
+            maxSizeMB={5}
+            shape="square"
+            placeholderText="Upload Cover Image"
+          />
+        </div>
+
+        {imageError && (
+          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {imageError}
+          </div>
+        )}
+      </fieldset>
 
       {/* Basic Info Section */}
       <fieldset className="space-y-4">

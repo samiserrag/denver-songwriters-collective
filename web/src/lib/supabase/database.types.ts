@@ -2864,6 +2864,7 @@ export type Database = {
           address: string
           city: string
           contact_link: string | null
+          cover_image_url: string | null
           created_at: string | null
           google_maps_url: string | null
           id: string
@@ -2884,6 +2885,7 @@ export type Database = {
           address: string
           city: string
           contact_link?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           google_maps_url?: string | null
           id?: string
@@ -2904,6 +2906,7 @@ export type Database = {
           address?: string
           city?: string
           contact_link?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           google_maps_url?: string | null
           id?: string

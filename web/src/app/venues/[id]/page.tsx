@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
 import { PageContainer } from "@/components/layout";
@@ -66,7 +67,8 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       phone,
       contact_link,
       accessibility_notes,
-      parking_notes
+      parking_notes,
+      cover_image_url
     `;
   const { data: venue, error: venueError } = isUUID(id)
     ? await supabase.from("venues").select(venueSelectQuery).eq("id", id).single()
@@ -228,6 +230,20 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
           </svg>
           All venues
         </Link>
+
+        {/* Hero Cover Image */}
+        {venue.cover_image_url && (
+          <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden mb-8">
+            <Image
+              src={venue.cover_image_url}
+              alt={`${venue.name} cover image`}
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              priority
+            />
+          </div>
+        )}
 
         {/* Venue Header */}
         <div className="mb-8">

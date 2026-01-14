@@ -10,6 +10,7 @@ interface VenueWithCounts {
   state?: string | null;
   google_maps_url?: string | null;
   website_url?: string | null;
+  cover_image_url?: string | null;
   counts: VenueEventCounts;
 }
 

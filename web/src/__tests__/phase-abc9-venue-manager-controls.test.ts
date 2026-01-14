@@ -27,6 +27,7 @@ describe("ABC9: Venue Manager Controls", () => {
       expect(MANAGER_EDITABLE_VENUE_FIELDS).toContain("neighborhood");
       expect(MANAGER_EDITABLE_VENUE_FIELDS).toContain("accessibility_notes");
       expect(MANAGER_EDITABLE_VENUE_FIELDS).toContain("parking_notes");
+      expect(MANAGER_EDITABLE_VENUE_FIELDS).toContain("cover_image_url");
     });
 
     it("should NOT contain system-managed fields", () => {
@@ -42,8 +43,8 @@ describe("ABC9: Venue Manager Controls", () => {
       expect(fields).not.toContain("notes"); // Admin-only internal notes
     });
 
-    it("should have exactly 13 editable fields", () => {
-      expect(MANAGER_EDITABLE_VENUE_FIELDS.length).toBe(13);
+    it("should have exactly 14 editable fields", () => {
+      expect(MANAGER_EDITABLE_VENUE_FIELDS.length).toBe(14);
     });
   });
 

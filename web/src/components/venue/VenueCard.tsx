@@ -10,6 +10,7 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { chooseVenueLink } from "@/lib/venue/chooseVenueLink";
 import { ImagePlaceholder } from "@/components/ui";
@@ -27,6 +28,7 @@ interface VenueCardProps {
     state?: string | null;
     google_maps_url?: string | null;
     website_url?: string | null;
+    cover_image_url?: string | null;  // Cover image for thumbnail display
   };
   /** Structured event counts (series + one-offs) */
   counts: VenueEventCounts;
@@ -59,12 +61,22 @@ export function VenueCard({ venue, counts, className }: VenueCardProps) {
           className
         )}
       >
-        {/* Placeholder Section - No venue images in schema */}
+        {/* Image Section - Cover image if available, placeholder fallback */}
         <div className="relative aspect-[4/3] overflow-hidden">
-          <ImagePlaceholder
-            initials={getInitials(venue.name)}
-            className="w-full h-full"
-          />
+          {venue.cover_image_url ? (
+            <Image
+              src={venue.cover_image_url}
+              alt={`${venue.name} cover`}
+              fill
+              className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-200"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          ) : (
+            <ImagePlaceholder
+              initials={getInitials(venue.name)}
+              className="w-full h-full"
+            />
+          )}
 
           {/* Event count badge */}
           <div className="absolute bottom-3 right-3">
