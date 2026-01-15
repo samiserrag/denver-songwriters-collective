@@ -315,19 +315,31 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Hotfix: Venue Invite RLS Policy (January 2026) — RESOLVED
+### Hotfix: Venue Invite RLS + URL Issues (January 2026) — RESOLVED
 
-**Goal:** Fix venue invite creation failing with "Failed to create invite" error.
+**Goal:** Fix venue invite creation failing with "Failed to create invite" error + fix invite URLs using localhost.
 
 **Status:** Fixed.
 
-**Root Cause:** The RLS policy `"Admins can manage all venue invites"` had only a `USING` clause but no `WITH CHECK` clause. PostgreSQL RLS requires `WITH CHECK` for INSERT operations - `USING` alone only controls SELECT/UPDATE/DELETE.
+**Root Causes (Two Issues):**
 
-**Fix:** Recreated the policy with both `USING` and `WITH CHECK` clauses.
+1. **Issue 1:** The RLS policy `"Admins can manage all venue invites"` had only a `USING` clause but no `WITH CHECK` clause. PostgreSQL RLS requires `WITH CHECK` for INSERT operations.
+   - **Migration:** `20260113210000_fix_venue_invites_rls_insert.sql`
 
-**Migration:** `20260113210000_fix_venue_invites_rls_insert.sql`
+2. **Issue 2:** The `users_see_own_invites` policy contained a subquery accessing `auth.users`:
+   ```sql
+   email_restriction = (SELECT email FROM auth.users WHERE id = auth.uid())
+   ```
+   The `authenticated` role has no SELECT permission on `auth.users`, causing error `42501: permission denied for table users`.
+   - **Migration:** `20260114000000_fix_venue_invites_users_policy.sql`
 
-**Lesson:** When creating `FOR ALL` RLS policies, always include both `USING` and `WITH CHECK` clauses.
+3. **Issue 3:** Invite URL used `process.env.NEXT_PUBLIC_SITE_URL` directly which fell back to `localhost:3000` in production.
+   - **Fix:** Import `SITE_URL` from `@/lib/email/render` which has proper production fallback.
+
+**Lessons:**
+- When creating `FOR ALL` RLS policies, always include both `USING` and `WITH CHECK` clauses
+- RLS policies cannot query `auth.users` directly (no SELECT permission for authenticated role)
+- Use the centralized `SITE_URL` constant from `lib/email/render.ts` for URL generation
 
 ---
 
