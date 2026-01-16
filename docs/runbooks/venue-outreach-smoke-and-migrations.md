@@ -1,7 +1,7 @@
 # Venue Outreach: Smoke Tests & Migration Verification
 
 > **Purpose:** End-to-end verification checklist for the venue outreach workflow (ABC8-11).
-> **Last Updated:** 2026-01-12
+> **Last Updated:** 2026-01-15
 
 ---
 
@@ -68,7 +68,7 @@ Run this query to verify all ABC migrations are applied:
 
 ```sql
 SELECT version, name FROM supabase_migrations.schema_migrations
-WHERE version IN ('20260111200000', '20260111210000', '20260112000000', '20260112100000')
+WHERE version IN ('20260111200000', '20260111210000', '20260112000000', '20260112100000', '20260113210000', '20260114000000')
 ORDER BY version;
 ```
 
@@ -80,6 +80,8 @@ ORDER BY version;
 | 20260111210000 | ABC6 enforce constraints |
 | 20260112000000 | ABC8 venue claiming |
 | 20260112100000 | ABC10b RLS tightening |
+| 20260113210000 | Fix venue_invites RLS INSERT |
+| 20260114000000 | Fix venue_invites users policy |
 
 ### B2. Table Existence Check
 
@@ -101,11 +103,12 @@ ORDER BY policyname;
 ```
 
 **Expected Policies:**
-- `Admins can manage all venue invites`
+- `Admins can manage all venue invites` (with both USING and WITH CHECK clauses)
 - `managers_see_venue_invites`
-- `users_see_own_invites`
 
-**NOT Expected:** `anyone_can_lookup_by_token` (removed in ABC10b)
+**NOT Expected:**
+- `anyone_can_lookup_by_token` (removed in ABC10b)
+- `users_see_own_invites` (removed in 20260114000000 - queried auth.users which lacks SELECT permission)
 
 ### B4. Handling "Already Exists" Errors
 
@@ -183,6 +186,65 @@ If TypeScript fails with `.from("table_name")` not found:
 - Check `create_user_notification` function exists and has correct search_path
 - Verify notification preferences aren't blocking
 
+### D5. "Invalid or expired invite" After Token Copy
+
+This error occurs when the accept endpoint cannot find the invite by token hash.
+
+**Root Cause (Fixed 2026-01-15):** The accept endpoint was using the user session client to query `venue_invites`, but RLS blocked the query because the user isn't a venue manager yet (that's what the invite grants).
+
+**Verification Checklist:**
+
+1. Confirm accept endpoint uses `createServiceRoleClient()`:
+   ```typescript
+   // In app/api/venue-invites/accept/route.ts
+   import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+
+   const serviceClient = createServiceRoleClient();
+   const { data: invite } = await serviceClient
+     .from("venue_invites")
+     .select(...)
+     .eq("token_hash", tokenHash)
+     .single();
+   ```
+
+2. Confirm ALL RLS-protected operations use `serviceClient`:
+   - `venue_invites` lookup by token hash
+   - `venue_managers` existence check
+   - `venue_invites` accepted_at/accepted_by update
+   - `venue_managers` INSERT (grant access)
+   - `create_user_notification` RPC call
+
+3. If using user session client (`supabase` from `createSupabaseServerClient()`), the query will fail because:
+   - User isn't in `venue_managers` yet (invite grants this)
+   - RLS policy `managers_see_venue_invites` requires active manager status
+
+### D6. Localhost URLs in Invite Links
+
+Invite URLs showing `localhost:3000` instead of production domain.
+
+**Root Cause (Fixed 2026-01-15):** Direct use of `process.env.NEXT_PUBLIC_SITE_URL` fell back to localhost when env var wasn't set in Vercel.
+
+**Fix:** Import centralized `SITE_URL` constant from email render module:
+
+```typescript
+// In app/api/admin/venues/[id]/invite/route.ts
+import { SITE_URL } from "@/lib/email/render";
+
+const inviteUrl = `${SITE_URL}/venue-invite?token=${token}`;
+```
+
+**SITE_URL Resolution Order** (from `lib/email/render.ts`):
+
+1. `process.env.PUBLIC_SITE_URL`
+2. `process.env.NEXT_PUBLIC_SITE_URL`
+3. Fallback: `https://denversongwriterscollective.org`
+
+**Vercel Environment Setup:**
+
+Ensure one of these is set in Vercel → Project → Settings → Environment Variables:
+- `NEXT_PUBLIC_SITE_URL=https://denversongwriterscollective.org`
+
 ---
 
 *Runbook created 2026-01-12 as part of ABC11 completion.*
+*Updated 2026-01-15: Added D5/D6 troubleshooting for service-role fix and URL env.*
