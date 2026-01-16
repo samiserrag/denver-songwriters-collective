@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -33,8 +34,9 @@ export async function POST(request: NextRequest) {
     // Hash the token to look it up
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-    // Find the invite
-    const { data: invite, error: findError } = await supabase
+    // Find the invite using service role (RLS doesn't allow regular users to read invites)
+    const serviceClient = createServiceRoleClient();
+    const { data: invite, error: findError } = await serviceClient
       .from("venue_invites")
       .select("id, venue_id, email_restriction, expires_at, accepted_at, revoked_at, created_by")
       .eq("token_hash", tokenHash)
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has access to this venue
-    const { data: existingManager } = await supabase
+    const { data: existingManager } = await serviceClient
       .from("venue_managers")
       .select("id")
       .eq("venue_id", invite.venue_id)
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark invite as accepted
-    const { error: acceptError } = await supabase
+    const { error: acceptError } = await serviceClient
       .from("venue_invites")
       .update({
         accepted_at: new Date().toISOString(),
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Grant manager access (invites grant manager role, not owner)
-    const { error: grantError } = await supabase.from("venue_managers").insert({
+    const { error: grantError } = await serviceClient.from("venue_managers").insert({
       venue_id: invite.venue_id,
       user_id: session.user.id,
       role: "manager",
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
     if (grantError) {
       console.error("[VenueInviteAccept] Grant error:", grantError);
       // Rollback invite acceptance
-      await supabase
+      await serviceClient
         .from("venue_invites")
         .update({ accepted_at: null, accepted_by: null })
         .eq("id", invite.id);
@@ -163,8 +165,8 @@ export async function POST(request: NextRequest) {
       const venueName = venue?.name || "the venue";
       const venueLink = `/dashboard/admin/venues/${invite.venue_id}`;
 
-      // Create notification for the invite creator
-      await supabase.rpc("create_user_notification", {
+      // Create notification for the invite creator (use service role for RPC)
+      await serviceClient.rpc("create_user_notification", {
         p_user_id: invite.created_by,
         p_type: "venue_invite_accepted",
         p_title: `Venue invite accepted`,
