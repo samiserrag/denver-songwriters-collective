@@ -86,9 +86,9 @@ export default async function AdminLogsPage() {
           <div className="text-3xl font-bold text-red-500">{errorCount}</div>
           <div className="text-sm text-red-400">Errors</div>
         </div>
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <div className="text-3xl font-bold text-amber-500">{warnCount}</div>
-          <div className="text-sm text-amber-400">Warnings</div>
+        <div className="p-4 bg-amber-100 border border-amber-300 rounded-lg">
+          <div className="text-3xl font-bold text-amber-700">{warnCount}</div>
+          <div className="text-sm text-amber-600">Warnings</div>
         </div>
         <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
           <div className="text-3xl font-bold text-blue-500">{infoCount}</div>

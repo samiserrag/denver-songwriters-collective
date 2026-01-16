@@ -315,13 +315,13 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Hotfix: Venue Invite RLS + URL Issues (January 2026) — RESOLVED
+### Hotfix: Venue Invite RLS + URL + Acceptance Issues (January 2026) — RESOLVED
 
-**Goal:** Fix venue invite creation failing with "Failed to create invite" error + fix invite URLs using localhost.
+**Goal:** Fix venue invite creation, URL generation, and invite acceptance flow.
 
 **Status:** Fixed.
 
-**Root Causes (Two Issues):**
+**Root Causes (Four Issues):**
 
 1. **Issue 1:** The RLS policy `"Admins can manage all venue invites"` had only a `USING` clause but no `WITH CHECK` clause. PostgreSQL RLS requires `WITH CHECK` for INSERT operations.
    - **Migration:** `20260113210000_fix_venue_invites_rls_insert.sql`
@@ -336,10 +336,41 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 3. **Issue 3:** Invite URL used `process.env.NEXT_PUBLIC_SITE_URL` directly which fell back to `localhost:3000` in production.
    - **Fix:** Import `SITE_URL` from `@/lib/email/render` which has proper production fallback.
 
+4. **Issue 4:** Invite acceptance endpoint used user session client which couldn't read `venue_invites` table (regular users aren't venue managers yet - that's what the invite grants).
+   - **Fix:** Use `createServiceRoleClient()` for token lookup, manager check, invite update, and manager grant operations.
+
 **Lessons:**
 - When creating `FOR ALL` RLS policies, always include both `USING` and `WITH CHECK` clauses
 - RLS policies cannot query `auth.users` directly (no SELECT permission for authenticated role)
 - Use the centralized `SITE_URL` constant from `lib/email/render.ts` for URL generation
+- Token validation endpoints that grant access should use service role to bypass RLS
+
+---
+
+### UI Contrast Fix: Amber Warning Banners (January 2026) — RESOLVED
+
+**Goal:** Fix poor text contrast on amber/yellow warning banners (light text on light background).
+
+**Status:** Fixed.
+
+**Problem:** Components used `bg-amber-500/10` (very light) with `text-amber-400` (light text), resulting in poor readability.
+
+**Solution:** Changed to `bg-amber-100` (solid light) with `text-amber-800` (dark text) for proper WCAG contrast.
+
+**Files Modified:**
+- `VenueInviteSection.tsx` - "This link will only be shown once!" banner
+- `BetaBanner.tsx` - Beta schedules warning
+- `confirm-sent/page.tsx` - Email junk folder warning
+- `EventForm.tsx` - Timeslot duration warning
+- `BlogPostForm.tsx` - Non-admin approval notice
+- `EventImportCard.tsx` - Warnings and confirmation dialogs
+- `VenueImportCard.tsx` - Confirmation dialog
+- `OverrideImportCard.tsx` - Confirmation dialog
+- `logs/page.tsx` - Warning count stat card
+
+**Pattern to Use:**
+- Light backgrounds: `bg-amber-100 border-amber-300 text-amber-800`
+- Dark backgrounds (dark mode): `bg-amber-900/30 border-amber-700 text-amber-300`
 
 ---
 

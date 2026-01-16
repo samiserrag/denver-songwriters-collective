@@ -295,8 +295,8 @@ export default function OverrideImportCard() {
 
           {/* Confirmation Dialog */}
           {showConfirm && (
-            <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded">
-              <p className="text-amber-400 mb-4">
+            <div className="mt-4 p-4 bg-amber-100 border border-amber-300 rounded">
+              <p className="text-amber-800 mb-4">
                 Are you sure you want to apply these changes? This will create{" "}
                 {previewResult.inserts?.length || 0} new overrides and update{" "}
                 {previewResult.updates?.length || 0} existing ones.

@@ -241,9 +241,9 @@ export default function EventImportCard() {
 
       {/* Warnings */}
       {previewResult?.valid && previewResult.warnings && previewResult.warnings.length > 0 && (
-        <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded">
-          <p className="text-amber-400 font-medium mb-2">Warnings</p>
-          <ul className="text-amber-400 text-sm space-y-1">
+        <div className="mt-4 p-4 bg-amber-100 border border-amber-300 rounded">
+          <p className="text-amber-800 font-medium mb-2">Warnings</p>
+          <ul className="text-amber-700 text-sm space-y-1">
             {previewResult.warnings.map((w, idx) => (
               <li key={idx}>
                 Row {w.rowIndex}: {w.warnings.join("; ")}
@@ -279,8 +279,8 @@ export default function EventImportCard() {
 
           {/* Confirmation Dialog */}
           {showConfirm && (
-            <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded">
-              <p className="text-amber-400 mb-4">
+            <div className="mt-4 p-4 bg-amber-100 border border-amber-300 rounded">
+              <p className="text-amber-800 mb-4">
                 Are you sure you want to apply these changes? This cannot be
                 undone.
               </p>

@@ -367,8 +367,8 @@ Denver Songwriters Collective Team`;
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-4">
-                  <p className="text-sm text-amber-400 font-medium">
+                <div className="p-3 rounded-lg bg-amber-100 border border-amber-300 mb-4">
+                  <p className="text-sm text-amber-800 font-medium">
                     Important: This link will only be shown once!
                   </p>
                 </div>

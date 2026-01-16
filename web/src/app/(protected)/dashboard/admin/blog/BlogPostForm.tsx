@@ -361,9 +361,9 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
       {/* Non-admin notice */}
       {!isAdmin && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-600">
+        <div className="p-4 bg-amber-100 border border-amber-300 rounded-lg text-amber-800">
           <p className="font-medium">Note: Your blog post will need admin approval before it&apos;s published publicly.</p>
-          <p className="text-sm mt-1 opacity-80">Once approved, it will appear on the blog page for everyone to see.</p>
+          <p className="text-sm mt-1 text-amber-700">Once approved, it will appear on the blog page for everyone to see.</p>
         </div>
       )}
 

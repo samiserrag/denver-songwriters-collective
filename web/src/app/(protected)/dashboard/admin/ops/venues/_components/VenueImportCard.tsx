@@ -252,8 +252,8 @@ export default function VenueImportCard() {
 
           {/* Confirmation Dialog */}
           {showConfirm && (
-            <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded">
-              <p className="text-amber-400 mb-4">
+            <div className="mt-4 p-4 bg-amber-100 border border-amber-300 rounded">
+              <p className="text-amber-800 mb-4">
                 Are you sure you want to apply these changes? This cannot be
                 undone.
               </p>

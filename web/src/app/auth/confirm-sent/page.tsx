@@ -34,8 +34,8 @@ function ConfirmSentContent() {
       </p>
 
       {/* Prominent junk mail warning */}
-      <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
-        <p className="text-sm text-amber-200 font-medium mb-1">
+      <div className="mb-6 p-4 rounded-lg bg-amber-100 border border-amber-300">
+        <p className="text-sm text-amber-800 font-medium mb-1">
           Can&apos;t find it?
         </p>
         <p className="text-sm text-[var(--color-text-secondary)]">

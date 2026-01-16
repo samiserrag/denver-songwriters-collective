@@ -906,8 +906,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* Warning: Timeslot duration exceeds event duration */}
       {slotDurationExceedsEvent && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <p className="text-sm text-amber-600">
+        <div className="p-4 bg-amber-100 border border-amber-300 rounded-lg">
+          <p className="text-sm text-amber-800">
             <strong>Warning:</strong> Total slot time ({totalSlotDuration} min) exceeds event duration ({eventDurationMinutes} min).
             {totalSlotDuration > eventDurationMinutes! && (
               <span className="block mt-1 text-sm text-[var(--color-text-secondary)]">

@@ -40,16 +40,16 @@ export function BetaBanner({ className }: BetaBannerProps) {
     <div
       className={cn(
         "flex items-center justify-between gap-3 px-3 py-2 rounded-lg",
-        "bg-amber-500/10 border border-amber-500/30",
+        "bg-amber-100 border border-amber-300",
         className
       )}
     >
-      <p className="text-sm text-amber-200">
-        <strong className="text-amber-100">Beta:</strong> Schedules are community-submitted. Please verify with venues.
+      <p className="text-sm text-amber-800">
+        <strong className="text-amber-900">Beta:</strong> Schedules are community-submitted. Please verify with venues.
       </p>
       <button
         onClick={handleDismiss}
-        className="shrink-0 text-amber-400 hover:text-amber-300 transition-colors text-sm"
+        className="shrink-0 text-amber-700 hover:text-amber-900 transition-colors text-sm"
         aria-label="Dismiss beta notice"
       >
         Dismiss
