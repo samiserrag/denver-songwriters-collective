@@ -279,12 +279,19 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   }
 
   // Compute derived states
-  const isPastEvent = event.event_date
+  // P0 Fix: For recurring events, check if recurrence_rule exists - if so, don't mark as past
+  // based solely on event_date (anchor date). The actual isPastEvent check for recurring
+  // events happens after occurrence expansion below.
+  const hasRecurrenceRule = !!(event as { recurrence_rule?: string | null }).recurrence_rule;
+  const isPastEventBasedOnAnchor = event.event_date
     ? new Date(event.event_date + "T23:59:59") < new Date()
     : false;
+  // For recurring events, assume not past until we expand occurrences
+  let isPastEvent = hasRecurrenceRule ? false : isPastEventBasedOnAnchor;
   const isCancelled = event.status === "cancelled";
   const needsVerification = event.status === "needs_verification";
-  const canRSVP = !isCancelled && !isPastEvent && event.is_published;
+  // canRSVP will be recomputed after occurrence expansion for recurring events
+  let canRSVP = !isCancelled && !isPastEvent && event.is_published;
 
   // Phase 4.37: Get verification state for display
   const verificationResult = getPublicVerificationState({
@@ -394,6 +401,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     );
   }
 
+  // P0 Fix: Recompute isPastEvent for recurring events now that we have occurrences
+  // A recurring event is only "past" if it has NO upcoming occurrences
+  if (hasRecurrenceRule) {
+    isPastEvent = upcomingOccurrences.length === 0;
+    canRSVP = !isCancelled && !isPastEvent && event.is_published;
+  }
+
   // Phase ABC5: Query occurrence override for selected date (if any)
   let selectedOverride: {
     status: string;
@@ -417,8 +431,11 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       dateSelectionMessage = "That date isn't in the next 90 days. Showing next upcoming date.";
     }
   } else if (upcomingOccurrences.length > 0) {
-    // No date specified - default to first occurrence for recurring events
-    effectiveSelectedDate = upcomingOccurrences[0].dateKey;
+    // No date specified - redirect to include date param for recurring events
+    // This ensures canonical URLs always include the occurrence date
+    const nextDate = upcomingOccurrences[0].dateKey;
+    const eventIdentifier = event.slug || event.id;
+    redirect(`/events/${eventIdentifier}?date=${nextDate}`);
   }
 
   // Fetch override for the effective selected date
