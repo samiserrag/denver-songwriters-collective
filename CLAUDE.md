@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.70):** Lint warnings = 0. All tests passing (1926). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.70):** Lint warnings = 0. All tests passing (2005). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -312,6 +312,96 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### P0 UI Polish: Hero Contrast + Nav Order + CTA Labels (January 2026) — RESOLVED
+
+**Goal:** Fix remaining P0 UI items for test-user readiness.
+
+**Status:** Fixed.
+
+**Changes:**
+
+| Item | Before | After |
+|------|--------|-------|
+| A) Hero text contrast | 30% top vignette only | 40% full overlay + 30% top vignette |
+| B) Nav menu order | Happenings → Venues → Members | Happenings → Members → Venues |
+| C) CTA pill labels | "See happenings" / "See open mics" | "See All Happenings" / "See Open Mics" |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/layout/hero-section.tsx` | Added 40% black overlay for text readability |
+| `components/navigation/header.tsx` | Reordered navLinks array |
+| `app/page.tsx` | Updated CTA button text (hero + Collective Happenings sections) |
+
+**Commit:** `dfe46d7`
+
+---
+
+### Slice 3: Getting Started Dashboard Prompts (January 2026) — RESOLVED
+
+**Goal:** Add post-onboarding action prompts to dashboard for hosts and venue managers.
+
+**Status:** Implemented.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Host prompt | Shows when `is_host=true` AND NOT approved host AND NO pending request |
+| Venue prompt | Shows when `(is_host OR is_studio)` AND venueCount === 0 |
+| Dismiss persistence | localStorage key `dsc_getting_started_dismissed_v1` |
+| Host CTA | Inline `RequestHostButton` component (was previously built but unused) |
+| Venue CTA | Link to `/venues` for discovering and claiming venues |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `dashboard/_components/GettingStartedSection.tsx` | Client component with dismissable prompts |
+| `__tests__/getting-started-section.test.tsx` | 22 tests for visibility logic |
+| `docs/investigation/phase-role-based-onboarding-slice-3-prompts.md` | Investigation doc |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/page.tsx` | Added server-side queries + GettingStartedSection component |
+
+**Test Coverage:** 22 tests covering visibility logic, localStorage behavior, and link targets.
+
+**Commit:** `5f8103e`
+
+---
+
+### Slice 1: Conditional Onboarding Step Display (January 2026) — RESOLVED
+
+**Goal:** Show/hide onboarding accordion sections based on identity flags.
+
+**Status:** Implemented.
+
+**Features:**
+- `getRelevantSections()` function determines visible sections based on identity flags
+- Fan-only users see minimal fields (Basic Info, Social Links)
+- Songwriter/Host/Studio users see role-relevant sections
+- All identity flags are NOT mutually exclusive (can be multiple)
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/onboarding/profile/page.tsx` | Added `getRelevantSections()` and conditional rendering |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/onboarding-conditional-steps.test.ts` | 12 tests for section visibility |
+
+**Commit:** `30e4d13`
 
 ---
 
