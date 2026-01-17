@@ -3,6 +3,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import { PerformerAvatar } from "@/components/performers";
 import { WelcomeToast } from "./WelcomeToast";
 import { DashboardProfileCard } from "./DashboardProfileCard";
+import { GettingStartedSection } from "./_components/GettingStartedSection";
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
@@ -38,14 +39,32 @@ export default async function DashboardPage() {
 
   const p = profile as DBProfile | null;
 
-  // Check host status (available for future use: isApprovedHost logic)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { data: _hostStatus } = await supabase
+  // Check if user is an approved host
+  const { data: approvedHostStatus } = await supabase
     .from("approved_hosts")
     .select("status")
     .eq("user_id", user.id)
     .eq("status", "active")
     .maybeSingle();
+
+  const isApprovedHost = !!approvedHostStatus;
+
+  // Check if user has a pending host request
+  const { data: pendingHostRequest } = await supabase
+    .from("host_requests")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  const hasPendingHostRequest = !!pendingHostRequest;
+
+  // Get count of venues user manages
+  const { count: venueCount } = await supabase
+    .from("venue_managers")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .is("revoked_at", null);
 
   // Get pending invitations with event details
   const { data: pendingInvitations } = await supabase
@@ -135,6 +154,17 @@ export default async function DashboardPage() {
                 cashapp_handle: p.cashapp_handle,
                 paypal_url: p.paypal_url,
               }}
+            />
+          )}
+
+          {/* Getting Started Prompts (Host + Venue) */}
+          {p && (
+            <GettingStartedSection
+              isHost={p.is_host ?? false}
+              isStudio={p.is_studio ?? false}
+              isApprovedHost={isApprovedHost}
+              hasPendingHostRequest={hasPendingHostRequest}
+              venueCount={venueCount ?? 0}
             />
           )}
 
