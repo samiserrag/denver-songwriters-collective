@@ -308,7 +308,7 @@ export default async function HomePage() {
       <section className="py-10 px-6 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-8">
-            Join us if you&apos;re…
+            <Link href="/signup">Join us if you&apos;re…</Link>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎸 a songwriter looking to play, improve, or connect</div>
