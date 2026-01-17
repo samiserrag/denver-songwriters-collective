@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.68):** Lint warnings = 0. All tests passing (1831). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.70):** Lint warnings = 0. All tests passing (1926). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -347,6 +347,56 @@ The Supabase JS client has a quirk where combining `.eq()` with `.ilike()` on ex
 - `a92613b` — Fix URLs for happenings/venues/members navigation
 - `b5d0af8` — Fix member search using `ilike()` instead of `or()`
 - `2449fd6` — Fix member search using `select("*")` to match working query pattern
+
+---
+
+### P0 Fix: DSC TEST Events + Recurring Events in Happenings (January 2026) — RESOLVED
+
+**Goal:** Fix DSC TEST events not appearing in happenings and showing incorrect "ended" state.
+
+**Status:** Fixed.
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| DSC filter shows 0 happenings | Recurring events with past anchor `event_date` filtered out | Added `recurrence_rule.not.is.null` to query OR clause |
+| Event detail shows "This happening has ended" | `isPastEvent` only checked anchor date, not future occurrences | Check `recurrence_rule`, recompute after occurrence expansion |
+| "Unconfirmed" badge on DSC TEST events | Badge logic didn't suppress for internal test events | Added `shouldShowUnconfirmedBadge()` helper |
+| Series slug without `?date=` param | No redirect to canonical URL | Redirect to include next occurrence date |
+
+**Key Changes:**
+
+1. **Happenings Query Fix (`app/happenings/page.tsx`):**
+   - Query now includes `recurrence_rule.not.is.null` in OR clause
+   - Recurring events with past anchor dates are fetched and expanded to future occurrences
+
+2. **Event Detail Page Fix (`app/events/[id]/page.tsx`):**
+   - Check `recurrence_rule` before marking event as past
+   - Recompute `isPastEvent` after occurrence expansion (only past if 0 upcoming)
+   - Redirect series slugs without `?date=` to include next occurrence date
+
+3. **DSC TEST Badge Suppression (`lib/events/verification.ts`):**
+   - New `shouldShowUnconfirmedBadge()` helper
+   - Rule: If `is_dsc_event=true` AND title starts with "TEST" (case-sensitive), hide badge
+   - Display-only suppression — doesn't change underlying verification state
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Added `recurrence_rule.not.is.null` to time filter queries |
+| `app/events/[id]/page.tsx` | Fixed `isPastEvent` for recurring events, added series slug redirect |
+| `lib/events/verification.ts` | Added `shouldShowUnconfirmedBadge()` helper |
+| `components/happenings/HappeningCard.tsx` | Use `shouldShowUnconfirmedBadge()` for badge display |
+| `components/happenings/SeriesCard.tsx` | Use `shouldShowUnconfirmedBadge()` for badge display |
+
+**Test Coverage:** 23 new tests in `src/__tests__/dsc-test-unconfirmed-suppression.test.ts`
+
+**Commits:**
+- `04ca056` — Suppress "Unconfirmed" badge on DSC TEST series
+- `58d5979` — Fix recurring events `isPastEvent` check + series slug redirect
+- `43f64e4` — Include recurring events with past anchor dates in happenings query
 
 ---
 
