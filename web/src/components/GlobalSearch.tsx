@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 interface SearchResult {
-  type: "event" | "open_mic" | "member" | "blog";
+  type: "event" | "open_mic" | "member" | "blog" | "venue";
   id: string;
   title: string;
   subtitle?: string;
@@ -18,6 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   event: "Event",
   member: "Member",
   blog: "Blog",
+  venue: "Venue",
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -25,6 +26,7 @@ const TYPE_ICONS: Record<string, string> = {
   event: "📅",
   member: "👤",
   blog: "📝",
+  venue: "📍",
 };
 
 export default function GlobalSearch() {
@@ -156,7 +158,7 @@ export default function GlobalSearch() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search open mics, events, members, blog..."
+                placeholder="Search happenings, venues, members..."
                 className="flex-1 py-4 bg-transparent text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:outline-none"
               />
               {isLoading && (

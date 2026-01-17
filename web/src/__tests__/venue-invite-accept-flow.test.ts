@@ -57,7 +57,7 @@ describe("Venue Invite Accept Flow", () => {
     it("should return 404 if token hash not found", () => {
       // Token is hashed with SHA-256 and looked up
       // Expected: { error: "Invalid or expired invite" }, status: 404
-      const _tokenHash = hashToken("nonexistent-token"); // Demonstrates hash is computed
+      // hashToken("nonexistent-token") would be computed to lookup in DB
       const invite = null; // Not found in DB
 
       expect(invite).toBeNull();

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 interface SearchResult {
-  type: "event" | "open_mic" | "member" | "blog";
+  type: "event" | "open_mic" | "member" | "blog" | "venue";
   id: string;
   title: string;
   subtitle?: string;
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const like = `%${query.replace(/[%_]/g, "")}%`;
 
   // Run all searches in parallel
-  const [openMicsRes, eventsRes, membersRes, blogsRes] = await Promise.all([
+  const [openMicsRes, eventsRes, membersRes, blogsRes, venuesRes] = await Promise.all([
     // Open mics - search title, venue name, city
     supabase
       .from("events")
@@ -40,11 +40,12 @@ export async function GET(request: NextRequest) {
       .or(`title.ilike.${like}`)
       .limit(5),
 
-    // Events - search title, description
+    // Events (non-open-mic) - search title, description
     supabase
       .from("events")
       .select(`
         id,
+        slug,
         title,
         event_date,
         venue_name
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
       .from("profiles")
       .select(`
         id,
+        slug,
         full_name,
         role,
         is_songwriter,
@@ -83,18 +85,31 @@ export async function GET(request: NextRequest) {
       .eq("is_published", true)
       .or(`title.ilike.${like},excerpt.ilike.${like}`)
       .limit(3),
+
+    // Venues - search name, city
+    supabase
+      .from("venues")
+      .select(`
+        id,
+        slug,
+        name,
+        city,
+        state
+      `)
+      .or(`name.ilike.${like},city.ilike.${like}`)
+      .limit(5),
   ]);
 
-  // Also search venues and include open mics at those venues
-  const { data: venueMatches } = await supabase
-    .from("venues")
-    .select("id, name, city")
-    .or(`name.ilike.${like},city.ilike.${like}`)
-    .limit(5);
-
-  let venueOpenMics: any[] = [];
-  if (venueMatches && venueMatches.length > 0) {
-    const venueIds = venueMatches.map((v) => v.id);
+  // Also find open mics at matching venues (for venue name searches)
+  let venueOpenMics: Array<{
+    id: string;
+    slug: string | null;
+    title: string;
+    day_of_week: string | null;
+    venues: { name: string; city: string | null } | { name: string; city: string | null }[] | null;
+  }> = [];
+  if (venuesRes.data && venuesRes.data.length > 0) {
+    const venueIds = venuesRes.data.map((v) => v.id);
     const { data: venueEvents } = await supabase
       .from("events")
       .select(`
@@ -115,6 +130,7 @@ export async function GET(request: NextRequest) {
   const results: SearchResult[] = [];
 
   // Format open mics (combine direct matches + venue matches)
+  // Use slug || id for correct detail page navigation
   const openMicIds = new Set<string>();
   const allOpenMics = [...(openMicsRes.data ?? []), ...venueOpenMics];
   for (const om of allOpenMics) {
@@ -126,30 +142,68 @@ export async function GET(request: NextRequest) {
       type: "open_mic",
       id: om.id,
       title: om.title,
-      subtitle: venue ? `${venue.name}${venue.city ? `, ${venue.city}` : ""} • ${om.day_of_week || "Weekly"}` : om.day_of_week || "Weekly",
-      url: `/happenings?type=open_mic`,
+      subtitle: venue
+        ? `${venue.name}${venue.city ? `, ${venue.city}` : ""} • ${om.day_of_week || "Weekly"}`
+        : om.day_of_week || "Weekly",
+      url: `/events/${om.slug || om.id}`,
     });
   }
 
-  // Format events
+  // Format events (non-open-mic)
+  // Use slug || id for correct detail page navigation
   for (const event of eventsRes.data ?? []) {
     results.push({
       type: "event",
       id: event.id,
       title: event.title,
-      subtitle: event.venue_name || (event.event_date ? new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "America/Denver" }) : undefined),
-      url: `/happenings?type=dsc`,
+      subtitle:
+        event.venue_name ||
+        (event.event_date
+          ? new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+              timeZone: "America/Denver",
+            })
+          : undefined),
+      url: `/events/${event.slug || event.id}`,
+    });
+  }
+
+  // Format venues
+  // Use slug || id for correct detail page navigation
+  for (const venue of venuesRes.data ?? []) {
+    const location = [venue.city, venue.state].filter(Boolean).join(", ");
+    results.push({
+      type: "venue",
+      id: venue.id,
+      title: venue.name,
+      subtitle: location || undefined,
+      url: `/venues/${venue.slug || venue.id}`,
     });
   }
 
   // Format members
+  // Use slug || id for correct detail page navigation to /songwriters/
   for (const member of membersRes.data ?? []) {
+    // Build subtitle from identity flags, fallback to role
+    let subtitle = "";
+    if (member.is_songwriter || member.is_host || member.is_studio) {
+      const flags: string[] = [];
+      if (member.is_songwriter) flags.push("Songwriter");
+      if (member.is_host) flags.push("Host");
+      if (member.is_studio) flags.push("Studio");
+      subtitle = flags.join(", ");
+    } else if (member.role) {
+      subtitle = member.role;
+    }
+    if (member.location) {
+      subtitle = subtitle ? `${subtitle} • ${member.location}` : member.location;
+    }
+
     results.push({
       type: "member",
       id: member.id,
       title: member.full_name || "Unknown",
-      subtitle: `${member.role}${member.location ? ` • ${member.location}` : ""}`,
-      url: `/members?id=${member.id}`,
+      subtitle: subtitle || undefined,
+      url: `/songwriters/${member.slug || member.id}`,
       image: member.avatar_url || undefined,
     });
   }
