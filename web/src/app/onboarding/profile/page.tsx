@@ -1,10 +1,94 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
+
+// =============================================================================
+// Conditional Step Logic
+// =============================================================================
+
+/**
+ * Section keys for the onboarding accordion.
+ * Identity is always shown. Others are conditionally displayed.
+ */
+type SectionKey = "identity" | "instruments" | "about" | "social" | "tipping" | "collab";
+
+interface IdentityFlags {
+  is_songwriter: boolean;
+  is_host: boolean;
+  is_studio: boolean;
+  is_fan: boolean;
+}
+
+/**
+ * Determines which optional sections are relevant based on selected identity flags.
+ *
+ * Rules (from investigation):
+ * - Songwriter: all sections
+ * - Host-only: bio, social (skip tipping, collab, instruments)
+ * - Studio-only: bio, social (skip tipping, collab, instruments)
+ * - Fan-only: bio (optional), genres (shown via instruments section)
+ * - Multi-role: union of relevant sections
+ * - No identity selected: show all (let user explore)
+ *
+ * Note: "identity" section is always shown and not included in this function.
+ */
+export function getRelevantSections(flags: IdentityFlags): SectionKey[] {
+  const { is_songwriter, is_host, is_studio, is_fan } = flags;
+
+  // If no identity selected, show all sections to let user explore
+  const hasAnyIdentity = is_songwriter || is_host || is_studio || is_fan;
+  if (!hasAnyIdentity) {
+    return ["identity", "instruments", "about", "social", "tipping", "collab"];
+  }
+
+  // Build set of relevant sections using union logic
+  const sections = new Set<SectionKey>();
+
+  // Identity is always shown
+  sections.add("identity");
+
+  // Songwriter gets all sections
+  if (is_songwriter) {
+    sections.add("instruments");
+    sections.add("about");
+    sections.add("social");
+    sections.add("tipping");
+    sections.add("collab");
+  }
+
+  // Host gets bio and social
+  if (is_host) {
+    sections.add("about");
+    sections.add("social");
+  }
+
+  // Studio gets bio and social
+  if (is_studio) {
+    sections.add("about");
+    sections.add("social");
+  }
+
+  // Fan gets bio and genres (genres are in instruments section)
+  if (is_fan) {
+    sections.add("about");
+    sections.add("instruments"); // Contains genres
+  }
+
+  // Return in display order
+  const orderedSections: SectionKey[] = ["identity", "instruments", "about", "social", "tipping", "collab"];
+  return orderedSections.filter(s => sections.has(s));
+}
+
+/**
+ * Check if a section should be displayed based on current identity flags.
+ */
+function isSectionVisible(section: SectionKey, relevantSections: SectionKey[]): boolean {
+  return relevantSections.includes(section);
+}
 
 export default function OnboardingProfile() {
   const router = useRouter();
@@ -50,6 +134,16 @@ export default function OnboardingProfile() {
 
   // Accordion state
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+
+  // Compute which sections are relevant based on current identity flags
+  const relevantSections = useMemo(() => {
+    return getRelevantSections({
+      is_songwriter: isSongwriter,
+      is_host: isHost,
+      is_studio: isStudio,
+      is_fan: isFan,
+    });
+  }, [isSongwriter, isHost, isStudio, isFan]);
 
   // Load existing profile data
   useEffect(() => {
@@ -399,7 +493,8 @@ export default function OnboardingProfile() {
               )}
             </div>
 
-            {/* Instruments & Genres */}
+            {/* Instruments & Genres - visible for Songwriter or Fan */}
+            {isSectionVisible("instruments", relevantSections) && (
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("instruments")}
@@ -642,8 +737,10 @@ export default function OnboardingProfile() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Tell people about yourself */}
+            {/* Tell people about yourself - visible for all identities */}
+            {isSectionVisible("about", relevantSections) && (
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("about")}
@@ -672,8 +769,10 @@ export default function OnboardingProfile() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Social links */}
+            {/* Social links - visible for Songwriter, Host, Studio */}
+            {isSectionVisible("social", relevantSections) && (
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("social")}
@@ -743,8 +842,10 @@ export default function OnboardingProfile() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Tipping */}
+            {/* Tipping - visible for Songwriter only */}
+            {isSectionVisible("tipping", relevantSections) && (
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("tipping")}
@@ -802,8 +903,10 @@ export default function OnboardingProfile() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* Collaboration */}
+            {/* Collaboration - visible for Songwriter only */}
+            {isSectionVisible("collab", relevantSections) && (
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("collab")}
@@ -852,6 +955,7 @@ export default function OnboardingProfile() {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           {/* Footer note */}
