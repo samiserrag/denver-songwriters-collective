@@ -2,8 +2,8 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-01-16
-> **Next Milestone:** Invite ~20 Test Users
+> **Last Updated:** 2026-01-17
+> **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
 
@@ -36,9 +36,9 @@
 
 | Item | Status | Evidence | Owner |
 |------|--------|----------|-------|
-| **Homepage hero text contrast** | OPEN | Text hard to read over background image | Sami |
-| **Nav reorder: Members after Happenings** | OPEN | Current order not intuitive | Sami |
-| **Homepage CTA pills text update** | OPEN | Change to "See all happenings" / "See open mics" | Sami |
+| **Homepage hero text contrast** | DONE | Commit `dfe46d7` — 40% black overlay added | Sami |
+| **Nav reorder: Members after Happenings** | DONE | Commit `dfe46d7` — Nav order: Happenings → Members → Venues | Sami |
+| **Homepage CTA pills text update** | DONE | Commit `dfe46d7` — "See All Happenings" / "See Open Mics" | Sami |
 | **Member pages basic completeness** | OPEN | See Member Pages section below | Sami |
 
 ### P2 — NICE TO HAVE
@@ -180,9 +180,9 @@ This is a structural UX realignment to better support performers, hosts, venues,
 | ID | Item | Priority | Status |
 |----|------|----------|--------|
 | UX-01 | Remove "Unconfirmed" badges from two existing DSC TEST series (cards + detail pages) | P0 | DONE |
-| UX-02 | Fix homepage hero text contrast over background image | P1 | OPEN |
-| UX-03 | Reorder nav: Members immediately after Happenings | P1 | OPEN |
-| UX-04 | Homepage CTA pills text: "See all happenings" / "See open mics" | P1 | OPEN |
+| UX-02 | Fix homepage hero text contrast over background image | P1 | DONE |
+| UX-03 | Reorder nav: Members immediately after Happenings | P1 | DONE |
+| UX-04 | Homepage CTA pills text: "See all happenings" / "See open mics" | P1 | DONE |
 | UX-05 | Make "Join us" heading a link to sign-up page (with hover effect) | P0 | DONE |
 
 ### Search (HIGH PRIORITY)
@@ -324,8 +324,8 @@ Before any milestone:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status:** 1953 tests passing, 0 lint warnings.
+**Current Status:** 2005 tests passing, 0 lint warnings.
 
 ---
 
-*This document reconciles all TODO sources as of 2026-01-16. See git history for changes.*
+*This document reconciles all TODO sources as of 2026-01-17. See git history for changes.*
