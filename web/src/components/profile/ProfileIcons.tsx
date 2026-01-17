@@ -80,7 +80,50 @@ export interface TipLink {
   color: string;
 }
 
+/**
+ * Normalize a social link value to a full URL.
+ * Handles both full URLs and bare handles.
+ */
+export function normalizeSocialUrl(
+  value: string | null | undefined,
+  platform: "instagram" | "youtube" | "tiktok" | "twitter" | "website" | "spotify"
+): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  // Already a full URL
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  // Platform-specific handle normalization
+  switch (platform) {
+    case "instagram":
+      return `https://instagram.com/${trimmed.replace(/^@/, "")}`;
+    case "youtube":
+      // Could be @handle or channel name
+      return `https://youtube.com/@${trimmed.replace(/^@/, "")}`;
+    case "tiktok":
+      return `https://tiktok.com/@${trimmed.replace(/^@/, "")}`;
+    case "twitter":
+      return `https://x.com/${trimmed.replace(/^@/, "")}`;
+    case "spotify":
+      // Spotify URLs are typically full URLs; if bare, assume artist page
+      if (trimmed.includes("spotify")) {
+        return `https://${trimmed}`;
+      }
+      return `https://open.spotify.com/artist/${trimmed}`;
+    case "website":
+      // Bare domain - add https
+      return `https://${trimmed}`;
+    default:
+      return trimmed;
+  }
+}
+
 // Helper to build social links array from profile data
+// Order: Musician-centric priority (Spotify → YouTube → Instagram → TikTok → Website → Twitter/X)
 export function buildSocialLinks(profile: {
   instagram_url?: string | null;
   facebook_url?: string | null;
@@ -91,12 +134,13 @@ export function buildSocialLinks(profile: {
   website_url?: string | null;
 }): SocialLink[] {
   return [
-    { type: "instagram", url: profile.instagram_url ?? null, label: "Instagram" },
-    { type: "facebook", url: profile.facebook_url ?? null, label: "Facebook" },
-    { type: "youtube", url: profile.youtube_url ?? null, label: "YouTube" },
-    { type: "spotify", url: profile.spotify_url ?? null, label: "Spotify" },
-    { type: "tiktok", url: profile.tiktok_url ?? null, label: "TikTok" },
-    { type: "website", url: profile.website_url ?? null, label: "Website" },
+    // Musician-centric priority order
+    { type: "spotify", url: normalizeSocialUrl(profile.spotify_url, "spotify"), label: "Spotify" },
+    { type: "youtube", url: normalizeSocialUrl(profile.youtube_url, "youtube"), label: "YouTube" },
+    { type: "instagram", url: normalizeSocialUrl(profile.instagram_url, "instagram"), label: "Instagram" },
+    { type: "tiktok", url: normalizeSocialUrl(profile.tiktok_url, "tiktok"), label: "TikTok" },
+    { type: "website", url: normalizeSocialUrl(profile.website_url, "website"), label: "Website" },
+    { type: "twitter", url: normalizeSocialUrl(profile.twitter_url, "twitter"), label: "X" },
   ].filter((link) => link.url) as SocialLink[];
 }
 
