@@ -366,6 +366,267 @@ curl -s -X POST https://denversongwriterscollective.org/api/guest/rsvp/request-c
 
 ---
 
+---
+
+### 16. New User Onboarding Flow (Phase Role-Based Onboarding)
+
+**Precondition:** NOT logged in (incognito window, clear cookies)
+
+#### A) Fan-Only Path
+
+**Steps:**
+1. Navigate to `/signup`
+2. Complete signup with email/password
+3. On role selection (`/onboarding/role`), select ONLY "Fan" checkbox
+4. Click Continue to profile page (`/onboarding/profile`)
+
+**Expected:**
+- Profile page shows ONLY Fan-relevant sections (Basic Info, Social Links)
+- Songwriter-specific fields (genres, instruments, etc.) are HIDDEN
+- Host-specific fields are HIDDEN
+- Studio-specific fields are HIDDEN
+
+5. Complete basic info and submit
+
+**Expected:**
+- Redirects to `/onboarding/complete`
+- Dashboard shows user as a Fan
+
+**Pass Criteria:** Fan-only users see minimal onboarding fields
+
+#### B) Songwriter Path
+
+**Steps:**
+1. Fresh signup
+2. Select "Songwriter" checkbox (may also select Fan)
+3. Continue to profile
+
+**Expected:**
+- Songwriter sections visible: Genres, Instruments, Collaborations
+- Can complete profile with songwriter details
+
+**Pass Criteria:** Songwriter-specific fields appear when identity flag set
+
+#### C) Host Path
+
+**Steps:**
+1. Fresh signup
+2. Select "Host" checkbox
+3. Continue to profile
+
+**Expected:**
+- Host-relevant sections visible
+- After completing onboarding, Dashboard shows "Getting Started" prompts
+
+**Pass Criteria:** Host identity flows through to dashboard prompts
+
+---
+
+### 17. Dashboard Getting Started Prompts (Slice 3)
+
+**Precondition:** Logged in as user with `is_host=true`, NOT an approved host, NO pending host request
+
+**URL:** `/dashboard`
+
+**Expected:**
+- "Getting Started" section appears with sparkle emoji header
+- "Host DSC Happenings" card visible with "Apply to Host" button
+- Dismiss button visible in section header
+
+**Steps:**
+1. Click "Dismiss"
+
+**Expected:**
+- Section disappears
+- Refresh page → section stays hidden (localStorage persistence)
+
+2. Clear localStorage key `dsc_getting_started_dismissed_v1` (dev tools)
+3. Refresh page
+
+**Expected:**
+- Section reappears
+
+**Additional Check (Venue Prompt):**
+
+**Precondition:** User has `is_host=true` OR `is_studio=true`, AND manages 0 venues
+
+**Expected:**
+- "Manage a Venue" card visible with "Browse Venues" button
+- Button links to `/venues`
+
+**Pass Criteria:** Prompts show for eligible users; dismiss persists via localStorage
+
+---
+
+### 18. Global Nav Search Click-Through
+
+**URL:** Homepage or any page with header
+
+**Steps:**
+1. Click the search icon in header
+2. Type "open" and wait for results
+
+**Expected:**
+- Happenings results appear (matching events)
+- Each result shows event type icon + title
+
+3. Click a Happening result
+
+**Expected:**
+- Navigates to `/events/{slug}` (NOT `/happenings?type=...`)
+
+4. Return to search, type a venue name (e.g., "brewery")
+
+**Expected:**
+- Venue results appear with location icon
+- Clicking navigates to `/venues/{slug}`
+
+5. Return to search, type a member name
+
+**Expected:**
+- Member results appear with person icon
+- Clicking navigates to `/songwriters/{slug}` (NOT `/members?id=...`)
+
+**Pass Criteria:** All three entity types searchable; all click-throughs go to detail pages
+
+---
+
+### 19. Venue Cover Image (Venue Manager Flow)
+
+**Precondition:** Logged in as venue manager for a venue
+
+**URL:** `/dashboard/my-venues/{venue-id}`
+
+#### A) Upload Cover Image
+
+**Steps:**
+1. Navigate to venue management page
+2. Find "Cover Image" section
+3. Upload an image file (JPG/PNG)
+
+**Expected:**
+- Image preview appears
+- Save button enabled
+- After save, image persists on refresh
+
+#### B) Rendering on /venues Cards
+
+**URL:** `/venues`
+
+**Expected:**
+- Venue card shows uploaded cover image
+- Image fills card area (aspect ratio maintained)
+- Fallback gradient shows for venues without cover image
+
+#### C) Rendering on /venues/[slug] Detail
+
+**URL:** `/venues/{venue-slug}` (venue with cover image)
+
+**Expected:**
+- Cover image displayed prominently in hero or header area
+- Image is high quality (not blurry)
+
+**Pass Criteria:** Cover image uploads, persists, and renders on both list and detail pages
+
+---
+
+### 20. Venue Invite Create + Accept Flow
+
+**Precondition:** Logged in as admin
+
+**URL:** `/dashboard/admin/venues/{venue-id}`
+
+#### A) Create Invite
+
+**Steps:**
+1. Navigate to venue admin page
+2. Find "Venue Invites" or invite section
+3. Click "Create Invite"
+4. Optionally restrict to email, set expiry (e.g., 7 days)
+5. Click Create
+
+**Expected:**
+- Invite URL displayed (shown only once!)
+- Copy button works
+- Email template available for copying
+
+#### B) Accept Invite (New User)
+
+**Steps:**
+1. Copy invite URL
+2. Open in incognito/different browser
+3. Navigate to invite URL
+
+**Expected:**
+- Invite acceptance page loads
+- If not logged in, prompts to log in or sign up
+- After auth, shows "Accept Invite" confirmation
+
+4. Click Accept
+
+**Expected:**
+- Success message
+- User is now a venue manager
+- `/dashboard/my-venues` shows the venue
+
+#### C) Revoke Invite (Admin)
+
+**Steps:**
+1. As admin, return to venue admin page
+2. Find pending invite in list
+3. Click "Revoke"
+
+**Expected:**
+- Invite marked as revoked
+- Using old URL returns error (invite expired/revoked)
+
+**Pass Criteria:** Full invite lifecycle works (create → accept → revoke)
+
+---
+
+### 21. Comments + RSVPs on Recurring Event with ?date=
+
+**Precondition:** A recurring event exists with multiple upcoming occurrences
+
+**URL:** `/events/{recurring-event-slug}?date=2026-01-25` (future date in series)
+
+#### A) Date-Specific Display
+
+**Expected:**
+- Page shows the specific occurrence date (Jan 25, 2026)
+- If override exists for that date, override info displayed
+- Date pills show other upcoming occurrences
+
+#### B) RSVP is Date-Scoped
+
+**Steps:**
+1. Log in as member
+2. Click RSVP on the `/events/{slug}?date=2026-01-25` page
+3. Navigate to `/events/{slug}?date=2026-02-01` (different occurrence)
+
+**Expected:**
+- Second occurrence shows you are NOT RSVP'd
+- RSVP button available again
+- Going to My RSVPs shows separate entries per date
+
+#### C) Comments are Date-Scoped (if implemented)
+
+**Expected:**
+- Comments posted on `?date=2026-01-25` only appear on that date
+- Different date shows different/no comments
+
+#### D) Series Slug Redirect
+
+**URL:** `/events/{recurring-event-slug}` (NO ?date= param)
+
+**Expected:**
+- Redirects to include `?date=` of next upcoming occurrence
+- Final URL includes the date parameter
+
+**Pass Criteria:** RSVPs and viewing are date-scoped for recurring events
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._
@@ -375,3 +636,54 @@ _Placeholder: Gallery-specific smoke tests will be added when the Gallery track 
 ## Profiles Smoke Checks (To Be Added in Profiles Track)
 
 _Placeholder: Profile-specific smoke tests will be added when the Profiles track ships._
+
+---
+
+## Smoke Test Execution Log
+
+> Append dated results after each production verification run.
+
+### 2026-01-17 — Post P0 UI Polish Deploy
+
+**Executed by:** Claude Agent
+**Commit:** `dfe46d7`
+**Timestamp:** 2026-01-17T15:34 UTC
+
+#### API & Infrastructure Tests
+
+| # | Test | Result | Notes |
+|---|------|--------|-------|
+| 13 | Guest Verification Health | ✅ PASS | `{"enabled":true,"mode":"always-on"}` |
+
+#### P0 UI Polish Verification
+
+| Item | Test | Result | Notes |
+|------|------|--------|-------|
+| A | Hero text contrast | ✅ PASS | 40% overlay + drop shadows visible |
+| B | Nav menu order | ✅ PASS | Order confirmed: Happenings → Members → Venues |
+| C | CTA pill labels | ✅ PASS | "See All Happenings" and "See Open Mics" displayed |
+
+#### New Feature Tests
+
+| # | Test | Result | Notes |
+|---|------|--------|-------|
+| 16A | Fan-Only Onboarding | 🔶 MANUAL | Pages load (200 OK), requires authenticated user flow |
+| 16B | Songwriter Onboarding | 🔶 MANUAL | Pages load (200 OK), requires authenticated user flow |
+| 16C | Host Onboarding | 🔶 MANUAL | Pages load (200 OK), requires authenticated user flow |
+| 17 | Getting Started Prompts | 🔶 MANUAL | Dashboard returns 307 redirect (auth required) |
+| 18 | Global Nav Search | ✅ PASS | All 3 types return correct URLs: happenings→`/events/{slug}`, venues→`/venues/{slug}`, members→`/songwriters/{slug}` |
+| 19A | Venue Cover Image Upload | 🔶 MANUAL | Requires venue manager auth |
+| 19B | Venue Cards | ✅ PASS | Cards render, fallback works (81 venues, most without images) |
+| 19C | Venue Detail | ✅ PASS | `/venues/brewery-rickoli` loads with cover image + happenings |
+| 20 | Venue Invite Flow | 🔶 MANUAL | `/venue-invite` page loads (200 OK), full flow requires admin auth |
+| 21A | Date-Specific Display | ✅ PASS | `/events/brewery-rickoli?date=2026-01-20` shows correct date + pills |
+| 21B | RSVP Date-Scoped | 🔶 MANUAL | RSVP section visible, requires auth to test scoping |
+| 21D | Series Slug Redirect | ✅ PASS | `/events/brewery-rickoli` → 307 redirect to `?date=2026-01-20` |
+
+#### Summary
+
+- **Automated checks:** 8 PASS
+- **Manual verification required:** 8 tests (require authenticated user sessions)
+- **Failures:** 0
+
+**No STOP-GATE issues found.** All public endpoints working correctly. Manual tests require user accounts to complete.
