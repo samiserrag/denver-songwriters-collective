@@ -315,6 +315,41 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### P0 Fix: Global Nav Search (January 2026) — RESOLVED
+
+**Goal:** Fix global nav search to find Happenings, Venues, AND Members, with correct navigation to detail pages.
+
+**Status:** Fixed.
+
+**Problems Fixed:**
+
+| Issue | Before | After |
+|-------|--------|-------|
+| Open mic results | Linked to `/happenings?type=open_mic` (filter page) | Links to `/events/{slug}` (detail page) |
+| Event results | Linked to `/happenings?type=dsc` (filter page) | Links to `/events/{slug}` (detail page) |
+| Member results | Linked to `/members?id={id}` (ignored param) | Links to `/songwriters/{slug}` (detail page) |
+| Venue search | Not searchable | Now searchable, links to `/venues/{slug}` |
+| Member search | Returned empty results | Fixed query to use `select("*")` |
+
+**Root Cause (Member Search):**
+The Supabase JS client has a quirk where combining `.eq()` with `.ilike()` on explicit column selections (`.select(\`id, slug, ...\`)`) fails silently. Changing to `.select("*")` (matching the working `/songwriters` page pattern) fixed the issue.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/search/route.ts` | Fixed all URLs, added venue search, fixed member query |
+| `components/GlobalSearch.tsx` | Added venue type with label and icon |
+
+**Test Coverage:** 18 new tests in `src/__tests__/nav-search.test.ts`
+
+**Commits:**
+- `a92613b` — Fix URLs for happenings/venues/members navigation
+- `b5d0af8` — Fix member search using `ilike()` instead of `or()`
+- `2449fd6` — Fix member search using `select("*")` to match working query pattern
+
+---
+
 ### Hotfix: Venue Invite RLS + URL + Acceptance Issues (January 2026) — RESOLVED
 
 **Goal:** Fix venue invite creation, URL generation, and invite acceptance flow.
