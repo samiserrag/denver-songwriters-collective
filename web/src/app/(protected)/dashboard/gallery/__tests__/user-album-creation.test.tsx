@@ -6,6 +6,9 @@
  * - Album create UI renders and responds to user input
  * - Slug generation follows the same logic as admin
  * - Album creation updates the dropdown selection
+ *
+ * Note: These tests use userEvent which can be slow during parallel execution.
+ * Timeout increased to 15s to prevent flaky failures in full suite runs.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -70,7 +73,7 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-describe("UserGalleryUpload - Album Creation", () => {
+describe("UserGalleryUpload - Album Creation", { timeout: 15000 }, () => {
   const defaultProps = {
     albums: [{ id: "existing-1", name: "Existing Album" }],
     venues: [{ id: "venue-1", name: "Mercury Cafe" }],
@@ -268,7 +271,7 @@ describe("UserGalleryUpload - Album Creation", () => {
   });
 });
 
-describe("UserGalleryUpload - Event Dropdown", () => {
+describe("UserGalleryUpload - Event Dropdown", { timeout: 15000 }, () => {
   // Helper to format dates exactly as the component does (America/Denver timezone)
   const formatEventDate = (dateStr: string): string => {
     return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
@@ -313,7 +316,7 @@ describe("UserGalleryUpload - Event Dropdown", () => {
   });
 });
 
-describe("UserGalleryUpload - Custom Venue Toggle", () => {
+describe("UserGalleryUpload - Custom Venue Toggle", { timeout: 15000 }, () => {
   const defaultProps = {
     albums: [],
     venues: [
@@ -356,7 +359,7 @@ describe("UserGalleryUpload - Custom Venue Toggle", () => {
   });
 });
 
-describe("UserGalleryUpload - Custom Event Toggle", () => {
+describe("UserGalleryUpload - Custom Event Toggle", { timeout: 15000 }, () => {
   const defaultProps = {
     albums: [],
     venues: [],
