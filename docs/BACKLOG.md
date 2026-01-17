@@ -197,6 +197,7 @@ This is a structural UX realignment to better support performers, hosts, venues,
 
 | ID | Item | Priority | Status | Notes |
 |----|------|----------|--------|-------|
+| MEMBER-00 | Fix fan-only member profile 404s / add /members/[id] route | P0 | DONE | 24 tests, MemberCard routing fixed |
 | MEMBER-01 | Profile completeness / visibility rules | P1 | OPEN | From DEFERRED-HIGH-PRIORITY.md |
 | MEMBER-02 | Member discovery / directory UX | P1 | OPEN | Search + filters |
 | MEMBER-03 | Member ↔ event ↔ venue linking | P2 | OPEN | Cross-linking |
@@ -323,7 +324,7 @@ Before any milestone:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status:** 1929 tests passing, 0 lint warnings.
+**Current Status:** 1953 tests passing, 0 lint warnings.
 
 ---
 

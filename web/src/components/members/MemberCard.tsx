@@ -83,7 +83,11 @@ function getLabel(member: Member): string {
 }
 
 /**
- * Get profile link based on identity flags (Studio -> /studios, others -> /songwriters)
+ * Get profile link based on identity flags
+ * Routing priority:
+ * - Studios → /studios/[id]
+ * - Songwriters or Hosts → /songwriters/[id]
+ * - Fan-only (is_fan=true and all others false) → /members/[id]
  * Prefers slug for SEO-friendly URLs, falls back to id for backward compatibility
  */
 function getProfileLink(member: Member): string {
@@ -91,8 +95,11 @@ function getProfileLink(member: Member): string {
   if (isMemberStudio(member)) {
     return `/studios/${identifier}`;
   }
-  // All other members (songwriters, hosts, fans) go to /songwriters/[id]
-  return `/songwriters/${identifier}`;
+  if (isMemberSongwriter(member) || isMemberHost(member)) {
+    return `/songwriters/${identifier}`;
+  }
+  // Fan-only members go to /members/[id]
+  return `/members/${identifier}`;
 }
 
 export function MemberCard({ member, className }: MemberCardProps) {
