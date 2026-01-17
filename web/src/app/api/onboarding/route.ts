@@ -19,7 +19,20 @@ export async function POST(request: Request) {
       is_songwriter = false,
       is_host = false,
       is_studio = false,
-      is_fan = false
+      is_fan = false,
+      bio,
+      instagram_url,
+      spotify_url,
+      youtube_url,
+      website_url,
+      tiktok_url,
+      venmo_handle,
+      cashapp_handle,
+      paypal_url,
+      open_to_collabs = false,
+      interested_in_cowriting = false,
+      instruments,
+      genres,
     } = body;
 
     // 3. Use SERVICE ROLE to bypass RLS
@@ -28,7 +41,7 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 4. Update profile
+    // 4. Update profile with all fields
     const { error: updateError } = await serviceClient
       .from('profiles')
       .update({
@@ -37,6 +50,19 @@ export async function POST(request: Request) {
         is_host,
         is_studio,
         is_fan,
+        bio: bio || null,
+        instagram_url: instagram_url || null,
+        spotify_url: spotify_url || null,
+        youtube_url: youtube_url || null,
+        website_url: website_url || null,
+        tiktok_url: tiktok_url || null,
+        venmo_handle: venmo_handle || null,
+        cashapp_handle: cashapp_handle || null,
+        paypal_url: paypal_url || null,
+        open_to_collabs,
+        interested_in_cowriting,
+        instruments: instruments?.length > 0 ? instruments : null,
+        genres: genres?.length > 0 ? genres : null,
         onboarding_complete: true,
         updated_at: new Date().toISOString(),
       })

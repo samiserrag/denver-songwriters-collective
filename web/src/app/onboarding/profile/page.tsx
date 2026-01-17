@@ -124,6 +124,19 @@ export default function OnboardingProfile() {
           is_host: isHost,
           is_studio: isStudio,
           is_fan: isFan,
+          bio: bio || null,
+          instagram_url: instagramUrl || null,
+          spotify_url: spotifyUrl || null,
+          youtube_url: youtubeUrl || null,
+          website_url: websiteUrl || null,
+          tiktok_url: tiktokUrl || null,
+          venmo_handle: venmoHandle || null,
+          cashapp_handle: cashappHandle || null,
+          paypal_url: paypalUrl || null,
+          open_to_collabs: openToCollabs,
+          interested_in_cowriting: interestedInCowriting,
+          instruments: instruments.length > 0 ? instruments : null,
+          genres: genres.length > 0 ? genres : null,
         }),
       });
 
@@ -148,7 +161,7 @@ export default function OnboardingProfile() {
     setError(null);
 
     try {
-      console.log("[Onboarding] Skipping via API route, saving name if provided");
+      console.log("[Onboarding] Skipping via API route, saving all provided data");
 
       const response = await fetch('/api/onboarding', {
         method: 'POST',
@@ -159,6 +172,19 @@ export default function OnboardingProfile() {
           is_host: isHost,
           is_studio: isStudio,
           is_fan: isFan,
+          bio: bio || null,
+          instagram_url: instagramUrl || null,
+          spotify_url: spotifyUrl || null,
+          youtube_url: youtubeUrl || null,
+          website_url: websiteUrl || null,
+          tiktok_url: tiktokUrl || null,
+          venmo_handle: venmoHandle || null,
+          cashapp_handle: cashappHandle || null,
+          paypal_url: paypalUrl || null,
+          open_to_collabs: openToCollabs,
+          interested_in_cowriting: interestedInCowriting,
+          instruments: instruments.length > 0 ? instruments : null,
+          genres: genres.length > 0 ? genres : null,
         }),
       });
 
