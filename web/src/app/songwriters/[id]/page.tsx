@@ -4,6 +4,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
 import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
+import { RoleBadges } from "@/components/members";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
 export const dynamic = "force-dynamic";
@@ -55,6 +56,24 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
   const socialLinks = buildSocialLinks(songwriter);
   const tipLinks = buildTipLinks(songwriter);
 
+  // Check if user is a venue manager (has active, non-revoked venue_managers entry)
+  const { data: venueManagerData } = await supabase
+    .from("venue_managers")
+    .select("id")
+    .eq("user_id", songwriter.id)
+    .is("revoked_at", null)
+    .limit(1);
+  const isVenueManager = (venueManagerData?.length ?? 0) > 0;
+
+  // Build role badge flags for shared component
+  const roleBadgeFlags = {
+    isSongwriter: songwriter.is_songwriter ?? false,
+    isHost: songwriter.is_host ?? false,
+    isVenueManager,
+    isFan: songwriter.is_fan ?? false,
+    role: songwriter.role ?? undefined,
+  };
+
   return (
     <>
       <HeroSection minHeight="auto">
@@ -76,30 +95,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               {songwriter.full_name ?? "Anonymous Songwriter"}
             </h1>
 
-            {/* Identity badges - flag-based (no role display except for legacy fallback) */}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {songwriter.is_songwriter && (
-                <span className="px-4 py-1.5 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm font-medium">
-                  🎵 Songwriter / Musician
-                </span>
-              )}
-              {(songwriter.is_host || songwriter.role === "host") && (
-                <span className="px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
-                  🎤 Open Mic Host
-                </span>
-              )}
-              {songwriter.is_studio && (
-                <span className="px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
-                  🎚️ Recording Studio
-                </span>
-              )}
-              {/* Fan badge - low prominence, only show if no other badges */}
-              {songwriter.is_fan && !songwriter.is_songwriter && !songwriter.is_host && !songwriter.is_studio && (
-                <span className="px-4 py-1.5 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-tertiary)] text-sm">
-                  Music Supporter
-                </span>
-              )}
-            </div>
+            {/* Identity badges - consistent order: Songwriter → Happenings Host → Venue Manager → Fan */}
+            <RoleBadges flags={roleBadgeFlags} mode="row" size="md" className="justify-center mb-4" />
 
             {/* Collaboration & Availability Badges */}
             <div className="flex flex-wrap justify-center gap-2 mb-6">

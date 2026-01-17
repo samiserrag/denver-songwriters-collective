@@ -185,6 +185,7 @@ export interface Member {
   isHost?: boolean;
   isStudio?: boolean;
   isFan?: boolean;
+  isVenueManager?: boolean;
   bio?: string;
   genres?: string[];
   instruments?: string[];

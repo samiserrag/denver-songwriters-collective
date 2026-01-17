@@ -8,6 +8,7 @@ import type { Member } from "@/types";
 import { SpotlightBadge } from "@/components/special/spotlight-badge";
 import { SocialLinks } from "@/components/special/social-links";
 import { ImagePlaceholder } from "@/components/ui";
+import { RoleBadges } from "./RoleBadges";
 
 interface MemberCardProps {
   member: Member;
@@ -41,45 +42,16 @@ function isMemberFan(member: Member): boolean {
 }
 
 /**
- * Get primary badge style based on identity flags (priority: Studio > Host > Songwriter > Fan)
+ * Convert Member to RoleBadgeFlags for the shared RoleBadges component
  */
-function getBadgeStyle(member: Member): string {
-  if (isMemberStudio(member)) {
-    return "bg-purple-500/20 text-purple-300 border-purple-500/30";
-  }
-  if (isMemberHost(member) && !isMemberSongwriter(member)) {
-    return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
-  }
-  if (isMemberSongwriter(member)) {
-    return "bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] border-[var(--color-border-accent)]/30";
-  }
-  if (isMemberFan(member)) {
-    return "bg-blue-500/20 text-blue-300 border-blue-500/30";
-  }
-  return "bg-gray-500/20 text-[var(--color-text-secondary)] border-gray-500/30";
-}
-
-/**
- * Get primary label based on identity flags
- * Shows combined labels when appropriate (e.g., "Songwriter & Host")
- */
-function getLabel(member: Member): string {
-  if (isMemberStudio(member)) {
-    return "Studio";
-  }
-  if (isMemberSongwriter(member) && isMemberHost(member)) {
-    return "Songwriter & Host";
-  }
-  if (isMemberSongwriter(member)) {
-    return "Songwriter";
-  }
-  if (isMemberHost(member)) {
-    return "Host";
-  }
-  if (isMemberFan(member)) {
-    return "Fan";
-  }
-  return "Member";
+function memberToRoleBadgeFlags(member: Member) {
+  return {
+    isSongwriter: isMemberSongwriter(member),
+    isHost: isMemberHost(member),
+    isVenueManager: member.isVenueManager,
+    isFan: isMemberFan(member),
+    role: member.role,
+  };
 }
 
 /**
@@ -104,8 +76,7 @@ function getProfileLink(member: Member): string {
 
 export function MemberCard({ member, className }: MemberCardProps) {
   const profileLink = getProfileLink(member);
-  const roleLabel = getLabel(member);
-  const roleBadgeStyle = getBadgeStyle(member);
+  const roleBadgeFlags = memberToRoleBadgeFlags(member);
 
   return (
     <Link href={profileLink} className="block h-full group focus-visible:outline-none">
@@ -147,14 +118,7 @@ export function MemberCard({ member, className }: MemberCardProps) {
 
           {/* Role badge */}
           <div className="absolute top-3 left-3">
-            <span
-              className={cn(
-                "px-2 py-1 text-sm font-medium rounded-full border",
-                roleBadgeStyle
-              )}
-            >
-              {roleLabel}
-            </span>
+            <RoleBadges flags={roleBadgeFlags} mode="single" size="sm" />
           </div>
         </div>
 

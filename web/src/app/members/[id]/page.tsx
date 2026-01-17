@@ -4,6 +4,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
 import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
+import { RoleBadges } from "@/components/members";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
 
@@ -62,14 +63,25 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   const socialLinks = buildSocialLinks(member);
   const tipLinks = buildTipLinks(member);
 
-  // Determine identity badges to show
+  // Check if user is a venue manager (has active, non-revoked venue_managers entry)
+  const { data: venueManagerData } = await supabase
+    .from("venue_managers")
+    .select("id")
+    .eq("user_id", member.id)
+    .is("revoked_at", null)
+    .limit(1);
+  const isVenueManager = (venueManagerData?.length ?? 0) > 0;
+
+  // Build role badge flags for shared component
   // Note: legacy role enum is "performer" | "host" | "studio" | "admin" | "fan" | "member"
-  // "songwriter" is not a valid role value - use "performer" for legacy compatibility
   const hasSongwriter = member.is_songwriter || member.role === "performer";
-  const hasHost = member.is_host || member.role === "host";
-  const hasStudio = member.is_studio || member.role === "studio";
-  const hasFan = member.is_fan || member.role === "fan";
-  const isFanOnly = hasFan && !hasSongwriter && !hasHost && !hasStudio;
+  const roleBadgeFlags = {
+    isSongwriter: hasSongwriter,
+    isHost: member.is_host ?? false,
+    isVenueManager,
+    isFan: member.is_fan ?? false,
+    role: member.role ?? undefined,
+  };
 
   return (
     <>
@@ -92,29 +104,8 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
               {member.full_name ?? "Anonymous Member"}
             </h1>
 
-            {/* Identity badges */}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {hasSongwriter && (
-                <span className="px-4 py-1.5 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm font-medium">
-                  🎵 Songwriter / Musician
-                </span>
-              )}
-              {hasHost && (
-                <span className="px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
-                  🎤 Happenings Host
-                </span>
-              )}
-              {hasStudio && (
-                <span className="px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
-                  🎚️ Recording Studio
-                </span>
-              )}
-              {isFanOnly && (
-                <span className="px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-sm font-medium">
-                  🎶 Music Supporter
-                </span>
-              )}
-            </div>
+            {/* Identity badges - consistent order: Songwriter → Happenings Host → Venue Manager → Fan */}
+            <RoleBadges flags={roleBadgeFlags} mode="row" size="md" className="justify-center mb-4" />
 
             {/* Collaboration & Availability Badges - only show if relevant flags are set */}
             <div className="flex flex-wrap justify-center gap-2 mb-6">
