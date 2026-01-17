@@ -26,9 +26,11 @@
 
 | Item | Status | Evidence | Owner |
 |------|--------|----------|-------|
-| **Nav search correctness + navigation** | OPEN | Search results don't navigate to detail pages | Sami |
-| **Remove "Unconfirmed" badges from DSC TEST series** | OPEN | Cards + detail pages show confusing status | Sami |
-| **Sign-up link clarity ("Join us" → link)** | OPEN | Heading not clickable | Sami |
+| **Nav search correctness + navigation** | DONE | Commits `a92613b`, `b5d0af8`, `2449fd6` | Sami |
+| **Remove "Unconfirmed" badges from DSC TEST series** | DONE | Commit `04ca056` | Sami |
+| **Sign-up link clarity ("Join us" → link)** | DONE | Commits `d4b4227`, `f6b2019` | Sami |
+| **DSC TEST events appearing in happenings list** | DONE | Commits `58d5979`, `43f64e4` | Sami |
+| **Role-Based Onboarding & Profile Personalization** | PLANNED | See detailed spec below | Sami |
 
 ### P1 — STRONGLY RECOMMENDED
 
@@ -44,6 +46,69 @@
 | Item | Status | Evidence | Owner |
 |------|--------|----------|-------|
 | **Visual polish pass** | OPEN | Minor UI refinements | — |
+
+---
+
+## P0 Spec: Role-Based Onboarding & Profile Personalization
+
+**Priority:** P0 (Pre-Test User Readiness)
+**Status:** Planned / Not Started
+
+### Description
+
+Add a role-selection step to signup onboarding that dynamically controls which onboarding fields, profile sections, and claim/approval flows are shown. Roles are NOT mutually exclusive and may be changed later.
+
+This is a structural UX realignment to better support performers, hosts, venues, and fans without forcing irrelevant questions.
+
+**Important:** This item must be completed BEFORE inviting external test users, but does NOT control or schedule test-user rollout. Sami explicitly controls when test users are invited.
+
+### Onboarding Prompt (First Step)
+
+> "How would you like to participate in the Collective?"
+> (Select any that apply)
+
+**Selectable Roles:**
+- Songwriter / Performer
+- Open Mic Host / Organizer
+- Venue Manager
+- Original Music Fan
+
+### Rules
+
+- Only name is required; all other onboarding fields remain optional
+- Selected roles determine which subsequent onboarding fields appear
+- Multiple roles merge fields (no duplication, no conflicts)
+- Roles can be updated later in profile settings
+
+### Role-Specific Behavior
+
+| Role | Behavior |
+|------|----------|
+| **Songwriter / Performer** | Instruments, originals/covers, links, performance-oriented fields |
+| **Open Mic Host / Organizer** | Prompt to claim or create an open mic → admin approval required |
+| **Venue Manager** | Prompt to claim or accept venue invite → admin approval required |
+| **Original Music Fan** | Fan-centric fields (genres followed, venues frequented, support style) |
+
+### Approval & States
+
+- Host/Venue selections create a "pending approval" state
+- Admin receives notification email
+- Profile displays "Pending approval" badge until approved
+- Approval grants existing permissions (reuse current systems)
+
+### Explicit Non-Goals
+
+- No trust/reputation scoring
+- No monetization changes
+- No forced identity locking
+
+### Deliverables
+
+1. Investigation doc (audit current onboarding + profile schema)
+2. Role → onboarding field matrix
+3. Claim/approval state confirmation
+4. UX spec for profile cards and badges
+5. Implementation + tests
 
 ---
 
@@ -114,19 +179,19 @@
 
 | ID | Item | Priority | Status |
 |----|------|----------|--------|
-| UX-01 | Remove "Unconfirmed" badges from two existing DSC TEST series (cards + detail pages) | P0 | OPEN |
+| UX-01 | Remove "Unconfirmed" badges from two existing DSC TEST series (cards + detail pages) | P0 | DONE |
 | UX-02 | Fix homepage hero text contrast over background image | P1 | OPEN |
 | UX-03 | Reorder nav: Members immediately after Happenings | P1 | OPEN |
 | UX-04 | Homepage CTA pills text: "See all happenings" / "See open mics" | P1 | OPEN |
-| UX-05 | Make "Join us" heading a link to sign-up page (no visual style change) | P0 | OPEN |
+| UX-05 | Make "Join us" heading a link to sign-up page (with hover effect) | P0 | DONE |
 
 ### Search (HIGH PRIORITY)
 
 | ID | Item | Priority | Status |
 |----|------|----------|--------|
-| SEARCH-01 | Global nav search must search happenings, venues, AND members | P0 | OPEN |
-| SEARCH-02 | Search results must navigate to correct detail pages for ALL result types | P0 | OPEN |
-| SEARCH-03 | Fix current behavior where even working results don't navigate | P0 | OPEN |
+| SEARCH-01 | Global nav search must search happenings, venues, AND members | P0 | DONE |
+| SEARCH-02 | Search results must navigate to correct detail pages for ALL result types | P0 | DONE |
+| SEARCH-03 | Fix current behavior where even working results don't navigate | P0 | DONE |
 
 ### Member Pages
 
@@ -258,7 +323,7 @@ Before any milestone:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status:** 1885 tests passing, 0 lint warnings.
+**Current Status:** 1929 tests passing, 0 lint warnings.
 
 ---
 
