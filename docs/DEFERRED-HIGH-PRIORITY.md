@@ -1,8 +1,15 @@
 # Deferred High-Priority Features
 
-> **Status:** Documentation-only. These features are high priority but blocked until ABC track completes.
+> **DEPRECATED** — This document has been merged into [docs/BACKLOG.md](./BACKLOG.md).
+> See the "Member Pages" section in the canonical backlog for current status.
 >
-> **ABC Track:** Data Health + Events Ops Console + Host Messaging
+> *Deprecated: 2026-01-16*
+
+---
+
+> ~~**Status:** Documentation-only. These features are high priority but blocked until ABC track completes.~~
+>
+> ~~**ABC Track:** Data Health + Events Ops Console + Host Messaging~~
 
 ---
 

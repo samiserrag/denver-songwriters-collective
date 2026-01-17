@@ -1,6 +1,13 @@
 # Ops & Admin Backlog
 
-> Deferred features and future work items. Updated as investigations complete.
+> **DEPRECATED** — This document has been merged into [docs/BACKLOG.md](./BACKLOG.md).
+> See the canonical backlog for current status of all items.
+>
+> *Deprecated: 2026-01-16*
+
+---
+
+> ~~Deferred features and future work items. Updated as investigations complete.~~
 
 ---
 
