@@ -215,12 +215,16 @@ export default async function HappeningsPage({
   // For "past", get events with event_date in the past window
   // For "upcoming", get events with event_date from today onwards OR recurring events
   // For "all", get all events (no date filter)
+  //
+  // P0 Fix: Recurring events with recurrence_rule may have past anchor dates but future
+  // occurrences. Include them so they can be expanded. The occurrence expansion will
+  // filter to the appropriate window.
   if (timeFilter === "past") {
-    // Past: event_date must be in the past window (or null for recurring)
-    query = query.or(`event_date.gte.${windowStart},event_date.lte.${windowEnd},event_date.is.null`);
+    // Past: event_date must be in the past window (or null for recurring) or has recurrence_rule
+    query = query.or(`event_date.gte.${windowStart},event_date.lte.${windowEnd},event_date.is.null,recurrence_rule.not.is.null`);
   } else if (timeFilter === "upcoming") {
-    // Upcoming: event_date from today onwards OR recurring (null event_date with day_of_week)
-    query = query.or(`event_date.gte.${today},event_date.is.null`);
+    // Upcoming: event_date from today onwards OR recurring (null event_date or has recurrence_rule)
+    query = query.or(`event_date.gte.${today},event_date.is.null,recurrence_rule.not.is.null`);
   }
   // For "all", no additional date filter needed
 
