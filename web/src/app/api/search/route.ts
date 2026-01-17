@@ -55,26 +55,12 @@ export async function GET(request: NextRequest) {
       .limit(5),
 
     // Members - search name (using identity flags with legacy role fallback)
-    (async () => {
-      const res = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          slug,
-          full_name,
-          role,
-          is_songwriter,
-          is_host,
-          is_studio,
-          avatar_url,
-          location
-        `)
-        .eq("is_public", true)
-        .ilike("full_name", like)
-        .limit(5);
-      console.log("[search] members query:", { data: res.data?.length, error: res.error, like });
-      return res;
-    })(),
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("is_public", true)
+      .ilike("full_name", like)
+      .limit(5),
 
     // Blog posts - search title, excerpt
     supabase
