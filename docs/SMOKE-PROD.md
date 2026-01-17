@@ -687,3 +687,93 @@ _Placeholder: Profile-specific smoke tests will be added when the Profiles track
 - **Failures:** 0
 
 **No STOP-GATE issues found.** All public endpoints working correctly. Manual tests require user accounts to complete.
+
+---
+
+### 2026-01-17 — Re-execution of Tests 16-21 (Session 2)
+
+**Executed by:** Claude Agent
+**Commit:** `118af42`
+**Timestamp:** 2026-01-17T16:15 UTC
+
+#### Test 16: New User Onboarding Flow
+
+| Test | URL | Result | Notes |
+|------|-----|--------|-------|
+| Signup page | `/signup` | ✅ PASS | 200 OK |
+| Role selection | `/onboarding/role` | ✅ PASS | 200 OK |
+| Profile page | `/onboarding/profile` | ✅ PASS | 200 OK |
+| Complete page | `/onboarding/complete` | ✅ PASS | 200 OK |
+| 16A Fan-Only | Full flow | 🔶 MANUAL | Requires signup + identity selection |
+| 16B Songwriter | Full flow | 🔶 MANUAL | Requires signup + identity selection |
+| 16C Host | Full flow | 🔶 MANUAL | Requires signup + identity selection |
+
+**Infrastructure:** All onboarding pages load correctly (200 OK). Full identity-based field visibility requires authenticated user session.
+
+#### Test 17: Dashboard Getting Started Prompts
+
+| Test | URL | Result | Notes |
+|------|-----|--------|-------|
+| Dashboard access | `/dashboard` | ✅ PASS | 307 redirect to login (expected for unauthenticated) |
+| Getting Started section | Authenticated | 🔶 MANUAL | Requires `is_host=true` user session |
+| Dismiss persistence | localStorage | 🔶 MANUAL | Requires browser session |
+
+**Infrastructure:** Dashboard correctly requires authentication.
+
+#### Test 18: Global Nav Search Click-Through
+
+| Test | Query | Result | Notes |
+|------|-------|--------|-------|
+| Happenings search | `?q=open` | ✅ PASS | Returns `/events/{slug}` URLs (e.g., `/events/words-open-mic`) |
+| Venue search | `?q=brewery` | ✅ PASS | Returns `/venues/{slug}` URLs (e.g., `/venues/brewery-rickoli`) |
+| Member search | `?q=sami` | ✅ PASS | Returns `/songwriters/{slug}` URLs (e.g., `/songwriters/sami-serrag`) |
+
+**All URL formats correct:** Happenings→`/events/`, Venues→`/venues/`, Members→`/songwriters/`
+
+#### Test 19: Venue Cover Image
+
+| Test | URL | Result | Notes |
+|------|-----|--------|-------|
+| 19A Upload | `/dashboard/my-venues/{id}` | 🔶 MANUAL | Requires venue manager auth |
+| 19B Venues list | `/venues` | ✅ PASS | 81 venue cards render with fallback styling |
+| 19C Venue detail | `/venues/brewery-rickoli` | ✅ PASS | 200 OK, happenings displayed |
+
+**Note:** Most venues use fallback placeholders (no cover_image_url set). Event images display correctly on venue detail pages.
+
+#### Test 20: Venue Invite Create + Accept Flow
+
+| Test | URL | Result | Notes |
+|------|-----|--------|-------|
+| Invite accept page | `/venue-invite` | ✅ PASS | 200 OK |
+| Admin venues | `/dashboard/admin/venues` | ✅ PASS | 307 redirect (auth required) |
+| 20A Create invite | Admin flow | 🔶 MANUAL | Requires admin auth |
+| 20B Accept invite | New user flow | 🔶 MANUAL | Requires invite token |
+| 20C Revoke invite | Admin flow | 🔶 MANUAL | Requires admin auth |
+
+**Infrastructure:** Public invite acceptance page loads. Admin flows require authentication.
+
+#### Test 21: Comments + RSVPs on Recurring Event with ?date=
+
+| Test | URL | Result | Notes |
+|------|-----|--------|-------|
+| 21A Date-specific | `/events/brewery-rickoli?date=2026-02-03` | ✅ PASS | Shows Feb 3, 2026 occurrence |
+| 21A Date pills | Same URL | ✅ PASS | Shows 6 upcoming dates: Jan 20, Feb 3, Feb 17, Mar 3, Mar 17, +2 more |
+| 21B RSVP scoping | Multiple dates | 🔶 MANUAL | Requires authenticated RSVP actions |
+| 21C Comments | Date-scoped | 🔶 MANUAL | Requires authenticated comment actions |
+| 21D Series redirect | `/events/brewery-rickoli` (no date) | ✅ PASS | Server includes redirect to `?date=2026-01-20` |
+
+**Date-awareness confirmed:** Different dates show different occurrence views. Date pills display recurrence pattern correctly ("Every Other Tuesday").
+
+#### Summary
+
+| Category | PASS | MANUAL | FAIL |
+|----------|------|--------|------|
+| Test 16 (Onboarding) | 4 | 3 | 0 |
+| Test 17 (Getting Started) | 1 | 2 | 0 |
+| Test 18 (Nav Search) | 3 | 0 | 0 |
+| Test 19 (Venue Images) | 2 | 1 | 0 |
+| Test 20 (Venue Invites) | 2 | 3 | 0 |
+| Test 21 (Recurring Events) | 4 | 2 | 0 |
+| **TOTAL** | **16** | **11** | **0** |
+
+**No STOP-GATE issues found.** All public endpoints functioning correctly. Manual tests require authenticated user sessions to complete full verification.
