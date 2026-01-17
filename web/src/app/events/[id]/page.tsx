@@ -17,7 +17,7 @@ import { WatchEventButton } from "@/components/events/WatchEventButton";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
-import { getPublicVerificationState, formatVerifiedDate } from "@/lib/events/verification";
+import { getPublicVerificationState, formatVerifiedDate, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
 import { VenueLink } from "@/components/venue/VenueLink";
 import {
   interpretRecurrence,
@@ -295,7 +295,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     verified_by: (event as { verified_by?: string | null }).verified_by,
   });
   const verificationState = verificationResult.state;
-  const isUnconfirmed = verificationState === "unconfirmed";
+  // P0 Fix: Suppress "Unconfirmed" badge for DSC TEST events
+  const showUnconfirmedBadge = shouldShowUnconfirmedBadge({
+    title: event.title,
+    is_dsc_event: event.is_dsc_event,
+    status: event.status,
+    last_verified_at: (event as { last_verified_at?: string | null }).last_verified_at,
+  });
 
   // Phase 4.0: Resolve location name and address
   // Check venue first, then fall back to custom location
@@ -736,6 +742,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               </span>
             )}
             {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
+            {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
             {verificationState === "confirmed" && (
               <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
                 <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -744,7 +751,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 Confirmed
               </span>
             )}
-            {verificationState === "unconfirmed" && (
+            {showUnconfirmedBadge && (
               <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
                 Unconfirmed
               </span>
@@ -772,7 +779,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               </span>
             </div>
           )}
-          {isUnconfirmed && !isCancelled && (
+          {/* P0 Fix: Use showUnconfirmedBadge to suppress warning banner for DSC TEST events */}
+          {showUnconfirmedBadge && !isCancelled && (
             <div className="mb-6 px-4 py-3 rounded-lg bg-amber-100 text-amber-800 flex items-center gap-3">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

@@ -23,7 +23,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
-import { getPublicVerificationState } from "@/lib/events/verification";
+import { getPublicVerificationState, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
 import {
   type SeriesEntry,
   type EventForOccurrence,
@@ -200,6 +200,13 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
     verified_by: event.verified_by,
   });
   const verificationState = verificationResult.state;
+  // P0 Fix: Suppress "Unconfirmed" badge for DSC TEST events
+  const showUnconfirmedBadge = shouldShowUnconfirmedBadge({
+    title: event.title,
+    is_dsc_event: event.is_dsc_event,
+    status: event.status,
+    last_verified_at: event.last_verified_at,
+  });
 
   // Image logic (same tiers as HappeningCard)
   const cardImageUrl = event.cover_image_card_url;
@@ -329,6 +336,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
             )}
 
             {/* Verification status row */}
+            {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
             <div className="flex items-center gap-1 mt-1 flex-wrap">
               {verificationState === "confirmed" && (
                 <Chip variant="success">
@@ -344,7 +352,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
                   Confirmed
                 </Chip>
               )}
-              {verificationState === "unconfirmed" && (
+              {showUnconfirmedBadge && (
                 <Chip variant="warning">Unconfirmed</Chip>
               )}
               {verificationState === "cancelled" && (

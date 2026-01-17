@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTimeToAMPM, getRecurrenceSummary } from "@/lib/recurrenceHumanizer";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
-import { getPublicVerificationState } from "@/lib/events/verification";
+import { getPublicVerificationState, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
 import {
   computeNextOccurrence,
   getTodayDenver,
@@ -354,7 +354,13 @@ export function HappeningCard({
     verified_by: event.verified_by,
   });
   const verificationState = verificationResult.state;
-  const isUnconfirmed = verificationState === "unconfirmed";
+  // P0 Fix: Suppress "Unconfirmed" badge for DSC TEST events
+  const showUnconfirmedBadge = shouldShowUnconfirmedBadge({
+    title: event.title,
+    is_dsc_event: event.is_dsc_event,
+    status: event.status,
+    last_verified_at: event.last_verified_at,
+  });
 
   // Phase 4.40: Show "Ended" for all past events regardless of verification
   // "Ended" takes priority over "Unconfirmed" since the event already happened
@@ -643,7 +649,8 @@ export function HappeningCard({
           {/* Status badge overlay - top left */}
           {/* Phase 4.37/4.40: Show verification state badges */}
           {/* Priority: cancelled > ended (past) > unconfirmed */}
-          {(isCancelled || showEnded || isUnconfirmed) && (
+          {/* P0 Fix: showUnconfirmedBadge suppresses badge for DSC TEST events */}
+          {(isCancelled || showEnded || showUnconfirmedBadge) && (
             <div className="absolute top-2.5 left-2.5 z-10">
               <span
                 className={cn(
@@ -651,7 +658,7 @@ export function HappeningCard({
                   "bg-black/50 backdrop-blur-sm",
                   isCancelled && "text-red-400",
                   !isCancelled && showEnded && "text-white/70",
-                  !isCancelled && !showEnded && isUnconfirmed && "text-amber-300"
+                  !isCancelled && !showEnded && showUnconfirmedBadge && "text-amber-300"
                 )}
               >
                 {isCancelled ? "CANCELLED" : showEnded ? "Ended" : "Unconfirmed"}
@@ -726,6 +733,7 @@ export function HappeningCard({
           {/* Chips row - Tier 3 type/context pills */}
           <div className="flex items-center gap-1 flex-wrap">
             {/* Phase 4.38: Always-visible verification status pill */}
+            {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
             {verificationState === "confirmed" && (
               <Chip variant="success">
                 <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -734,7 +742,7 @@ export function HappeningCard({
                 Confirmed
               </Chip>
             )}
-            {verificationState === "unconfirmed" && (
+            {showUnconfirmedBadge && (
               <Chip variant="warning">Unconfirmed</Chip>
             )}
             {verificationState === "cancelled" && (

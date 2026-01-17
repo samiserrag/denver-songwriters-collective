@@ -104,3 +104,30 @@ export function formatVerifiedDate(dateStr: string | null | undefined): string |
     return null;
   }
 }
+
+/**
+ * Check if the unconfirmed badge should be displayed for an event
+ *
+ * Suppresses "Unconfirmed" UI for DSC TEST series (internal testing events).
+ * Rule: If is_dsc_event=true AND title starts with "TEST", hide badge.
+ *
+ * This is display-only suppression - does not change underlying verification state.
+ */
+export interface UnconfirmedBadgeInput {
+  title?: string | null;
+  is_dsc_event?: boolean | null;
+  status?: string | null;
+  last_verified_at?: string | null;
+}
+
+export function shouldShowUnconfirmedBadge(event: UnconfirmedBadgeInput): boolean {
+  // First check if actually unconfirmed
+  const state = getPublicVerificationState(event);
+  if (state.state !== "unconfirmed") return false;
+
+  // Suppress for DSC TEST events (case-sensitive "TEST" prefix)
+  const title = event.title ?? "";
+  const isDscTest = event.is_dsc_event === true && title.startsWith("TEST");
+
+  return !isDscTest;
+}
