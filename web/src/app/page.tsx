@@ -292,13 +292,13 @@ export default async function HomePage() {
               href="/happenings"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors shadow-lg"
             >
-              See happenings
+              See All Happenings
             </Link>
             <Link
               href="/happenings?type=open_mic"
               className="inline-flex items-center justify-center px-6 py-3 bg-white/20 backdrop-blur text-white font-semibold rounded-full hover:bg-white/30 transition-colors border border-white/30"
             >
-              See open mics
+              See Open Mics
             </Link>
           </div>
         </div>
@@ -336,13 +336,13 @@ export default async function HomePage() {
               href="/happenings"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
-              See happenings
+              See All Happenings
             </Link>
             <Link
               href="/happenings?type=open_mic"
               className="inline-flex items-center justify-center px-6 py-3 border border-[var(--color-border-accent)] text-[var(--color-text-accent)] font-medium rounded-full hover:bg-[var(--color-accent-primary)]/10 transition-colors"
             >
-              See open mics
+              See Open Mics
             </Link>
           </div>
         </div>

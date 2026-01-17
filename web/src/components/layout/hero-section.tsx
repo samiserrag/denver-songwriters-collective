@@ -61,7 +61,15 @@ export function HeroSection({
         />
       )}
 
-      {/* Top vignette - subtle dark fade for text readability */}
+      {/* Full overlay for text readability over background image */}
+      {showVignette && (
+        <div
+          className="absolute inset-0 bg-black/40 pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Top vignette - additional dark fade for header area */}
       {showVignette && (
         <div
           className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/30 to-transparent pointer-events-none"
