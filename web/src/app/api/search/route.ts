@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
         location
       `)
       .eq("is_public", true)
-      .or(`full_name.ilike.${like},bio.ilike.${like}`)
+      .ilike("full_name", like)
       .limit(5),
 
     // Blog posts - search title, excerpt
