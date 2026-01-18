@@ -12,6 +12,8 @@ import { checkAdminRole } from "@/lib/auth/adminAuth";
 import VenueManagersList from "./_components/VenueManagersList";
 import VenueEditHistory from "./_components/VenueEditHistory";
 import VenueInviteSection from "./_components/VenueInviteSection";
+import VenueEditForm from "@/app/(protected)/dashboard/my-venues/[id]/_components/VenueEditForm";
+import { VenuePhotosSection } from "@/components/venue/VenuePhotosSection";
 
 export const dynamic = "force-dynamic";
 
@@ -43,10 +45,10 @@ export default async function AdminVenueDetailPage({
   // Use service role to fetch venue and managers
   const serviceClient = createServiceRoleClient();
 
-  // Fetch venue
+  // Fetch venue (all fields needed for edit form)
   const { data: venue, error } = await serviceClient
     .from("venues")
-    .select("id, name, slug, address, city, state, zip, created_at")
+    .select("id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url, created_at")
     .eq("id", venueId)
     .single();
 
@@ -118,6 +120,14 @@ export default async function AdminVenueDetailPage({
   }
   const inviteProfileMap = new Map(inviteCreatorProfiles.map((p) => [p.id, p]));
 
+  // Fetch venue images
+  const { data: venueImages } = await serviceClient
+    .from("venue_images")
+    .select("id, venue_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
+    .eq("venue_id", venueId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
   // Fetch venue edit audit logs
   const { data: auditLogs } = await serviceClient
     .from("app_logs")
@@ -182,6 +192,53 @@ export default async function AdminVenueDetailPage({
             </Link>
           </div>
         </div>
+
+        {/* Venue Edit Form Section */}
+        <section className="mb-10 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+            Edit Venue Information
+          </h2>
+          <VenueEditForm venue={{
+            id: venue.id,
+            name: venue.name,
+            slug: venue.slug,
+            address: venue.address || "",
+            city: venue.city || "",
+            state: venue.state || "",
+            zip: venue.zip,
+            phone: venue.phone,
+            website_url: venue.website_url,
+            google_maps_url: venue.google_maps_url,
+            map_link: venue.map_link,
+            contact_link: venue.contact_link,
+            neighborhood: venue.neighborhood,
+            accessibility_notes: venue.accessibility_notes,
+            parking_notes: venue.parking_notes,
+            cover_image_url: venue.cover_image_url,
+          }} />
+        </section>
+
+        {/* Venue Photos Section */}
+        <section className="mb-10">
+          <VenuePhotosSection
+            venueId={venueId}
+            venueName={venue.name}
+            currentCoverUrl={venue.cover_image_url}
+            initialImages={(venueImages || []) as Array<{
+              id: string;
+              venue_id: string;
+              image_url: string;
+              storage_path: string;
+              uploaded_by: string | null;
+              created_at: string;
+              deleted_at: string | null;
+            }>}
+            onCoverChange={() => {
+              // Page will refresh to show new cover
+            }}
+            userId={session.user.id}
+          />
+        </section>
 
         {/* Active Managers Section */}
         <section className="mb-10">

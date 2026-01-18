@@ -221,6 +221,22 @@ export default async function DashboardPage() {
                 <span className="text-sm font-medium text-[var(--color-text-primary)]">My Photos</span>
               </Link>
 
+              {/* My Venues - show for venue managers or hosts/studios */}
+              {((venueCount ?? 0) > 0 || p?.is_host || p?.is_studio) && (
+                <Link
+                  href="/dashboard/my-venues"
+                  className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center relative"
+                >
+                  <span className="block text-2xl mb-2">🏠</span>
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">My Venues</span>
+                  {(venueCount ?? 0) > 0 && (
+                    <span className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full">
+                      {venueCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+
               {/* Admin Panel - only for admins */}
               {p?.role === "admin" && (
                 <Link
