@@ -5,6 +5,13 @@ import { SongwriterAvatar } from "@/components/songwriters";
 import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
 import { RoleBadges } from "@/components/members";
+import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
+import {
+  getTodayDenver,
+  addDaysDenver,
+  groupEventsAsSeriesView,
+  buildOverrideMap,
+} from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
 
@@ -71,6 +78,81 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     .is("revoked_at", null)
     .limit(1);
   const isVenueManager = (venueManagerData?.length ?? 0) > 0;
+
+  // Query hosted happenings - events where this profile is the host
+  const today = getTodayDenver();
+  const windowEnd = addDaysDenver(today, 90);
+
+  const { data: hostedEvents } = await supabase
+    .from("events")
+    .select(`
+      id,
+      slug,
+      title,
+      event_type,
+      event_date,
+      day_of_week,
+      start_time,
+      end_time,
+      recurrence_rule,
+      is_recurring,
+      status,
+      cover_image_url,
+      is_dsc_event,
+      is_free,
+      last_verified_at,
+      verified_by,
+      source,
+      host_id,
+      location_mode,
+      venue_id,
+      venue_name,
+      venue_address
+    `)
+    .eq("host_id", member.id)
+    .eq("is_published", true)
+    .in("status", ["active", "needs_verification", "unverified"]);
+
+  // Get event IDs for override query
+  const eventIds = (hostedEvents ?? []).map((e) => e.id);
+
+  // Query occurrence overrides for hosted events
+  const { data: overridesData } = eventIds.length > 0
+    ? await supabase
+        .from("occurrence_overrides")
+        .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes")
+        .in("event_id", eventIds)
+        .gte("date_key", today)
+        .lte("date_key", windowEnd)
+    : { data: [] };
+
+  const overrideMap = buildOverrideMap(
+    (overridesData || []).map((o) => ({
+      event_id: o.event_id,
+      date_key: o.date_key,
+      status: o.status as "normal" | "cancelled",
+      override_start_time: o.override_start_time,
+      override_cover_image_url: o.override_cover_image_url,
+      override_notes: o.override_notes,
+    }))
+  );
+
+  // Map to SeriesEvent format
+  const eventsForSeries: SeriesEvent[] = (hostedEvents ?? []).map((event) => ({
+    ...event,
+    venue: null, // Not joining venue data for profile pages
+  }));
+
+  // Group events as series view with occurrence expansion
+  const { series: hostedSeries } = groupEventsAsSeriesView(eventsForSeries, {
+    startKey: today,
+    endKey: windowEnd,
+    overrideMap,
+  });
+
+  // Cap visible series to 3
+  const visibleHostedSeries = hostedSeries.slice(0, 3);
+  const hasMoreHostedEvents = hostedSeries.length > 3;
 
   // Build role badge flags for shared component
   // Note: legacy role enum is "performer" | "host" | "studio" | "admin" | "fan" | "member"
@@ -305,6 +387,25 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
               </div>
             </section>
           )}
+
+          {/* Hosted Happenings Section */}
+          <section className="mb-12" data-testid="hosted-happenings-section">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Hosted Happenings</h2>
+            {visibleHostedSeries.length > 0 ? (
+              <div className="space-y-3">
+                {visibleHostedSeries.map((entry) => (
+                  <SeriesCard key={entry.event.id} series={entry} />
+                ))}
+                {hasMoreHostedEvents && (
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-4">
+                    Showing 3 of {hostedSeries.length} happenings.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[var(--color-text-tertiary)]">No hosted happenings yet.</p>
+            )}
+          </section>
 
           {/* Profile Comments Section */}
           <ProfileComments profileId={member.id} profileOwnerId={member.id} />
