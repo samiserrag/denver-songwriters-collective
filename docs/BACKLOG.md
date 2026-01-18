@@ -112,6 +112,51 @@ This is a structural UX realignment to better support performers, hosts, venues,
 
 ---
 
+## P0 Spec: Member Profile Enhancements (Pre-Invite)
+
+**Priority:** P0 (Pre-Test User Readiness)
+**Status:** Investigation Complete — Awaiting Approval
+**Investigation Doc:** `docs/investigation/phase-member-profile-enhancements.md`
+
+### Summary
+
+Polish member profiles before external test users see them. Three scope areas:
+
+| Scope | Description | Status |
+|-------|-------------|--------|
+| **A: Quick Wins** | Badge unification, empty states, social links ordering | Investigation complete |
+| **B: Profile Gallery** | Member-managed photos on profile (reuse gallery infra) | Investigation complete — DEFERRED (requires migration) |
+| **C: Activity Sections** | Blog posts, photos, events by user | Investigation complete |
+
+### PR Slice Order (Recommended)
+
+| Slice | Scope | Description | Complexity |
+|-------|-------|-------------|------------|
+| 1 | A5 | Social Links Fix — Add Twitter, reorder to musician-centric | Low (1 file) |
+| 2 | A1 | Badge Row Unification — Shared IdentityBadgeRow component | Low |
+| 3 | A2 | Empty State Polish — Consistent empty states | Low |
+| 4 | A3+A4 | Card/Detail Consistency + Fan Polish | Low |
+| 5 | A6 | Canonicalization Audit — Verify redirects | Low |
+| 6 | A8 | Profile Completeness Indicator | Low |
+| 7 | C | Blog Posts Activity Section | Low |
+| 8 | C | Photos Activity Section | Medium |
+
+### DEFERRED Items
+
+| Item | Reason |
+|------|--------|
+| Profile Gallery (B) | Requires DB migration for `album_type` column |
+| Follow CTA (A7) | P2 — Not needed for initial test users |
+
+### Next Step
+
+**Slice 1: Social Links Fix** — Smallest change with immediate benefit.
+- Single file: `components/profile/ProfileIcons.tsx`
+- Fixes Twitter/X bug, reorders to Spotify → YouTube → Instagram first
+- ~10 lines changed, 5 tests
+
+---
+
 ## Completed Work (Ground Truth)
 
 ### Phase 4.65–4.69 (January 2026) — Venue + Performance Fixes

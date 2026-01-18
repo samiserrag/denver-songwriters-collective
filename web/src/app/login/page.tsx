@@ -21,6 +21,9 @@ function LoginForm() {
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
 
+  // Check for password reset success message
+  const resetSuccess = searchParams.get("reset") === "success";
+
   // Redirect if already logged in
   React.useEffect(() => {
     if (!authLoading && user) {
@@ -80,6 +83,14 @@ function LoginForm() {
       <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] italic mb-6 text-center">
         Log in
       </h1>
+
+      {resetSuccess && (
+        <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <p className="text-green-400 text-sm text-center">
+            Your password has been updated. Please log in with your new password.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
