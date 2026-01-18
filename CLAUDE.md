@@ -315,6 +315,51 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Slice 5: Member Profile Photo Gallery (January 2026) — RESOLVED
+
+**Goal:** Allow members to upload multiple profile photos and choose which one to display as their avatar.
+
+**Status:** Implemented.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Profile images table | New `profile_images` table with soft-delete support |
+| RLS policies | 7 policies: own view, admin view, public view (if is_public), insert, update, delete |
+| Dashboard UI | `ProfilePhotosSection` component with upload, grid, avatar selection |
+| Avatar selection | Clicking "Set as profile photo" copies URL to `profiles.avatar_url` |
+| Storage path | `profile-gallery/{user_id}/{uuid}.{ext}` in `avatars` bucket |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260117000001_profile_images.sql` | Create table, indexes, RLS policies |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/profile/ProfilePhotosSection.tsx` | Dashboard photo management component |
+| `__tests__/profile-images-rls-and-contract.test.ts` | RLS contract tests (62 tests) |
+| `__tests__/profile-photos-ui.test.tsx` | UI behavior tests (49 tests) |
+| `docs/investigation/phase-member-profile-photos.md` | Investigation document |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/(protected)/dashboard/profile/page.tsx` | Integrated ProfilePhotosSection, fetch images |
+| `components/profile/index.ts` | Added export |
+| `lib/supabase/database.types.ts` | Regenerated with profile_images table |
+
+**Test Coverage:** 111 new tests (2116 total).
+
+**Commit:** `3a3144b`
+
+---
+
 ### P0 UI Polish: Hero Contrast + Nav Order + CTA Labels (January 2026) — RESOLVED
 
 **Goal:** Fix remaining P0 UI items for test-user readiness.
