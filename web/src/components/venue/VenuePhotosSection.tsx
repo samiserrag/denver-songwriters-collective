@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
@@ -22,7 +23,6 @@ type VenuePhotosSectionProps = {
   venueName: string;
   currentCoverUrl: string | null;
   initialImages: VenueImage[];
-  onCoverChange: (newUrl: string) => void;
   userId: string;
 };
 
@@ -31,13 +31,14 @@ export function VenuePhotosSection({
   venueName,
   currentCoverUrl,
   initialImages,
-  onCoverChange,
   userId,
 }: VenuePhotosSectionProps) {
+  const router = useRouter();
   const supabase = createSupabaseBrowserClient();
   const [images, setImages] = useState<VenueImage[]>(initialImages);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [settingCoverId, setSettingCoverId] = useState<string | null>(null);
+  const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(currentCoverUrl);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,7 +154,8 @@ export function VenuePhotosSection({
           return;
         }
 
-        onCoverChange(image.image_url);
+        setLocalCoverUrl(image.image_url);
+        router.refresh();
         toast.success("Cover photo updated!");
       } catch (err) {
         console.error("Cover update error:", err);
@@ -162,19 +164,19 @@ export function VenuePhotosSection({
         setSettingCoverId(null);
       }
     },
-    [supabase, venueId, onCoverChange]
+    [supabase, venueId, router]
   );
 
   // Check if an image is the current cover
   const isCurrentCover = useCallback(
     (imageUrl: string) => {
-      if (!currentCoverUrl) return false;
+      if (!localCoverUrl) return false;
       // Compare without cache busters
-      const normalizedCurrent = currentCoverUrl.split("?")[0];
+      const normalizedCurrent = localCoverUrl.split("?")[0];
       const normalizedImage = imageUrl.split("?")[0];
       return normalizedCurrent === normalizedImage;
     },
-    [currentCoverUrl]
+    [localCoverUrl]
   );
 
   // Filter out soft-deleted images

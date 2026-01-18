@@ -139,9 +139,6 @@ export default async function EditVenuePage({
               created_at: string;
               deleted_at: string | null;
             }>}
-            onCoverChange={() => {
-              // Page will refresh to show new cover
-            }}
             userId={session.user.id}
           />
         </div>
