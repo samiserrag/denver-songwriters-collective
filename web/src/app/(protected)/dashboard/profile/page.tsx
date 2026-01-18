@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { ImageUpload } from "@/components/ui";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, SPECIALTY_OPTIONS } from "@/lib/profile/options";
-import { ProfileCompleteness } from "@/components/profile";
+import { ProfileCompleteness, ProfilePhotosSection } from "@/components/profile";
 import { toast } from "sonner";
+
+type ProfileImage = {
+  id: string;
+  user_id: string;
+  image_url: string;
+  storage_path: string;
+  created_at: string;
+  deleted_at: string | null;
+};
 import Link from "next/link";
 
 type FormData = {
@@ -92,6 +100,7 @@ export default function EditProfilePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [customInstrument, setCustomInstrument] = useState("");
   const [customGenre, setCustomGenre] = useState("");
+  const [profileImages, setProfileImages] = useState<ProfileImage[]>([]);
   // Track original identity flags from database to detect accidental clearing
   const [originalIdentity, setOriginalIdentity] = useState<{
     is_songwriter: boolean;
@@ -117,6 +126,18 @@ export default function EditProfilePage() {
         .select("*")
         .eq("id", user.id)
         .single();
+
+      // Fetch profile images
+      const { data: images } = await supabase
+        .from("profile_images")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      if (images) {
+        setProfileImages(images);
+      }
 
       if (profile) {
         // Store original identity flags to detect accidental clearing
@@ -165,60 +186,6 @@ export default function EditProfilePage() {
     }
     loadProfile();
   }, [supabase, router]);
-
-  const handleAvatarUpload = useCallback(async (file: File): Promise<string | null> => {
-    if (!userId) return null;
-
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    const fileName = `${userId}/avatar.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, { upsert: true });
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      toast.error('Failed to upload image');
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-
-    const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: urlWithTimestamp })
-      .eq('id', userId);
-
-    if (updateError) {
-      console.error('Profile update error:', updateError);
-      toast.error('Failed to update profile');
-      return null;
-    }
-
-    setFormData(prev => ({ ...prev, avatar_url: urlWithTimestamp }));
-    toast.success('Avatar updated!');
-    return urlWithTimestamp;
-  }, [supabase, userId]);
-
-  const handleAvatarRemove = useCallback(async () => {
-    if (!userId) return;
-
-    await supabase.storage
-      .from('avatars')
-      .remove([`${userId}/avatar.jpg`, `${userId}/avatar.png`, `${userId}/avatar.webp`]);
-
-    await supabase
-      .from('profiles')
-      .update({ avatar_url: null })
-      .eq('id', userId);
-
-    setFormData(prev => ({ ...prev, avatar_url: '' }));
-    toast.success('Avatar removed');
-  }, [supabase, userId]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -374,34 +341,15 @@ export default function EditProfilePage() {
               </label>
             </section>
 
-            {/* Profile Picture */}
-            <section id="avatar-section">
-              <h2 className="text-xl text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-                Profile Picture
-              </h2>
-              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
-                <ImageUpload
-                  currentImageUrl={formData.avatar_url || null}
-                  onUpload={handleAvatarUpload}
-                  onRemove={handleAvatarRemove}
-                  aspectRatio={1}
-                  maxSizeMB={5}
-                  shape="circle"
-                  placeholderText="Add Photo"
-                  className="w-32 h-32 sm:w-40 sm:h-40"
-                />
-                <div className="text-center sm:text-left">
-                  <p className="text-[var(--color-text-secondary)] text-sm mb-2">
-                    Recommended: A clear photo of your face
-                  </p>
-                  <ul className="text-xs text-[var(--color-text-secondary)] space-y-1">
-                    <li>JPG, PNG, WebP, or GIF</li>
-                    <li>Max 5MB file size</li>
-                    <li>Will be cropped to a square</li>
-                  </ul>
-                </div>
-              </div>
-            </section>
+            {/* Profile Photos */}
+            {userId && (
+              <ProfilePhotosSection
+                userId={userId}
+                currentAvatarUrl={formData.avatar_url}
+                initialImages={profileImages}
+                onAvatarChange={(newUrl) => setFormData(prev => ({ ...prev, avatar_url: newUrl }))}
+              />
+            )}
 
             {/* Basic Info */}
             <section id="basic-info-section">
