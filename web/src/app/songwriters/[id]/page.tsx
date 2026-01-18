@@ -98,8 +98,83 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             {/* Identity badges - consistent order: Songwriter → Happenings Host → Venue Manager → Fan */}
             <RoleBadges flags={roleBadgeFlags} mode="row" size="md" className="justify-center mb-4" />
 
-            {/* Collaboration & Availability Badges */}
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {/* Social Links - only render section if links exist */}
+            {socialLinks.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-3 mb-6">
+                {socialLinks.map((link) => (
+                  <Link
+                    key={link.type}
+                    href={link.url!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                    title={link.label}
+                  >
+                    <SocialIcon type={link.type} />
+                    <span className="text-sm font-medium">{link.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </PageContainer>
+      </HeroSection>
+
+      <PageContainer>
+        <div className="py-12 max-w-4xl mx-auto">
+          {/* 1. Bio Section - always show with empty state */}
+          <section className="mb-12" data-testid="bio-section">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">About</h2>
+            <p className="text-[var(--color-text-secondary)] leading-relaxed text-lg">
+              {songwriter.bio || <span className="text-[var(--color-text-tertiary)]">No bio yet.</span>}
+            </p>
+          </section>
+
+          {/* 2. Instruments & Genres - always show with empty states */}
+          <div className="grid md:grid-cols-2 gap-8 mb-12" data-testid="instruments-genres-section">
+            {/* Instruments Section */}
+            <section data-testid="instruments-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Instruments & Skills</h2>
+              {songwriter.instruments && songwriter.instruments.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {songwriter.instruments.map((instrument) => (
+                    <span
+                      key={instrument}
+                      className="px-4 py-2 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm font-medium"
+                    >
+                      {instrument}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No instruments listed.</p>
+              )}
+            </section>
+
+            {/* Genres Section */}
+            <section data-testid="genres-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Genres</h2>
+              {songwriter.genres && songwriter.genres.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {songwriter.genres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="px-4 py-2 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No genres listed.</p>
+              )}
+            </section>
+          </div>
+
+          {/* 3. Collaboration Section - songwriters/hosts always have this */}
+          <section className="mb-12" data-testid="collaboration-section">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Collaboration</h2>
+            <div className="flex flex-wrap gap-2">
               {songwriter.open_to_collabs && (
                 <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -124,80 +199,13 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                   Available for Hire
                 </span>
               )}
+              {!songwriter.open_to_collabs && !songwriter.interested_in_cowriting && !songwriter.available_for_hire && (
+                <p className="text-[var(--color-text-tertiary)]">No collaboration preferences set.</p>
+              )}
             </div>
-
-            {/* Social Links */}
-            {socialLinks.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-3">
-                {socialLinks.map((link) => (
-                  <Link
-                    key={link.type}
-                    href={link.url!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                    title={link.label}
-                  >
-                    <SocialIcon type={link.type} />
-                    <span className="text-sm font-medium">{link.label}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </PageContainer>
-      </HeroSection>
-
-      <PageContainer>
-        <div className="py-12 max-w-4xl mx-auto">
-          {/* About Section */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">About</h2>
-            <p className="text-[var(--color-text-secondary)] leading-relaxed text-lg">
-              {songwriter.bio ?? "This songwriter hasn't added a bio yet."}
-            </p>
           </section>
 
-          {/* Two-column grid for Genres and Instruments */}
-          {((songwriter.genres && songwriter.genres.length > 0) || (songwriter.instruments && songwriter.instruments.length > 0)) && (
-            <div className="grid md:grid-cols-2 gap-8 mb-12">
-              {/* Genres Section */}
-              {songwriter.genres && songwriter.genres.length > 0 && (
-                <section>
-                  <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Genres</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {songwriter.genres.map((genre) => (
-                      <span
-                        key={genre}
-                        className="px-4 py-2 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium"
-                      >
-                        {genre}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Instruments & Skills Section */}
-              {songwriter.instruments && songwriter.instruments.length > 0 && (
-                <section>
-                  <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Instruments & Skills</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {songwriter.instruments.map((instrument) => (
-                      <span
-                        key={instrument}
-                        className="px-4 py-2 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm font-medium"
-                      >
-                        {instrument}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-          )}
-
-          {/* Specialties Section */}
+          {/* Specialties Section - only show if has content */}
           {songwriter.specialties && songwriter.specialties.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Specialties</h2>

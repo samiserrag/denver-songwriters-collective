@@ -75,13 +75,17 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   // Build role badge flags for shared component
   // Note: legacy role enum is "performer" | "host" | "studio" | "admin" | "fan" | "member"
   const hasSongwriter = member.is_songwriter || member.role === "performer";
+  const hasHost = member.is_host || member.role === "host";
   const roleBadgeFlags = {
     isSongwriter: hasSongwriter,
-    isHost: member.is_host ?? false,
+    isHost: hasHost,
     isVenueManager,
     isFan: member.is_fan ?? false,
     role: member.role ?? undefined,
   };
+
+  // Determine if collaboration section should show (only for songwriter or host)
+  const showCollabSection = hasSongwriter || hasHost;
 
   return (
     <>
@@ -107,37 +111,9 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
             {/* Identity badges - consistent order: Songwriter → Happenings Host → Venue Manager → Fan */}
             <RoleBadges flags={roleBadgeFlags} mode="row" size="md" className="justify-center mb-4" />
 
-            {/* Collaboration & Availability Badges - only show if relevant flags are set */}
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              {member.open_to_collabs && (
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  Open to Collaborations
-                </span>
-              )}
-              {member.interested_in_cowriting && (
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  Interested in Co-writing
-                </span>
-              )}
-              {member.available_for_hire && (
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Available for Hire
-                </span>
-              )}
-            </div>
-
-            {/* Social Links */}
+            {/* Social Links - only render section if links exist */}
             {socialLinks.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="flex flex-wrap justify-center gap-3 mb-6">
                 {socialLinks.map((link) => (
                   <Link
                     key={link.type}
@@ -159,55 +135,93 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
 
       <PageContainer>
         <div className="py-12 max-w-4xl mx-auto">
-          {/* About Section */}
-          <section className="mb-12">
+          {/* 1. Bio Section - always show with empty state */}
+          <section className="mb-12" data-testid="bio-section">
             <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">About</h2>
             <p className="text-[var(--color-text-secondary)] leading-relaxed text-lg">
-              {member.bio ?? "This member hasn't added a bio yet."}
+              {member.bio || <span className="text-[var(--color-text-tertiary)]">No bio yet.</span>}
             </p>
           </section>
 
-          {/* Genres and Instruments - only show if member is a songwriter/musician */}
-          {hasSongwriter && ((member.genres && member.genres.length > 0) || (member.instruments && member.instruments.length > 0)) && (
-            <div className="grid md:grid-cols-2 gap-8 mb-12">
-              {/* Genres Section */}
-              {member.genres && member.genres.length > 0 && (
-                <section>
-                  <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Genres</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {member.genres.map((genre) => (
-                      <span
-                        key={genre}
-                        className="px-4 py-2 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium"
-                      >
-                        {genre}
-                      </span>
-                    ))}
-                  </div>
-                </section>
+          {/* 2. Instruments & Genres - always show for all members with empty states */}
+          <div className="grid md:grid-cols-2 gap-8 mb-12" data-testid="instruments-genres-section">
+            {/* Instruments Section */}
+            <section data-testid="instruments-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Instruments & Skills</h2>
+              {member.instruments && member.instruments.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {member.instruments.map((instrument) => (
+                    <span
+                      key={instrument}
+                      className="px-4 py-2 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm font-medium"
+                    >
+                      {instrument}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No instruments listed.</p>
               )}
+            </section>
 
-              {/* Instruments & Skills Section */}
-              {member.instruments && member.instruments.length > 0 && (
-                <section>
-                  <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Instruments & Skills</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {member.instruments.map((instrument) => (
-                      <span
-                        key={instrument}
-                        className="px-4 py-2 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-text-secondary)] text-sm font-medium"
-                      >
-                        {instrument}
-                      </span>
-                    ))}
-                  </div>
-                </section>
+            {/* Genres Section */}
+            <section data-testid="genres-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Genres</h2>
+              {member.genres && member.genres.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {member.genres.map((genre) => (
+                    <span
+                      key={genre}
+                      className="px-4 py-2 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No genres listed.</p>
               )}
-            </div>
+            </section>
+          </div>
+
+          {/* 3. Collaboration Section - only show for songwriter or host */}
+          {showCollabSection && (
+            <section className="mb-12" data-testid="collaboration-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Collaboration</h2>
+              <div className="flex flex-wrap gap-2">
+                {member.open_to_collabs && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Open to Collaborations
+                  </span>
+                )}
+                {member.interested_in_cowriting && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Interested in Co-writing
+                  </span>
+                )}
+                {member.available_for_hire && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Available for Hire
+                  </span>
+                )}
+                {!member.open_to_collabs && !member.interested_in_cowriting && !member.available_for_hire && (
+                  <p className="text-[var(--color-text-tertiary)]">No collaboration preferences set.</p>
+                )}
+              </div>
+            </section>
           )}
 
-          {/* Specialties Section - only show if member is a songwriter/musician */}
-          {hasSongwriter && member.specialties && member.specialties.length > 0 && (
+          {/* Specialties Section - only show if has content */}
+          {member.specialties && member.specialties.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Specialties</h2>
               <div className="flex flex-wrap gap-2">
@@ -223,16 +237,16 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
             </section>
           )}
 
-          {/* Favorite Open Mic - only show if member is a songwriter/musician */}
-          {hasSongwriter && member.favorite_open_mic && (
+          {/* Favorite Open Mic - only show if has content */}
+          {member.favorite_open_mic && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Favorite Open Mic</h2>
               <p className="text-[var(--color-text-secondary)]">{member.favorite_open_mic}</p>
             </section>
           )}
 
-          {/* Song Links Section - only show if member is a songwriter/musician */}
-          {hasSongwriter && member.song_links && member.song_links.length > 0 && (
+          {/* Song Links Section - only show if has content */}
+          {member.song_links && member.song_links.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
               <div className="grid gap-3 max-w-xl">
@@ -269,7 +283,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
             </section>
           )}
 
-          {/* Tip/Support Section */}
+          {/* Tip/Support Section - only show if has content */}
           {tipLinks.length > 0 && (
             <section className="mb-12">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Support This Member</h2>
