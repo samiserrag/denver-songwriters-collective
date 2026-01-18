@@ -10,9 +10,10 @@ interface CropModalProps {
   aspectRatio?: number; // undefined = free crop
   onComplete: (croppedFile: File) => void;
   onCancel: () => void;
+  onUseOriginal?: () => void; // Optional: skip cropping and use original file
 }
 
-export function CropModal({ file, aspectRatio, onComplete, onCancel }: CropModalProps) {
+export function CropModal({ file, aspectRatio, onComplete, onCancel, onUseOriginal }: CropModalProps) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [isSaving, setIsSaving] = useState(false);
@@ -170,28 +171,41 @@ export function CropModal({ file, aspectRatio, onComplete, onCancel }: CropModal
         </p>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-4 border-t border-[var(--color-border-default)]">
-          <button
-            onClick={onCancel}
-            disabled={isSaving}
-            className="px-4 py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg border border-[var(--color-border-default)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !completedCrop}
-            className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Crop'
-            )}
-          </button>
+        <div className="flex flex-col gap-3 p-4 border-t border-[var(--color-border-default)]">
+          {/* Use Original Image button - prominent option */}
+          {onUseOriginal && (
+            <button
+              type="button"
+              onClick={onUseOriginal}
+              disabled={isSaving}
+              className="w-full px-4 py-3 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
+            >
+              Use Original Image (No Crop)
+            </button>
+          )}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              disabled={isSaving}
+              className="px-4 py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg border border-[var(--color-border-default)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !completedCrop}
+              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Crop'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

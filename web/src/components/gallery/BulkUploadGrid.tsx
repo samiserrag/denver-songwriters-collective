@@ -531,6 +531,12 @@ export default function BulkUploadGrid({
     setCropTarget(null);
   }, []);
 
+  // Use original image without cropping
+  const handleUseOriginal = useCallback(() => {
+    // Just close the modal - the file stays as-is in the queue
+    setCropTarget(null);
+  }, []);
+
   // Calculate progress
   const totalFiles = queuedFiles.length;
   const uploadedCount = queuedFiles.filter((f) => f.status === 'uploaded').length;
@@ -754,6 +760,7 @@ export default function BulkUploadGrid({
           aspectRatio={undefined} // Free crop - user decides
           onComplete={handleCropComplete}
           onCancel={handleCropCancel}
+          onUseOriginal={handleUseOriginal}
         />
       )}
     </div>

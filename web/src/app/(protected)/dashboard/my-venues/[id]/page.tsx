@@ -10,6 +10,7 @@ import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { isVenueManager, getVenueRole } from "@/lib/venue/managerAuth";
 import VenueEditForm from "./_components/VenueEditForm";
+import { VenuePhotosSection } from "@/components/venue/VenuePhotosSection";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,14 @@ export default async function EditVenuePage({
   if (!isManager && !isAdmin) {
     redirect("/dashboard/my-venues");
   }
+
+  // Fetch venue images
+  const { data: venueImages } = await supabase
+    .from("venue_images")
+    .select("id, venue_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
+    .eq("venue_id", venueId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -114,6 +123,28 @@ export default async function EditVenuePage({
 
         {/* Edit Form */}
         <VenueEditForm venue={venue} />
+
+        {/* Venue Photos Section */}
+        <div className="mt-12 pt-8 border-t border-[var(--color-border-default)]">
+          <VenuePhotosSection
+            venueId={venueId}
+            venueName={venue.name}
+            currentCoverUrl={venue.cover_image_url}
+            initialImages={(venueImages || []) as Array<{
+              id: string;
+              venue_id: string;
+              image_url: string;
+              storage_path: string;
+              uploaded_by: string | null;
+              created_at: string;
+              deleted_at: string | null;
+            }>}
+            onCoverChange={() => {
+              // Page will refresh to show new cover
+            }}
+            userId={session.user.id}
+          />
+        </div>
       </div>
     </main>
   );

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
 import { PageContainer } from "@/components/layout";
+import { PhotoGallery } from "@/components/profile/PhotoGallery";
 import { chooseVenueLink, isValidUrl } from "@/lib/venue/chooseVenueLink";
 import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
 import {
@@ -148,6 +149,14 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       override_notes: o.override_notes,
     }))
   );
+
+  // Fetch venue images for photo gallery
+  const { data: venueImages } = await supabase
+    .from("venue_images")
+    .select("id, image_url")
+    .eq("venue_id", venue.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
 
   // Map events to SeriesEvent format with venue info
   // Phase ABC4: Include venue slug for SeriesCard internal links
@@ -347,6 +356,16 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
             </div>
           )}
         </div>
+
+        {/* Photos Section */}
+        {venueImages && venueImages.length > 0 && (
+          <section className="mt-8 mb-12" data-testid="venue-photos-section">
+            <h2 className="text-2xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] mb-6">
+              Photos
+            </h2>
+            <PhotoGallery images={venueImages as Array<{ id: string; image_url: string }>} />
+          </section>
+        )}
 
         {/* Happenings Section */}
         <section className="mt-8">

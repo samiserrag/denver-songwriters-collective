@@ -315,6 +315,56 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Slice 6: Venue Photo Gallery (January 2026) — RESOLVED
+
+**Goal:** Allow venue managers and admins to upload photos for venues. Photos appear on public venue detail pages.
+
+**Status:** Implemented.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Venue images table | New `venue_images` table with soft-delete support |
+| RLS policies | 10 policies: manager view, admin view, public view, insert, update, delete |
+| Dashboard UI | `VenuePhotosSection` component with upload, grid, cover selection |
+| Cover selection | Clicking "Set as cover photo" copies URL to `venues.cover_image_url` |
+| Storage path | `venues/{venue_id}/{uuid}.{ext}` in `avatars` bucket |
+| Public display | Photos displayed on `/venues/[id]` using `PhotoGallery` component |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260117100000_venue_images.sql` | Create table, indexes, RLS policies |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/venue/VenuePhotosSection.tsx` | Dashboard photo management component |
+| `supabase/migrations/20260117100000_venue_images.sql` | Migration file |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/(protected)/dashboard/my-venues/[id]/page.tsx` | Integrated VenuePhotosSection, fetch images |
+| `app/venues/[id]/page.tsx` | Added venue photo gallery display |
+| `lib/supabase/database.types.ts` | Regenerated with venue_images table |
+| `components/gallery/CropModal.tsx` | Added onUseOriginal callback for skipping crop |
+| `components/gallery/BulkUploadGrid.tsx` | Added handleUseOriginal callback |
+
+**RLS Authorization:**
+
+| Role | Can View | Can Upload | Can Delete |
+|------|----------|------------|------------|
+| Venue Manager | Own venue images | Own venue | Own venue |
+| Admin | All images | All venues | All venues |
+| Public | Active images only | No | No |
+
+---
+
 ### Slice 5: Member Profile Photo Gallery (January 2026) — RESOLVED
 
 **Goal:** Allow members to upload multiple profile photos and choose which one to display as their avatar.

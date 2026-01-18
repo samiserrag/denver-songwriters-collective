@@ -2779,6 +2779,58 @@ export type Database = {
           },
         ]
       }
+      venue_images: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          image_url: string
+          storage_path: string
+          uploaded_by: string | null
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          image_url: string
+          storage_path: string
+          uploaded_by?: string | null
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          image_url?: string
+          storage_path?: string
+          uploaded_by?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_images_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_images_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["matched_venue_id"]
+          },
+          {
+            foreignKeyName: "venue_images_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_invites: {
         Row: {
           accepted_at: string | null
