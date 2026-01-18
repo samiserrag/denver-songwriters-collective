@@ -66,15 +66,17 @@ describe("Profile Images Schema Contract", () => {
   });
 
   describe("Storage path format", () => {
-    it("should use profile-gallery/{user_id}/{uuid}.{ext} format", () => {
+    it("should use {user_id}/profile-gallery/{uuid}.{ext} format", () => {
+      // Storage path must start with userId to satisfy RLS policy:
+      // (storage.foldername(name))[1] = auth.uid()::text
       const userId = "123e4567-e89b-12d3-a456-426614174000";
       const fileId = "987fcdeb-51a2-3e4f-5678-901234567890";
       const ext = "jpg";
 
-      const storagePath = `profile-gallery/${userId}/${fileId}.${ext}`;
+      const storagePath = `${userId}/profile-gallery/${fileId}.${ext}`;
 
       expect(storagePath).toMatch(
-        /^profile-gallery\/[a-f0-9-]+\/[a-f0-9-]+\.[a-z]+$/
+        /^[a-f0-9-]+\/profile-gallery\/[a-f0-9-]+\.[a-z]+$/
       );
     });
 
@@ -84,7 +86,7 @@ describe("Profile Images Schema Contract", () => {
       const fileId = "test-file-id";
 
       validExtensions.forEach((ext) => {
-        const path = `profile-gallery/${userId}/${fileId}.${ext}`;
+        const path = `${userId}/profile-gallery/${fileId}.${ext}`;
         expect(path).toContain(`.${ext}`);
       });
     });

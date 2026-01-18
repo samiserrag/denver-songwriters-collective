@@ -41,7 +41,9 @@ export function ProfilePhotosSection({
       try {
         const fileExt = file.name.split(".").pop() || "jpg";
         const fileId = crypto.randomUUID();
-        const storagePath = `profile-gallery/${userId}/${fileId}.${fileExt}`;
+        // Storage path must start with userId to satisfy RLS policy:
+        // (storage.foldername(name))[1] = auth.uid()::text
+        const storagePath = `${userId}/profile-gallery/${fileId}.${fileExt}`;
 
         // Upload to storage
         const { error: uploadError } = await supabase.storage
