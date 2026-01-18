@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
-import { Trash2, Check, Loader2 } from "lucide-react";
+import { Trash2, Check, Loader2, X, ZoomIn } from "lucide-react";
 import Image from "next/image";
 
 type ProfileImage = {
@@ -33,6 +33,7 @@ export function ProfilePhotosSection({
   const [images, setImages] = useState<ProfileImage[]>(initialImages);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [settingAvatarId, setSettingAvatarId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Upload handler for ImageUpload component
@@ -236,6 +237,16 @@ export function ProfilePhotosSection({
 
                 {/* Hover overlay with actions */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  {/* View full size button */}
+                  <button
+                    type="button"
+                    onClick={() => setLightboxImage(image.image_url)}
+                    className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                    title="View full size"
+                  >
+                    <ZoomIn className="w-4 h-4 text-white" />
+                  </button>
+
                   {/* Set as avatar button */}
                   {!isAvatar && (
                     <button
@@ -288,6 +299,32 @@ export function ProfilePhotosSection({
         accept="image/jpeg,image/png,image/webp,image/gif"
         className="hidden"
       />
+
+      {/* Lightbox modal for full-size viewing */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- Lightbox needs unconstrained sizing; next/image requires fixed dimensions */}
+            <img
+              src={lightboxImage}
+              alt="Full size photo"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

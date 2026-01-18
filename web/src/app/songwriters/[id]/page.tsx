@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
-import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
+import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks, PhotoGallery } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
 import { RoleBadges } from "@/components/members";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
@@ -14,7 +14,6 @@ import {
 } from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
-import Image from "next/image";
 export const dynamic = "force-dynamic";
 
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -225,22 +224,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
           {profileImages && profileImages.length > 0 && (
             <section className="mb-12" data-testid="photos-section">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Photos</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {profileImages.map((image) => (
-                  <div
-                    key={image.id}
-                    className="relative aspect-square rounded-lg overflow-hidden border border-[var(--color-border-default)]"
-                  >
-                    <Image
-                      src={image.image_url}
-                      alt="Profile photo"
-                      fill
-                      className="object-cover object-top"
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                    />
-                  </div>
-                ))}
-              </div>
+              <PhotoGallery images={profileImages} />
             </section>
           )}
 

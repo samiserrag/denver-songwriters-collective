@@ -5,6 +5,56 @@ import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-cr
 import 'react-image-crop/dist/ReactCrop.css';
 import { Upload, X, Camera, Loader2 } from 'lucide-react';
 
+// Separate component for crop preview to handle canvas updates properly
+function CropPreview({
+  image,
+  crop,
+  aspectRatio,
+  shape,
+}: {
+  image: HTMLImageElement;
+  crop: Crop;
+  aspectRatio: number;
+  shape: 'circle' | 'square';
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Convert percentage crop to pixels on the natural image
+    const cropX = (crop.x / 100) * image.naturalWidth;
+    const cropY = (crop.y / 100) * image.naturalHeight;
+    const cropWidth = (crop.width / 100) * image.naturalWidth;
+    const cropHeight = (crop.height / 100) * image.naturalHeight;
+
+    // Clear and draw the cropped portion
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      image,
+      cropX, cropY, cropWidth, cropHeight,
+      0, 0, canvas.width, canvas.height
+    );
+  }, [image, crop]);
+
+  const previewHeight = aspectRatio === 1 ? 120 : Math.round(120 / aspectRatio);
+
+  return (
+    <div className="flex flex-col items-center">
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-2">Final result preview</p>
+      <canvas
+        ref={canvasRef}
+        width={120}
+        height={previewHeight}
+        className={`border-2 border-[var(--color-border-accent)] ${shape === 'circle' ? 'rounded-full' : 'rounded-lg'}`}
+      />
+    </div>
+  );
+}
+
 type ImageUploadProps = {
   currentImageUrl?: string | null;
   onUpload: (file: File) => Promise<string | null>;
@@ -314,37 +364,14 @@ export function ImageUpload({
               </ReactCrop>
             </div>
 
-            {/* Live preview */}
+            {/* Live preview using canvas for accurate crop visualization */}
             {completedCrop && imgRef.current && (
-              <div className="flex flex-col items-center">
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-2">Final result preview</p>
-                <div
-                  className={`overflow-hidden border-2 border-[var(--color-border-accent)] ${shape === 'circle' ? 'rounded-full' : 'rounded-lg'}`}
-                  style={{
-                    width: 120,
-                    height: aspectRatio === 1 ? 120 : Math.round(120 / aspectRatio),
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${100 / (completedCrop.width / 100)}%`,
-                      marginLeft: `-${(completedCrop.x / completedCrop.width) * 100}%`,
-                      marginTop: `-${(completedCrop.y / completedCrop.height) * 100}%`,
-                    }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- Preview uses CSS transform for crop visualization; next/image incompatible */}
-                    <img
-                      src={previewUrl}
-                      alt="Final preview"
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block',
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
+              <CropPreview
+                image={imgRef.current}
+                crop={completedCrop}
+                aspectRatio={aspectRatio}
+                shape={shape}
+              />
             )}
           </div>
 
@@ -400,9 +427,9 @@ export function ImageUpload({
               type="button"
               onClick={handleUseOriginal}
               disabled={isUploading}
-              className="w-full px-4 py-2 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-white/5 transition-colors disabled:opacity-50 text-sm"
+              className="w-full px-4 py-3 rounded-lg border border-white/20 text-[var(--color-text-secondary)] hover:border-white/40 hover:text-[var(--color-text-primary)] hover:bg-white/5 transition-colors disabled:opacity-50"
             >
-              Skip cropping — use original image
+              Use Original Image (No Crop)
             </button>
           </div>
         </div>
