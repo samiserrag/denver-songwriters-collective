@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 
@@ -37,32 +38,44 @@ export async function POST(
 
   const { user_id, search_name } = await request.json();
 
-  // Find user by ID or exact name match (case-insensitive for UX, but exact for security)
+  // Find user by ID or name search
   let targetUserId = user_id;
 
   if (!targetUserId && search_name) {
+    // Use service role client to bypass RLS for member search
+    // This allows finding members even if they don't have identity flags set yet
+    const serviceClient = createServiceRoleClient();
+
     // Search for partial name match (case-insensitive)
     const searchTerm = `%${search_name.trim()}%`;
-    const { data: profiles } = await supabase
+    const { data: profiles, error: searchError } = await serviceClient
       .from("profiles")
       .select("id, full_name")
       .ilike("full_name", searchTerm)
       .limit(10);
 
+    if (searchError) {
+      console.error("Profile search error:", searchError);
+      return NextResponse.json({
+        error: "Failed to search members. Please try again."
+      }, { status: 500 });
+    }
+
     if (profiles && profiles.length === 1) {
-      // Exact single match found
+      // Single match found
       targetUserId = profiles[0].id;
     } else if (profiles && profiles.length > 1) {
-      // Multiple matches - return them so user can be more specific
+      // Multiple matches - return them so user can select or be more specific
       return NextResponse.json({
-        error: `Multiple users found: ${profiles.map(p => p.full_name).join(", ")}. Please enter a more specific name.`
+        multiple_matches: profiles.map(p => ({ id: p.id, name: p.full_name })),
+        error: `Multiple members found. Please select one or be more specific.`
       }, { status: 400 });
     }
   }
 
   if (!targetUserId) {
     return NextResponse.json({
-      error: "User not found. Please check the name and try again."
+      error: "No member found with that name. They may need to join the site first."
     }, { status: 404 });
   }
 

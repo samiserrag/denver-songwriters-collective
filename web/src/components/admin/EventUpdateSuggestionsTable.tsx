@@ -43,6 +43,29 @@ function parseNewEventData(jsonStr: string): NewEventData | null {
   }
 }
 
+/**
+ * Parse the update scope from notes field
+ * Returns { scope: "series" | "date" | null, dateKey: string | null, remainingNotes: string }
+ */
+function parseUpdateScope(notes: string | null): { scope: "series" | "date" | null; dateKey: string | null; remainingNotes: string } {
+  if (!notes) return { scope: null, dateKey: null, remainingNotes: "" };
+
+  const seriesMatch = notes.match(/\[UPDATE SCOPE: Entire series\]/);
+  const dateMatch = notes.match(/\[UPDATE SCOPE: This date only \((\d{4}-\d{2}-\d{2})\)\]/);
+
+  if (seriesMatch) {
+    const remainingNotes = notes.replace(seriesMatch[0], "").trim();
+    return { scope: "series", dateKey: null, remainingNotes };
+  }
+
+  if (dateMatch) {
+    const remainingNotes = notes.replace(dateMatch[0], "").trim();
+    return { scope: "date", dateKey: dateMatch[1], remainingNotes };
+  }
+
+  return { scope: null, dateKey: null, remainingNotes: notes };
+}
+
 const RESPONSE_TEMPLATES = {
   approve: "Thank you for your contribution! Your correction has been approved and the listing has been updated.",
   reject: "Thank you for your submission. After review, we weren't able to verify this change. If you have additional information, please resubmit.",
@@ -147,6 +170,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
             {suggestions.map((s) => {
               const isNewEvent = s.field === "_new_event";
               const newEventData = isNewEvent ? parseNewEventData(s.new_value) : null;
+              const scopeInfo = parseUpdateScope(s.notes ?? null);
 
               return (
               <tr key={s.id} className="border-t border-white/5 hover:bg-white/5">
@@ -165,20 +189,33 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                     </div>
                   ) : (
                     <div>
+                      {/* Show scope badge for recurring events */}
+                      {scopeInfo.scope && (
+                        <span className={`px-2 py-0.5 rounded text-xs mb-1 inline-block ${
+                          scopeInfo.scope === "date"
+                            ? "bg-blue-600 text-white"
+                            : "bg-purple-600 text-white"
+                        }`}>
+                          {scopeInfo.scope === "date"
+                            ? `📅 ${scopeInfo.dateKey}`
+                            : "🔄 ENTIRE SERIES"}
+                        </span>
+                      )}
                       <Link
-                        href={`/open-mics/${s.events?.slug || s.event_id}`}
+                        href={`/events/${s.events?.slug || s.event_id}`}
                         target="_blank"
-                        className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] font-medium"
+                        className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] font-medium block"
                       >
                         {s.events?.title || "Unknown Event"}
                       </Link>
                       <p className="text-xs text-[var(--color-text-tertiary)]">
                         {s.events?.venue_name} • {s.events?.day_of_week}
                       </p>
-                      <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                        {s.batch_id && <span>batch: {s.batch_id} </span>}
-                        {s.event_id && <span>event: {s.event_id}</span>}
-                      </p>
+                      {scopeInfo.remainingNotes && (
+                        <p className="text-xs text-[var(--color-text-tertiary)] mt-1 italic">
+                          Note: {scopeInfo.remainingNotes}
+                        </p>
+                      )}
                     </div>
                   )}
                 </td>
@@ -299,29 +336,52 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                   );
                 })()
               ) : (
-                <>
-                  <p className="text-[var(--color-text-tertiary)]">Event: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.events?.title}</span></p>
-                  <p className="text-[var(--color-text-tertiary)]">Field: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.field}</span></p>
-                  <p className="text-[var(--color-text-tertiary)]">Current: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span></p>
-                  {actionModal.action === "approve" ? (
-                    <div className="mt-2">
-                      <label className="block text-[var(--color-text-tertiary)] mb-1">
-                        Value to apply (edit if needed):
-                      </label>
-                      <textarea
-                        value={editedValue}
-                        onChange={(e) => setEditedValue(e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-input)] rounded text-green-400 font-mono text-sm"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-[var(--color-text-tertiary)]">Suggested: <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
-                  )}
-                </>
-              )}
-              {actionModal.suggestion.notes && (
-                <p className="text-[var(--color-text-tertiary)] mt-2">Notes: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.notes}</span></p>
+                (() => {
+                  const modalScopeInfo = parseUpdateScope(actionModal.suggestion.notes ?? null);
+                  return (
+                    <>
+                      {/* Scope banner */}
+                      {modalScopeInfo.scope && (
+                        <div className={`mb-3 px-3 py-2 rounded ${
+                          modalScopeInfo.scope === "date"
+                            ? "bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
+                            : "bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
+                        }`}>
+                          <p className={`text-sm font-medium ${
+                            modalScopeInfo.scope === "date"
+                              ? "text-blue-800 dark:text-blue-300"
+                              : "text-purple-800 dark:text-purple-300"
+                          }`}>
+                            {modalScopeInfo.scope === "date"
+                              ? `📅 Update for ${modalScopeInfo.dateKey} only`
+                              : "🔄 Update applies to ENTIRE SERIES"}
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-[var(--color-text-tertiary)]">Event: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.events?.title}</span></p>
+                      <p className="text-[var(--color-text-tertiary)]">Field: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.field}</span></p>
+                      <p className="text-[var(--color-text-tertiary)]">Current: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span></p>
+                      {actionModal.action === "approve" ? (
+                        <div className="mt-2">
+                          <label className="block text-[var(--color-text-tertiary)] mb-1">
+                            Value to apply (edit if needed):
+                          </label>
+                          <textarea
+                            value={editedValue}
+                            onChange={(e) => setEditedValue(e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-input)] rounded text-green-400 font-mono text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-[var(--color-text-tertiary)]">Suggested: <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+                      )}
+                      {modalScopeInfo.remainingNotes && (
+                        <p className="text-[var(--color-text-tertiary)] mt-2 italic">Note: {modalScopeInfo.remainingNotes}</p>
+                      )}
+                    </>
+                  );
+                })()
               )}
             </div>
 

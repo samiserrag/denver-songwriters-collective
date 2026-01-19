@@ -2,14 +2,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 
-// NEW full mock suggestion object (matches table output)
+// Mock suggestion object matching the table component expectations
 const mockSuggestion = {
   id: 1,
   batch_id: "batch-uuid-123",
   event_id: "event-uuid-456",
   field: "start_time",
   old_value: "7:00 PM",
-  new_value: "Correct event date",
+  new_value: "8:00 PM",
   notes: "The time was wrong on the flyer",
   status: "pending",
   created_at: "2024-12-31T17:00:00Z",
@@ -17,6 +17,16 @@ const mockSuggestion = {
   reviewed_by: null,
   submitter_email: "tester@example.com",
   submitter_name: "Test User",
+  admin_response: null,
+  // Joined events data that the table expects
+  events: {
+    id: "event-uuid-456",
+    title: "Test Open Mic Night",
+    slug: "test-open-mic-night",
+    venue_name: "Test Venue",
+    day_of_week: "Monday",
+    start_time: "7:00 PM",
+  },
 };
 
 // Updated Supabase mock to match the page query pattern
@@ -69,14 +79,17 @@ describe("Admin Event Update Suggestions Page", () => {
     const element = await AdminEventUpdateSuggestionsPage();
     render(element as any);
 
-    await waitFor(() => expect(screen.getByText("Correct event date")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("8:00 PM")).toBeInTheDocument());
 
-    // The table renders batch_id / event_id / field / old / new — assert those instead of venue
-    expect(screen.getByText(/batch-uuid-123/)).toBeInTheDocument();
-    expect(screen.getByText(/event-uuid-456/)).toBeInTheDocument();
+    // The table shows: Event (title), Field, Current (old_value), Suggested (new_value), Submitter, Status, Created, Actions
+    expect(screen.getByText("Test Open Mic Night")).toBeInTheDocument();
     expect(screen.getByText("start_time")).toBeInTheDocument();
+    expect(screen.getByText("7:00 PM")).toBeInTheDocument(); // old_value (Current)
+    expect(screen.getByText("Test User")).toBeInTheDocument(); // submitter_name
+    expect(screen.getByText("pending")).toBeInTheDocument();
 
-    const possibleActionLabels = ["Approve", "Reject", "Delete"];
+    // Admin action buttons should be present for pending suggestions
+    const possibleActionLabels = ["Approve", "Reject", "Need Info", "Delete"];
     const anyActionPresent = possibleActionLabels.some((label) => screen.queryByText(label) !== null);
     expect(anyActionPresent).toBe(true);
   });

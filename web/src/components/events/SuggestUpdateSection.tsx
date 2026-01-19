@@ -3,7 +3,7 @@
 /**
  * SuggestUpdateSection - Client wrapper for EventSuggestionForm
  *
- * Provides a button to toggle the suggestion form visibility.
+ * Shows the suggestion form directly when user clicks "Suggest an update".
  * Works for both logged-in users and guests (guest mode = email only, no verification).
  */
 
@@ -41,9 +41,13 @@ interface Event {
 interface Props {
   event: Event;
   isAdminUser: boolean;
+  /** The specific occurrence date if viewing a recurring event on a specific date */
+  selectedDateKey?: string | null;
+  /** Whether this is a recurring event */
+  isRecurring?: boolean;
 }
 
-export function SuggestUpdateSection({ event, isAdminUser }: Props) {
+export function SuggestUpdateSection({ event, isAdminUser, selectedDateKey, isRecurring }: Props) {
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -57,17 +61,22 @@ export function SuggestUpdateSection({ event, isAdminUser }: Props) {
         </button>
         {isAdminUser && (
           <a
-            href="/dashboard/admin/open-mics"
+            href="/dashboard/admin/event-update-suggestions"
             className="text-sm underline hover:no-underline"
           >
-            Admin queue
+            Review suggestions
           </a>
         )}
       </div>
 
       {showForm && (
         <div className="mt-4">
-          <EventSuggestionForm event={event} />
+          <EventSuggestionForm
+            event={event}
+            selectedDateKey={selectedDateKey}
+            isRecurring={isRecurring}
+            onClose={() => setShowForm(false)}
+          />
         </div>
       )}
     </div>

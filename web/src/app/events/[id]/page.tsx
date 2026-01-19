@@ -859,6 +859,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                       status: event.status,
                     }}
                     isAdminUser={isAdminUser}
+                    selectedDateKey={effectiveSelectedDate}
+                    isRecurring={recurrence.isRecurring}
                   />
                 </div>
               </div>

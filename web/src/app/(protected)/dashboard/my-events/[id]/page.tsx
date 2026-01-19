@@ -228,7 +228,7 @@ export default async function EditEventPage({
             {isPrimaryHost && (
               <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
                 <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Co-hosts</h2>
-                <CoHostManager eventId={eventId} hosts={hostsWithProfiles} />
+                <CoHostManager eventId={eventId} eventTitle={event.title} hosts={hostsWithProfiles} />
               </section>
             )}
           </div>

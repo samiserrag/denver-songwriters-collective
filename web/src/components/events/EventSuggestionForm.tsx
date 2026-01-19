@@ -47,6 +47,12 @@ interface Event {
 
 interface Props {
   event: Event;
+  /** The specific occurrence date if viewing a recurring event on a specific date */
+  selectedDateKey?: string | null;
+  /** Whether this is a recurring event */
+  isRecurring?: boolean;
+  /** Callback to close the form */
+  onClose?: () => void;
 }
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -73,11 +79,14 @@ const STATUS_SUGGESTIONS = [
   { value: "cancelled", label: "Cancelled - This event is no longer happening" }
 ];
 
-export default function EventSuggestionForm({ event }: Props) {
+export default function EventSuggestionForm({ event, selectedDateKey, isRecurring, onClose }: Props) {
   const supabase = createClient();
 
-  const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  // Track whether user is updating the whole series or just this date
+  const [updateScope, setUpdateScope] = useState<"series" | "date">(
+    isRecurring && selectedDateKey ? "date" : "series"
+  );
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -195,6 +204,14 @@ export default function EventSuggestionForm({ event }: Props) {
     }
 
     try {
+      // Build scope context for the notes
+      const scopeNote = isRecurring
+        ? updateScope === "date" && selectedDateKey
+          ? `[UPDATE SCOPE: This date only (${selectedDateKey})]`
+          : "[UPDATE SCOPE: Entire series]"
+        : "";
+      const fullNotes = [scopeNote, additionalNotes].filter(Boolean).join(" ");
+
       // Submit each change to the API
       for (const change of changes) {
         const response = await fetch("/api/event-update-suggestions", {
@@ -209,7 +226,7 @@ export default function EventSuggestionForm({ event }: Props) {
             status: "pending",
             submitter_name: submitterName || null,
             submitter_email: submitterEmail || null,
-            notes: additionalNotes || null,
+            notes: fullNotes || null,
           }),
         });
 
@@ -220,7 +237,7 @@ export default function EventSuggestionForm({ event }: Props) {
       }
 
       setSuccess(true);
-      setIsOpen(false);
+      if (onClose) onClose();
     } catch (err) {
       console.error("Submission error:", err);
       setError(err instanceof Error ? err.message : "Failed to submit. Please try again.");
@@ -240,21 +257,62 @@ export default function EventSuggestionForm({ event }: Props) {
 
   if (isLoggedIn === null) return null;
 
+  // Format the selected date for display
+  const formattedDate = selectedDateKey
+    ? new Date(selectedDateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "America/Denver",
+      })
+    : null;
+
   return (
-    <div className="mt-8">
-      {!isOpen ? (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] underline text-sm"
-        >
-          Suggest updates to this listing
-        </button>
-      ) : (
-        <form onSubmit={handleSubmit} className="bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Suggest Updates</h3>
-          <p className="text-[var(--color-text-tertiary)] text-sm mb-4">
-            Edit any fields that need correction. Only changed fields will be submitted.
-          </p>
+    <div>
+      <form onSubmit={handleSubmit} className="bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Suggest Updates</h3>
+
+        {/* Series vs Date scope selector - only show for recurring events with a selected date */}
+        {isRecurring && selectedDateKey && (
+          <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
+            <p className="text-blue-800 dark:text-blue-300 text-sm font-medium mb-2">
+              What are you updating?
+            </p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="updateScope"
+                  value="date"
+                  checked={updateScope === "date"}
+                  onChange={() => setUpdateScope("date")}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <span className="text-blue-700 dark:text-blue-200 text-sm">
+                  <strong>Just {formattedDate}</strong> — This specific occurrence only
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="updateScope"
+                  value="series"
+                  checked={updateScope === "series"}
+                  onChange={() => setUpdateScope("series")}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <span className="text-blue-700 dark:text-blue-200 text-sm">
+                  <strong>The entire series</strong> — All occurrences (past and future)
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        <p className="text-[var(--color-text-tertiary)] text-sm mb-4">
+          Edit any fields that need correction. Only changed fields will be submitted.
+        </p>
 
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-red-800 dark:text-red-300 text-sm">
@@ -559,16 +617,17 @@ export default function EventSuggestionForm({ event }: Props) {
             >
               {submitting ? "Submitting..." : "Submit Suggestions"}
             </button>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
-            >
-              Cancel
-            </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] rounded text-[var(--color-text-primary)]"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </form>
-      )}
     </div>
   );
 }
