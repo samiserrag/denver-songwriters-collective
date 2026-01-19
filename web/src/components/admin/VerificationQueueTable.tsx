@@ -165,6 +165,40 @@ export default function VerificationQueueTable({ events: initialEvents, venues }
     }
   };
 
+  // Unverify action - clears last_verified_at (marks as unconfirmed)
+  const handleUnverify = async (eventId: string) => {
+    setUpdating(eventId);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/ops/events/bulk-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventIds: [eventId],
+          action: "unverify",
+        }),
+      });
+
+      if (res.ok) {
+        setEvents((prev) =>
+          prev.map((e) =>
+            e.id === eventId
+              ? { ...e, last_verified_at: null, verified_by: null }
+              : e
+          )
+        );
+      } else {
+        const errData = await res.json();
+        setError(`Failed to unverify: ${errData.error || "Unknown error"}`);
+      }
+    } catch {
+      setError("Error unverifying event");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   // Cancel action - sets status to cancelled
   const handleCancel = async (eventId: string) => {
     if (!confirm("Are you sure you want to cancel this event? This will hide it from public views.")) {
@@ -476,6 +510,17 @@ export default function VerificationQueueTable({ events: initialEvents, venues }
                             className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded text-white text-xs font-medium"
                           >
                             {isUpdating ? "..." : "Verify"}
+                          </button>
+                        )}
+
+                        {/* Unverify button - only for confirmed events */}
+                        {verificationStatus === "confirmed" && (
+                          <button
+                            onClick={() => handleUnverify(event.id)}
+                            disabled={isUpdating}
+                            className="px-2.5 py-1 bg-gray-600 hover:bg-gray-500 disabled:opacity-50 rounded text-white text-xs font-medium"
+                          >
+                            {isUpdating ? "..." : "Unverify"}
                           </button>
                         )}
 
