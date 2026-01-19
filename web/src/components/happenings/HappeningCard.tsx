@@ -563,7 +563,8 @@ export function HappeningCard({
         data-cancelled={isCancelled ? "true" : undefined}
       >
         {/* Poster Media Section - Reduced height for density (was 4:3, now 3:2) */}
-        <div className="relative aspect-[3/2] overflow-hidden" data-testid="poster-thumbnail">
+        {/* bg-tertiary provides letterbox background for object-contain images */}
+        <div className="relative aspect-[3/2] overflow-hidden bg-[var(--color-bg-tertiary)]" data-testid="poster-thumbnail">
           {/* Tier 1: Card-optimized 4:3 image */}
           {hasCardImage && (
             <Image
@@ -576,14 +577,14 @@ export function HappeningCard({
             />
           )}
 
-          {/* Tier 2: Full cover image - object-top preserves top of image when cropping */}
+          {/* Tier 2: Full cover image - object-contain shows full image with letterboxing */}
           {hasFullPoster && fullPosterUrl && (
             <Image
               src={fullPosterUrl}
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover object-top transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+              className="object-contain transition-transform duration-300 ease-out group-hover:scale-[1.02]"
               data-testid="full-poster-contained"
             />
           )}

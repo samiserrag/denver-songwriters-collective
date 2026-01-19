@@ -315,6 +315,41 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Happening Card Image Display + Admin Verification Control (January 2026) — RESOLVED
+
+**Goal:** Fix card image cropping and add verification control for admins on event detail pages.
+
+**Status:** Fixed.
+
+**Issues Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Tall flyer images heavily cropped on happening cards | `object-cover` CSS always crops to fill | Changed to `object-contain` with bg-tertiary letterbox background |
+| Admins/hosts cannot verify happenings from detail page | No UI control existed | Added `VerifyEventButton` component |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/events/VerifyEventButton.tsx` | Admin button to verify/unverify happenings |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningCard.tsx` | Tier 2 poster now uses `object-contain`, added `bg-[var(--color-bg-tertiary)]` for letterbox background |
+| `app/events/[id]/page.tsx` | Added VerifyEventButton in unconfirmed banner for admins |
+
+**Behavior:**
+
+- **Card images:** Tall images now show fully with letterbox (empty space on sides) instead of being cropped
+- **Verify button:** Admins see "Confirm this happening" button in the unconfirmed warning banner
+- **After verification:** Shows green "Verified" badge with date, option to remove verification
+- Uses existing `/api/admin/ops/events/bulk-verify` endpoint (works for single events)
+
+---
+
 ### Event-Images Storage Policy Fix (January 2026) — RESOLVED
 
 **Goal:** Fix admin image upload failing on happenings admin editor.

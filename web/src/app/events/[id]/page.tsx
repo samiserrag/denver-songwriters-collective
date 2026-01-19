@@ -14,6 +14,7 @@ import { ClaimEventButton } from "@/components/events/ClaimEventButton";
 import { AttendeeList } from "@/components/events/AttendeeList";
 import { EventComments } from "@/components/events/EventComments";
 import { WatchEventButton } from "@/components/events/WatchEventButton";
+import { VerifyEventButton } from "@/components/events/VerifyEventButton";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
@@ -815,24 +816,34 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                     <span className="ml-1">Last verified: {formatVerifiedDate(verificationResult.lastVerifiedAt)}</span>
                   )}
                 </span>
-                <div className="flex gap-3 mt-1">
-                  <Link
-                    href={`/open-mics/${(event as { slug?: string }).slug || event.id}`}
-                    className="text-sm underline hover:no-underline"
-                  >
-                    Suggest an update
-                  </Link>
+                <div className="flex flex-col gap-3 mt-2">
+                  {/* Admin/Host verification control */}
                   {isAdminUser && (
-                    <>
+                    <div className="flex items-center gap-3">
+                      <VerifyEventButton
+                        eventId={event.id}
+                        isVerified={!!verificationResult.lastVerifiedAt}
+                        lastVerifiedAt={verificationResult.lastVerifiedAt}
+                      />
+                      <WatchEventButton eventId={event.id} initialWatching={isWatching} />
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <Link
+                      href={`/open-mics/${(event as { slug?: string }).slug || event.id}`}
+                      className="text-sm underline hover:no-underline"
+                    >
+                      Suggest an update
+                    </Link>
+                    {isAdminUser && (
                       <Link
                         href="/dashboard/admin/open-mics"
                         className="text-sm underline hover:no-underline"
                       >
-                        Admin: Manage status
+                        Admin queue
                       </Link>
-                      <WatchEventButton eventId={event.id} initialWatching={isWatching} />
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
