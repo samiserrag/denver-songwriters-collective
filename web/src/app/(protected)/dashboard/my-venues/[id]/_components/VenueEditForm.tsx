@@ -221,6 +221,7 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
 
         <div className="max-w-xs">
           <ImageUpload
+            key={coverImageUrl || "no-image"}
             currentImageUrl={coverImageUrl}
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
@@ -515,17 +516,17 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
       </fieldset>
 
       {/* Submit Button */}
-      <div className="flex items-center justify-between pt-4 border-t border-[var(--color-border-default)]">
-        <p className="text-xs text-[var(--color-text-tertiary)]">
-          <span className="text-red-400">*</span> Required fields
-        </p>
+      <div className="pt-6 border-t border-[var(--color-border-default)] space-y-3">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-6 py-2 bg-[var(--color-accent)] text-[var(--color-text-on-accent)] font-medium rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="w-full px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? "Saving..." : "Save Changes"}
         </button>
+        <p className="text-xs text-[var(--color-text-tertiary)] text-center">
+          <span className="text-red-400">*</span> Required fields
+        </p>
       </div>
     </form>
   );

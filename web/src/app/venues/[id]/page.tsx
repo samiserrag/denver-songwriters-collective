@@ -67,6 +67,7 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       website_url,
       phone,
       contact_link,
+      map_link,
       accessibility_notes,
       parking_notes,
       cover_image_url
@@ -242,12 +243,12 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
 
         {/* Hero Cover Image */}
         {venue.cover_image_url && (
-          <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden mb-8">
+          <div className="relative w-full aspect-[21/9] rounded-xl overflow-hidden mb-8 bg-[var(--color-bg-secondary)]">
             <Image
               src={venue.cover_image_url}
               alt={`${venue.name} cover image`}
               fill
-              className="object-cover object-center"
+              className="object-contain object-center"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
               priority
             />
@@ -260,9 +261,14 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
             {venue.name}
           </h1>
 
-          {/* Location */}
+          {/* Location with neighborhood */}
           <p className="text-lg text-[var(--color-text-secondary)] mt-2">
             {locationText}
+            {venue.neighborhood && (
+              <span className="ml-2 text-[var(--color-text-tertiary)]">
+                ({venue.neighborhood})
+              </span>
+            )}
           </p>
 
           {/* Address block */}
@@ -303,6 +309,21 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
               </a>
             )}
 
+            {/* Alternate Map Link (Apple Maps, etc.) */}
+            {venue.map_link && isValidUrl(venue.map_link) && (
+              <a
+                href={venue.map_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                Alternate Map
+              </a>
+            )}
+
             {/* Separate Website button when venue has both google_maps_url AND website_url */}
             {venue.website_url && isValidUrl(venue.website_url) && !!venue.google_maps_url && (
               <a
@@ -330,6 +351,21 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
                 {venue.phone}
+              </a>
+            )}
+
+            {/* Contact Link - booking/inquiry page */}
+            {venue.contact_link && isValidUrl(venue.contact_link) && (
+              <a
+                href={venue.contact_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Contact / Booking
               </a>
             )}
           </div>
