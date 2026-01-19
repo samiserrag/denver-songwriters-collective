@@ -315,6 +315,55 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Admin Suggestion Notification + UI Improvements (January 2026) — RESOLVED
+
+**Goal:** Add admin email notifications for event update suggestions and fix admin table UI.
+
+**Status:** Fixed.
+
+**Features Added:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Admin notification email | `adminSuggestionNotification` template sends email to admin when suggestions are submitted |
+| Improved action buttons | Approve/Reject/Need Info buttons now more visible with white text, proper contrast |
+| Actions column width | Minimum width ensures buttons aren't cut off on narrow screens |
+| "Already reviewed" text | Shows when suggestion has already been processed (not pending) |
+
+**New Email Template:**
+
+| Template | Path | Purpose |
+|----------|------|---------|
+| `adminSuggestionNotification` | `lib/email/templates/adminSuggestionNotification.ts` | Notifies admin of new event update suggestions |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/email/templates/adminSuggestionNotification.ts` | Email template for admin notification |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/registry.ts` | Registered new template |
+| `lib/email/index.ts` | Added export for new template |
+| `lib/email/email.test.ts` | Updated template count (19→20) |
+| `app/api/event-update-suggestions/route.ts` | Sends admin notification email after suggestion is created |
+| `components/admin/EventUpdateSuggestionsTable.tsx` | Improved button visibility, added min-width to Actions column |
+| `components/events/EventSuggestionForm.tsx` | Fixed success message contrast (theme-aware green styling) |
+
+**Email Template Details:**
+
+The `adminSuggestionNotification` email includes:
+- Submitter name and email (if provided)
+- Event title with link to event page
+- Field being changed, old value, and new value
+- Any notes from the submitter
+- Link to admin review page (`/dashboard/admin/event-update-suggestions`)
+
+---
+
 ### Happening Card Image Display + Admin Verification Control (January 2026) — RESOLVED
 
 **Goal:** Fix card image cropping and add verification control for admins on event detail pages.

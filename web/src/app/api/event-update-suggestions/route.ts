@@ -2,6 +2,8 @@
 
 import { NextResponse } from "next/server";
 import { insertEventUpdateSuggestion, EventUpdateSuggestionInsert } from "@/lib/eventUpdateSuggestions/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { sendEmail, ADMIN_EMAIL, getAdminSuggestionNotificationEmail } from "@/lib/email";
 
 // Allowed fields that can be suggested for update
 // Phase 4.1: Expanded to include Phase 3/4 event fields
@@ -121,6 +123,41 @@ export async function POST(request: Request) {
     if (error) {
       console.error("insertEventUpdateSuggestion error:", error);
       return NextResponse.json({ error: error.message ?? error }, { status: 500 });
+    }
+
+    // Send admin notification email
+    try {
+      const supabase = createServiceRoleClient();
+      const { data: event } = await supabase
+        .from("events")
+        .select("title, slug")
+        .eq("id", body.event_id)
+        .single();
+
+      if (event) {
+        const emailContent = getAdminSuggestionNotificationEmail({
+          submitterName: body.submitter_name ?? null,
+          submitterEmail: body.submitter_email ?? null,
+          eventTitle: event.title,
+          eventId: body.event_id,
+          eventSlug: event.slug,
+          field: body.field,
+          oldValue: body.old_value ?? null,
+          newValue: body.new_value,
+          notes: body.notes ?? null,
+        });
+
+        await sendEmail({
+          to: ADMIN_EMAIL,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+          templateName: "adminSuggestionNotification",
+        });
+      }
+    } catch (emailError) {
+      // Log but don't fail the request if email fails
+      console.error("Failed to send admin notification email:", emailError);
     }
 
     return NextResponse.json({ data }, { status: 201 });

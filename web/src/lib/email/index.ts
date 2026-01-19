@@ -139,6 +139,11 @@ export {
   type AdminEventClaimNotificationEmailParams,
 } from "./templates/adminEventClaimNotification";
 
+export {
+  getAdminSuggestionNotificationEmail,
+  type AdminSuggestionNotificationEmailParams,
+} from "./templates/adminSuggestionNotification";
+
 // Occurrence override templates
 export {
   getOccurrenceCancelledHostEmail,

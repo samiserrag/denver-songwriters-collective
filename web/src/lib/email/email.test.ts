@@ -367,9 +367,10 @@ describe("Email Registry", () => {
     expect(keys).toContain("eventClaimApproved");
     expect(keys).toContain("eventClaimRejected");
     expect(keys).toContain("adminEventClaimNotification");
+    expect(keys).toContain("adminSuggestionNotification");
     expect(keys).toContain("occurrenceCancelledHost");
     expect(keys).toContain("occurrenceModifiedHost");
-    expect(keys.length).toBe(19);
+    expect(keys.length).toBe(20);
   });
 
   it("getTemplate returns valid output for all templates", () => {

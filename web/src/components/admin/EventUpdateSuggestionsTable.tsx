@@ -134,7 +134,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
               <th className="px-3 py-2">Submitter</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Created</th>
-              <th className="px-3 py-2">Actions</th>
+              <th className="px-3 py-2 min-w-[180px]">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -223,32 +223,34 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                 <td className="px-3 py-2 text-[var(--color-text-tertiary)] text-xs">
                   {new Date(s.created_at).toLocaleDateString("en-US", { timeZone: "America/Denver" })}
                 </td>
-                <td className="px-3 py-2">
-                  {s.status === "pending" && (
-                    <div className="flex gap-1 flex-wrap">
+                <td className="px-3 py-2 min-w-[180px]">
+                  {s.status === "pending" ? (
+                    <div className="flex gap-1 flex-wrap mb-1">
                       <button
                         onClick={() => openModal(s, "approve")}
-                        className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-[var(--color-text-primary)] text-xs"
+                        className="px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-white text-xs font-medium"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => openModal(s, "reject")}
-                        className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[var(--color-text-primary)] text-xs"
+                        className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-xs font-medium"
                       >
                         Reject
                       </button>
                       <button
                         onClick={() => openModal(s, "needs_info")}
-                        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-[var(--color-text-primary)] text-xs"
+                        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-white text-xs font-medium"
                       >
                         Need Info
                       </button>
                     </div>
+                  ) : (
+                    <span className="text-xs text-[var(--color-text-tertiary)] italic">Already reviewed</span>
                   )}
                   <button
                     onClick={() => handleDelete(s.id)}
-                    className="px-2 py-1 text-red-400 hover:text-red-300 text-xs mt-1"
+                    className="px-2 py-1 text-red-400 hover:text-red-300 text-xs block"
                   >
                     Delete
                   </button>

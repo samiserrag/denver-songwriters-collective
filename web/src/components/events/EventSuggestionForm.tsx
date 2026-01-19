@@ -231,9 +231,9 @@ export default function EventSuggestionForm({ event }: Props) {
 
   if (success) {
     return (
-      <div className="mt-8 p-4 bg-green-900/30 border border-green-700 rounded-lg text-center">
-        <p className="text-green-300 font-medium">Thank you!</p>
-        <p className="text-[var(--color-text-tertiary)] text-sm mt-1">Your suggestions will be reviewed.</p>
+      <div className="mt-8 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg text-center">
+        <p className="text-green-800 dark:text-green-300 font-medium">Thank you!</p>
+        <p className="text-green-700 dark:text-green-400 text-sm mt-1">Your suggestions will be reviewed.</p>
       </div>
     );
   }

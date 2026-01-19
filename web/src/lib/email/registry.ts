@@ -81,6 +81,10 @@ import {
   getOccurrenceModifiedHostEmail,
   type OccurrenceModifiedHostEmailParams,
 } from "./templates/occurrenceModifiedHost";
+import {
+  getAdminSuggestionNotificationEmail,
+  type AdminSuggestionNotificationEmailParams,
+} from "./templates/adminSuggestionNotification";
 
 /**
  * All available email template keys
@@ -103,6 +107,7 @@ export type EmailTemplateKey =
   | "eventClaimApproved"
   | "eventClaimRejected"
   | "adminEventClaimNotification"
+  | "adminSuggestionNotification"
   | "occurrenceCancelledHost"
   | "occurrenceModifiedHost";
 
@@ -127,6 +132,7 @@ export interface EmailTemplateParams {
   eventClaimApproved: EventClaimApprovedEmailParams;
   eventClaimRejected: EventClaimRejectedEmailParams;
   adminEventClaimNotification: AdminEventClaimNotificationEmailParams;
+  adminSuggestionNotification: AdminSuggestionNotificationEmailParams;
   occurrenceCancelledHost: OccurrenceCancelledHostEmailParams;
   occurrenceModifiedHost: OccurrenceModifiedHostEmailParams;
 }
@@ -292,6 +298,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: true,
   },
+  adminSuggestionNotification: {
+    key: "adminSuggestionNotification",
+    name: "Admin Suggestion Notification",
+    description: "New event update suggestion for admin review",
+    audience: "admin",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
   occurrenceCancelledHost: {
     key: "occurrenceCancelledHost",
     name: "Occurrence Cancelled",
@@ -360,6 +374,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getEventClaimRejectedEmail(params as EventClaimRejectedEmailParams);
     case "adminEventClaimNotification":
       return getAdminEventClaimNotificationEmail(params as AdminEventClaimNotificationEmailParams);
+    case "adminSuggestionNotification":
+      return getAdminSuggestionNotificationEmail(params as AdminSuggestionNotificationEmailParams);
     case "occurrenceCancelledHost":
       return getOccurrenceCancelledHostEmail(params as OccurrenceCancelledHostEmailParams);
     case "occurrenceModifiedHost":
@@ -405,6 +421,7 @@ export {
   getEventClaimApprovedEmail,
   getEventClaimRejectedEmail,
   getAdminEventClaimNotificationEmail,
+  getAdminSuggestionNotificationEmail,
   getOccurrenceCancelledHostEmail,
   getOccurrenceModifiedHostEmail,
 };
@@ -428,6 +445,7 @@ export type {
   EventClaimApprovedEmailParams,
   EventClaimRejectedEmailParams,
   AdminEventClaimNotificationEmailParams,
+  AdminSuggestionNotificationEmailParams,
   OccurrenceCancelledHostEmailParams,
   OccurrenceModifiedHostEmailParams,
 };
