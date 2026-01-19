@@ -193,7 +193,7 @@ export default async function MyVenuesPage() {
               return (
                 <div
                   key={claim.id}
-                  className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5"
+                  className="p-4 rounded-lg border border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/5"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -213,7 +213,7 @@ export default async function MyVenuesPage() {
                         Submitted {formatDate(claim.created_at)}
                       </p>
                     </div>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-200 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400">
                       Pending Review
                     </span>
                   </div>

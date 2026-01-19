@@ -70,7 +70,7 @@ function getStatusBadge(status: string, waitlistPosition: number | null, offerEx
       );
     case "offered":
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/30 text-amber-300 text-xs font-medium animate-pulse">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-medium animate-pulse">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -79,7 +79,7 @@ function getStatusBadge(status: string, waitlistPosition: number | null, offerEx
       );
     case "waitlist":
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 text-xs font-medium">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -88,7 +88,7 @@ function getStatusBadge(status: string, waitlistPosition: number | null, offerEx
       );
     case "cancelled":
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400 text-xs font-medium">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -231,7 +231,7 @@ export function RSVPCard({ rsvp, event, showCancel = true }: RSVPCardProps) {
 
         {/* Error message */}
         {error && (
-          <p className="mt-3 text-red-400 text-sm">{error}</p>
+          <p className="mt-3 text-red-800 dark:text-red-400 text-sm">{error}</p>
         )}
 
         {/* Actions */}

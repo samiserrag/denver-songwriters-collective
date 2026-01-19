@@ -354,16 +354,16 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600">
+        <div className="p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg text-red-800 dark:text-red-400">
           {error}
         </div>
       )}
 
       {/* Non-admin notice */}
       {!isAdmin && (
-        <div className="p-4 bg-amber-100 border border-amber-300 rounded-lg text-amber-800">
+        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-amber-800 dark:text-amber-300">
           <p className="font-medium">Note: Your blog post will need admin approval before it&apos;s published publicly.</p>
-          <p className="text-sm mt-1 text-amber-700">Once approved, it will appear on the blog page for everyone to see.</p>
+          <p className="text-sm mt-1 text-amber-700 dark:text-amber-400">Once approved, it will appear on the blog page for everyone to see.</p>
         </div>
       )}
 

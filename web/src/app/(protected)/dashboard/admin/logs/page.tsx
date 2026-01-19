@@ -82,13 +82,13 @@ export default async function AdminLogsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <div className="text-3xl font-bold text-red-500">{errorCount}</div>
-          <div className="text-sm text-red-400">Errors</div>
+        <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-500/30 rounded-lg">
+          <div className="text-3xl font-bold text-red-700 dark:text-red-400">{errorCount}</div>
+          <div className="text-sm text-red-600 dark:text-red-400">Errors</div>
         </div>
-        <div className="p-4 bg-amber-100 border border-amber-300 rounded-lg">
-          <div className="text-3xl font-bold text-amber-700">{warnCount}</div>
-          <div className="text-sm text-amber-600">Warnings</div>
+        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+          <div className="text-3xl font-bold text-amber-800 dark:text-amber-300">{warnCount}</div>
+          <div className="text-sm text-amber-700 dark:text-amber-400">Warnings</div>
         </div>
         <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
           <div className="text-3xl font-bold text-blue-500">{infoCount}</div>

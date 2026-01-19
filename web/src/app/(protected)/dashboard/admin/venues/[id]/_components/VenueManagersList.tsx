@@ -142,7 +142,7 @@ export default function VenueManagersList({
               </div>
               <button
                 onClick={() => setShowRevokeModal(manager)}
-                className="px-3 py-1 text-xs font-medium rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                className="px-3 py-1 text-xs font-medium rounded-lg bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors"
               >
                 Revoke
               </button>

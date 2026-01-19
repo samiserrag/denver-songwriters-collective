@@ -128,7 +128,7 @@ export function VenueClaimsTable({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <div className="p-3 rounded bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -237,7 +237,7 @@ export function VenueClaimsTable({
                         <button
                           onClick={() => handleReject(claim.id)}
                           disabled={loadingId === claim.id}
-                          className="px-2 py-1 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded disabled:opacity-50"
+                          className="px-2 py-1 text-xs bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
                         >
                           {loadingId === claim.id ? "..." : "Confirm"}
                         </button>
@@ -263,7 +263,7 @@ export function VenueClaimsTable({
                         <button
                           onClick={() => setRejectingId(claim.id)}
                           disabled={loadingId === claim.id}
-                          className="px-3 py-1 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded disabled:opacity-50"
+                          className="px-3 py-1 text-xs bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
                         >
                           Reject
                         </button>
@@ -278,7 +278,7 @@ export function VenueClaimsTable({
                           ? "bg-emerald-500/20 text-emerald-400"
                           : claim.status === "cancelled"
                           ? "bg-gray-500/20 text-gray-400"
-                          : "bg-red-500/20 text-red-400"
+                          : "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400"
                       }`}
                     >
                       {claim.status === "approved"

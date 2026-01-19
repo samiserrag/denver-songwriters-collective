@@ -166,7 +166,7 @@ export default function OccurrenceOverrideList({
               key={occ.dateKey}
               className={`p-4 rounded-lg border transition-colors ${
                 occ.isCancelled
-                  ? "bg-red-500/5 border-red-500/30 opacity-60"
+                  ? "bg-red-100 dark:bg-red-500/5 border-red-300 dark:border-red-500/30 opacity-60"
                   : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)]"
               }`}
             >
@@ -186,7 +186,7 @@ export default function OccurrenceOverrideList({
                       {formatTimeToAMPM(displayTime)}
                     </span>
                     {hasTimeOverride && (
-                      <span className="px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">
+                      <span className="px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 rounded">
                         Time override
                       </span>
                     )}
@@ -206,11 +206,11 @@ export default function OccurrenceOverrideList({
                 {/* Status Pill */}
                 <div className="flex-shrink-0">
                   {occ.isCancelled ? (
-                    <span className="px-2 py-1 text-xs font-medium bg-red-500/20 text-red-400 rounded-full">
+                    <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400 rounded-full">
                       CANCELLED
                     </span>
                   ) : hasAnyOverride ? (
-                    <span className="px-2 py-1 text-xs font-medium bg-amber-500/20 text-amber-400 rounded-full">
+                    <span className="px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 rounded-full">
                       MODIFIED
                     </span>
                   ) : (
@@ -235,7 +235,7 @@ export default function OccurrenceOverrideList({
                     <button
                       onClick={() => handleQuickCancel(occ.dateKey)}
                       disabled={isLoading}
-                      className="px-3 py-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded disabled:opacity-50"
+                      className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
                     >
                       {isLoading ? "..." : "Cancel"}
                     </button>

@@ -109,8 +109,8 @@ export default function BulkVerifyCard() {
 
       {/* Error Display */}
       {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded">
-          <p className="text-red-400">{error}</p>
+        <div className="mt-4 p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded">
+          <p className="text-red-800 dark:text-red-400">{error}</p>
         </div>
       )}
 

@@ -71,8 +71,8 @@ export default function ReportChangeForm({ eventId, eventTitle }: Props) {
 
   if (success) {
     return (
-      <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg text-center">
-        <p className="text-green-300 font-medium">Thanks! A human will review this.</p>
+      <div className="p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg text-center">
+        <p className="text-green-800 dark:text-green-300 font-medium">Thanks! A human will review this.</p>
         <button
           onClick={() => setSuccess(false)}
           className="mt-2 text-sm text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] underline"
@@ -114,7 +114,7 @@ export default function ReportChangeForm({ eventId, eventTitle }: Props) {
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-red-300 text-sm">
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-red-800 dark:text-red-300 text-sm">
               {error}
             </div>
           )}

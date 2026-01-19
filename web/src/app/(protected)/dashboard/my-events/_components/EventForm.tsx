@@ -445,7 +445,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600">
+        <div className="p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg text-red-800 dark:text-red-600">
           {error}
         </div>
       )}
@@ -710,7 +710,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               const mapsUrl = selectedVenue.google_maps_url || selectedVenue.map_link;
 
               return (
-                <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-900/10 border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
+                <div className={`p-4 rounded-lg border ${hasAnyUnknown ? "bg-amber-100 dark:bg-amber-900/10 border-amber-300 dark:border-amber-500/30" : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)]"}`}>
                   <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">
                     Venue Details
                   </h4>
@@ -721,13 +721,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                     </div>
                     <div className="flex gap-2">
                       <dt className="text-[var(--color-text-secondary)] w-16">Address:</dt>
-                      <dd className={hasUnknownAddress ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                      <dd className={hasUnknownAddress ? "text-amber-800 dark:text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
                         {hasUnknownAddress ? "Unknown" : selectedVenue.address}
                       </dd>
                     </div>
                     <div className="flex gap-2">
                       <dt className="text-[var(--color-text-secondary)] w-16">City:</dt>
-                      <dd className={hasUnknownCity ? "text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
+                      <dd className={hasUnknownCity ? "text-amber-800 dark:text-amber-400 italic" : "text-[var(--color-text-primary)]"}>
                         {hasUnknownCity ? "Unknown" : `${selectedVenue.city}, ${selectedVenue.state || "CO"}`}
                       </dd>
                     </div>
@@ -743,7 +743,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                     )}
                   </dl>
                   {hasAnyUnknown && (
-                    <p className="mt-3 text-sm text-amber-400">
+                    <p className="mt-3 text-sm text-amber-800 dark:text-amber-400">
                       This venue record is incomplete. Consider using a custom location or updating the venue details.
                     </p>
                   )}

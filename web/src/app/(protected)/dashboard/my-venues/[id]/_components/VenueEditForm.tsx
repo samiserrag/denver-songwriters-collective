@@ -200,7 +200,7 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Error/Success Messages */}
       {error && (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <div className="p-3 rounded-lg bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -233,7 +233,7 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
         </div>
 
         {imageError && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <div className="p-3 rounded-lg bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
             {imageError}
           </div>
         )}

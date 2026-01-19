@@ -269,7 +269,7 @@ export function RSVPButton({
       {capacity !== null && (
         <div className="text-sm">
           {isFull ? (
-            <span className="text-amber-400 font-medium">
+            <span className="text-amber-800 dark:text-amber-400 font-medium">
               Event is full - Waitlist available
             </span>
           ) : (
@@ -281,7 +281,7 @@ export function RSVPButton({
         </div>
       )}
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>}
 
       {rsvp?.status === "confirmed" ? (
         <div className="space-y-2">
@@ -310,8 +310,8 @@ export function RSVPButton({
           )}
 
           {showCancelConfirm ? (
-            <div className="flex items-center gap-2 p-3 bg-red-900/20 border border-red-700/30 rounded-lg">
-              <p className="text-red-300 text-sm flex-1">Cancel your RSVP?</p>
+            <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700/30 rounded-lg">
+              <p className="text-red-800 dark:text-red-300 text-sm flex-1">Cancel your RSVP?</p>
               <button
                 onClick={handleCancel}
                 disabled={loading}
@@ -339,16 +339,16 @@ export function RSVPButton({
         </div>
       ) : rsvp?.status === "offered" ? (
         <div className="space-y-3">
-          <div className="p-4 bg-amber-900/40 border-2 border-amber-500/60 rounded-xl animate-pulse-slow">
+          <div className="p-4 bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-400 dark:border-amber-500/60 rounded-xl animate-pulse-slow">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center">
-                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-500/30 flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <p className="text-amber-300 font-semibold">A Spot is Available!</p>
-                <p className="text-amber-400/80 text-sm">
+                <p className="text-amber-800 dark:text-amber-300 font-semibold">A Spot is Available!</p>
+                <p className="text-amber-700 dark:text-amber-400/80 text-sm">
                   Confirm within{" "}
                   <span className="font-semibold">{formatTimeRemaining(rsvp.offer_expires_at)}</span>
                 </p>
@@ -380,8 +380,8 @@ export function RSVPButton({
           </button>
 
           {showCancelConfirm ? (
-            <div className="flex items-center gap-2 p-3 bg-red-900/20 border border-red-700/30 rounded-lg">
-              <p className="text-red-300 text-sm flex-1">Decline this offer?</p>
+            <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700/30 rounded-lg">
+              <p className="text-red-800 dark:text-red-300 text-sm flex-1">Decline this offer?</p>
               <button
                 onClick={handleCancel}
                 disabled={loading}
@@ -409,28 +409,28 @@ export function RSVPButton({
         </div>
       ) : rsvp?.status === "waitlist" ? (
         <div className="space-y-2">
-          <div className="flex items-center gap-3 p-4 bg-amber-900/30 border border-amber-700/50 rounded-xl">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-3 p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-xl">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-500/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-amber-700 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="text-amber-300 font-semibold">
+              <p className="text-amber-800 dark:text-amber-300 font-semibold">
                 On waitlist{" "}
                 {rsvp.waitlist_position && (
-                  <span className="text-amber-400/80 font-normal">(#{rsvp.waitlist_position})</span>
+                  <span className="text-amber-700 dark:text-amber-400/80 font-normal">(#{rsvp.waitlist_position})</span>
                 )}
               </p>
-              <p className="text-amber-400/70 text-sm">
+              <p className="text-amber-700 dark:text-amber-400/70 text-sm">
                 We&apos;ll notify you if a spot opens
               </p>
             </div>
           </div>
 
           {showCancelConfirm ? (
-            <div className="flex items-center gap-2 p-3 bg-red-900/20 border border-red-700/30 rounded-lg">
-              <p className="text-red-300 text-sm flex-1">Leave the waitlist?</p>
+            <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700/30 rounded-lg">
+              <p className="text-red-800 dark:text-red-300 text-sm flex-1">Leave the waitlist?</p>
               <button
                 onClick={handleCancel}
                 disabled={loading}

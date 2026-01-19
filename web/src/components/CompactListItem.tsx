@@ -11,12 +11,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 // Phase 4.37: Updated labels to use "Unconfirmed" instead of "Schedule TBD"
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  active: { bg: "bg-emerald-900/60", text: "text-emerald-300", label: "Active" },
-  inactive: { bg: "bg-red-900/60", text: "text-red-300", label: "Inactive" },
-  cancelled: { bg: "bg-red-900/60", text: "text-red-300", label: "Cancelled" },
-  unverified: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Unconfirmed" },
-  needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", label: "Unconfirmed" },
-  seasonal: { bg: "bg-sky-900/60", text: "text-sky-300", label: "Seasonal" },
+  active: { bg: "bg-emerald-100 dark:bg-emerald-900/60", text: "text-emerald-800 dark:text-emerald-300", label: "Active" },
+  inactive: { bg: "bg-red-100 dark:bg-red-900/60", text: "text-red-800 dark:text-red-300", label: "Inactive" },
+  cancelled: { bg: "bg-red-100 dark:bg-red-900/60", text: "text-red-800 dark:text-red-300", label: "Cancelled" },
+  unverified: { bg: "bg-amber-100 dark:bg-amber-900/60", text: "text-amber-800 dark:text-amber-300", label: "Unconfirmed" },
+  needs_verification: { bg: "bg-amber-100 dark:bg-amber-900/60", text: "text-amber-800 dark:text-amber-300", label: "Unconfirmed" },
+  seasonal: { bg: "bg-sky-100 dark:bg-sky-900/60", text: "text-sky-800 dark:text-sky-300", label: "Seasonal" },
 };
 
 function isValidMapUrl(url?: string | null): boolean {
@@ -164,12 +164,12 @@ export default function CompactListItem({
           ) : null}
           {/* Verification status */}
           {verifiedText && (
-            <div className="text-xs text-emerald-400 mt-1" title={`Last verified: ${last_verified_at}`}>
-              ✓ Verified {verifiedText}
+            <div className="text-xs text-emerald-700 dark:text-emerald-400 mt-1" title={`Last verified: ${last_verified_at}`}>
+              Verified {verifiedText}
             </div>
           )}
           {showUnverified && (
-            <div className="text-xs text-amber-400 mt-1">
+            <div className="text-xs text-amber-700 dark:text-amber-400 mt-1">
               Not yet verified
             </div>
           )}

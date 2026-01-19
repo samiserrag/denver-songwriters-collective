@@ -152,7 +152,7 @@ export default function VenueSelector({
           </div>
 
           {error && (
-            <div className="p-2 bg-red-900/30 border border-red-700 rounded text-red-300 text-sm">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-red-800 dark:text-red-300 text-sm">
               {error}
             </div>
           )}

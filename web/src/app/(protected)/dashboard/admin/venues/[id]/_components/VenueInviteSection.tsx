@@ -224,7 +224,7 @@ Denver Songwriters Collective Team`;
                 key={invite.id}
                 className={`p-4 rounded-lg border ${
                   isExpired
-                    ? "border-red-500/30 bg-red-500/5"
+                    ? "border-red-300 dark:border-red-500/30 bg-red-100 dark:bg-red-500/5"
                     : "border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]"
                 }`}
               >
@@ -240,7 +240,7 @@ Denver Songwriters Collective Team`;
                     <p
                       className={`text-xs mt-1 ${
                         isExpired
-                          ? "text-red-400"
+                          ? "text-red-800 dark:text-red-400"
                           : "text-[var(--color-text-tertiary)]"
                       }`}
                     >
@@ -252,7 +252,7 @@ Denver Songwriters Collective Team`;
                   {!isExpired && (
                     <button
                       onClick={() => setShowRevokeModal(invite)}
-                      className="px-3 py-1 text-xs font-medium rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                      className="px-3 py-1 text-xs font-medium rounded-lg bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors"
                     >
                       Revoke
                     </button>
@@ -318,7 +318,7 @@ Denver Songwriters Collective Team`;
                 </div>
 
                 {createError && (
-                  <div className="mt-4 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                  <div className="mt-4 p-3 rounded bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
                     {createError}
                   </div>
                 )}
@@ -367,8 +367,8 @@ Denver Songwriters Collective Team`;
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-amber-100 border border-amber-300 mb-4">
-                  <p className="text-sm text-amber-800 font-medium">
+                <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 mb-4">
+                  <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
                     Important: This link will only be shown once!
                   </p>
                 </div>
@@ -467,7 +467,7 @@ Denver Songwriters Collective Team`;
             </div>
 
             {revokeError && (
-              <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <div className="mb-4 p-3 rounded bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
                 {revokeError}
               </div>
             )}

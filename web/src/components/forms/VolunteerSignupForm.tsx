@@ -111,7 +111,7 @@ export function VolunteerSignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-300">
+        <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg text-red-800 dark:text-red-300">
           {error}
         </div>
       )}

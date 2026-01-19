@@ -85,7 +85,7 @@ export function MissingDetailsChipStatic({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full",
-        "bg-amber-100 text-amber-800",
+        "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300",
         compact ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm",
         className
       )}

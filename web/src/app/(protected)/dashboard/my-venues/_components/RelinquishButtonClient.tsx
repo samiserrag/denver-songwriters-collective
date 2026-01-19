@@ -57,12 +57,12 @@ export function RelinquishButtonClient({
     return (
       <div className="flex items-center gap-2">
         {error && (
-          <span className="text-xs text-red-400">{error}</span>
+          <span className="text-xs text-red-800 dark:text-red-400">{error}</span>
         )}
         <button
           onClick={handleRelinquish}
           disabled={isLoading}
-          className="px-2 py-1 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded disabled:opacity-50"
+          className="px-2 py-1 text-xs bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
         >
           {isLoading ? "..." : "Confirm"}
         </button>
@@ -83,7 +83,7 @@ export function RelinquishButtonClient({
   return (
     <button
       onClick={() => setIsConfirming(true)}
-      className="px-2 py-1 text-xs text-[var(--color-text-tertiary)] hover:text-red-400 transition-colors"
+      className="px-2 py-1 text-xs text-[var(--color-text-tertiary)] hover:text-red-800 dark:hover:text-red-400 transition-colors"
       title={role === "owner" ? "Relinquish ownership" : "Leave venue"}
     >
       {role === "owner" ? "Relinquish" : "Leave"}

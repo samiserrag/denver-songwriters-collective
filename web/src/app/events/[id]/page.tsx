@@ -671,12 +671,12 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         </div>
       )}
       {needsVerification && !isCancelled && (
-        <div className="mb-4 p-4 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-300">
+        <div className="mb-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
           <div className="flex items-center gap-2">
             <span className="text-lg">⚠️</span>
             <div>
               <p className="font-semibold">Schedule may have changed</p>
-              <p className="text-sm text-amber-300/80">We&apos;re confirming details with the venue. Check back soon!</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300/80">We&apos;re confirming details with the venue. Check back soon!</p>
             </div>
           </div>
         </div>
@@ -693,12 +693,12 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         </div>
       )}
       {!event.is_published && (
-        <div className="mb-4 p-4 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-300">
+        <div className="mb-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
           <div className="flex items-center gap-2">
             <span className="text-lg">📝</span>
             <div>
               <p className="font-semibold">Draft Preview</p>
-              <p className="text-sm text-amber-300/80">This happening is not published yet. Only you and admins can see it.</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300/80">This happening is not published yet. Only you and admins can see it.</p>
             </div>
           </div>
         </div>
@@ -706,13 +706,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
       {/* Phase 4.32: No signup lane warning - only visible to hosts/admins */}
       {canManageEvent && event.is_dsc_event && !signupLaneExists && (
-        <div className="mb-4 p-4 rounded-lg bg-amber-900/30 border border-amber-500/40 text-amber-300">
+        <div className="mb-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <span className="text-lg">⚙️</span>
               <div>
                 <p className="font-semibold">No sign-up method configured</p>
-                <p className="text-sm text-amber-300/80">
+                <p className="text-sm text-amber-700 dark:text-amber-300/80">
                   {event.has_timeslots
                     ? "Timeslots are enabled but no slots have been generated yet."
                     : "Set a capacity to enable RSVP, or enable performance slots."}
@@ -891,19 +891,19 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
           {/* Phase ABC5: Date selection message (if user requested invalid date) */}
           {dateSelectionMessage && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-amber-900/30 border border-amber-700/50 text-amber-300">
+            <div className="mb-4 px-4 py-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 text-amber-800 dark:text-amber-300">
               <p className="text-sm">{dateSelectionMessage}</p>
             </div>
           )}
 
           {/* Phase ABC5: Occurrence cancelled banner */}
           {isOccurrenceCancelled && effectiveSelectedDate && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-red-900/30 border border-red-700/50">
+            <div className="mb-4 px-4 py-3 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700/50">
               <div className="flex items-center gap-3">
-                <span className="text-red-400 text-xl">⚠️</span>
+                <span className="text-red-600 dark:text-red-400 text-xl">⚠️</span>
                 <div>
-                  <p className="text-red-300 font-semibold">Cancelled for {selectedDateDisplay}</p>
-                  <p className="text-red-400/80 text-sm">This occurrence has been cancelled. The series continues on other dates.</p>
+                  <p className="text-red-800 dark:text-red-300 font-semibold">Cancelled for {selectedDateDisplay}</p>
+                  <p className="text-red-700 dark:text-red-400/80 text-sm">This occurrence has been cancelled. The series continues on other dates.</p>
                 </div>
               </div>
             </div>

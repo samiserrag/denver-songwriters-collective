@@ -283,8 +283,8 @@ export function SeriesView({
 
       {/* Metrics for debugging (hidden by default) */}
       {process.env.NODE_ENV === "development" && result.metrics.wasCapped && (
-        <div className="mt-4 text-xs text-amber-500">
-          ⚠️ Results capped at {result.metrics.eventsProcessed} events
+        <div className="mt-4 text-xs text-amber-800 dark:text-amber-500">
+          Results capped at {result.metrics.eventsProcessed} events
         </div>
       )}
     </div>

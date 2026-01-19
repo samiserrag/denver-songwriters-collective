@@ -241,10 +241,10 @@ export default async function DashboardPage() {
               {p?.role === "admin" && (
                 <Link
                   href="/dashboard/admin"
-                  className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg hover:border-red-500/60 hover:bg-red-500/20 transition-colors text-center col-span-2 sm:col-span-1"
+                  className="p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg hover:border-red-500 dark:hover:border-red-500/60 hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors text-center col-span-2 sm:col-span-1"
                 >
                   <span className="block text-2xl mb-2">⚙️</span>
-                  <span className="text-sm font-medium text-red-400">Admin Panel</span>
+                  <span className="text-sm font-medium text-red-800 dark:text-red-400">Admin Panel</span>
                 </Link>
               )}
             </div>
@@ -252,11 +252,11 @@ export default async function DashboardPage() {
 
           {/* Invitations Section (if any pending) */}
           {(pendingInvitations?.length ?? 0) > 0 && (
-            <section className="p-6 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+            <section className="p-6 bg-amber-100 dark:bg-amber-500/5 border border-amber-300 dark:border-amber-500/20 rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
                 <span>📬</span>
                 <span>Co-host Invitations</span>
-                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 text-xs rounded-full">
+                <span className="px-2 py-0.5 bg-amber-200 dark:bg-amber-500/20 text-amber-800 dark:text-amber-600 text-xs rounded-full">
                   {pendingInvitations?.length}
                 </span>
               </h2>

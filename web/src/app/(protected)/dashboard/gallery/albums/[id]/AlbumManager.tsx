@@ -478,12 +478,12 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
               </span>
 
               {album.is_hidden && !isAdmin && (
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full" title="Contact us if you think this is a mistake">
+                <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full" title="Contact us if you think this is a mistake">
                   Hidden by admin
                 </span>
               )}
               {album.is_hidden && isAdmin && (
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full">
                   Hidden
                 </span>
               )}
@@ -492,8 +492,8 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
               <span
                 className={`px-2 py-0.5 text-xs rounded-full font-medium ${
                   album.is_published
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
                 }`}
               >
                 {album.is_published ? "Published" : "Draft"}
@@ -602,8 +602,8 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
 
       {/* Owner context for hidden albums (non-admin) */}
       {album.is_hidden && !isAdmin && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-sm text-amber-800">
+        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+          <p className="text-sm text-amber-800 dark:text-amber-300">
             This album has been hidden by an admin and is not visible in the public gallery.
             Contact us if you think this is a mistake.
           </p>
@@ -612,8 +612,8 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
 
       {/* Admin Info */}
       {isAdmin && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="p-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
             <strong>Admin view:</strong> You are viewing this album as an admin.
             {album.is_hidden && " This album is currently hidden from the public gallery."}
           </p>

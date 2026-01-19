@@ -128,9 +128,9 @@ export default async function NewsletterAdminPage() {
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {subscriber.unsubscribed_at ? (
-                    <span className="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">Unsubscribed</span>
+                    <span className="px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">Unsubscribed</span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">Active</span>
+                    <span className="px-2 py-0.5 rounded text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">Active</span>
                   )}
                 </td>
               </tr>

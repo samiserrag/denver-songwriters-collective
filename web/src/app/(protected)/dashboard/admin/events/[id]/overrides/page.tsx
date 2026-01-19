@@ -152,7 +152,7 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
             }
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
               showCancelledFlag
-                ? "bg-red-500/10 border-red-500/30 text-red-400"
+                ? "bg-red-100 dark:bg-red-500/10 border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400"
                 : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             }`}
           >
@@ -178,7 +178,7 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
       {/* Cancelled Section (when toggle is on) */}
       {showCancelledFlag && cancelledOccurrences.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-lg font-semibold text-red-400 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-4 flex items-center gap-2">
             <span className="w-1 h-5 bg-red-500 rounded-full" />
             Cancelled Occurrences ({cancelledOccurrences.length})
           </h2>

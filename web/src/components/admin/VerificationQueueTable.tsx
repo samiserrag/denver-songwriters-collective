@@ -319,14 +319,14 @@ export default function VerificationQueueTable({ events: initialEvents, venues }
 
     if (status === "cancelled") {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-500/30">
           Cancelled
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30">
         Unconfirmed
       </span>
     );
@@ -347,7 +347,7 @@ export default function VerificationQueueTable({ events: initialEvents, venues }
     <div>
       {/* Error banner */}
       {error && (
-        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded text-red-400 text-sm">
+        <div className="mb-4 p-3 bg-red-100 dark:bg-red-500/20 border border-red-300 dark:border-red-500/30 rounded text-red-800 dark:text-red-400 text-sm">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">
             Dismiss

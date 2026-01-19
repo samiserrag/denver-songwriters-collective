@@ -267,7 +267,7 @@ export default async function AdminVenueDetailPage({
                 return (
                   <div
                     key={claim.id}
-                    className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5"
+                    className="p-4 rounded-lg border border-amber-300 dark:border-amber-500/30 bg-amber-100 dark:bg-amber-500/5"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -285,7 +285,7 @@ export default async function AdminVenueDetailPage({
                       </div>
                       <Link
                         href="/dashboard/admin/venue-claims"
-                        className="px-3 py-1 text-xs font-medium rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                        className="px-3 py-1 text-xs font-medium rounded-lg bg-amber-200 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 hover:bg-amber-300 dark:hover:bg-amber-500/30"
                       >
                         Review Claims
                       </Link>
@@ -333,12 +333,12 @@ export default async function AdminVenueDetailPage({
                             Was: {manager.role} via {manager.grant_method}
                           </p>
                           {manager.revoked_reason && (
-                            <p className="text-xs text-red-400 mt-1">
+                            <p className="text-xs text-red-800 dark:text-red-400 mt-1">
                               Reason: {manager.revoked_reason}
                             </p>
                           )}
                         </div>
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-500/20 text-red-400">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400">
                           Revoked
                         </span>
                       </div>

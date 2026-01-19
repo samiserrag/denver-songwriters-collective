@@ -243,8 +243,8 @@ export default async function EditEventPage({
 
             {/* Danger Zone */}
             {isPrimaryHost && event.status === "active" && (
-              <section className="p-6 bg-red-950/30 border border-red-900/50 rounded-lg">
-                <h2 className="text-lg font-semibold text-red-400 mb-4">Danger Zone</h2>
+              <section className="p-6 bg-red-100 dark:bg-red-950/30 border border-red-300 dark:border-red-900/50 rounded-lg">
+                <h2 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-4">Danger Zone</h2>
                 <CancelEventButton eventId={eventId} />
               </section>
             )}

@@ -188,7 +188,7 @@ export default async function UserGalleryPage() {
                       <span className={`px-2 py-0.5 text-xs rounded-full ${
                         album.is_published
                           ? "bg-green-500/90 text-white"
-                          : "bg-yellow-500/90 text-white"
+                          : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
                       }`}>
                         {album.is_published ? "Published" : "Draft"}
                       </span>

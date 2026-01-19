@@ -426,7 +426,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           album.is_published
                             ? "bg-green-500/90 text-white"
-                            : "bg-yellow-500/90 text-white"
+                            : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
                         }`}
                       >
                         {album.is_published ? "Published" : "Draft"}
@@ -516,7 +516,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                         </button>
                         <button
                           onClick={() => handleDeleteAlbum(album.id)}
-                          className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded transition-colors"
+                          className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 text-xs rounded transition-colors"
                         >
                           Delete
                         </button>
@@ -742,7 +742,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                         </button>
                         <button
                           onClick={() => handleReject(image.id)}
-                          className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded"
+                          className="px-2 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 text-xs rounded"
                         >
                           Delete
                         </button>

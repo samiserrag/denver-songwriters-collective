@@ -125,7 +125,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
       )}
 
       {success && (
-        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded text-green-600 text-sm">
+        <div className="p-3 bg-green-100 dark:bg-green-500/10 border border-green-300 dark:border-green-500/30 rounded text-green-800 dark:text-green-400 text-sm">
           Happening updated! Redirecting...
         </div>
       )}

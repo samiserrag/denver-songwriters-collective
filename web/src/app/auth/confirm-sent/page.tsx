@@ -34,12 +34,12 @@ function ConfirmSentContent() {
       </p>
 
       {/* Prominent junk mail warning */}
-      <div className="mb-6 p-4 rounded-lg bg-amber-100 border border-amber-300">
-        <p className="text-sm text-amber-800 font-medium mb-1">
+      <div className="mb-6 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+        <p className="text-sm text-amber-800 dark:text-amber-300 font-medium mb-1">
           Can&apos;t find it?
         </p>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Check your <span className="font-semibold text-[var(--color-text-primary)]">spam or junk folder</span>.
+        <p className="text-sm text-amber-700 dark:text-[var(--color-text-secondary)]">
+          Check your <span className="font-semibold text-amber-900 dark:text-[var(--color-text-primary)]">spam or junk folder</span>.
           If you find it there, please mark us as a trusted sender so you don&apos;t miss future notifications!
         </p>
       </div>

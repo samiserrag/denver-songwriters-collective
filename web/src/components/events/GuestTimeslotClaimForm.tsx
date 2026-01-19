@@ -127,7 +127,7 @@ export function GuestTimeslotClaimForm({
         </p>
 
         {error && (
-          <p className="text-xs text-red-500 bg-red-500/10 px-2 py-1 rounded text-center">
+          <p className="text-xs text-red-800 dark:text-red-500 bg-red-100 dark:bg-red-500/10 px-2 py-1 rounded text-center">
             {error}
           </p>
         )}
@@ -175,7 +175,7 @@ export function GuestTimeslotClaimForm({
       </div>
 
       {error && (
-        <p className="text-xs text-red-500 bg-red-500/10 px-2 py-1 rounded text-center">
+        <p className="text-xs text-red-800 dark:text-red-500 bg-red-100 dark:bg-red-500/10 px-2 py-1 rounded text-center">
           {error}
         </p>
       )}

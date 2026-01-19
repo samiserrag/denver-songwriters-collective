@@ -208,26 +208,26 @@ export default function EventImportCard() {
 
       {/* Error Display */}
       {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded">
-          <p className="text-red-400">{error}</p>
+        <div className="mt-4 p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded">
+          <p className="text-red-800 dark:text-red-400">{error}</p>
         </div>
       )}
 
       {/* Parse/Validation Errors */}
       {previewResult && !previewResult.valid && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded">
-          <p className="text-red-400 font-medium mb-2">
+        <div className="mt-4 p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded">
+          <p className="text-red-800 dark:text-red-400 font-medium mb-2">
             {previewResult.error || "Validation Failed"}
           </p>
           {previewResult.parseErrors && (
-            <ul className="text-red-400 text-sm space-y-1">
+            <ul className="text-red-800 dark:text-red-400 text-sm space-y-1">
               {previewResult.parseErrors.map((err, idx) => (
                 <li key={idx}>{err}</li>
               ))}
             </ul>
           )}
           {previewResult.validationErrors && (
-            <ul className="text-red-400 text-sm space-y-2 mt-2">
+            <ul className="text-red-800 dark:text-red-400 text-sm space-y-2 mt-2">
               {previewResult.validationErrors.map((rowErr, idx) => (
                 <li key={idx}>
                   <span className="font-medium">Row {rowErr.rowIndex}:</span>{" "}
@@ -241,9 +241,9 @@ export default function EventImportCard() {
 
       {/* Warnings */}
       {previewResult?.valid && previewResult.warnings && previewResult.warnings.length > 0 && (
-        <div className="mt-4 p-4 bg-amber-100 border border-amber-300 rounded">
-          <p className="text-amber-800 font-medium mb-2">Warnings</p>
-          <ul className="text-amber-700 text-sm space-y-1">
+        <div className="mt-4 p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded">
+          <p className="text-amber-800 dark:text-amber-300 font-medium mb-2">Warnings</p>
+          <ul className="text-amber-700 dark:text-amber-400 text-sm space-y-1">
             {previewResult.warnings.map((w, idx) => (
               <li key={idx}>
                 Row {w.rowIndex}: {w.warnings.join("; ")}
@@ -279,8 +279,8 @@ export default function EventImportCard() {
 
           {/* Confirmation Dialog */}
           {showConfirm && (
-            <div className="mt-4 p-4 bg-amber-100 border border-amber-300 rounded">
-              <p className="text-amber-800 mb-4">
+            <div className="mt-4 p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded">
+              <p className="text-amber-800 dark:text-amber-300 mb-4">
                 Are you sure you want to apply these changes? This cannot be
                 undone.
               </p>
@@ -318,8 +318,8 @@ export default function EventImportCard() {
           </p>
           {applyResult.errors && applyResult.errors.length > 0 && (
             <div className="mt-2">
-              <p className="text-red-400 text-sm">Errors:</p>
-              <ul className="text-red-400 text-sm">
+              <p className="text-red-800 dark:text-red-400 text-sm">Errors:</p>
+              <ul className="text-red-800 dark:text-red-400 text-sm">
                 {applyResult.errors.map((err, idx) => (
                   <li key={idx}>
                     {err.id}: {err.error}

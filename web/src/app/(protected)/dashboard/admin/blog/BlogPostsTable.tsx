@@ -304,7 +304,7 @@ export default function BlogPostsTable({ posts }: Props) {
                     </Link>
                     <button
                       onClick={() => setDeleteModal({ open: true, post })}
-                      className="text-red-400 hover:text-red-300 text-xs"
+                      className="text-red-800 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-xs"
                     >
                       Delete
                     </button>
@@ -330,7 +330,7 @@ export default function BlogPostsTable({ posts }: Props) {
       {deleteModal.open && deleteModal.post && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
           <div className="bg-[var(--color-bg-primary)] border border-red-500/30 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-red-600 mb-4">Delete Post</h2>
+            <h2 className="text-xl font-semibold text-red-800 dark:text-red-600 mb-4">Delete Post</h2>
             <p className="text-[var(--color-text-secondary)] mb-6">
               Are you sure you want to delete &quot;{deleteModal.post.title}&quot;? This action cannot be undone.
             </p>

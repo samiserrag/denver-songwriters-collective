@@ -17,17 +17,17 @@ export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: Cr
   return (
     <div className={`mb-6 p-4 rounded-lg border flex items-start justify-between ${
       isDraft
-        ? "bg-amber-500/10 border-amber-500/30"
-        : "bg-emerald-500/10 border-emerald-500/30"
+        ? "bg-amber-100 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/30"
+        : "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30"
     }`}>
       <div className="flex-1">
         <h3 className={`font-semibold ${
-          isDraft ? "text-amber-600" : "text-emerald-600"
+          isDraft ? "text-amber-800 dark:text-amber-600" : "text-emerald-800 dark:text-emerald-600"
         }`}>
           {isDraft ? "Happening Created as Draft" : "Happening Created & Published!"}
         </h3>
         <p className={`text-sm mt-1 ${
-          isDraft ? "text-amber-700" : "text-emerald-700"
+          isDraft ? "text-amber-700 dark:text-amber-700" : "text-emerald-700 dark:text-emerald-700"
         }`}>
           {isDraft
             ? "Your happening is saved but not visible to the public yet."
@@ -35,13 +35,13 @@ export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: Cr
           }
         </p>
         {isDraft ? (
-          <p className={`text-sm mt-2 font-medium text-amber-700`}>
+          <p className={`text-sm mt-2 font-medium text-amber-800 dark:text-amber-700`}>
             To publish: Scroll down to the &quot;Draft/Published&quot; toggle at the bottom of the form and switch it to Published, then click Save Changes.
           </p>
         ) : (
           <Link
             href={`/events/${eventSlug || eventId}`}
-            className="inline-block mt-2 text-sm text-emerald-600 hover:underline"
+            className="inline-block mt-2 text-sm text-emerald-700 dark:text-emerald-600 hover:underline"
           >
             View Public Page →
           </Link>
@@ -50,7 +50,7 @@ export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: Cr
       <button
         onClick={() => setDismissed(true)}
         className={`ml-4 p-1 rounded hover:bg-black/10 ${
-          isDraft ? "text-amber-600" : "text-emerald-600"
+          isDraft ? "text-amber-800 dark:text-amber-600" : "text-emerald-800 dark:text-emerald-600"
         }`}
         aria-label="Dismiss"
       >

@@ -83,7 +83,7 @@ export default async function AdminGalleryPage() {
           <p className="text-[var(--color-text-secondary)]">
             Manage photos and albums.
             {pendingCount > 0 && (
-              <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">
+              <span className="ml-2 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full text-sm">
                 {pendingCount} pending approval
               </span>
             )}

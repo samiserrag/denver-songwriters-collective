@@ -23,12 +23,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; label: string }> = {
-  active: { bg: "bg-emerald-900/60", text: "text-emerald-300", border: "border-emerald-500/40", label: "Active" },
-  inactive: { bg: "bg-red-900/60", text: "text-red-300", border: "border-red-500/40", label: "Inactive" },
-  cancelled: { bg: "bg-red-900/60", text: "text-red-300", border: "border-red-500/40", label: "Cancelled" },
-  unverified: { bg: "bg-amber-900/60", text: "text-amber-300", border: "border-amber-500/40", label: "Schedule TBD" },
-  needs_verification: { bg: "bg-amber-900/60", text: "text-amber-300", border: "border-amber-500/40", label: "Schedule TBD" },
-  seasonal: { bg: "bg-sky-900/60", text: "text-sky-300", border: "border-sky-500/40", label: "Seasonal" },
+  active: { bg: "bg-emerald-100 dark:bg-emerald-900/60", text: "text-emerald-800 dark:text-emerald-300", border: "border-emerald-400 dark:border-emerald-500/40", label: "Active" },
+  inactive: { bg: "bg-red-100 dark:bg-red-900/60", text: "text-red-800 dark:text-red-300", border: "border-red-400 dark:border-red-500/40", label: "Inactive" },
+  cancelled: { bg: "bg-red-100 dark:bg-red-900/60", text: "text-red-800 dark:text-red-300", border: "border-red-400 dark:border-red-500/40", label: "Cancelled" },
+  unverified: { bg: "bg-amber-100 dark:bg-amber-900/60", text: "text-amber-800 dark:text-amber-300", border: "border-amber-400 dark:border-amber-500/40", label: "Schedule TBD" },
+  needs_verification: { bg: "bg-amber-100 dark:bg-amber-900/60", text: "text-amber-800 dark:text-amber-300", border: "border-amber-400 dark:border-amber-500/40", label: "Schedule TBD" },
+  seasonal: { bg: "bg-sky-100 dark:bg-sky-900/60", text: "text-sky-800 dark:text-sky-300", border: "border-sky-400 dark:border-sky-500/40", label: "Seasonal" },
 };
 
 type MaybeVenue = Venue | string | undefined | null;

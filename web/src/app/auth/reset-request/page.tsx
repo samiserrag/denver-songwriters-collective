@@ -52,8 +52,8 @@ export default function ResetRequestPage() {
 
       {sent ? (
         <div className="space-y-4">
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-            <p className="text-green-400 font-medium mb-2">
+          <div className="bg-green-100 dark:bg-green-500/10 border border-green-300 dark:border-green-500/30 rounded-lg p-4">
+            <p className="text-green-800 dark:text-green-400 font-medium mb-2">
               Check your email for a reset link
             </p>
             <p className="text-[var(--color-text-secondary)] text-sm">
@@ -61,8 +61,8 @@ export default function ResetRequestPage() {
             </p>
           </div>
 
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-            <p className="text-amber-400 text-sm font-medium mb-1">
+          <div className="bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-lg p-4">
+            <p className="text-amber-800 dark:text-amber-400 text-sm font-medium mb-1">
               Didn&apos;t receive an email?
             </p>
             <ul className="text-[var(--color-text-secondary)] text-sm space-y-1 list-disc list-inside">
@@ -104,8 +104,8 @@ export default function ResetRequestPage() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg p-3">
+              <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>
             </div>
           )}
 

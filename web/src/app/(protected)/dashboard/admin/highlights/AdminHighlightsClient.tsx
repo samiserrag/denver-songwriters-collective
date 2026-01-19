@@ -214,7 +214,7 @@ export default function AdminHighlightsClient() {
       </p>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600">
+        <div className="mb-4 p-3 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded text-red-800 dark:text-red-400">
           {error}
         </div>
       )}

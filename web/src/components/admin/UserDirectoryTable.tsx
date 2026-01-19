@@ -48,12 +48,12 @@ function getUserTypeLabel(u: Profile): string {
 
 // Get badge color based on identity
 function getUserTypeBadgeClass(u: Profile): string {
-  if (isUserAdmin(u)) return "bg-red-100 text-red-700 border-red-300";
-  if (isUserStudio(u)) return "bg-purple-100 text-purple-700 border-purple-300";
-  if (isUserHost(u)) return "bg-emerald-100 text-emerald-700 border-emerald-300";
-  if (isUserSongwriter(u)) return "bg-amber-100 text-amber-700 border-amber-300";
-  if (isUserFan(u)) return "bg-blue-100 text-blue-700 border-blue-300";
-  return "bg-gray-100 text-gray-600 border-gray-300";
+  if (isUserAdmin(u)) return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700";
+  if (isUserStudio(u)) return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700";
+  if (isUserHost(u)) return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700";
+  if (isUserSongwriter(u)) return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700";
+  if (isUserFan(u)) return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700";
+  return "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600";
 }
 
 const SPOTLIGHT_OPTIONS = [
@@ -226,13 +226,13 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
   const getSpotlightDisplayClass = (value: string): string => {
     switch (value) {
       case "performer":
-        return "bg-amber-100 text-amber-700 border-amber-300";
+        return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700";
       case "host":
-        return "bg-amber-100 text-amber-700 border-amber-300";
+        return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700";
       case "studio":
-        return "bg-purple-100 text-purple-700 border-purple-300";
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700";
       default:
-        return "bg-gray-100 text-gray-600 border-gray-300";
+        return "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600";
     }
   };
 
@@ -309,8 +309,8 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                         disabled={togglingHost === u.id}
                         className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                           u.is_host
-                            ? "bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200"
-                            : "bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200"
+                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700"
                         }`}
                       >
                         {togglingHost === u.id
@@ -320,7 +320,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                           : "No"}
                       </button>
                     ) : isUserHost(u) && !isUserSongwriter(u) ? (
-                      <span className="text-emerald-700 text-xs">Primary Host</span>
+                      <span className="text-emerald-700 dark:text-emerald-300 text-xs">Primary Host</span>
                     ) : (
                       <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
@@ -409,18 +409,18 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       {/* Delete Confirmation Modal */}
       {deleteModal.open && deleteModal.user && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="bg-white border border-red-300 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold text-red-600 mb-4">
+          <div className="bg-white dark:bg-[var(--color-bg-secondary)] border border-red-300 dark:border-red-700 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">
               Delete User
             </h2>
-            <p className="text-gray-700 mb-4">
-              Are you sure you want to delete <strong className="text-gray-900">{deleteModal.user.full_name ?? "this user"}</strong>?
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              Are you sure you want to delete <strong className="text-gray-900 dark:text-white">{deleteModal.user.full_name ?? "this user"}</strong>?
             </p>
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-              <p className="text-red-700 font-medium mb-2">
+            <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg mb-4">
+              <p className="text-red-800 dark:text-red-300 font-medium mb-2">
                 This action cannot be reversed. It will permanently delete:
               </p>
-              <ul className="text-red-600 text-sm space-y-1 ml-4">
+              <ul className="text-red-800 dark:text-red-300 text-sm space-y-1 ml-4">
                 <li>* Their profile information</li>
                 <li>* All suggestions they&apos;ve submitted</li>
                 <li>* All venue submissions</li>
@@ -429,15 +429,15 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm mb-2">
-                Type <strong className="text-gray-900">DELETE</strong> to confirm:
+              <label className="block text-gray-700 dark:text-gray-300 text-sm mb-2">
+                Type <strong className="text-gray-900 dark:text-white">DELETE</strong> to confirm:
               </label>
               <input
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder:text-[var(--color-text-tertiary)] focus:border-red-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-gray-100 dark:bg-[var(--color-bg-tertiary)] border border-gray-300 dark:border-[var(--color-border-default)] rounded-lg text-gray-900 dark:text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-red-500 focus:outline-none"
               />
             </div>
 
@@ -449,7 +449,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
               <button
                 onClick={handleDeleteUser}
                 disabled={isDeleting || confirmText !== "DELETE"}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-200 disabled:text-red-400 text-[var(--color-text-primary)] rounded-lg transition-colors disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-red-200 dark:disabled:bg-red-900/50 disabled:text-red-400 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
               >
                 {isDeleting ? "Deleting..." : "Delete User"}
               </button>
@@ -459,7 +459,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                   setConfirmText("");
                   setError("");
                 }}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg transition-colors"
+                className="px-4 py-2 bg-gray-200 dark:bg-[var(--color-bg-tertiary)] hover:bg-gray-300 dark:hover:bg-[var(--color-bg-primary)] text-gray-900 dark:text-[var(--color-text-primary)] rounded-lg transition-colors"
               >
                 Cancel
               </button>

@@ -80,11 +80,11 @@ export function RequestHostButton() {
 
   if (isHost) {
     return (
-      <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg">
-        <p className="text-green-300">&#10003; You&apos;re an approved host!</p>
+      <div className="p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg">
+        <p className="text-green-800 dark:text-green-300">&#10003; You&apos;re an approved host!</p>
         <Link
           href="/dashboard/my-events"
-          className="text-green-400 hover:text-green-300 text-sm underline"
+          className="text-green-700 dark:text-green-400 hover:text-green-600 dark:hover:text-green-300 text-sm underline"
         >
           Manage your events &rarr;
         </Link>
@@ -94,11 +94,11 @@ export function RequestHostButton() {
 
   if (requestStatus === "pending" || success) {
     return (
-      <div className="p-4 bg-amber-900/30 border border-amber-700 rounded-lg">
-        <p className="text-amber-300">
+      <div className="p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+        <p className="text-amber-800 dark:text-amber-300">
           &#8987; Your host request is pending review.
         </p>
-        <p className="text-amber-400/70 text-sm mt-1">
+        <p className="text-amber-700 dark:text-amber-400/70 text-sm mt-1">
           We&apos;ll notify you when it&apos;s approved.
         </p>
       </div>

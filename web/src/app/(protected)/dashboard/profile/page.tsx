@@ -606,7 +606,7 @@ export default function EditProfilePage() {
                                       genres: prev.genres.filter(g => g !== genre)
                                     }));
                                   }}
-                                  className="ml-1 hover:text-red-500 transition-colors"
+                                  className="ml-1 hover:text-red-800 dark:hover:text-red-500 transition-colors"
                                   aria-label={`Remove ${genre}`}
                                 >
                                   ×
@@ -728,7 +728,7 @@ export default function EditProfilePage() {
                                       instruments: prev.instruments.filter(i => i !== instrument)
                                     }));
                                   }}
-                                  className="ml-1 hover:text-red-500 transition-colors"
+                                  className="ml-1 hover:text-red-800 dark:hover:text-red-500 transition-colors"
                                   aria-label={`Remove ${instrument}`}
                                 >
                                   ×
@@ -907,7 +907,7 @@ export default function EditProfilePage() {
                             song_links: prev.song_links.filter((_, i) => i !== index)
                           }));
                         }}
-                        className="px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                        className="px-3 py-2 rounded-lg border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/10 transition-colors"
                       >
                         Remove
                       </button>

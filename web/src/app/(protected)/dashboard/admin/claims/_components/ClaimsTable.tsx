@@ -174,7 +174,7 @@ export default function ClaimsTable({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <div className="p-3 rounded bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -228,7 +228,7 @@ export default function ClaimsTable({
                         </p>
                       )}
                       {claim.event.host_id && (
-                        <span className="text-xs text-amber-400">
+                        <span className="text-xs text-amber-800 dark:text-amber-400">
                           Already has owner
                         </span>
                       )}
@@ -288,7 +288,7 @@ export default function ClaimsTable({
                         <button
                           onClick={() => handleReject(claim.id)}
                           disabled={loadingId === claim.id}
-                          className="px-2 py-1 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded disabled:opacity-50"
+                          className="px-2 py-1 text-xs bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
                         >
                           {loadingId === claim.id ? "..." : "Confirm"}
                         </button>
@@ -316,7 +316,7 @@ export default function ClaimsTable({
                         <button
                           onClick={() => setRejectingId(claim.id)}
                           disabled={loadingId === claim.id}
-                          className="px-3 py-1 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded disabled:opacity-50"
+                          className="px-3 py-1 text-xs bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
                         >
                           Reject
                         </button>
@@ -329,7 +329,7 @@ export default function ClaimsTable({
                       className={`px-2 py-1 text-xs font-medium rounded-full ${
                         claim.status === "approved"
                           ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-red-500/20 text-red-400"
+                          : "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400"
                       }`}
                     >
                       {claim.status === "approved" ? "Approved" : "Rejected"}

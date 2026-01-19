@@ -43,7 +43,7 @@ export default function CancelEventButton({ eventId }: CancelEventButtonProps) {
         type="button"
         onClick={handleCancel}
         disabled={loading}
-        className="w-full px-4 py-2 bg-red-900/50 hover:bg-red-900 text-red-400 hover:text-red-300 rounded border border-red-800 transition-colors disabled:opacity-50"
+        className="w-full px-4 py-2 bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-900 text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 rounded border border-red-300 dark:border-red-800 transition-colors disabled:opacity-50"
       >
         {loading ? "Cancelling..." : "Cancel Event"}
       </button>

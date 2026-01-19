@@ -11,10 +11,10 @@ export function StudioAppointmentCard({ appointment }: { appointment: StudioOwne
   const supabase = createSupabaseBrowserClient();
 
   const statusColor = {
-    pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
-    confirmed: "text-green-400 bg-green-400/10 border-green-400/30",
-    completed: "text-blue-400 bg-blue-400/10 border-blue-400/30",
-    cancelled: "text-red-400 bg-red-400/10 border-red-400/30",
+    pending: "text-yellow-800 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-400/10 border-yellow-300 dark:border-yellow-400/30",
+    confirmed: "text-green-800 dark:text-green-400 bg-green-100 dark:bg-green-400/10 border-green-300 dark:border-green-400/30",
+    completed: "text-blue-800 dark:text-blue-400 bg-blue-100 dark:bg-blue-400/10 border-blue-300 dark:border-blue-400/30",
+    cancelled: "text-red-800 dark:text-red-400 bg-red-100 dark:bg-red-400/10 border-red-300 dark:border-red-400/30",
   }[appointment.status];
 
   async function updateStatus(newStatus: AppointmentStatus) {
@@ -68,7 +68,7 @@ export function StudioAppointmentCard({ appointment }: { appointment: StudioOwne
             <button
               disabled={loading}
               onClick={() => updateStatus("confirmed")}
-              className="text-sm px-3 py-2 rounded-md bg-green-600/30 text-green-400 border border-green-500/40 hover:bg-green-600/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm px-3 py-2 rounded-md bg-green-100 dark:bg-green-600/30 text-green-800 dark:text-green-400 border border-green-300 dark:border-green-500/40 hover:bg-green-200 dark:hover:bg-green-600/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "..." : "Confirm"}
             </button>
@@ -78,7 +78,7 @@ export function StudioAppointmentCard({ appointment }: { appointment: StudioOwne
             <button
               disabled={loading}
               onClick={() => updateStatus("completed")}
-              className="text-sm px-3 py-2 rounded-md bg-blue-600/30 text-blue-400 border border-blue-500/40 hover:bg-blue-600/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm px-3 py-2 rounded-md bg-blue-100 dark:bg-blue-600/30 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-500/40 hover:bg-blue-200 dark:hover:bg-blue-600/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "..." : "Mark Completed"}
             </button>
@@ -88,7 +88,7 @@ export function StudioAppointmentCard({ appointment }: { appointment: StudioOwne
             <button
               disabled={loading}
               onClick={() => updateStatus("cancelled")}
-              className="text-sm px-3 py-2 rounded-md bg-red-600/30 text-red-400 border border-red-500/40 hover:bg-red-600/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm px-3 py-2 rounded-md bg-red-100 dark:bg-red-600/30 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-500/40 hover:bg-red-200 dark:hover:bg-red-600/40 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "..." : "Cancel"}
             </button>

@@ -168,7 +168,7 @@ const Chip = ({
         "bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border-[var(--pill-border-warning)]",
       variant === "success" &&
         "bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border-[var(--pill-border-success)]",
-      variant === "danger" && "bg-red-500/20 text-red-400 border-red-500/30"
+      variant === "danger" && "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400 border-red-300 dark:border-red-500/30"
     )}
   >
     {children}

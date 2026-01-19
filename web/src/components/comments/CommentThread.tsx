@@ -533,10 +533,10 @@ export function CommentThread({
                 <span className="text-xs text-[var(--color-text-tertiary)] italic">(edited)</span>
               )}
               {isDeleted && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">deleted</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400">deleted</span>
               )}
               {isHidden && !isDeleted && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">hidden</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400">hidden</span>
               )}
             </div>
 

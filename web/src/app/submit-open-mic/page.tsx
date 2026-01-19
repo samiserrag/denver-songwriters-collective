@@ -317,7 +317,7 @@ export default function SubmitOpenMicPage() {
         <PageContainer>
           <form onSubmit={handleSubmitNew} className="py-8 max-w-2xl">
             {error && (
-              <div className="mb-6 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-300">
+              <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg text-red-800 dark:text-red-300">
                 {error}
               </div>
             )}
@@ -494,7 +494,7 @@ export default function SubmitOpenMicPage() {
         <PageContainer>
           <form onSubmit={handleSubmitClaim} className="py-8 max-w-2xl">
             {error && (
-              <div className="mb-6 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-300">
+              <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg text-red-800 dark:text-red-300">
                 {error}
               </div>
             )}

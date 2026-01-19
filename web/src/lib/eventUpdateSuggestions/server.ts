@@ -1,6 +1,6 @@
 // web/src/lib/eventUpdateSuggestions/server.ts
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import type { EventUpdateSuggestion } from "@/types/eventUpdateSuggestion";
 
 export type EventUpdateSuggestionInsert = Omit<
@@ -8,10 +8,15 @@ export type EventUpdateSuggestionInsert = Omit<
   "id" | "created_at" | "reviewed_at" | "reviewed_by"
 > & { batch_id?: string };
 
+/**
+ * Insert an event update suggestion using service role client.
+ * This allows both authenticated users and guests to submit suggestions.
+ * The API route validates input before calling this function.
+ */
 export async function insertEventUpdateSuggestion(
   payload: EventUpdateSuggestionInsert
 ) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createServiceRoleClient();
 
   const { data, error } = await supabase
     .from("event_update_suggestions")

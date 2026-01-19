@@ -311,8 +311,8 @@ export default function SettingsPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className="p-6 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <h2 className="text-xl font-semibold text-red-600 mb-2">Danger Zone</h2>
+        <section className="p-6 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-500/30 rounded-lg">
+          <h2 className="text-xl font-semibold text-red-800 dark:text-red-400 mb-2">Danger Zone</h2>
           <p className="text-[var(--color-text-secondary)] mb-4">
             Permanently delete your account and all associated data.
             This action cannot be undone.
@@ -327,11 +327,11 @@ export default function SettingsPage() {
             </button>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-red-600 font-medium mb-2">
+              <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-500/30 rounded-lg">
+                <p className="text-red-800 dark:text-red-400 font-medium mb-2">
                   This will permanently delete:
                 </p>
-                <ul className="text-red-600 text-sm space-y-1 ml-4">
+                <ul className="text-red-800 dark:text-red-400 text-sm space-y-1 ml-4">
                   <li>• Your account and login</li>
                   <li>• Your profile information</li>
                   <li>• All suggestions you&apos;ve submitted</li>

@@ -210,7 +210,7 @@ function GuestCommentForm({ eventId, dateKey, onSuccess }: { eventId: string; da
       <form onSubmit={handleRequestCode} className="space-y-3 p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
         <div className="text-sm font-medium text-[var(--color-text-primary)]">Comment as Guest</div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input
@@ -280,7 +280,7 @@ function GuestCommentForm({ eventId, dateKey, onSuccess }: { eventId: string; da
           We sent a 6-digit code to <span className="font-medium">{guestEmail}</span>
         </p>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-red-800 dark:text-red-400 text-sm">{error}</p>}
 
         <input
           type="text"
@@ -597,10 +597,10 @@ export function EventComments({ eventId, hostId, dateKey }: EventCommentsProps) 
                 {formatTimeAgo(comment.created_at)}
               </span>
               {isDeleted && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">deleted</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400">deleted</span>
               )}
               {isHidden && !isDeleted && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">hidden</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400">hidden</span>
               )}
             </div>
             <p className={`text-[var(--color-text-secondary)] break-words mt-1 ${isDeleted ? "line-through" : ""}`}>
@@ -693,7 +693,7 @@ export function EventComments({ eventId, hostId, dateKey }: EventCommentsProps) 
 
       {/* Error state */}
       {error && (
-        <p className="text-red-400 text-sm mb-4">{error}</p>
+        <p className="text-red-800 dark:text-red-400 text-sm mb-4">{error}</p>
       )}
 
       {/* Comments list */}

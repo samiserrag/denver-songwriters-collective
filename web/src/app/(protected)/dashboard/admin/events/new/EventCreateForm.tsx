@@ -105,13 +105,13 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-red-600 text-sm">
+        <div className="p-3 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded text-red-800 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded text-green-600 text-sm">
+        <div className="p-3 bg-green-100 dark:bg-green-500/10 border border-green-300 dark:border-green-500/30 rounded text-green-800 dark:text-green-400 text-sm">
           Event created! Redirecting...
         </div>
       )}

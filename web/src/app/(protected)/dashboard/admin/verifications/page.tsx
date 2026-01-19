@@ -80,16 +80,16 @@ export default async function AdminVerificationsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="p-4 rounded-lg bg-amber-900/20 border border-amber-700/30">
-          <div className="text-2xl font-bold text-amber-400">{pendingCount}</div>
+        <div className="p-4 rounded-lg bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/30">
+          <div className="text-2xl font-bold text-amber-800 dark:text-amber-400">{pendingCount}</div>
           <div className="text-sm text-[var(--color-text-secondary)]">Pending</div>
         </div>
-        <div className="p-4 rounded-lg bg-emerald-900/20 border border-emerald-700/30">
-          <div className="text-2xl font-bold text-emerald-400">{approvedCount}</div>
+        <div className="p-4 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700/30">
+          <div className="text-2xl font-bold text-emerald-800 dark:text-emerald-400">{approvedCount}</div>
           <div className="text-sm text-[var(--color-text-secondary)]">Approved</div>
         </div>
-        <div className="p-4 rounded-lg bg-red-900/20 border border-red-700/30">
-          <div className="text-2xl font-bold text-red-400">{rejectedCount}</div>
+        <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700/30">
+          <div className="text-2xl font-bold text-red-800 dark:text-red-400">{rejectedCount}</div>
           <div className="text-sm text-[var(--color-text-secondary)]">Rejected</div>
         </div>
       </div>

@@ -44,13 +44,13 @@ export default function UserBlogPostsTable({ posts }: Props) {
   const getStatusBadge = (post: BlogPost) => {
     if (post.is_published) {
       return (
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
           Published
         </span>
       );
     }
     return (
-      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
         Draft
       </span>
     );

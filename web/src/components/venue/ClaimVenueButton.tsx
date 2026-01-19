@@ -67,10 +67,10 @@ export function ClaimVenueButton({
           <span
             className={`px-3 py-1 text-sm font-medium rounded-full ${
               existingClaim.status === "pending"
-                ? "bg-amber-500/20 text-amber-400"
+                ? "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400"
                 : existingClaim.status === "approved"
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "bg-red-500/20 text-red-400"
+                ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400"
+                : "bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400"
             }`}
           >
             {existingClaim.status === "pending"
@@ -81,7 +81,7 @@ export function ClaimVenueButton({
           </span>
         </div>
         {existingClaim.status === "rejected" && existingClaim.rejection_reason && (
-          <p className="mt-2 text-sm text-red-400">
+          <p className="mt-2 text-sm text-red-800 dark:text-red-400">
             Reason: {existingClaim.rejection_reason}
           </p>
         )}
@@ -194,7 +194,7 @@ export function ClaimVenueButton({
               </div>
 
               {error && (
-                <div className="p-3 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                <div className="p-3 rounded bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 text-sm">
                   {error}
                 </div>
               )}

@@ -120,9 +120,9 @@ export function RSVPSection({
     const redirectParam = searchParams.get("confirm") === "true" ? "confirm=true" : "cancel=true";
     return (
       <div className="space-y-4">
-        <div className="p-4 bg-amber-900/30 border border-amber-700/50 rounded-xl">
-          <p className="text-amber-300 font-medium mb-2">Login Required</p>
-          <p className="text-amber-400/80 text-sm mb-3">
+        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-xl">
+          <p className="text-amber-800 dark:text-amber-300 font-medium mb-2">Login Required</p>
+          <p className="text-amber-700 dark:text-amber-400/80 text-sm mb-3">
             Please log in to {action}.
           </p>
           <a
@@ -173,9 +173,9 @@ export function RSVPSection({
   if (confirmError) {
     return (
       <div className="space-y-4">
-        <div className="p-4 bg-red-900/30 border border-red-700/50 rounded-xl">
-          <p className="text-red-300 font-medium mb-1">Could Not Confirm</p>
-          <p className="text-red-400/80 text-sm">{confirmError}</p>
+        <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700/50 rounded-xl">
+          <p className="text-red-800 dark:text-red-300 font-medium mb-1">Could Not Confirm</p>
+          <p className="text-red-700 dark:text-red-400/80 text-sm">{confirmError}</p>
         </div>
         <RSVPButton
           eventId={eventId}
@@ -191,17 +191,17 @@ export function RSVPSection({
   if (confirmLoading) {
     return (
       <div className="space-y-4">
-        <div className="p-4 bg-amber-900/30 border border-amber-700/50 rounded-xl animate-pulse">
+        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-xl animate-pulse">
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-              <svg className="w-5 h-5 text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-500/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-amber-700 dark:text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
             </div>
             <div>
-              <p className="text-amber-300 font-semibold">Confirming Your Spot...</p>
-              <p className="text-amber-400/80 text-sm">Please wait</p>
+              <p className="text-amber-800 dark:text-amber-300 font-semibold">Confirming Your Spot...</p>
+              <p className="text-amber-700 dark:text-amber-400/80 text-sm">Please wait</p>
             </div>
           </div>
         </div>
