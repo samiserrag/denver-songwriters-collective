@@ -68,7 +68,7 @@ const Icons = {
 
 const mainNavItems: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: Icons.home },
-  { href: "/dashboard/my-events", label: "My Events", icon: Icons.calendar },
+  { href: "/dashboard/my-events", label: "My Happenings", icon: Icons.calendar },
   { href: "/dashboard/my-rsvps", label: "My RSVPs", icon: Icons.ticket },
   { href: "/dashboard/gallery", label: "My Gallery", icon: Icons.photo },
   { href: "/dashboard/notifications", label: "Notifications", icon: Icons.bell },
@@ -78,7 +78,7 @@ const mainNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
   { href: "/dashboard/admin", label: "Admin Overview", icon: Icons.shield },
-  { href: "/dashboard/admin/claims", label: "Event Claims", icon: Icons.clipboard },
+  { href: "/dashboard/admin/claims", label: "Happening Claims", icon: Icons.clipboard },
 ];
 
 interface DashboardSidebarProps {

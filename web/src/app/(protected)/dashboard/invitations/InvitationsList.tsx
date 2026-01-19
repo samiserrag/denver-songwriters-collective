@@ -39,7 +39,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
 
       if (res.ok) {
         if (action === "accept") {
-          setSuccessMessage(`You are now a co-host for "${eventTitle}"! Check My Events to manage it.`);
+          setSuccessMessage(`You are now a co-host for "${eventTitle}"! Check My Happenings to manage it.`);
         } else {
           setSuccessMessage("Invitation declined.");
         }
@@ -58,7 +58,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
         <div className="text-6xl mb-4">📬</div>
         <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No pending invitations</h2>
         <p className="text-[var(--color-text-secondary)]">
-          When someone invites you to co-host an event, it will appear here.
+          When someone invites you to co-host a happening, it will appear here.
         </p>
       </div>
     );

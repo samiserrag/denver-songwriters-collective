@@ -8,7 +8,7 @@ import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "My Events | DSC"
+  title: "My Happenings | DSC"
 };
 
 export default async function MyEventsPage() {
@@ -97,14 +97,14 @@ export default async function MyEventsPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">My Events</h1>
-            <p className="text-[var(--color-text-secondary)] mt-1">Events you host or co-host</p>
+            <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">My Happenings</h1>
+            <p className="text-[var(--color-text-secondary)] mt-1">Happenings you host or co-host</p>
           </div>
           <Link
             href="/dashboard/my-events/new"
             className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-background)] font-semibold rounded-lg transition-colors"
           >
-            + Create Event
+            + Create Happening
           </Link>
         </div>
 

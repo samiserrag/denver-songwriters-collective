@@ -4,7 +4,7 @@ import EventForm from "../_components/EventForm";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
 
 export const metadata = {
-  title: "Create Event | DSC"
+  title: "Create Happening | DSC"
 };
 
 export default async function NewEventPage() {
@@ -32,11 +32,11 @@ export default async function NewEventPage() {
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">Create Event</h1>
+        <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">Create Happening</h1>
         <p className="text-[var(--color-text-secondary)] mb-8">
           {canCreateDSC
-            ? "Set up a new community event or official DSC event"
-            : "Set up a new community event"}
+            ? "Set up a new community happening or official DSC happening"
+            : "Set up a new community happening"}
         </p>
 
         <EventForm mode="create" venues={venues ?? []} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} />

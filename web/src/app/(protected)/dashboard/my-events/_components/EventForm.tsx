@@ -83,6 +83,8 @@ interface EventFormProps {
     signup_deadline?: string | null;
     age_policy?: string | null;
     is_dsc_event?: boolean;
+    // External website URL
+    external_url?: string | null;
     // Phase 4.0: Custom location fields
     custom_location_name?: string | null;
     custom_address?: string | null;
@@ -135,6 +137,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     signup_deadline: event?.signup_deadline || "",
     age_policy: event?.age_policy || "",
     is_dsc_event: event?.is_dsc_event ?? false,
+    external_url: event?.external_url || "",
     // Phase 4.0: Custom location fields
     custom_location_name: event?.custom_location_name || "",
     custom_address: event?.custom_address || "",
@@ -369,6 +372,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         signup_deadline: formData.signup_deadline || null,
         age_policy: formData.age_policy || null,
         is_dsc_event: canCreateDSC ? formData.is_dsc_event : false,
+        external_url: formData.external_url.trim() || null,
         // Phase 4.0: Location selection mode and custom location fields
         location_selection_mode: locationSelectionMode,
         venue_id: locationSelectionMode === "venue" ? formData.venue_id : null,
@@ -540,10 +544,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Create Event Series
+              Create Happening Series
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Create multiple events for a recurring series. Each event will have its own page and signups.
+              Create multiple happenings for a recurring series. Each happening will have its own page and signups.
             </p>
           </div>
 
@@ -1062,6 +1066,23 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Leave blank if unknown</p>
             </div>
 
+            {/* External Website Link */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                External Website Link <span className="font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                placeholder="https://venue-website.com/event-page"
+                value={formData.external_url}
+                onChange={(e) => setFormData(prev => ({ ...prev, external_url: e.target.value }))}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Link to venue&apos;s website, Facebook event, or other external page for this happening
+              </p>
+            </div>
+
             {/* DSC Toggle */}
             {canCreateDSC && (
               <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
@@ -1220,7 +1241,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           disabled={loading}
           className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
         >
-          {loading ? "Saving..." : mode === "create" ? "Create Event" : "Save Changes"}
+          {loading ? "Saving..." : mode === "create" ? "Create Happening" : "Save Changes"}
         </button>
         {mode === "edit" && (
           <button

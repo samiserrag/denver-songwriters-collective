@@ -150,7 +150,9 @@ export async function PATCH(
     "timezone", "location_mode", "online_url", "is_free", "cost_label",
     "signup_mode", "signup_url", "signup_deadline", "age_policy",
     // Timeslot configuration fields
-    "has_timeslots", "total_slots", "slot_duration_minutes"
+    "has_timeslots", "total_slots", "slot_duration_minutes",
+    // External link field
+    "external_url"
   ];
 
   const now = new Date().toISOString();

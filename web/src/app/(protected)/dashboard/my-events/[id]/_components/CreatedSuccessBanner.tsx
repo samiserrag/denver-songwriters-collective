@@ -24,14 +24,14 @@ export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: Cr
         <h3 className={`font-semibold ${
           isDraft ? "text-amber-600" : "text-emerald-600"
         }`}>
-          {isDraft ? "Event Created as Draft" : "Event Created & Published!"}
+          {isDraft ? "Happening Created as Draft" : "Happening Created & Published!"}
         </h3>
         <p className={`text-sm mt-1 ${
           isDraft ? "text-amber-700" : "text-emerald-700"
         }`}>
           {isDraft
-            ? "Your event is saved but not visible to the public yet."
-            : "Your event is now live and visible on the Happenings page!"
+            ? "Your happening is saved but not visible to the public yet."
+            : "Your happening is now live and visible on the Happenings page!"
           }
         </p>
         {isDraft ? (

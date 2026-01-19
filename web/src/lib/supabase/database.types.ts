@@ -628,6 +628,51 @@ export type Database = {
           },
         ]
       }
+      event_images: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          event_id: string
+          id: string
+          image_url: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          event_id: string
+          id?: string
+          image_url: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          event_id?: string
+          id?: string
+          image_url?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_images_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_images_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineup_state: {
         Row: {
           date_key: string
@@ -989,6 +1034,7 @@ export type Database = {
           end_time: string | null
           event_date: string | null
           event_type: Database["public"]["Enums"]["event_type"]
+          external_url: string | null
           has_timeslots: boolean | null
           host_id: string | null
           host_notes: string | null
@@ -1054,6 +1100,7 @@ export type Database = {
           end_time?: string | null
           event_date?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
+          external_url?: string | null
           has_timeslots?: boolean | null
           host_id?: string | null
           host_notes?: string | null
@@ -1119,6 +1166,7 @@ export type Database = {
           end_time?: string | null
           event_date?: string | null
           event_type?: Database["public"]["Enums"]["event_type"]
+          external_url?: string | null
           has_timeslots?: boolean | null
           host_id?: string | null
           host_notes?: string | null

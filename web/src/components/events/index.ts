@@ -2,6 +2,7 @@
 export { EventCard } from "./EventCard";
 export { EventComments } from "./EventComments";
 export { EventGrid } from "./EventGrid";
+export { EventPhotosSection } from "./EventPhotosSection";
 export { EventSlotsPanel } from "./EventSlotsPanel";
 export { OpenMicComments } from "./OpenMicComments";
 export { default as ReportChangeForm } from "./ReportChangeForm";

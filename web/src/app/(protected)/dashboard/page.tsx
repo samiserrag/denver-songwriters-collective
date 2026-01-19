@@ -197,7 +197,7 @@ export default async function DashboardPage() {
                 className="p-4 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg hover:border-[var(--color-border-accent)] transition-colors text-center relative"
               >
                 <span className="block text-2xl mb-2">📅</span>
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">My Events</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">My Happenings</span>
                 {(myEventsCount ?? 0) > 0 && (
                   <span className="absolute top-2 right-2 px-2 py-0.5 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs rounded-full">
                     {myEventsCount}

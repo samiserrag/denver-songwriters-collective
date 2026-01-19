@@ -194,6 +194,7 @@ function buildEventInsert(params: EventInsertParams) {
     signup_url: (body.signup_url as string) || null,
     signup_deadline: (body.signup_deadline as string) || null,
     age_policy: (body.age_policy as string) || (isDSCEvent ? "18+ only" : null),
+    external_url: (body.external_url as string) || null,
     source: "community",
     // Phase 4.42k A1b: Auto-confirm community events when published
     // Set last_verified_at to mark as confirmed, but leave verified_by null

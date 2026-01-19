@@ -204,11 +204,11 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">🎵</div>
-        <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No events yet</h2>
+        <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No happenings yet</h2>
         <p className="text-[var(--color-text-secondary)] mb-6">
           {isApprovedHost
-            ? "Create your first event to get started!"
-            : "Once you're an approved host, you can create events here."
+            ? "Create your first happening to get started!"
+            : "Once you're an approved host, you can create happenings here."
           }
         </p>
         {isApprovedHost && (
@@ -216,7 +216,7 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
             href="/dashboard/my-events/new"
             className="inline-block px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg"
           >
-            Create Your First Event
+            Create Your First Happening
           </Link>
         )}
       </div>
@@ -262,8 +262,8 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
       {/* Events List */}
       {filteredEvents.length === 0 ? (
         <div className="text-center py-12 text-[var(--color-text-secondary)]">
-          {activeTab === "active" && "No live events. Publish a draft to make it live!"}
-          {activeTab === "drafts" && "No draft events."}
+          {activeTab === "active" && "No live happenings. Publish a draft to make it live!"}
+          {activeTab === "drafts" && "No draft happenings."}
         </div>
       ) : (
         <div className="space-y-4">

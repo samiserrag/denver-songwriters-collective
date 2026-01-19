@@ -6,7 +6,7 @@ import ClaimsTable from "./_components/ClaimsTable";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Event Claims | Admin Dashboard",
+  title: "Happening Claims | Admin Dashboard",
 };
 
 interface EventClaim {
@@ -102,10 +102,10 @@ export default async function AdminClaimsPage() {
     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[var(--color-text-accent)]">
-          Event Claims
+          Happening Claims
         </h1>
         <p className="text-[var(--color-text-secondary)] mt-2">
-          Review and manage requests from users to claim ownership of events.
+          Review and manage requests from users to claim ownership of happenings.
         </p>
       </div>
 
