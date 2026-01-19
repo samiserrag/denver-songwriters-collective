@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.70):** Lint warnings = 0. All tests passing (2005). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.71):** Lint warnings = 0. All tests passing (2116). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -312,6 +312,60 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Slice 7: Event Photo Gallery + External URL + UI Terminology (January 2026) — RESOLVED
+
+**Goal:** Add photo gallery system to happenings (same pattern as venues), add external_url field for outside happening links, and update UI terminology from "events" to "happenings" in dashboards.
+
+**Status:** Implemented.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Event images table | New `event_images` table with soft-delete support (matches venue_images) |
+| RLS policies | Host view, co-host view, admin view, public view, insert, update, delete |
+| Storage policies | Event hosts and admins can upload to `event-images/{event_id}/*` |
+| Admin UI | EventPhotosSection component in admin event edit page |
+| External URL field | `external_url` column for linking to outside happening pages |
+| UI terminology | "events" → "happenings" in user-facing dashboard copy |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260118120000_event_images_and_external_url.sql` | Create table, indexes, RLS policies, storage policies, external_url column |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/events/EventPhotosSection.tsx` | Admin photo management component (same pattern as VenuePhotosSection) |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/admin/events/[id]/edit/page.tsx` | Integrated EventPhotosSection, fetch images |
+| `dashboard/admin/events/[id]/edit/EventEditForm.tsx` | Added external_url field |
+| `api/my-events/[id]/route.ts` | Added external_url to allowedFields |
+| `api/my-events/route.ts` | Added external_url to insert payload |
+| `components/navigation/DashboardSidebar.tsx` | "My Events" → "My Happenings", "Event Claims" → "Happening Claims" |
+| `dashboard/my-events/page.tsx` | All headings/labels updated to "Happenings" |
+| `dashboard/my-events/new/page.tsx` | "Create Event" → "Create Happening" |
+| `dashboard/my-events/[id]/page.tsx` | "Edit Event" → "Edit Happening" |
+| `dashboard/my-events/_components/EventForm.tsx` | "Create Event" → "Create Happening" |
+| `dashboard/my-events/_components/MyEventsFilteredList.tsx` | All references to "happenings" |
+| `dashboard/my-events/[id]/_components/CreatedSuccessBanner.tsx` | All references to "happenings" |
+| `dashboard/admin/claims/page.tsx` | "Event Claims" → "Happening Claims" |
+| `dashboard/invitations/InvitationsList.tsx` | References to "happenings" |
+| `dashboard/page.tsx` | Quick action "My Events" → "My Happenings" |
+
+**Terminology Note:** Backend code keeps "event" terminology (API routes, DB tables, TypeScript types). Only user-facing UI copy changed to "happenings".
+
+**Commit:** `e362238`
 
 ---
 
