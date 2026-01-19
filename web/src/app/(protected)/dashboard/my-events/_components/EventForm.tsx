@@ -58,6 +58,8 @@ interface EventFormProps {
   canCreateDSC?: boolean; // Whether user can create DSC-branded events
   /** Phase 4.45b: Whether user can create new venues (admin only) */
   canCreateVenue?: boolean;
+  /** Whether user is admin (can verify events directly) */
+  isAdmin?: boolean;
   event?: {
     id: string;
     title: string;
@@ -93,10 +95,12 @@ interface EventFormProps {
     custom_latitude?: number | null;
     custom_longitude?: number | null;
     location_notes?: string | null;
+    // Verification fields
+    last_verified_at?: string | null;
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, isAdmin = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -110,6 +114,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   // Phase 4.44c: Advanced section collapse state (collapsed by default)
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Verification state - for admin/host to confirm event is real and happening
+  const [isVerified, setIsVerified] = useState(!!event?.last_verified_at);
+  const wasVerified = !!event?.last_verified_at;
 
   const [formData, setFormData] = useState({
     title: event?.title || "",
@@ -402,6 +410,24 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         const publishStatus = formData.is_published ? "published" : "draft";
         router.push(`/dashboard/my-events/${data.id}?created=true&status=${publishStatus}`);
       } else {
+        // Handle verification change (admin only) - call bulk-verify API
+        if (isAdmin && isVerified !== wasVerified) {
+          try {
+            const verifyRes = await fetch("/api/admin/ops/events/bulk-verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                eventIds: [event?.id],
+                action: isVerified ? "verify" : "unverify",
+              }),
+            });
+            if (!verifyRes.ok) {
+              console.error("Failed to update verification status");
+            }
+          } catch (verifyErr) {
+            console.error("Verification update error:", verifyErr);
+          }
+        }
         setSuccess("Changes saved successfully!");
         router.refresh();
       }
@@ -1185,6 +1211,28 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </span>
               <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
                 This will make your happening visible to the community. You can unpublish at any time.
+              </p>
+            </div>
+          </label>
+        )}
+
+        {/* Verification checkbox - for admin only in edit mode */}
+        {mode === "edit" && isAdmin && formData.is_published && (
+          <label className="flex items-start gap-3 cursor-pointer p-3 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+            <input
+              type="checkbox"
+              checked={isVerified}
+              onChange={(e) => setIsVerified(e.target.checked)}
+              className="mt-0.5 w-5 h-5 rounded border-[var(--color-border-default)] text-emerald-600 focus:ring-emerald-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                ✓ Confirm this happening
+              </span>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+                {wasVerified
+                  ? "This happening has been verified. Uncheck to mark as unconfirmed."
+                  : "Mark this happening as confirmed (verified) once you know it&apos;s real and happening."}
               </p>
             </div>
           </label>

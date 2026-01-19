@@ -221,7 +221,7 @@ export default async function EditEventPage({
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Happening Details</h2>
-              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} />
+              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} isAdmin={isAdmin} />
             </section>
 
             {/* Co-hosts (only for primary host) */}
