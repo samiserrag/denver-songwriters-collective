@@ -390,7 +390,7 @@ export function ImageUpload({
           </p>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-500/30 text-red-300 text-sm text-center">
+            <div className="mb-4 p-3 rounded-lg bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-300 text-sm text-center">
               {error}
             </div>
           )}
