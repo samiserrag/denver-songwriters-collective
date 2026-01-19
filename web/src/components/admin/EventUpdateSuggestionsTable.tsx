@@ -123,8 +123,9 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-2">← Scroll horizontally to see Actions column →</p>
+      <div className="overflow-x-auto border border-white/10 rounded-lg">
+        <table className="min-w-max text-left text-sm">
           <thead>
             <tr className="text-[var(--color-text-tertiary)] border-b border-white/10">
               <th className="px-3 py-2">Event</th>
