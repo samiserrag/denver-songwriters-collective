@@ -15,6 +15,7 @@ import { AttendeeList } from "@/components/events/AttendeeList";
 import { EventComments } from "@/components/events/EventComments";
 import { WatchEventButton } from "@/components/events/WatchEventButton";
 import { VerifyEventButton } from "@/components/events/VerifyEventButton";
+import { SuggestUpdateSection } from "@/components/events/SuggestUpdateSection";
 import { PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
@@ -828,22 +829,37 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                       <WatchEventButton eventId={event.id} initialWatching={isWatching} />
                     </div>
                   )}
-                  <div className="flex gap-3">
-                    <Link
-                      href={`/open-mics/${(event as { slug?: string }).slug || event.id}`}
-                      className="text-sm underline hover:no-underline"
-                    >
-                      Suggest an update
-                    </Link>
-                    {isAdminUser && (
-                      <Link
-                        href="/dashboard/admin/open-mics"
-                        className="text-sm underline hover:no-underline"
-                      >
-                        Admin queue
-                      </Link>
-                    )}
-                  </div>
+                  {/* Suggest an update form - available to everyone */}
+                  <SuggestUpdateSection
+                    event={{
+                      id: event.id,
+                      title: event.title,
+                      venue_name: event.venue_name,
+                      venue_address: venueAddress,
+                      day_of_week: event.day_of_week,
+                      start_time: event.start_time,
+                      end_time: event.end_time,
+                      signup_time: (event as any).signup_time,
+                      recurrence_rule: event.recurrence_rule,
+                      category: (event as any).category,
+                      description: event.description,
+                      slug: (event as { slug?: string }).slug,
+                      is_free: (event as any).is_free,
+                      cost_label: (event as any).cost_label,
+                      signup_mode: (event as any).signup_mode,
+                      signup_url: (event as any).signup_url,
+                      age_policy: (event as any).age_policy,
+                      location_mode: event.location_mode,
+                      online_url: (event as any).online_url,
+                      custom_location_name: event.custom_location_name,
+                      custom_address: (event as any).custom_address,
+                      custom_city: (event as any).custom_city,
+                      custom_state: (event as any).custom_state,
+                      location_notes: (event as any).location_notes,
+                      status: event.status,
+                    }}
+                    isAdminUser={isAdminUser}
+                  />
                 </div>
               </div>
             </div>

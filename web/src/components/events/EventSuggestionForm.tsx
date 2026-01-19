@@ -14,7 +14,6 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 
 interface Event {
   id: string;
@@ -75,7 +74,6 @@ const STATUS_SUGGESTIONS = [
 ];
 
 export default function EventSuggestionForm({ event }: Props) {
-  const router = useRouter();
   const supabase = createClient();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -135,9 +133,9 @@ export default function EventSuggestionForm({ event }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLoggedIn) {
-      const slug = event.slug || event.id;
-      router.push(`/login?redirectTo=/open-mics/${slug}`);
+    // Guest submissions require email
+    if (!isLoggedIn && !submitterEmail.trim()) {
+      setError("Please provide your email address so we can follow up if needed.");
       return;
     }
 
@@ -242,22 +240,14 @@ export default function EventSuggestionForm({ event }: Props) {
 
   if (isLoggedIn === null) return null;
 
-  const slug = event.slug || event.id;
-
   return (
     <div className="mt-8">
       {!isOpen ? (
         <button
-          onClick={() => {
-            if (!isLoggedIn) {
-              router.push(`/login?redirectTo=/open-mics/${slug}`);
-            } else {
-              setIsOpen(true);
-            }
-          }}
+          onClick={() => setIsOpen(true)}
           className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)] underline text-sm"
         >
-          {isLoggedIn ? "Suggest updates to this listing" : "Sign in to suggest updates"}
+          Suggest updates to this listing
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="bg-[var(--color-bg-secondary)]/50 border border-[var(--color-border-input)] rounded-lg p-6">
@@ -535,13 +525,16 @@ export default function EventSuggestionForm({ event }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">Your Email</label>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  Your Email{!isLoggedIn && <span className="text-red-400 ml-1">*</span>}
+                </label>
                 <input
                   type="email"
                   value={submitterEmail}
                   onChange={(e) => setSubmitterEmail(e.target.value)}
+                  placeholder={!isLoggedIn ? "Required for guest submissions" : ""}
                   className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)]"
-                  readOnly={!!submitterEmail}
+                  readOnly={isLoggedIn && !!submitterEmail}
                 />
               </div>
             </div>
