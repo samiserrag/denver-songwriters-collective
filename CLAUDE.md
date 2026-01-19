@@ -315,6 +315,71 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Venue Management + Storage Policies Hotfixes (January 2026) — RESOLVED
+
+**Goal:** Fix venue management dashboard access and image upload failures.
+
+**Status:** Fixed.
+
+**Issues Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Venue edit pages showing "Something went wrong" | `onCoverChange` callback passed from Server Component to Client Component | Removed callback, use local state + `router.refresh()` |
+| Venue cover image upload failing | Storage RLS policies only allowed `{user_id}/*` paths | Added policies for `venue-covers/{venue_id}/*` in gallery-images bucket |
+| Venue gallery image upload failing | Storage RLS policies only allowed `{user_id}/*` paths | Added policies for `venues/{venue_id}/*` in avatars bucket |
+| Error message poor contrast on light theme | `text-red-300` on `bg-red-900/30` | Theme-aware: `bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300` |
+| Venue card images cropped (wide images cut off) | `object-cover` CSS | Changed to `object-contain` with background color |
+
+**Database Migrations:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260118100000_venue_images_storage_policy.sql` | Storage policies for `avatars` bucket venue paths |
+| `20260118110000_venue_covers_storage_policy.sql` | Storage policies for `gallery-images` bucket venue-covers paths |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/venue/VenuePhotosSection.tsx` | Removed `onCoverChange` prop, use local state + router |
+| `components/venue/VenueCard.tsx` | Changed `object-cover` to `object-contain` for cover images |
+| `components/ui/ImageUpload.tsx` | Theme-aware error message styling |
+| `app/(protected)/dashboard/admin/venues/[id]/page.tsx` | Removed `onCoverChange` prop |
+| `app/(protected)/dashboard/my-venues/[id]/page.tsx` | Removed `onCoverChange` prop |
+
+**Storage Bucket Policies Added:**
+
+| Bucket | Path Pattern | Roles |
+|--------|--------------|-------|
+| `avatars` | `venues/{venue_id}/*` | Venue managers, Admins |
+| `avatars` | `profile-gallery/{user_id}/*` | Own user |
+| `gallery-images` | `venue-covers/{venue_id}/*` | Venue managers, Admins |
+
+**Commits:** `c03b1a4`, `2491345`, `84c8a07`, `09fafc1`
+
+---
+
+### Password Reset Flow Fix (January 2026) — RESOLVED
+
+**Goal:** Fix password reset flow showing "Auth session missing!" error.
+
+**Status:** Fixed.
+
+**Root Cause:** The `/auth/reset` page wasn't properly handling the Supabase PKCE flow. Reset links include tokens in URL hash that need to be exchanged for a session before calling `updateUser()`.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/auth/reset/page.tsx` | Complete rewrite to handle PKCE tokens from URL hash |
+| `app/auth/reset-request/page.tsx` | Improved UX with loading state and email confirmation |
+| `app/login/page.tsx` | Added success banner after password reset |
+
+**Commits:** `e432633`, `af2f4f1`
+
+---
+
 ### Slice 6: Venue Photo Gallery (January 2026) — RESOLVED
 
 **Goal:** Allow venue managers and admins to upload photos for venues. Photos appear on public venue detail pages.
