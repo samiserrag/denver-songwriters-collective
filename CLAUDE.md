@@ -315,6 +315,38 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Event-Images Storage Policy Fix (January 2026) — RESOLVED
+
+**Goal:** Fix admin image upload failing on happenings admin editor.
+
+**Status:** Fixed.
+
+**Problem:** When admin tried to upload images via EventPhotosSection, the upload failed with "Failed to upload image. Please try again."
+
+**Root Cause:** Conflicting storage policies in two migrations:
+1. Old migration (`20251209200002`) required `{user_id}/*` paths for the event-images bucket
+2. New migration (`20260118120000`) expected `{event_id}/*` paths (matching EventPhotosSection code)
+
+The EventPhotosSection uploads to `{eventId}/{uuid}.{ext}` but the old policy blocked uploads because the path didn't start with the user's ID.
+
+**Fix:** Created migration `20260118200000_fix_event_images_storage_policy.sql` that:
+1. Drops the conflicting `{user_id}/*` policies from the old migration
+2. Ensures admin upload/update/delete policies work for `{event_id}/*` paths
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260118200000_fix_event_images_storage_policy.sql` | Remove conflicting policies, ensure admin access works |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260118200000_fix_event_images_storage_policy.sql` | Storage policy fix |
+
+---
+
 ### Slice 7: Event Photo Gallery + External URL + UI Terminology (January 2026) — RESOLVED
 
 **Goal:** Add photo gallery system to happenings (same pattern as venues), add external_url field for outside happening links, and update UI terminology from "events" to "happenings" in dashboards.
