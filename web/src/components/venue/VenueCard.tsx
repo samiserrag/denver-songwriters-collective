@@ -62,13 +62,13 @@ export function VenueCard({ venue, counts, className }: VenueCardProps) {
         )}
       >
         {/* Image Section - Cover image if available, placeholder fallback */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--color-bg-secondary)]">
           {venue.cover_image_url ? (
             <Image
               src={venue.cover_image_url}
               alt={`${venue.name} cover`}
               fill
-              className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-200"
+              className="object-contain object-center group-hover:scale-[1.02] transition-transform duration-200"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (
