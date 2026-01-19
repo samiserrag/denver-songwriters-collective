@@ -449,7 +449,7 @@ export function ImageUpload({
             ? 'border-[var(--color-border-accent)] bg-[var(--color-accent-primary)]/10'
             : 'border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]'
         }`}
-        style={{ aspectRatio: '1 / 1' }}
+        style={{ aspectRatio: aspectRatio === 1 ? '1 / 1' : `${aspectRatio} / 1` }}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
@@ -460,8 +460,8 @@ export function ImageUpload({
             {/* eslint-disable-next-line @next/next/no-img-element -- Displays objectURL or user-uploaded image; next/image requires remote config */}
             <img
               src={currentImageUrl}
-              alt="Profile"
-              className="w-full h-full object-cover object-top"
+              alt="Uploaded image"
+              className="w-full h-full object-contain"
             />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <button

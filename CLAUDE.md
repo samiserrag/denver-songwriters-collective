@@ -330,6 +330,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 | Venue gallery image upload failing | Storage RLS policies only allowed `{user_id}/*` paths | Added policies for `venues/{venue_id}/*` in avatars bucket |
 | Error message poor contrast on light theme | `text-red-300` on `bg-red-900/30` | Theme-aware: `bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300` |
 | Venue card images cropped (wide images cut off) | `object-cover` CSS | Changed to `object-contain` with background color |
+| ImageUpload preview showing cropped image when "Use Original" selected | Preview used hardcoded 1:1 aspect + `object-cover` | Preview now respects `aspectRatio` prop + uses `object-contain` |
 
 **Database Migrations:**
 
@@ -344,7 +345,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 |------|--------|
 | `components/venue/VenuePhotosSection.tsx` | Removed `onCoverChange` prop, use local state + router |
 | `components/venue/VenueCard.tsx` | Changed `object-cover` to `object-contain` for cover images |
-| `components/ui/ImageUpload.tsx` | Theme-aware error message styling |
+| `components/ui/ImageUpload.tsx` | Theme-aware error message styling; preview respects aspectRatio prop + object-contain |
 | `app/(protected)/dashboard/admin/venues/[id]/page.tsx` | Removed `onCoverChange` prop |
 | `app/(protected)/dashboard/my-venues/[id]/page.tsx` | Removed `onCoverChange` prop |
 
