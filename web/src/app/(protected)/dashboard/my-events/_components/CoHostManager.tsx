@@ -95,7 +95,9 @@ export default function CoHostManager({ eventId, hosts }: CoHostManagerProps) {
               </div>
               <div>
                 <p className="text-[var(--color-text-primary)] text-sm">{host.user?.full_name || "Unknown"}</p>
-                <p className="text-xs text-[var(--color-text-secondary)]">{host.role}</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {host.role === "host" ? "Primary Host" : "Co-host"}
+                </p>
               </div>
             </div>
             {host.role === "cohost" && (

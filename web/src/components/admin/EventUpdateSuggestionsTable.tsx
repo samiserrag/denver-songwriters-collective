@@ -55,6 +55,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
     action: "approve" | "reject" | "needs_info";
   } | null>(null);
   const [responseText, setResponseText] = useState("");
+  const [editedValue, setEditedValue] = useState("");
   const [sending, setSending] = useState(false);
 
   if (!suggestions || suggestions.length === 0) {
@@ -64,11 +65,13 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
   const openModal = (suggestion: Suggestion, action: "approve" | "reject" | "needs_info") => {
     setActionModal({ suggestion, action });
     setResponseText(RESPONSE_TEMPLATES[action]);
+    setEditedValue(suggestion.new_value);
   };
 
   const closeModal = () => {
     setActionModal(null);
     setResponseText("");
+    setEditedValue("");
   };
 
   const handleAction = async () => {
@@ -89,6 +92,8 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
         body: JSON.stringify({
           status: statusMap[action],
           admin_response: responseText,
+          // Send edited value if approving and it was modified
+          ...(action === "approve" && editedValue !== suggestion.new_value && { edited_new_value: editedValue }),
         }),
       });
 
@@ -225,7 +230,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                   {new Date(s.created_at).toLocaleDateString("en-US", { timeZone: "America/Denver" })}
                 </td>
                 <td className="px-3 py-2 min-w-[180px]">
-                  {s.status === "pending" ? (
+                  {(s.status === "pending" || s.status === "needs_info") ? (
                     <div className="flex gap-1 flex-wrap mb-1">
                       <button
                         onClick={() => openModal(s, "approve")}
@@ -239,12 +244,14 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                       >
                         Reject
                       </button>
-                      <button
-                        onClick={() => openModal(s, "needs_info")}
-                        className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-white text-xs font-medium"
-                      >
-                        Need Info
-                      </button>
+                      {s.status === "pending" && (
+                        <button
+                          onClick={() => openModal(s, "needs_info")}
+                          className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-white text-xs font-medium"
+                        >
+                          Need Info
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <span className="text-xs text-[var(--color-text-tertiary)] italic">Already reviewed</span>
@@ -295,7 +302,22 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                 <>
                   <p className="text-[var(--color-text-tertiary)]">Event: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.events?.title}</span></p>
                   <p className="text-[var(--color-text-tertiary)]">Field: <span className="text-[var(--color-text-primary)]">{actionModal.suggestion.field}</span></p>
-                  <p className="text-[var(--color-text-tertiary)]">Change: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span> → <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+                  <p className="text-[var(--color-text-tertiary)]">Current: <span className="text-red-400 line-through">{actionModal.suggestion.old_value || "empty"}</span></p>
+                  {actionModal.action === "approve" ? (
+                    <div className="mt-2">
+                      <label className="block text-[var(--color-text-tertiary)] mb-1">
+                        Value to apply (edit if needed):
+                      </label>
+                      <textarea
+                        value={editedValue}
+                        onChange={(e) => setEditedValue(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-input)] rounded text-green-400 font-mono text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-[var(--color-text-tertiary)]">Suggested: <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+                  )}
                 </>
               )}
               {actionModal.suggestion.notes && (

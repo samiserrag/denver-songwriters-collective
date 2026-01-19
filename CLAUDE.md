@@ -531,6 +531,39 @@ The EventPhotosSection uploads to `{eventId}/{uuid}.{ext}` but the old policy bl
 
 ---
 
+### Event Update Suggestions Admin Workflow Fixes (January 2026) — RESOLVED
+
+**Goal:** Fix admin workflow for reviewing and applying event update suggestions.
+
+**Status:** Fixed.
+
+**Issues Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Approved suggestions not applied to events | PATCH endpoint only updated suggestion status, never updated the event itself | Added logic to apply approved changes to events table |
+| "Need Info" status lost approve/reject ability | Table only showed action buttons for `status === "pending"` | Now shows buttons for `pending` OR `needs_info` status |
+| Can't edit suggestion values before approving | No edit UI in modal | Added editable textarea in approval modal |
+| Co-host search not finding members | `.ilike()` search required exact match | Changed to partial match with `%search%` wildcards |
+| Host label wrong in co-hosts section | All hosts displayed role as-is ("host", "cohost") | Now shows "Primary Host" vs "Co-host" for clarity |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/admin/event-update-suggestions/[id]/route.ts` | Apply approved changes to events; accept edited values |
+| `components/admin/EventUpdateSuggestionsTable.tsx` | Show actions for `needs_info`; add editable value field in modal |
+| `app/api/my-events/[id]/cohosts/route.ts` | Partial name search with wildcards; multi-match feedback |
+| `app/(protected)/dashboard/my-events/_components/CoHostManager.tsx` | "Primary Host" vs "Co-host" labels |
+
+**Admin Approval Flow (Now Works):**
+1. Admin reviews suggestion in table
+2. Clicks "Approve" → modal shows editable value
+3. Admin can modify the value before confirming
+4. On confirm: suggestion marked approved + event updated with (edited) value
+
+---
+
 ### Password Reset Flow Fix (January 2026) — RESOLVED
 
 **Goal:** Fix password reset flow showing "Auth session missing!" error.

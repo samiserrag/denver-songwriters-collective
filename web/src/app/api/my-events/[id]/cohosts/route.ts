@@ -41,20 +41,28 @@ export async function POST(
   let targetUserId = user_id;
 
   if (!targetUserId && search_name) {
-    const { data: profile } = await supabase
+    // Search for partial name match (case-insensitive)
+    const searchTerm = `%${search_name.trim()}%`;
+    const { data: profiles } = await supabase
       .from("profiles")
-      .select("id")
-      .ilike("full_name", search_name.trim())
-      .maybeSingle();
+      .select("id, full_name")
+      .ilike("full_name", searchTerm)
+      .limit(10);
 
-    if (profile) {
-      targetUserId = profile.id;
+    if (profiles && profiles.length === 1) {
+      // Exact single match found
+      targetUserId = profiles[0].id;
+    } else if (profiles && profiles.length > 1) {
+      // Multiple matches - return them so user can be more specific
+      return NextResponse.json({
+        error: `Multiple users found: ${profiles.map(p => p.full_name).join(", ")}. Please enter a more specific name.`
+      }, { status: 400 });
     }
   }
 
   if (!targetUserId) {
     return NextResponse.json({
-      error: "User not found. Please enter their exact display name."
+      error: "User not found. Please check the name and try again."
     }, { status: 404 });
   }
 

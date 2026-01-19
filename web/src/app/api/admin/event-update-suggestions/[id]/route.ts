@@ -23,12 +23,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     // Use service role client for admin operations that bypass RLS
     const serviceClient = createServiceRoleClient();
 
-    type PatchBody = Partial<{ status: string; reviewed_by: string; admin_response: string }>;
+    type PatchBody = Partial<{ status: string; reviewed_by: string; admin_response: string; edited_new_value: string }>;
     const body = (await request.json()) as PatchBody;
-    const allowed: Partial<{ status: string; reviewed_by: string; admin_response: string }> = {};
+    const allowed: Partial<{ status: string; reviewed_by: string; admin_response: string; new_value: string }> = {};
     if (body.status) allowed.status = body.status;
     if (body.reviewed_by) allowed.reviewed_by = body.reviewed_by;
     if (body.admin_response) allowed.admin_response = body.admin_response;
+    // If admin edited the value, update it in the suggestion record
+    if (body.edited_new_value) allowed.new_value = body.edited_new_value;
 
     if (Object.keys(allowed).length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
@@ -49,6 +51,26 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       .single();
 
     if (error) return NextResponse.json({ error: error.message ?? error }, { status: 500 });
+
+    // If approved, apply the change to the event
+    if (body.status === 'approved' && currentSuggestion?.event_id && currentSuggestion.field !== '_new_event') {
+      const fieldToUpdate = currentSuggestion.field;
+      // Use edited value if provided, otherwise use original suggestion value
+      const newValue = body.edited_new_value || currentSuggestion.new_value;
+
+      // Update the event with the approved value
+      const { error: eventUpdateError } = await serviceClient
+        .from('events')
+        .update({ [fieldToUpdate]: newValue })
+        .eq('id', currentSuggestion.event_id);
+
+      if (eventUpdateError) {
+        console.error('Failed to apply approved suggestion to event:', eventUpdateError);
+        // Don't fail the request, but log the error
+      } else {
+        console.log(`Applied approved suggestion: ${fieldToUpdate} = ${newValue} to event ${currentSuggestion.event_id}`);
+      }
+    }
 
     // Send email notification if submitter has email and status changed
     if (
