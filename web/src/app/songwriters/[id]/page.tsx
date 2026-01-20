@@ -81,11 +81,22 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     .limit(1);
   const isVenueManager = (venueManagerData?.length ?? 0) > 0;
 
-  // Query hosted happenings - events where this profile is the host
+  // Query hosted happenings - events where this profile is host OR co-host
   const today = getTodayDenver();
   const windowEnd = addDaysDenver(today, 90);
 
-  const { data: hostedEvents } = await supabase
+  // First, get event IDs where this user is a co-host (via event_hosts)
+  const { data: coHostEntries } = await supabase
+    .from("event_hosts")
+    .select("event_id")
+    .eq("user_id", songwriter.id)
+    .eq("invitation_status", "accepted");
+
+  const coHostedEventIds = (coHostEntries ?? []).map((e) => e.event_id);
+
+  // Query events where user is primary host OR co-host
+  // Use .or() to combine: host_id matches OR id is in co-hosted list
+  let hostedEventsQuery = supabase
     .from("events")
     .select(`
       id,
@@ -111,9 +122,17 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
       venue_name,
       venue_address
     `)
-    .eq("host_id", songwriter.id)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification", "unverified"]);
+
+  // Add the OR condition for host_id or co-hosted event IDs
+  if (coHostedEventIds.length > 0) {
+    hostedEventsQuery = hostedEventsQuery.or(`host_id.eq.${songwriter.id},id.in.(${coHostedEventIds.join(",")})`);
+  } else {
+    hostedEventsQuery = hostedEventsQuery.eq("host_id", songwriter.id);
+  }
+
+  const { data: hostedEvents } = await hostedEventsQuery;
 
   // Get event IDs for override query
   const eventIds = (hostedEvents ?? []).map((e) => e.id);
@@ -163,8 +182,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     .eq("created_by", songwriter.id)
     .eq("is_published", true)
     .eq("is_hidden", false)
-    .order("created_at", { ascending: false })
-    .limit(3);
+    .order("created_at", { ascending: false });
   const galleries = galleriesData ?? [];
 
   // Query blog posts written by this member (published + approved)
@@ -174,8 +192,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     .eq("author_id", songwriter.id)
     .eq("is_published", true)
     .eq("is_approved", true)
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(3);
+    .order("published_at", { ascending: false, nullsFirst: false });
   const blogPosts = blogPostsData ?? [];
 
   // Build role badge flags for shared component
@@ -433,17 +450,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
           {/* Galleries Created Section */}
           <section className="mb-12" data-testid="galleries-created-section">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)]">Galleries Created</h2>
-              {galleries.length > 0 && (
-                <Link
-                  href="/gallery"
-                  className="text-sm text-[var(--color-text-accent)] hover:underline"
-                >
-                  See all →
-                </Link>
-              )}
-            </div>
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Galleries Created</h2>
             {galleries.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {galleries.map((album) => (
@@ -491,17 +498,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
           {/* Blogs Written Section */}
           <section className="mb-12" data-testid="blogs-written-section">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)]">Blogs Written</h2>
-              {blogPosts.length > 0 && (
-                <Link
-                  href="/blog"
-                  className="text-sm text-[var(--color-text-accent)] hover:underline"
-                >
-                  See all →
-                </Link>
-              )}
-            </div>
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Blogs Written</h2>
             {blogPosts.length > 0 ? (
               <div className="space-y-3">
                 {blogPosts.map((post) => (

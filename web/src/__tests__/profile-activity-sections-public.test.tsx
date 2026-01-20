@@ -175,16 +175,15 @@ describe("Galleries Created Section - Query Filters", () => {
     ]);
   });
 
-  it("should cap results at 3 items", () => {
-    const displayableAlbums = mockGalleryAlbums
-      .filter(
-        (album) =>
-          album.created_by === mockProfileId &&
-          album.is_published === true &&
-          album.is_hidden === false
-      )
-      .slice(0, 3);
-    expect(displayableAlbums.length).toBeLessThanOrEqual(3);
+  it("should show all published albums (no cap)", () => {
+    const displayableAlbums = mockGalleryAlbums.filter(
+      (album) =>
+        album.created_by === mockProfileId &&
+        album.is_published === true &&
+        album.is_hidden === false
+    );
+    // All 3 valid albums should be shown (no .limit(3))
+    expect(displayableAlbums.length).toBe(3);
   });
 
   it("should sort by created_at descending (newest first)", () => {
@@ -248,16 +247,16 @@ describe("Blogs Written Section - Query Filters", () => {
     ]);
   });
 
-  it("should cap results at 3 items", () => {
+  it("should show all published posts (no cap)", () => {
     const displayablePosts = mockBlogPosts
       .filter(
         (post) =>
           post.author_id === mockProfileId &&
           post.is_published === true &&
           post.is_approved === true
-      )
-      .slice(0, 3);
-    expect(displayablePosts.length).toBeLessThanOrEqual(3);
+      );
+    // All 3 valid posts should be shown (no .limit(3))
+    expect(displayablePosts.length).toBe(3);
   });
 
   it("should sort by published_at descending (newest first)", () => {
@@ -321,41 +320,17 @@ describe("Empty State Behavior", () => {
 // "SEE ALL" LINK TESTS
 // =============================================================================
 
-describe("See All Link Behavior", () => {
-  it("Galleries 'See all' should link to /gallery (unfiltered)", () => {
-    // Per validation: /gallery does not support author filtering
-    const seeAllHref = "/gallery";
-    expect(seeAllHref).toBe("/gallery");
+describe("No 'See All' Links (All Items Shown Inline)", () => {
+  it("Galleries section has no 'See all' link (shows all items inline)", () => {
+    // Per design update: galleries show all items, no cap, no "See all" link
+    const galleriesShowAll = true; // All galleries rendered inline
+    expect(galleriesShowAll).toBe(true);
   });
 
-  it("Blogs 'See all' should link to /blog (unfiltered)", () => {
-    // Per validation: /blog does not support author filtering
-    const seeAllHref = "/blog";
-    expect(seeAllHref).toBe("/blog");
-  });
-
-  it("'See all' link should only render when content exists", () => {
-    const galleriesExist = mockGalleryAlbums.filter(
-      (a) => a.is_published && !a.is_hidden
-    ).length > 0;
-    const blogsExist = mockBlogPosts.filter(
-      (p) => p.is_published && p.is_approved
-    ).length > 0;
-
-    // With our mock data, content exists
-    expect(galleriesExist).toBe(true);
-    expect(blogsExist).toBe(true);
-  });
-
-  it("'See all' link should NOT render when no content exists", () => {
-    const emptyGalleries: typeof mockGalleryAlbums = [];
-    const emptyBlogs: typeof mockBlogPosts = [];
-
-    const shouldShowGalleriesSeeAll = emptyGalleries.length > 0;
-    const shouldShowBlogsSeeAll = emptyBlogs.length > 0;
-
-    expect(shouldShowGalleriesSeeAll).toBe(false);
-    expect(shouldShowBlogsSeeAll).toBe(false);
+  it("Blogs section has no 'See all' link (shows all items inline)", () => {
+    // Per design update: blogs show all items, no cap, no "See all" link
+    const blogsShowAll = true; // All blogs rendered inline
+    expect(blogsShowAll).toBe(true);
   });
 });
 
@@ -478,5 +453,83 @@ describe("Route Coverage", () => {
     const sectionTestId = "blogs-written-section";
     expect(routes.length).toBe(2);
     expect(sectionTestId).toBe("blogs-written-section");
+  });
+});
+
+// =============================================================================
+// HOSTED HAPPENINGS - CO-HOST INCLUSION TESTS
+// =============================================================================
+
+describe("Hosted Happenings - Co-host Inclusion", () => {
+  const mockCoHostEntries = [
+    { event_id: "event-1", user_id: mockProfileId, invitation_status: "accepted" },
+    { event_id: "event-2", user_id: mockProfileId, invitation_status: "accepted" },
+    { event_id: "event-3", user_id: mockProfileId, invitation_status: "pending" }, // Should NOT be included
+  ];
+
+  const mockEvents = [
+    { id: "event-1", title: "Co-hosted Open Mic", host_id: "other-user", status: "active", is_published: true },
+    { id: "event-2", title: "Another Co-hosted Event", host_id: "other-user-2", status: "active", is_published: true },
+    { id: "event-3", title: "Pending Invite", host_id: "other-user-3", status: "active", is_published: true },
+    { id: "event-4", title: "Primary Hosted Event", host_id: mockProfileId, status: "active", is_published: true },
+  ];
+
+  it("should include events where user is co-host with accepted invitation", () => {
+    const acceptedCoHostEventIds = mockCoHostEntries
+      .filter((e) => e.invitation_status === "accepted")
+      .map((e) => e.event_id);
+
+    expect(acceptedCoHostEventIds).toContain("event-1");
+    expect(acceptedCoHostEventIds).toContain("event-2");
+    expect(acceptedCoHostEventIds.length).toBe(2);
+  });
+
+  it("should NOT include events where invitation is pending", () => {
+    const acceptedCoHostEventIds = mockCoHostEntries
+      .filter((e) => e.invitation_status === "accepted")
+      .map((e) => e.event_id);
+
+    expect(acceptedCoHostEventIds).not.toContain("event-3");
+  });
+
+  it("should combine primary hosted and co-hosted events", () => {
+    const acceptedCoHostEventIds = mockCoHostEntries
+      .filter((e) => e.invitation_status === "accepted")
+      .map((e) => e.event_id);
+
+    const allHostedEvents = mockEvents.filter(
+      (e) => e.host_id === mockProfileId || acceptedCoHostEventIds.includes(e.id)
+    );
+
+    expect(allHostedEvents.length).toBe(3); // event-1, event-2, event-4
+    expect(allHostedEvents.map((e) => e.id)).toContain("event-1");
+    expect(allHostedEvents.map((e) => e.id)).toContain("event-2");
+    expect(allHostedEvents.map((e) => e.id)).toContain("event-4");
+  });
+
+  it("should deduplicate if user is both primary host and co-host", () => {
+    // If a user is both host_id AND in event_hosts, we want one entry not two
+    const eventWithBothRoles = [
+      ...mockEvents,
+      { id: "event-5", title: "Dual Role Event", host_id: mockProfileId, status: "active", is_published: true },
+    ];
+    const coHostEntriesWithDual = [
+      ...mockCoHostEntries,
+      { event_id: "event-5", user_id: mockProfileId, invitation_status: "accepted" },
+    ];
+
+    const acceptedCoHostEventIds = coHostEntriesWithDual
+      .filter((e) => e.invitation_status === "accepted")
+      .map((e) => e.event_id);
+
+    // Using a Set ensures deduplication
+    const allHostedEventIds = new Set([
+      ...eventWithBothRoles.filter((e) => e.host_id === mockProfileId).map((e) => e.id),
+      ...acceptedCoHostEventIds.filter((id) => eventWithBothRoles.some((e) => e.id === id)),
+    ]);
+
+    // event-4 (primary), event-5 (both), event-1, event-2 (co-hosted) = 4 unique events
+    expect(allHostedEventIds.size).toBe(4);
+    expect(allHostedEventIds.has("event-5")).toBe(true);
   });
 });

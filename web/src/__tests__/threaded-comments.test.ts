@@ -143,10 +143,10 @@ describe("Author Delete - Soft Delete", () => {
     expect(content).toMatch(/is_deleted:\s*true/);
   });
 
-  it("should show deleted indicator for managers", () => {
+  it("deleted comments should be completely filtered out (not shown to anyone)", () => {
     const content = fs.readFileSync(commentThreadPath, "utf-8");
-    // Deleted comments should have visual indicator
-    expect(content).toMatch(/isDeleted.*\[deleted\]|deleted.*badge/i);
+    // Deleted comments are removed entirely from the visible list
+    expect(content).toMatch(/if \(c\.is_deleted\)\s*return false/);
   });
 });
 
@@ -303,5 +303,37 @@ describe("Database Migration - Threading Schema", () => {
   it("should have RLS policies for profile_comments", () => {
     const content = fs.readFileSync(migrationPath, "utf-8");
     expect(content).toMatch(/CREATE POLICY.*profile_comments/i);
+  });
+});
+
+describe("Deleted Comments - Complete Removal", () => {
+  const commentThreadPath = path.join(
+    __dirname,
+    "../components/comments/CommentThread.tsx"
+  );
+
+  it("deleted comments should be filtered out entirely (never shown)", () => {
+    const content = fs.readFileSync(commentThreadPath, "utf-8");
+    // The filter should remove deleted comments for everyone
+    expect(content).toMatch(/if \(c\.is_deleted\)\s*return false/);
+  });
+
+  it("should NOT show [deleted] placeholder text", () => {
+    const content = fs.readFileSync(commentThreadPath, "utf-8");
+    // The [deleted] placeholder pattern should NOT exist
+    expect(content).not.toMatch(/\[deleted\]/);
+  });
+
+  it("should NOT show 'deleted' badge in UI", () => {
+    const content = fs.readFileSync(commentThreadPath, "utf-8");
+    // The deleted badge should NOT exist (was removed)
+    expect(content).not.toMatch(/>deleted</);
+    expect(content).not.toMatch(/bg-red.*text-red.*deleted/);
+  });
+
+  it("hidden comments should only be visible to admins and entity owners", () => {
+    const content = fs.readFileSync(commentThreadPath, "utf-8");
+    // Hidden comments check should look for isAdmin or entityOwnerId
+    expect(content).toMatch(/if \(c\.is_hidden\)[\s\S]*isAdmin.*entityOwnerId/);
   });
 });

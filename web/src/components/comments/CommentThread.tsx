@@ -201,17 +201,17 @@ export function CommentThread({
       guest_verified: c.guest_verified ?? false,
     }));
 
-    // Filter visible comments (show deleted/hidden only to managers)
+    // Filter visible comments
+    // Deleted comments are NEVER shown to anyone (complete removal)
+    // Hidden comments only shown to admin/owner for moderation
     const visibleComments = normalizedComments.filter((c) => {
-      // Always show to author
-      if (c.user_id === currentUserId || c.author_id === currentUserId) return true;
-      // Always show to admin
-      if (isAdmin) return true;
-      // Always show to entity owner
-      if (entityOwnerId === currentUserId) return true;
-      if (secondaryOwnerId === currentUserId) return true;
-      // Hide deleted/hidden from others
-      return !c.is_deleted && !c.is_hidden;
+      // Deleted comments are completely removed from view for everyone
+      if (c.is_deleted) return false;
+      // Hidden comments: show only to admin or entity owner for moderation
+      if (c.is_hidden) {
+        return isAdmin || entityOwnerId === currentUserId || secondaryOwnerId === currentUserId;
+      }
+      return true;
     });
 
     // Organize into threads
@@ -489,7 +489,7 @@ export function CommentThread({
   function renderComment(comment: Comment, isReply = false) {
     const authorId = comment.user_id || comment.author_id;
     const isAuthor = authorId === currentUserId;
-    const isDeleted = comment.is_deleted;
+    // Note: deleted comments are filtered out entirely, so is_deleted is never true here
     const isHidden = comment.is_hidden;
     const isGuestComment = !authorId && comment.guest_name;
     const displayName = isGuestComment
@@ -501,7 +501,7 @@ export function CommentThread({
 
     return (
       <div key={comment.id} className={`group ${isReply ? "ml-6 pl-3 border-l-2 border-[var(--color-border-default)]" : ""}`}>
-        <div className={`flex gap-2 text-sm ${isDeleted || isHidden ? "opacity-50" : ""}`}>
+        <div className={`flex gap-2 text-sm ${isHidden ? "opacity-50" : ""}`}>
           {showAvatars && (
             <div className="flex-shrink-0">
               {comment.author?.avatar_url && !isGuestComment ? (
@@ -529,13 +529,10 @@ export function CommentThread({
               <span className="text-[var(--color-text-tertiary)] text-xs">
                 {formatTimeAgo(comment.created_at)}
               </span>
-              {comment.edited_at && !isDeleted && (
+              {comment.edited_at && (
                 <span className="text-xs text-[var(--color-text-tertiary)] italic">(edited)</span>
               )}
-              {isDeleted && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400">deleted</span>
-              )}
-              {isHidden && !isDeleted && (
+              {isHidden && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400">hidden</span>
               )}
             </div>
@@ -571,13 +568,13 @@ export function CommentThread({
                 </div>
               </form>
             ) : (
-              <p className={`text-[var(--color-text-secondary)] break-words ${isDeleted ? "line-through" : ""}`}>
-                {isDeleted ? "[deleted]" : comment.content}
+              <p className="text-[var(--color-text-secondary)] break-words">
+                {comment.content}
               </p>
             )}
 
             {/* Actions row - hide if editing */}
-            {!isDeleted && editingId !== comment.id && (currentUserId || canGuestDelete(comment)) && (
+            {editingId !== comment.id && (currentUserId || canGuestDelete(comment)) && (
               <div className="flex items-center gap-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {/* Edit button - shows first for author's own comments */}
                 {canEdit(comment) && (
