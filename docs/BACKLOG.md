@@ -170,6 +170,26 @@ Polish member profiles before external test users see them. Three scope areas:
 | Venue cover image feature | Upload + display works | `f6554fa` + migration |
 | Timeslot/RSVP performance scoping by date_key | <1s load time | `bebeadf` |
 
+### Member Profile Quick Wins (January 2026) — RESOLVED
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Owner-only CTAs | "Edit profile" + "Manage photos" buttons on profile pages, visible only to owner | DONE |
+| Photo ordering | Avatar photo appears first in public photo gallery, remaining sorted newest-first | DONE |
+| Hosted Happenings split | Split into "Upcoming" and "Past" subsections with 3-item caps each | DONE |
+
+**Files Added:**
+- `lib/profile/sortProfileImages.ts` — Avatar-first sorting helper
+- `lib/profile/splitHostedHappenings.ts` — Upcoming/past split helper
+- `__tests__/member-profile-quick-wins.test.ts` — 18 tests
+
+**Files Modified:**
+- `app/songwriters/[id]/page.tsx` — Owner CTAs, photo ordering, hosted happenings split
+- `app/members/[id]/page.tsx` — Owner CTAs, photo gallery section, photo ordering, hosted happenings split
+- `app/(protected)/dashboard/profile/page.tsx` — Added `id="photos"` anchor for deep-linking
+
+**Test Coverage:** 18 new tests (2206 total passing)
+
 ### Venue Invites Track (January 2026) — RESOLVED
 
 | Item | Evidence | Commit |

@@ -2,11 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
-import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
+import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks, PhotoGallery } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
 import { RoleBadges } from "@/components/members";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
 import Image from "next/image";
+import { sortProfileImagesAvatarFirst } from "@/lib/profile/sortProfileImages";
+import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import {
   getTodayDenver,
   addDaysDenver,
@@ -79,6 +81,19 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     .is("revoked_at", null)
     .limit(1);
   const isVenueManager = (venueManagerData?.length ?? 0) > 0;
+
+  // Fetch profile images for public display (only non-deleted images)
+  const { data: profileImagesRaw } = await supabase
+    .from("profile_images")
+    .select("id, image_url, created_at")
+    .eq("user_id", member.id)
+    .is("deleted_at", null);
+
+  // Sort images: avatar first, then newest-first
+  const profileImages = sortProfileImagesAvatarFirst(
+    profileImagesRaw ?? [],
+    member.avatar_url
+  );
 
   // Query hosted happenings - events where this profile is host OR co-host
   const today = getTodayDenver();
@@ -170,9 +185,15 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     overrideMap,
   });
 
-  // Cap visible series to 3
-  const visibleHostedSeries = hostedSeries.slice(0, 3);
-  const hasMoreHostedEvents = hostedSeries.length > 3;
+  // Split hosted happenings into upcoming and past (3 per section)
+  const {
+    upcoming: upcomingHosted,
+    past: pastHosted,
+    hasMoreUpcoming,
+    hasMorePast,
+    totalUpcoming,
+    totalPast,
+  } = splitHostedHappenings(hostedSeries, 3);
 
   // Query galleries created by this member (published + not hidden)
   const { data: galleriesData } = await supabase
@@ -367,6 +388,30 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                 ))}
               </div>
             )}
+
+            {/* Owner-only CTAs */}
+            {isOwner && (
+              <div className="flex flex-wrap justify-center gap-3 mt-4" data-testid="owner-ctas">
+                <Link
+                  href="/dashboard/profile"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit profile
+                </Link>
+                <Link
+                  href="/dashboard/profile#photos"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Manage photos
+                </Link>
+              </div>
+            )}
           </div>
         </PageContainer>
       </HeroSection>
@@ -380,6 +425,14 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
               {member.bio || <span className="text-[var(--color-text-tertiary)]">No bio yet.</span>}
             </p>
           </section>
+
+          {/* Profile Photo Gallery - only show if photos exist */}
+          {profileImages && profileImages.length > 0 && (
+            <section className="mb-12" data-testid="photos-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Photos</h2>
+              <PhotoGallery images={profileImages} />
+            </section>
+          )}
 
           {/* 2. Instruments & Genres - always show for all members with empty states */}
           <div className="grid md:grid-cols-2 gap-8 mb-12" data-testid="instruments-genres-section">
@@ -544,23 +597,47 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
             </section>
           )}
 
-          {/* Hosted Happenings Section */}
+          {/* Hosted Happenings Section - Split into Upcoming and Past */}
           <section className="mb-12" data-testid="hosted-happenings-section">
-            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Hosted Happenings</h2>
-            {visibleHostedSeries.length > 0 ? (
-              <div className="space-y-3">
-                {visibleHostedSeries.map((entry) => (
-                  <SeriesCard key={entry.event.id} series={entry} />
-                ))}
-                {hasMoreHostedEvents && (
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-4">
-                    Showing 3 of {hostedSeries.length} happenings.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-[var(--color-text-tertiary)]">No hosted happenings yet.</p>
-            )}
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">Hosted Happenings</h2>
+
+            {/* Upcoming Hosted Happenings */}
+            <div className="mb-8" data-testid="upcoming-hosted-happenings">
+              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Upcoming</h3>
+              {upcomingHosted.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingHosted.map((entry) => (
+                    <SeriesCard key={entry.event.id} series={entry} />
+                  ))}
+                  {hasMoreUpcoming && (
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+                      Showing 3 of {totalUpcoming} upcoming happenings.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No upcoming happenings.</p>
+              )}
+            </div>
+
+            {/* Past Hosted Happenings */}
+            <div data-testid="past-hosted-happenings">
+              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Past</h3>
+              {pastHosted.length > 0 ? (
+                <div className="space-y-3">
+                  {pastHosted.map((entry) => (
+                    <SeriesCard key={entry.event.id} series={entry} />
+                  ))}
+                  {hasMorePast && (
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+                      Showing 3 of {totalPast} past happenings.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No past happenings.</p>
+              )}
+            </div>
           </section>
 
           {/* Galleries Created Section */}
