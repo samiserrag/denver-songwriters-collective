@@ -266,6 +266,34 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Deferred (Future Phases)
 
+### Community Profile Activity Visibility Decision
+
+**Status:** DEFERRED (needs product decision)
+**Added:** 2026-01-19
+**Context:** Phase B - Private Profile Activity Sections
+
+| Item | Description |
+|------|-------------|
+| Opt-in public RSVPs | Allow members to make their RSVP history publicly visible on their profile |
+| Opt-in public performances | Allow members to share their performer slot history publicly |
+| Community activity visibility | Let community see who's attending/performing at happenings |
+
+**Decision Needed:**
+- Should RSVPs ever be visible to other community members?
+- Should performance history be public by default or opt-in?
+- What privacy controls should users have?
+
+**Current Implementation:**
+- "My RSVPs" and "My Performances" are PRIVATE (owner-only)
+- No data is exposed to other users
+- Privacy-first approach until product decision is made
+
+**When to Revisit:**
+- After gathering feedback from test users about privacy expectations
+- Before building any "social" or "community activity" features
+
+---
+
 ### ABC12 — Venue Change Approval Gating
 
 **Status:** Investigation complete, awaiting approval

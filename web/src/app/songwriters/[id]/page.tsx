@@ -195,6 +195,105 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     .order("published_at", { ascending: false, nullsFirst: false });
   const blogPosts = blogPostsData ?? [];
 
+  // Check if viewer is the profile owner (for private sections)
+  const { data: { session } } = await supabase.auth.getSession();
+  const isOwner = session?.user?.id === songwriter.id;
+
+  // Private sections: Only query if viewer is the owner
+  let myRsvps: Array<{
+    event_id: string;
+    date_key: string | null;
+    created_at: string;
+    event: { id: string; title: string; slug: string | null; start_time: string | null; status: string } | null;
+  }> = [];
+  let myPerformances: Array<{
+    id: string;
+    timeslot: {
+      id: string;
+      date_key: string | null;
+      slot_start_time: string | null;
+      event: { id: string; title: string; slug: string | null; status: string } | null;
+    } | null;
+  }> = [];
+
+  if (isOwner) {
+    // Fetch RSVPs for this user
+    const { data: rsvpsData } = await supabase
+      .from("event_rsvps")
+      .select(`
+        event_id,
+        date_key,
+        created_at,
+        event:events!event_rsvps_event_id_fkey(id, title, slug, start_time, status)
+      `)
+      .eq("user_id", songwriter.id)
+      .order("date_key", { ascending: true, nullsFirst: false });
+    myRsvps = (rsvpsData ?? []) as unknown as typeof myRsvps;
+
+    // Fetch timeslot claims for this user
+    const { data: claimsData } = await supabase
+      .from("timeslot_claims")
+      .select(`
+        id,
+        timeslot:event_timeslots!timeslot_claims_timeslot_id_fkey(
+          id,
+          date_key,
+          slot_start_time,
+          event:events!event_timeslots_event_id_fkey(id, title, slug, status)
+        )
+      `)
+      .eq("member_id", songwriter.id)
+      .eq("status", "confirmed");
+    myPerformances = (claimsData ?? []) as unknown as typeof myPerformances;
+  }
+
+  // Process RSVPs: separate upcoming and past
+  const processedRsvps = myRsvps
+    .filter((r) => r.event)
+    .map((r) => {
+      const dateKey = r.date_key || r.event?.start_time?.split("T")[0] || today;
+      const isUpcoming = dateKey >= today;
+      return {
+        eventId: r.event_id,
+        eventTitle: r.event!.title,
+        eventSlug: r.event!.slug || r.event!.id,
+        dateKey,
+        isUpcoming,
+        status: r.event!.status,
+      };
+    })
+    .sort((a, b) => {
+      // Upcoming first (asc), then past (desc)
+      if (a.isUpcoming && !b.isUpcoming) return -1;
+      if (!a.isUpcoming && b.isUpcoming) return 1;
+      if (a.isUpcoming) return a.dateKey.localeCompare(b.dateKey);
+      return b.dateKey.localeCompare(a.dateKey);
+    });
+
+  // Process Performances: separate upcoming and past (client-side filter on date_key)
+  const processedPerformances = myPerformances
+    .filter((p) => p.timeslot?.event)
+    .map((p) => {
+      const dateKey = p.timeslot!.date_key || today;
+      const isUpcoming = dateKey >= today;
+      return {
+        eventId: p.timeslot!.event!.id,
+        eventTitle: p.timeslot!.event!.title,
+        eventSlug: p.timeslot!.event!.slug || p.timeslot!.event!.id,
+        dateKey,
+        slotTime: p.timeslot!.slot_start_time,
+        isUpcoming,
+        status: p.timeslot!.event!.status,
+      };
+    })
+    .sort((a, b) => {
+      // Upcoming first (asc), then past (desc)
+      if (a.isUpcoming && !b.isUpcoming) return -1;
+      if (!a.isUpcoming && b.isUpcoming) return 1;
+      if (a.isUpcoming) return a.dateKey.localeCompare(b.dateKey);
+      return b.dateKey.localeCompare(a.dateKey);
+    });
+
   // Build role badge flags for shared component
   const roleBadgeFlags = {
     isSongwriter: songwriter.is_songwriter ?? false,
@@ -569,6 +668,98 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
               <p className="text-[var(--color-text-tertiary)]">No published blog posts yet.</p>
             )}
           </section>
+
+          {/* PRIVATE SECTIONS - Only visible to profile owner */}
+          {isOwner && (
+            <>
+              {/* My RSVPs Section */}
+              <section className="mb-12" data-testid="my-rsvps-section">
+                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-1">My RSVPs</h2>
+                <p className="text-sm text-[var(--color-text-tertiary)] mb-4">Only you can see this.</p>
+                {processedRsvps.length > 0 ? (
+                  <div className="space-y-2">
+                    {processedRsvps.map((rsvp) => (
+                      <Link
+                        key={`${rsvp.eventId}-${rsvp.dateKey}`}
+                        href={`/events/${rsvp.eventSlug}?date=${rsvp.dateKey}`}
+                        className="flex items-center justify-between gap-4 p-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium text-[var(--color-text-primary)] truncate">
+                            {rsvp.eventTitle}
+                          </h3>
+                          <p className="text-sm text-[var(--color-text-secondary)]">
+                            {new Date(rsvp.dateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              timeZone: "America/Denver",
+                            })}
+                          </p>
+                        </div>
+                        <span
+                          className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${
+                            rsvp.isUpcoming
+                              ? "bg-emerald-500/20 text-emerald-400"
+                              : "bg-[var(--color-accent-muted)] text-[var(--color-text-tertiary)]"
+                          }`}
+                        >
+                          {rsvp.isUpcoming ? "Upcoming" : "Past"}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-text-tertiary)]">You haven&apos;t RSVPed to any happenings yet.</p>
+                )}
+              </section>
+
+              {/* My Performances Section */}
+              <section className="mb-12" data-testid="my-performances-section">
+                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-1">My Performances</h2>
+                <p className="text-sm text-[var(--color-text-tertiary)] mb-4">Only you can see this.</p>
+                {processedPerformances.length > 0 ? (
+                  <div className="space-y-2">
+                    {processedPerformances.map((perf) => (
+                      <Link
+                        key={`${perf.eventId}-${perf.dateKey}`}
+                        href={`/events/${perf.eventSlug}?date=${perf.dateKey}`}
+                        className="flex items-center justify-between gap-4 p-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium text-[var(--color-text-primary)] truncate">
+                            {perf.eventTitle}
+                          </h3>
+                          <p className="text-sm text-[var(--color-text-secondary)]">
+                            {new Date(perf.dateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              timeZone: "America/Denver",
+                            })}
+                            {perf.slotTime && ` at ${perf.slotTime}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${
+                            perf.isUpcoming
+                              ? "bg-emerald-500/20 text-emerald-400"
+                              : "bg-[var(--color-accent-muted)] text-[var(--color-text-tertiary)]"
+                          }`}
+                        >
+                          {perf.isUpcoming ? "Upcoming" : "Past"}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-text-tertiary)]">You haven&apos;t claimed any performance slots yet.</p>
+                )}
+              </section>
+            </>
+          )}
 
           {/* Profile Comments Section */}
           <ProfileComments profileId={songwriter.id} profileOwnerId={songwriter.id} />
