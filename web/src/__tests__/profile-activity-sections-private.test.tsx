@@ -7,7 +7,7 @@
  * 3. Empty states display correct messaging
  * 4. Items are sorted correctly (upcoming first, then past)
  *
- * @see docs/investigation/phase-b-private-profile-sections.md
+ * Related to Phase B - Private Profile Activity Sections implementation
  */
 
 import { describe, it, expect } from "vitest";

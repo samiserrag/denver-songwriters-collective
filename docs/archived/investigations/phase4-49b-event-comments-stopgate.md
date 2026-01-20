@@ -11,7 +11,7 @@
 
 **Finding: NO comment notifications exist.**
 
-Neither blog nor gallery comments trigger any notifications. The investigation document (`docs/INVESTIGATIONS/comments-and-notifications.md`) proposed this as a future feature but it was never implemented.
+Neither blog nor gallery comments trigger any notifications. The investigation document (`comments-and-notifications.md` in this archive folder) proposed this as a future feature but it was never implemented.
 
 **Current notification infrastructure:**
 - `notifications` table — user inbox notifications

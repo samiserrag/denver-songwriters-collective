@@ -12,10 +12,10 @@
 | File | Purpose | Status |
 |------|---------|--------|
 | `docs/BACKLOG.md` | **CANONICAL** — All TODOs live here | ACTIVE |
-| `docs/OPS_BACKLOG.md` | Ops Console features | DEPRECATED → merged here |
-| `docs/DEFERRED-HIGH-PRIORITY.md` | Member profile enhancements | DEPRECATED → merged here |
+| `docs/archived/deprecated/OPS_BACKLOG.md` | Ops Console features | DEPRECATED → merged here |
+| `docs/archived/deprecated/DEFERRED-HIGH-PRIORITY.md` | Member profile enhancements | DEPRECATED → merged here |
 | `docs/known-issues.md` | Bug tracking | ACTIVE (bugs only, no features) |
-| `docs/future-specs/PLAN.md` | Dual-track strategy | ARCHIVED (long-term vision) |
+| `docs/archived/future-specs/PLAN.md` | Dual-track strategy | ARCHIVED (long-term vision) |
 | `CLAUDE.md` | Repo operations + recent changes | ACTIVE (operational, not backlog) |
 
 ---
@@ -116,7 +116,7 @@ This is a structural UX realignment to better support performers, hosts, venues,
 
 **Priority:** P0 (Pre-Test User Readiness)
 **Status:** Investigation Complete — Awaiting Approval
-**Investigation Doc:** `docs/investigation/phase-member-profile-enhancements.md`
+**Investigation Doc:** `docs/archived/investigations/phase-member-profile-enhancements.md`
 
 ### Summary
 
@@ -204,7 +204,7 @@ Polish member profiles before external test users see them. Three scope areas:
 
 | Phase | Description | Status | Evidence |
 |-------|-------------|--------|----------|
-| ABC3 | Duplicate venue merge | DONE | `docs/investigation/Archive/phase-abc3-duplicate-venue-merge.md` |
+| ABC3 | Duplicate venue merge | DONE | `docs/archived/investigations/phase-abc3-duplicate-venue-merge.md` |
 | ABC4 | Venue slugs + series view fix | DONE | `7ce4891`, `8244b01` |
 | ABC5 | Occurrence-aware event detail | DONE | `82fe0a4` |
 | ABC6 | Per-occurrence date_key columns | DONE | `70cd947` |
@@ -317,7 +317,7 @@ Polish member profiles before external test users see them. Three scope areas:
 ### ABC12 — Venue Change Approval Gating
 
 **Status:** Investigation complete, awaiting approval
-**Document:** `docs/investigation/Archive/phase-abc12-venue-change-approval-gating.md`
+**Document:** `docs/archived/investigations/phase-abc12-venue-change-approval-gating.md`
 
 | Item | Description |
 |------|-------------|
