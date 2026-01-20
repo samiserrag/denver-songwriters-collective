@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { SongwriterAvatar } from "@/components/songwriters";
-import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks, PhotoGallery } from "@/components/profile";
+import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks, PhotoGallery, PrivateSectionBanner } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
 import { RoleBadges } from "@/components/members";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
@@ -735,8 +735,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             <>
               {/* My RSVPs Section */}
               <section className="mb-12" data-testid="my-rsvps-section">
-                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-1">My RSVPs</h2>
-                <p className="text-sm text-[var(--color-text-tertiary)] mb-4">Only you can see this.</p>
+                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-3">My RSVPs</h2>
+                <PrivateSectionBanner />
                 {processedRsvps.length > 0 ? (
                   <div className="space-y-2">
                     {processedRsvps.map((rsvp) => (
@@ -778,8 +778,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
               {/* My Performances Section */}
               <section className="mb-12" data-testid="my-performances-section">
-                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-1">My Performances</h2>
-                <p className="text-sm text-[var(--color-text-tertiary)] mb-4">Only you can see this.</p>
+                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-3">My Performances</h2>
+                <PrivateSectionBanner />
                 {processedPerformances.length > 0 ? (
                   <div className="space-y-2">
                     {processedPerformances.map((perf) => (
