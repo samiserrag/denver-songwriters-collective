@@ -315,6 +315,33 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Privacy Policy + Get Involved Page Updates (January 2026) — RESOLVED
+
+**Goal:** Update Privacy Policy date and revise Get Involved page content to focus on hosting, venues, and community outreach.
+
+**Status:** Complete.
+
+**Changes:**
+
+| Page | Updates |
+|------|---------|
+| `/privacy` | Updated "Last updated" date from December 2024 to January 2026 |
+| `/get-involved` | Revised hero subtitle, Ways to Help cards, and Why It Matters section |
+
+**Get Involved Revisions:**
+- Hero subtitle: "Host events, find venues, spread the word, and help keep our open mic directory accurate."
+- Reorganized "Ways to Help" cards with new priorities:
+  1. Help Host Events — Encouraging people to run open mics/showcases
+  2. Find & Suggest Venues — Connecting with new venues
+  3. Update Open Mic Info — Keeping the directory accurate
+  4. Spread the Word — Telling musicians in the local scene
+  5. Connect Partners (unchanged)
+  6. Test Website Features (moved to end)
+- Updated "Why Your Contribution Matters" to focus on building the local music scene
+- Updated volunteer form intro to mention hosting events and venues
+
+---
+
 ### Bandcamp URL Support + Listen to My Music Section Enhancement (January 2026) — RESOLVED
 
 **Goal:** Add Bandcamp URL to member profiles and improve the "Listen to My Music" section with music platform pills.

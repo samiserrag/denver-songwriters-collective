@@ -5,23 +5,23 @@ import { VolunteerSignupForm } from "@/components/forms";
 
 const waysToHelp = [
   {
-    title: "Submit or Update Directory Entries",
-    description: "Help us build the most accurate open mic directory in Denver by submitting new venues or updating existing listings.",
-    cta: { text: "Submit an Open Mic", href: "/submit-open-mic" },
-  },
-  {
-    title: "Suggest New Venues",
-    description: "Know a bar, brewery, coffee shop, or art space that would welcome songwriter events? Let us know!",
-    cta: { text: "Suggest a Venue", href: "/submit-open-mic" },
-  },
-  {
-    title: "Volunteer at Events",
-    description: "Help run showcases, meetups, or livestream nights. No experience needed, just enthusiasm and a willingness to show up.",
+    title: "Help Host Events",
+    description: "Want to run an open mic, showcase, or songwriter meetup? We'll help you get started with venues, promotion, and logistics.",
     cta: null,
   },
   {
-    title: "Test Website Features",
-    description: "Help us improve by testing new features and offering usability feedback. Your input shapes the platform.",
+    title: "Find & Suggest Venues",
+    description: "Know a bar, brewery, coffee shop, or art space that would welcome live music? Help us connect with new venues across Denver.",
+    cta: { text: "Suggest a Venue", href: "/submit-open-mic" },
+  },
+  {
+    title: "Update Open Mic Info",
+    description: "Help keep our directory accurate! If you notice outdated times, venues that closed, or new open mics we're missing, let us know.",
+    cta: { text: "Submit an Update", href: "/submit-open-mic" },
+  },
+  {
+    title: "Spread the Word",
+    description: "Tell other musicians, songwriters, and music lovers about DSC. Share with your band, your open mic regulars, or anyone in the local music scene.",
     cta: null,
   },
   {
@@ -30,8 +30,8 @@ const waysToHelp = [
     cta: { text: "Partner With Us", href: "/partners" },
   },
   {
-    title: "Spread the Word",
-    description: "Share DSC with friends, musicians, and supporters. The more people who know about us, the stronger we become.",
+    title: "Test Website Features",
+    description: "Help us improve by testing new features and offering usability feedback. Your input shapes the platform.",
     cta: null,
   },
 ];
@@ -46,7 +46,7 @@ export default function GetInvolvedPage() {
               Get Involved
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              Volunteer, host, test features, or help keep the open mic list accurate.
+              Host events, find venues, spread the word, and help keep our open mic directory accurate.
             </p>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] italic max-w-2xl mx-auto">
               Many hands make lighter load-ins.
@@ -99,10 +99,10 @@ export default function GetInvolvedPage() {
               Why Your Contribution Matters
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              The more participation we receive, the stronger and more accurate the directory becomes and the more meaningful all of our gatherings will be. This project only succeeds because people care enough to be part of it.
+              Denver&apos;s music scene thrives when people in the community help each other find places to play. Whether you host an open mic, connect us with a venue, or simply tell a fellow songwriter about DSC, you&apos;re helping build something real.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Every submission, every suggestion, every share helps build something real for Denver&apos;s creative community. Your contribution will have a lasting impact on songwriters across the Front Range.
+              The more people who know about us and keep our listings accurate, the easier it becomes for musicians across the Front Range to find their next stage.
             </p>
           </section>
 
@@ -113,7 +113,7 @@ export default function GetInvolvedPage() {
                 Volunteer Sign-Up
               </h2>
               <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
-                Interested in helping out at events, running open mics, or supporting DSC in other ways? Fill out the form below and we will be in touch.
+                Want to host events, help with venues, or support DSC in other ways? Fill out the form below and we&apos;ll be in touch.
               </p>
             </div>
             <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-5 md:p-6">

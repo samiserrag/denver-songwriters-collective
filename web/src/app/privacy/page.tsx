@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <main className="min-h-screen bg-[var(--color-bg-primary)] py-16 px-6">
       <article className="max-w-3xl mx-auto">
         <h1 className="font-display text-4xl text-[var(--color-text-primary)] mb-2">Privacy Policy</h1>
-        <p className="text-[var(--color-text-tertiary)] mb-8">Last updated: December 2024</p>
+        <p className="text-[var(--color-text-tertiary)] mb-8">Last updated: January 2026</p>
 
         <div className="prose prose-lg space-y-8">
           <section>
