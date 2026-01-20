@@ -189,7 +189,7 @@ export async function POST(
   return NextResponse.json(invitation);
 }
 
-// DELETE - Remove a co-host
+// DELETE - Remove a co-host or cancel a pending invitation
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -224,7 +224,11 @@ export async function DELETE(
     }
   }
 
-  const { error } = await supabase
+  // Use service role client to bypass RLS
+  // We've already verified authorization above (user is admin or primary host)
+  const serviceClient = createServiceRoleClient();
+
+  const { error } = await serviceClient
     .from("event_hosts")
     .delete()
     .eq("event_id", eventId)
