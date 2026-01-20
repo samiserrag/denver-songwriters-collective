@@ -187,7 +187,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   // Query blog posts written by this member (published + approved)
   const { data: blogPostsData } = await supabase
     .from("blog_posts")
-    .select("id, slug, title, excerpt, cover_image_url, published_at")
+    .select("id, slug, title, excerpt, cover_image_url, published_at, tags")
     .eq("author_id", member.id)
     .eq("is_published", true)
     .eq("is_approved", true)
@@ -499,43 +499,68 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
           <section className="mb-12" data-testid="blogs-written-section">
             <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Blogs Written</h2>
             {blogPosts.length > 0 ? (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {blogPosts.map((post) => (
                   <Link
                     key={post.id}
                     href={`/blog/${post.slug}`}
-                    className="group flex gap-4 p-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                    className="block group focus-visible:outline-none"
                   >
-                    {post.cover_image_url && (
-                      <div className="relative w-20 h-20 flex-shrink-0 rounded overflow-hidden bg-[var(--color-bg-tertiary)]">
-                        <Image
-                          src={post.cover_image_url}
-                          alt={post.title}
-                          fill
-                          sizes="80px"
-                          className="object-cover"
-                        />
+                    <article className="h-full overflow-hidden card-spotlight transition-shadow transition-colors duration-200 ease-out hover:shadow-md hover:border-[var(--color-accent-primary)]/30 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-accent-primary)]/30 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[var(--color-bg-primary)]">
+                      {/* Image Section - aspect-[4/3] */}
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        {post.cover_image_url ? (
+                          <Image
+                            src={post.cover_image_url}
+                            alt={post.title}
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-bg-tertiary)] flex items-center justify-center">
+                            <svg className="w-12 h-12 text-[var(--color-text-accent)]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                            </svg>
+                          </div>
+                        )}
+                        {/* Gradient overlay */}
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-1">
-                        {post.title}
-                      </h3>
-                      {post.excerpt && (
-                        <p className="text-sm text-[var(--color-text-secondary)] mt-1 line-clamp-2">
-                          {post.excerpt}
+
+                      {/* Content Section */}
+                      <div className="p-4 space-y-2 text-center">
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap justify-center gap-1.5">
+                            {post.tags.slice(0, 2).map((tag: string) => (
+                              <span
+                                key={tag}
+                                className="text-sm tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-text-accent)]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <h3 className="text-lg font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] tracking-tight group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-2">
+                          {post.title}
+                        </h3>
+                        {post.excerpt && (
+                          <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">
+                            {post.excerpt}
+                          </p>
+                        )}
+                        <p className="text-xs text-[var(--color-text-tertiary)] pt-1">
+                          {post.published_at
+                            ? new Date(post.published_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })
+                            : "Draft"}
                         </p>
-                      )}
-                      <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                        {post.published_at
-                          ? new Date(post.published_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                          : "Draft"}
-                      </p>
-                    </div>
+                      </div>
+                    </article>
                   </Link>
                 ))}
               </div>
