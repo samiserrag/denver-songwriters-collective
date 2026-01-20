@@ -128,6 +128,26 @@ export default function CoHostManager({ eventId, eventTitle, hosts }: CoHostMana
     }
   };
 
+  const handleCancelInvite = async (userId: string) => {
+    if (!confirm("Cancel this invitation?")) return;
+
+    try {
+      const res = await fetch(`/api/my-events/${eventId}/cohosts`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId })
+      });
+
+      if (res.ok) {
+        setSuccess("Invitation cancelled");
+        router.refresh();
+        setTimeout(() => setSuccess(""), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to cancel invitation:", err);
+    }
+  };
+
   const cancelInvite = () => {
     setInviteMode(null);
     setSearchQuery("");
@@ -205,8 +225,16 @@ Best,
           <ul className="space-y-2">
             {pendingInvites.map((invite) => (
               <li key={invite.id} className="flex items-center justify-between p-2 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
-                <span className="text-[var(--color-text-primary)] text-sm">{invite.user?.full_name || "Unknown"}</span>
-                <span className="text-xs text-[var(--color-text-accent)]">Pending</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--color-text-primary)] text-sm">{invite.user?.full_name || "Unknown"}</span>
+                  <span className="text-xs text-[var(--color-text-accent)]">Pending</span>
+                </div>
+                <button
+                  onClick={() => handleCancelInvite(invite.user_id)}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  Cancel
+                </button>
               </li>
             ))}
           </ul>
