@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.72):** Lint warnings = 0. All tests passing (2118). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.73):** Lint warnings = 0. All tests passing (2223). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -312,6 +312,85 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Bandcamp URL Support + Listen to My Music Section Enhancement (January 2026) — RESOLVED
+
+**Goal:** Add Bandcamp URL to member profiles and improve the "Listen to My Music" section with music platform pills.
+
+**Status:** Complete.
+
+**Part 1: Listen to My Music Section Enhancement**
+
+| Feature | Implementation |
+|---------|----------------|
+| Music platform pills | Spotify, Bandcamp, YouTube links shown inside "Listen to My Music" section |
+| Placement | Pills appear ABOVE individual song/track links |
+| Section visibility | Shows if EITHER `song_links` OR music platform URLs exist |
+| Pages updated | Both `/songwriters/[id]` and `/members/[id]` |
+
+The existing social link pills at the top of the profile remain unchanged (intentional duplication for discoverability).
+
+**Part 2: Bandcamp URL Support**
+
+| Feature | Implementation |
+|---------|----------------|
+| Database column | Added `bandcamp_url` to profiles table |
+| Icon | Bandcamp icon added to `SocialIcon` component |
+| URL normalization | Handles full URLs, bare domains, and usernames |
+| Link order | Bandcamp appears after Spotify (musician-centric ordering) |
+| Onboarding | Bandcamp input field in profile onboarding form |
+| Dashboard | Bandcamp input field in profile edit page |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260120100000_add_bandcamp_url.sql` | Add `bandcamp_url` column to profiles |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/profile/ProfileIcons.tsx` | Added Bandcamp icon, URL normalization, buildSocialLinks entry |
+| `app/songwriters/[id]/page.tsx` | Music platform pills in Listen to My Music section |
+| `app/members/[id]/page.tsx` | Music platform pills in Listen to My Music section |
+| `app/onboarding/profile/page.tsx` | Added Bandcamp input field |
+| `app/api/onboarding/route.ts` | Added bandcamp_url persistence |
+| `app/(protected)/dashboard/profile/page.tsx` | Added Bandcamp input field |
+| `lib/supabase/database.types.ts` | Regenerated with bandcamp_url column |
+
+**Test Coverage:** 13 new tests in `__tests__/bandcamp-url-support.test.ts`
+
+---
+
+### Private Section Banner for Profile Pages (January 2026) — RESOLVED
+
+**Goal:** Add prominent privacy indicator to private profile sections (My RSVPs, My Performances).
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| PrivateSectionBanner component | Lock icon + "Private — Only you can see this section" message |
+| Applied to | My RSVPs and My Performances sections on profile pages |
+| Styling | Uses theme tokens, subtle background with border |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/profile/PrivateSectionBanner.tsx` | Reusable privacy indicator component |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/songwriters/[id]/page.tsx` | Added PrivateSectionBanner to private sections |
+| `components/profile/index.ts` | Exported PrivateSectionBanner |
 
 ---
 
