@@ -189,7 +189,8 @@ export async function POST(
   return NextResponse.json(invitation);
 }
 
-// DELETE - Remove a co-host or cancel a pending invitation
+// DELETE - Remove a host/co-host, cancel invitation, or leave event
+// Supports: self-removal, primary host removing cohost, admin removing anyone
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -203,12 +204,32 @@ export async function DELETE(
   }
 
   const { user_id } = await request.json();
-
-  // Check if user is primary host or admin (using profiles.role, not app_metadata)
+  const isSelfRemoval = user_id === session.user.id;
   const isAdmin = await checkAdminRole(supabase, session.user.id);
 
-  if (!isAdmin) {
-    const { data: hostEntry } = await supabase
+  // Use service role client for all operations
+  const serviceClient = createServiceRoleClient();
+
+  // Get the target host entry to check their role
+  const { data: targetHostEntry } = await serviceClient
+    .from("event_hosts")
+    .select("id, role, invitation_status")
+    .eq("event_id", eventId)
+    .eq("user_id", user_id)
+    .maybeSingle();
+
+  if (!targetHostEntry) {
+    return NextResponse.json({
+      error: "Host entry not found"
+    }, { status: 404 });
+  }
+
+  const targetRole = targetHostEntry.role;
+
+  // Authorization logic
+  if (!isAdmin && !isSelfRemoval) {
+    // Not admin and not self-removal: must be primary host removing a cohost
+    const { data: callerHostEntry } = await supabase
       .from("event_hosts")
       .select("role")
       .eq("event_id", eventId)
@@ -217,27 +238,101 @@ export async function DELETE(
       .eq("role", "host")
       .maybeSingle();
 
-    if (!hostEntry) {
+    if (!callerHostEntry) {
       return NextResponse.json({
         error: "Only primary hosts can remove co-hosts"
       }, { status: 403 });
     }
+
+    // Primary host can only remove cohosts, not other primary hosts
+    if (targetRole === "host") {
+      return NextResponse.json({
+        error: "Primary hosts cannot remove other primary hosts"
+      }, { status: 403 });
+    }
   }
 
-  // Use service role client to bypass RLS
-  // We've already verified authorization above (user is admin or primary host)
-  const serviceClient = createServiceRoleClient();
+  if (isSelfRemoval && !isAdmin) {
+    // Self-removal: verify user is actually a host for this event
+    const { data: selfHostEntry } = await supabase
+      .from("event_hosts")
+      .select("role")
+      .eq("event_id", eventId)
+      .eq("user_id", session.user.id)
+      .maybeSingle();
 
+    if (!selfHostEntry) {
+      return NextResponse.json({
+        error: "You are not a host for this event"
+      }, { status: 403 });
+    }
+  }
+
+  // Delete the host entry (no role constraint - we've verified authorization)
   const { error } = await serviceClient
     .from("event_hosts")
     .delete()
     .eq("event_id", eventId)
-    .eq("user_id", user_id)
-    .eq("role", "cohost");
+    .eq("user_id", user_id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // Check if event now has zero accepted hosts
+  const { data: remainingHosts } = await serviceClient
+    .from("event_hosts")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("invitation_status", "accepted");
+
+  const eventNowUnhosted = !remainingHosts || remainingHosts.length === 0;
+
+  // If primary host left or event is now unhosted, set events.host_id = null
+  if (targetRole === "host" || eventNowUnhosted) {
+    const { error: updateError } = await serviceClient
+      .from("events")
+      .update({ host_id: null })
+      .eq("id", eventId);
+
+    if (updateError) {
+      console.error("Failed to clear event host_id:", updateError);
+      // Don't fail the request - the host entry was already deleted
+    }
+  }
+
+  // Send notification if removed by someone else (not self-removal)
+  if (!isSelfRemoval) {
+    // Fetch event title for notification
+    const { data: event } = await serviceClient
+      .from("events")
+      .select("title")
+      .eq("id", eventId)
+      .single();
+
+    const eventTitle = event?.title || "an event";
+
+    // Fetch remover's name
+    const { data: remover } = await serviceClient
+      .from("profiles")
+      .select("full_name")
+      .eq("id", session.user.id)
+      .single();
+
+    const removerName = remover?.full_name || "An admin";
+
+    await supabase.rpc("create_user_notification", {
+      p_user_id: user_id,
+      p_type: "cohost_removed",
+      p_title: `Removed from "${eventTitle}"`,
+      p_message: `${removerName} removed you as ${targetRole === "host" ? "host" : "co-host"} from "${eventTitle}"`,
+      p_link: `/dashboard/my-events`
+    });
+  }
+
+  return NextResponse.json({
+    success: true,
+    removedRole: targetRole,
+    eventNowUnhosted
+  });
 }

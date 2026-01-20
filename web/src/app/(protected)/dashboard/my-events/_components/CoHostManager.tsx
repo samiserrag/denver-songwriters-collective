@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { LeaveEventButton } from "@/components/events/LeaveEventButton";
 
 interface Host {
   id: string;
@@ -20,6 +21,12 @@ interface CoHostManagerProps {
   eventId: string;
   eventTitle: string;
   hosts: Host[];
+  /** Current user's ID for leave button */
+  currentUserId?: string;
+  /** Current user's role */
+  currentUserRole?: "host" | "cohost";
+  /** Whether the current user is the only host */
+  isSoleHost?: boolean;
 }
 
 interface SearchResult {
@@ -27,7 +34,14 @@ interface SearchResult {
   name: string | null;
 }
 
-export default function CoHostManager({ eventId, eventTitle, hosts }: CoHostManagerProps) {
+export default function CoHostManager({
+  eventId,
+  eventTitle,
+  hosts,
+  currentUserId,
+  currentUserRole,
+  isSoleHost = false,
+}: CoHostManagerProps) {
   const router = useRouter();
   const [inviteMode, setInviteMode] = useState<"search" | "email" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -376,6 +390,19 @@ Best,
           >
             ← Back
           </button>
+        </div>
+      )}
+
+      {/* Leave event button for primary hosts */}
+      {currentUserId && currentUserRole === "host" && (
+        <div className="mt-6 pt-4 border-t border-[var(--color-border-default)]">
+          <LeaveEventButton
+            eventId={eventId}
+            eventTitle={eventTitle}
+            userRole="host"
+            userId={currentUserId}
+            isSoleHost={isSoleHost}
+          />
         </div>
       )}
     </div>

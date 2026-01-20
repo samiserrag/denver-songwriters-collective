@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import EventEditForm from "./EventEditForm";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
 import { EventPhotosSection } from "@/components/events/EventPhotosSection";
+import { AdminHostManager } from "@/components/admin/AdminHostManager";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -55,6 +56,35 @@ export default async function EditEventPage({ params }: PageProps) {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
+  // Fetch event hosts
+  const { data: eventHosts } = await supabase
+    .from("event_hosts")
+    .select("id, user_id, role, invitation_status")
+    .eq("event_id", id);
+
+  // Fetch profiles for hosts
+  const hostUserIds = (eventHosts || []).map(h => h.user_id);
+  let hostsWithProfiles: Array<{
+    id: string;
+    user_id: string;
+    role: string;
+    invitation_status: string;
+    user?: { id: string; full_name: string | null; avatar_url: string | null };
+  }> = [];
+
+  if (hostUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", hostUserIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    hostsWithProfiles = (eventHosts || []).map(h => ({
+      ...h,
+      user: profileMap.get(h.user_id) || undefined
+    }));
+  }
+
   return (
     <div className="min-h-screen w-full px-6 py-12 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold text-[var(--color-text-accent)] mb-8">Edit Happening</h1>
@@ -72,6 +102,19 @@ export default async function EditEventPage({ params }: PageProps) {
       />
 
       <EventEditForm event={event} venues={venues || []} />
+
+      {/* Host Management Section */}
+      <div className="mt-10 pt-10 border-t border-[var(--color-border-default)]">
+        <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Host Management</h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+          Manage hosts and co-hosts for this happening. You can remove any host from this event.
+        </p>
+        <AdminHostManager
+          eventId={id}
+          eventTitle={event.title}
+          hosts={hostsWithProfiles}
+        />
+      </div>
 
       {/* Happening Photos Section */}
       <div className="mt-10 pt-10 border-t border-[var(--color-border-default)]">

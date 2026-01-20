@@ -315,6 +315,57 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Host Step-Down + Admin Host Removal (January 2026) — RESOLVED
+
+**Goal:** Allow hosts and co-hosts to leave events, and give admins the ability to remove any host from any event.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Self-removal | Hosts and co-hosts can leave events via LeaveEventButton |
+| Admin removal | Admins can remove any host (primary or co-host) from any event |
+| Sole host warning | Shows warning when leaving would make event unhosted |
+| Event unhosting | When last host leaves, `events.host_id` is set to null |
+| Removal notification | Users notified when removed by someone else |
+
+**Authorization Matrix:**
+
+| User | Can Leave | Can Remove Co-hosts | Can Remove Primary Hosts |
+|------|-----------|---------------------|--------------------------|
+| Co-host | ✅ Self only | ❌ | ❌ |
+| Primary Host | ✅ Self (with warning if sole) | ✅ | ❌ |
+| Admin | N/A | ✅ | ✅ |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/events/LeaveEventButton.tsx` | Two-step confirmation button for leaving events |
+| `components/admin/AdminHostManager.tsx` | Admin component to manage/remove any host |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `api/my-events/[id]/cohosts/route.ts` | Extended DELETE for self-removal, admin removal, event unhosting |
+| `dashboard/my-events/[id]/page.tsx` | Co-hosts section visible to all hosts, leave button for co-hosts |
+| `dashboard/my-events/_components/CoHostManager.tsx` | Added leave button for primary hosts, new props |
+| `dashboard/admin/events/[id]/edit/page.tsx` | Added Host Management section with AdminHostManager |
+
+**API Changes (`DELETE /api/my-events/[id]/cohosts`):**
+
+- Supports self-removal (any host can leave)
+- Supports admin removal of any host
+- Primary hosts can remove co-hosts but not other primary hosts
+- Clears `events.host_id` when primary host leaves or event becomes unhosted
+- Sends notification when user is removed by someone else
+- Returns `{ success, removedRole, eventNowUnhosted }`
+
+---
+
 ### Admin Suggestion Notification + UI Improvements (January 2026) — RESOLVED
 
 **Goal:** Add admin email notifications for event update suggestions and fix admin table UI.
