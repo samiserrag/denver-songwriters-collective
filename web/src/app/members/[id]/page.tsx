@@ -6,6 +6,7 @@ import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/componen
 import { ProfileComments } from "@/components/comments";
 import { RoleBadges } from "@/components/members";
 import { SeriesCard, type SeriesEvent } from "@/components/happenings/SeriesCard";
+import Image from "next/image";
 import {
   getTodayDenver,
   addDaysDenver,
@@ -153,6 +154,28 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   // Cap visible series to 3
   const visibleHostedSeries = hostedSeries.slice(0, 3);
   const hasMoreHostedEvents = hostedSeries.length > 3;
+
+  // Query galleries created by this member (published + not hidden)
+  const { data: galleriesData } = await supabase
+    .from("gallery_albums")
+    .select("id, name, slug, cover_image_url, created_at")
+    .eq("created_by", member.id)
+    .eq("is_published", true)
+    .eq("is_hidden", false)
+    .order("created_at", { ascending: false })
+    .limit(3);
+  const galleries = galleriesData ?? [];
+
+  // Query blog posts written by this member (published + approved)
+  const { data: blogPostsData } = await supabase
+    .from("blog_posts")
+    .select("id, slug, title, excerpt, cover_image_url, published_at")
+    .eq("author_id", member.id)
+    .eq("is_published", true)
+    .eq("is_approved", true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(3);
+  const blogPosts = blogPostsData ?? [];
 
   // Build role badge flags for shared component
   // Note: legacy role enum is "performer" | "host" | "studio" | "admin" | "fan" | "member"
@@ -404,6 +427,123 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
               </div>
             ) : (
               <p className="text-[var(--color-text-tertiary)]">No hosted happenings yet.</p>
+            )}
+          </section>
+
+          {/* Galleries Created Section */}
+          <section className="mb-12" data-testid="galleries-created-section">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)]">Galleries Created</h2>
+              {galleries.length > 0 && (
+                <Link
+                  href="/gallery"
+                  className="text-sm text-[var(--color-text-accent)] hover:underline"
+                >
+                  See all →
+                </Link>
+              )}
+            </div>
+            {galleries.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {galleries.map((album) => (
+                  <Link
+                    key={album.id}
+                    href={`/gallery/${album.slug}`}
+                    className="group block rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                  >
+                    <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
+                      {album.cover_image_url ? (
+                        <Image
+                          src={album.cover_image_url}
+                          alt={album.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-10 h-10 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors truncate">
+                        {album.name}
+                      </h3>
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                        {new Date(album.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[var(--color-text-tertiary)]">No published galleries yet.</p>
+            )}
+          </section>
+
+          {/* Blogs Written Section */}
+          <section className="mb-12" data-testid="blogs-written-section">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)]">Blogs Written</h2>
+              {blogPosts.length > 0 && (
+                <Link
+                  href="/blog"
+                  className="text-sm text-[var(--color-text-accent)] hover:underline"
+                >
+                  See all →
+                </Link>
+              )}
+            </div>
+            {blogPosts.length > 0 ? (
+              <div className="space-y-3">
+                {blogPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    href={`/blog/${post.slug}`}
+                    className="group flex gap-4 p-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                  >
+                    {post.cover_image_url && (
+                      <div className="relative w-20 h-20 flex-shrink-0 rounded overflow-hidden bg-[var(--color-bg-tertiary)]">
+                        <Image
+                          src={post.cover_image_url}
+                          alt={post.title}
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors line-clamp-1">
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="text-sm text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                          {post.excerpt}
+                        </p>
+                      )}
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                        {post.published_at
+                          ? new Date(post.published_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Draft"}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[var(--color-text-tertiary)]">No published blog posts yet.</p>
             )}
           </section>
 
