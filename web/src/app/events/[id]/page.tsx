@@ -570,10 +570,18 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       .maybeSingle();
 
     if (existingClaim) {
-      userClaim = {
-        status: existingClaim.status as "pending" | "approved" | "rejected",
-        rejection_reason: existingClaim.rejection_reason,
-      };
+      // If claim was approved but user is no longer in event_hosts, the claim is stale
+      // (e.g., admin removed them). Allow them to re-claim by treating it as no claim.
+      const isStaleApprovedClaim =
+        existingClaim.status === "approved" &&
+        !eventHosts?.some(h => h.user_id === session.user.id);
+
+      if (!isStaleApprovedClaim) {
+        userClaim = {
+          status: existingClaim.status as "pending" | "approved" | "rejected",
+          rejection_reason: existingClaim.rejection_reason,
+        };
+      }
     }
   }
 
