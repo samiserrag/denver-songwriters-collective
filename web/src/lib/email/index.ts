@@ -160,3 +160,9 @@ export {
   getEventCommentNotificationEmail,
   type EventCommentNotificationEmailParams,
 } from "./templates/eventCommentNotification";
+
+// Co-host invitation template
+export {
+  getCohostInvitationEmail,
+  type CohostInvitationEmailParams,
+} from "./templates/cohostInvitation";

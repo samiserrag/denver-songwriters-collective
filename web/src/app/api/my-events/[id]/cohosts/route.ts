@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { sendEmail, isEmailConfigured, getCohostInvitationEmail } from "@/lib/email";
 
 // POST - Invite a co-host
 export async function POST(
@@ -121,18 +122,68 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Send notification to invited user
+  // Fetch event details for notification and email
+  const { data: event } = await serviceClient
+    .from("events")
+    .select("title, slug, venue_name, start_time")
+    .eq("id", eventId)
+    .single();
+
+  // Fetch inviter profile
+  const { data: inviter } = await serviceClient
+    .from("profiles")
+    .select("full_name")
+    .eq("id", session.user.id)
+    .single();
+
+  // Fetch invited user profile for email
+  const { data: invitedUser } = await serviceClient
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", targetUserId)
+    .single();
+
+  const eventTitle = event?.title || "an event";
+  const inviterName = inviter?.full_name || "Someone";
+
+  // Send notification to invited user with event details
   const { error: notifyError } = await supabase.rpc("create_user_notification", {
     p_user_id: targetUserId,
     p_type: "cohost_invitation",
-    p_title: "Co-host Invitation",
-    p_message: "You've been invited to co-host an event",
+    p_title: `Co-host Invitation: ${eventTitle}`,
+    p_message: `${inviterName} invited you to co-host "${eventTitle}"`,
     p_link: `/dashboard/invitations`
   });
 
   if (notifyError) {
     // Log the error but don't fail the request - the invitation was created successfully
     console.error("Failed to send co-host invitation notification:", notifyError);
+  }
+
+  // Send email to invited user
+  if (invitedUser?.email && isEmailConfigured()) {
+    const emailContent = getCohostInvitationEmail({
+      inviteeName: invitedUser.full_name || "there",
+      inviterName,
+      eventTitle,
+      eventSlug: event?.slug,
+      eventId,
+      venueName: event?.venue_name,
+      startTime: event?.start_time,
+    });
+
+    try {
+      await sendEmail({
+        to: invitedUser.email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+      });
+      console.log(`Sent co-host invitation email to ${invitedUser.email}`);
+    } catch (emailErr) {
+      // Log but don't fail - the invitation was created successfully
+      console.error("Failed to send co-host invitation email:", emailErr);
+    }
   }
 
   return NextResponse.json(invitation);
