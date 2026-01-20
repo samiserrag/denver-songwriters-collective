@@ -39,6 +39,11 @@ export const SocialIcon = ({ type }: { type: string }) => {
         <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
     ),
+    bandcamp: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M0 18.75l7.437-13.5H24l-7.438 13.5H0z"/>
+      </svg>
+    ),
   };
   return <>{icons[type] || null}</>;
 };
@@ -86,7 +91,7 @@ export interface TipLink {
  */
 export function normalizeSocialUrl(
   value: string | null | undefined,
-  platform: "instagram" | "youtube" | "tiktok" | "twitter" | "website" | "spotify"
+  platform: "instagram" | "youtube" | "tiktok" | "twitter" | "website" | "spotify" | "bandcamp"
 ): string | null {
   if (!value) return null;
   const trimmed = value.trim();
@@ -117,13 +122,20 @@ export function normalizeSocialUrl(
     case "website":
       // Bare domain - add https
       return `https://${trimmed}`;
+    case "bandcamp":
+      // Bandcamp URLs are typically username.bandcamp.com or full URLs
+      if (trimmed.includes("bandcamp.com")) {
+        return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+      }
+      // Bare username - convert to bandcamp.com URL
+      return `https://${trimmed.replace(/^@/, "")}.bandcamp.com`;
     default:
       return trimmed;
   }
 }
 
 // Helper to build social links array from profile data
-// Order: Musician-centric priority (Spotify → YouTube → Instagram → TikTok → Website → Twitter/X)
+// Order: Musician-centric priority (Spotify → Bandcamp → YouTube → Instagram → TikTok → Website → Twitter/X)
 export function buildSocialLinks(profile: {
   instagram_url?: string | null;
   facebook_url?: string | null;
@@ -132,10 +144,12 @@ export function buildSocialLinks(profile: {
   spotify_url?: string | null;
   tiktok_url?: string | null;
   website_url?: string | null;
+  bandcamp_url?: string | null;
 }): SocialLink[] {
   return [
     // Musician-centric priority order
     { type: "spotify", url: normalizeSocialUrl(profile.spotify_url, "spotify"), label: "Spotify" },
+    { type: "bandcamp", url: normalizeSocialUrl(profile.bandcamp_url, "bandcamp"), label: "Bandcamp" },
     { type: "youtube", url: normalizeSocialUrl(profile.youtube_url, "youtube"), label: "YouTube" },
     { type: "instagram", url: normalizeSocialUrl(profile.instagram_url, "instagram"), label: "Instagram" },
     { type: "tiktok", url: normalizeSocialUrl(profile.tiktok_url, "tiktok"), label: "TikTok" },

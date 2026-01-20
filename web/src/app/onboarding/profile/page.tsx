@@ -116,6 +116,7 @@ export default function OnboardingProfile() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [tiktokUrl, setTiktokUrl] = useState("");
+  const [bandcampUrl, setBandcampUrl] = useState("");
 
   // Tipping
   const [venmoHandle, setVenmoHandle] = useState("");
@@ -175,6 +176,7 @@ export default function OnboardingProfile() {
           setYoutubeUrl(profile.youtube_url || "");
           setWebsiteUrl(profile.website_url || "");
           setTiktokUrl(profile.tiktok_url || "");
+          setBandcampUrl(profile.bandcamp_url || "");
           setVenmoHandle(profile.venmo_handle || "");
           setCashappHandle(profile.cashapp_handle || "");
           setPaypalUrl(profile.paypal_url || "");
@@ -224,6 +226,7 @@ export default function OnboardingProfile() {
           youtube_url: youtubeUrl || null,
           website_url: websiteUrl || null,
           tiktok_url: tiktokUrl || null,
+          bandcamp_url: bandcampUrl || null,
           venmo_handle: venmoHandle || null,
           cashapp_handle: cashappHandle || null,
           paypal_url: paypalUrl || null,
@@ -272,6 +275,7 @@ export default function OnboardingProfile() {
           youtube_url: youtubeUrl || null,
           website_url: websiteUrl || null,
           tiktok_url: tiktokUrl || null,
+          bandcamp_url: bandcampUrl || null,
           venmo_handle: venmoHandle || null,
           cashapp_handle: cashappHandle || null,
           paypal_url: paypalUrl || null,
@@ -806,6 +810,12 @@ export default function OnboardingProfile() {
                       value: spotifyUrl,
                       onChange: setSpotifyUrl,
                       placeholder: "https://open.spotify.com/artist/...",
+                    },
+                    {
+                      label: "Bandcamp",
+                      value: bandcampUrl,
+                      onChange: setBandcampUrl,
+                      placeholder: "https://yourname.bandcamp.com",
                     },
                     {
                       label: "YouTube",

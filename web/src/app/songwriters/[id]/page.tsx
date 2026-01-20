@@ -504,12 +504,43 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             </section>
           )}
 
-          {/* Song Links Section */}
-          {songwriter.song_links && songwriter.song_links.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
-              <div className="grid gap-3 max-w-xl">
-                {songwriter.song_links.map((link, index) => {
+          {/* Listen to My Music Section - show if song_links OR music-related social links exist */}
+          {(() => {
+            const musicPlatformLinks = socialLinks.filter(link =>
+              ["spotify", "bandcamp", "youtube"].includes(link.type)
+            );
+            const hasSongLinks = songwriter.song_links && songwriter.song_links.length > 0;
+            const hasMusicPlatforms = musicPlatformLinks.length > 0;
+
+            if (!hasSongLinks && !hasMusicPlatforms) return null;
+
+            return (
+              <section className="mb-12">
+                <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
+
+                {/* Music platform social links (Spotify, Bandcamp, YouTube) */}
+                {musicPlatformLinks.length > 0 && (
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    {musicPlatformLinks.map((link) => (
+                      <Link
+                        key={link.type}
+                        href={link.url!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        title={link.label}
+                      >
+                        <SocialIcon type={link.type} />
+                        <span className="text-sm font-medium">{link.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Individual song/track links */}
+                {hasSongLinks && (
+                  <div className="grid gap-3 max-w-xl">
+                    {songwriter.song_links!.map((link, index) => {
                   // Determine the platform icon based on URL
                   const getPlatformInfo = (url: string) => {
                     if (url.includes("spotify")) return { name: "Spotify", color: "bg-[#1DB954]" };
@@ -537,10 +568,12 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                       </svg>
                     </Link>
                   );
-                })}
-              </div>
-            </section>
-          )}
+                    })}
+                  </div>
+                )}
+              </section>
+            );
+          })()}
 
           {/* Tip/Support Section */}
           {tipLinks.length > 0 && (

@@ -2337,6 +2337,7 @@ export type Database = {
         Row: {
           available_for_hire: boolean | null
           avatar_url: string | null
+          bandcamp_url: string | null
           bio: string | null
           cashapp_handle: string | null
           city: string | null
@@ -2382,6 +2383,7 @@ export type Database = {
         Insert: {
           available_for_hire?: boolean | null
           avatar_url?: string | null
+          bandcamp_url?: string | null
           bio?: string | null
           cashapp_handle?: string | null
           city?: string | null
@@ -2427,6 +2429,7 @@ export type Database = {
         Update: {
           available_for_hire?: boolean | null
           avatar_url?: string | null
+          bandcamp_url?: string | null
           bio?: string | null
           cashapp_handle?: string | null
           city?: string | null

@@ -37,6 +37,7 @@ type FormData = {
   tiktok_url: string;
   youtube_url: string;
   spotify_url: string;
+  bandcamp_url: string;
   website_url: string;
   venmo_handle: string;
   cashapp_handle: string;
@@ -73,6 +74,7 @@ const initialFormData: FormData = {
   tiktok_url: "",
   youtube_url: "",
   spotify_url: "",
+  bandcamp_url: "",
   website_url: "",
   venmo_handle: "",
   cashapp_handle: "",
@@ -166,6 +168,7 @@ export default function EditProfilePage() {
           tiktok_url: (profile as any).tiktok_url || "",
           youtube_url: (profile as any).youtube_url || "",
           spotify_url: (profile as any).spotify_url || "",
+          bandcamp_url: (profile as any).bandcamp_url || "",
           website_url: (profile as any).website_url || "",
           venmo_handle: (profile as any).venmo_handle || "",
           cashapp_handle: (profile as any).cashapp_handle || "",
@@ -250,6 +253,7 @@ export default function EditProfilePage() {
           tiktok_url: formData.tiktok_url || null,
           youtube_url: formData.youtube_url || null,
           spotify_url: formData.spotify_url || null,
+          bandcamp_url: formData.bandcamp_url || null,
           website_url: formData.website_url || null,
           venmo_handle: formData.venmo_handle || null,
           cashapp_handle: formData.cashapp_handle || null,
@@ -1007,6 +1011,20 @@ export default function EditProfilePage() {
                     value={formData.spotify_url}
                     onChange={handleChange}
                     placeholder="https://open.spotify.com/artist/..."
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bandcamp_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Bandcamp
+                  </label>
+                  <input
+                    type="url"
+                    id="bandcamp_url"
+                    name="bandcamp_url"
+                    value={formData.bandcamp_url}
+                    onChange={handleChange}
+                    placeholder="https://yourname.bandcamp.com"
                     className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>
