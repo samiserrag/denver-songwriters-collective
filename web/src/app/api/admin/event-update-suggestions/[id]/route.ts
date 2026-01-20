@@ -39,7 +39,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     // First fetch the current suggestion to get submitter info
     const { data: currentSuggestion } = await serviceClient
       .from('event_update_suggestions')
-      .select('*, events(title)')
+      .select('*, events(title, slug)')
       .eq('id', id)
       .single();
 
@@ -52,23 +52,94 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     if (error) return NextResponse.json({ error: error.message ?? error }, { status: 500 });
 
-    // If approved, apply the change to the event
+    // If approved, apply the change to the event or occurrence override
     if (body.status === 'approved' && currentSuggestion?.event_id && currentSuggestion.field !== '_new_event') {
       const fieldToUpdate = currentSuggestion.field;
       // Use edited value if provided, otherwise use original suggestion value
       const newValue = body.edited_new_value || currentSuggestion.new_value;
 
-      // Update the event with the approved value
-      const { error: eventUpdateError } = await serviceClient
-        .from('events')
-        .update({ [fieldToUpdate]: newValue })
-        .eq('id', currentSuggestion.event_id);
+      // Parse the scope from notes to determine if this is a date-specific update
+      const notes = currentSuggestion.notes || '';
+      const dateMatch = notes.match(/\[UPDATE SCOPE: This date only \((\d{4}-\d{2}-\d{2})\)\]/);
+      const isDateSpecific = !!dateMatch;
+      const dateKey = dateMatch ? dateMatch[1] : null;
 
-      if (eventUpdateError) {
-        console.error('Failed to apply approved suggestion to event:', eventUpdateError);
-        // Don't fail the request, but log the error
+      if (isDateSpecific && dateKey) {
+        // For date-specific updates, create/update an occurrence override
+        // Map field names to override column names
+        const overrideFieldMap: Record<string, string> = {
+          'start_time': 'override_start_time',
+          'end_time': 'override_end_time',
+          'status': 'status',
+          'suggested_status': 'status',
+        };
+
+        const overrideField = overrideFieldMap[fieldToUpdate];
+
+        if (overrideField) {
+          // Check if override exists for this date
+          const { data: existingOverride } = await serviceClient
+            .from('occurrence_overrides')
+            .select('id')
+            .eq('event_id', currentSuggestion.event_id)
+            .eq('date_key', dateKey)
+            .maybeSingle();
+
+          if (existingOverride) {
+            // Update existing override
+            const { error: overrideError } = await serviceClient
+              .from('occurrence_overrides')
+              .update({ [overrideField]: newValue })
+              .eq('id', existingOverride.id);
+
+            if (overrideError) {
+              console.error('Failed to update occurrence override:', overrideError);
+            } else {
+              console.log(`Updated occurrence override for ${dateKey}: ${overrideField} = ${newValue}`);
+            }
+          } else {
+            // Create new override
+            const { error: overrideError } = await serviceClient
+              .from('occurrence_overrides')
+              .insert({
+                event_id: currentSuggestion.event_id,
+                date_key: dateKey,
+                [overrideField]: newValue
+              });
+
+            if (overrideError) {
+              console.error('Failed to create occurrence override:', overrideError);
+            } else {
+              console.log(`Created occurrence override for ${dateKey}: ${overrideField} = ${newValue}`);
+            }
+          }
+        } else {
+          // Field doesn't have an override mapping, apply to event directly with a note
+          console.log(`Field ${fieldToUpdate} doesn't have override support, applying to event directly`);
+          const { error: eventUpdateError } = await serviceClient
+            .from('events')
+            .update({ [fieldToUpdate]: newValue })
+            .eq('id', currentSuggestion.event_id);
+
+          if (eventUpdateError) {
+            console.error('Failed to apply approved suggestion to event:', eventUpdateError);
+          } else {
+            console.log(`Applied approved suggestion: ${fieldToUpdate} = ${newValue} to event ${currentSuggestion.event_id}`);
+          }
+        }
       } else {
-        console.log(`Applied approved suggestion: ${fieldToUpdate} = ${newValue} to event ${currentSuggestion.event_id}`);
+        // Series-wide update - apply directly to the event
+        const { error: eventUpdateError } = await serviceClient
+          .from('events')
+          .update({ [fieldToUpdate]: newValue })
+          .eq('id', currentSuggestion.event_id);
+
+        if (eventUpdateError) {
+          console.error('Failed to apply approved suggestion to event:', eventUpdateError);
+          // Don't fail the request, but log the error
+        } else {
+          console.log(`Applied approved suggestion: ${fieldToUpdate} = ${newValue} to event ${currentSuggestion.event_id}`);
+        }
       }
     }
 
@@ -92,11 +163,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         }
       }
 
+      // Get event slug for the link
+      const eventSlug = (currentSuggestion.events as { slug?: string } | null)?.slug;
+
       const emailContent = getSuggestionResponseEmail({
         submitterName: currentSuggestion.submitter_name,
         status: body.status as SuggestionStatus,
         isNewEvent,
         eventTitle,
+        eventSlug,
+        eventId: currentSuggestion.event_id,
         adminMessage: body.admin_response || '',
       });
 

@@ -651,7 +651,7 @@ describe("New Email Templates", () => {
       expect(result.text).toContain("happenings?type=open_mic");
     });
 
-    it("generates needs_info email", () => {
+    it("generates needs_info email for existing event (no link)", () => {
       const result = getSuggestionResponseEmail({
         status: "needs_info",
         isNewEvent: false,
@@ -662,6 +662,38 @@ describe("New Email Templates", () => {
         "Quick question about your suggestion — The Denver Songwriters Collective"
       );
       expect(result.html).toContain("What time does it start?");
+      // For existing event without eventLink, user should just reply to email
+      expect(result.text).toContain("reply to this email");
+    });
+
+    it("generates needs_info email for existing event (with event link)", () => {
+      const result = getSuggestionResponseEmail({
+        status: "needs_info",
+        isNewEvent: false,
+        eventSlug: "test-open-mic",
+        eventId: "uuid-123",
+        adminMessage: "What time does it start?",
+      });
+
+      expect(result.subject).toBe(
+        "Quick question about your suggestion — The Denver Songwriters Collective"
+      );
+      expect(result.html).toContain("What time does it start?");
+      // With eventLink, it should link to the event page
+      expect(result.text).toContain("/open-mics/test-open-mic");
+    });
+
+    it("generates needs_info email for new event submission", () => {
+      const result = getSuggestionResponseEmail({
+        status: "needs_info",
+        isNewEvent: true,
+        adminMessage: "Please provide more details",
+      });
+
+      expect(result.subject).toBe(
+        "Quick question about your open mic submission — The Denver Songwriters Collective"
+      );
+      // For new event without eventLink, should link to submit form
       expect(result.text).toContain("submit-open-mic");
     });
 

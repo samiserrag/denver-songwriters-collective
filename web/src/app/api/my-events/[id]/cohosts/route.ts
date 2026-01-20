@@ -108,10 +108,7 @@ export async function POST(
       invitation_status: "pending",
       invited_by: session.user.id
     })
-    .select(`
-      *,
-      user:profiles(id, full_name, avatar_url)
-    `)
+    .select("*")
     .single();
 
   if (error) {

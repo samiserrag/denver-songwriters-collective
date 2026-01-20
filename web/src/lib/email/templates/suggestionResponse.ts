@@ -93,7 +93,10 @@ export function getSuggestionResponseEmail(params: SuggestionResponseEmailParams
   } else if (status === "rejected") {
     closing = "No worries though! Feel free to resubmit if you have more details, or reach out if you have questions.";
   } else {
-    closing = "Just reply to this email with any additional info and we'll take another look!";
+    // needs_info
+    closing = eventLink
+      ? "You can visit the event page below to submit additional details, or just reply to this email!"
+      : "Just reply to this email with any additional info and we'll take another look!";
   }
 
   // Build status box based on type
@@ -125,7 +128,8 @@ ${paragraph(closing)}
 
 ${status === "approved" && eventLink ? createButton("View the listing", eventLink, "green") : ""}
 ${status === "approved" && !eventLink ? createButton("View open mics", `${SITE_URL}/happenings?type=open_mic`, "green") : ""}
-${status === "needs_info" ? createButton("Submit more info", `${SITE_URL}/submit-open-mic`) : ""}
+${status === "needs_info" && eventLink ? createButton("View event & submit more info", eventLink) : ""}
+${status === "needs_info" && !eventLink && isNewEvent ? createButton("Submit a new open mic", `${SITE_URL}/submit-open-mic`) : ""}
 `;
 
   const html = wrapEmailHtml(htmlContent);
@@ -143,7 +147,8 @@ ${closing}
 
 ${status === "approved" && eventLink ? `View the listing: ${eventLink}` : ""}
 ${status === "approved" && !eventLink ? `View open mics: ${SITE_URL}/happenings?type=open_mic` : ""}
-${status === "needs_info" ? `Submit more info: ${SITE_URL}/submit-open-mic` : ""}`;
+${status === "needs_info" && eventLink ? `View event & submit more info: ${eventLink}` : ""}
+${status === "needs_info" && !eventLink && isNewEvent ? `Submit a new open mic: ${SITE_URL}/submit-open-mic` : ""}`;
 
   const text = wrapEmailText(textContent);
 
