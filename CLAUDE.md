@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.71):** Lint warnings = 0. All tests passing (2116). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.72):** Lint warnings = 0. All tests passing (2118). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -312,6 +312,43 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Timeslots + Host Controls for ALL Events (January 2026) — RESOLVED
+
+**Goal:** Enable performer slots, host controls, and signup warnings for ALL events (not just DSC official events).
+
+**Status:** Complete.
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Timeslots not showing on community events | `TimeslotSection` gated by `is_dsc_event` | Removed gate, now shows for any event with `has_timeslots=true` |
+| Timeslots not showing on recurring events | Query used occurrence `date_key` but slots created with anchor `date_key` | Added fallback query without date filter |
+| Host Controls not showing for community events | `HostControls` gated by `is_dsc_event` | Removed gate, shows for all events |
+| No signup warning missing for community events | Warning banner gated by `is_dsc_event` | Removed gate, shows for all managed events |
+| Stale "Approved" claim after host removal | Claim status shown even when user removed from `event_hosts` | Check if user still in hosts before showing approved claim |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | Removed `is_dsc_event` gates from TimeslotSection, HostControls, signup warning; added stale claim detection |
+| `components/events/TimeslotSection.tsx` | Added fallback query when no slots found for specific date_key |
+| `__tests__/phase4-43-rsvp-always.test.ts` | Updated tests for new behavior |
+| `__tests__/signup-lane-detection.test.ts` | Updated tests for new behavior |
+
+**Behavior Change:**
+
+| Feature | Before | After |
+|---------|--------|-------|
+| TimeslotSection | DSC events only | Any event with `has_timeslots=true` |
+| HostControls | DSC events only | All events (component handles auth) |
+| No signup warning | DSC events only | All managed events |
+
+**Test Coverage:** 2118 tests passing.
 
 ---
 
