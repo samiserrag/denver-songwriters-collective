@@ -133,16 +133,18 @@ describe("Phase 4.32: Host/Admin Banner Visibility", () => {
     const signupLaneExists = hasSignupLane(event, 0);
     const canManageEvent = false;
 
-    const showBanner = canManageEvent && event.is_dsc_event && !signupLaneExists;
+    // Phase 4.XX: Banner now shows for ALL events (not just DSC), but only to managers
+    const showBanner = canManageEvent && !signupLaneExists;
     expect(showBanner).toBe(false);
   });
 
-  it("banner should NOT show for non-DSC events", () => {
+  it("banner DOES show for non-DSC events when user can manage", () => {
+    // Phase 4.XX: Banner now shows for ALL events (not just DSC)
     const event = { has_timeslots: false, capacity: null, is_dsc_event: false };
     const signupLaneExists = hasSignupLane(event, 0);
     const canManageEvent = true;
 
-    const showBanner = canManageEvent && event.is_dsc_event && !signupLaneExists;
-    expect(showBanner).toBe(false);
+    const showBanner = canManageEvent && !signupLaneExists;
+    expect(showBanner).toBe(true);
   });
 });

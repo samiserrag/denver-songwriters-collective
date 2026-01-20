@@ -72,12 +72,27 @@ export function TimeslotSection({
         query = query.eq("date_key", dateKey);
       }
 
-      const { data: slots, error: slotsError } = await query.order("slot_index", { ascending: true });
+      const { data: initialSlots, error: slotsError } = await query.order("slot_index", { ascending: true });
+      let slots = initialSlots;
 
       if (slotsError) {
         console.error("Error fetching timeslots:", slotsError);
         setLoading(false);
         return;
+      }
+
+      // If no slots found for specific date_key, fall back to querying without date filter
+      // This handles recurring events where slots may have been generated with anchor date_key
+      if ((!slots || slots.length === 0) && dateKey) {
+        const fallbackResult = await supabase
+          .from("event_timeslots")
+          .select("*")
+          .eq("event_id", eventId)
+          .order("slot_index", { ascending: true });
+
+        if (!fallbackResult.error && fallbackResult.data && fallbackResult.data.length > 0) {
+          slots = fallbackResult.data;
+        }
       }
 
       if (!slots || slots.length === 0) {

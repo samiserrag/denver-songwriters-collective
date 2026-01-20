@@ -713,7 +713,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       )}
 
       {/* Phase 4.32: No signup lane warning - only visible to hosts/admins */}
-      {canManageEvent && event.is_dsc_event && !signupLaneExists && (
+      {/* Phase 4.XX: Warning applies to ALL events (not just DSC), per timeslots-everywhere change */}
+      {canManageEvent && !signupLaneExists && (
         <div className="mb-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -1121,12 +1122,11 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           </div>
 
           {/* Host Controls - only visible to hosts/admins */}
-          {event.is_dsc_event && (
-            <HostControls
-              eventId={event.id}
-              hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
-            />
-          )}
+          {/* Phase 4.XX: Host controls available for ALL events (not just DSC), per timeslots-everywhere change */}
+          <HostControls
+            eventId={event.id}
+            hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
+          />
 
           {/* About section - shown above timeslots */}
           {event.description && (
@@ -1139,7 +1139,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           )}
 
           {/* Timeslot claiming section for timeslot-enabled events */}
-          {event.is_dsc_event && (event as { has_timeslots?: boolean }).has_timeslots && (
+          {/* Phase 4.XX: Timeslots available for ALL events (not just DSC), per Phase 4.47 opt-in design */}
+          {(event as { has_timeslots?: boolean }).has_timeslots && (
             <div className="mb-8">
               {/* Phase ABC6: Timeslots are per-occurrence (date-scoped) */}
               <TimeslotSection

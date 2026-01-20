@@ -522,47 +522,48 @@ describe("Phase 4.43c: RSVP for all public events", () => {
   });
 
   describe("DSC-only features remain gated", () => {
-    // These elements should still check is_dsc_event
-    function shouldShowHostControls(event: { is_dsc_event: boolean }): boolean {
-      return event.is_dsc_event;
+    // Phase 4.XX: These elements now show for ALL events (not just DSC)
+    // HostControls always renders (it handles its own auth check internally)
+    function shouldShowHostControls(): boolean {
+      return true; // Always shown, component handles auth internally
     }
 
+    // TimeslotSection shows for ANY event with has_timeslots enabled
     function shouldShowTimeslotSection(event: {
-      is_dsc_event: boolean;
       has_timeslots: boolean;
     }): boolean {
-      return event.is_dsc_event && event.has_timeslots;
+      return event.has_timeslots;
     }
 
+    // No signup warning shows for ANY event the user can manage
     function shouldShowNoSignupWarning(event: {
-      is_dsc_event: boolean;
       canManageEvent: boolean;
       signupLaneExists: boolean;
     }): boolean {
-      return event.canManageEvent && event.is_dsc_event && !event.signupLaneExists;
+      return event.canManageEvent && !event.signupLaneExists;
     }
 
-    it("HostControls only shows for DSC events", () => {
-      expect(shouldShowHostControls({ is_dsc_event: true })).toBe(true);
-      expect(shouldShowHostControls({ is_dsc_event: false })).toBe(false);
+    it("HostControls shows for all events (component handles auth internally)", () => {
+      expect(shouldShowHostControls()).toBe(true);
     });
 
-    it("TimeslotSection only shows for DSC events with timeslots", () => {
-      expect(shouldShowTimeslotSection({ is_dsc_event: true, has_timeslots: true })).toBe(true);
-      expect(shouldShowTimeslotSection({ is_dsc_event: true, has_timeslots: false })).toBe(false);
-      expect(shouldShowTimeslotSection({ is_dsc_event: false, has_timeslots: true })).toBe(false);
+    it("TimeslotSection shows for any event with timeslots enabled", () => {
+      expect(shouldShowTimeslotSection({ has_timeslots: true })).toBe(true);
+      expect(shouldShowTimeslotSection({ has_timeslots: false })).toBe(false);
     });
 
-    it("No signup warning only shows for DSC events", () => {
+    it("No signup warning shows for any event user can manage", () => {
       expect(shouldShowNoSignupWarning({
-        is_dsc_event: true,
         canManageEvent: true,
         signupLaneExists: false
       })).toBe(true);
       expect(shouldShowNoSignupWarning({
-        is_dsc_event: false,
-        canManageEvent: true,
+        canManageEvent: false,
         signupLaneExists: false
+      })).toBe(false);
+      expect(shouldShowNoSignupWarning({
+        canManageEvent: true,
+        signupLaneExists: true
       })).toBe(false);
     });
   });
