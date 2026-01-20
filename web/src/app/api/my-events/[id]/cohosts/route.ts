@@ -84,8 +84,12 @@ export async function POST(
     return NextResponse.json({ error: "You cannot invite yourself" }, { status: 400 });
   }
 
+  // Use service role client for operations that might be blocked by RLS
+  // We've already verified authorization above (user is admin or primary host)
+  const serviceClient = createServiceRoleClient();
+
   // Check if already a host
-  const { data: existing } = await supabase
+  const { data: existing } = await serviceClient
     .from("event_hosts")
     .select("id, invitation_status")
     .eq("event_id", eventId)
@@ -98,8 +102,10 @@ export async function POST(
     }, { status: 400 });
   }
 
-  // Create invitation
-  const { data: invitation, error } = await supabase
+  // Create invitation using service role client
+  // RLS policy requires approved_hosts membership, but we've already verified
+  // the user is authorized (admin or primary host) at the API level
+  const { data: invitation, error } = await serviceClient
     .from("event_hosts")
     .insert({
       event_id: eventId,
