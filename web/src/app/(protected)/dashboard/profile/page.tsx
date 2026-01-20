@@ -343,12 +343,14 @@ export default function EditProfilePage() {
 
             {/* Profile Photos */}
             {userId && (
-              <ProfilePhotosSection
-                userId={userId}
-                currentAvatarUrl={formData.avatar_url}
-                initialImages={profileImages}
-                onAvatarChange={(newUrl) => setFormData(prev => ({ ...prev, avatar_url: newUrl }))}
-              />
+              <section id="photos">
+                <ProfilePhotosSection
+                  userId={userId}
+                  currentAvatarUrl={formData.avatar_url}
+                  initialImages={profileImages}
+                  onAvatarChange={(newUrl) => setFormData(prev => ({ ...prev, avatar_url: newUrl }))}
+                />
+              </section>
             )}
 
             {/* Basic Info */}

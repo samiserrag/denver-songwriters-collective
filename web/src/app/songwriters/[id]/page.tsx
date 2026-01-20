@@ -13,6 +13,8 @@ import {
   buildOverrideMap,
 } from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
+import { sortProfileImagesAvatarFirst } from "@/lib/profile/sortProfileImages";
+import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import Link from "next/link";
 import Image from "next/image";
 export const dynamic = "force-dynamic";
@@ -61,12 +63,17 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
   const songwriter = profile as DBProfile;
 
   // Fetch profile images for public display (only non-deleted images)
-  const { data: profileImages } = await supabase
+  const { data: profileImagesRaw } = await supabase
     .from("profile_images")
-    .select("id, image_url")
+    .select("id, image_url, created_at")
     .eq("user_id", songwriter.id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null);
+
+  // Sort images: avatar first, then newest-first
+  const profileImages = sortProfileImagesAvatarFirst(
+    profileImagesRaw ?? [],
+    songwriter.avatar_url
+  );
 
   // Build social and tip links using shared helpers
   const socialLinks = buildSocialLinks(songwriter);
@@ -171,9 +178,15 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     overrideMap,
   });
 
-  // Cap visible series to 3
-  const visibleHostedSeries = hostedSeries.slice(0, 3);
-  const hasMoreHostedEvents = hostedSeries.length > 3;
+  // Split hosted happenings into upcoming and past (3 per section)
+  const {
+    upcoming: upcomingHosted,
+    past: pastHosted,
+    hasMoreUpcoming,
+    hasMorePast,
+    totalUpcoming,
+    totalPast,
+  } = splitHostedHappenings(hostedSeries, 3);
 
   // Query galleries created by this member (published + not hidden)
   const { data: galleriesData } = await supabase
@@ -343,6 +356,30 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                     <span className="text-sm font-medium">{link.label}</span>
                   </Link>
                 ))}
+              </div>
+            )}
+
+            {/* Owner-only CTAs */}
+            {isOwner && (
+              <div className="flex flex-wrap justify-center gap-3 mt-4" data-testid="owner-ctas">
+                <Link
+                  href="/dashboard/profile"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit profile
+                </Link>
+                <Link
+                  href="/dashboard/profile#photos"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Manage photos
+                </Link>
               </div>
             )}
           </div>
@@ -528,23 +565,47 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             </section>
           )}
 
-          {/* Hosted Happenings Section */}
+          {/* Hosted Happenings Section - Split into Upcoming and Past */}
           <section className="mb-12" data-testid="hosted-happenings-section">
-            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Hosted Happenings</h2>
-            {visibleHostedSeries.length > 0 ? (
-              <div className="space-y-3">
-                {visibleHostedSeries.map((entry) => (
-                  <SeriesCard key={entry.event.id} series={entry} />
-                ))}
-                {hasMoreHostedEvents && (
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-4">
-                    Showing 3 of {hostedSeries.length} happenings.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-[var(--color-text-tertiary)]">No hosted happenings yet.</p>
-            )}
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">Hosted Happenings</h2>
+
+            {/* Upcoming Hosted Happenings */}
+            <div className="mb-8" data-testid="upcoming-hosted-happenings">
+              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Upcoming</h3>
+              {upcomingHosted.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingHosted.map((entry) => (
+                    <SeriesCard key={entry.event.id} series={entry} />
+                  ))}
+                  {hasMoreUpcoming && (
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+                      Showing 3 of {totalUpcoming} upcoming happenings.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No upcoming happenings.</p>
+              )}
+            </div>
+
+            {/* Past Hosted Happenings */}
+            <div data-testid="past-hosted-happenings">
+              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-3">Past</h3>
+              {pastHosted.length > 0 ? (
+                <div className="space-y-3">
+                  {pastHosted.map((entry) => (
+                    <SeriesCard key={entry.event.id} series={entry} />
+                  ))}
+                  {hasMorePast && (
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+                      Showing 3 of {totalPast} past happenings.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No past happenings.</p>
+              )}
+            </div>
           </section>
 
           {/* Galleries Created Section */}
