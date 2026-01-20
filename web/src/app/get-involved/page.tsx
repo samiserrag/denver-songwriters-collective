@@ -153,11 +153,11 @@ export default function GetInvolvedPage() {
               </div>
               <div className="pt-4 border-t border-[var(--color-border-default)]">
                 <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] mb-4">
-                  We are currently setting up our donation system. In the meantime, if you would like to contribute or discuss sponsorship opportunities, please reach out to us directly.
+                  Your contributions help cover venue fees, equipment, website hosting, and community programming.
                 </p>
-                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-accent)]/80 italic">
-                  Online donations coming soon.
-                </p>
+                <Button asChild variant="primary" size="lg">
+                  <Link href="/tip-jar">Support the Collective</Link>
+                </Button>
               </div>
             </div>
           </section>
