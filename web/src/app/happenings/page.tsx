@@ -294,7 +294,7 @@ export default async function HappeningsPage({
       }
       // For dated events: derive day from event_date
       if (event.event_date) {
-        const date = new Date(event.event_date + "T00:00:00");
+        const date = new Date(event.event_date + "T12:00:00Z");
         const dayIndex = date.getDay();
         return targetDayIndices.includes(dayIndex);
       }

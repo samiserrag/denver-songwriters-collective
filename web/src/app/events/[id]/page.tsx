@@ -943,6 +943,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                       weekday: "short",
                       month: "short",
                       day: "numeric",
+                      year: "numeric",
                       timeZone: "America/Denver",
                     })}
                   </span>
@@ -951,10 +952,11 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">📅</span>
                   <span className="font-medium">
-                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-US", {
+                    {new Date(event.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
+                      year: "numeric",
                       timeZone: "America/Denver",
                     })}
                   </span>

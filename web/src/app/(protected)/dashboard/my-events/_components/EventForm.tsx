@@ -143,7 +143,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     // Recurring series fields (only for create mode)
     start_date: "",
     occurrence_count: "1", // Default to 1 (one-time event)
-    series_mode: "single" as "single" | "weekly" | "custom", // Phase 4.x: Series mode selection
+    series_mode: "single" as "single" | "weekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
     location_mode: event?.location_mode || "venue",
@@ -185,6 +185,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   // Phase 4.x: Custom dates state for non-predictable series
   const [customDates, setCustomDates] = useState<string[]>([]);
+
+  // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
+  const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>([1]); // Default to 1st
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
@@ -317,9 +320,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     if (!formData.title.trim()) {
       missingFields.push("Title");
     }
-    // Day of Week only required for weekly recurring series
+    // Day of Week required for weekly and monthly recurring series
     // Single and custom modes use event_date instead
-    if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
+    if (mode === "create" && (formData.series_mode === "weekly" || formData.series_mode === "monthly") && !formData.day_of_week) {
       missingFields.push("Day of Week");
     }
     // In edit mode, day_of_week is only required if this is a recurring event
@@ -348,6 +351,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     // Custom dates validation (when in custom series mode)
     if (mode === "create" && formData.series_mode === "custom" && customDates.length === 0) {
       missingFields.push("Custom Dates (select at least one date)");
+    }
+
+    // Start date validation for all create modes
+    if (mode === "create") {
+      if (formData.series_mode === "single" && !formData.start_date) {
+        missingFields.push("Event Date");
+      } else if ((formData.series_mode === "weekly" || formData.series_mode === "monthly")) {
+        const effectiveStartDate = formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null);
+        if (!effectiveStartDate) {
+          missingFields.push("First Event Date");
+        }
+      }
     }
 
     // If any required fields are missing, show error summary and scroll to form top
@@ -382,9 +397,21 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       // Determine recurrence settings based on series mode
       // Single mode: no recurrence (one-time event)
       // Weekly mode: weekly recurrence
+      // Monthly mode: monthly ordinal recurrence (e.g., "1st", "2nd/4th")
       // Custom mode: no recurrence (each date is a separate one-time event)
-      const isRecurring = formData.series_mode === "weekly";
-      const effectiveRecurrenceRule = isRecurring ? (formData.recurrence_rule || "weekly") : null;
+      const isRecurring = formData.series_mode === "weekly" || formData.series_mode === "monthly";
+
+      // Build recurrence rule based on mode
+      let effectiveRecurrenceRule: string | null = null;
+      if (formData.series_mode === "weekly") {
+        effectiveRecurrenceRule = "weekly";
+      } else if (formData.series_mode === "monthly") {
+        // Convert ordinals to text format (e.g., [1, 3] => "1st/3rd")
+        const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
+        const ordinalTexts = selectedOrdinals.sort((a, b) => a - b).map(o => ordinalWords[o] || `${o}th`);
+        effectiveRecurrenceRule = ordinalTexts.join("/");
+      }
+
       const effectiveDayOfWeek = isRecurring ? formData.day_of_week : null;
 
       const body = {
@@ -470,7 +497,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           }
         }
         setSuccess("Changes saved successfully!");
-        router.refresh();
+        // Clear URL params (created, status) after edit to prevent stale banner
+        if (window.location.search.includes("created=true")) {
+          router.replace(`/dashboard/my-events/${event?.id}`);
+        } else {
+          router.refresh();
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
@@ -589,8 +621,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3: SCHEDULE ============ */}
       {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Day of Week - only shown for weekly recurring series or in edit mode for recurring events */}
-        {(mode === "edit" || formData.series_mode === "weekly") && (
+        {/* Day of Week - only shown for:
+            - Create mode with weekly or monthly series selected
+            - Edit mode for recurring events (has recurrence_rule)
+            Single-date and custom-date events derive day_of_week from the selected date(s) */}
+        {((mode === "edit" && event?.recurrence_rule) || (mode === "create" && (formData.series_mode === "weekly" || formData.series_mode === "monthly"))) && (
           <div>
             <label className="block text-sm font-medium mb-2">
               <span className="text-red-500">Day of Week</span>
@@ -688,8 +723,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </p>
           </div>
 
-          {/* Series Mode Selection */}
-          <div className="flex flex-wrap gap-2">
+          {/* Series Mode Selection - Card style for better UX */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => {
@@ -697,13 +732,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 updateField("occurrence_count", "1");
                 setCustomDates([]);
               }}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`p-3 rounded-lg border text-left transition-colors ${
                 formData.series_mode === "single"
-                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
-                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
               }`}
             >
-              One-time Event
+              <span className="block text-sm font-medium text-[var(--color-text-primary)]">One-time Event</span>
+              <span className="block text-xs text-[var(--color-text-secondary)] mt-0.5">A single happening on one date</span>
             </button>
             <button
               type="button"
@@ -712,13 +748,33 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 updateField("occurrence_count", "4");
                 setCustomDates([]);
               }}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`p-3 rounded-lg border text-left transition-colors ${
                 formData.series_mode === "weekly"
-                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
-                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
               }`}
             >
-              Weekly Series
+              <span className="block text-sm font-medium text-[var(--color-text-primary)]">Weekly Series</span>
+              <span className="block text-xs text-[var(--color-text-secondary)] mt-0.5">Same day each week (e.g., every Tuesday)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                updateField("series_mode", "monthly");
+                updateField("occurrence_count", "3");
+                setCustomDates([]);
+                if (selectedOrdinals.length === 0) {
+                  setSelectedOrdinals([1]); // Default to 1st
+                }
+              }}
+              className={`p-3 rounded-lg border text-left transition-colors ${
+                formData.series_mode === "monthly"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
+              }`}
+            >
+              <span className="block text-sm font-medium text-[var(--color-text-primary)]">Monthly Pattern</span>
+              <span className="block text-xs text-[var(--color-text-secondary)] mt-0.5">Specific weeks each month (e.g., 1st &amp; 3rd Sunday)</span>
             </button>
             <button
               type="button"
@@ -730,13 +786,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   setCustomDates([formData.start_date]);
                 }
               }}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+              className={`p-3 rounded-lg border text-left transition-colors ${
                 formData.series_mode === "custom"
-                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
-                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
               }`}
             >
-              Custom Dates
+              <span className="block text-sm font-medium text-[var(--color-text-primary)]">Custom Dates</span>
+              <span className="block text-xs text-[var(--color-text-secondary)] mt-0.5">Pick specific dates (irregular schedule)</span>
             </button>
           </div>
 
@@ -828,6 +885,112 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 </div>
               )}
             </>
+          )}
+
+          {/* Monthly Pattern Series */}
+          {formData.series_mode === "monthly" && (
+            <div className="space-y-4">
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Choose which week(s) of the month your happening occurs. Select the day of week above.
+              </p>
+
+              {/* Ordinal Selection - Which weeks of the month */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+                  Which week(s) of the month?
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 1, label: "1st" },
+                    { value: 2, label: "2nd" },
+                    { value: 3, label: "3rd" },
+                    { value: 4, label: "4th" },
+                    { value: -1, label: "Last" },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        if (selectedOrdinals.includes(value)) {
+                          // Don't allow deselecting the last one
+                          if (selectedOrdinals.length > 1) {
+                            setSelectedOrdinals(selectedOrdinals.filter(o => o !== value));
+                          }
+                        } else {
+                          setSelectedOrdinals([...selectedOrdinals, value].sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b));
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                        selectedOrdinals.includes(value)
+                          ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
+                          : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  Select one or more weeks. E.g., &quot;1st &amp; 3rd&quot; for twice-monthly events.
+                </p>
+              </div>
+
+              {/* First Event Date and Number of Events */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <span className="text-red-500">First Event Date</span>
+                    <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
+                    onChange={(e) => {
+                      updateField("start_date", e.target.value);
+                      if (e.target.value) {
+                        updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+                      }
+                    }}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+                    Number of Events
+                  </label>
+                  <select
+                    value={formData.occurrence_count}
+                    onChange={(e) => updateField("occurrence_count", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  >
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                      <option key={n} value={n.toString()}>
+                        {n} events
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Pattern Summary */}
+              {formData.day_of_week && selectedOrdinals.length > 0 && (
+                <div className="pt-2 border-t border-[var(--color-border-default)]">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                    Pattern:{" "}
+                    <span className="text-[var(--color-accent-primary)]">
+                      {(() => {
+                        const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "Last" };
+                        const ordinalTexts = selectedOrdinals
+                          .sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b)
+                          .map(o => ordinalWords[o] || `${o}th`);
+                        return `${ordinalTexts.join(" & ")} ${formData.day_of_week} of the month`;
+                      })()}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Custom Dates */}

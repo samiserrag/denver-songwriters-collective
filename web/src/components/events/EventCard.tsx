@@ -31,7 +31,7 @@ interface EventCardProps {
 
 function getDateInitials(date: string | null | undefined): string {
   if (!date) return "LIVE";
-  const d = new Date(date + "T00:00:00");
+  const d = new Date(date + "T12:00:00Z");
   if (Number.isNaN(d.getTime())) return "LIVE";
   // Use explicit timezone to prevent server/client hydration mismatch
   return d.toLocaleDateString("en-US", {

@@ -274,7 +274,7 @@ describe("UserGalleryUpload - Album Creation", { timeout: 15000 }, () => {
 describe("UserGalleryUpload - Event Dropdown", { timeout: 15000 }, () => {
   // Helper to format dates exactly as the component does (America/Denver timezone)
   const formatEventDate = (dateStr: string): string => {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+    return new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",

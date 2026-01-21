@@ -76,7 +76,7 @@ function DeleteDraftModal({ isOpen, eventTitle, onConfirm, onCancel, isLoading }
 
 function formatEventDate(dateStr: string | null): string {
   if (!dateStr) return "";
-  const date = new Date(dateStr + "T00:00:00");
+  const date = new Date(dateStr + "T12:00:00Z");
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",

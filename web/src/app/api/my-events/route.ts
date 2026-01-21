@@ -307,10 +307,11 @@ export async function POST(request: Request) {
   }
 
   // Determine series configuration
-  // Phase 4.x: Support three series modes:
-  // - "single": One-time event (single date)
-  // - "weekly": Weekly recurring series (predictable dates)
-  // - "custom": Custom dates (non-predictable, user-specified dates)
+  // Phase 4.x: Support four series modes:
+  // - "single": One-time event (single date, no recurrence)
+  // - "weekly": Weekly recurring series (creates multiple event records)
+  // - "monthly": Monthly ordinal pattern (creates SINGLE event with recurrence_rule like "1st/3rd")
+  // - "custom": Custom dates (non-predictable, creates multiple event records)
   const seriesMode = (body.series_mode as string) || "single";
   const startDate = body.start_date;
 
@@ -320,7 +321,12 @@ export async function POST(request: Request) {
 
   let eventDates: string[];
 
-  if (seriesMode === "custom" && Array.isArray(body.custom_dates) && body.custom_dates.length > 0) {
+  if (seriesMode === "monthly") {
+    // Monthly pattern mode: create a SINGLE event record with recurrence_rule
+    // The recurrence_rule (e.g., "1st/3rd") is passed from the client
+    // Expansion to actual dates happens at query time via expandOccurrencesForEvent()
+    eventDates = [startDate];
+  } else if (seriesMode === "custom" && Array.isArray(body.custom_dates) && body.custom_dates.length > 0) {
     // Custom dates mode: use the user-provided dates array
     // Sort dates chronologically and limit to 12
     eventDates = (body.custom_dates as string[])

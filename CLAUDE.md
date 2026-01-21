@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.73):** Lint warnings = 0. All tests passing (2223). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.74):** Lint warnings = 0. All tests passing (2308). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -315,9 +315,9 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Series Mode Selection + Custom Dates + Auto-Confirmation (January 2026) — RESOLVED
+### Four Series Modes + Monthly Ordinal Patterns (January 2026) — RESOLVED
 
-**Goal:** Enable flexible event scheduling with three modes (single, weekly, custom dates), fix auto-confirmation for non-admin published events, and allow users to see all their happenings.
+**Goal:** Enable flexible event scheduling with four modes: single, weekly, monthly ordinal patterns, and custom dates. Improved UX with card-style selection and clear descriptions.
 
 **Status:** Complete.
 
@@ -325,34 +325,50 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 | Feature | Implementation |
 |---------|----------------|
-| Series mode selection | Three modes: `single` (one-time), `weekly` (recurring), `custom` (user-specified dates) |
-| Custom dates UI | Add/remove specific dates for non-predictable series |
-| Auto-confirmation | Non-admin events auto-confirmed (`last_verified_at`) on first publish |
-| My Happenings filter removal | Users see ALL their happenings, not just DSC events |
-| Backend validation | Custom dates sorted, validated (YYYY-MM-DD format), limited to 12 |
+| Four series modes | `single`, `weekly`, `monthly`, `custom` |
+| Monthly ordinal patterns | Support for "1st & 3rd Sunday", "2nd/4th Tuesday" etc. |
+| Card-style mode selection | Large cards with title + description for better UX |
+| Ordinal checkboxes | Multi-select for 1st, 2nd, 3rd, 4th, 5th, Last |
+| Auto-confirmation | Non-admin events auto-confirmed on first publish |
+| Date timezone fix | All date parsing uses `T12:00:00Z` to avoid off-by-one errors |
+
+**Series Mode Details:**
+
+| Mode | DB Behavior | Description |
+|------|-------------|-------------|
+| `single` | 1 DB row, no recurrence | A single happening on one date |
+| `weekly` | N DB rows (2-12), linked by `series_id` | Same day each week (e.g., every Tuesday) |
+| `monthly` | 1 DB row with `recurrence_rule` (e.g., "1st/3rd") | Specific weeks each month (e.g., 1st & 3rd Sunday) |
+| `custom` | N DB rows for specific dates, linked by `series_id` | Pick specific dates (irregular schedule) |
+
+**Monthly Mode:**
+- Creates ONE database row with `recurrence_rule` field
+- Occurrence expansion happens at query time via `expandOccurrencesForEvent()`
+- Per-occurrence RSVPs, comments, timeslots via `date_key` column (Phase ABC6)
 
 **Files Modified:**
 
 | File | Change |
 |------|--------|
-| `dashboard/my-events/_components/EventForm.tsx` | Series mode buttons, custom dates UI, frontend validation |
-| `app/api/my-events/route.ts` | Three-mode series logic, custom dates handling |
-| `app/api/my-events/[id]/route.ts` | Auto-confirmation on first publish, removed `is_dsc_event` filter |
-| `dashboard/admin/events/new/EventCreateForm.tsx` | Multi-select categories UI |
+| `dashboard/my-events/_components/EventForm.tsx` | Four-mode card selection, ordinal checkboxes, improved validation |
+| `app/api/my-events/route.ts` | Monthly mode handling (single row with recurrence_rule) |
+| `happenings/page.tsx` | Date timezone fix (T12:00:00Z) |
+| `components/events/EventCard.tsx` | Date timezone fix |
+| `MyEventsFilteredList.tsx` | Date timezone fix |
 
 **Test Coverage:**
 
 | Test File | Tests |
 |-----------|-------|
-| `__tests__/custom-dates-api.test.ts` | 15 tests - single/weekly/custom modes, validation, edge cases |
-| `__tests__/series-creation-rls.test.ts` | Updated 6 tests to use explicit `series_mode: "weekly"` |
+| `__tests__/custom-dates-api.test.ts` | 15 tests - all four modes, validation, edge cases |
+| `__tests__/series-creation-rls.test.ts` | 11 tests - RLS compliance |
+| `__tests__/recurrence-unification.test.ts` | 24 tests - recurrence contract |
 
-**Behavior:**
-- **Single mode (default):** Creates one event on the specified date
-- **Weekly mode:** Creates N events at 7-day intervals (N = 2-12)
-- **Custom mode:** Creates events on user-specified dates (max 12, sorted chronologically)
-- **Edit mode:** Series mode selection not shown (dates fixed at creation)
-- **Backward compatibility:** Requests without `series_mode` default to single mode
+**UX Card Descriptions:**
+- **One-time Event:** "A single happening on one date"
+- **Weekly Series:** "Same day each week (e.g., every Tuesday)"
+- **Monthly Pattern:** "Specific weeks each month (e.g., 1st & 3rd Sunday)"
+- **Custom Dates:** "Pick specific dates (irregular schedule)"
 
 ---
 
