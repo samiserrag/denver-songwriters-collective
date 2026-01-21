@@ -159,6 +159,14 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Completed Work (Ground Truth)
 
+### Get Involved Page Polish (January 2026) — DONE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Test Features → Feedback link | "Test Website Features" card now links to `/feedback` | DONE |
+| Financial support CTA | "Support the Collective" button links to `/tip-jar` | DONE (already present) |
+| Role framing | Ways to Help section covers: host events, find venues, update info, spread word, connect partners, test features | DONE |
+
 ### Phase 4.65–4.69 (January 2026) — Venue + Performance Fixes
 
 | Item | Evidence | Commit/PR |
