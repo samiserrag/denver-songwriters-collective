@@ -45,6 +45,7 @@ export async function generateMetadata({ params }: VenueDetailParams): Promise<M
 }
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export default async function VenueDetailPage({ params }: VenueDetailParams) {
   const { id } = await params;

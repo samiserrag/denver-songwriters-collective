@@ -158,11 +158,70 @@ export async function DELETE(
   // Use service role client for admin operations that bypass RLS
   const serviceClient = createServiceRoleClient();
 
-  const { error } = await serviceClient.from("venues").delete().eq("id", id);
+  // Pre-delete check: verify venue exists
+  const { data: preDelete, error: preError } = await serviceClient
+    .from("venues")
+    .select("id, name, slug")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (preError) {
+    console.error("[VENUE DELETE] Pre-delete check failed:", preError);
+    return NextResponse.json({ error: preError.message }, { status: 500 });
+  }
+
+  if (!preDelete) {
+    // Venue doesn't exist - already deleted or wrong ID
+    return NextResponse.json(
+      { error: "Venue not found", detail: "No venue exists with this ID" },
+      { status: 404 }
+    );
+  }
+
+  // Perform delete and return deleted rows to verify
+  const { data: deleted, error } = await serviceClient
+    .from("venues")
+    .delete()
+    .eq("id", id)
+    .select("id");
 
   if (error) {
+    console.error("[VENUE DELETE] Delete failed:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // Verify deletion actually happened
+  if (!deleted || deleted.length === 0) {
+    console.error("[VENUE DELETE] Delete returned 0 rows for venue:", preDelete.name);
+    return NextResponse.json(
+      { error: "Delete failed", detail: "Venue existed but delete returned 0 rows" },
+      { status: 500 }
+    );
+  }
+
+  // Post-delete verification: confirm venue is gone
+  const { data: postDelete } = await serviceClient
+    .from("venues")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (postDelete) {
+    // This should never happen - delete succeeded but row still exists
+    console.error("[VENUE DELETE] CRITICAL: Venue still exists after delete:", preDelete.name);
+    return NextResponse.json(
+      { error: "Delete verification failed", detail: "Row still exists after delete" },
+      { status: 500 }
+    );
+  }
+
+  // Log successful deletion
+  console.log(`[VENUE DELETE] Successfully deleted venue: ${preDelete.name} (${id})`);
+
+  return NextResponse.json({
+    success: true,
+    deletedId: id,
+    deletedName: preDelete.name,
+    deletedSlug: preDelete.slug,
+  });
 }

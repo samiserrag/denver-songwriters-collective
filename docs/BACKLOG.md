@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-01-17
+> **Last Updated:** 2026-01-20
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -158,6 +158,13 @@ Polish member profiles before external test users see them. Three scope areas:
 ---
 
 ## Completed Work (Ground Truth)
+
+### Venue Delete Visibility Fix (January 2026)
+
+| Item | Evidence | Commit |
+|------|----------|--------|
+| DELETE endpoint hardening | Pre/post delete verification | `venue-delete-visibility.test.ts` (18 tests) |
+| Cache busting for venue pages | Added `fetchCache="force-no-store"` | `venues/page.tsx`, `venues/[id]/page.tsx`, `api/search/route.ts` |
 
 ### Phase 4.65–4.69 (January 2026) — Venue + Performance Fixes
 
@@ -417,7 +424,7 @@ Before any milestone:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status:** 2005 tests passing, 0 lint warnings.
+**Current Status:** 2241 tests passing, 0 lint warnings.
 
 ---
 
