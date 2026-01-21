@@ -136,7 +136,7 @@ function DaySection({ dayName, seriesEntries, isUnknown = false }: DaySectionPro
     <section id={`day-${sectionId}`} className="relative">
       {/* Sticky day header with collapse toggle */}
       <div
-        className="sticky top-[120px] z-20 py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-bg-primary)]/95 backdrop-blur-sm border-b border-[var(--color-border-default)]"
+        className="sticky top-[120px] z-20 py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 bg-[var(--color-accent-primary)] border-b border-[var(--color-accent-primary)]"
       >
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -146,24 +146,24 @@ function DaySection({ dayName, seriesEntries, isUnknown = false }: DaySectionPro
         >
           <ChevronIcon
             isExpanded={isExpanded}
-            className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]"
+            className="text-[var(--color-text-on-accent)] group-hover:text-[var(--color-text-on-accent)]"
           />
-          <h2 className="text-lg md:text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2 flex-1">
+          <h2 className="text-lg md:text-xl font-bold text-[var(--color-text-on-accent)] flex items-center gap-2 flex-1">
             <span
               className={cn(
                 "w-1 h-5 rounded-full",
-                isUnknown ? "bg-amber-500" : "bg-[var(--color-accent-primary)]"
+                isUnknown ? "bg-amber-200" : "bg-[var(--color-text-on-accent)]"
               )}
               aria-hidden="true"
             />
             {isUnknown ? "Schedule Unknown" : `${formatDayName(dayName)}s`}
-            <span className="text-sm font-normal text-[var(--color-text-secondary)]">
+            <span className="text-sm font-normal text-[var(--color-text-on-accent)]/80">
               ({seriesEntries.length})
             </span>
           </h2>
         </button>
         {isUnknown && isExpanded && (
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1 ml-7">
+          <p className="text-sm text-[var(--color-text-on-accent)]/70 mt-1 ml-7">
             These happenings have incomplete schedule information
           </p>
         )}
