@@ -1292,6 +1292,54 @@ export type Database = {
           },
         ]
       }
+      feedback_submissions: {
+        Row: {
+          admin_notes: string | null
+          category: string
+          created_at: string
+          description: string
+          email: string
+          id: string
+          ip_hash: string
+          name: string
+          page_url: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: string
+          created_at?: string
+          description: string
+          email: string
+          id?: string
+          ip_hash: string
+          name: string
+          page_url?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          email?: string
+          id?: string
+          ip_hash?: string
+          name?: string
+          page_url?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       gallery_album_comments: {
         Row: {
           album_id: string

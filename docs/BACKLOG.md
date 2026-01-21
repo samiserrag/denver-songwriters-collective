@@ -159,6 +159,35 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Completed Work (Ground Truth)
 
+### Public Changelog Page (January 2026) — DONE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| `/changelog` page | TypeScript-backed changelog with date, title, bullets, optional tags | DONE |
+| Entry format | Each entry has ISO date, title, 1-3 bullets, optional tags (feature/fix/improvement) | DONE |
+| Thanks page link | "See what's changed" link added to Early Contributors thanks page | DONE |
+| Tests | 10 tests covering tag validation, entry format, link structure | DONE |
+
+**Note:** Changelog is NOT linked from main navigation. Link only from Early Contributors thanks page for now.
+
+### Early Contributors Testing Flow (January 2026) — DONE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| `/early-contributors` page | Role-based 20-minute mission chooser (Songwriter, Host, Venue, Visitor) | DONE |
+| `/early-contributors/thanks` page | Post-feedback thank you page with navigation links | DONE |
+| Feedback URL prefill | `/feedback` now accepts `category`, `subject`, `pageUrl` query params | DONE |
+| Footer link | Added "Early Contributors" to Community section | DONE |
+| Tests | 18 tests covering mission structure, URL prefill, footer link, thanks page | DONE |
+
+### Get Involved Page Polish (January 2026) — DONE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Test Features → Feedback link | "Test Website Features" card now links to `/feedback` | DONE |
+| Financial support CTA | "Support the Collective" button links to `/tip-jar` | DONE (already present) |
+| Role framing | Ways to Help section covers: host events, find venues, update info, spread word, connect partners, test features | DONE |
+
 ### Phase 4.65–4.69 (January 2026) — Venue + Performance Fixes
 
 | Item | Evidence | Commit/PR |

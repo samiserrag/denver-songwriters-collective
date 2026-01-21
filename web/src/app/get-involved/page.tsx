@@ -31,8 +31,8 @@ const waysToHelp = [
   },
   {
     title: "Test Website Features",
-    description: "Help us improve by testing new features and offering usability feedback. Your input shapes the platform.",
-    cta: null,
+    description: "Help us improve by testing new features and reporting bugs. Found an issue or have an idea? Use our feedback form.",
+    cta: { text: "Submit Feedback", href: "/feedback" },
   },
 ];
 
