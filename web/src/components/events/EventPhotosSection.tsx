@@ -45,6 +45,10 @@ export function EventPhotosSection({
   // Upload handler for ImageUpload component
   const handleUpload = useCallback(
     async (file: File): Promise<string | null> => {
+      // Check if this will be the first image (before upload)
+      const activeCount = images.filter((img) => !img.deleted_at).length;
+      const isFirstImage = !localCoverUrl && activeCount === 0;
+
       try {
         const fileExt = file.name.split(".").pop() || "jpg";
         const fileName = `${eventId}/${crypto.randomUUID()}.${fileExt}`;
@@ -87,7 +91,25 @@ export function EventPhotosSection({
 
         // Update local state
         setImages((prev) => [imageRecord as EventImage, ...prev]);
-        toast.success("Image uploaded!");
+
+        // Auto-set as cover if this is the first image
+        if (isFirstImage) {
+          const { error: coverError } = await supabase
+            .from("events")
+            .update({ cover_image_url: publicUrl })
+            .eq("id", eventId);
+
+          if (!coverError) {
+            setLocalCoverUrl(publicUrl);
+            router.refresh();
+            toast.success("Image uploaded and set as cover!");
+          } else {
+            toast.success("Image uploaded!");
+          }
+        } else {
+          toast.success("Image uploaded!");
+        }
+
         return publicUrl;
       } catch (err) {
         console.error("Upload error:", err);
@@ -95,7 +117,7 @@ export function EventPhotosSection({
         return null;
       }
     },
-    [supabase, eventId, userId]
+    [supabase, eventId, userId, images, localCoverUrl, router]
   );
 
   // Delete (soft-delete) an image

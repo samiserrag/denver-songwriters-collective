@@ -40,7 +40,7 @@ export default async function NewEventPage() {
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-[var(--color-text-accent)] mb-8">Add New Happening</h1>
-      <EventCreateForm venues={venues ?? []} />
+      <EventCreateForm venues={venues ?? []} userId={user.id} />
     </div>
   );
 }

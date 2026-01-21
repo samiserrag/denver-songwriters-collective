@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import VenueSelector from "@/components/admin/VenueSelector";
+import { ImageUpload } from "@/components/ui";
+import { toast } from "sonner";
 
 interface Venue {
   id: string;
@@ -15,6 +17,7 @@ interface Venue {
 
 interface EventCreateFormProps {
   venues: Venue[];
+  userId: string;
 }
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -35,12 +38,15 @@ for (let hour = 6; hour <= 23; hour++) {
   }
 }
 
-export default function EventCreateForm({ venues: initialVenues }: EventCreateFormProps) {
+export default function EventCreateForm({ venues: initialVenues, userId }: EventCreateFormProps) {
   const router = useRouter();
+  const supabase = createSupabaseBrowserClient();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -56,6 +62,25 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
     status: "active",
     event_type: "open_mic",
   });
+
+  // Handle image selection (store file for upload after event creation)
+  const handleImageSelect = useCallback(async (file: File): Promise<string | null> => {
+    // Store the file for later upload
+    setPendingImageFile(file);
+    // Create a preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreviewUrl(previewUrl);
+    return previewUrl;
+  }, []);
+
+  // Remove pending image
+  const handleImageRemove = useCallback(async () => {
+    setPendingImageFile(null);
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+      setImagePreviewUrl(null);
+    }
+  }, [imagePreviewUrl]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -73,9 +98,8 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
       return;
     }
 
-    const supabase = createSupabaseBrowserClient();
-
-    const { error: insertError } = await supabase
+    // Create the event first
+    const { data: newEvent, error: insertError } = await supabase
       .from("events")
       .insert({
         title: form.title,
@@ -90,16 +114,63 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
         category: form.category || null,
         status: form.status,
         event_type: form.event_type,
-      });
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !newEvent) {
+      setError(insertError?.message || "Failed to create event");
+      setSaving(false);
+      return;
+    }
+
+    // If there's a pending image, upload it and set as cover
+    if (pendingImageFile) {
+      try {
+        const fileExt = pendingImageFile.name.split(".").pop() || "jpg";
+        const fileName = `${newEvent.id}/${crypto.randomUUID()}.${fileExt}`;
+
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+          .from("event-images")
+          .upload(fileName, pendingImageFile, { upsert: false });
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast.error("Event created but image upload failed");
+        } else {
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from("event-images")
+            .getPublicUrl(fileName);
+
+          // Insert record into event_images table
+          await supabase
+            .from("event_images")
+            .insert({
+              event_id: newEvent.id,
+              image_url: publicUrl,
+              storage_path: fileName,
+              uploaded_by: userId,
+            });
+
+          // Set as cover image (first image is always cover)
+          await supabase
+            .from("events")
+            .update({ cover_image_url: publicUrl })
+            .eq("id", newEvent.id);
+
+          toast.success("Image uploaded and set as cover!");
+        }
+      } catch (err) {
+        console.error("Image upload error:", err);
+        toast.error("Event created but image upload failed");
+      }
+    }
 
     setSaving(false);
-
-    if (insertError) {
-      setError(insertError.message);
-    } else {
-      setSuccess(true);
-      setTimeout(() => router.push("/dashboard/admin/events"), 1500);
-    }
+    setSuccess(true);
+    setTimeout(() => router.push("/dashboard/admin/events"), 1500);
   };
 
   return (
@@ -278,6 +349,25 @@ export default function EventCreateForm({ venues: initialVenues }: EventCreateFo
           rows={3}
           className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
         />
+      </div>
+
+      {/* Cover Image Upload */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Cover Image</label>
+        <div className="max-w-xs">
+          <ImageUpload
+            currentImageUrl={imagePreviewUrl}
+            onUpload={handleImageSelect}
+            onRemove={handleImageRemove}
+            aspectRatio={4 / 3}
+            shape="square"
+            placeholderText="Add Cover Photo"
+            maxSizeMB={5}
+          />
+        </div>
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+          This image will be displayed on the happening card and detail page.
+        </p>
       </div>
 
       <div className="flex gap-4 pt-4">
