@@ -26,6 +26,7 @@ interface EventEditFormProps {
     notes?: string;
     description?: string;
     category?: string;
+    categories?: string[];
     status?: string;
     event_type?: string;
     external_url?: string;
@@ -70,10 +71,22 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
     notes: event.notes || "",
     description: event.description || "",
     category: event.category || "",
+    categories: event.categories || [],
     status: event.status || "active",
     event_type: event.event_type || "open_mic",
     external_url: event.external_url || "",
   });
+
+  const handleCategoryToggle = (cat: string) => {
+    setForm(prev => {
+      const current = prev.categories || [];
+      if (current.includes(cat)) {
+        return { ...prev, categories: current.filter(c => c !== cat) };
+      } else {
+        return { ...prev, categories: [...current, cat] };
+      }
+    });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -100,6 +113,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         notes: form.notes,
         description: form.description,
         category: form.category,
+        categories: form.categories,
         status: form.status,
         event_type: form.event_type,
         external_url: form.external_url || null,
@@ -260,35 +274,46 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Category</label>
-          <select
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          >
-            <option value="">Select category...</option>
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+      {/* Categories (multi-select checkboxes) */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Categories
+          <span className="font-normal ml-1">(select all that apply)</span>
+        </label>
+        <div className="flex flex-wrap gap-3">
+          {CATEGORIES.map(cat => (
+            <label
+              key={cat}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                form.categories.includes(cat)
+                  ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={form.categories.includes(cat)}
+                onChange={() => handleCategoryToggle(cat)}
+                className="w-4 h-4 accent-[var(--color-accent-primary)]"
+              />
+              <span className="capitalize">{cat}</span>
+            </label>
+          ))}
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Status</label>
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          >
-            {STATUSES.map(s => (
-              <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Status</label>
+        <select
+          name="status"
+          value={form.status}
+          onChange={handleChange}
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+        >
+          {STATUSES.map(s => (
+            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+          ))}
+        </select>
       </div>
 
       <div>

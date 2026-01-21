@@ -94,6 +94,7 @@ export interface HappeningEvent {
   imageUrl?: string | null;
   status?: string | null;
   category?: string | null;
+  categories?: string[] | null;
 
   // Capacity / Availability
   capacity?: number | null;
@@ -750,6 +751,10 @@ export function HappeningCard({
               <Chip variant="danger">Cancelled</Chip>
             )}
             <Chip variant="default">{eventTypeLabel}</Chip>
+            {/* Categories (up to 3) */}
+            {event.categories && event.categories.length > 0 && event.categories.map((cat) => (
+              <Chip key={cat} variant="muted">{cat}</Chip>
+            ))}
             {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}
             {signupChip.show && <Chip variant="muted">Sign-up: {signupChip.label}</Chip>}
             {availabilityDisplay && <Chip variant="muted">{availabilityDisplay}</Chip>}

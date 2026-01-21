@@ -1019,6 +1019,7 @@ export type Database = {
           cancel_reason: string | null
           cancelled_at: string | null
           capacity: number | null
+          categories: string[] | null
           category: string | null
           cost_label: string | null
           cover_image_url: string | null
@@ -1085,6 +1086,7 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           capacity?: number | null
+          categories?: string[] | null
           category?: string | null
           cost_label?: string | null
           cover_image_url?: string | null
@@ -1151,6 +1153,7 @@ export type Database = {
           cancel_reason?: string | null
           cancelled_at?: string | null
           capacity?: number | null
+          categories?: string[] | null
           category?: string | null
           cost_label?: string | null
           cover_image_url?: string | null

@@ -53,6 +53,7 @@ export interface SeriesEvent extends EventForOccurrence {
   verified_by?: string | null;
   source?: string | null;
   host_id?: string | null;
+  categories?: string[] | null;
   venue?: {
     id?: string;
     slug?: string | null;  // Phase ABC4: Add slug for friendly URLs
@@ -335,7 +336,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               </div>
             )}
 
-            {/* Verification status row */}
+            {/* Verification status and categories row */}
             {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
             <div className="flex items-center gap-1 mt-1 flex-wrap">
               {verificationState === "confirmed" && (
@@ -358,6 +359,10 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               {verificationState === "cancelled" && (
                 <Chip variant="danger">Cancelled</Chip>
               )}
+              {/* Categories (up to 3) */}
+              {event.categories && event.categories.length > 0 && event.categories.map((cat) => (
+                <Chip key={cat} variant="muted">{cat}</Chip>
+              ))}
             </div>
           </div>
         </div>
