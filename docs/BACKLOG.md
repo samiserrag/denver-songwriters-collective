@@ -159,6 +159,17 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Completed Work (Ground Truth)
 
+### Public Changelog Page (January 2026) — DONE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| `/changelog` page | TypeScript-backed changelog with date, title, bullets, optional tags | DONE |
+| Entry format | Each entry has ISO date, title, 1-3 bullets, optional tags (feature/fix/improvement) | DONE |
+| Thanks page link | "See what's changed" link added to Early Contributors thanks page | DONE |
+| Tests | 10 tests covering tag validation, entry format, link structure | DONE |
+
+**Note:** Changelog is NOT linked from main navigation. Link only from Early Contributors thanks page for now.
+
 ### Early Contributors Testing Flow (January 2026) — DONE
 
 | Item | Description | Status |

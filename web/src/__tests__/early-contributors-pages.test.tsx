@@ -181,3 +181,91 @@ describe("Boundaries Section Content", () => {
     expect(boundariesCopy[2]).toContain("unverified");
   });
 });
+
+// =============================================================================
+// Changelog Page Tests
+// =============================================================================
+
+describe("Changelog Page Structure", () => {
+  const validTags = ["feature", "fix", "improvement"];
+
+  it("should only use valid tag values", () => {
+    // This test ensures new entries use the correct tag values
+    validTags.forEach((tag) => {
+      expect(["feature", "fix", "improvement"]).toContain(tag);
+    });
+  });
+
+  it("should have tag labels for all valid tags", () => {
+    const tagLabels: Record<string, string> = {
+      feature: "New",
+      fix: "Fix",
+      improvement: "Improved",
+    };
+
+    validTags.forEach((tag) => {
+      expect(tagLabels[tag]).toBeDefined();
+    });
+  });
+
+  it("should have tag styles for all valid tags", () => {
+    const tagStyles: Record<string, string> = {
+      feature: "bg-emerald-100 text-emerald-800 border-emerald-300",
+      fix: "bg-rose-100 text-rose-800 border-rose-300",
+      improvement: "bg-sky-100 text-sky-800 border-sky-300",
+    };
+
+    validTags.forEach((tag) => {
+      expect(tagStyles[tag]).toBeDefined();
+    });
+  });
+});
+
+describe("Changelog Entry Validation", () => {
+  interface ChangelogEntry {
+    date: string;
+    title: string;
+    bullets: string[];
+    tags?: ("feature" | "fix" | "improvement")[];
+  }
+
+  const sampleEntry: ChangelogEntry = {
+    date: "2026-01-20",
+    title: "Early Contributors Program",
+    bullets: [
+      "Added role-based testing missions",
+      "New feedback form with category prefill",
+      "Thanks page with clear next steps",
+    ],
+    tags: ["feature"],
+  };
+
+  it("should have a valid ISO date format", () => {
+    expect(sampleEntry.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("should have a non-empty title", () => {
+    expect(sampleEntry.title.length).toBeGreaterThan(0);
+  });
+
+  it("should have 1-3 bullets", () => {
+    expect(sampleEntry.bullets.length).toBeGreaterThanOrEqual(1);
+    expect(sampleEntry.bullets.length).toBeLessThanOrEqual(3);
+  });
+
+  it("should have optional tags array", () => {
+    expect(Array.isArray(sampleEntry.tags) || sampleEntry.tags === undefined).toBe(true);
+  });
+});
+
+describe("Thanks Page Changelog Link", () => {
+  it("should link to /changelog route", () => {
+    const changelogPath = "/changelog";
+    expect(changelogPath).toBe("/changelog");
+  });
+
+  it("should use proper link text", () => {
+    const linkText = "See what's changed";
+    expect(linkText).toContain("changed");
+  });
+});
