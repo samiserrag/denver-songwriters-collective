@@ -102,6 +102,8 @@ interface EventFormProps {
     location_notes?: string | null;
     // Verification fields
     last_verified_at?: string | null;
+    // Event date (for non-recurring events)
+    event_date?: string | null;
   };
 }
 
@@ -133,9 +135,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     day_of_week: event?.day_of_week || "",
     start_time: event?.start_time || "",
     end_time: event?.end_time || "",
-    recurrence_rule: event?.recurrence_rule || "weekly",
+    recurrence_rule: event?.recurrence_rule || "",
     host_notes: event?.host_notes || "",
     is_published: event?.is_published ?? false, // New events start as drafts
+    // Event date field (for edit mode of non-recurring events)
+    event_date: event?.event_date || "",
     // Recurring series fields (only for create mode)
     start_date: "",
     occurrence_count: "1", // Default to 1 (one-time event)
@@ -313,7 +317,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     if (!formData.title.trim()) {
       missingFields.push("Title");
     }
-    if (!formData.day_of_week) {
+    // Day of Week only required for weekly recurring series
+    // Single and custom modes use event_date instead
+    if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
+      missingFields.push("Day of Week");
+    }
+    // In edit mode, day_of_week is only required if this is a recurring event
+    if (mode === "edit" && event?.recurrence_rule && !formData.day_of_week) {
       missingFields.push("Day of Week");
     }
     if (!formData.start_time) {
@@ -369,8 +379,19 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       const method = mode === "create" ? "POST" : "PATCH";
 
+      // Determine recurrence settings based on series mode
+      // Single mode: no recurrence (one-time event)
+      // Weekly mode: weekly recurrence
+      // Custom mode: no recurrence (each date is a separate one-time event)
+      const isRecurring = formData.series_mode === "weekly";
+      const effectiveRecurrenceRule = isRecurring ? (formData.recurrence_rule || "weekly") : null;
+      const effectiveDayOfWeek = isRecurring ? formData.day_of_week : null;
+
       const body = {
         ...formData,
+        // Override recurrence fields based on series mode
+        recurrence_rule: effectiveRecurrenceRule,
+        day_of_week: effectiveDayOfWeek,
         // Phase 4.43: capacity is independent of timeslots (RSVP always available)
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: coverImageUrl,
@@ -568,29 +589,32 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3: SCHEDULE ============ */}
       {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <span className="text-red-500">Day of Week</span>
-            <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-          </label>
-          <select
-            value={formData.day_of_week}
-            onChange={(e) => {
-              updateField("day_of_week", e.target.value);
-              // Phase 4.42e: Auto-snap start date to selected weekday (Mountain Time)
-              if (e.target.value) {
-                updateField("start_date", getNextDayOfWeekMT(e.target.value));
-              }
-            }}
-            required
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            <option value="">Select day</option>
-            {DAYS_OF_WEEK.map(day => (
-              <option key={day} value={day}>{day}</option>
-            ))}
-          </select>
-        </div>
+        {/* Day of Week - only shown for weekly recurring series or in edit mode for recurring events */}
+        {(mode === "edit" || formData.series_mode === "weekly") && (
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              <span className="text-red-500">Day of Week</span>
+              <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+            </label>
+            <select
+              value={formData.day_of_week}
+              onChange={(e) => {
+                updateField("day_of_week", e.target.value);
+                // Phase 4.42e: Auto-snap start date to selected weekday (Mountain Time)
+                if (e.target.value) {
+                  updateField("start_date", getNextDayOfWeekMT(e.target.value));
+                }
+              }}
+              required
+              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            >
+              <option value="">Select day</option>
+              {DAYS_OF_WEEK.map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium mb-2">
             <span className="text-red-500">Start Time</span>
@@ -624,6 +648,32 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </select>
         </div>
       </div>
+
+      {/* ============ SECTION 3a: EVENT DATE (Edit Mode - Non-Recurring) ============ */}
+      {/* Allow editing event date for non-recurring events */}
+      {mode === "edit" && !event?.recurrence_rule && (
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            <span className="text-red-500">Event Date</span>
+            <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+          </label>
+          <input
+            type="date"
+            value={formData.event_date}
+            onChange={(e) => {
+              updateField("event_date", e.target.value);
+              // Update day_of_week to match the selected date
+              if (e.target.value) {
+                updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+              }
+            }}
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          />
+          <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+            Change the date for this one-time happening.
+          </p>
+        </div>
+      )}
 
       {/* ============ SECTION 3b: EVENT DATE(S) ============ */}
       {/* Phase 4.x: Flexible date selection - single, weekly series, or custom dates */}
