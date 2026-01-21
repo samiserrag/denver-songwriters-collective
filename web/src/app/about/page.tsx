@@ -56,7 +56,10 @@ export default async function AboutPage() {
               What This Is
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              The Denver Songwriters Collective is a community platform for discovering open mics, connecting with local musicians, and staying informed about Denver&apos;s songwriter scene. Whether you&apos;re a performer looking for stages, a venue hosting events, or a fan supporting local music, this site helps you find your people.
+              The Denver Songwriters Collective grew out of years of informal open mics, songwriting circles, and community-run events around the Denver metro area. What started as a way to keep track of shows and stay connected gradually became something larger: a shared resource for songwriters, hosts, venues, and listeners.
+            </p>
+            <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
+              Today, this site is a community platform for discovering open mics, finding places to play, connecting with local musicians, and staying informed about Denver&apos;s songwriter scene. Whether you&apos;re a performer looking for stages, a venue hosting events, or someone who simply loves local music, the goal is simple — make it easier to find your people and keep the scene visible.
             </p>
           </section>
 
@@ -111,24 +114,35 @@ export default async function AboutPage() {
             </Link>
 
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Built by Sami Serrag with help from modern AI development tools — to support the local music community.
+              Built by Sami Serrag with help from modern AI-assisted development tools, this project is a practical response to real gaps in how local music events are shared and supported. It&apos;s not a startup and not a corporate platform — it&apos;s an ongoing, community-driven project shaped by feedback from the people who actually use it.
+            </p>
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
+              Sami has hosted around 80 events and could not have done it without the many volunteers from the collective and the hundreds of songwriters who have shown up to contribute their time, talents, and mutual encouragement to each other. Special shoutout to{" "}
+              <Link
+                href="/songwriters/robert"
+                className="text-[var(--color-text-accent)] hover:underline"
+              >
+                Robert Fulton Jr
+              </Link>, who set up and hosted a year of open mics for the collective.
             </p>
           </section>
 
-          {/* Section C: Safety & Trust */}
+          {/* Section C: Privacy */}
           <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-3">
             <h2 className="text-[length:var(--font-size-heading-md)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Your Privacy Matters
             </h2>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              We collect minimal data and don&apos;t sell your information. Read the{" "}
+              This site collects only what&apos;s necessary to function (such as an email address and basic activity data). Your information is never sold or shared with third parties, and you&apos;re always in control of your account.
+            </p>
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
+              For details, see the{" "}
               <Link
                 href="/privacy"
                 className="text-[var(--color-text-accent)] hover:underline"
               >
                 Privacy Policy
-              </Link>
-              {" "}for details.
+              </Link>.
             </p>
           </section>
 
@@ -137,7 +151,16 @@ export default async function AboutPage() {
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
               Get Involved
             </h2>
-            <div className="flex flex-wrap gap-3">
+            <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
+              The Collective improves through community participation.
+            </p>
+            <ul className="list-disc list-inside text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)] space-y-1">
+              <li>Host or suggest events</li>
+              <li>Help test new features</li>
+              <li>Share feedback or report issues</li>
+              <li>Support the project financially if you&apos;re able</li>
+            </ul>
+            <div className="flex flex-wrap gap-3 pt-2">
               <Button asChild variant="primary" size="lg">
                 <Link href="/get-involved">Get Involved</Link>
               </Button>
