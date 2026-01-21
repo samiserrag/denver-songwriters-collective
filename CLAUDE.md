@@ -315,6 +315,86 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Image Upload for New Happenings + Auto-Cover (January 2026) — RESOLVED
+
+**Goal:** Add image upload to admin "Add New Happening" form and auto-set first image as cover photo.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Image upload on create | `EventCreateForm.tsx` now includes `ImageUpload` component |
+| Deferred upload | Image stored locally until event created, then uploaded to storage |
+| Auto-cover on first upload | First image uploaded to any happening automatically becomes cover photo |
+| Storage path | `event-images/{event_id}/{uuid}.{ext}` |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/admin/events/new/EventCreateForm.tsx` | Added ImageUpload component, deferred upload logic |
+| `dashboard/admin/events/new/page.tsx` | Pass `userId` prop to form |
+| `components/events/EventPhotosSection.tsx` | Auto-set first uploaded image as cover |
+
+**Behavior:**
+- New happening form now shows "Cover Image" upload field
+- After event creation, pending image is uploaded and set as `cover_image_url`
+- In EventPhotosSection, first image uploaded (when no cover exists) is automatically set as cover
+- Subsequent images require explicit "Set as cover" click
+
+---
+
+### Multiple Categories Support for Happenings (January 2026) — RESOLVED
+
+**Goal:** Allow happenings to have multiple categories (multi-select) instead of single category.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Database column | Added `categories text[]` to events table |
+| Multi-select UI | Checkbox-style category selection in EventEditForm |
+| Card display | Categories shown as chips on HappeningCard and SeriesCard |
+| Backward compatible | Single `category` field still exists for legacy support |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260120200000_add_categories_array.sql` | Add `categories text[]` column to events |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/admin/events/[id]/edit/EventEditForm.tsx` | Multi-select category checkboxes |
+| `components/happenings/HappeningCard.tsx` | Display categories as muted chips |
+| `components/happenings/SeriesCard.tsx` | Display categories as muted chips |
+
+**Categories Available:** music, comedy, poetry, variety, other
+
+---
+
+### Admin Happenings Table Improvements (January 2026) — RESOLVED
+
+**Goal:** Improve admin happenings table with clickable links and inline verify action.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Clickable titles | Event titles link to public event detail page |
+| Verify checkbox | Inline checkbox to mark events as verified/unverified |
+| Visual feedback | Checkbox shows current verification state |
+
+---
+
 ### About Page Rewrite (January 2026) — RESOLVED
 
 **Goal:** Simplify the About page with explicit builder attribution and clear CTAs.
