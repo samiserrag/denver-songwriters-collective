@@ -72,6 +72,14 @@ These issues have been resolved and are now guarded by regression tests to preve
 - **Guard:** `event-claims.test.ts` (13 tests)
 - **Resolved:** Phase 4.22 (January 2026)
 
+### 14. Deleted Venues Still Visible on Public Pages ✅ RESOLVED
+
+- **Symptoms:** Admin-deleted venues continued appearing on `/venues` list and detail pages
+- **Root Cause:** Two issues: (1) DELETE endpoint returned success even when zero rows deleted (Supabase behavior), (2) Vercel Data Cache potentially caching Supabase responses despite `dynamic="force-dynamic"`
+- **Fix:** Hardened DELETE endpoint with pre/post delete verification, added `fetchCache="force-no-store"` to venue pages and search API
+- **Guard:** `venue-delete-visibility.test.ts` (18 tests)
+- **Resolved:** January 2026
+
 ---
 
 ## 1. ~~Missing PWA Icon~~ ✅ RESOLVED
@@ -125,6 +133,7 @@ These issues have been resolved and are now guarded by regression tests to preve
 | Unused Imports | None | Medium | P4 | ✅ Resolved |
 | Admin `<img>` | Low | Medium | P4 | ✅ Resolved |
 | Lint Warnings | None | Medium | P4 | ✅ Resolved |
+| Venue Delete Visibility | High | Low | P0 | ✅ Resolved |
 
 ## 7. ~~Lint Warnings (no-img-element, unused vars)~~ ✅ RESOLVED
 
@@ -137,9 +146,9 @@ These issues have been resolved and are now guarded by regression tests to preve
 
 ## Resolution Plan
 
-All issues resolved or accepted. **Lint warnings: 0**. **Tests: 661 passing**.
+All issues resolved or accepted. **Lint warnings: 0**. **Tests: 2241 passing**.
 
-**Current Status**: 12 of 13 issues resolved; 1 accepted (footer heading order is decorative).
+**Current Status**: 13 of 14 issues resolved; 1 accepted (footer heading order is decorative).
 
 **Phase 4.30 Track:** Gallery + Comments — CLOSED (January 2026)
 **Phase 4.21 Track:** Occurrence Overrides — COMPLETE (January 2026)

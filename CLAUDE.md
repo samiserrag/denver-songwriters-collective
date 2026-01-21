@@ -315,6 +315,34 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Venue Delete Visibility Fix (January 2026) — RESOLVED
+
+**Goal:** Fix deleted venues still appearing on public `/venues` list and detail pages after admin deletion.
+
+**Status:** Complete.
+
+**Root Cause:** Two issues identified:
+1. DELETE endpoint returned success even when zero rows deleted (Supabase `.delete()` behavior)
+2. Vercel Data Cache potentially caching Supabase responses despite `dynamic="force-dynamic"`
+
+**Fix:**
+- Hardened DELETE endpoint with pre-delete verification, delete with `.select("id")`, and post-delete verification
+- Added `fetchCache="force-no-store"` to `venues/page.tsx`, `venues/[id]/page.tsx`, and `api/search/route.ts`
+- DELETE now returns 404 if venue not found, detailed success response with deleted venue info
+
+**Test Coverage:** 18 new tests in `venue-delete-visibility.test.ts`
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/admin/venues/[id]/route.ts` | Pre/post delete verification, proper 404/500 responses |
+| `app/venues/page.tsx` | Added `fetchCache="force-no-store"` |
+| `app/venues/[id]/page.tsx` | Added `fetchCache="force-no-store"` |
+| `app/api/search/route.ts` | Added `fetchCache="force-no-store"` |
+
+---
+
 ### Privacy Policy + Get Involved Page Updates (January 2026) — RESOLVED
 
 **Goal:** Update Privacy Policy date and revise Get Involved page content to focus on hosting, venues, and community outreach.
