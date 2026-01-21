@@ -315,6 +315,47 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Series Mode Selection + Custom Dates + Auto-Confirmation (January 2026) — RESOLVED
+
+**Goal:** Enable flexible event scheduling with three modes (single, weekly, custom dates), fix auto-confirmation for non-admin published events, and allow users to see all their happenings.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Series mode selection | Three modes: `single` (one-time), `weekly` (recurring), `custom` (user-specified dates) |
+| Custom dates UI | Add/remove specific dates for non-predictable series |
+| Auto-confirmation | Non-admin events auto-confirmed (`last_verified_at`) on first publish |
+| My Happenings filter removal | Users see ALL their happenings, not just DSC events |
+| Backend validation | Custom dates sorted, validated (YYYY-MM-DD format), limited to 12 |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Series mode buttons, custom dates UI, frontend validation |
+| `app/api/my-events/route.ts` | Three-mode series logic, custom dates handling |
+| `app/api/my-events/[id]/route.ts` | Auto-confirmation on first publish, removed `is_dsc_event` filter |
+| `dashboard/admin/events/new/EventCreateForm.tsx` | Multi-select categories UI |
+
+**Test Coverage:**
+
+| Test File | Tests |
+|-----------|-------|
+| `__tests__/custom-dates-api.test.ts` | 15 tests - single/weekly/custom modes, validation, edge cases |
+| `__tests__/series-creation-rls.test.ts` | Updated 6 tests to use explicit `series_mode: "weekly"` |
+
+**Behavior:**
+- **Single mode (default):** Creates one event on the specified date
+- **Weekly mode:** Creates N events at 7-day intervals (N = 2-12)
+- **Custom mode:** Creates events on user-specified dates (max 12, sorted chronologically)
+- **Edit mode:** Series mode selection not shown (dates fixed at creation)
+- **Backward compatibility:** Requests without `series_mode` default to single mode
+
+---
+
 ### Image Upload for New Happenings + Auto-Cover (January 2026) — RESOLVED
 
 **Goal:** Add image upload to admin "Add New Happening" form and auto-set first image as cover photo.

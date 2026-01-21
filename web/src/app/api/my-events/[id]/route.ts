@@ -42,6 +42,8 @@ export async function GET(
 
   // Note: event_hosts.user_id references auth.users, not profiles
   // So we fetch hosts without profile join, then fetch profiles separately
+  // Phase 4.x: Removed is_dsc_event filter - users should be able to edit ALL their happenings,
+  // not just DSC events. Community events (is_dsc_event=false) also editable in My Happenings.
   const { data: event, error } = await supabase
     .from("events")
     .select(`
@@ -49,7 +51,6 @@ export async function GET(
       event_hosts(id, user_id, role, invitation_status)
     `)
     .eq("id", eventId)
-    .eq("is_dsc_event", true)
     .single();
 
   if (error || !event) {
@@ -152,7 +153,9 @@ export async function PATCH(
     // Timeslot configuration fields
     "has_timeslots", "total_slots", "slot_duration_minutes",
     // External link field
-    "external_url"
+    "external_url",
+    // Categories (multi-select array)
+    "categories"
   ];
 
   const now = new Date().toISOString();
@@ -279,6 +282,10 @@ export async function PATCH(
   if (body.is_published === true) {
     if (!prevEvent?.published_at) {
       updates.published_at = now;
+      // Phase 4.42k A1b: Auto-confirm community events when first published
+      // This matches the behavior in POST route - set last_verified_at to mark as confirmed
+      // verified_by remains null to indicate auto-confirmed (not admin-verified)
+      updates.last_verified_at = now;
     }
     // Also set status to active when publishing
     if (!updates.status) {

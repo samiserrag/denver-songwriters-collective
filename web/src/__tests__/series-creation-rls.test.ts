@@ -144,6 +144,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
+          series_mode: "weekly", // Phase 4.x: Must specify weekly mode for series
           occurrence_count: 4, // Series of 4
           day_of_week: "Wednesday",
           recurrence_rule: "weekly",
@@ -172,6 +173,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
           start_time: "20:00",
           start_date: "2026-02-01",
           venue_id: "venue-1",
+          series_mode: "weekly", // Phase 4.x: Must specify weekly mode for series
           occurrence_count: 2,
         })
       });
@@ -218,6 +220,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
           start_time: "18:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
+          series_mode: "weekly", // Phase 4.x: Must specify weekly mode for series
           occurrence_count: 3,
         })
       });
@@ -249,6 +252,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
           start_time: "19:00",
           start_date: "2026-01-15", // Wed Jan 15
           venue_id: "venue-1",
+          series_mode: "weekly", // Phase 4.x: Must specify weekly mode for series
           occurrence_count: 3,
         })
       });
@@ -273,6 +277,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
           start_time: "14:00",
           start_date: "2026-01-20",
           venue_id: "venue-1",
+          series_mode: "weekly", // Phase 4.x: Must specify weekly mode for series
           occurrence_count: 2,
           description: "Test description",
           is_dsc_event: true,
@@ -363,6 +368,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
+          series_mode: "weekly", // Phase 4.x: Must specify weekly mode for series
           occurrence_count: 100, // Exceeds max
         })
       });

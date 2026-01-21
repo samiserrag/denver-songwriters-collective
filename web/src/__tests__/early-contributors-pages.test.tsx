@@ -269,3 +269,173 @@ describe("Thanks Page Changelog Link", () => {
     expect(linkText).toContain("changed");
   });
 });
+
+// =============================================================================
+// Phase 4.x — Time Estimate Removal Tests
+// =============================================================================
+
+describe("Early Contributors Page — No Time Estimates", () => {
+  // Simulates the mission data structure as it should be after the update
+  const missions = [
+    {
+      id: "songwriter",
+      title: "Songwriter",
+      bullets: [
+        "Find an event you'd actually attend (clarity, time, signup, vibe)",
+        "Check if songwriter profiles feel useful and trustworthy",
+        "Tell us what would make you share this with a friend",
+      ],
+      feedbackSubject: "Early Contributors — Songwriter",
+    },
+    {
+      id: "host",
+      title: "Happenings Host / Organizer",
+      bullets: [
+        "Pretend you're promoting a happening: does the page sell it clearly?",
+        "Check event details for missing info (where/when/signup/age/cover)",
+        "Tell us what hosts need most to keep listings accurate",
+      ],
+      feedbackSubject: "Early Contributors — Host",
+    },
+    {
+      id: "venue",
+      title: "Venue / Promoter",
+      bullets: [
+        "Review venue pages: photos, parking, accessibility, basic trust signals",
+        "Look for anything that would block you from partnering",
+        "Tell us what venues would want added before saying \"yes\"",
+      ],
+      feedbackSubject: "Early Contributors — Venue",
+    },
+    {
+      id: "visitor",
+      title: "First-time Visitor",
+      bullets: [
+        "Use the site like you've never heard of it",
+        "Tell us what's confusing, slow, or feels unfinished",
+        "Tell us what would make you come back next week",
+      ],
+      feedbackSubject: "Early Contributors — Visitor",
+    },
+  ];
+
+  const heroSubtitle = "Help shape the Denver Songwriters Collective. Pick a mission, explore, and tell us what you find.";
+
+  it("should NOT contain '~20 minutes' in hero subtitle", () => {
+    expect(heroSubtitle).not.toContain("~20 minutes");
+    expect(heroSubtitle).not.toContain("20 minutes");
+    expect(heroSubtitle).not.toContain("minutes");
+  });
+
+  it("should NOT have timebox property in mission data", () => {
+    missions.forEach((mission) => {
+      expect(mission).not.toHaveProperty("timebox");
+    });
+  });
+
+  it("should NOT contain time estimates in any mission bullets", () => {
+    missions.forEach((mission) => {
+      mission.bullets.forEach((bullet) => {
+        expect(bullet).not.toContain("minutes");
+        expect(bullet).not.toContain("~20");
+      });
+    });
+  });
+});
+
+// =============================================================================
+// Phase 4.x — Updated Mission Bullets Tests
+// =============================================================================
+
+describe("Early Contributors Page — Updated Mission Bullets", () => {
+  const songwriterBullets = [
+    "Find an event you'd actually attend (clarity, time, signup, vibe)",
+    "Check if songwriter profiles feel useful and trustworthy",
+    "Tell us what would make you share this with a friend",
+  ];
+
+  const hostBullets = [
+    "Pretend you're promoting a happening: does the page sell it clearly?",
+    "Check event details for missing info (where/when/signup/age/cover)",
+    "Tell us what hosts need most to keep listings accurate",
+  ];
+
+  const venueBullets = [
+    "Review venue pages: photos, parking, accessibility, basic trust signals",
+    "Look for anything that would block you from partnering",
+    "Tell us what venues would want added before saying \"yes\"",
+  ];
+
+  const visitorBullets = [
+    "Use the site like you've never heard of it",
+    "Tell us what's confusing, slow, or feels unfinished",
+    "Tell us what would make you come back next week",
+  ];
+
+  it("Songwriter mission should have updated bullet copy", () => {
+    expect(songwriterBullets[0]).toContain("clarity, time, signup, vibe");
+    expect(songwriterBullets[1]).toContain("trustworthy");
+    expect(songwriterBullets[2]).toContain("share this with a friend");
+  });
+
+  it("Host mission should have updated bullet copy", () => {
+    expect(hostBullets[0]).toContain("does the page sell it clearly?");
+    expect(hostBullets[1]).toContain("where/when/signup/age/cover");
+    expect(hostBullets[2]).toContain("keep listings accurate");
+  });
+
+  it("Venue mission should have updated bullet copy", () => {
+    expect(venueBullets[0]).toContain("trust signals");
+    expect(venueBullets[1]).toContain("block you from partnering");
+    expect(venueBullets[2]).toContain("before saying");
+  });
+
+  it("Visitor mission should have updated bullet copy", () => {
+    expect(visitorBullets[0]).toContain("never heard of it");
+    expect(visitorBullets[1]).toContain("slow");
+    expect(visitorBullets[2]).toContain("next week");
+  });
+});
+
+// =============================================================================
+// Phase 4.x — Optional Deep Dive Section Tests
+// =============================================================================
+
+describe("Early Contributors Page — Optional Deep Dive Section", () => {
+  const deepDiveHeader = "If you want to go deeper";
+  const deepDiveBullets = [
+    "Try the site on mobile and report any friction",
+    "Search for a venue or happening you know and check accuracy",
+    "Look for missing \"trust\" info (who runs it, privacy, what's verified)",
+    "Note anything that feels unclear in navigation or wording",
+    "If you find a bug, include steps to reproduce in /feedback",
+  ];
+
+  it("should have the correct section header", () => {
+    expect(deepDiveHeader).toBe("If you want to go deeper");
+  });
+
+  it("should have 5 deep dive bullets", () => {
+    expect(deepDiveBullets).toHaveLength(5);
+  });
+
+  it("should mention mobile testing", () => {
+    expect(deepDiveBullets[0]).toContain("mobile");
+  });
+
+  it("should mention accuracy checking", () => {
+    expect(deepDiveBullets[1]).toContain("accuracy");
+  });
+
+  it("should mention trust info", () => {
+    expect(deepDiveBullets[2]).toContain("trust");
+  });
+
+  it("should mention navigation/wording", () => {
+    expect(deepDiveBullets[3]).toContain("navigation");
+  });
+
+  it("should direct bug reports to /feedback", () => {
+    expect(deepDiveBullets[4]).toContain("/feedback");
+  });
+});

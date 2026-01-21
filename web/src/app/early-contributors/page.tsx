@@ -6,44 +6,40 @@ const missions = [
   {
     id: "songwriter",
     title: "Songwriter",
-    timebox: "~20 minutes",
     bullets: [
-      "Find 1 event you'd actually attend",
-      "Check if artist profiles feel useful",
-      "Tell us what would make you share this site",
+      "Find an event you'd actually attend (clarity, time, signup, vibe)",
+      "Check if songwriter profiles feel useful and trustworthy",
+      "Tell us what would make you share this with a friend",
     ],
     feedbackSubject: "Early Contributors — Songwriter",
   },
   {
     id: "host",
     title: "Happenings Host / Organizer",
-    timebox: "~20 minutes",
     bullets: [
-      "Pretend you're promoting a happening",
-      "Check event detail clarity (where/when/signup)",
-      "Tell us what's missing for hosts",
+      "Pretend you're promoting a happening: does the page sell it clearly?",
+      "Check event details for missing info (where/when/signup/age/cover)",
+      "Tell us what hosts need most to keep listings accurate",
     ],
     feedbackSubject: "Early Contributors — Host",
   },
   {
     id: "venue",
     title: "Venue / Promoter",
-    timebox: "~20 minutes",
     bullets: [
-      "Check venue pages (photos, parking, accessibility)",
-      "Look for anything that would stop you partnering",
-      "Tell us what info venues need most",
+      "Review venue pages: photos, parking, accessibility, basic trust signals",
+      "Look for anything that would block you from partnering",
+      "Tell us what venues would want added before saying \"yes\"",
     ],
     feedbackSubject: "Early Contributors — Venue",
   },
   {
     id: "visitor",
     title: "First-time Visitor",
-    timebox: "~20 minutes",
     bullets: [
       "Use the site like you've never heard of it",
-      "Tell us what's confusing or feels unfinished",
-      "Tell us what would make you come back",
+      "Tell us what's confusing, slow, or feels unfinished",
+      "Tell us what would make you come back next week",
     ],
     feedbackSubject: "Early Contributors — Visitor",
   },
@@ -59,7 +55,7 @@ export default function EarlyContributorsPage() {
               Early Contributors
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              Help shape the Denver Songwriters Collective site in ~20 minutes.
+              Help shape the Denver Songwriters Collective. Pick a mission, explore, and tell us what you find.
             </p>
           </div>
         </PageContainer>
@@ -80,14 +76,9 @@ export default function EarlyContributorsPage() {
                   id={mission.id}
                   className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
-                      {mission.title}
-                    </h3>
-                    <span className="text-xs px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] rounded-full">
-                      {mission.timebox}
-                    </span>
-                  </div>
+                  <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)]">
+                    {mission.title}
+                  </h3>
                   <ul className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed space-y-2">
                     {mission.bullets.map((bullet, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -125,6 +116,35 @@ export default function EarlyContributorsPage() {
               <li className="flex items-start gap-3">
                 <span className="text-[var(--color-text-accent)]">→</span>
                 <span>Some events may be unverified during pre-launch testing.</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Optional Deep Dive */}
+          <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-6 space-y-4">
+            <h2 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
+              If you want to go deeper
+            </h2>
+            <ul className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--color-text-accent)] mt-0.5">•</span>
+                <span>Try the site on mobile and report any friction</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--color-text-accent)] mt-0.5">•</span>
+                <span>Search for a venue or happening you know and check accuracy</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--color-text-accent)] mt-0.5">•</span>
+                <span>Look for missing &quot;trust&quot; info (who runs it, privacy, what&apos;s verified)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--color-text-accent)] mt-0.5">•</span>
+                <span>Note anything that feels unclear in navigation or wording</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--color-text-accent)] mt-0.5">•</span>
+                <span>If you find a bug, include steps to reproduce in <Link href="/feedback" className="text-[var(--color-text-accent)] hover:underline">/feedback</Link></span>
               </li>
             </ul>
           </section>

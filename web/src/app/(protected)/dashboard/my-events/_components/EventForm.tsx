@@ -13,6 +13,9 @@ import {
   DAYS_OF_WEEK,
   type EventType
 } from "@/types/events";
+
+// Categories for happenings (multi-select)
+const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
 import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 // Phase 4.42e: Import Mountain Time date helpers for series date alignment
@@ -87,6 +90,8 @@ interface EventFormProps {
     is_dsc_event?: boolean;
     // External website URL
     external_url?: string | null;
+    // Categories (multi-select)
+    categories?: string[] | null;
     // Phase 4.0: Custom location fields
     custom_location_name?: string | null;
     custom_address?: string | null;
@@ -133,7 +138,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     is_published: event?.is_published ?? false, // New events start as drafts
     // Recurring series fields (only for create mode)
     start_date: "",
-    occurrence_count: "4", // Default to 4 events in series
+    occurrence_count: "1", // Default to 1 (one-time event)
+    series_mode: "single" as "single" | "weekly" | "custom", // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
     location_mode: event?.location_mode || "venue",
@@ -146,6 +152,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     age_policy: event?.age_policy || "",
     is_dsc_event: event?.is_dsc_event ?? false,
     external_url: event?.external_url || "",
+    // Categories (multi-select)
+    categories: event?.categories || [],
     // Phase 4.0: Custom location fields
     custom_location_name: event?.custom_location_name || "",
     custom_address: event?.custom_address || "",
@@ -170,6 +178,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     slot_duration_minutes: 10,
     allow_guests: true,
   });
+
+  // Phase 4.x: Custom dates state for non-predictable series
+  const [customDates, setCustomDates] = useState<string[]>([]);
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
@@ -324,6 +335,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       missingFields.push("Online URL");
     }
 
+    // Custom dates validation (when in custom series mode)
+    if (mode === "create" && formData.series_mode === "custom" && customDates.length === 0) {
+      missingFields.push("Custom Dates (select at least one date)");
+    }
+
     // If any required fields are missing, show error summary and scroll to form top
     if (missingFields.length > 0) {
       const fieldList = missingFields.join(", ");
@@ -369,6 +385,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Series configuration (for create mode)
         start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
         occurrence_count: parseInt(formData.occurrence_count) || 1,
+        series_mode: formData.series_mode,
+        custom_dates: formData.series_mode === "custom" ? customDates : undefined,
         // Phase 3 fields
         timezone: formData.timezone,
         location_mode: formData.location_mode,
@@ -381,6 +399,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         age_policy: formData.age_policy || null,
         is_dsc_event: canCreateDSC ? formData.is_dsc_event : false,
         external_url: formData.external_url.trim() || null,
+        // Categories (multi-select array)
+        categories: formData.categories.length > 0 ? formData.categories : null,
         // Phase 4.0: Location selection mode and custom location fields
         location_selection_mode: locationSelectionMode,
         venue_id: locationSelectionMode === "venue" ? formData.venue_id : null,
@@ -442,6 +462,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Handler for multi-select category checkboxes
+  const handleCategoryToggle = (cat: string) => {
+    setFormData(prev => {
+      const current = prev.categories || [];
+      if (current.includes(cat)) {
+        return { ...prev, categories: current.filter(c => c !== cat) };
+      } else {
+        return { ...prev, categories: [...current, cat] };
+      }
+    });
+  };
+
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {error && (
@@ -486,6 +518,35 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           ))}
         </div>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
+      </div>
+
+      {/* ============ SECTION 1b: CATEGORIES ============ */}
+      {/* Multi-select checkboxes for categorizing the happening */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Categories
+          <span className="font-normal ml-1">(select all that apply)</span>
+        </label>
+        <div className="flex flex-wrap gap-3">
+          {CATEGORIES.map(cat => (
+            <label
+              key={cat}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                formData.categories.includes(cat)
+                  ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={formData.categories.includes(cat)}
+                onChange={() => handleCategoryToggle(cat)}
+                className="w-4 h-4 accent-[var(--color-accent-primary)]"
+              />
+              <span className="capitalize">{cat}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* ============ SECTION 2: TITLE ============ */}
@@ -564,31 +625,83 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       </div>
 
-      {/* ============ SECTION 3b: EVENT SERIES (Progressive Disclosure) ============ */}
-      {/* Phase 4.44c: Only shown when day_of_week is selected in create mode */}
-      {mode === "create" && formData.day_of_week && (
+      {/* ============ SECTION 3b: EVENT DATE(S) ============ */}
+      {/* Phase 4.x: Flexible date selection - single, weekly series, or custom dates */}
+      {mode === "create" && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Create Happening Series
+              Event Schedule
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Create multiple happenings for a recurring series. Each happening will have its own page and signups.
+              Choose how to schedule your happening(s).
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Series Mode Selection */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                updateField("series_mode", "single");
+                updateField("occurrence_count", "1");
+                setCustomDates([]);
+              }}
+              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                formData.series_mode === "single"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+              }`}
+            >
+              One-time Event
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                updateField("series_mode", "weekly");
+                updateField("occurrence_count", "4");
+                setCustomDates([]);
+              }}
+              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                formData.series_mode === "weekly"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+              }`}
+            >
+              Weekly Series
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                updateField("series_mode", "custom");
+                updateField("occurrence_count", "1");
+                // Initialize custom dates with start_date if set
+                if (formData.start_date && customDates.length === 0) {
+                  setCustomDates([formData.start_date]);
+                }
+              }}
+              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                formData.series_mode === "custom"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+              }`}
+            >
+              Custom Dates
+            </button>
+          </div>
+
+          {/* Single Event Date */}
+          {formData.series_mode === "single" && (
             <div>
               <label className="block text-sm font-medium mb-2">
-                <span className="text-red-500">First Event Date</span>
+                <span className="text-red-500">Event Date</span>
                 <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
               </label>
               <input
                 type="date"
-                value={formData.start_date || getNextDayOfWeekMT(formData.day_of_week)}
+                value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
                 onChange={(e) => {
                   updateField("start_date", e.target.value);
-                  // Phase 4.42e: Bi-directional sync - update Day of Week to match selected date
                   if (e.target.value) {
                     updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
                   }
@@ -596,47 +709,158 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 min={new Date().toISOString().split("T")[0]}
                 className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                <span className="text-red-500">Number of Events</span>
-                <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-              </label>
-              <select
-                value={formData.occurrence_count}
-                onChange={(e) => updateField("occurrence_count", e.target.value)}
-                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                  <option key={n} value={n.toString()}>
-                    {n} {n === 1 ? "event" : "events"}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Preview of dates */}
-          {formData.start_date && parseInt(formData.occurrence_count) > 1 && (
-            <div className="pt-2 border-t border-[var(--color-border-default)]">
-              <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Events will be created for:
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                This happening will occur only once.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: Math.min(parseInt(formData.occurrence_count), 12) }, (_, i) => {
-                  const startDate = new Date(formData.start_date + "T00:00:00");
-                  const eventDate = new Date(startDate);
-                  eventDate.setDate(startDate.getDate() + (i * 7)); // Weekly
-                  return (
-                    <span
-                      key={i}
-                      className="px-2 py-1 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-primary)]"
-                    >
-                      {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}
-                    </span>
-                  );
-                })}
+            </div>
+          )}
+
+          {/* Weekly Series */}
+          {formData.series_mode === "weekly" && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    <span className="text-red-500">First Event Date</span>
+                    <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
+                    onChange={(e) => {
+                      updateField("start_date", e.target.value);
+                      if (e.target.value) {
+                        updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+                      }
+                    }}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+                    Number of Events
+                  </label>
+                  <select
+                    value={formData.occurrence_count}
+                    onChange={(e) => updateField("occurrence_count", e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  >
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                      <option key={n} value={n.toString()}>
+                        {n} events
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+              {/* Preview of weekly dates */}
+              {formData.start_date && (
+                <div className="pt-2 border-t border-[var(--color-border-default)]">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                    Events will be created for:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: Math.min(parseInt(formData.occurrence_count), 12) }, (_, i) => {
+                      const startDate = new Date(formData.start_date + "T12:00:00Z");
+                      const eventDate = new Date(startDate);
+                      eventDate.setDate(startDate.getDate() + (i * 7));
+                      return (
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-[var(--color-bg-secondary)] rounded text-xs text-[var(--color-text-primary)]"
+                        >
+                          {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Denver" })}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Custom Dates */}
+          {formData.series_mode === "custom" && (
+            <div className="space-y-3">
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Add specific dates for your happening series. Each date will create a separate event.
+              </p>
+
+              {/* Existing dates */}
+              {customDates.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {customDates.sort().map((date, index) => (
+                    <div
+                      key={date}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]"
+                    >
+                      <span className="text-sm text-[var(--color-text-primary)]">
+                        {new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Denver" })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newDates = customDates.filter((_, i) => i !== index);
+                          setCustomDates(newDates);
+                          updateField("occurrence_count", Math.max(1, newDates.length).toString());
+                          if (newDates.length > 0) {
+                            updateField("start_date", newDates.sort()[0]);
+                          }
+                        }}
+                        className="ml-1 text-[var(--color-text-secondary)] hover:text-red-500 transition-colors"
+                        aria-label="Remove date"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new date */}
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  id="add-custom-date"
+                  min={new Date().toISOString().split("T")[0]}
+                  className="flex-1 px-4 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.getElementById("add-custom-date") as HTMLInputElement;
+                    const newDate = input?.value;
+                    if (newDate && !customDates.includes(newDate)) {
+                      const newDates = [...customDates, newDate].sort();
+                      setCustomDates(newDates);
+                      updateField("occurrence_count", newDates.length.toString());
+                      updateField("start_date", newDates[0]);
+                      if (newDates.length === 1) {
+                        updateField("day_of_week", weekdayNameFromDateMT(newDates[0]));
+                      }
+                      input.value = "";
+                    }
+                  }}
+                  className="px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] rounded-lg font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
+                >
+                  Add Date
+                </button>
+              </div>
+
+              {customDates.length === 0 && (
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Please add at least one date for your happening.
+                </p>
+              )}
+
+              {customDates.length > 0 && (
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {customDates.length} date{customDates.length === 1 ? "" : "s"} selected. Each will create a separate happening.
+                </p>
+              )}
             </div>
           )}
         </div>

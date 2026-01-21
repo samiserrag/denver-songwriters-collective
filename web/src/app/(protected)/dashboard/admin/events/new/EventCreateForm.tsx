@@ -58,10 +58,22 @@ export default function EventCreateForm({ venues: initialVenues, userId }: Event
     recurrence_rule: "",
     notes: "",
     description: "",
-    category: "",
+    categories: [] as string[],
     status: "active",
     event_type: "open_mic",
   });
+
+  // Handler for multi-select category checkboxes
+  const handleCategoryToggle = (cat: string) => {
+    setForm(prev => {
+      const current = prev.categories || [];
+      if (current.includes(cat)) {
+        return { ...prev, categories: current.filter(c => c !== cat) };
+      } else {
+        return { ...prev, categories: [...current, cat] };
+      }
+    });
+  };
 
   // Handle image selection (store file for upload after event creation)
   const handleImageSelect = useCallback(async (file: File): Promise<string | null> => {
@@ -111,7 +123,7 @@ export default function EventCreateForm({ venues: initialVenues, userId }: Event
         recurrence_rule: form.recurrence_rule || null,
         notes: form.notes || null,
         description: form.description || null,
-        category: form.category || null,
+        categories: form.categories.length > 0 ? form.categories : null,
         status: form.status,
         event_type: form.event_type,
       })
@@ -298,35 +310,46 @@ export default function EventCreateForm({ venues: initialVenues, userId }: Event
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Category</label>
-          <select
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          >
-            <option value="">Select category...</option>
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+      {/* Categories (multi-select checkboxes) */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Categories
+          <span className="font-normal ml-1">(select all that apply)</span>
+        </label>
+        <div className="flex flex-wrap gap-3">
+          {CATEGORIES.map(cat => (
+            <label
+              key={cat}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                form.categories.includes(cat)
+                  ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={form.categories.includes(cat)}
+                onChange={() => handleCategoryToggle(cat)}
+                className="w-4 h-4 accent-[var(--color-accent-primary)]"
+              />
+              <span className="capitalize">{cat}</span>
+            </label>
+          ))}
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Status</label>
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          >
-            {STATUSES.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Status</label>
+        <select
+          name="status"
+          value={form.status}
+          onChange={handleChange}
+          className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
+        >
+          {STATUSES.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
       <div>

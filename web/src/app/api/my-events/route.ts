@@ -32,6 +32,8 @@ export async function GET() {
   // Get full event data
   // Note: event_hosts.user_id references auth.users, not profiles
   // So we fetch hosts without profile join, then fetch profiles separately
+  // Phase 4.x: Removed is_dsc_event filter - users should see ALL their happenings,
+  // not just DSC events. Community events (is_dsc_event=false) also show in My Happenings.
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select(`
@@ -39,7 +41,6 @@ export async function GET() {
       event_hosts(id, user_id, role, invitation_status)
     `)
     .in("id", eventIds)
-    .eq("is_dsc_event", true)
     .order("created_at", { ascending: false });
 
   if (eventsError) {
@@ -195,6 +196,8 @@ function buildEventInsert(params: EventInsertParams) {
     signup_deadline: (body.signup_deadline as string) || null,
     age_policy: (body.age_policy as string) || (isDSCEvent ? "18+ only" : null),
     external_url: (body.external_url as string) || null,
+    // Categories (multi-select array)
+    categories: (body.categories as string[])?.length > 0 ? body.categories : null,
     source: "community",
     // Phase 4.42k A1b: Auto-confirm community events when published
     // Set last_verified_at to mark as confirmed, but leave verified_by null
@@ -304,18 +307,43 @@ export async function POST(request: Request) {
   }
 
   // Determine series configuration
-  const occurrenceCount = Math.min(Math.max(body.occurrence_count || 1, 1), 12); // Clamp between 1-12
+  // Phase 4.x: Support three series modes:
+  // - "single": One-time event (single date)
+  // - "weekly": Weekly recurring series (predictable dates)
+  // - "custom": Custom dates (non-predictable, user-specified dates)
+  const seriesMode = (body.series_mode as string) || "single";
   const startDate = body.start_date;
 
   if (!startDate) {
     return NextResponse.json({ error: "start_date is required" }, { status: 400 });
   }
 
-  // Generate series_id if creating multiple events
-  const seriesId = occurrenceCount > 1 ? crypto.randomUUID() : null;
-  const eventDates = generateSeriesDates(startDate, occurrenceCount);
+  let eventDates: string[];
 
-  console.log("[POST /api/my-events] Creating", occurrenceCount, "event(s), series_id:", seriesId);
+  if (seriesMode === "custom" && Array.isArray(body.custom_dates) && body.custom_dates.length > 0) {
+    // Custom dates mode: use the user-provided dates array
+    // Sort dates chronologically and limit to 12
+    eventDates = (body.custom_dates as string[])
+      .filter((d: string) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d))
+      .sort()
+      .slice(0, 12);
+
+    if (eventDates.length === 0) {
+      return NextResponse.json({ error: "At least one valid date is required for custom series" }, { status: 400 });
+    }
+  } else if (seriesMode === "weekly") {
+    // Weekly series mode: generate predictable weekly dates
+    const occurrenceCount = Math.min(Math.max(body.occurrence_count || 1, 1), 12); // Clamp between 1-12
+    eventDates = generateSeriesDates(startDate, occurrenceCount);
+  } else {
+    // Single event mode (default): just the start date
+    eventDates = [startDate];
+  }
+
+  // Generate series_id if creating multiple events
+  const seriesId = eventDates.length > 1 ? crypto.randomUUID() : null;
+
+  console.log("[POST /api/my-events] Creating", eventDates.length, "event(s), series_id:", seriesId, "| mode:", seriesMode);
 
   // Create all events in the series
   const createdEvents: { id: string; event_date: string | null }[] = [];
@@ -365,7 +393,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
           ...createdEvents[0],
           series_count: createdEvents.length,
-          error: `Created ${createdEvents.length} of ${occurrenceCount} events. Error: ${eventError.message}`
+          error: `Created ${createdEvents.length} of ${eventDates.length} events. Error: ${eventError.message}`
         });
       }
       return NextResponse.json({ error: eventError.message }, { status: 500 });
