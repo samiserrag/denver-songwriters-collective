@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -8,6 +9,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 type Category = "bug" | "feature" | "other";
 
 export default function FeedbackPage() {
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState<Category>("bug");
@@ -17,6 +19,22 @@ export default function FeedbackPage() {
   const [honeypot, setHoneypot] = useState(""); // Hidden field for spam detection
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error" | "rate_limited">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Prefill from URL params (for deep-linking from early contributors, etc.)
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam && ["bug", "feature", "other"].includes(categoryParam)) {
+      setCategory(categoryParam as Category);
+    }
+    const subjectParam = searchParams.get("subject");
+    if (subjectParam) {
+      setSubject(decodeURIComponent(subjectParam));
+    }
+    const pageUrlParam = searchParams.get("pageUrl");
+    if (pageUrlParam) {
+      setPageUrl(decodeURIComponent(pageUrlParam));
+    }
+  }, [searchParams]);
 
   // Prefill name/email if logged in
   useEffect(() => {

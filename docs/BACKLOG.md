@@ -159,6 +159,16 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Completed Work (Ground Truth)
 
+### Early Contributors Testing Flow (January 2026) — DONE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| `/early-contributors` page | Role-based 20-minute mission chooser (Songwriter, Host, Venue, Visitor) | DONE |
+| `/early-contributors/thanks` page | Post-feedback thank you page with navigation links | DONE |
+| Feedback URL prefill | `/feedback` now accepts `category`, `subject`, `pageUrl` query params | DONE |
+| Footer link | Added "Early Contributors" to Community section | DONE |
+| Tests | 18 tests covering mission structure, URL prefill, footer link, thanks page | DONE |
+
 ### Get Involved Page Polish (January 2026) — DONE
 
 | Item | Description | Status |
