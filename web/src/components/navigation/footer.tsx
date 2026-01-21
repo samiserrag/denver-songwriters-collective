@@ -80,7 +80,7 @@ export function Footer({ className }: FooterProps) {
           </p>
           <div className="flex gap-6 text-sm">
             <Link href="/privacy" className="text-[var(--color-text-on-inverse-tertiary)] hover:text-[var(--color-text-on-inverse-secondary)] transition-colors">Privacy</Link>
-            <a href="mailto:admin@denversongwriterscollective.org?subject=Bug%20Report%20%2F%20Feature%20Request" className="text-[var(--color-text-on-inverse-tertiary)] hover:text-[var(--color-text-on-inverse-secondary)] transition-colors">Report Bug / Suggest Feature</a>
+            <Link href="/feedback" className="text-[var(--color-text-on-inverse-tertiary)] hover:text-[var(--color-text-on-inverse-secondary)] transition-colors">Feedback</Link>
           </div>
         </div>
       </div>

@@ -370,7 +370,8 @@ describe("Email Registry", () => {
     expect(keys).toContain("adminSuggestionNotification");
     expect(keys).toContain("occurrenceCancelledHost");
     expect(keys).toContain("occurrenceModifiedHost");
-    expect(keys.length).toBe(20);
+    expect(keys).toContain("feedbackNotification");
+    expect(keys.length).toBe(21);
   });
 
   it("getTemplate returns valid output for all templates", () => {

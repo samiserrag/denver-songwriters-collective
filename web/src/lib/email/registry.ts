@@ -85,6 +85,10 @@ import {
   getAdminSuggestionNotificationEmail,
   type AdminSuggestionNotificationEmailParams,
 } from "./templates/adminSuggestionNotification";
+import {
+  getFeedbackNotificationEmail,
+  type FeedbackNotificationEmailParams,
+} from "./templates/feedbackNotification";
 
 /**
  * All available email template keys
@@ -109,7 +113,8 @@ export type EmailTemplateKey =
   | "adminEventClaimNotification"
   | "adminSuggestionNotification"
   | "occurrenceCancelledHost"
-  | "occurrenceModifiedHost";
+  | "occurrenceModifiedHost"
+  | "feedbackNotification";
 
 /**
  * Map of template keys to their parameter types
@@ -135,6 +140,7 @@ export interface EmailTemplateParams {
   adminSuggestionNotification: AdminSuggestionNotificationEmailParams;
   occurrenceCancelledHost: OccurrenceCancelledHostEmailParams;
   occurrenceModifiedHost: OccurrenceModifiedHostEmailParams;
+  feedbackNotification: FeedbackNotificationEmailParams;
 }
 
 /**
@@ -322,6 +328,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: true,
   },
+  feedbackNotification: {
+    key: "feedbackNotification",
+    name: "Feedback Notification",
+    description: "New feedback submission notification for admin",
+    audience: "admin",
+    hasLinks: true,
+    requiresEventTitle: false,
+  },
 };
 
 /**
@@ -380,6 +394,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getOccurrenceCancelledHostEmail(params as OccurrenceCancelledHostEmailParams);
     case "occurrenceModifiedHost":
       return getOccurrenceModifiedHostEmail(params as OccurrenceModifiedHostEmailParams);
+    case "feedbackNotification":
+      return getFeedbackNotificationEmail(params as FeedbackNotificationEmailParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -424,6 +440,7 @@ export {
   getAdminSuggestionNotificationEmail,
   getOccurrenceCancelledHostEmail,
   getOccurrenceModifiedHostEmail,
+  getFeedbackNotificationEmail,
 };
 
 // Re-export param types
@@ -448,4 +465,5 @@ export type {
   AdminSuggestionNotificationEmailParams,
   OccurrenceCancelledHostEmailParams,
   OccurrenceModifiedHostEmailParams,
+  FeedbackNotificationEmailParams,
 };

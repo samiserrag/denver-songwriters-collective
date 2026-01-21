@@ -166,3 +166,9 @@ export {
   getCohostInvitationEmail,
   type CohostInvitationEmailParams,
 } from "./templates/cohostInvitation";
+
+// Feedback notification template
+export {
+  getFeedbackNotificationEmail,
+  type FeedbackNotificationEmailParams,
+} from "./templates/feedbackNotification";
