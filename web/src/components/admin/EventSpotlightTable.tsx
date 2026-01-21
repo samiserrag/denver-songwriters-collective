@@ -10,6 +10,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
   venues?: { id: string; name: string } | null;
   is_published?: boolean | null;
   has_timeslots?: boolean | null;
+  last_verified_at?: string | null;
 };
 
  interface Props {
@@ -24,6 +25,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
    const [deleteModal, setDeleteModal] = useState<{ id: string; title: string } | null>(null);
    const [deleteConfirm, setDeleteConfirm] = useState("");
    const [deleting, setDeleting] = useState(false);
+   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
    // CRITICAL: Guard MUST be first line
    if (!events || !Array.isArray(events)) {
@@ -61,6 +63,42 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
     setLoadingId(null);
   }
 
+  async function toggleVerify(id: string, isCurrentlyVerified: boolean) {
+    setVerifyingId(id);
+    const action = isCurrentlyVerified ? "unverify" : "verify";
+
+    try {
+      const response = await fetch("/api/admin/ops/events/bulk-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventIds: [id], action }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        alert(data.error || "Failed to update verification status");
+        setVerifyingId(null);
+        return;
+      }
+
+      // Update local state
+      setRows(prev =>
+        prev.map(ev =>
+          ev.id === id
+            ? {
+                ...ev,
+                last_verified_at: action === "verify" ? new Date().toISOString() : null,
+              }
+            : ev
+        )
+      );
+    } catch {
+      alert("Failed to update verification status");
+    }
+
+    setVerifyingId(null);
+  }
+
   async function handleDelete() {
     if (!deleteModal || deleteConfirm !== "DELETE") return;
     setDeleting(true);
@@ -93,6 +131,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
             <th className="py-2 px-3">Date</th>
             <th className="py-2 px-3">Venue</th>
             <th className="py-2 px-3">Type</th>
+            <th className="py-2 px-3">Verified</th>
             <th className="py-2 px-3">Spotlight</th>
             <th className="py-2 px-3">Actions</th>
           </tr>
@@ -101,7 +140,15 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
         <tbody>
           {rows.map((ev) => (
             <tr key={ev.id} className="border-b border-white/5">
-              <td className="py-2 px-3">{ev.title}</td>
+              <td className="py-2 px-3">
+                <Link
+                  href={`/events/${ev.slug || ev.id}`}
+                  className="text-[var(--color-text-accent)] hover:underline"
+                  target="_blank"
+                >
+                  {ev.title}
+                </Link>
+              </td>
               <td className="py-2 px-3">
                 <div className="flex items-center gap-1">
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -133,6 +180,17 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                     RSVP
                   </span>
                 )}
+              </td>
+
+              <td className="py-2 px-3">
+                <input
+                  type="checkbox"
+                  checked={!!ev.last_verified_at}
+                  onChange={() => toggleVerify(ev.id, !!ev.last_verified_at)}
+                  disabled={verifyingId === ev.id}
+                  title={ev.last_verified_at ? "Verified - click to unverify" : "Unverified - click to verify"}
+                  className="w-4 h-4 cursor-pointer accent-emerald-500"
+                />
               </td>
 
               <td className="py-2 px-3">
