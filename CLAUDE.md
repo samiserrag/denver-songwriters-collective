@@ -315,6 +315,34 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### About Page Rewrite (January 2026) — RESOLVED
+
+**Goal:** Simplify the About page with explicit builder attribution and clear CTAs.
+
+**Status:** Complete.
+
+**Changes:**
+
+| Section | Content |
+|---------|---------|
+| What This Is | Platform description for discovering open mics and connecting with local musicians |
+| Who Built It | Sami Serrag attribution with clickable profile card, AI tools mention |
+| Your Privacy Matters | Callout box linking to Privacy Policy |
+| Get Involved | CTA buttons for Get Involved, Submit Feedback, Tip Jar |
+
+**Key Implementation Details:**
+- Server-side query for Sami's avatar via slug lookup (`profiles.slug = "sami-serrag"`)
+- Inline "Built by" card using `card-spotlight` class pattern
+- Reduced from ~230 lines to ~157 lines (removed About FAQ, Open Mic Guide, unused sections)
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/about/page.tsx` | Complete rewrite with 4 focused sections |
+
+---
+
 ### Privacy Policy + Get Involved Page Updates (January 2026) — RESOLVED
 
 **Goal:** Update Privacy Policy date and revise Get Involved page content to focus on hosting, venues, and community outreach.
