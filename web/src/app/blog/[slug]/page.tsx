@@ -13,6 +13,8 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+
 // Generate dynamic metadata for SEO and social sharing
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -33,13 +35,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const authorName = (post.author as any)?.full_name ?? "Denver Songwriters Collective";
-  const title = post.title;
+  const title = `${post.title} | Denver Songwriters Collective`;
   const description = post.excerpt
     ? post.excerpt.slice(0, 155) + (post.excerpt.length > 155 ? "..." : "")
     : `Read "${post.title}" by ${authorName} on the Denver Songwriters Collective blog.`;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
   const canonicalUrl = `${siteUrl}/blog/${slug}`;
+  const ogImageUrl = `${siteUrl}/og/blog/${slug}`;
 
   return {
     title,
@@ -52,22 +54,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Denver Songwriters Collective",
       type: "article",
       locale: "en_US",
-      images: post.cover_image_url
-        ? [
-            {
-              url: post.cover_image_url,
-              width: 1200,
-              height: 630,
-              alt: post.title,
-            },
-          ]
-        : undefined,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${post.title} - Denver Songwriters Collective`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: post.cover_image_url ? [post.cover_image_url] : undefined,
+      images: [ogImageUrl],
     },
     alternates: {
       canonical: canonicalUrl,

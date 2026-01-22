@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
@@ -19,6 +20,8 @@ import Link from "next/link";
 import Image from "next/image";
 export const dynamic = "force-dynamic";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface SongwriterDetailPageProps {
@@ -28,6 +31,78 @@ interface SongwriterDetailPageProps {
 // Check if string is a valid UUID
 function isUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+export async function generateMetadata({
+  params,
+}: SongwriterDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
+
+  // Support both UUID and slug lookups
+  const { data: profile } = isUUID(id)
+    ? await supabase
+        .from("profiles")
+        .select("full_name, bio, avatar_url, slug, city, state, genres, instruments")
+        .eq("id", id)
+        .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
+        .single()
+    : await supabase
+        .from("profiles")
+        .select("full_name, bio, avatar_url, slug, city, state, genres, instruments")
+        .eq("slug", id)
+        .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
+        .single();
+
+  if (!profile) {
+    return {
+      title: "Songwriter Not Found | Denver Songwriters Collective",
+      description: "This songwriter profile could not be found.",
+    };
+  }
+
+  const name = profile.full_name ?? "Songwriter";
+  const location = [profile.city, profile.state].filter(Boolean).join(", ");
+  const genreText = profile.genres?.slice(0, 3).join(", ");
+
+  const title = `${name} | Denver Songwriters Collective`;
+  const description = profile.bio
+    ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
+    : `${name}${location ? ` from ${location}` : ""}${genreText ? `. Genres: ${genreText}` : ""}. Connect with songwriters in Denver.`;
+
+  const canonicalSlug = profile.slug || id;
+  const canonicalUrl = `${siteUrl}/songwriters/${canonicalSlug}`;
+  const ogImageUrl = `${siteUrl}/og/songwriter/${canonicalSlug}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Denver Songwriters Collective",
+      type: "profile",
+      locale: "en_US",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${name} - Denver Songwriters Collective`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  };
 }
 
 export default async function SongwriterDetailPage({ params }: SongwriterDetailPageProps) {
