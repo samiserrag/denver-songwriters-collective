@@ -234,10 +234,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update feedback record with attachment URLs
-    // Note: attachments column added in migration 20260121200000_feedback_attachments.sql
-    // Type cast needed until Supabase types are regenerated after migration
     if (attachmentUrls.length > 0) {
-      await (serviceClient as unknown as { from: (table: string) => { update: (data: Record<string, unknown>) => { eq: (col: string, val: string) => Promise<unknown> } } })
+      await serviceClient
         .from("feedback_submissions")
         .update({ attachments: attachmentUrls })
         .eq("id", feedback.id);
