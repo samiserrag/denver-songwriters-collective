@@ -428,6 +428,61 @@ if (!isPublished) {
 
 ---
 
+### Spotlight Happenings Homepage Section (January 2026) — RESOLVED
+
+**Goal:** Give the admin `is_spotlight` toggle a public display on the homepage.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Admin toggle | `is_spotlight` checkbox in EventSpotlightTable (admin happenings dashboard) |
+| Homepage section | "✨ Spotlight" section displays admin-selected happenings |
+| Query filters | Only shows published, active events with `is_spotlight=true` |
+| Layout | 3-column grid matching other homepage sections |
+| Limit | Up to 6 spotlight happenings displayed |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Added spotlight happenings query and section |
+
+**Behavior:**
+- Admins toggle spotlight on/off from `/dashboard/admin/events` table
+- Spotlighted happenings appear in dedicated homepage section after "Tonight's Happenings"
+- Section only renders if at least one spotlight happening exists
+- Uses existing HappeningsCard component for consistent display
+
+---
+
+### Auto-Confirm on Publish via PublishButton (January 2026) — RESOLVED
+
+**Goal:** Fix events not being auto-confirmed when published via the header PublishButton.
+
+**Status:** Complete.
+
+**Problem:** Events published via the PublishButton showed "Unconfirmed" on public pages because the button bypassed the API route's auto-confirm logic.
+
+**Root Cause:** PublishButton directly updated Supabase, only setting `is_published` and `status`, but not `last_verified_at`.
+
+**Fix:** Added `last_verified_at: new Date().toISOString()` to PublishButton's update payload when publishing.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/[id]/_components/PublishButton.tsx` | Added `last_verified_at` when publishing |
+
+**Behavior:**
+- Both PublishButton (header) and EventForm (save button) now auto-confirm on publish
+- Republishing an event also refreshes the `last_verified_at` timestamp
+- Community events no longer show "Unconfirmed" after being published
+
+---
+
 ### Image Upload for New Happenings + Auto-Cover (January 2026) — RESOLVED
 
 **Goal:** Add image upload to admin "Add New Happening" form and auto-set first image as cover photo.

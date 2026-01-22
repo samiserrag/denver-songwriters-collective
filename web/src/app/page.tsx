@@ -72,7 +72,7 @@ export default async function HomePage() {
     data: { session: _session },
   } = await supabase.auth.getSession();
 
-  const [upcomingEventsRes, tonightsHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes] = await Promise.all([
+  const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)
     supabase
       .from("events")
@@ -93,6 +93,18 @@ export default async function HomePage() {
       .eq("is_published", true)
       .in("status", ["active", "needs_verification"])
       .limit(EXPANSION_CAPS.MAX_EVENTS),
+    // Spotlight happenings - admin-selected featured events
+    supabase
+      .from("events")
+      .select(`
+        *,
+        venues!left(name, address, city, state)
+      `)
+      .eq("is_spotlight", true)
+      .eq("is_published", true)
+      .eq("status", "active")
+      .order("event_date", { ascending: true })
+      .limit(6),
     // Featured members of any role - only spotlighted members
     supabase
       .from("profiles")
@@ -265,8 +277,12 @@ export default async function HomePage() {
   }
   const highlights: Highlight[] = highlightsRes.data ?? [];
 
+  // Spotlight happenings (admin-selected)
+  const spotlightHappenings = (spotlightHappeningsRes.data ?? []) as any[];
+
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasTonightsHappenings = tonightsHappenings.length > 0;
+  const hasSpotlightHappenings = spotlightHappenings.length > 0;
   const hasFeaturedMembers = featuredMembers.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = allBlogPosts.length > 0;
@@ -502,6 +518,48 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Spotlight Happenings - Admin-selected featured events */}
+      {hasSpotlightHappenings && (
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
+                  <span className="text-[var(--color-accent-primary)]">✨</span> Spotlight
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Special happenings we think you should check out.
+                </p>
+              </div>
+              <Link
+                href="/happenings"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                See all happenings
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {spotlightHappenings.slice(0, 6).map((event: any) => (
+                <HappeningsCard
+                  key={event.id}
+                  event={event}
+                  occurrence={{
+                    date: event.event_date || today,
+                    isToday: event.event_date === today,
+                    isTomorrow: false,
+                    isConfident: true,
+                  }}
+                  todayKey={today}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Playlists */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
