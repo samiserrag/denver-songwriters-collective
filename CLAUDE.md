@@ -315,11 +315,11 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Feedback Screenshot Support (January 2026) — PENDING APPROVAL
+### Feedback Screenshot Support (January 2026) — RESOLVED
 
 **Goal:** Allow users to attach screenshots to feedback submissions via paste or file upload.
 
-**Status:** Implementation complete. Awaiting Sami approval before deployment.
+**Status:** Complete and deployed.
 
 **Features:**
 
@@ -376,8 +376,6 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - All form validation unchanged
 
 **Test Coverage:** 18 new tests (2334 total).
-
-**STOP-GATE:** Migration must be applied and Supabase types regenerated before deployment.
 
 ---
 
