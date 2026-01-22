@@ -89,7 +89,7 @@ export default async function BlogPostPage({ params }: Props) {
       cover_image_url,
       published_at,
       tags,
-      author:profiles!blog_posts_author_id_fkey(full_name, avatar_url, bio)
+      author:profiles!blog_posts_author_id_fkey(full_name, avatar_url, bio, slug)
     `)
     .eq("slug", slug)
     .eq("is_published", true)
@@ -341,28 +341,57 @@ export default async function BlogPostPage({ params }: Props) {
 
           {/* Author info */}
           <div className="flex items-center gap-4 pb-8 mb-8 border-b border-[var(--color-border-subtle)]">
-            {author?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
-              <img
-                src={author.avatar_url}
-                alt={author.full_name ?? "Author"}
-                className="w-12 h-12 rounded-full object-cover"
-              />
+            {author?.slug ? (
+              <Link href={`/songwriters/${author.slug}`} className="flex items-center gap-4 group">
+                {author.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
+                  <img
+                    src={author.avatar_url}
+                    alt={author.full_name ?? "Author"}
+                    className="w-12 h-12 rounded-full object-cover group-hover:ring-2 ring-[var(--color-accent-primary)] transition-all"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center group-hover:ring-2 ring-[var(--color-accent-primary)] transition-all">
+                    <span className="text-[var(--color-text-accent)] text-lg">
+                      {author.full_name?.[0] ?? "?"}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[var(--color-text-primary)] font-medium group-hover:text-[var(--color-text-accent)] transition-colors">
+                    {author.full_name ?? "Anonymous"}
+                  </p>
+                  {formattedDate && (
+                    <p className="text-[var(--color-text-tertiary)] text-sm">{formattedDate}</p>
+                  )}
+                </div>
+              </Link>
             ) : (
-              <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-                <span className="text-[var(--color-text-accent)] text-lg">
-                  {author?.full_name?.[0] ?? "?"}
-                </span>
-              </div>
+              <>
+                {author?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
+                  <img
+                    src={author.avatar_url}
+                    alt={author?.full_name ?? "Author"}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                    <span className="text-[var(--color-text-accent)] text-lg">
+                      {author?.full_name?.[0] ?? "?"}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[var(--color-text-primary)] font-medium">
+                    {author?.full_name ?? "Anonymous"}
+                  </p>
+                  {formattedDate && (
+                    <p className="text-[var(--color-text-tertiary)] text-sm">{formattedDate}</p>
+                  )}
+                </div>
+              </>
             )}
-            <div>
-              <p className="text-[var(--color-text-primary)] font-medium">
-                {author?.full_name ?? "Anonymous"}
-              </p>
-              {formattedDate && (
-                <p className="text-[var(--color-text-tertiary)] text-sm">{formattedDate}</p>
-              )}
-            </div>
           </div>
 
           {/* Content */}
@@ -411,28 +440,53 @@ export default async function BlogPostPage({ params }: Props) {
               <h3 className="text-lg font-[var(--font-family-serif)] text-[var(--color-text-primary)] mb-4">
                 About the Author
               </h3>
-              <div className="flex items-start gap-4">
-                {author.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
-                  <img
-                    src={author.avatar_url}
-                    alt={author.full_name ?? "Author"}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-                    <span className="text-[var(--color-text-accent)] text-xl">
-                      {author.full_name?.[0] ?? "?"}
-                    </span>
+              {author.slug ? (
+                <Link href={`/songwriters/${author.slug}`} className="flex items-start gap-4 group">
+                  {author.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
+                    <img
+                      src={author.avatar_url}
+                      alt={author.full_name ?? "Author"}
+                      className="w-16 h-16 rounded-full object-cover group-hover:ring-2 ring-[var(--color-accent-primary)] transition-all"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center group-hover:ring-2 ring-[var(--color-accent-primary)] transition-all">
+                      <span className="text-[var(--color-text-accent)] text-xl">
+                        {author.full_name?.[0] ?? "?"}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[var(--color-text-primary)] font-medium mb-2 group-hover:text-[var(--color-text-accent)] transition-colors">
+                      {author.full_name}
+                    </p>
+                    <p className="text-[var(--color-text-secondary)] text-sm">{author.bio}</p>
                   </div>
-                )}
-                <div>
-                  <p className="text-[var(--color-text-primary)] font-medium mb-2">
-                    {author.full_name}
-                  </p>
-                  <p className="text-[var(--color-text-secondary)] text-sm">{author.bio}</p>
+                </Link>
+              ) : (
+                <div className="flex items-start gap-4">
+                  {author.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Author avatar from user uploads; fixed size but external domain
+                    <img
+                      src={author.avatar_url}
+                      alt={author.full_name ?? "Author"}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                      <span className="text-[var(--color-text-accent)] text-xl">
+                        {author.full_name?.[0] ?? "?"}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[var(--color-text-primary)] font-medium mb-2">
+                      {author.full_name}
+                    </p>
+                    <p className="text-[var(--color-text-secondary)] text-sm">{author.bio}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
