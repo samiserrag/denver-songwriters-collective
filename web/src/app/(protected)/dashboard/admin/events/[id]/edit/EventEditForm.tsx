@@ -31,6 +31,7 @@ interface EventEditFormProps {
     event_type?: string;
     external_url?: string;
     cover_image_url?: string;
+    published_at?: string | null;
   };
   venues: Venue[];
 }
@@ -100,6 +101,13 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
 
     const supabase = createSupabaseBrowserClient();
 
+    // Phase 4.x: Sync verification with status
+    // When status is "active", the event should be confirmed (last_verified_at set)
+    // This ensures the admin status dropdown and verify checkbox stay in sync
+    const now = new Date().toISOString();
+    const isActivating = form.status === "active" && event.status !== "active";
+    const isDeactivating = form.status !== "active" && event.status === "active";
+
     const { error: updateError } = await supabase
       .from("events")
       .update({
@@ -117,6 +125,9 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         status: form.status,
         event_type: form.event_type,
         external_url: form.external_url || null,
+        // Auto-confirm when activating, clear when deactivating
+        ...(isActivating ? { last_verified_at: now, is_published: true, published_at: event.published_at || now } : {}),
+        ...(isDeactivating ? { is_published: false } : {}),
       })
       .eq("id", event.id);
 

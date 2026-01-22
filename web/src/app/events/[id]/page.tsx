@@ -207,6 +207,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Support both UUID and slug lookups
   // Phase 4.37: Added slug, source, last_verified_at, verified_by for verification display
   // Phase ABC4: Added recurrence_rule for recurrence display + upcoming dates
+  // Phase 4.x: Added cost_label, external_url, timezone, online_url, signup_url, signup_mode for full event info display
   const eventSelectQuery = `
       id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
@@ -215,9 +216,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       is_recurring, recurrence_pattern, recurrence_rule,
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
-      is_free, age_policy, host_id,
+      is_free, cost_label, age_policy, host_id,
       source, last_verified_at, verified_by,
-      series_id
+      series_id, external_url, timezone, online_url, signup_url, signup_mode
     `;
   const { data: event, error } = isUUID(id)
     ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
@@ -1021,6 +1022,73 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               <p className="mt-1 text-[var(--color-text-secondary)] text-sm pl-6 italic">
                 {event.location_notes}
               </p>
+            )}
+
+            {/* Phase 4.x: Cost/Admission info */}
+            {((event as { is_free?: boolean | null }).is_free !== null || (event as { cost_label?: string | null }).cost_label) && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-[var(--color-text-accent)]">💵</span>
+                <span>
+                  {(event as { is_free?: boolean | null }).is_free === true
+                    ? "Free"
+                    : (event as { cost_label?: string | null }).cost_label
+                      ? (event as { cost_label?: string | null }).cost_label
+                      : "Paid event"}
+                </span>
+              </div>
+            )}
+
+            {/* Phase 4.x: Age policy */}
+            {(event as { age_policy?: string | null }).age_policy && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-[var(--color-text-accent)]">🎫</span>
+                <span>{(event as { age_policy?: string | null }).age_policy}</span>
+              </div>
+            )}
+
+            {/* Phase 4.x: Online event URL (for online/hybrid events) */}
+            {(event as { online_url?: string | null }).online_url && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-[var(--color-text-accent)]">🔗</span>
+                <a
+                  href={(event as { online_url?: string | null }).online_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-link)] hover:underline"
+                >
+                  Join Online
+                </a>
+              </div>
+            )}
+
+            {/* Phase 4.x: External signup URL */}
+            {(event as { signup_url?: string | null }).signup_url && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-[var(--color-text-accent)]">📝</span>
+                <a
+                  href={(event as { signup_url?: string | null }).signup_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-link)] hover:underline"
+                >
+                  External Signup
+                </a>
+              </div>
+            )}
+
+            {/* Phase 4.x: External event link (e.g., Eventbrite, Facebook event) */}
+            {(event as { external_url?: string | null }).external_url && (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-[var(--color-text-accent)]">🌐</span>
+                <a
+                  href={(event as { external_url?: string | null }).external_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-link)] hover:underline"
+                >
+                  More Info
+                </a>
+              </div>
             )}
           </div>
 
