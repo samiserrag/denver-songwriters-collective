@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -137,75 +138,153 @@ export default async function BlogPostPage({ params }: Props) {
       })
     : null;
 
+  // Helper to render inline markdown (bold, italic)
+  const renderInlineMarkdown = (text: string): React.ReactNode => {
+    // Handle **bold** and *italic* (but not list markers)
+    const parts: React.ReactNode[] = [];
+    let remaining = text;
+    let keyIndex = 0;
+
+    while (remaining.length > 0) {
+      // Match **bold**
+      const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+      if (boldMatch && boldMatch.index !== undefined) {
+        // Add text before the match
+        if (boldMatch.index > 0) {
+          parts.push(remaining.slice(0, boldMatch.index));
+        }
+        // Add the bold text
+        parts.push(<strong key={`bold-${keyIndex++}`} className="font-semibold text-[var(--color-text-primary)]">{boldMatch[1]}</strong>);
+        remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
+        continue;
+      }
+      // No more matches, add the rest
+      parts.push(remaining);
+      break;
+    }
+
+    return parts.length === 1 ? parts[0] : parts;
+  };
+
   // Simple markdown-like rendering (paragraphs, headers, lists)
   const renderContent = (content: string) => {
-    return content.split("\n\n").map((block, i) => {
-      // Headers
-      if (block.startsWith("### ")) {
-        return (
-          <h3 key={i} className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-8 mb-4">
-            {block.replace("### ", "")}
-          </h3>
+    // Split by single or double newlines to handle both formats
+    const lines = content.split("\n");
+    const elements: React.ReactNode[] = [];
+    let currentList: string[] = [];
+    let listType: "ul" | "ol" | null = null;
+    let blockIndex = 0;
+
+    const flushList = () => {
+      if (currentList.length > 0 && listType) {
+        const ListTag = listType;
+        const listClass = listType === "ul"
+          ? "list-disc list-outside ml-6 space-y-2 my-4 text-[var(--color-text-secondary)]"
+          : "list-decimal list-outside ml-6 space-y-2 my-4 text-[var(--color-text-secondary)]";
+        elements.push(
+          <ListTag key={`list-${blockIndex++}`} className={listClass}>
+            {currentList.map((item, j) => (
+              <li key={j}>{renderInlineMarkdown(item)}</li>
+            ))}
+          </ListTag>
         );
+        currentList = [];
+        listType = null;
       }
-      if (block.startsWith("## ")) {
-        return (
-          <h2 key={i} className="text-2xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-10 mb-4">
-            {block.replace("## ", "")}
-          </h2>
-        );
-      }
-      if (block.startsWith("# ")) {
-        return (
-          <h1 key={i} className="text-3xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-12 mb-6">
-            {block.replace("# ", "")}
-          </h1>
-        );
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Skip empty lines (they just separate blocks)
+      if (trimmedLine === "") {
+        flushList();
+        continue;
       }
 
-      // Bullet lists
-      if (block.includes("\n- ") || block.startsWith("- ")) {
-        const items = block.split("\n").filter((line) => line.startsWith("- "));
-        return (
-          <ul key={i} className="list-disc list-inside space-y-2 my-4 text-[var(--color-text-secondary)]">
-            {items.map((item, j) => (
-              <li key={j}>{item.replace("- ", "")}</li>
-            ))}
-          </ul>
+      // Headers
+      if (trimmedLine.startsWith("### ")) {
+        flushList();
+        elements.push(
+          <h3 key={`h3-${blockIndex++}`} className="text-xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-8 mb-4">
+            {renderInlineMarkdown(trimmedLine.replace("### ", ""))}
+          </h3>
         );
+        continue;
+      }
+      if (trimmedLine.startsWith("## ")) {
+        flushList();
+        elements.push(
+          <h2 key={`h2-${blockIndex++}`} className="text-2xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-10 mb-4">
+            {renderInlineMarkdown(trimmedLine.replace("## ", ""))}
+          </h2>
+        );
+        continue;
+      }
+      if (trimmedLine.startsWith("# ")) {
+        flushList();
+        elements.push(
+          <h1 key={`h1-${blockIndex++}`} className="text-3xl font-[var(--font-family-serif)] text-[var(--color-text-primary)] mt-12 mb-6">
+            {renderInlineMarkdown(trimmedLine.replace("# ", ""))}
+          </h1>
+        );
+        continue;
+      }
+
+      // Bullet lists (support both * and -)
+      if (trimmedLine.startsWith("* ") || trimmedLine.startsWith("- ")) {
+        if (listType !== "ul") {
+          flushList();
+          listType = "ul";
+        }
+        currentList.push(trimmedLine.replace(/^[*-] /, ""));
+        continue;
       }
 
       // Numbered lists
-      if (/^\d+\. /.test(block)) {
-        const items = block.split("\n").filter((line) => /^\d+\. /.test(line));
-        return (
-          <ol key={i} className="list-decimal list-inside space-y-2 my-4 text-[var(--color-text-secondary)]">
-            {items.map((item, j) => (
-              <li key={j}>{item.replace(/^\d+\. /, "")}</li>
-            ))}
-          </ol>
-        );
+      if (/^\d+\. /.test(trimmedLine)) {
+        if (listType !== "ol") {
+          flushList();
+          listType = "ol";
+        }
+        currentList.push(trimmedLine.replace(/^\d+\. /, ""));
+        continue;
       }
 
       // Blockquote
-      if (block.startsWith("> ")) {
-        return (
+      if (trimmedLine.startsWith("> ")) {
+        flushList();
+        // Collect consecutive blockquote lines
+        let quoteContent = trimmedLine.replace(/^> ?/, "");
+        while (i + 1 < lines.length && lines[i + 1].trim().startsWith("> ")) {
+          i++;
+          quoteContent += "\n" + lines[i].trim().replace(/^> ?/, "");
+        }
+        elements.push(
           <blockquote
-            key={i}
+            key={`quote-${blockIndex++}`}
             className="border-l-4 border-[var(--color-border-accent)] pl-4 my-6 text-[var(--color-text-tertiary)] italic"
           >
-            {block.replace(/^> /gm, "")}
+            {renderInlineMarkdown(quoteContent)}
           </blockquote>
         );
+        continue;
       }
 
       // Regular paragraph
-      return (
-        <p key={i} className="text-[var(--color-text-secondary)] leading-relaxed my-4">
-          {block}
+      flushList();
+      elements.push(
+        <p key={`p-${blockIndex++}`} className="text-[var(--color-text-secondary)] leading-relaxed my-4">
+          {renderInlineMarkdown(trimmedLine)}
         </p>
       );
-    });
+    }
+
+    // Flush any remaining list
+    flushList();
+
+    return elements;
   };
 
   // Handle array response from Supabase join
