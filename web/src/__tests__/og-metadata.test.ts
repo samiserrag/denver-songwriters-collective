@@ -168,6 +168,14 @@ describe("OG Image URL patterns", () => {
       expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/blog/my-first-post");
     });
   });
+
+  describe("Gallery OG images", () => {
+    it("should generate correct OG image URL for slug", () => {
+      const slug = "showcase-webshow-9-5-25";
+      const ogImageUrl = `${siteUrl}/og/gallery/${slug}`;
+      expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/gallery/showcase-webshow-9-5-25");
+    });
+  });
 });
 
 describe("Metadata fallback values", () => {
@@ -191,6 +199,12 @@ describe("Metadata fallback values", () => {
 
   it("should have fallback title for missing blog post", () => {
     const title = "Post Not Found | Denver Songwriters Collective";
+    expect(title).toContain("Not Found");
+    expect(title).toContain("Denver Songwriters Collective");
+  });
+
+  it("should have fallback title for missing gallery album", () => {
+    const title = "Album Not Found | Denver Songwriters Collective";
     expect(title).toContain("Not Found");
     expect(title).toContain("Denver Songwriters Collective");
   });

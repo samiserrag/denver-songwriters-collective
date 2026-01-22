@@ -32,12 +32,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org"}/og/gallery/${slug}`;
+
   return {
     title: `${album.name} | Gallery | Denver Songwriters Collective`,
     description: album.description || `Photos from ${album.name}`,
     openGraph: {
       title: `${album.name} | Gallery`,
       description: album.description || `Photos from ${album.name}`,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: album.name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${album.name} | Gallery`,
+      description: album.description || `Photos from ${album.name}`,
+      images: [ogImageUrl],
     },
   };
 }

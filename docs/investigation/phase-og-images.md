@@ -1,8 +1,60 @@
 # Investigation: OG Images for Social Link Previews
 
-**Status:** STOP-GATE #1 — Awaiting Approval
+**Status:** COMPLETED
 **Date:** January 2026
-**Phase:** 0 (Investigation Complete)
+**Phase:** Implementation Complete
+
+---
+
+## Implementation Summary (January 2026)
+
+### What Was Delivered
+
+1. **Shared OG Card Helper** (`web/src/app/og/_shared/ogCard.tsx`)
+   - DSC-branded card layout matching site card styling
+   - Improved pill opacity (35% vs 20%) for better readability
+   - Brighter text colors for contrast
+   - Larger DSC logo (56px) + split wordmark ("Denver Songwriters" / "Collective" in gold)
+   - Entity image panel (320x320) with shadow
+   - Support for author info (blog posts)
+
+2. **OG Routes Created/Updated**
+   - `/og/songwriter/[id]` - Shows name, location, genres, role (Songwriter/Host/both)
+   - `/og/event/[id]` - Shows title, date/time/venue, type, confirmed/cancelled status
+   - `/og/venue/[id]` - Shows name, location, neighborhood
+   - `/og/blog/[slug]` - Shows title, excerpt, author with avatar
+   - `/og/gallery/[slug]` - **NEW** Shows album name, event/venue info
+
+3. **Metadata Updated**
+   - Gallery page now includes OG image URL pointing to `/og/gallery/[slug]`
+
+### Quality Gates
+
+| Check | Result |
+|-------|--------|
+| Lint | ✅ 0 warnings |
+| Tests | ✅ 2358 passing (24 OG metadata tests) |
+| Build | ✅ Success |
+| Local Testing | ✅ All 5 routes return 200 with image/png |
+
+### Design Decisions
+
+| Decision | Implementation |
+|----------|----------------|
+| Pill backgrounds | 35% opacity (was 20%) for readability |
+| Pill text colors | Brighter variants (#fcd34d gold, #6ee7b7 emerald, etc.) |
+| DSC logo | 56px badge with "DSC" text |
+| Wordmark | Split into two lines: "Denver Songwriters" (white) + "Collective" (gold) |
+| Image panel | 320x320 with rounded corners and shadow |
+| Kind badge | Top-right badge showing entity type (Songwriter, Event, Venue, Blog, Gallery)
+
+### Facebook App ID
+
+**Not found** in codebase. This is optional and only needed for Facebook-specific analytics.
+
+---
+
+## Original Investigation
 
 ---
 

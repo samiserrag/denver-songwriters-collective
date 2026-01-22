@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EVENT_TYPE_CONFIG, type EventType } from "@/types/events";
+import { renderOgCard, type OgChip } from "../../_shared/ogCard";
 
 export const runtime = "edge";
 
@@ -20,12 +21,12 @@ export async function GET(
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
-        .select("title, event_type, event_date, start_time, venue_name, cover_image_url")
+        .select("title, event_type, event_date, start_time, venue_name, cover_image_url, status, last_verified_at")
         .eq("id", id)
         .single()
     : await supabase
         .from("events")
-        .select("title, event_type, event_date, start_time, venue_name, cover_image_url")
+        .select("title, event_type, event_date, start_time, venue_name, cover_image_url, status, last_verified_at")
         .eq("slug", id)
         .single();
 
@@ -66,186 +67,45 @@ export async function GET(
     }
   }
 
-  // DSC brand colors
-  const goldAccent = "#d4a853";
-  const darkBg = "#0f172a";
-  const textPrimary = "#f8fafc";
-  const textSecondary = "#94a3b8";
+  // Build subtitle from date, time, venue
+  const dateLine = [dateStr, timeStr].filter(Boolean).join(" · ");
+  const subtitle = [dateLine, venue ? `📍 ${venue}` : ""].filter(Boolean).join(" — ");
+
+  // Build chips
+  const chips: OgChip[] = [];
+
+  // Type chip
+  chips.push({
+    label: typeLabel,
+    variant: "gold",
+  });
+
+  // Verification status
+  const isConfirmed = event?.last_verified_at !== null;
+  const isCancelled = event?.status === "cancelled";
+
+  if (isCancelled) {
+    chips.push({
+      label: "Cancelled",
+      variant: "purple",
+    });
+  } else if (isConfirmed) {
+    chips.push({
+      label: "Confirmed",
+      variant: "emerald",
+    });
+  }
 
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          backgroundColor: darkBg,
-          padding: "60px",
-        }}
-      >
-        {/* Top bar with DSC branding */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "40px",
-          }}
-        >
-          {/* DSC Logo badge */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "8px",
-                backgroundColor: goldAccent,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "20px",
-                fontWeight: "bold",
-                color: darkBg,
-              }}
-            >
-              DSC
-            </div>
-            <span
-              style={{
-                fontSize: "18px",
-                color: textSecondary,
-              }}
-            >
-              Denver Songwriters Collective
-            </span>
-          </div>
-
-          {/* Event type badge */}
-          <div
-            style={{
-              backgroundColor: `${goldAccent}20`,
-              border: `2px solid ${goldAccent}`,
-              borderRadius: "20px",
-              padding: "8px 20px",
-              fontSize: "18px",
-              color: goldAccent,
-              fontWeight: "600",
-            }}
-          >
-            {typeLabel}
-          </div>
-        </div>
-
-        {/* Main content area */}
-        <div
-          style={{
-            display: "flex",
-            flex: 1,
-            gap: "40px",
-          }}
-        >
-          {/* Cover image */}
-          {coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img element
-            <img
-              src={coverImage}
-              width={280}
-              height={280}
-              alt=""
-              style={{
-                borderRadius: "16px",
-                objectFit: "cover",
-                border: `2px solid ${goldAccent}40`,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "280px",
-                height: "280px",
-                borderRadius: "16px",
-                backgroundColor: `${goldAccent}20`,
-                border: `2px solid ${goldAccent}40`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "80px",
-              }}
-            >
-              🎵
-            </div>
-          )}
-
-          {/* Text content */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              flex: 1,
-            }}
-          >
-            {/* Title */}
-            <h1
-              style={{
-                fontSize: "48px",
-                fontWeight: "bold",
-                color: textPrimary,
-                margin: "0 0 20px 0",
-                lineHeight: 1.1,
-                maxWidth: "700px",
-              }}
-            >
-              {title.length > 60 ? title.slice(0, 60) + "..." : title}
-            </h1>
-
-            {/* Date and time */}
-            {(dateStr || timeStr) && (
-              <p
-                style={{
-                  fontSize: "28px",
-                  color: goldAccent,
-                  margin: "0 0 12px 0",
-                  fontWeight: "600",
-                }}
-              >
-                {[dateStr, timeStr].filter(Boolean).join(" · ")}
-              </p>
-            )}
-
-            {/* Venue */}
-            {venue && (
-              <p
-                style={{
-                  fontSize: "24px",
-                  color: textSecondary,
-                  margin: "0",
-                }}
-              >
-                📍 {venue}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom accent line */}
-        <div
-          style={{
-            width: "100%",
-            height: "4px",
-            backgroundColor: goldAccent,
-            marginTop: "40px",
-          }}
-        />
-      </div>
-    ),
+    renderOgCard({
+      title,
+      subtitle: subtitle || undefined,
+      chips,
+      imageUrl: coverImage,
+      fallbackEmoji: "🎵",
+      kindLabel: typeLabel,
+      kindVariant: "gold",
+    }),
     {
       width: 1200,
       height: 630,
