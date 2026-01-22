@@ -27,14 +27,17 @@ export default function PublishButton({ eventId, isPublished, status }: Props) {
     setIsLoading(true);
     const supabase = createClient();
 
-    // When publishing, also set status to active
+    // When publishing, also set status to active and auto-confirm
     // When unpublishing, keep status as-is (don't reset to draft)
-    const updates: { is_published: boolean; status?: string } = {
+    const updates: { is_published: boolean; status?: string; last_verified_at?: string } = {
       is_published: !isPublished,
     };
     if (!isPublished) {
       // Publishing: ensure status is active so it appears on /happenings
       updates.status = "active";
+      // Phase 4.73: Auto-confirm on publish (including republish)
+      // This ensures user-created events are confirmed when published
+      updates.last_verified_at = new Date().toISOString();
     }
 
     const { error } = await supabase

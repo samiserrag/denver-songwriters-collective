@@ -347,12 +347,25 @@ if (!wasPublished) { updates.last_verified_at = now; }
 <CreatedSuccessBanner isDraft={!event.is_published} ... />
 ```
 
+**Bug 3: PublishButton Bypassing API Auto-Confirm**
+
+**Root Cause:** The PublishButton component directly updated Supabase, bypassing the API route's auto-confirm logic. It only set `is_published` and `status`, but NOT `last_verified_at`.
+
+**Fix:** Added `last_verified_at` to PublishButton's update payload when publishing:
+```typescript
+if (!isPublished) {
+  updates.status = "active";
+  updates.last_verified_at = new Date().toISOString(); // Auto-confirm
+}
+```
+
 **Files Modified:**
 
 | File | Change |
 |------|--------|
 | `app/api/my-events/[id]/route.ts` | Check `wasPublished` instead of `published_at` for auto-confirm |
 | `dashboard/my-events/[id]/page.tsx` | Use `event.is_published` instead of URL params for banner |
+| `dashboard/my-events/[id]/_components/PublishButton.tsx` | Set `last_verified_at` when publishing |
 
 **Test Coverage:** All 2308 tests passing.
 
