@@ -315,6 +315,49 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Auto-Confirmation on Republish + Draft Banner Fix (January 2026) — RESOLVED
+
+**Goal:** Fix two bugs: (1) Republishing an event did not auto-confirm it, (2) Draft banner persisted after publishing.
+
+**Status:** Complete.
+
+**Bug 1: Republish Not Confirming Events**
+
+**Root Cause:** The PATCH route in `my-events/[id]/route.ts` only set `last_verified_at` when `!prevEvent?.published_at` (first publish). When an event was unpublished and republished, `published_at` still had a value from the first publish, so auto-confirmation didn't trigger.
+
+**Fix:** Changed logic to check `wasPublished` (current `is_published` state) instead of `published_at`. Now auto-confirms whenever transitioning from unpublished → published:
+```typescript
+// Before: Only on first publish
+if (!prevEvent?.published_at) { updates.last_verified_at = now; }
+
+// After: On any publish (including republish)
+if (!wasPublished) { updates.last_verified_at = now; }
+```
+
+**Bug 2: Draft Banner Persistence**
+
+**Root Cause:** `CreatedSuccessBanner` used URL params (`?status=draft`) to determine draft state, but URL params don't update after form save. The banner showed stale "draft" status even after publishing.
+
+**Fix:** Changed to use actual event state (`!event.is_published`) instead of URL params:
+```typescript
+// Before: Used stale URL params
+<CreatedSuccessBanner isDraft={status === "draft"} ... />
+
+// After: Uses current event state
+<CreatedSuccessBanner isDraft={!event.is_published} ... />
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/[id]/route.ts` | Check `wasPublished` instead of `published_at` for auto-confirm |
+| `dashboard/my-events/[id]/page.tsx` | Use `event.is_published` instead of URL params for banner |
+
+**Test Coverage:** All 2308 tests passing.
+
+---
+
 ### Four Series Modes + Monthly Ordinal Patterns (January 2026) — RESOLVED
 
 **Goal:** Enable flexible event scheduling with four modes: single, weekly, monthly ordinal patterns, and custom dates. Improved UX with card-style selection and clear descriptions.

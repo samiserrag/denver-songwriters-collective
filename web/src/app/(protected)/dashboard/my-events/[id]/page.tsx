@@ -33,10 +33,10 @@ export default async function EditEventPage({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string; status?: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const { id: eventId } = await params;
-  const { created, status } = await searchParams;
+  const { created } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -133,8 +133,9 @@ export default async function EditEventPage({
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
         {/* Success Banner for newly created events */}
+        {/* Phase 4.73: Use event.is_published for current state, not stale URL params */}
         {created === "true" && (
-          <CreatedSuccessBanner isDraft={status === "draft"} eventId={eventId} eventSlug={event.slug} />
+          <CreatedSuccessBanner isDraft={!event.is_published} eventId={eventId} eventSlug={event.slug} />
         )}
 
         {/* Header */}

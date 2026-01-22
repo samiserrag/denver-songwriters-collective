@@ -278,14 +278,18 @@ export async function PATCH(
     );
   }
 
-  // Track first publish
+  // Track publishing state changes
   if (body.is_published === true) {
+    // Phase 4.73: Auto-confirm on ANY publish (first or republish)
+    // When transitioning from unpublished to published, always set last_verified_at
+    // This ensures republished events are also confirmed
+    if (!wasPublished) {
+      updates.last_verified_at = now;
+      // verified_by remains null to indicate auto-confirmed (not admin-verified)
+    }
+    // Track first publish timestamp (only set once)
     if (!prevEvent?.published_at) {
       updates.published_at = now;
-      // Phase 4.42k A1b: Auto-confirm community events when first published
-      // This matches the behavior in POST route - set last_verified_at to mark as confirmed
-      // verified_by remains null to indicate auto-confirmed (not admin-verified)
-      updates.last_verified_at = now;
     }
     // Also set status to active when publishing
     if (!updates.status) {
