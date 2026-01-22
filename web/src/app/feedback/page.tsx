@@ -1,12 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Category = "bug" | "feature" | "other";
+
+interface AttachmentPreview {
+  id: string;
+  file: File;
+  previewUrl: string;
+}
+
+const MAX_ATTACHMENTS = 2;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 
 export default function FeedbackPage() {
   const searchParams = useSearchParams();
@@ -18,6 +29,9 @@ export default function FeedbackPage() {
   const [pageUrl, setPageUrl] = useState("");
   const [honeypot, setHoneypot] = useState(""); // Hidden field for spam detection
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error" | "rate_limited">("idle");
+  const [attachments, setAttachments] = useState<AttachmentPreview[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   // Prefill from URL params (for deep-linking from early contributors, etc.)
@@ -61,6 +75,86 @@ export default function FeedbackPage() {
     prefillUser();
   }, []);
 
+  // Validate and add a file to attachments
+  const addAttachment = useCallback((file: File): string | null => {
+    // Check file count
+    if (attachments.length >= MAX_ATTACHMENTS) {
+      return `Maximum ${MAX_ATTACHMENTS} screenshots allowed`;
+    }
+
+    // Check file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return "Only PNG and JPG images are allowed";
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return "File must be 5MB or less";
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    setAttachments((prev) => [...prev, { id, file, previewUrl }]);
+    return null;
+  }, [attachments.length]);
+
+  // Remove an attachment
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments((prev) => {
+      const attachment = prev.find((a) => a.id === id);
+      if (attachment) {
+        URL.revokeObjectURL(attachment.previewUrl);
+      }
+      return prev.filter((a) => a.id !== id);
+    });
+  }, []);
+
+  // Handle paste event on textarea
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          const error = addAttachment(file);
+          if (error) {
+            setErrorMessage(error);
+          }
+        }
+        break;
+      }
+    }
+  }, [addAttachment]);
+
+  // Handle file input change
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (const file of files) {
+      const error = addAttachment(file);
+      if (error) {
+        setErrorMessage(error);
+        break;
+      }
+    }
+
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  }, [addAttachment]);
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      attachments.forEach((a) => URL.revokeObjectURL(a.previewUrl));
+    };
+  }, [attachments]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -91,18 +185,24 @@ export default function FeedbackPage() {
     setStatus("sending");
 
     try {
+      // Build FormData for multipart submission
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("email", email);
+      formData.append("category", category);
+      formData.append("subject", subject);
+      formData.append("description", description);
+      if (pageUrl) formData.append("pageUrl", pageUrl);
+      if (honeypot) formData.append("honeypot", honeypot);
+
+      // Append attachments
+      attachments.forEach((attachment, index) => {
+        formData.append(`attachment${index}`, attachment.file);
+      });
+
       const response = await fetch("/api/feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          category,
-          subject,
-          description,
-          pageUrl: pageUrl || null,
-          honeypot, // Will be empty for real users
-        }),
+        body: formData,
       });
 
       if (response.status === 429) {
@@ -124,6 +224,9 @@ export default function FeedbackPage() {
       setSubject("");
       setDescription("");
       setPageUrl("");
+      // Clean up attachment previews
+      attachments.forEach((a) => URL.revokeObjectURL(a.previewUrl));
+      setAttachments([]);
     } catch (err) {
       console.error("Feedback form error:", err);
       setStatus("error");
@@ -273,9 +376,11 @@ export default function FeedbackPage() {
                 </span>
               </label>
               <textarea
+                ref={textareaRef}
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value.slice(0, 5000))}
+                onPaste={handlePaste}
                 required
                 maxLength={5000}
                 rows={8}
@@ -288,6 +393,73 @@ export default function FeedbackPage() {
                     : "Share your thoughts, suggestions, or questions."
                 }
               />
+              <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                Tip: You can paste screenshots directly into this field (Ctrl/Cmd+V)
+              </p>
+            </div>
+
+            {/* Screenshots */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Screenshots <span className="text-[var(--color-text-tertiary)]">(optional, max 2)</span>
+              </label>
+
+              {/* Attachment previews */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="relative group w-24 h-24 rounded-lg overflow-hidden border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]"
+                    >
+                      <Image
+                        src={attachment.previewUrl}
+                        alt="Screenshot preview"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-red-600 hover:bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove screenshot"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload button */}
+              {attachments.length < MAX_ATTACHMENTS && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    aria-label="Upload screenshot"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] transition-colors text-sm"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Attach Screenshot
+                  </button>
+                  <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                    PNG or JPG, max 5MB each
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Page URL (optional) */}

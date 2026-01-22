@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.74):** Lint warnings = 0. All tests passing (2308). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.75):** Lint warnings = 0. All tests passing (2334). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -312,6 +312,72 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Feedback Screenshot Support (January 2026) — PENDING APPROVAL
+
+**Goal:** Allow users to attach screenshots to feedback submissions via paste or file upload.
+
+**Status:** Implementation complete. Awaiting Sami approval before deployment.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Clipboard paste | Paste images directly into description textarea |
+| File upload | Click to upload PNG/JPG files |
+| Max 2 attachments | Per submission limit enforced client + server |
+| Max 5MB per file | Size validation on both client and server |
+| PNG/JPG only | MIME type validation |
+| Private storage | `feedback-attachments` bucket, admin-only access |
+| Signed URLs | 7-day expiry for admin viewing |
+| Email links | Screenshot links in admin notification email |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260121200000_feedback_attachments.sql` | Add `attachments text[]` column, create private storage bucket, storage policies |
+
+**Storage Policies:**
+
+| Policy | Access |
+|--------|--------|
+| Upload | Anyone (public feedback form) |
+| View/Download | Admin only (via signed URLs) |
+| Delete | Admin only |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260121200000_feedback_attachments.sql` | Migration |
+| `web/src/__tests__/feedback-screenshot-support.test.ts` | 18 tests |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/feedback/page.tsx` | Paste handler, file upload UI, thumbnail previews, FormData submission |
+| `app/api/feedback/route.ts` | Multipart form parsing, attachment validation, storage upload, signed URLs |
+| `lib/email/templates/feedbackNotification.ts` | Attachments section in HTML and plain text |
+
+**UI Flow:**
+1. User pastes image or clicks "Add Screenshot" button
+2. Thumbnail preview appears below textarea with remove button
+3. On submit, files uploaded to Supabase Storage
+4. Signed URLs generated and stored in `feedback_submissions.attachments`
+5. Admin notification email includes clickable screenshot links
+
+**Backward Compatibility:**
+- Existing feedback flow unchanged (attachments optional)
+- Honeypot and rate limiting preserved
+- All form validation unchanged
+
+**Test Coverage:** 18 new tests (2334 total).
+
+**STOP-GATE:** Migration must be applied and Supabase types regenerated before deployment.
 
 ---
 

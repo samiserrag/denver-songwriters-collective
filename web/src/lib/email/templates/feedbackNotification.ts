@@ -16,6 +16,7 @@ export interface FeedbackNotificationEmailParams {
   name: string;
   email: string;
   submittedAt: string;
+  attachments?: string[];
 }
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
@@ -29,7 +30,7 @@ export function getFeedbackNotificationEmail(params: FeedbackNotificationEmailPa
   html: string;
   text: string;
 } {
-  const { category, subject, description, pageUrl, name, email, submittedAt } = params;
+  const { category, subject, description, pageUrl, name, email, submittedAt, attachments = [] } = params;
 
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
@@ -85,6 +86,20 @@ export function getFeedbackNotificationEmail(params: FeedbackNotificationEmailPa
       </td>
     </tr>
     ` : ""}
+    ${attachments.length > 0 ? `
+    <tr>
+      <td style="padding-bottom: 16px;">
+        <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Attachments (${attachments.length})</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          ${attachments.map((url, i) => `
+            <a href="${escapeHtml(url)}" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: ${EMAIL_COLORS.bgCard}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 6px; color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 13px;">
+              Screenshot ${i + 1}
+            </a>
+          `).join("")}
+        </div>
+      </td>
+    </tr>
+    ` : ""}
     <tr>
       <td style="padding-bottom: 8px;">
         <p style="margin: 0 0 4px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Submitted By</p>
@@ -115,6 +130,10 @@ export function getFeedbackNotificationEmail(params: FeedbackNotificationEmailPa
 
   const html = wrapEmailHtml(htmlContent);
 
+  const attachmentsText = attachments.length > 0
+    ? `\nAttachments:\n${attachments.map((url, i) => `  ${i + 1}. ${url}`).join("\n")}`
+    : "";
+
   const textContent = `New Feedback Submission
 ========================
 
@@ -123,7 +142,7 @@ Subject: ${subject}
 
 Description:
 ${description}
-${pageUrl ? `\nRelated Page: ${pageUrl}` : ""}
+${pageUrl ? `\nRelated Page: ${pageUrl}` : ""}${attachmentsText}
 
 Submitted By: ${name} <${email}>
 Submitted At: ${formattedDate} (MT)`;
