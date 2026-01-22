@@ -814,6 +814,30 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Early Contributors CTA */}
+      <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+        <div className="max-w-2xl mx-auto">
+          <article className="card-spotlight p-6 md:p-8 text-center">
+            <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-4">
+              Early Contributors
+            </h2>
+            <p className="text-[var(--color-text-secondary)] text-base md:text-lg mb-2">
+              Help shape the Denver Songwriters Collective.
+              Explore the site and tell us what worked, what didn&apos;t, and what would make you share it.
+            </p>
+            <p className="text-sm text-[var(--color-text-tertiary)] mb-6">
+              For songwriters, hosts, venues, and curious first-timers.
+            </p>
+            <Link
+              href="/early-contributors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              Become an Early Contributor
+            </Link>
+          </article>
+        </div>
+      </section>
+
       {/* Newsletter Signup */}
       <NewsletterSection />
     </>

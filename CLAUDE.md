@@ -428,6 +428,44 @@ if (!isPublished) {
 
 ---
 
+### Early Contributors CTA on Homepage (January 2026) — RESOLVED
+
+**Goal:** Add a subtle CTA section on the homepage inviting users to become Early Contributors.
+
+**Status:** Complete.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Placement | After Theme Picker, before Newsletter Signup |
+| Styling | `card-spotlight` card with centered text |
+| Link target | `/early-contributors` |
+| Visibility | Always visible (no conditional rendering) |
+| Copy | No time estimates (approved Option A copy) |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/early-contributors-cta.test.tsx` | 8 tests for copy requirements and structure |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Added Early Contributors CTA section |
+
+**Copy (Approved):**
+- Title: "Early Contributors"
+- Body: "Help shape the Denver Songwriters Collective. Explore the site and tell us what worked, what didn't, and what would make you share it."
+- Subtitle: "For songwriters, hosts, venues, and curious first-timers."
+- Button: "Become an Early Contributor"
+
+**Test Coverage:** 8 tests preventing time estimates from creeping back in.
+
+---
+
 ### Spotlight Happenings Homepage Section (January 2026) — RESOLVED
 
 **Goal:** Give the admin `is_spotlight` toggle a public display on the homepage.
