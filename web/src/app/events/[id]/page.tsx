@@ -61,6 +61,8 @@ function isDateInOccurrences(
   return occurrences.some((occ) => occ.dateKey === dateKey);
 }
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+
 export async function generateMetadata({
   params,
 }: EventPageProps): Promise<Metadata> {
@@ -71,12 +73,12 @@ export async function generateMetadata({
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
-        .select("title, description, event_type, venue_name")
+        .select("title, description, event_type, venue_name, slug")
         .eq("id", id)
         .single()
     : await supabase
         .from("events")
-        .select("title, description, event_type, venue_name")
+        .select("title, description, event_type, venue_name, slug")
         .eq("slug", id)
         .single();
 
@@ -93,20 +95,37 @@ export async function generateMetadata({
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
     : `Join us for ${event.title}${event.venue_name ? ` at ${event.venue_name}` : ""}. A ${config.label.toLowerCase()} hosted by the Denver Songwriters Collective.`;
 
+  const canonicalSlug = event.slug || id;
+  const canonicalUrl = `${siteUrl}/events/${canonicalSlug}`;
+  const ogImageUrl = `${siteUrl}/og/event/${canonicalSlug}`;
+
   return {
     title,
     description,
     openGraph: {
       title,
       description,
+      url: canonicalUrl,
       siteName: "Denver Songwriters Collective",
       type: "website",
       locale: "en_US",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${event.title} - Denver Songwriters Collective`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: canonicalUrl,
     },
   };
 }

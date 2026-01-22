@@ -24,23 +24,60 @@ interface VenueDetailParams {
   params: Promise<{ id: string }>;
 }
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+
 export async function generateMetadata({ params }: VenueDetailParams): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
   // Phase ABC4: Support both UUID and slug lookups
   const { data: venue } = isUUID(id)
-    ? await supabase.from("venues").select("name, city, state").eq("id", id).single()
-    : await supabase.from("venues").select("name, city, state").eq("slug", id).single();
+    ? await supabase.from("venues").select("name, city, state, slug, neighborhood").eq("id", id).single()
+    : await supabase.from("venues").select("name, city, state, slug, neighborhood").eq("slug", id).single();
 
   if (!venue) {
-    return { title: "Venue Not Found | Denver Songwriters Collective" };
+    return {
+      title: "Venue Not Found | Denver Songwriters Collective",
+      description: "This venue could not be found.",
+    };
   }
 
   const location = [venue.city, venue.state].filter(Boolean).join(", ");
+  const title = `${venue.name} | Denver Songwriters Collective`;
+  const description = `Discover happenings at ${venue.name}${location ? ` in ${location}` : ""}${venue.neighborhood ? ` (${venue.neighborhood})` : ""}. Open mics, showcases, and music events.`;
+
+  const canonicalSlug = venue.slug || id;
+  const canonicalUrl = `${siteUrl}/venues/${canonicalSlug}`;
+  const ogImageUrl = `${siteUrl}/og/venue/${canonicalSlug}`;
+
   return {
-    title: `${venue.name} | Denver Songwriters Collective`,
-    description: `Discover happenings at ${venue.name}${location ? ` in ${location}` : ""}. Open mics, showcases, and music events.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Denver Songwriters Collective",
+      type: "website",
+      locale: "en_US",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${venue.name} - Denver Songwriters Collective`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+    },
   };
 }
 
