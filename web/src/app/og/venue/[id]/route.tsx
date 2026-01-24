@@ -56,6 +56,7 @@ export async function GET(
       fallbackEmoji: "📍",
       kindLabel: "Venue",
       kindVariant: "gold",
+      imageFit: "contain",
     }),
     {
       width: 1200,

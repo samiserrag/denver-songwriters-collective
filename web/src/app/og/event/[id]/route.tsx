@@ -67,9 +67,11 @@ export async function GET(
     }
   }
 
-  // Build subtitle from date, time, venue
-  const dateLine = [dateStr, timeStr].filter(Boolean).join(" · ");
-  const subtitle = [dateLine, venue ? `📍 ${venue}` : ""].filter(Boolean).join(" — ");
+  // Build date overlay for image zone
+  const dateOverlay = [dateStr, timeStr].filter(Boolean).join(" · ") || undefined;
+
+  // Build subtitle from venue
+  const subtitle = venue ? `📍 ${venue}` : undefined;
 
   // Build chips
   const chips: OgChip[] = [];
@@ -99,12 +101,13 @@ export async function GET(
   return new ImageResponse(
     renderOgCard({
       title,
-      subtitle: subtitle || undefined,
+      subtitle,
       chips,
       imageUrl: coverImage,
       fallbackEmoji: "🎵",
       kindLabel: typeLabel,
       kindVariant: "gold",
+      dateOverlay,
     }),
     {
       width: 1200,
