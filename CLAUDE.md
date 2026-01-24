@@ -315,6 +315,58 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Custom Date Series → Single-Row Model (January 2026) — RESOLVED
+
+**Goal:** Fix custom-date series creating N independent DB rows instead of one series identity, causing inconsistent publish/verify state and no occurrence expansion.
+
+**Status:** Complete and deployed.
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Custom series = N independent rows | Create API looped over dates, creating one row per date | Single row with `recurrence_rule='custom'` + `custom_dates TEXT[]` |
+| Only one row published | PATCH not series-aware; user published one, rest stayed draft | Single row = single publish state |
+| Admin edit used legacy form | EventSpotlightTable linked to `/dashboard/admin/events/${id}/edit` | Changed to canonical `/dashboard/my-events/${id}` |
+| No occurrence expansion | No expansion logic for custom dates | Added Case 2a in `expandOccurrencesForEvent()` |
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260124000000_custom_dates_single_row.sql` | Add `custom_dates TEXT[]`, expand status CHECK to include `'duplicate'`, trigger update, retroactive conversion |
+
+**Retroactive Migration:**
+- 1 legacy series found: "Barrels and Bottles Open Mic" (12 rows, shared `series_id`)
+- Canonical row promoted: `recurrence_rule='custom'`, `custom_dates=[12 dates]`, `series_id=NULL`
+- 11 siblings soft-retired: `status='duplicate'`, `is_published=false` (rows preserved for FK safety)
+- Total events unchanged: 94
+
+**Single-Row Custom Dates Model:**
+
+| Field | Value |
+|-------|-------|
+| `recurrence_rule` | `'custom'` |
+| `custom_dates` | `TEXT[]` array of `YYYY-MM-DD` date strings |
+| `event_date` | First date in array (anchor) |
+| Expansion | `expandOccurrencesForEvent()` reads from `custom_dates` array |
+| Max dates | 12 per event (validated in API) |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/admin/EventSpotlightTable.tsx` | Admin edit link → canonical form |
+| `app/api/my-events/route.ts` | Single-row creation + `custom_dates` in insert |
+| `app/api/my-events/[id]/route.ts` | Added `custom_dates` to PATCH allowedFields |
+| `lib/events/recurrenceContract.ts` | `"custom"` frequency + interpretation + label |
+| `lib/events/nextOccurrence.ts` | `custom_dates` in interface + expansion + next occurrence |
+| `__tests__/custom-dates-api.test.ts` | Updated 7 tests for single-row expectations |
+
+**Commits:** `7b970b0`
+
+---
+
 ### Theme Auto Mode Fix (January 2026) — RESOLVED
 
 **Goal:** Fix "Auto" theme option so it actually follows OS light/dark preference.
