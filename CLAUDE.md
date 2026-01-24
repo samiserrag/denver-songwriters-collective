@@ -185,6 +185,8 @@ All must pass before merge:
 | ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
 | GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
 | BlogComments | `web/src/components/blog/BlogComments.tsx` |
+| OccurrenceEditor (host) | `web/src/app/(protected)/dashboard/my-events/[id]/overrides/_components/OccurrenceEditor.tsx` |
+| SeriesEditingNotice | `web/src/components/events/SeriesEditingNotice.tsx` |
 
 ### Key Pages
 
@@ -197,6 +199,8 @@ All must pass before merge:
 | Admin | `web/src/app/(protected)/dashboard/admin/` |
 | Songwriter profile | `web/src/app/songwriters/[id]/page.tsx` |
 | Studio profile | `web/src/app/studios/[id]/page.tsx` |
+| Host occurrence editor | `web/src/app/(protected)/dashboard/my-events/[id]/overrides/page.tsx` |
+| Per-date edit | `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/page.tsx` |
 
 ---
 
@@ -312,6 +316,89 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Occurrence Mode Form — Per-Date Field Overrides (January 2026) — RESOLVED
+
+**Goal:** Allow hosts/admins to edit nearly all canonical event fields per-occurrence using the same EventForm in a new "occurrence" mode, stored as `override_patch` JSONB.
+
+**Status:** Complete and deployed.
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260125000000_add_override_patch.sql` | Add `override_patch JSONB NULL` column + GIN index to `occurrence_overrides` |
+
+**Override System (Complete):**
+
+| Override Type | Column | Behavior |
+|---------------|--------|----------|
+| Cancel single date | `status = 'cancelled'` | Date hidden from public listings |
+| Hide single date | `override_patch.is_published = false` | Date hidden from public |
+| Modify fields | `override_patch = {key: value}` | Per-occurrence field changes |
+| Legacy time override | `override_start_time` | Backward-compatible time change |
+| Legacy flyer override | `override_cover_image_url` | Backward-compatible image |
+| Legacy notes | `override_notes` | Backward-compatible notes |
+
+**Canonical Merge Function:** `applyOccurrenceOverride()` in `web/src/lib/events/nextOccurrence.ts`
+- Applies legacy columns first, then overlays `override_patch` keys
+- Only allowlisted keys applied (enforced by `ALLOWED_OVERRIDE_FIELDS` set)
+- Patch takes precedence over legacy columns when both set
+- Returns new object (never mutates base event)
+
+**ALLOWED_OVERRIDE_FIELDS** (`web/src/lib/events/nextOccurrence.ts`):
+```
+title, description, start_time, end_time, venue_id, location_mode,
+custom_location_name, custom_address, custom_city, custom_state,
+online_url, location_notes, capacity, has_timeslots, total_slots,
+slot_duration_minutes, is_free, cost_label, signup_url, signup_deadline,
+age_policy, external_url, categories, cover_image_url, host_notes, is_published
+```
+
+**Blocked Fields (series-level, never per-occurrence):**
+`event_type`, `recurrence_rule`, `day_of_week`, `custom_dates`, `max_occurrences`, `series_mode`, `is_dsc_event`
+
+**UI Routes:**
+
+| Route | Purpose |
+|-------|---------|
+| `/dashboard/my-events/[id]/overrides` | Host/admin occurrence list (cancel/restore/edit) |
+| `/dashboard/my-events/[id]/overrides/[dateKey]` | Per-date edit using EventForm in occurrence mode |
+
+**API Route:** `GET/POST/DELETE /api/my-events/[id]/overrides`
+- Auth: event owner, accepted host, or admin
+- POST: Upserts override with `date_key`, `status`, legacy columns, and/or `override_patch`
+- Server-side sanitizes patch against ALLOWED_OVERRIDE_FIELDS
+- Auto-deletes row when all fields empty (revert behavior)
+
+**EventForm Occurrence Mode:**
+- Props: `occurrenceMode`, `occurrenceDateKey`, `occurrenceEventId`
+- Hides: event type, day of week, series controls, publish section, live preview
+- Submit: Builds diff against base event, sends only changed keys as `override_patch`
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260125000000_add_override_patch.sql` | Migration |
+| `web/src/app/api/my-events/[id]/overrides/route.ts` | API route |
+| `web/src/app/(protected)/dashboard/my-events/[id]/overrides/page.tsx` | Occurrence list page |
+| `web/src/app/(protected)/dashboard/my-events/[id]/overrides/_components/OccurrenceEditor.tsx` | Editor component |
+| `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/page.tsx` | Per-date edit page |
+| `web/src/__tests__/override-patch-merge.test.ts` | 20 tests for merge function |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `web/src/lib/events/nextOccurrence.ts` | Added `override_patch` to type, `ALLOWED_OVERRIDE_FIELDS`, `applyOccurrenceOverride()` |
+| `web/src/components/events/SeriesEditingNotice.tsx` | Link to host occurrence editor (was admin-only) |
+| `web/src/app/(protected)/dashboard/my-events/[id]/page.tsx` | `showOverrideLink` for hosts (not just admins) |
+| `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` | Occurrence mode props + diff submit |
+
+**Test Coverage:** 20 new tests (2455 total).
 
 ---
 
