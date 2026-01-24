@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.75):** Lint warnings = 0. All tests passing (2334). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.76):** Lint warnings = 0. All tests passing (2417). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -363,6 +363,93 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Monthly: `maxOccurrences * 35` days from anchor (generous window)
 
 **Test Coverage:** Updated tests in `custom-dates-api.test.ts` and `series-creation-rls.test.ts` to assert single-row behavior.
+
+---
+
+### Edit Form Series Controls + Save Button UX (January 2026) — RESOLVED
+
+**Goal:** Add full series controls (ordinal checkboxes, series length) to the edit form for recurring events, and move the Save button to the top of the form for immediate access.
+
+**Status:** Complete and deployed.
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Save button buried in middle of form | Placed inside Section 8 (Publish) | Moved to very top of form, above Event Type |
+| No series controls on edit form | Monthly ordinal + series length only in create mode | Added "Series Settings" section in edit mode |
+| Edit save wiped recurrence_rule | Submit used series_mode="single" (default) in edit | Derive series_mode from event.recurrence_rule |
+| Day of Week wrong for monthly events | Independent dropdown allowed mismatch with date | Hidden for monthly; derived from date picker |
+| selectedOrdinals not initialized | Hardcoded to [1] regardless of event data | Parse from recurrence_rule (e.g., "3rd" → [3]) |
+| max_occurrences not sent on edit | Body didn't include it | Added to PATCH payload |
+
+**Edit Form Layout (New):**
+
+```
+[Save Changes] [Back without saving]     ← TOP of form
+────────────────────────────────────
+Event Type cards
+Categories
+Title
+Schedule (Day of Week for weekly only, Start/End time)
+Series Start Date (edit mode)
+Series Settings (edit mode, recurring only):
+  - Ordinal checkboxes (monthly): 1st, 2nd, 3rd, 4th, Last
+  - Pattern summary: "3rd Thursday of the month"
+  - Series Length: No end date / Ends after N occurrences
+Location
+Description / Cover Image
+Attendance (RSVP/Slots)
+Advanced Options (collapsed)
+Publish toggle + Verify checkbox
+Preview card
+"Scroll up to save" hint                  ← BOTTOM of form
+```
+
+**Series Mode Detection (Edit Mode):**
+
+| recurrence_rule | Detected Mode | Controls Shown |
+|----------------|---------------|----------------|
+| `"weekly"` / `"biweekly"` | weekly | Day of Week dropdown + Series Length |
+| `"3rd"` / `"1st/3rd"` / etc. | monthly | Ordinal checkboxes + Pattern summary + Series Length |
+| `null` / missing | single | Event Date only |
+
+**Ordinal Parsing (recurrence_rule → selectedOrdinals):**
+
+| Input | Parsed |
+|-------|--------|
+| `"3rd"` | `[3]` |
+| `"1st/3rd"` | `[1, 3]` |
+| `"2nd/4th"` | `[2, 4]` |
+| `"last"` | `[-1]` |
+| `"1st/3rd/last"` | `[1, 3, -1]` |
+
+**Recurrence Rule Rebuild (selectedOrdinals → recurrence_rule on save):**
+
+| Ordinals | Output |
+|----------|--------|
+| `[3]` | `"3rd"` |
+| `[1, 3]` | `"1st/3rd"` |
+| `[2, -1]` | `"2nd/last"` |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Save at top, series controls in edit mode, ordinal parsing, submit rebuild, Day of Week visibility |
+
+**Test Coverage:** 59 new tests in `__tests__/edit-form-series-controls.test.ts`
+
+| Test Category | Tests |
+|---------------|-------|
+| Ordinal parsing from recurrence_rule | 13 |
+| Recurrence rule rebuild from ordinals | 8 |
+| Series mode detection | 7 |
+| max_occurrences conversion | 6 |
+| Day of Week visibility rules | 7 |
+| Occurrence count initialization | 5 |
+| Round-trip (parse → rebuild) | 6 |
+| Edit mode body construction | 7 |
 
 ---
 
@@ -4564,6 +4651,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/notification-icons.test.ts` | Distinct notification icons by type (14 tests) |
 | `__tests__/notification-interactions.test.ts` | Notification controls: mark-on-click, mark-all, hide-read, deep-links (21 tests) |
 | `__tests__/venue-page-fixes.test.ts` | Venue page count filters + de-duplication logic (17 tests) |
+| `__tests__/edit-form-series-controls.test.ts` | Edit form ordinal parsing, recurrence rebuild, series mode detection, max_occurrences (59 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
