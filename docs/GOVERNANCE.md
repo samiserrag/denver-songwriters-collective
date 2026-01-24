@@ -111,7 +111,24 @@ Examples of deviations requiring stop:
 
 Any **policy / GRANT / schema** change must ship via a **migration file** in `supabase/migrations/`.
 
-**Never apply structural changes via direct SQL without a corresponding migration.**
+**Never apply structural changes via direct SQL without a corresponding migration file.**
+
+### Migration Application Modes
+
+This project's remote database has many historical migrations applied before the migration history table was consistently used. `npx supabase db push` may attempt to re-apply already-applied migrations. Agents must choose the correct mode:
+
+| Mode | When to Use | How |
+|------|-------------|-----|
+| **MODE A** (`supabase db push`) | `migration list` shows ONLY your new migration as pending | `npx supabase db push` |
+| **MODE B** (direct `psql`) | `migration list` shows many unexpected pending migrations | Apply via `psql -f`, then record in `schema_migrations` |
+
+**MODE B is the common case** for this repo. See `CLAUDE.md` → "Deploy Rules" for full workflow commands.
+
+**Rules:**
+- If MODE B is used, do NOT also run `npx supabase db push`
+- Always record applied migrations in `supabase_migrations.schema_migrations`
+- Always verify schema with `\d table_name` after applying
+- Stop-gate approval required before applying any migration
 
 ### Direct SQL Allowed (Data Corrections Only)
 
