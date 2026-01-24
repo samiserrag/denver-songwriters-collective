@@ -29,7 +29,8 @@ export function ThemeInitializer({ defaultTheme, defaultFont }: ThemeInitializer
     const fontToApply = localFont || defaultFont;
 
     // Update the HTML element's data attributes
-    if (themeToApply) {
+    // "auto" means follow OS preference — remove data-theme so CSS @media query activates
+    if (themeToApply && themeToApply !== "auto") {
       document.documentElement.setAttribute("data-theme", themeToApply);
     } else {
       document.documentElement.removeAttribute("data-theme");

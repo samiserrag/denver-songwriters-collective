@@ -141,7 +141,7 @@ export default async function RootLayout({
         {/* Pre-hydration theme script - runs before React to prevent flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("dsc-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("dsc-theme");if(t&&t!=="auto")document.documentElement.setAttribute("data-theme",t);else if(t==="auto")document.documentElement.removeAttribute("data-theme")}catch(e){}})();`,
           }}
         />
         {/* Preconnect to external domains for faster asset loading */}
