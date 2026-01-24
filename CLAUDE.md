@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.79):** Lint warnings = 0. All tests passing (2476). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.80):** Lint warnings = 0. All tests passing (2476). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -358,6 +358,50 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Edit Form Date/Recurrence Fix + Day-of-Week Indicator (January 2026) — RESOLVED
+
+**Goal:** Fix one-time mode save not clearing recurrence fields, remove duplicate date field, and add day-of-week confirmation indicator to all date inputs.
+
+**Status:** Complete.
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Saving as one-time still shows "Every Saturday" | `day_of_week` not cleared for single mode in submit handler | Only keep `day_of_week` for weekly/monthly; null for single/custom |
+| Recurrence card shows stale pattern after mode change | `is_recurring` column not updated on save | Added `is_recurring` to PATCH allowedFields; form sends `false` for single mode |
+| Duplicate Event Date fields in form | Section 3a (edit-mode date) + Section 3b (schedule section) both visible | Removed Section 3a; consolidated all dates into schedule section |
+| Date inputs don't confirm day of week | No visual feedback for which day a selected date falls on | Added `DateDayIndicator` component showing derived day name |
+| Edit mode date inputs empty | `start_date` initialized to `""` instead of event's `event_date` | Initialize `start_date` from `event.event_date` |
+
+**DateDayIndicator Component:**
+- Shows derived day name (e.g., "Saturday") in accent color next to the date label
+- Blank when no date is entered, updates dynamically when date changes
+- Applied to: single mode, weekly mode, monthly mode date inputs
+- Custom date pills now show weekday abbreviation (e.g., "Sat, Jan 24")
+
+**Submit Handler Fix (line 522):**
+```typescript
+// Before: Only cleared for custom mode
+effectiveDayOfWeek = formData.series_mode === "custom" ? null : (formData.day_of_week || null);
+
+// After: Only preserved for recurring modes
+effectiveDayOfWeek = (formData.series_mode === "weekly" || formData.series_mode === "monthly")
+  ? (formData.day_of_week || null)
+  : null;
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `EventForm.tsx` | DateDayIndicator, removed Section 3a, start_date init, submit fixes, is_recurring in body |
+| `api/my-events/[id]/route.ts` | Added `is_recurring` to allowedFields |
+
+**Commits:** `0e0ef0d`
 
 ---
 
