@@ -196,8 +196,8 @@ describe("PATCH /api/my-events/[id] — custom_dates validation and anchoring", 
     expect(data.error).toContain("At least one valid date");
   });
 
-  it("rejects more than 12 dates with 400", async () => {
-    const dates = Array.from({ length: 13 }, (_, i) => {
+  it("accepts more than 12 dates (no cap)", async () => {
+    const dates = Array.from({ length: 20 }, (_, i) => {
       const day = String(i + 1).padStart(2, "0");
       return `2026-03-${day}`;
     });
@@ -206,23 +206,8 @@ describe("PATCH /api/my-events/[id] — custom_dates validation and anchoring", 
       custom_dates: dates,
     }), { params: Promise.resolve({ id: "event-1" }) });
 
-    expect(res.status).toBe(400);
-    const data = await res.json();
-    expect(data.error).toContain("Maximum of 12 dates");
-  });
-
-  it("accepts exactly 12 dates", async () => {
-    const dates = Array.from({ length: 12 }, (_, i) => {
-      const day = String(i + 1).padStart(2, "0");
-      return `2026-04-${day}`;
-    });
-
-    const res = await PATCH(makePatchRequest({
-      custom_dates: dates,
-    }), { params: Promise.resolve({ id: "event-1" }) });
-
     expect(res.status).toBe(200);
-    expect(capturedUpdatePayload!.custom_dates).toHaveLength(12);
+    expect(capturedUpdatePayload!.custom_dates).toHaveLength(20);
   });
 
   it("rejects non-array custom_dates with 400", async () => {
@@ -370,15 +355,17 @@ describe("EventForm custom dates client logic", () => {
     expect(result).toEqual(["2026-03-01", "2026-04-01"]);
   });
 
-  it("max 12 dates cap is enforced", () => {
-    const existing = Array.from({ length: 12 }, (_, i) => {
-      const day = String(i + 1).padStart(2, "0");
-      return `2026-05-${day}`;
+  it("no date cap — can add unlimited dates", () => {
+    const existing = Array.from({ length: 30 }, (_, i) => {
+      const day = String((i % 28) + 1).padStart(2, "0");
+      const month = String(Math.floor(i / 28) + 3).padStart(2, "0");
+      return `2026-${month}-${day}`;
     });
 
-    // UI should disable add when at cap
-    const atCap = existing.length >= 12;
-    expect(atCap).toBe(true);
+    // UI should always allow adding more dates
+    const atCap = false; // No cap exists
+    expect(atCap).toBe(false);
+    expect(existing.length).toBe(30);
   });
 
   it("min 1 date validation blocks empty array", () => {

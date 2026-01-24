@@ -926,7 +926,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {formData.series_mode === "custom" && (
             <div className="space-y-3">
               <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-                Custom Dates ({customDates.length}/12)
+                Custom Dates ({customDates.length})
               </label>
 
               {/* Existing date pills with remove buttons */}
@@ -966,33 +966,27 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               )}
 
               {/* Add new date */}
-              {customDates.length < 12 ? (
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    id="edit-custom-date"
-                    className="flex-1 px-4 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = document.getElementById("edit-custom-date") as HTMLInputElement;
-                      const newDate = input?.value;
-                      if (newDate && /^\d{4}-\d{2}-\d{2}$/.test(newDate) && !customDates.includes(newDate)) {
-                        setCustomDates([...customDates, newDate].sort());
-                        input.value = "";
-                      }
-                    }}
-                    className="px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] rounded-lg font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
-                  >
-                    Add Date
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs text-amber-600">
-                  Maximum of 12 dates reached.
-                </p>
-              )}
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  id="edit-custom-date"
+                  className="flex-1 px-4 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.getElementById("edit-custom-date") as HTMLInputElement;
+                    const newDate = input?.value;
+                    if (newDate && /^\d{4}-\d{2}-\d{2}$/.test(newDate) && !customDates.includes(newDate)) {
+                      setCustomDates([...customDates, newDate].sort());
+                      input.value = "";
+                    }
+                  }}
+                  className="px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] rounded-lg font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
+                >
+                  Add Date
+                </button>
+              </div>
 
               {customDates.length === 0 && (
                 <p className="text-sm text-amber-600">

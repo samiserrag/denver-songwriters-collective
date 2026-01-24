@@ -192,9 +192,6 @@ export async function PATCH(
     if (uniqueDates.length === 0) {
       return NextResponse.json({ error: "At least one valid date is required for custom series" }, { status: 400 });
     }
-    if (uniqueDates.length > 12) {
-      return NextResponse.json({ error: "Maximum of 12 dates allowed for custom series" }, { status: 400 });
-    }
     updates.custom_dates = uniqueDates;
     updates.recurrence_rule = "custom";
     updates.day_of_week = null;
