@@ -426,6 +426,16 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     );
   }
 
+  // Fetch all overrides for this event to check reschedules on date pills
+  let allOverrides: Array<{ date_key: string; status: string; override_patch: Record<string, unknown> | null }> = [];
+  if (recurrence.isRecurring && upcomingOccurrences.length > 0) {
+    const { data: overrides } = await supabase
+      .from("occurrence_overrides")
+      .select("date_key, status, override_patch")
+      .eq("event_id", event.id);
+    allOverrides = (overrides || []) as typeof allOverrides;
+  }
+
   // P0 Fix: Recompute isPastEvent for recurring events now that we have occurrences
   // A recurring event is only "past" if it has NO upcoming occurrences
   if (hasRecurrenceRule) {
@@ -1150,13 +1160,19 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 <p className="text-sm text-[var(--color-text-secondary)] mb-2">Upcoming dates:</p>
                 <div className="flex flex-wrap gap-2">
                   {upcomingOccurrences.slice(0, 5).map((occ) => {
-                    const dateDisplay = new Date(occ.dateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+                    // Check if this occurrence is rescheduled
+                    const occOverride = allOverrides.find((o) => o.date_key === occ.dateKey);
+                    const patch = occOverride?.override_patch;
+                    const rescheduledDate = (patch as Record<string, unknown> | null)?.event_date as string | undefined;
+                    const isRescheduled = !!(rescheduledDate && rescheduledDate !== occ.dateKey);
+                    const pillDateKey = isRescheduled ? rescheduledDate : occ.dateKey;
+                    const dateDisplay = new Date(pillDateKey + "T12:00:00Z").toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
                       timeZone: "America/Denver",
                     });
-                    // Phase ABC5: Link to this event's occurrence page for that date
+                    // Link always uses identity dateKey for routing
                     const eventSlug = event.slug || event.id;
                     const isSelected = occ.dateKey === effectiveSelectedDate;
                     return (
@@ -1166,9 +1182,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           isSelected
                             ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                            : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
+                            : isRescheduled
+                              ? "bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-300 dark:border-amber-500/30"
+                              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
                         }`}
+                        title={isRescheduled ? "Rescheduled" : undefined}
                       >
+                        {isRescheduled && <span className="mr-1">↻</span>}
                         {dateDisplay}
                       </Link>
                     );

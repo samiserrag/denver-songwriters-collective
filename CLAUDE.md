@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.80):** Lint warnings = 0. All tests passing (2476). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.81):** Lint warnings = 0. All tests passing (2503). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -358,6 +358,82 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Occurrence Rescheduling — Timeline + Series + Editor Display (January 2026) — RESOLVED
+
+**Goal:** When a host changes an occurrence's date via `override_patch.event_date`, the system shows the occurrence on its new date in the timeline, series card pills, and OccurrenceEditor with proper reschedule indicators.
+
+**Status:** Complete.
+
+**Key Design Principle:**
+- `date_key` = IDENTITY (never changes) — used in URLs, RSVPs, comments, override row PK
+- `override_patch.event_date` = DISPLAY date — where the occurrence appears in the timeline
+- Links always use `date_key` for routing; visual display uses the override `event_date` for placement
+
+**New Functions in `nextOccurrence.ts`:**
+
+| Function | Purpose |
+|----------|---------|
+| `applyReschedulesToTimeline()` | Post-processes expanded groups: moves entries from original date group to rescheduled date group |
+| `getDisplayDateForOccurrence()` | Returns display date + isRescheduled flag from override |
+
+**Extended Interfaces:**
+
+| Interface | New Fields |
+|-----------|-----------|
+| `ExpandedOccurrence` | `displayDate?`, `isRescheduled?` |
+| `EventOccurrenceEntry` | `isRescheduled?`, `originalDateKey?`, `displayDate?` |
+| `DatePillData` | `isRescheduled?` |
+
+**UI Indicators:**
+
+| Surface | Indicator |
+|---------|-----------|
+| DatePillRow | ↻ prefix + amber styling for rescheduled pills |
+| SeriesCard | Uses `displayDate` for labels, `dateKey` for hrefs |
+| OccurrenceEditor | RESCHEDULED status pill (indigo) + "→ New Date" text |
+| Event detail page | Amber pills with ↻ for rescheduled occurrences |
+
+**Conflict Detection (EventForm):**
+- When rescheduling, checks both series pattern dates AND other override reschedule targets
+- Shows amber warning: "This occurrence will be rescheduled from X to Y"
+- Shows conflict warning if target date already has an occurrence
+
+**Server-Side Validation (`/api/my-events/[id]/overrides`):**
+- Validates `event_date` format (YYYY-MM-DD)
+- Strips pointless reschedules (new date = same as date_key)
+- Rejects past dates
+
+**Key Invariants:**
+1. `date_key` never changes — identity for RSVPs, comments, URLs, override PK
+2. Links always use `date_key` — `?date=2026-01-18` even if display shows Feb 1
+3. `expandOccurrencesForEvent()` stays pure — never knows about overrides
+4. Post-processing (`applyReschedulesToTimeline`) is the only reschedule-aware layer
+5. Cancelled > Rescheduled — if both, treat as cancelled
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/events/nextOccurrence.ts` | Added `applyReschedulesToTimeline()`, `getDisplayDateForOccurrence()`, extended interfaces |
+| `app/happenings/page.tsx` | Call post-processing after expansion, use rescheduled groups for filtering |
+| `components/happenings/DatePillRow.tsx` | Added `isRescheduled` to interface, ↻ indicator + amber styling |
+| `components/happenings/SeriesCard.tsx` | Use displayDate for labels, dateKey for hrefs |
+| `app/events/[id]/page.tsx` | Reschedule-aware date pills + display date for selected occurrence |
+| `dashboard/my-events/[id]/overrides/_components/OccurrenceEditor.tsx` | RESCHEDULED pill + "→ date" indicator |
+| `dashboard/my-events/_components/EventForm.tsx` | Occurrence date input, conflict detection, reschedule preview text |
+| `dashboard/my-events/[id]/overrides/[dateKey]/page.tsx` | Conflict detection with other reschedule targets |
+| `api/my-events/[id]/overrides/route.ts` | Server-side date validation for reschedules |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/occurrence-reschedule.test.ts` | 27 tests for timeline moves, display dates, validation, status priority, round-trips |
+
+**Test Coverage:** 27 new tests (2503 total).
 
 ---
 

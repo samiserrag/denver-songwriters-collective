@@ -25,6 +25,8 @@ export interface DatePillData {
   href: string;
   /** Date key for selection comparison, e.g., "2026-01-13" */
   dateKey: string;
+  /** Whether this pill represents a rescheduled occurrence */
+  isRescheduled?: boolean;
 }
 
 export interface DatePillRowProps {
@@ -70,10 +72,14 @@ export function DatePillRow({
               "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
               isSelected
                 ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
+                : date.isRescheduled
+                  ? "bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-300 dark:border-amber-500/30"
+                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
             )}
             onClick={(e) => e.stopPropagation()}
+            title={date.isRescheduled ? "Rescheduled" : undefined}
           >
+            {date.isRescheduled && <span className="mr-1">↻</span>}
             {date.label}
           </Link>
         );

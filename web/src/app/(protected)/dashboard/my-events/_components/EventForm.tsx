@@ -84,6 +84,8 @@ interface EventFormProps {
   occurrenceDateKey?: string;
   /** The event ID for the occurrence (used to submit override) */
   occurrenceEventId?: string;
+  /** Existing occurrence dates for this series (for conflict detection when rescheduling) */
+  existingOccurrenceDates?: string[];
   event?: {
     id: string;
     title: string;
@@ -132,7 +134,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, isAdmin = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, isAdmin = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [] }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -217,7 +219,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   );
 
   // Occurrence date state - allows rescheduling a single occurrence to a different date
-  const [occurrenceDate, setOccurrenceDate] = useState<string>(occurrenceDateKey || "");
+  // Initialize from effectiveEvent.event_date if it differs from dateKey (already rescheduled)
+  const [occurrenceDate, setOccurrenceDate] = useState<string>(
+    occurrenceMode && event?.event_date && event.event_date !== occurrenceDateKey
+      ? event.event_date
+      : occurrenceDateKey || ""
+  );
 
   // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
   // Parse initial ordinals from event.recurrence_rule in edit mode (e.g., "3rd" → [3], "1st/3rd" → [1, 3])
@@ -807,6 +814,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             {occurrenceDate && occurrenceDate !== occurrenceDateKey && (
               <p className="text-xs text-amber-800 dark:text-amber-400 mt-1">
                 This occurrence will be rescheduled from {occurrenceDateKey} to {occurrenceDate}
+              </p>
+            )}
+            {occurrenceDate && occurrenceDate !== occurrenceDateKey && existingOccurrenceDates.includes(occurrenceDate) && (
+              <p className="text-xs text-red-800 dark:text-red-400 mt-1 font-medium">
+                Warning: Another occurrence already falls on this date. Both will appear on the same day.
               </p>
             )}
           </div>

@@ -13,6 +13,7 @@ import {
   addDaysDenver,
   formatDateGroupHeader,
   expandAndGroupEvents,
+  applyReschedulesToTimeline,
   buildOverrideMap,
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
@@ -321,28 +322,31 @@ export default async function HappeningsPage({
     }
   );
 
+  // Apply rescheduling post-processing: moves rescheduled occurrences to their new display date
+  const rescheduledGroups = applyReschedulesToTimeline(expandedGroups);
+
   // Phase 4.50b: Sort date groups based on timeFilter
   // - upcoming/all: chronological (ASC) - earliest first
   // - past: reverse chronological (DESC) - most recent first
-  let filteredGroups = expandedGroups;
+  let filteredGroups = rescheduledGroups;
   if (timeFilter === "upcoming") {
     // Filter to only upcoming occurrences
     filteredGroups = new Map(
-      [...expandedGroups.entries()]
+      [...rescheduledGroups.entries()]
         .filter(([dateKey]) => dateKey >= today)
         .sort(([a], [b]) => a.localeCompare(b)) // ASC
     );
   } else if (timeFilter === "past") {
     // Sort in reverse chronological order (newest first)
     filteredGroups = new Map(
-      [...expandedGroups.entries()]
+      [...rescheduledGroups.entries()]
         .filter(([dateKey]) => dateKey < today)
         .sort(([a], [b]) => b.localeCompare(a)) // DESC
     );
   } else {
     // "all" - sort chronologically
     filteredGroups = new Map(
-      [...expandedGroups.entries()].sort(([a], [b]) => a.localeCompare(b))
+      [...rescheduledGroups.entries()].sort(([a], [b]) => a.localeCompare(b))
     );
   }
 

@@ -147,10 +147,13 @@ export default function OccurrenceEditor({
         {displayOccurrences.map((occ) => {
           const isLoading = loading === occ.dateKey;
           const displayTime = occ.override?.override_start_time || baseEvent.start_time;
-          const hasOverridePatch = !!(occ.override as Record<string, unknown> | null)?.override_patch;
+          const patch = (occ.override as Record<string, unknown> | null)?.override_patch as Record<string, unknown> | null;
+          const hasOverridePatch = !!patch;
           const hasTimeOverride = !!occ.override?.override_start_time;
           const hasNotes = !!occ.override?.override_notes;
           const hasFlyerOverride = !!occ.override?.override_cover_image_url;
+          const rescheduledTo = patch?.event_date as string | undefined;
+          const isRescheduled = !!(rescheduledTo && rescheduledTo !== occ.dateKey);
           const hasAnyModification = hasOverridePatch || hasTimeOverride || hasNotes || hasFlyerOverride;
 
           return (
@@ -177,18 +180,23 @@ export default function OccurrenceEditor({
                     <span className="text-[var(--color-text-secondary)]">
                       {formatTimeToAMPM(displayTime)}
                     </span>
+                    {isRescheduled && rescheduledTo && (
+                      <span className="px-1.5 py-0.5 text-xs bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-400 rounded">
+                        → {formatDateGroupHeader(rescheduledTo, todayKey)}
+                      </span>
+                    )}
                     {hasTimeOverride && (
                       <span className="px-1.5 py-0.5 text-xs bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 rounded">
                         Time override
                       </span>
                     )}
-                    {hasOverridePatch && (
+                    {hasOverridePatch && !isRescheduled && (
                       <span className="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-400 rounded">
                         Custom fields
                       </span>
                     )}
                     {hasNotes && (
-                      <span className="px-1.5 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">
+                      <span className="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-400 rounded">
                         Notes
                       </span>
                     )}
@@ -200,11 +208,15 @@ export default function OccurrenceEditor({
                   </div>
                 </div>
 
-                {/* Status Pill */}
+                {/* Status Pill — Priority: CANCELLED > RESCHEDULED > MODIFIED > NORMAL */}
                 <div className="flex-shrink-0">
                   {occ.isCancelled ? (
                     <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-400 rounded-full">
                       CANCELLED
+                    </span>
+                  ) : isRescheduled ? (
+                    <span className="px-2 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-400 rounded-full">
+                      RESCHEDULED
                     </span>
                   ) : hasAnyModification ? (
                     <span className="px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 rounded-full">

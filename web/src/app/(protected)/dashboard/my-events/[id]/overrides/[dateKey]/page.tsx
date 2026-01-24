@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
-import { formatDateGroupHeader, getTodayDenver } from "@/lib/events/nextOccurrence";
+import { formatDateGroupHeader, getTodayDenver, addDaysDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import EventForm from "../../../_components/EventForm";
 
 export const dynamic = "force-dynamic";
@@ -87,6 +87,34 @@ export default async function EditOccurrencePage({ params }: PageProps) {
   const todayKey = getTodayDenver();
   const dateLabel = formatDateGroupHeader(dateKey, todayKey);
 
+  // Expand occurrences for conflict detection when rescheduling
+  const windowEnd = addDaysDenver(todayKey, 90);
+  const existingOccurrences = expandOccurrencesForEvent(
+    {
+      event_date: event.event_date,
+      day_of_week: event.day_of_week,
+      recurrence_rule: (event as { recurrence_rule?: string | null }).recurrence_rule,
+      start_time: event.start_time,
+      max_occurrences: (event as { max_occurrences?: number | null }).max_occurrences,
+      custom_dates: (event as { custom_dates?: string[] | null }).custom_dates,
+    },
+    { startKey: todayKey, endKey: windowEnd }
+  );
+  // Also fetch other overrides that have reschedule targets (event_date in patch)
+  const { data: otherOverrides } = await supabase
+    .from("occurrence_overrides")
+    .select("date_key, override_patch")
+    .eq("event_id", eventId)
+    .neq("date_key", dateKey);
+  const rescheduleTargets = (otherOverrides || [])
+    .map((o) => (o.override_patch as Record<string, unknown> | null)?.event_date as string | undefined)
+    .filter((d): d is string => !!d);
+  // Combine series dates + other reschedule targets, exclude current dateKey
+  const existingOccurrenceDates = [
+    ...existingOccurrences.map((o) => o.dateKey),
+    ...rescheduleTargets,
+  ].filter((d) => d !== dateKey);
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
@@ -126,6 +154,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
             occurrenceMode={true}
             occurrenceDateKey={dateKey}
             occurrenceEventId={eventId}
+            existingOccurrenceDates={existingOccurrenceDates}
           />
         </section>
       </div>

@@ -534,10 +534,14 @@ export interface ExpansionOptions {
 }
 
 export interface ExpandedOccurrence {
-  /** Date key (YYYY-MM-DD) */
+  /** Date key (YYYY-MM-DD) — the IDENTITY of this occurrence (never changes) */
   dateKey: string;
   /** Whether this occurrence is confident */
   isConfident: boolean;
+  /** Display date (may differ from dateKey if rescheduled via override_patch.event_date) */
+  displayDate?: string;
+  /** Whether this occurrence was rescheduled to a different date */
+  isRescheduled?: boolean;
 }
 
 /**
@@ -1006,6 +1010,12 @@ export interface EventOccurrenceEntry<T extends EventForOccurrence = EventForOcc
   override?: OccurrenceOverride;
   /** Whether this occurrence is cancelled */
   isCancelled: boolean;
+  /** Whether this occurrence was rescheduled to a different date */
+  isRescheduled?: boolean;
+  /** Original date_key before rescheduling (for "moved from" indicators) */
+  originalDateKey?: string;
+  /** The display date (may differ from dateKey if rescheduled) */
+  displayDate?: string;
 }
 
 export interface ExpansionResult<T extends EventForOccurrence = EventForOccurrence> {
@@ -1156,6 +1166,108 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
 }
 
 // ============================================================
+// Occurrence Rescheduling Post-Processing
+// ============================================================
+
+/**
+ * Get the display date for an occurrence, accounting for rescheduling.
+ *
+ * When an override has `override_patch.event_date` set to a different date,
+ * the occurrence is "rescheduled" — it should display on the new date
+ * while keeping its identity (date_key) for routing/RSVPs/comments.
+ */
+export function getDisplayDateForOccurrence(
+  dateKey: string,
+  override?: OccurrenceOverride
+): { displayDate: string; isRescheduled: boolean; originalDateKey?: string } {
+  if (!override) {
+    return { displayDate: dateKey, isRescheduled: false };
+  }
+  const patch = override.override_patch ?? null;
+  const rescheduledDate = patch?.event_date as string | undefined;
+  if (rescheduledDate && rescheduledDate !== dateKey) {
+    return { displayDate: rescheduledDate, isRescheduled: true, originalDateKey: dateKey };
+  }
+  return { displayDate: dateKey, isRescheduled: false };
+}
+
+/**
+ * Apply rescheduling to grouped timeline events.
+ *
+ * Moves rescheduled entries from their original date group to the new
+ * (display) date group. Preserves identity (dateKey) on each entry.
+ *
+ * MUST be called AFTER expandAndGroupEvents() — this is a post-processing step.
+ * expandOccurrencesForEvent() stays pure and never knows about overrides.
+ *
+ * @param groupedEvents - Map from expandAndGroupEvents()
+ * @returns New map with rescheduled entries relocated to their display dates
+ */
+export function applyReschedulesToTimeline<T extends EventForOccurrence & { id: string }>(
+  groupedEvents: Map<string, EventOccurrenceEntry<T>[]>
+): Map<string, EventOccurrenceEntry<T>[]> {
+  // Build a new map to avoid mutating input
+  const result = new Map<string, EventOccurrenceEntry<T>[]>();
+
+  // First pass: copy non-rescheduled entries, collect rescheduled ones
+  const rescheduledEntries: Array<{ entry: EventOccurrenceEntry<T>; newDateKey: string }> = [];
+
+  for (const [dateKey, entries] of groupedEvents.entries()) {
+    const kept: EventOccurrenceEntry<T>[] = [];
+
+    for (const entry of entries) {
+      const { displayDate, isRescheduled } = getDisplayDateForOccurrence(
+        entry.dateKey,
+        entry.override
+      );
+
+      if (isRescheduled) {
+        // Mark entry and collect for relocation
+        rescheduledEntries.push({
+          entry: {
+            ...entry,
+            isRescheduled: true,
+            originalDateKey: entry.dateKey,
+            displayDate,
+          },
+          newDateKey: displayDate,
+        });
+      } else {
+        kept.push(entry);
+      }
+    }
+
+    if (kept.length > 0) {
+      result.set(dateKey, kept);
+    }
+  }
+
+  // Second pass: insert rescheduled entries into their new date groups
+  for (const { entry, newDateKey } of rescheduledEntries) {
+    if (!result.has(newDateKey)) {
+      result.set(newDateKey, []);
+    }
+    result.get(newDateKey)!.push(entry);
+  }
+
+  // Sort groups by date key, and within each group by start_time
+  const sorted = new Map(
+    [...result.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([dateKey, entries]) => [
+        dateKey,
+        entries.sort((a, b) => {
+          const timeA = a.override?.override_start_time || a.event.start_time || "99:99";
+          const timeB = b.override?.override_start_time || b.event.start_time || "99:99";
+          return timeA.localeCompare(timeB);
+        }),
+      ])
+  );
+
+  return sorted;
+}
+
+// ============================================================
 // Phase 4.54: Series View Support
 // ============================================================
 
@@ -1248,12 +1360,21 @@ export function groupEventsAsSeriesView<T extends EventForOccurrence & { id: str
       continue;
     }
 
-    // Filter out cancelled occurrences
-    const activeOccurrences = allOccurrences.filter((occ) => {
-      const overrideKey = buildOverrideKey(event.id, occ.dateKey);
-      const override = overrideMap.get(overrideKey);
-      return override?.status !== "cancelled";
-    });
+    // Filter out cancelled occurrences and apply reschedule display dates
+    const activeOccurrences = allOccurrences
+      .filter((occ) => {
+        const overrideKey = buildOverrideKey(event.id, occ.dateKey);
+        const override = overrideMap.get(overrideKey);
+        return override?.status !== "cancelled";
+      })
+      .map((occ) => {
+        const overrideKey = buildOverrideKey(event.id, occ.dateKey);
+        const override = overrideMap.get(overrideKey);
+        const { displayDate, isRescheduled } = getDisplayDateForOccurrence(occ.dateKey, override);
+        return { ...occ, displayDate, isRescheduled };
+      })
+      // Sort by display date so rescheduled occurrences appear in correct order
+      .sort((a, b) => (a.displayDate || a.dateKey).localeCompare(b.displayDate || b.dateKey));
 
     // Get recurrence summary using the contract
     const recurrence = interpretRecurrence(event);

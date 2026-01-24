@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { getTodayDenver } from "@/lib/events/nextOccurrence";
 
 /**
  * Occurrence Override API — Per-occurrence field overrides for recurring events.
@@ -199,6 +200,25 @@ export async function POST(
       return NextResponse.json({ error: "override_patch must be a JSON object" }, { status: 400 });
     }
     const sanitized = sanitizeOverridePatch(override_patch as Record<string, unknown>);
+
+    // Validate event_date if present (rescheduling)
+    if (sanitized.event_date !== undefined) {
+      const newDate = sanitized.event_date as string;
+      if (typeof newDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+        return NextResponse.json({ error: "Invalid date format for event_date" }, { status: 400 });
+      }
+      // Strip if same as date_key (not a reschedule)
+      if (newDate === date_key) {
+        delete sanitized.event_date;
+      } else {
+        // Reject past dates
+        const today = getTodayDenver();
+        if (newDate < today) {
+          return NextResponse.json({ error: "Cannot reschedule to a past date" }, { status: 400 });
+        }
+      }
+    }
+
     // Only store if there are actual allowed keys
     upsertPayload.override_patch = Object.keys(sanitized).length > 0 ? sanitized : null;
   }
