@@ -69,7 +69,7 @@ export function NewsletterSignup() {
         </button>
       </div>
       {message && (
-        <p className={`text-xs ${status === "error" ? "text-red-400" : "text-green-400"}`}>
+        <p className={`text-xs ${status === "error" ? "text-red-800 dark:text-red-400" : "text-green-800 dark:text-green-400"}`}>
           {message}
         </p>
       )}

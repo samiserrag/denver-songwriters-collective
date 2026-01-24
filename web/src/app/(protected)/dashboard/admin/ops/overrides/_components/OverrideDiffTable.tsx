@@ -54,7 +54,7 @@ export default function OverrideDiffTable({
           <>
             <span className="text-[var(--color-text-tertiary)]">•</span>
             <span className="text-[var(--color-text-secondary)]">
-              <span className="text-red-400">{eventIdsNotFound.length}</span>{" "}
+              <span className="text-red-800 dark:text-red-400">{eventIdsNotFound.length}</span>{" "}
               invalid event IDs
             </span>
           </>
@@ -98,8 +98,8 @@ export default function OverrideDiffTable({
                       <span
                         className={
                           insert.status === "cancelled"
-                            ? "text-red-400"
-                            : "text-green-400"
+                            ? "text-red-800 dark:text-red-400"
+                            : "text-green-800 dark:text-green-400"
                         }
                       >
                         {insert.status}

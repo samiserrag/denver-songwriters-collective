@@ -32,7 +32,7 @@ export default function EventDiffTable({ updates, notFound, unchanged }: Props) 
           <>
             <span className="text-[var(--color-text-tertiary)]">•</span>
             <span className="text-[var(--color-text-secondary)]">
-              <span className="text-red-400">{notFound.length}</span> not found
+              <span className="text-red-800 dark:text-red-400">{notFound.length}</span> not found
             </span>
           </>
         )}

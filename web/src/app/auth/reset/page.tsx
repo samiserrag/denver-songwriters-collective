@@ -146,8 +146,8 @@ function ResetPasswordForm() {
         <h1 className="text-2xl font-bold mb-4 text-[var(--color-text-primary)]">
           Reset Link Expired
         </h1>
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-          <p className="text-red-400">{errorMessage}</p>
+        <div className="bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg p-4 mb-6">
+          <p className="text-red-800 dark:text-red-400">{errorMessage}</p>
         </div>
         <p className="text-[var(--color-text-secondary)] mb-4">
           Password reset links expire after 1 hour for security. Please request a new one.
@@ -177,8 +177,8 @@ function ResetPasswordForm() {
         <h1 className="text-2xl font-bold mb-4 text-[var(--color-text-primary)]">
           Password Updated!
         </h1>
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
-          <p className="text-green-400">
+        <div className="bg-green-100 dark:bg-green-500/10 border border-green-300 dark:border-green-500/30 rounded-lg p-4 mb-4">
+          <p className="text-green-800 dark:text-green-400">
             Your password has been successfully updated.
           </p>
         </div>
@@ -249,8 +249,8 @@ function ResetPasswordForm() {
         </div>
 
         {errorMessage && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-            <p className="text-red-400 text-sm">{errorMessage}</p>
+          <div className="bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg p-3">
+            <p className="text-red-800 dark:text-red-400 text-sm">{errorMessage}</p>
           </div>
         )}
 

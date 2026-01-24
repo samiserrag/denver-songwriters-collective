@@ -31,13 +31,13 @@ export default function VenueDiffTable({
     <div className="space-y-4">
       {/* Summary */}
       <div className="flex gap-4 text-sm">
-        <span className="text-amber-400">{updates.length} to update</span>
+        <span className="text-amber-800 dark:text-amber-400">{updates.length} to update</span>
         <span className="text-[var(--color-text-tertiary)]">•</span>
         <span className="text-[var(--color-text-tertiary)]">{unchanged} unchanged</span>
         {notFound.length > 0 && (
           <>
             <span className="text-[var(--color-text-tertiary)]">•</span>
-            <span className="text-red-400">{notFound.length} not found (will skip)</span>
+            <span className="text-red-800 dark:text-red-400">{notFound.length} not found (will skip)</span>
           </>
         )}
       </div>

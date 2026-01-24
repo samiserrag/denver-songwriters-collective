@@ -64,7 +64,7 @@ export function ProfileCompleteness({ profile, variant = "full" }: ProfileComple
               ? "text-[var(--color-text-accent)]"
               : result.percentage >= 40
               ? "text-amber-500"
-              : "text-red-400"
+              : "text-red-800 dark:text-red-400"
           }`}
         >
           {result.percentage}%

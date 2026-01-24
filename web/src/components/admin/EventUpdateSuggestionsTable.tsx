@@ -332,7 +332,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                       {eventData.description && <p className="text-[var(--color-text-tertiary)] mt-2">Description: <span className="text-[var(--color-text-secondary)]">{eventData.description}</span></p>}
                     </div>
                   ) : (
-                    <p className="text-red-400">Could not parse event data</p>
+                    <p className="text-red-800 dark:text-red-400">Could not parse event data</p>
                   );
                 })()
               ) : (
@@ -374,7 +374,7 @@ export default function EventUpdateSuggestionsTable({ suggestions }: Props) {
                           />
                         </div>
                       ) : (
-                        <p className="text-[var(--color-text-tertiary)]">Suggested: <span className="text-green-400">{actionModal.suggestion.new_value}</span></p>
+                        <p className="text-[var(--color-text-tertiary)]">Suggested: <span className="text-green-800 dark:text-green-400">{actionModal.suggestion.new_value}</span></p>
                       )}
                       {modalScopeInfo.remainingNotes && (
                         <p className="text-[var(--color-text-tertiary)] mt-2 italic">Note: {modalScopeInfo.remainingNotes}</p>

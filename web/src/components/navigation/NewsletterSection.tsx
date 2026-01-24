@@ -85,7 +85,7 @@ export function NewsletterSection({ source = "homepage" }: NewsletterSectionProp
         </form>
 
         {message && (
-          <p className={`mt-3 text-sm ${status === "error" ? "text-red-400" : "text-emerald-400"}`}>
+          <p className={`mt-3 text-sm ${status === "error" ? "text-red-800 dark:text-red-400" : "text-emerald-800 dark:text-emerald-400"}`}>
             {message}
           </p>
         )}

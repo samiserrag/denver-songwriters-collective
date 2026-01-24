@@ -20,7 +20,7 @@ export default async function StudioAppointmentsPage() {
   const user = session?.user ?? null;
   if (!user) {
     return (
-      <PageContainer className="py-24 text-center text-red-400">
+      <PageContainer className="py-24 text-center text-red-800 dark:text-red-400">
         <p>Not authenticated.</p>
       </PageContainer>
     );
