@@ -232,12 +232,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       day_of_week, start_time, end_time, capacity, cover_image_url,
       is_dsc_event, status, created_at, event_date, slug,
       has_timeslots, total_slots, slot_duration_minutes, is_published,
-      is_recurring, recurrence_pattern, recurrence_rule,
+      is_recurring, recurrence_pattern, recurrence_rule, max_occurrences,
       custom_location_name, custom_address, custom_city, custom_state,
       custom_latitude, custom_longitude, location_notes, location_mode,
       is_free, cost_label, age_policy, host_id,
       source, last_verified_at, verified_by,
-      series_id, external_url, timezone, online_url, signup_url, signup_mode
+      series_id, external_url, timezone, online_url, signup_url, signup_mode,
+      custom_dates
     `;
   const { data: event, error } = isUUID(id)
     ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
@@ -418,6 +419,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         day_of_week: event.day_of_week,
         recurrence_rule: (event as { recurrence_rule?: string | null }).recurrence_rule,
         start_time: event.start_time,
+        max_occurrences: (event as { max_occurrences?: number | null }).max_occurrences,
+        custom_dates: (event as { custom_dates?: string[] | null }).custom_dates,
       },
       { startKey: today, endKey: windowEnd }
     );
@@ -482,6 +485,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   const displayDescription = (patch?.description as string | undefined) ?? event.description;
   const displayTitle = (patch?.title as string | undefined) || event.title;
   const occurrenceNotes = (patch?.host_notes as string | undefined) ?? selectedOverride?.override_notes;
+  // If the occurrence has been rescheduled, use the overridden date for display
+  const displayDate = (patch?.event_date as string | undefined) || effectiveSelectedDate;
 
   // If venue_id is overridden, re-fetch venue details for this occurrence
   const overrideVenueId = patch?.venue_id as string | undefined;
@@ -502,9 +507,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     }
   }
 
-  // Phase ABC5: Format selected date for display
-  const selectedDateDisplay = effectiveSelectedDate
-    ? new Date(effectiveSelectedDate + "T12:00:00Z").toLocaleDateString("en-US", {
+  // Phase ABC5: Format selected date for display (uses rescheduled date if overridden)
+  const selectedDateDisplay = displayDate
+    ? new Date(displayDate + "T12:00:00Z").toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -978,11 +983,11 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           <div className="mb-6 p-4 rounded-xl bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)]">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[var(--color-text-primary)]">
               {/* Date - Phase ABC5: Show selected occurrence date for recurring events */}
-              {recurrence.isRecurring && effectiveSelectedDate ? (
+              {recurrence.isRecurring && displayDate ? (
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">📅</span>
                   <span className="font-medium">
-                    {new Date(effectiveSelectedDate + "T12:00:00Z").toLocaleDateString("en-US", {
+                    {new Date(displayDate + "T12:00:00Z").toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",

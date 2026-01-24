@@ -907,6 +907,7 @@ export interface OccurrenceOverride {
 export const ALLOWED_OVERRIDE_FIELDS = new Set([
   "title",
   "description",
+  "event_date",
   "start_time",
   "end_time",
   "venue_id",

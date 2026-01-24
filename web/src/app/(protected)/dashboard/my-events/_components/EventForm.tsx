@@ -216,6 +216,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     mode === "edit" && event?.custom_dates ? event.custom_dates : []
   );
 
+  // Occurrence date state - allows rescheduling a single occurrence to a different date
+  const [occurrenceDate, setOccurrenceDate] = useState<string>(occurrenceDateKey || "");
+
   // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
   // Parse initial ordinals from event.recurrence_rule in edit mode (e.g., "3rd" → [3], "1st/3rd" → [1, 3])
   const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>(() => {
@@ -446,6 +449,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Compare each allowlisted field against the base event
         if (formData.title.trim() !== (event?.title || "")) overridePatch.title = formData.title.trim();
         if (formData.description.trim() !== (event?.description || "")) overridePatch.description = formData.description.trim() || null;
+        // Occurrence date change (reschedule this occurrence to a different date)
+        if (occurrenceDate && occurrenceDate !== occurrenceDateKey) overridePatch.event_date = occurrenceDate;
         if (formData.start_time !== (event?.start_time || "")) overridePatch.start_time = formData.start_time || null;
         if (formData.end_time !== (event?.end_time || "")) overridePatch.end_time = formData.end_time || null;
         if ((locationSelectionMode === "venue" ? formData.venue_id : null) !== (event?.venue_id || null)) {
@@ -786,6 +791,26 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3: SCHEDULE ============ */}
       {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Occurrence date picker - allows rescheduling a single occurrence */}
+        {occurrenceMode && (
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              <span className="text-[var(--color-text-primary)]">Date</span>
+              <DateDayIndicator dateValue={occurrenceDate} />
+            </label>
+            <input
+              type="date"
+              value={occurrenceDate}
+              onChange={(e) => setOccurrenceDate(e.target.value)}
+              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            />
+            {occurrenceDate && occurrenceDate !== occurrenceDateKey && (
+              <p className="text-xs text-amber-800 dark:text-amber-400 mt-1">
+                This occurrence will be rescheduled from {occurrenceDateKey} to {occurrenceDate}
+              </p>
+            )}
+          </div>
+        )}
         {/* Day of Week - only shown for weekly series (create or edit).
             Monthly events derive day_of_week from the date picker.
             Single-date and custom-date events derive from selected date(s).
