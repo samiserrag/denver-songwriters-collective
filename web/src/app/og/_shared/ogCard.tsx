@@ -6,8 +6,10 @@
  *   Content Bar (bottom 230px): brighter card-spotlight gradient with title/subtitle/chips
  *
  * Design:
- *   - Kind badge overlaid top-left on image zone
- *   - "Denver Songwriters Collective" wordmark top-right (22px gold, dark scrim)
+ *   - Kind badge overlaid top-left on image zone (48px bold)
+ *   - Date/time overlay bottom-left on image zone (44px bold)
+ *   - City label bottom-right on image zone (22px)
+ *   - "Denver Songwriters Collective" wordmark top-right (24px gold, dark scrim)
  *   - Bottom gradient on image blends into content bar
  *   - All chips use single gold pill style
  *   - Title is large and dominant (52px default)

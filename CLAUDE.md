@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.76):** Lint warnings = 0. All tests passing (2417). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.77):** Lint warnings = 0. All tests passing (2423). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -312,6 +312,53 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### OG Image Redesign: Stronger DSC Branding + Improved Readability (January 2026) — RESOLVED
+
+**Goal:** Redesign OG (Open Graph) social sharing images with image-dominant layout, stronger branding, and readable badges at thumbnail scale.
+
+**Status:** Complete and deployed.
+
+**Layout (1200x630):**
+- Image Zone (top 400px): entity image fills top ~63%
+- Content Bar (bottom 230px): card-spotlight gradient with title/subtitle/chips
+
+**Design Features:**
+
+| Element | Size | Position |
+|---------|------|----------|
+| Kind badge (event type) | 48px bold | Top-left on image |
+| DSC wordmark | 24px gold | Top-right with dark scrim |
+| Date/time overlay | 44px bold | Bottom-left on image |
+| City label | 22px | Bottom-right on image |
+| Title | 40-52px (length-based) | Content bar |
+| Subtitle | 24px | Content bar |
+| Chips | 18px gold pills | Content bar |
+
+**Entity-Specific Behavior:**
+
+| Entity | Extra Props |
+|--------|-------------|
+| Event | dateOverlay (series pattern or one-time date + time), cityLabel (venue city/state) |
+| Venue | cityLabel (city/state), subtitle with neighborhood |
+| Blog | Author avatar + name (only when real author exists) |
+| Gallery | Creator name, venue city in subtitle |
+| Songwriter | Genres as chips |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `og/_shared/ogCard.tsx` | Complete v2 layout with image zone + content bar |
+| `og/event/[id]/route.tsx` | Venue FK join for city, recurrence labels, dateOverlay, cityLabel |
+| `og/venue/[id]/route.tsx` | imageFit: cover, cityLabel, subtitle with pin emoji |
+| `og/blog/[slug]/route.tsx` | Author only shown when full_name exists |
+| `og/gallery/[slug]/route.tsx` | Creator join, venue city in subtitle |
+| `__tests__/og-metadata.test.ts` | 6 venue OG regression tests added |
+
+**Commits:** `6ec5964`, `54d5dd6`, `2f15346`, `1d81118`
 
 ---
 
