@@ -477,8 +477,30 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Apply override values: override_patch takes precedence over legacy columns
   const patch = (selectedOverride as { override_patch?: Record<string, unknown> | null } | null)?.override_patch;
   const displayStartTime = (patch?.start_time as string | undefined) || selectedOverride?.override_start_time || event.start_time;
+  const displayEndTime = (patch?.end_time as string | undefined) || event.end_time;
   const displayCoverImage = (patch?.cover_image_url as string | undefined) || selectedOverride?.override_cover_image_url || event.cover_image_url;
-  const occurrenceNotes = selectedOverride?.override_notes;
+  const displayDescription = (patch?.description as string | undefined) ?? event.description;
+  const displayTitle = (patch?.title as string | undefined) || event.title;
+  const occurrenceNotes = (patch?.host_notes as string | undefined) ?? selectedOverride?.override_notes;
+
+  // If venue_id is overridden, re-fetch venue details for this occurrence
+  const overrideVenueId = patch?.venue_id as string | undefined;
+  if (overrideVenueId && overrideVenueId !== event.venue_id) {
+    const { data: overrideVenue } = await supabase
+      .from("venues")
+      .select("name, address, city, state, google_maps_url, website_url, slug")
+      .eq("id", overrideVenueId)
+      .single();
+    if (overrideVenue) {
+      locationName = overrideVenue.name;
+      const addressParts = [overrideVenue.address, overrideVenue.city, overrideVenue.state].filter(Boolean);
+      locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+      venueGoogleMapsUrl = overrideVenue.google_maps_url;
+      venueWebsiteUrl = overrideVenue.website_url;
+      venueSlug = overrideVenue.slug;
+      isCustomLocation = false;
+    }
+  }
 
   // Phase ABC5: Format selected date for display
   const selectedDateDisplay = effectiveSelectedDate
@@ -813,7 +835,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           </div>
 
           <h1 className="font-[var(--font-family-serif)] text-3xl md:text-4xl text-[var(--color-text-primary)] mb-4">
-            {event.title}
+            {displayTitle}
           </h1>
 
           {/* Phase 4.37: Verification status block */}
@@ -989,7 +1011,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">🕐</span>
                   <span>
-                    {formatTime(displayStartTime)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ""}
+                    {formatTime(displayStartTime)}{displayEndTime ? ` - ${formatTime(displayEndTime)}` : ""}
                   </span>
                 </div>
               )}
@@ -998,9 +1020,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               {venueName && (
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--color-text-accent)]">📍</span>
-                  {event.venue_id && !isCustomLocation ? (
+                  {(overrideVenueId || event.venue_id) && !isCustomLocation ? (
                     <Link
-                      href={`/venues/${venueSlug || event.venue_id}`}
+                      href={`/venues/${venueSlug || overrideVenueId || event.venue_id}`}
                       className="hover:underline text-[var(--color-link)]"
                     >
                       {venueName}
@@ -1220,11 +1242,11 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           )}
 
           {/* About section - shown above timeslots */}
-          {event.description && (
+          {displayDescription && (
             <div className="mb-8">
               <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">About This Event</h2>
               <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">
-                {event.description}
+                {displayDescription}
               </p>
             </div>
           )}
@@ -1236,7 +1258,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               {/* Phase ABC6: Timeslots are per-occurrence (date-scoped) */}
               <TimeslotSection
                 eventId={event.id}
-                eventStartTime={event.start_time}
+                eventStartTime={displayStartTime}
                 totalSlots={(event as { total_slots?: number }).total_slots || 10}
                 slotDuration={(event as { slot_duration_minutes?: number }).slot_duration_minutes || 15}
                 disabled={!canRSVP}

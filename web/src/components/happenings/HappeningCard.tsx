@@ -328,10 +328,10 @@ export function HappeningCard({
   const todayKey = canonicalTodayKey ?? getTodayDenver();
 
   // Phase 4.21: Apply override data
-  // Override time takes precedence over event time
-  const effectiveStartTime = override?.override_start_time || event.start_time;
-  // Override flyer takes precedence over event flyer
-  const effectiveCoverUrl = override?.override_cover_image_url || event.cover_image_url;
+  // override_patch takes precedence over legacy columns, which take precedence over event fields
+  const patch = override?.override_patch;
+  const effectiveStartTime = (patch?.start_time as string | undefined) || override?.override_start_time || event.start_time;
+  const effectiveCoverUrl = (patch?.cover_image_url as string | undefined) || override?.override_cover_image_url || event.cover_image_url;
 
   // Derived values - use pre-computed occurrence if available
   const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
@@ -491,8 +491,9 @@ export function HappeningCard({
   const cardImageUrl = event.cover_image_card_url;
   const fullPosterUrl = effectiveCoverUrl || event.imageUrl;
   const defaultImageUrl = getDefaultImageForType(event.event_type);
-  const hasCardImage = !!cardImageUrl && !override?.override_cover_image_url; // Skip card image if override has flyer
-  const hasFullPoster = (!hasCardImage && !!fullPosterUrl) || !!override?.override_cover_image_url;
+  const hasOverrideCover = !!(patch?.cover_image_url || override?.override_cover_image_url);
+  const hasCardImage = !!cardImageUrl && !hasOverrideCover; // Skip card image if override has flyer
+  const hasFullPoster = (!hasCardImage && !!fullPosterUrl) || hasOverrideCover;
   const hasDefaultImage = !hasCardImage && !hasFullPoster && !!defaultImageUrl;
 
   // Signup chip

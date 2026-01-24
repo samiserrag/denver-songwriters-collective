@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.77):** Lint warnings = 0. All tests passing (2423). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.78):** Lint warnings = 0. All tests passing (2476). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -358,6 +358,45 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Override Patch Rendering Fix + Legacy Admin Form Redirect (January 2026) — RESOLVED
+
+**Goal:** Fix per-occurrence override_patch fields not displaying on public pages; eliminate legacy admin edit forms causing form drift between accounts.
+
+**Status:** Complete.
+
+**Problem 1: Override patch fields not rendering**
+The occurrence editor correctly saved all override_patch fields (venue_id, description, end_time, title, cover_image_url, etc.) to the database, but public-facing pages only applied `start_time` and `cover_image_url` from the patch. All other fields reverted to base event values.
+
+**Root Cause:** Event detail page extracted only 2 fields from override_patch. Venue lookup ran BEFORE the override was fetched, so overridden venue_id was never used.
+
+**Problem 2: Legacy admin edit form**
+The admin edit page at `/dashboard/admin/events/[id]/edit` used a legacy `EventEditForm` with basic dropdowns, missing all modern features (occurrence overrides, series controls, full field set). Admins reaching this page via bookmarks saw different forms than the canonical editor.
+
+**Fix:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | Apply ALL override_patch fields: title, description, end_time, venue_id (with re-fetch), cover_image_url, host_notes; pass `displayStartTime` to TimeslotSection |
+| `components/happenings/HappeningCard.tsx` | Read `override_patch` for start_time, cover_image_url precedence over legacy columns |
+| `admin/events/[id]/edit/page.tsx` | Replaced with server-side redirect to `/dashboard/my-events/[id]` |
+| `admin/events/new/page.tsx` | Replaced with server-side redirect to `/dashboard/my-events/new` |
+
+**Override Rendering Priority (event detail page):**
+1. `override_patch.field` (highest priority)
+2. Legacy override columns (`override_start_time`, `override_cover_image_url`, `override_notes`)
+3. Base event field (fallback)
+
+**Venue Override Behavior:**
+When `override_patch.venue_id` differs from base event, the detail page re-fetches venue details (name, address, slug, maps URL, website) and updates all display variables.
+
+**Admin Form Redirect Rule:** `/dashboard/admin/events/[id]/edit` and `/dashboard/admin/events/new` are intentional server-side redirects. The canonical editor is the ONLY supported path for happening editing. Do NOT reintroduce admin-specific edit forms.
+
+**Dead Code (not deleted, orphaned by redirects):**
+- `admin/events/[id]/edit/EventEditForm.tsx` — Legacy form component
+- `admin/events/new/EventCreateForm.tsx` — Legacy create form component
 
 ---
 
