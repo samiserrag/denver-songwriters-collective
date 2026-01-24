@@ -13,6 +13,7 @@ import { getRecurrenceSummary } from "@/lib/recurrenceHumanizer";
 import OccurrenceEditor from "./_components/OccurrenceEditor";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = {
   title: "Manage Occurrences | My Happenings",

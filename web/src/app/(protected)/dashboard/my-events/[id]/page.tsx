@@ -12,6 +12,8 @@ import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
 import { LeaveEventButton } from "@/components/events/LeaveEventButton";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Edit Happening | DSC"
 };
