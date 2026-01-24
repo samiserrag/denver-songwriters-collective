@@ -172,12 +172,12 @@ export function renderOgCard({
             top: "20px",
             left: "24px",
             backgroundColor: COLORS.kindBadgeBg,
-            borderRadius: "10px",
-            padding: "10px 20px",
-            fontSize: "24px",
+            borderRadius: "18px",
+            padding: "16px 32px",
+            fontSize: "48px",
             fontWeight: "700",
             color: COLORS.textPrimary,
-            letterSpacing: "0.3px",
+            letterSpacing: "0.5px",
           }}
         >
           {kindLabel}
@@ -229,9 +229,9 @@ export function renderOgCard({
               bottom: "20px",
               left: "24px",
               backgroundColor: COLORS.kindBadgeBg,
-              borderRadius: "10px",
-              padding: "10px 20px",
-              fontSize: "22px",
+              borderRadius: "14px",
+              padding: "14px 28px",
+              fontSize: "44px",
               fontWeight: "700",
               color: COLORS.textPrimary,
             }}
