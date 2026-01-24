@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
-import { generateSeriesDates } from "@/lib/events/formDateHelpers";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -94,8 +93,8 @@ export async function GET() {
   return NextResponse.json(eventsWithCounts);
 }
 
-// Series dates are now generated via MT-safe helper from formDateHelpers.ts
-// See: import { generateSeriesDates } from "@/lib/events/formDateHelpers"
+// Weekly series now creates a single DB row with recurrence_rule="weekly" and max_occurrences
+// Occurrence expansion happens dynamically at query time via expandOccurrencesForEvent()
 
 /**
  * Phase 4.42d: Unified event insert builder.
@@ -185,6 +184,8 @@ function buildEventInsert(params: EventInsertParams) {
     event_date: eventDate,
     series_id: seriesId,
     series_index: seriesIndex,
+    // Max occurrences: null = infinite, N = stops after N occurrences
+    max_occurrences: (body.occurrence_count as number) > 0 ? (body.occurrence_count as number) : null,
     // Additional fields
     timezone: (body.timezone as string) || "America/Denver",
     location_mode: (body.location_mode as string) || "venue",
@@ -338,9 +339,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "At least one valid date is required for custom series" }, { status: 400 });
     }
   } else if (seriesMode === "weekly") {
-    // Weekly series mode: generate predictable weekly dates
-    const occurrenceCount = Math.min(Math.max(body.occurrence_count || 1, 1), 12); // Clamp between 1-12
-    eventDates = generateSeriesDates(startDate, occurrenceCount);
+    // Weekly series mode: create a SINGLE event record with recurrence_rule="weekly"
+    // max_occurrences controls whether it's infinite (null/0) or finite (N)
+    // Expansion to actual dates happens at query time via expandOccurrencesForEvent()
+    eventDates = [startDate];
+    // Enforce recurrence_rule server-side (don't rely on client setting it)
+    body.recurrence_rule = "weekly";
   } else {
     // Single event mode (default): just the start date
     eventDates = [startDate];

@@ -142,7 +142,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     event_date: event?.event_date || "",
     // Recurring series fields (only for create mode)
     start_date: "",
-    occurrence_count: "1", // Default to 1 (one-time event)
+    occurrence_count: "0", // 0 = no end date (ongoing), >0 = finite series
     series_mode: "single" as "single" | "weekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
@@ -432,7 +432,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
         // Series configuration (for create mode)
         start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
-        occurrence_count: parseInt(formData.occurrence_count) || 1,
+        occurrence_count: parseInt(formData.occurrence_count) || 0,
         series_mode: formData.series_mode,
         custom_dates: formData.series_mode === "custom" ? customDates : undefined,
         // Phase 3 fields
@@ -825,50 +825,88 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {/* Weekly Series */}
           {formData.series_mode === "weekly" && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    <span className="text-red-500">First Event Date</span>
-                    <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <span className="text-red-500">First Event Date</span>
+                  <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
+                  onChange={(e) => {
+                    updateField("start_date", e.target.value);
+                    if (e.target.value) {
+                      updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+                    }
+                  }}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+              </div>
+
+              {/* Series end mode */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+                  How long does this series run?
+                </label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-default)] cursor-pointer hover:border-[var(--color-border-accent)] transition-colors">
+                    <input
+                      type="radio"
+                      name="series_end_mode"
+                      checked={formData.occurrence_count === "0"}
+                      onChange={() => updateField("occurrence_count", "0")}
+                      className="accent-[var(--color-accent)]"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">No end date (ongoing)</span>
+                      <p className="text-xs text-[var(--color-text-secondary)]">Repeats every week indefinitely</p>
+                    </div>
                   </label>
-                  <input
-                    type="date"
-                    value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
-                    onChange={(e) => {
-                      updateField("start_date", e.target.value);
-                      if (e.target.value) {
-                        updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
-                      }
-                    }}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
-                    Number of Events
+                  <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-default)] cursor-pointer hover:border-[var(--color-border-accent)] transition-colors">
+                    <input
+                      type="radio"
+                      name="series_end_mode"
+                      checked={formData.occurrence_count !== "0"}
+                      onChange={() => updateField("occurrence_count", "4")}
+                      className="accent-[var(--color-accent)]"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">Ends after</span>
+                      <select
+                        value={formData.occurrence_count === "0" ? "4" : formData.occurrence_count}
+                        onChange={(e) => updateField("occurrence_count", e.target.value)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (formData.occurrence_count === "0") {
+                            updateField("occurrence_count", (e.target as HTMLSelectElement).value);
+                          }
+                        }}
+                        disabled={formData.occurrence_count === "0"}
+                        className="px-2 py-1 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+                      >
+                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 52].map(n => (
+                          <option key={n} value={n.toString()}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">occurrences</span>
+                    </div>
                   </label>
-                  <select
-                    value={formData.occurrence_count}
-                    onChange={(e) => updateField("occurrence_count", e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  >
-                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                      <option key={n} value={n.toString()}>
-                        {n} events
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
-              {/* Preview of weekly dates */}
+
+              {/* Preview of upcoming dates */}
               {formData.start_date && (
                 <div className="pt-2 border-t border-[var(--color-border-default)]">
                   <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                    Events will be created for:
+                    {formData.occurrence_count === "0"
+                      ? "Upcoming occurrences (repeats indefinitely):"
+                      : `Series will run for ${formData.occurrence_count} weeks:`}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {Array.from({ length: Math.min(parseInt(formData.occurrence_count), 12) }, (_, i) => {
+                    {Array.from({ length: Math.min(formData.occurrence_count === "0" ? 6 : parseInt(formData.occurrence_count), 12) }, (_, i) => {
                       const startDate = new Date(formData.start_date + "T12:00:00Z");
                       const eventDate = new Date(startDate);
                       eventDate.setDate(startDate.getDate() + (i * 7));
@@ -881,6 +919,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                         </span>
                       );
                     })}
+                    {formData.occurrence_count === "0" && (
+                      <span className="px-2 py-1 text-xs text-[var(--color-text-secondary)] italic">
+                        and every week after...
+                      </span>
+                    )}
+                    {formData.occurrence_count !== "0" && parseInt(formData.occurrence_count) > 12 && (
+                      <span className="px-2 py-1 text-xs text-[var(--color-text-secondary)] italic">
+                        +{parseInt(formData.occurrence_count) - 12} more
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

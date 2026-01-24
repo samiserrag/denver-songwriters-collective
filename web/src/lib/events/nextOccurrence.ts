@@ -207,6 +207,7 @@ export interface EventForOccurrence {
   day_of_week?: string | null;
   recurrence_rule?: string | null;
   start_time?: string | null;
+  max_occurrences?: number | null;
 }
 
 export interface NextOccurrenceResult {
@@ -563,6 +564,26 @@ export function expandOccurrencesForEvent(
     ? event.event_date
     : startKey;
 
+  // If max_occurrences is set, compute the series end date.
+  // This ensures finite series stop after N occurrences from the anchor date.
+  let effectiveEndKey = endKey;
+  let effectiveMaxOccurrences = maxOccurrences;
+  if (event.max_occurrences && event.max_occurrences > 0 && event.event_date) {
+    // Compute when the series ends
+    const seriesEndDate = computeSeriesEndDate(
+      recurrence,
+      targetDayIndex,
+      event.event_date,
+      event.max_occurrences
+    );
+    // Use the earlier of window end or series end
+    if (seriesEndDate && seriesEndDate < endKey) {
+      effectiveEndKey = seriesEndDate;
+    }
+    // Also cap the expansion count to the series limit
+    effectiveMaxOccurrences = Math.min(maxOccurrences, event.max_occurrences);
+  }
+
   // Handle different recurrence frequencies
   switch (recurrence.frequency) {
     case "monthly":
@@ -572,25 +593,25 @@ export function expandOccurrencesForEvent(
           recurrence.ordinals,
           targetDayIndex,
           effectiveStart,
-          endKey,
-          maxOccurrences,
+          effectiveEndKey,
+          effectiveMaxOccurrences,
           occurrences
         );
       } else {
         // Monthly without ordinals - just expand weekly (fallback)
-        expandWeekly(targetDayIndex, effectiveStart, endKey, maxOccurrences, occurrences);
+        expandWeekly(targetDayIndex, effectiveStart, effectiveEndKey, effectiveMaxOccurrences, occurrences);
       }
       break;
 
     case "biweekly":
       // Biweekly - every other week
-      expandBiweekly(targetDayIndex, effectiveStart, endKey, maxOccurrences, occurrences);
+      expandBiweekly(targetDayIndex, effectiveStart, effectiveEndKey, effectiveMaxOccurrences, occurrences);
       break;
 
     case "weekly":
     default:
       // Weekly expansion
-      expandWeekly(targetDayIndex, effectiveStart, endKey, maxOccurrences, occurrences);
+      expandWeekly(targetDayIndex, effectiveStart, effectiveEndKey, effectiveMaxOccurrences, occurrences);
       break;
   }
 
@@ -598,6 +619,45 @@ export function expandOccurrencesForEvent(
   assertRecurrenceInvariant(recurrence, occurrences.length);
 
   return occurrences;
+}
+
+/**
+ * Compute the last date of a finite series.
+ * Given the event's anchor date and max_occurrences, determine when the series ends.
+ *
+ * For weekly: last date = anchor + (max_occurrences - 1) * 7 days
+ * For biweekly: last date = anchor + (max_occurrences - 1) * 14 days
+ * For monthly: approximate by stepping through months
+ */
+function computeSeriesEndDate(
+  recurrence: { frequency: string; ordinals: number[] },
+  dayOfWeek: number | null,
+  anchorDate: string,
+  maxOccurrences: number
+): string | null {
+  if (maxOccurrences <= 0 || !dayOfWeek) return null;
+
+  switch (recurrence.frequency) {
+    case "weekly": {
+      // Each occurrence is 7 days apart
+      const totalDays = (maxOccurrences - 1) * 7;
+      return addDaysDenver(anchorDate, totalDays);
+    }
+    case "biweekly": {
+      // Each occurrence is 14 days apart
+      const totalDays = (maxOccurrences - 1) * 14;
+      return addDaysDenver(anchorDate, totalDays);
+    }
+    case "monthly": {
+      // For monthly patterns, approximate: each occurrence ~30 days apart
+      // We overshoot slightly to ensure we don't cut off the last occurrence
+      const totalDays = maxOccurrences * 35;
+      // But cap the actual expansion within expandMonthlyOrdinals via maxOccurrences param
+      return addDaysDenver(anchorDate, totalDays);
+    }
+    default:
+      return null;
+  }
 }
 
 /**

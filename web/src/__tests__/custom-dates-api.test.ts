@@ -175,7 +175,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
   });
 
   describe("Weekly mode", () => {
-    it("creates multiple events with weekly dates when series_mode is 'weekly'", async () => {
+    it("creates a single DB row with recurrence_rule='weekly' for weekly series", async () => {
       const request = new Request("http://localhost/api/my-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,44 +184,47 @@ describe("POST /api/my-events - Series Mode Support", () => {
           event_type: "open_mic",
           start_time: "19:00",
           start_date: "2026-01-15",
+          day_of_week: "Wednesday",
           venue_id: "venue-1",
           series_mode: "weekly",
-          occurrence_count: 3,
+          occurrence_count: 0, // No end date (ongoing)
         })
       });
 
       const response = await POST(request);
       expect(response.status).toBe(200);
 
-      expect(capturedInsertPayloads.length).toBe(3);
+      // Single DB row created (not multiple)
+      expect(capturedInsertPayloads.length).toBe(1);
       expect(capturedInsertPayloads[0].event_date).toBe("2026-01-15");
-      expect(capturedInsertPayloads[1].event_date).toBe("2026-01-22"); // +7 days
-      expect(capturedInsertPayloads[2].event_date).toBe("2026-01-29"); // +14 days
-
-      // All should share same series_id
-      const seriesId = capturedInsertPayloads[0].series_id;
-      expect(seriesId).toBeTruthy();
-      expect(capturedInsertPayloads[1].series_id).toBe(seriesId);
-      expect(capturedInsertPayloads[2].series_id).toBe(seriesId);
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("weekly");
+      expect(capturedInsertPayloads[0].max_occurrences).toBeNull(); // infinite
+      // No series_id needed for single row
+      expect(capturedInsertPayloads[0].series_id).toBeNull();
     });
 
-    it("clamps occurrence_count to max 12 in weekly mode", async () => {
+    it("sets max_occurrences when occurrence_count is specified", async () => {
       const request = new Request("http://localhost/api/my-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: "Too Many Events",
+          title: "Limited Series",
           event_type: "open_mic",
           start_time: "19:00",
           start_date: "2026-01-15",
+          day_of_week: "Wednesday",
           venue_id: "venue-1",
           series_mode: "weekly",
-          occurrence_count: 100,
+          occurrence_count: 6,
         })
       });
 
-      await POST(request);
-      expect(capturedInsertPayloads.length).toBe(12);
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].max_occurrences).toBe(6);
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("weekly");
     });
   });
 

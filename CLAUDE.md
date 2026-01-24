@@ -315,6 +315,57 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Single-Row Weekly Series + max_occurrences (January 2026) — RESOLVED
+
+**Goal:** Fix misleading "Number of Events" dropdown for weekly series and add proper series end control.
+
+**Status:** Complete and deployed.
+
+**Problem:** The weekly series form had a "Number of Events" dropdown that created N DB rows, but occurrence expansion ignored row count and expanded indefinitely within a 90-day window. The dropdown was effectively cosmetic.
+
+**Solution:**
+1. Weekly series now creates a single DB row (matching monthly pattern) with `recurrence_rule = "weekly"`
+2. New `max_occurrences` column controls series length
+3. Form UI replaced with radio choice: "No end date (ongoing)" vs "Ends after X occurrences"
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260123200000_add_max_occurrences.sql` | Add nullable `max_occurrences` integer column to events |
+
+**Behavior:**
+
+| Setting | DB Value | Expansion Behavior |
+|---------|----------|-------------------|
+| No end date (ongoing) | `max_occurrences = NULL` | Expands indefinitely within 90-day window |
+| Ends after N occurrences | `max_occurrences = N` | Stops after N occurrences from anchor date |
+
+**Backward Compatibility:**
+- Existing multi-row series (created before this change) continue working — `interpretRecurrence()` returns `isRecurring: true` for any event with `day_of_week` set
+- Existing events have `max_occurrences = NULL` (infinite, preserving current behavior)
+- No data migration needed
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Radio UI for series end mode (no end date vs finite) |
+| `app/api/my-events/route.ts` | Single-row creation, server-side `recurrence_rule` enforcement, `max_occurrences` in insert |
+| `app/api/my-events/[id]/route.ts` | Added `max_occurrences` to PATCH allowed fields |
+| `lib/events/nextOccurrence.ts` | `max_occurrences` in interface, `computeSeriesEndDate()`, expansion limiting |
+
+**Key Implementation Details:**
+- `computeSeriesEndDate()` calculates the effective end date based on anchor + max_occurrences
+- Expansion stops at whichever is earlier: 90-day window end or series end date
+- Weekly: `(maxOccurrences - 1) * 7` days from anchor
+- Biweekly: `(maxOccurrences - 1) * 14` days from anchor
+- Monthly: `maxOccurrences * 35` days from anchor (generous window)
+
+**Test Coverage:** Updated tests in `custom-dates-api.test.ts` and `series-creation-rls.test.ts` to assert single-row behavior.
+
+---
+
 ### Feedback Screenshot Support (January 2026) — RESOLVED
 
 **Goal:** Allow users to attach screenshots to feedback submissions via paste or file upload.

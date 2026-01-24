@@ -155,7 +155,9 @@ export async function PATCH(
     // External link field
     "external_url",
     // Categories (multi-select array)
-    "categories"
+    "categories",
+    // Series limit (null = infinite, N = stops after N occurrences)
+    "max_occurrences"
   ];
 
   const now = new Date().toISOString();
