@@ -352,8 +352,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
         missingFields.push("Day of Week");
       }
-      // In edit mode, day_of_week is only required if this is a recurring event
-      if (mode === "edit" && event?.recurrence_rule && !formData.day_of_week) {
+      // In edit mode, day_of_week is only required for weekly/monthly recurring events (not custom)
+      if (mode === "edit" && event?.recurrence_rule && formData.series_mode !== "custom" && !formData.day_of_week) {
         missingFields.push("Day of Week");
       }
     }
