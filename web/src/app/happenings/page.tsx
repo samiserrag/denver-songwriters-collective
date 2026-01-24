@@ -144,7 +144,7 @@ export default async function HappeningsPage({
   // This runs in parallel with the events query
   const { data: overridesData } = await supabase
     .from("occurrence_overrides")
-    .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes")
+    .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes, override_patch")
     .gte("date_key", windowStart)
     .lte("date_key", windowEnd);
 
@@ -156,6 +156,7 @@ export default async function HappeningsPage({
       override_start_time: o.override_start_time,
       override_cover_image_url: o.override_cover_image_url,
       override_notes: o.override_notes,
+      override_patch: o.override_patch as Record<string, unknown> | null,
     }))
   );
 

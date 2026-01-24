@@ -464,19 +464,20 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   if (effectiveSelectedDate) {
     const { data: override } = await supabase
       .from("occurrence_overrides")
-      .select("status, override_start_time, override_cover_image_url, override_notes")
+      .select("status, override_start_time, override_cover_image_url, override_notes, override_patch")
       .eq("event_id", event.id)
       .eq("date_key", effectiveSelectedDate)
       .maybeSingle();
-    selectedOverride = override;
+    selectedOverride = override as typeof override & { override_patch?: Record<string, unknown> | null };
   }
 
   // Determine if the selected occurrence is cancelled
   const isOccurrenceCancelled = selectedOverride?.status === "cancelled";
 
-  // Apply override values (fall back to event defaults)
-  const displayStartTime = selectedOverride?.override_start_time || event.start_time;
-  const displayCoverImage = selectedOverride?.override_cover_image_url || event.cover_image_url;
+  // Apply override values: override_patch takes precedence over legacy columns
+  const patch = (selectedOverride as { override_patch?: Record<string, unknown> | null } | null)?.override_patch;
+  const displayStartTime = (patch?.start_time as string | undefined) || selectedOverride?.override_start_time || event.start_time;
+  const displayCoverImage = (patch?.cover_image_url as string | undefined) || selectedOverride?.override_cover_image_url || event.cover_image_url;
   const occurrenceNotes = selectedOverride?.override_notes;
 
   // Phase ABC5: Format selected date for display
@@ -710,12 +711,12 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         </div>
       )}
       {isPastEvent && !isCancelled && (
-        <div className="mb-4 p-4 rounded-lg bg-slate-900/30 border border-slate-500/40 text-slate-300">
+        <div className="mb-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-900/30 border border-slate-300 dark:border-slate-500/40 text-slate-800 dark:text-slate-300">
           <div className="flex items-center gap-2">
             <span className="text-lg">📅</span>
             <div>
               <p className="font-semibold">This happening has ended</p>
-              <p className="text-sm text-slate-300/80">Check out upcoming happenings for future happenings.</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300/80">Check out upcoming happenings for future happenings.</p>
             </div>
           </div>
         </div>
@@ -1210,12 +1211,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
             )}
           </div>
 
-          {/* Host Controls - only visible to hosts/admins */}
-          {/* Phase 4.XX: Host controls available for ALL events (not just DSC), per timeslots-everywhere change */}
-          <HostControls
-            eventId={event.id}
-            hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
-          />
+          {/* Host Controls - only visible to hosts/admins on timeslot events */}
+          {(event as { has_timeslots?: boolean }).has_timeslots && (
+            <HostControls
+              eventId={event.id}
+              hasTimeslots={true}
+            />
+          )}
 
           {/* About section - shown above timeslots */}
           {event.description && (
