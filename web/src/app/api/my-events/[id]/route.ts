@@ -181,21 +181,25 @@ export async function PATCH(
 
   // Validate and canonicalize custom_dates when provided
   if (body.custom_dates !== undefined) {
-    if (!Array.isArray(body.custom_dates)) {
+    if (body.custom_dates === null) {
+      // Clearing custom_dates (switching away from custom mode)
+      updates.custom_dates = null;
+    } else if (!Array.isArray(body.custom_dates)) {
       return NextResponse.json({ error: "custom_dates must be an array" }, { status: 400 });
+    } else {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      const validDates = (body.custom_dates as string[])
+        .filter((d: string) => typeof d === "string" && dateRegex.test(d));
+      // Dedupe and sort
+      const uniqueDates = [...new Set(validDates)].sort();
+      if (uniqueDates.length === 0) {
+        return NextResponse.json({ error: "At least one valid date is required for custom series" }, { status: 400 });
+      }
+      updates.custom_dates = uniqueDates;
+      updates.recurrence_rule = "custom";
+      updates.day_of_week = null;
+      updates.event_date = uniqueDates[0]; // Anchor = first date
     }
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    const validDates = (body.custom_dates as string[])
-      .filter((d: string) => typeof d === "string" && dateRegex.test(d));
-    // Dedupe and sort
-    const uniqueDates = [...new Set(validDates)].sort();
-    if (uniqueDates.length === 0) {
-      return NextResponse.json({ error: "At least one valid date is required for custom series" }, { status: 400 });
-    }
-    updates.custom_dates = uniqueDates;
-    updates.recurrence_rule = "custom";
-    updates.day_of_week = null;
-    updates.event_date = uniqueDates[0]; // Anchor = first date
   }
 
   // Phase 4.0: Handle location selection changes with invariant enforcement

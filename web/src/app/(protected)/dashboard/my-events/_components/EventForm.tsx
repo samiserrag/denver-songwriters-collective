@@ -548,7 +548,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
         occurrence_count: parseInt(formData.occurrence_count) || 0,
         series_mode: formData.series_mode,
-        custom_dates: formData.series_mode === "custom" ? customDates : undefined,
+        custom_dates: formData.series_mode === "custom" ? customDates : (mode === "edit" ? null : undefined),
         // max_occurrences for edit mode (sent directly to DB)
         max_occurrences: (parseInt(formData.occurrence_count) || 0) > 0 ? parseInt(formData.occurrence_count) : null,
         // Phase 3 fields
@@ -1062,7 +1062,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3b: EVENT DATE(S) ============ */}
       {/* Phase 4.x: Flexible date selection - single, weekly series, or custom dates */}
       {/* Hidden in occurrence mode (create-mode series configuration) */}
-      {!occurrenceMode && mode === "create" && (
+      {!occurrenceMode && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
