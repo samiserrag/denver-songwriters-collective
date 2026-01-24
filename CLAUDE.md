@@ -361,6 +361,36 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Admin Override Modal Removal + Canonical Redirect (January 2026) — RESOLVED
+
+**Goal:** Eliminate the legacy 4-field admin override modal and make all occurrence edits use the full canonical EventForm occurrence editor.
+
+**Status:** Complete.
+
+**Problem:** The admin overrides page at `/dashboard/admin/events/[id]/overrides` used `OccurrenceOverrideModal` which only edited 4 legacy fields (status, override_start_time, override_cover_image_url, override_notes). It bypassed the `override_patch` JSONB system and the API route's server-side allowlist validation.
+
+**Fix:**
+- Admin overrides page now server-side redirects to `/dashboard/my-events/[id]/overrides`
+- All "Edit" actions navigate to the full per-date EventForm editor (26-field override_patch)
+- Deleted dead code: `OccurrenceOverrideModal.tsx`, `OccurrenceOverrideList.tsx`
+
+**Files Deleted:**
+
+| File | Reason |
+|------|--------|
+| `admin/events/[id]/overrides/_components/OccurrenceOverrideModal.tsx` | Dead code — replaced by canonical EventForm |
+| `admin/events/[id]/overrides/_components/OccurrenceOverrideList.tsx` | Dead code — admin page redirects before rendering |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `admin/events/[id]/overrides/page.tsx` | Replaced 213-line page with 23-line server-side redirect |
+
+**Commits:** `77ce7fa`
+
+---
+
 ### Occurrence Mode Form — Per-Date Field Overrides (January 2026) — RESOLVED
 
 **Goal:** Allow hosts/admins to edit nearly all canonical event fields per-occurrence using the same EventForm in a new "occurrence" mode, stored as `override_patch` JSONB.
@@ -406,8 +436,11 @@ age_policy, external_url, categories, cover_image_url, host_notes, is_published
 
 | Route | Purpose |
 |-------|---------|
-| `/dashboard/my-events/[id]/overrides` | Host/admin occurrence list (cancel/restore/edit) |
-| `/dashboard/my-events/[id]/overrides/[dateKey]` | Per-date edit using EventForm in occurrence mode |
+| `/dashboard/my-events/[id]/overrides` | Host/admin occurrence list (cancel/restore/edit) — CANONICAL |
+| `/dashboard/my-events/[id]/overrides/[dateKey]` | Per-date edit using EventForm in occurrence mode — CANONICAL |
+| `/dashboard/admin/events/[id]/overrides` | Server-side redirect to canonical list (intentional) |
+
+**Admin Overrides Redirect Rule:** The admin overrides page is intentionally a server-side `redirect()`. The canonical per-date editor is the ONLY supported path for occurrence editing. Do NOT reintroduce an admin-specific occurrence editor — all occurrence edits must flow through the canonical EventForm occurrence mode.
 
 **API Route:** `GET/POST/DELETE /api/my-events/[id]/overrides`
 - Auth: event owner, accepted host, or admin
