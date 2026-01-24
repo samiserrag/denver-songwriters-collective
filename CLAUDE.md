@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.78):** Lint warnings = 0. All tests passing (2476). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.79):** Lint warnings = 0. All tests passing (2476). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -358,6 +358,69 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Edit Form Series Type Selector + Contrast Audit (January 2026) — RESOLVED
+
+**Goal:** Allow hosts/admins to change an existing happening's series type (One-time, Weekly, Monthly, Custom Dates) from the edit form, and fix all remaining low-contrast text across both themes.
+
+**Status:** Complete.
+
+**Series Type Selector in Edit Mode:**
+
+| Change | Implementation |
+|--------|----------------|
+| Selector visibility | Changed from `mode === "create"` only to all non-occurrence modes |
+| Condition | `{!occurrenceMode && (` — shows in both create and edit |
+| Occurrence override protection | `occurrenceMode={true}` hides series options in per-date editor |
+| Mode switching warning | Amber banner warns about orphaned RSVPs/overrides when changing type |
+| custom_dates clearing | Sends `null` in edit mode when switching away from custom |
+| API support | PATCH route handles `custom_dates: null` to clear column |
+
+**Series Mode Initialization (Edit Mode):**
+
+| recurrence_rule | Detected Mode |
+|----------------|---------------|
+| `"weekly"` / `"biweekly"` | weekly |
+| `"custom"` | custom |
+| `"2nd"` / `"1st/3rd"` / etc. | monthly |
+| `null` / missing | single |
+
+**Data Safety:** Saving without changing the series type rebuilds the exact same `recurrence_rule` from the initialized state. No unintended data mutations.
+
+**Orphan Behavior:** When switching series types, past RSVPs/comments/overrides for dates no longer generated remain in the DB but become invisible (expected trade-off of single-row model).
+
+**Dual-Theme Contrast Fixes (11 files):**
+
+All instances of `text-*-400` used without light-mode counterparts now use `text-*-800 dark:text-*-400`:
+
+| File | Fix |
+|------|-----|
+| `auth/reset/page.tsx` | Error + success message banners |
+| `newsletter-signup.tsx` | Status message text |
+| `NewsletterSection.tsx` | Status message text |
+| `EventUpdateSuggestionsTable.tsx` | Error text + suggested value |
+| `VenueDiffTable.tsx` | Update count + not-found text |
+| `EventDiffTable.tsx` | Not-found count |
+| `OverrideDiffTable.tsx` | Event ID count + status colors |
+| `ProfileCompleteness.tsx` | Low completion percentage |
+| `DashboardProfileCard.tsx` | Low completion percentage |
+| `dashboard/page.tsx` | Auth error text |
+| `studio-appointments/page.tsx` | Auth error text |
+
+**Correct Dual-Theme Pattern:**
+- Light mode: `text-red-800` / `text-amber-800` / `text-green-800`
+- Dark mode: `dark:text-red-400` / `dark:text-amber-400` / `dark:text-green-400`
+- Background: `bg-*-100 dark:bg-*-500/10`
+- Border: `border-*-300 dark:border-*-500/30`
+
+**Acceptable exceptions (not fixed):**
+- Required field asterisks (`<span className="text-red-400">*</span>`) — small decorative characters
+- Image overlay badges (`bg-black/50` backdrop ensures contrast)
+- `text-amber-500` / `text-emerald-500` for percentage indicators (medium brightness, acceptable on both themes)
+
+**Commits:** `ea1ee4d`, `5b87458`, `fe10bea`
 
 ---
 
