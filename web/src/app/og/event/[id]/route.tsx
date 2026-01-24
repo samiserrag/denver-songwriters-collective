@@ -132,6 +132,9 @@ export async function GET(
     });
   }
 
+  // Build city label for bottom-right of image zone
+  const cityLabel = [venueCity, venueState].filter(Boolean).join(", ") || undefined;
+
   return new ImageResponse(
     renderOgCard({
       title,
@@ -142,6 +145,7 @@ export async function GET(
       kindLabel: typeLabel,
       kindVariant: "gold",
       dateOverlay,
+      cityLabel,
     }),
     {
       width: 1200,

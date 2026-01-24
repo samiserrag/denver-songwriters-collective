@@ -71,6 +71,8 @@ export interface OgCardProps {
   imageFit?: "cover" | "contain";
   /** Date overlay badge on image zone (events only) */
   dateOverlay?: string;
+  /** City label shown bottom-right on image zone */
+  cityLabel?: string;
 }
 
 /**
@@ -86,6 +88,7 @@ export function renderOgCard({
   author,
   imageFit = "cover",
   dateOverlay,
+  cityLabel,
 }: OgCardProps): React.ReactElement {
   return (
     <div
@@ -169,10 +172,10 @@ export function renderOgCard({
             top: "20px",
             left: "24px",
             backgroundColor: COLORS.kindBadgeBg,
-            borderRadius: "8px",
-            padding: "8px 16px",
-            fontSize: "18px",
-            fontWeight: "600",
+            borderRadius: "10px",
+            padding: "10px 20px",
+            fontSize: "24px",
+            fontWeight: "700",
             color: COLORS.textPrimary,
             letterSpacing: "0.3px",
           }}
@@ -189,14 +192,14 @@ export function renderOgCard({
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-end",
-            backgroundColor: "rgba(0, 0, 0, 0.50)",
-            borderRadius: "10px",
-            padding: "10px 16px",
+            backgroundColor: "rgba(0, 0, 0, 0.55)",
+            borderRadius: "12px",
+            padding: "12px 20px",
           }}
         >
           <span
             style={{
-              fontSize: "20px",
+              fontSize: "24px",
               fontWeight: "700",
               color: COLORS.goldAccent,
               lineHeight: 1.25,
@@ -207,7 +210,7 @@ export function renderOgCard({
           </span>
           <span
             style={{
-              fontSize: "20px",
+              fontSize: "24px",
               fontWeight: "700",
               color: COLORS.goldAccent,
               lineHeight: 1.25,
@@ -226,14 +229,33 @@ export function renderOgCard({
               bottom: "20px",
               left: "24px",
               backgroundColor: COLORS.kindBadgeBg,
-              borderRadius: "8px",
-              padding: "8px 16px",
-              fontSize: "18px",
-              fontWeight: "600",
+              borderRadius: "10px",
+              padding: "10px 20px",
+              fontSize: "22px",
+              fontWeight: "700",
               color: COLORS.textPrimary,
             }}
           >
             {dateOverlay}
+          </div>
+        )}
+
+        {/* City label — bottom-right */}
+        {cityLabel && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "20px",
+              right: "24px",
+              backgroundColor: COLORS.kindBadgeBg,
+              borderRadius: "10px",
+              padding: "10px 20px",
+              fontSize: "22px",
+              fontWeight: "600",
+              color: COLORS.textPrimary,
+            }}
+          >
+            {cityLabel}
           </div>
         )}
       </div>
@@ -309,11 +331,11 @@ export function renderOgCard({
                   style={{
                     backgroundColor: COLORS.pillBg,
                     border: `1.5px solid ${COLORS.pillBorder}`,
-                    borderRadius: "14px",
-                    padding: "5px 14px",
-                    fontSize: "15px",
+                    borderRadius: "16px",
+                    padding: "6px 16px",
+                    fontSize: "18px",
                     color: COLORS.pillText,
-                    fontWeight: "500",
+                    fontWeight: "600",
                   }}
                 >
                   {chip.label}

@@ -49,6 +49,9 @@ export async function GET(
     variant: "gold",
   });
 
+  // City label for bottom-right of image zone
+  const cityLabel = location || undefined;
+
   return new ImageResponse(
     renderOgCard({
       title: name,
@@ -59,6 +62,7 @@ export async function GET(
       kindLabel: "Venue",
       kindVariant: "gold",
       imageFit: "cover",
+      cityLabel,
     }),
     {
       width: 1200,
