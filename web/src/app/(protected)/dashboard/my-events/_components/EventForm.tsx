@@ -106,6 +106,8 @@ interface EventFormProps {
     event_date?: string | null;
     // Series length
     max_occurrences?: number | null;
+    // Custom dates (for custom-date series)
+    custom_dates?: string[] | null;
   };
 }
 
@@ -146,7 +148,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     start_date: "",
     occurrence_count: event?.max_occurrences ? event.max_occurrences.toString() : "0", // 0 = no end date (ongoing), >0 = finite series
     series_mode: (mode === "edit" && event?.recurrence_rule
-      ? (event.recurrence_rule === "weekly" || event.recurrence_rule === "biweekly" ? "weekly" : "monthly")
+      ? (event.recurrence_rule === "weekly" || event.recurrence_rule === "biweekly" ? "weekly"
+        : event.recurrence_rule === "custom" ? "custom" : "monthly")
       : "single") as "single" | "weekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
@@ -188,12 +191,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   });
 
   // Phase 4.x: Custom dates state for non-predictable series
-  const [customDates, setCustomDates] = useState<string[]>([]);
+  const [customDates, setCustomDates] = useState<string[]>(
+    mode === "edit" && event?.custom_dates ? event.custom_dates : []
+  );
 
   // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
   // Parse initial ordinals from event.recurrence_rule in edit mode (e.g., "3rd" → [3], "1st/3rd" → [1, 3])
   const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>(() => {
-    if (mode === "edit" && event?.recurrence_rule && event.recurrence_rule !== "weekly" && event.recurrence_rule !== "biweekly") {
+    if (mode === "edit" && event?.recurrence_rule && event.recurrence_rule !== "weekly" && event.recurrence_rule !== "biweekly" && event.recurrence_rule !== "custom") {
       const ordinalMap: Record<string, number> = { "1st": 1, "2nd": 2, "3rd": 3, "4th": 4, "5th": 5, "last": -1 };
       const parts = event.recurrence_rule.split("/").map(s => s.trim().toLowerCase());
       const parsed = parts.map(p => ordinalMap[p]).filter((n): n is number => n !== undefined);
@@ -412,17 +417,19 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       let effectiveDayOfWeek: string | null = null;
 
       if (mode === "edit") {
-        // Edit mode: rebuild recurrence_rule from ordinals for monthly, or preserve for weekly
+        // Edit mode: rebuild recurrence_rule from ordinals for monthly, preserve for weekly/custom
         if (formData.series_mode === "monthly") {
           const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
           const ordinalTexts = selectedOrdinals.sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b).map(o => ordinalWords[o] || `${o}th`);
           effectiveRecurrenceRule = ordinalTexts.join("/");
         } else if (formData.series_mode === "weekly") {
           effectiveRecurrenceRule = "weekly";
+        } else if (formData.series_mode === "custom") {
+          effectiveRecurrenceRule = "custom";
         } else {
           effectiveRecurrenceRule = null; // single event
         }
-        effectiveDayOfWeek = formData.day_of_week || null;
+        effectiveDayOfWeek = formData.series_mode === "custom" ? null : (formData.day_of_week || null);
       } else {
         // Create mode: derive from series_mode selection
         if (formData.series_mode === "weekly") {
@@ -759,8 +766,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       )}
 
       {/* ============ SECTION 3a-edit: SERIES CONTROLS (Edit Mode) ============ */}
-      {/* Show ordinal checkboxes for monthly events and series length for all recurring events in edit mode */}
-      {mode === "edit" && (formData.series_mode === "monthly" || formData.series_mode === "weekly") && (
+      {/* Show ordinal checkboxes for monthly events, series length for weekly/monthly, or dates for custom */}
+      {mode === "edit" && (formData.series_mode === "monthly" || formData.series_mode === "weekly" || formData.series_mode === "custom") && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
             Series Settings
@@ -826,7 +833,37 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
-          {/* Series Length */}
+          {/* Custom Dates Display */}
+          {formData.series_mode === "custom" && (
+            <div>
+              <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+                Custom Dates ({customDates.length} dates)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {customDates
+                  .sort()
+                  .map(dateStr => (
+                    <span
+                      key={dateStr}
+                      className="px-3 py-1.5 rounded-full text-sm bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/30 text-[var(--color-text-primary)]"
+                    >
+                      {new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "America/Denver",
+                      })}
+                    </span>
+                  ))}
+              </div>
+              <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+                This is a custom-date series. Dates are managed as a fixed set.
+              </p>
+            </div>
+          )}
+
+          {/* Series Length (not applicable for custom dates) */}
+          {formData.series_mode !== "custom" && (
           <div>
             <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
               How long does this series run?
@@ -880,6 +917,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </label>
             </div>
           </div>
+          )}
         </div>
       )}
 
