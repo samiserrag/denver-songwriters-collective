@@ -104,6 +104,8 @@ interface EventFormProps {
     last_verified_at?: string | null;
     // Event date (for non-recurring events)
     event_date?: string | null;
+    // Series length
+    max_occurrences?: number | null;
   };
 }
 
@@ -142,8 +144,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     event_date: event?.event_date || "",
     // Recurring series fields (only for create mode)
     start_date: "",
-    occurrence_count: "0", // 0 = no end date (ongoing), >0 = finite series
-    series_mode: "single" as "single" | "weekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
+    occurrence_count: event?.max_occurrences ? event.max_occurrences.toString() : "0", // 0 = no end date (ongoing), >0 = finite series
+    series_mode: (mode === "edit" && event?.recurrence_rule
+      ? (event.recurrence_rule === "weekly" || event.recurrence_rule === "biweekly" ? "weekly" : "monthly")
+      : "single") as "single" | "weekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
     location_mode: event?.location_mode || "venue",
@@ -187,7 +191,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [customDates, setCustomDates] = useState<string[]>([]);
 
   // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
-  const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>([1]); // Default to 1st
+  // Parse initial ordinals from event.recurrence_rule in edit mode (e.g., "3rd" → [3], "1st/3rd" → [1, 3])
+  const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>(() => {
+    if (mode === "edit" && event?.recurrence_rule && event.recurrence_rule !== "weekly" && event.recurrence_rule !== "biweekly") {
+      const ordinalMap: Record<string, number> = { "1st": 1, "2nd": 2, "3rd": 3, "4th": 4, "5th": 5, "last": -1 };
+      const parts = event.recurrence_rule.split("/").map(s => s.trim().toLowerCase());
+      const parsed = parts.map(p => ordinalMap[p]).filter((n): n is number => n !== undefined);
+      return parsed.length > 0 ? parsed : [1];
+    }
+    return [1];
+  });
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
@@ -399,9 +412,16 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       let effectiveDayOfWeek: string | null = null;
 
       if (mode === "edit") {
-        // Edit mode: preserve the event's recurrence fields from the form state
-        // (user can change day_of_week via date picker, which updates formData.day_of_week)
-        effectiveRecurrenceRule = formData.recurrence_rule || null;
+        // Edit mode: rebuild recurrence_rule from ordinals for monthly, or preserve for weekly
+        if (formData.series_mode === "monthly") {
+          const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
+          const ordinalTexts = selectedOrdinals.sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b).map(o => ordinalWords[o] || `${o}th`);
+          effectiveRecurrenceRule = ordinalTexts.join("/");
+        } else if (formData.series_mode === "weekly") {
+          effectiveRecurrenceRule = "weekly";
+        } else {
+          effectiveRecurrenceRule = null; // single event
+        }
         effectiveDayOfWeek = formData.day_of_week || null;
       } else {
         // Create mode: derive from series_mode selection
@@ -433,11 +453,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
         slot_duration_minutes: slotConfig.has_timeslots ? slotConfig.slot_duration_minutes : null,
         allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
-        // Series configuration (for create mode)
+        // Series configuration
         start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
         occurrence_count: parseInt(formData.occurrence_count) || 0,
         series_mode: formData.series_mode,
         custom_dates: formData.series_mode === "custom" ? customDates : undefined,
+        // max_occurrences for edit mode (sent directly to DB)
+        max_occurrences: (parseInt(formData.occurrence_count) || 0) > 0 ? parseInt(formData.occurrence_count) : null,
         // Phase 3 fields
         timezone: formData.timezone,
         location_mode: formData.location_mode,
@@ -544,6 +566,27 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
+      {/* ============ SAVE BUTTON (top of form) ============ */}
+      <div className="flex items-center gap-4">
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
+        >
+          {loading ? "Saving..." : mode === "create" ? "Create Happening" : "Save Changes"}
+        </button>
+        {mode === "edit" && (
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/my-events")}
+            className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] rounded-lg transition-colors"
+            aria-label="Back without saving (does not cancel event)"
+          >
+            Back without saving
+          </button>
+        )}
+      </div>
+
       {/* ============ SECTION 1: EVENT TYPE ============ */}
       {/* Phase 4.44c: Intent-first - What kind of event is this? */}
       <div>
@@ -624,11 +667,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3: SCHEDULE ============ */}
       {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Day of Week - only shown for:
-            - Create mode with weekly series selected (monthly derives from date picker)
-            - Edit mode for recurring events (has recurrence_rule) - shows derived value
-            Single-date and custom-date events derive day_of_week from the selected date(s) */}
-        {((mode === "edit" && event?.recurrence_rule) || (mode === "create" && formData.series_mode === "weekly")) && (
+        {/* Day of Week - only shown for weekly series (create or edit).
+            Monthly events derive day_of_week from the date picker.
+            Single-date and custom-date events derive from selected date(s). */}
+        {((mode === "edit" && formData.series_mode === "weekly") || (mode === "create" && formData.series_mode === "weekly")) && (
           <div>
             <label className="block text-sm font-medium mb-2">
               <span className="text-red-500">Day of Week</span>
@@ -713,6 +755,131 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               ? "Changing this date will update the day of week and shift all future occurrences."
               : "Change the date for this one-time happening."}
           </p>
+        </div>
+      )}
+
+      {/* ============ SECTION 3a-edit: SERIES CONTROLS (Edit Mode) ============ */}
+      {/* Show ordinal checkboxes for monthly events and series length for all recurring events in edit mode */}
+      {mode === "edit" && (formData.series_mode === "monthly" || formData.series_mode === "weekly") && (
+        <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
+            Series Settings
+          </h3>
+
+          {/* Monthly: Ordinal Selection - Which weeks of the month */}
+          {formData.series_mode === "monthly" && (
+            <div>
+              <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+                Which week(s) of the month?
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 1, label: "1st" },
+                  { value: 2, label: "2nd" },
+                  { value: 3, label: "3rd" },
+                  { value: 4, label: "4th" },
+                  { value: -1, label: "Last" },
+                ].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      if (selectedOrdinals.includes(value)) {
+                        if (selectedOrdinals.length > 1) {
+                          setSelectedOrdinals(selectedOrdinals.filter(o => o !== value));
+                        }
+                      } else {
+                        setSelectedOrdinals([...selectedOrdinals, value].sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b));
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      selectedOrdinals.includes(value)
+                        ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
+                        : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                Select one or more weeks. E.g., &quot;1st &amp; 3rd&quot; for twice-monthly events.
+              </p>
+
+              {/* Pattern Summary */}
+              {formData.day_of_week && selectedOrdinals.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-[var(--color-border-default)]">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                    Pattern:{" "}
+                    <span className="text-[var(--color-accent-primary)]">
+                      {(() => {
+                        const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "Last" };
+                        const ordinalTexts = selectedOrdinals
+                          .sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b)
+                          .map(o => ordinalWords[o] || `${o}th`);
+                        return `${ordinalTexts.join(" & ")} ${formData.day_of_week} of the month`;
+                      })()}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Series Length */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
+              How long does this series run?
+            </label>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-default)] cursor-pointer hover:border-[var(--color-border-accent)] transition-colors">
+                <input
+                  type="radio"
+                  name="edit_series_end_mode"
+                  checked={formData.occurrence_count === "0"}
+                  onChange={() => updateField("occurrence_count", "0")}
+                  className="accent-[var(--color-accent)]"
+                />
+                <div>
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">No end date (ongoing)</span>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {formData.series_mode === "weekly" ? "Repeats every week indefinitely" : "Repeats every month indefinitely"}
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-default)] cursor-pointer hover:border-[var(--color-border-accent)] transition-colors">
+                <input
+                  type="radio"
+                  name="edit_series_end_mode"
+                  checked={formData.occurrence_count !== "0"}
+                  onChange={() => updateField("occurrence_count", formData.series_mode === "weekly" ? "4" : "6")}
+                  className="accent-[var(--color-accent)]"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">Ends after</span>
+                  <select
+                    value={formData.occurrence_count === "0" ? (formData.series_mode === "weekly" ? "4" : "6") : formData.occurrence_count}
+                    onChange={(e) => updateField("occurrence_count", e.target.value)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (formData.occurrence_count === "0") {
+                        updateField("occurrence_count", (e.target as HTMLSelectElement).value);
+                      }
+                    }}
+                    disabled={formData.occurrence_count === "0"}
+                    className="px-2 py-1 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
+                  >
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 52].map(n => (
+                      <option key={n} value={n.toString()}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">occurrences</span>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1673,31 +1840,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         )}
       </div>
 
-      {/* ============ SECTION 8: SAVE & PUBLISH ============ */}
+      {/* ============ SECTION 8: PUBLISH ============ */}
       <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
-        {/* Save / Back buttons */}
-        <div className="flex items-center gap-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
-          >
-            {loading ? "Saving..." : mode === "create" ? "Create Happening" : "Save Changes"}
-          </button>
-          {mode === "edit" && (
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/my-events")}
-              className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] rounded-lg transition-colors"
-              aria-label="Back without saving (does not cancel event)"
-            >
-              Back without saving
-            </button>
-          )}
-        </div>
-
         {/* Publish toggle */}
-        <div className="flex items-center justify-between pt-3 border-t border-[var(--color-border-default)]">
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
               {formData.is_published ? "Published" : "Draft"}
