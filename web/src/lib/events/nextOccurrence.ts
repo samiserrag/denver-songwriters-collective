@@ -896,6 +896,82 @@ export interface OccurrenceOverride {
   override_start_time?: string | null;
   override_cover_image_url?: string | null;
   override_notes?: string | null;
+  /** JSONB patch of per-occurrence field overrides (Phase: Occurrence Mode Form) */
+  override_patch?: Record<string, unknown> | null;
+}
+
+/**
+ * Allowlist of fields that can be overridden per-occurrence.
+ * Series-level fields (event_type, recurrence_rule, etc.) are BLOCKED.
+ */
+export const ALLOWED_OVERRIDE_FIELDS = new Set([
+  "title",
+  "description",
+  "start_time",
+  "end_time",
+  "venue_id",
+  "location_mode",
+  "custom_location_name",
+  "custom_address",
+  "custom_city",
+  "custom_state",
+  "online_url",
+  "location_notes",
+  "capacity",
+  "has_timeslots",
+  "total_slots",
+  "slot_duration_minutes",
+  "is_free",
+  "cost_label",
+  "signup_url",
+  "signup_deadline",
+  "age_policy",
+  "external_url",
+  "categories",
+  "cover_image_url",
+  "host_notes",
+  "is_published",
+]);
+
+/**
+ * Apply occurrence override to a base event.
+ * Single merge path: legacy columns first, then overlay override_patch.
+ *
+ * Usage: const effective = applyOccurrenceOverride(baseEvent, overrideRow);
+ *
+ * @param baseEvent - The series-level event data (any object with event fields)
+ * @param override - The override row from occurrence_overrides table (or null)
+ * @returns A new object with overrides applied (does NOT mutate inputs)
+ */
+export function applyOccurrenceOverride<T extends Record<string, unknown>>(
+  baseEvent: T,
+  override: OccurrenceOverride | null | undefined
+): T {
+  if (!override) return baseEvent;
+
+  const result = { ...baseEvent };
+
+  // 1. Apply legacy columns (backward compatibility with existing override UI)
+  if (override.override_start_time) {
+    (result as Record<string, unknown>).start_time = override.override_start_time;
+  }
+  if (override.override_cover_image_url) {
+    (result as Record<string, unknown>).cover_image_url = override.override_cover_image_url;
+  }
+  if (override.override_notes) {
+    (result as Record<string, unknown>).host_notes = override.override_notes;
+  }
+
+  // 2. Apply override_patch (allowlisted keys only)
+  if (override.override_patch && typeof override.override_patch === "object") {
+    for (const [key, value] of Object.entries(override.override_patch)) {
+      if (ALLOWED_OVERRIDE_FIELDS.has(key)) {
+        (result as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
+
+  return result;
 }
 
 /**

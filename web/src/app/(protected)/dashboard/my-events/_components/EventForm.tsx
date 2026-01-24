@@ -63,6 +63,12 @@ interface EventFormProps {
   canCreateVenue?: boolean;
   /** Whether user is admin (can verify events directly) */
   isAdmin?: boolean;
+  /** Occurrence mode: form edits a single occurrence, not the series */
+  occurrenceMode?: boolean;
+  /** The date_key for the occurrence being edited (YYYY-MM-DD) */
+  occurrenceDateKey?: string;
+  /** The event ID for the occurrence (used to submit override) */
+  occurrenceEventId?: string;
   event?: {
     id: string;
     title: string;
@@ -111,7 +117,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, isAdmin = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, isAdmin = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -338,15 +344,20 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     if (!formData.title.trim()) {
       missingFields.push("Title");
     }
-    // Day of Week required for weekly series (user selects from dropdown)
-    // Monthly mode derives day_of_week from the date picker automatically
-    if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
-      missingFields.push("Day of Week");
+
+    // Series-related validations only apply when NOT in occurrence mode
+    if (!occurrenceMode) {
+      // Day of Week required for weekly series (user selects from dropdown)
+      // Monthly mode derives day_of_week from the date picker automatically
+      if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
+        missingFields.push("Day of Week");
+      }
+      // In edit mode, day_of_week is only required if this is a recurring event
+      if (mode === "edit" && event?.recurrence_rule && !formData.day_of_week) {
+        missingFields.push("Day of Week");
+      }
     }
-    // In edit mode, day_of_week is only required if this is a recurring event
-    if (mode === "edit" && event?.recurrence_rule && !formData.day_of_week) {
-      missingFields.push("Day of Week");
-    }
+
     if (!formData.start_time) {
       missingFields.push("Start Time");
     }
@@ -366,13 +377,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       missingFields.push("Online URL");
     }
 
-    // Custom dates validation (when in custom series mode)
-    if (mode === "create" && formData.series_mode === "custom" && customDates.length === 0) {
+    // Custom dates validation (when in custom series mode) — skip in occurrence mode
+    if (!occurrenceMode && mode === "create" && formData.series_mode === "custom" && customDates.length === 0) {
       missingFields.push("Custom Dates (select at least one date)");
     }
 
-    // Start date validation for all create modes
-    if (mode === "create") {
+    // Start date validation for all create modes — skip in occurrence mode
+    if (!occurrenceMode && mode === "create") {
       if (formData.series_mode === "single" && !formData.start_date) {
         missingFields.push("Event Date");
       } else if ((formData.series_mode === "weekly" || formData.series_mode === "monthly")) {
@@ -394,18 +405,91 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     }
 
     // Phase 4.36: Require publish confirmation when transitioning to published
-    // Confirmation is needed when: (1) publishing a new event, OR (2) publishing a previously draft event
+    // Skip in occurrence mode (occurrence publish state is per-date, not series)
     const wasPublished = event?.is_published ?? false;
     const willPublish = formData.is_published;
     const isNewPublish = willPublish && !wasPublished;
 
-    if (isNewPublish && !publishConfirmed) {
+    if (!occurrenceMode && isNewPublish && !publishConfirmed) {
       setError("Please confirm you're ready to publish before making this event visible.");
       setLoading(false);
       return;
     }
 
     try {
+      // ─── OCCURRENCE MODE: Submit as override patch ───
+      if (occurrenceMode && occurrenceDateKey && occurrenceEventId) {
+        // Build override_patch as diff of changed fields vs base event
+        const overridePatch: Record<string, unknown> = {};
+
+        // Compare each allowlisted field against the base event
+        if (formData.title.trim() !== (event?.title || "")) overridePatch.title = formData.title.trim();
+        if (formData.description.trim() !== (event?.description || "")) overridePatch.description = formData.description.trim() || null;
+        if (formData.start_time !== (event?.start_time || "")) overridePatch.start_time = formData.start_time || null;
+        if (formData.end_time !== (event?.end_time || "")) overridePatch.end_time = formData.end_time || null;
+        if ((locationSelectionMode === "venue" ? formData.venue_id : null) !== (event?.venue_id || null)) {
+          overridePatch.venue_id = locationSelectionMode === "venue" ? formData.venue_id || null : null;
+        }
+        if (formData.location_mode !== (event?.location_mode || "venue")) overridePatch.location_mode = formData.location_mode;
+        if ((locationSelectionMode === "custom" ? formData.custom_location_name.trim() : "") !== (event?.custom_location_name || "")) {
+          overridePatch.custom_location_name = locationSelectionMode === "custom" ? formData.custom_location_name.trim() || null : null;
+        }
+        if ((locationSelectionMode === "custom" ? formData.custom_address.trim() : "") !== (event?.custom_address || "")) {
+          overridePatch.custom_address = locationSelectionMode === "custom" ? formData.custom_address.trim() || null : null;
+        }
+        if ((locationSelectionMode === "custom" ? formData.custom_city.trim() : "") !== (event?.custom_city || "")) {
+          overridePatch.custom_city = locationSelectionMode === "custom" ? formData.custom_city.trim() || null : null;
+        }
+        if ((locationSelectionMode === "custom" ? formData.custom_state.trim() : "") !== (event?.custom_state || "")) {
+          overridePatch.custom_state = locationSelectionMode === "custom" ? formData.custom_state.trim() || null : null;
+        }
+        if (formData.online_url !== (event?.online_url || "")) overridePatch.online_url = formData.online_url || null;
+        if (formData.location_notes.trim() !== (event?.location_notes || "")) overridePatch.location_notes = formData.location_notes.trim() || null;
+        if ((formData.capacity ? parseInt(formData.capacity) : null) !== (event?.capacity ?? null)) {
+          overridePatch.capacity = formData.capacity ? parseInt(formData.capacity) : null;
+        }
+        if (slotConfig.has_timeslots !== false) overridePatch.has_timeslots = slotConfig.has_timeslots;
+        if (slotConfig.has_timeslots && slotConfig.total_slots !== 10) overridePatch.total_slots = slotConfig.total_slots;
+        if (slotConfig.has_timeslots && slotConfig.slot_duration_minutes !== 10) overridePatch.slot_duration_minutes = slotConfig.slot_duration_minutes;
+        if (formData.is_free !== (event?.is_free ?? null)) overridePatch.is_free = formData.is_free;
+        if (formData.cost_label !== (event?.cost_label || "")) overridePatch.cost_label = formData.cost_label || null;
+        if (formData.signup_url !== (event?.signup_url || "")) overridePatch.signup_url = formData.signup_url || null;
+        if (formData.signup_deadline !== (event?.signup_deadline || "")) overridePatch.signup_deadline = formData.signup_deadline || null;
+        if (formData.age_policy !== (event?.age_policy || "")) overridePatch.age_policy = formData.age_policy || null;
+        if (formData.external_url.trim() !== (event?.external_url || "")) overridePatch.external_url = formData.external_url.trim() || null;
+        if (JSON.stringify(formData.categories) !== JSON.stringify(event?.categories || [])) {
+          overridePatch.categories = formData.categories.length > 0 ? formData.categories : null;
+        }
+        if (coverImageUrl !== (event?.cover_image_url || null)) overridePatch.cover_image_url = coverImageUrl;
+        if (formData.host_notes.trim() !== (event?.host_notes || "")) overridePatch.host_notes = formData.host_notes.trim() || null;
+
+        // Submit to override API
+        const res = await fetch(`/api/my-events/${occurrenceEventId}/overrides`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date_key: occurrenceDateKey,
+            status: "normal",
+            // Legacy columns for backward compat with existing override UI
+            override_start_time: overridePatch.start_time !== undefined ? overridePatch.start_time : undefined,
+            override_cover_image_url: overridePatch.cover_image_url !== undefined ? overridePatch.cover_image_url : undefined,
+            override_notes: overridePatch.host_notes !== undefined ? overridePatch.host_notes : undefined,
+            // Full patch (minus fields already in legacy columns)
+            override_patch: Object.keys(overridePatch).length > 0 ? overridePatch : null,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to save occurrence override");
+        }
+
+        setSuccess("Occurrence updated successfully!");
+        router.push(`/dashboard/my-events/${occurrenceEventId}/overrides`);
+        return;
+      }
+
+      // ─── NORMAL MODE: Create or edit the event ───
       const url = mode === "create"
         ? "/api/my-events"
         : `/api/my-events/${event?.id}`;
@@ -580,7 +664,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           disabled={loading}
           className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
         >
-          {loading ? "Saving..." : mode === "create" ? "Create Happening" : "Save Changes"}
+          {loading ? "Saving..." : occurrenceMode ? "Save Occurrence" : mode === "create" ? "Create Happening" : "Save Changes"}
         </button>
         {mode === "edit" && (
           <button
@@ -596,7 +680,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* ============ SECTION 1: EVENT TYPE ============ */}
       {/* Phase 4.44c: Intent-first - What kind of event is this? */}
-      <div>
+      {/* Hidden in occurrence mode (event_type is series-level) */}
+      {!occurrenceMode && <div>
         <label className="block text-sm font-medium mb-2">
           <span className="text-red-500">Event Type</span>
           <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
@@ -624,7 +709,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           ))}
         </div>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{selectedTypeConfig.description}</p>
-      </div>
+      </div>}
 
       {/* ============ SECTION 1b: CATEGORIES ============ */}
       {/* Multi-select checkboxes for categorizing the happening */}
@@ -676,8 +761,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Day of Week - only shown for weekly series (create or edit).
             Monthly events derive day_of_week from the date picker.
-            Single-date and custom-date events derive from selected date(s). */}
-        {((mode === "edit" && formData.series_mode === "weekly") || (mode === "create" && formData.series_mode === "weekly")) && (
+            Single-date and custom-date events derive from selected date(s).
+            Hidden in occurrence mode (series-level control). */}
+        {!occurrenceMode && ((mode === "edit" && formData.series_mode === "weekly") || (mode === "create" && formData.series_mode === "weekly")) && (
           <div>
             <label className="block text-sm font-medium mb-2">
               <span className="text-red-500">Day of Week</span>
@@ -739,7 +825,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3a: EVENT DATE (Edit Mode) ============ */}
       {/* For non-recurring events: change the event date */}
       {/* For recurring events: change the anchor (start) date of the series */}
-      {mode === "edit" && (
+      {/* Hidden in occurrence mode (date is fixed to the occurrence date_key) */}
+      {!occurrenceMode && mode === "edit" && (
         <div>
           <label className="block text-sm font-medium mb-2">
             <span className="text-red-500">{event?.recurrence_rule ? "Series Start Date" : "Event Date"}</span>
@@ -767,7 +854,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* ============ SECTION 3a-edit: SERIES CONTROLS (Edit Mode) ============ */}
       {/* Show ordinal checkboxes for monthly events, series length for weekly/monthly, or dates for custom */}
-      {mode === "edit" && (formData.series_mode === "monthly" || formData.series_mode === "weekly" || formData.series_mode === "custom") && (
+      {/* Hidden in occurrence mode (series-level controls) */}
+      {!occurrenceMode && mode === "edit" && (formData.series_mode === "monthly" || formData.series_mode === "weekly" || formData.series_mode === "custom") && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
             Series Settings
@@ -923,7 +1011,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* ============ SECTION 3b: EVENT DATE(S) ============ */}
       {/* Phase 4.x: Flexible date selection - single, weekly series, or custom dates */}
-      {mode === "create" && (
+      {/* Hidden in occurrence mode (create-mode series configuration) */}
+      {!occurrenceMode && mode === "create" && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
@@ -1879,7 +1968,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       </div>
 
       {/* ============ SECTION 8: PUBLISH ============ */}
-      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
+      {/* Hidden in occurrence mode (publish is series-level) */}
+      {!occurrenceMode && <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
         {/* Publish toggle */}
         <div className="flex items-center justify-between">
           <div>
@@ -1959,57 +2049,62 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           </label>
         )}
-      </div>
+      </div>}
 
       {/* ============ LIVE PREVIEW SECTION ============ */}
-      <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
-        <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
-          Preview
-        </h3>
+      {/* Hidden in occurrence mode */}
+      {!occurrenceMode && (
+        <>
+          <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+            <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
+              Preview
+            </h3>
 
-        {/* Card Preview */}
-        <div className="mb-6">
-          <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-            How your happening will appear in listings:
-          </p>
-          <div className="pointer-events-none select-none" aria-hidden="true">
-            <HappeningCard
-              event={previewEvent}
-              variant="list"
-            />
-          </div>
-        </div>
+            {/* Card Preview */}
+            <div className="mb-6">
+              <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+                How your happening will appear in listings:
+              </p>
+              <div className="pointer-events-none select-none" aria-hidden="true">
+                <HappeningCard
+                  event={previewEvent}
+                  variant="list"
+                />
+              </div>
+            </div>
 
-        {/* Detail Header Preview */}
-        <div>
-          <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-            Happening detail page header:
-          </p>
-          <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-              {formData.title || "Event Title"}
-            </h2>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
-              {formData.day_of_week && (
-                <span>{formData.day_of_week}s</span>
-              )}
-              {formData.start_time && (
-                <span>{formatTimeToAMPM(formData.start_time)}</span>
-              )}
-              {getPreviewLocation() && (
-                <span>{getPreviewLocation()}</span>
-              )}
+            {/* Detail Header Preview */}
+            <div>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+                Happening detail page header:
+              </p>
+              <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+                <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+                  {formData.title || "Event Title"}
+                </h2>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
+                  {formData.day_of_week && (
+                    <span>{formData.day_of_week}s</span>
+                  )}
+                  {formData.start_time && (
+                    <span>{formatTimeToAMPM(formData.start_time)}</span>
+                  )}
+                  {getPreviewLocation() && (
+                    <span>{getPreviewLocation()}</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Bottom message directing to save/publish at top */}
-      <div className="text-center pt-2">
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Scroll up to save{mode === "edit" ? " and publish" : ""} your happening.
-        </p>
-      </div>
+          {/* Bottom message directing to save/publish at top */}
+          <div className="text-center pt-2">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Scroll up to save{mode === "edit" ? " and publish" : ""} your happening.
+            </p>
+          </div>
+        </>
+      )}
     </form>
   );
 }

@@ -86,10 +86,10 @@ export function SeriesEditingNotice({
             <p className="text-sm text-[var(--color-text-secondary)] mt-2">
               To cancel or modify a single date, use the{" "}
               <Link
-                href={`/dashboard/admin/events/${event.id}/overrides`}
+                href={`/dashboard/my-events/${event.id}/overrides`}
                 className="text-[var(--color-link)] hover:text-[var(--color-link-hover)] underline"
               >
-                override editor
+                occurrence editor
               </Link>
               .
             </p>
