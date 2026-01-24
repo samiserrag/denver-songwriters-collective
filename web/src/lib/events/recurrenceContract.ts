@@ -143,7 +143,7 @@ const LEGACY_ORDINAL_TO_NUMBER: Record<string, number> = {
 /**
  * Recurrence frequency types
  */
-export type RecurrenceFrequency = "weekly" | "biweekly" | "monthly" | "daily" | "yearly" | "one-time" | "unknown";
+export type RecurrenceFrequency = "weekly" | "biweekly" | "monthly" | "daily" | "yearly" | "custom" | "one-time" | "unknown";
 
 /**
  * Parsed recurrence rule in normalized form.
@@ -477,6 +477,17 @@ function interpretLegacyRule(
     };
   }
 
+  // "custom" - custom dates series (dates stored in custom_dates column)
+  if (r === "custom") {
+    return {
+      ...base,
+      isRecurring: true,
+      frequency: "custom",
+      startDate: event_date ?? null,
+      isConfident: true,
+    };
+  }
+
   // "monthly"
   if (r === "monthly") {
     return {
@@ -596,6 +607,9 @@ export function labelFromRecurrence(rec: NormalizedRecurrence): string {
 
     case "yearly":
       return rec.interval === 1 ? "Yearly" : `Every ${rec.interval} Years`;
+
+    case "custom":
+      return "Custom Schedule";
 
     default:
       return dayName ? `Every ${dayName}` : "Recurring";

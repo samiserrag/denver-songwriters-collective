@@ -208,6 +208,7 @@ export interface EventForOccurrence {
   recurrence_rule?: string | null;
   start_time?: string | null;
   max_occurrences?: number | null;
+  custom_dates?: string[] | null;
 }
 
 export interface NextOccurrenceResult {
@@ -355,6 +356,27 @@ export function computeNextOccurrence(
 ): NextOccurrenceResult {
   const todayKey = options?.todayKey ?? getTodayDenver();
   const tomorrowKey = addDaysDenver(todayKey, 1);
+
+  // Case 0: Custom dates series - find next date >= today
+  if (event.recurrence_rule === "custom" && Array.isArray(event.custom_dates) && event.custom_dates.length > 0) {
+    const nextDate = event.custom_dates.sort().find(d => d >= todayKey);
+    if (nextDate) {
+      return {
+        date: nextDate,
+        isToday: nextDate === todayKey,
+        isTomorrow: nextDate === tomorrowKey,
+        isConfident: true,
+      };
+    }
+    // All dates in the past - return last date
+    const lastDate = event.custom_dates[event.custom_dates.length - 1];
+    return {
+      date: lastDate,
+      isToday: false,
+      isTomorrow: false,
+      isConfident: true,
+    };
+  }
 
   // Case 1: One-time event with specific date
   if (event.event_date) {
@@ -551,7 +573,18 @@ export function expandOccurrencesForEvent(
     return occurrences;
   }
 
-  // Case 2: Recurring event - MUST expand to multiple occurrences
+  // Case 2a: Custom dates series - expand from custom_dates array
+  if (recurrence.frequency === "custom" && Array.isArray(event.custom_dates) && event.custom_dates.length > 0) {
+    for (const dateKey of event.custom_dates) {
+      if (dateKey >= startKey && dateKey <= endKey) {
+        occurrences.push({ dateKey, isConfident: true });
+      }
+      if (occurrences.length >= maxOccurrences) break;
+    }
+    return occurrences;
+  }
+
+  // Case 2b: Recurring event - MUST expand to multiple occurrences
   const targetDayIndex = recurrence.dayOfWeekIndex;
 
   // If we don't have a confident day, return empty (unknown schedule)

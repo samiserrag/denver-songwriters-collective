@@ -210,7 +210,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <Link
-                      href={`/dashboard/admin/events/${ev.id}/edit`}
+                      href={`/dashboard/my-events/${ev.id}`}
                       className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-[var(--color-text-primary)] text-xs"
                     >
                       Edit

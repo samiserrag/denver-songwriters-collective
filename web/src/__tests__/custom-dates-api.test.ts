@@ -228,8 +228,8 @@ describe("POST /api/my-events - Series Mode Support", () => {
     });
   });
 
-  describe("Custom mode", () => {
-    it("creates events for each custom date when series_mode is 'custom'", async () => {
+  describe("Custom mode (single-row model)", () => {
+    it("creates a single event row with recurrence_rule='custom' and custom_dates array", async () => {
       const request = new Request("http://localhost/api/my-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,17 +247,14 @@ describe("POST /api/my-events - Series Mode Support", () => {
       const response = await POST(request);
       expect(response.status).toBe(200);
 
-      expect(capturedInsertPayloads.length).toBe(3);
-      expect(capturedInsertPayloads[0].event_date).toBe("2026-02-01");
-      expect(capturedInsertPayloads[1].event_date).toBe("2026-02-15");
-      expect(capturedInsertPayloads[2].event_date).toBe("2026-03-01");
-
-      // All should share same series_id since there are multiple dates
-      const seriesId = capturedInsertPayloads[0].series_id;
-      expect(seriesId).toBeTruthy();
+      // Single-row model: only 1 DB row created
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].event_date).toBe("2026-02-01"); // Anchor = first sorted date
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("custom");
+      expect(capturedInsertPayloads[0].custom_dates).toEqual(["2026-02-01", "2026-02-15", "2026-03-01"]);
     });
 
-    it("sorts custom dates chronologically", async () => {
+    it("sorts custom dates chronologically and uses first as anchor", async () => {
       const request = new Request("http://localhost/api/my-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -265,7 +262,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
           title: "Unsorted Dates",
           event_type: "showcase",
           start_time: "20:00",
-          start_date: "2026-03-15", // Start date doesn't match first custom date
+          start_date: "2026-03-15",
           venue_id: "venue-1",
           series_mode: "custom",
           custom_dates: ["2026-03-15", "2026-02-01", "2026-02-20"], // Out of order
@@ -274,10 +271,10 @@ describe("POST /api/my-events - Series Mode Support", () => {
 
       await POST(request);
 
-      // Should be sorted chronologically
+      // Single row with sorted dates, anchor = earliest
+      expect(capturedInsertPayloads.length).toBe(1);
       expect(capturedInsertPayloads[0].event_date).toBe("2026-02-01");
-      expect(capturedInsertPayloads[1].event_date).toBe("2026-02-20");
-      expect(capturedInsertPayloads[2].event_date).toBe("2026-03-15");
+      expect(capturedInsertPayloads[0].custom_dates).toEqual(["2026-02-01", "2026-02-20", "2026-03-15"]);
     });
 
     it("limits custom dates to 12", async () => {
@@ -300,7 +297,10 @@ describe("POST /api/my-events - Series Mode Support", () => {
       });
 
       await POST(request);
-      expect(capturedInsertPayloads.length).toBe(12);
+
+      // Single row, but custom_dates capped at 12
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].custom_dates.length).toBe(12);
     });
 
     it("filters out invalid date formats from custom_dates", async () => {
@@ -326,11 +326,12 @@ describe("POST /api/my-events - Series Mode Support", () => {
 
       await POST(request);
 
-      // Only 3 valid dates should be used
-      expect(capturedInsertPayloads.length).toBe(3);
+      // Single row with only valid dates in custom_dates
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].custom_dates).toEqual(["2026-02-01", "2026-02-15", "2026-03-01"]);
     });
 
-    it("returns 400 when custom_dates array is empty", async () => {
+    it("falls back to single event when custom_dates array is empty", async () => {
       const request = new Request("http://localhost/api/my-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -341,13 +342,13 @@ describe("POST /api/my-events - Series Mode Support", () => {
           start_date: "2026-02-01",
           venue_id: "venue-1",
           series_mode: "custom",
-          custom_dates: [], // Empty array
+          custom_dates: [], // Empty array — falls back to single mode
         })
       });
 
       const response = await POST(request);
 
-      // Should fall back to single mode using start_date
+      // Falls through to single mode using start_date (empty array doesn't match custom condition)
       expect(response.status).toBe(200);
       expect(capturedInsertPayloads.length).toBe(1);
       expect(capturedInsertPayloads[0].event_date).toBe("2026-02-01");
@@ -375,7 +376,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
       expect(data.error).toContain("valid date");
     });
 
-    it("creates single event without series_id for one custom date", async () => {
+    it("creates single event with recurrence_rule='custom' for one custom date", async () => {
       const request = new Request("http://localhost/api/my-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -393,7 +394,8 @@ describe("POST /api/my-events - Series Mode Support", () => {
       await POST(request);
 
       expect(capturedInsertPayloads.length).toBe(1);
-      expect(capturedInsertPayloads[0].series_id).toBeNull(); // No series for single event
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("custom");
+      expect(capturedInsertPayloads[0].custom_dates).toEqual(["2026-02-14"]);
     });
   });
 

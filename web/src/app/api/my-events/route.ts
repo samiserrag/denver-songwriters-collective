@@ -199,6 +199,8 @@ function buildEventInsert(params: EventInsertParams) {
     external_url: (body.external_url as string) || null,
     // Categories (multi-select array)
     categories: (body.categories as string[])?.length > 0 ? body.categories : null,
+    // Custom dates (for recurrence_rule="custom" events)
+    custom_dates: Array.isArray(body.custom_dates) && body.custom_dates.length > 0 ? body.custom_dates : null,
     source: "community",
     // Phase 4.42k A1b: Auto-confirm community events when published
     // Set last_verified_at to mark as confirmed, but leave verified_by null
@@ -328,16 +330,21 @@ export async function POST(request: Request) {
     // Expansion to actual dates happens at query time via expandOccurrencesForEvent()
     eventDates = [startDate];
   } else if (seriesMode === "custom" && Array.isArray(body.custom_dates) && body.custom_dates.length > 0) {
-    // Custom dates mode: use the user-provided dates array
-    // Sort dates chronologically and limit to 12
-    eventDates = (body.custom_dates as string[])
+    // Custom dates mode: create a SINGLE event record with recurrence_rule="custom"
+    // Dates are stored in custom_dates column. Expansion happens at query time.
+    const validDates = (body.custom_dates as string[])
       .filter((d: string) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d))
       .sort()
       .slice(0, 12);
 
-    if (eventDates.length === 0) {
+    if (validDates.length === 0) {
       return NextResponse.json({ error: "At least one valid date is required for custom series" }, { status: 400 });
     }
+
+    // Single row model: anchor is first date, expansion from custom_dates
+    eventDates = [validDates[0]];
+    body.recurrence_rule = "custom";
+    body.custom_dates = validDates;
   } else if (seriesMode === "weekly") {
     // Weekly series mode: create a SINGLE event record with recurrence_rule="weekly"
     // max_occurrences controls whether it's infinite (null/0) or finite (N)

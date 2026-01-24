@@ -157,7 +157,9 @@ export async function PATCH(
     // Categories (multi-select array)
     "categories",
     // Series limit (null = infinite, N = stops after N occurrences)
-    "max_occurrences"
+    "max_occurrences",
+    // Custom dates (for recurrence_rule="custom" events)
+    "custom_dates"
   ];
 
   const now = new Date().toISOString();
