@@ -653,7 +653,10 @@ export function expandOccurrencesForEvent(
   }
 
   // Phase 4.42c: Invariant check - recurring events should produce multiple occurrences
-  assertRecurrenceInvariant(recurrence, occurrences.length);
+  // Skip check for bounded series (max_occurrences limits expansion count)
+  if (!event.max_occurrences || event.max_occurrences > 1) {
+    assertRecurrenceInvariant(recurrence, occurrences.length);
+  }
 
   return occurrences;
 }

@@ -136,7 +136,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.81):** Lint warnings = 0. All tests passing (2503). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.82):** Lint warnings = 0. All tests passing (2503). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -358,6 +358,59 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Override Propagation + Recurrence Fix + Inline Verification (Phase 4.82, January 2026) — RESOLVED
+
+**Goal:** Fix override patch fields not propagating to all display surfaces, fix recurrence invariant violation causing events to disappear from happenings, and fix verification status error on save.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2503, build success).
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Override fields not rendering on public pages | HappeningCard and event detail page only applied 2 of 26 override_patch fields | Apply ALL override_patch fields: title, description, venue_id, start_time, end_time, cover_image_url, host_notes |
+| Override venue_id not resolving to venue name | Venue lookup ran before override was applied; no pre-fetch for override venues | Pre-resolve venue data server-side via `overrideVenueMap`, pass as prop |
+| RECURRENCE INVARIANT VIOLATION on save | Monthly/weekly events in edit mode could save with `day_of_week = null` if DB didn't have it set | Derive `day_of_week` from anchor date (`weekdayNameFromDateMT`) when not explicitly set |
+| False invariant warning for bounded series | `max_occurrences = 1` with `recurrence_rule = "weekly"` legitimately produces 1 occurrence | Skip invariant check when `max_occurrences` is set and ≤ 1 |
+| Verification status error on save | Separate `POST /api/admin/ops/events/bulk-verify` call after PATCH could fail due to auth differences | Moved verification inline into PATCH route via `verify_action` body field |
+| Auto-publish overwriting explicit admin unverify | Auto-confirm on publish ran after explicit `verify_action: "unverify"` | Skip auto-confirm when explicit `verify_action` is present |
+| Duplicate Series Settings + Event Schedule sections | Both sections visible in edit mode for recurring events | Removed duplicate section; consolidated into single Schedule section |
+| Preview card shows "Every Saturday" instead of "4th Saturday" | Live preview used generic recurrence label | Preview now uses `labelFromRecurrence()` with proper ordinal labels |
+
+**Verification Fix Details:**
+- `verify_action: "verify" | "unverify"` is now sent inline with the PATCH body
+- Admin-only guard: non-admin users can include the field but it's silently ignored
+- `verify_action` is NOT in `allowedFields` — cannot corrupt DB through generic field loop
+- Auto-publish auto-confirm respects explicit admin intent (skips when `verify_action` present)
+
+**Recurrence Fix Details:**
+- Edit mode for monthly/weekly: derives `day_of_week` from `start_date` using `weekdayNameFromDateMT()` when the form field is empty
+- This self-heals events with missing `day_of_week` in the DB on next save
+- Invariant guard: `if (!event.max_occurrences || event.max_occurrences > 1)` prevents false positives for intentionally bounded series
+
+**Override Venue Resolution:**
+- Happenings page pre-fetches all override venue_ids in a single query
+- Builds `overrideVenueMap: Map<venueId, {name, slug, google_maps_url, website_url}>`
+- Passes resolved venue data to `HappeningsCard` → `HappeningCard` as `overrideVenueData` prop
+- HappeningCard uses override venue name when `override_patch.venue_id` is set
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Pre-fetch override venue data, pass overrideVenueData to cards |
+| `components/happenings/HappeningCard.tsx` | Apply all override_patch fields, use overrideVenueData for venue name |
+| `components/happenings/HappeningsCard.tsx` | Added overrideVenueData prop pass-through |
+| `app/events/[id]/page.tsx` | Apply all override_patch fields, re-fetch venue on venue_id override |
+| `dashboard/my-events/[id]/overrides/_components/OccurrenceEditor.tsx` | Show rescheduled display date as primary label |
+| `dashboard/my-events/_components/EventForm.tsx` | Derive day_of_week from anchor, inline verify_action, fix duplicate sections, fix preview label |
+| `app/api/my-events/[id]/route.ts` | Handle `verify_action` inline (admin-only), auto-publish respects explicit verify |
+| `lib/events/nextOccurrence.ts` | Skip invariant for bounded series |
+
+**Test Coverage:** 2503 tests passing.
 
 ---
 

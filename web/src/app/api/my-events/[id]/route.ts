@@ -250,6 +250,17 @@ export async function PATCH(
     updates.location_notes = body.location_notes || null;
   }
 
+  // Handle admin verification inline (avoids separate bulk-verify call)
+  if (body.verify_action !== undefined && isAdmin) {
+    if (body.verify_action === "verify") {
+      updates.last_verified_at = now;
+      updates.verified_by = session.user.id;
+    } else if (body.verify_action === "unverify") {
+      updates.last_verified_at = null;
+      updates.verified_by = null;
+    }
+  }
+
   // Handle is_dsc_event separately - only allow if canCreateDSC
   if (body.is_dsc_event !== undefined) {
     if (body.is_dsc_event === true && !canCreateDSC) {
@@ -309,8 +320,8 @@ export async function PATCH(
   if (body.is_published === true) {
     // Phase 4.73: Auto-confirm on ANY publish (first or republish)
     // When transitioning from unpublished to published, always set last_verified_at
-    // This ensures republished events are also confirmed
-    if (!wasPublished) {
+    // Skip if admin explicitly set verify_action (their intent takes precedence)
+    if (!wasPublished && body.verify_action === undefined) {
       updates.last_verified_at = now;
       // verified_by remains null to indicate auto-confirmed (not admin-verified)
     }

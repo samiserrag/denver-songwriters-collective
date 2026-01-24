@@ -26,6 +26,13 @@ type Props = {
   override?: OccurrenceOverride;
   /** Phase 4.21: Whether this occurrence is cancelled */
   isCancelled?: boolean;
+  /** Phase 4.81: Pre-resolved venue data for override venue_id */
+  overrideVenueData?: {
+    name: string;
+    slug?: string | null;
+    google_maps_url?: string | null;
+    website_url?: string | null;
+  } | null;
 };
 
 export function HappeningsCard({
@@ -36,6 +43,7 @@ export function HappeningsCard({
   todayKey,
   override,
   isCancelled,
+  overrideVenueData,
 }: Props) {
   return (
     <HappeningCard
@@ -47,6 +55,7 @@ export function HappeningsCard({
       todayKey={todayKey}
       override={override}
       isCancelled={isCancelled}
+      overrideVenueData={overrideVenueData}
     />
   );
 }

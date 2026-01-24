@@ -286,6 +286,17 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   // Build preview event object for HappeningCard
   const previewEvent: HappeningEvent = useMemo(() => {
     const selectedVenue = venues.find(v => v.id === formData.venue_id);
+    // Compute recurrence_rule from current form state for accurate preview
+    let previewRecurrenceRule: string | undefined;
+    if (formData.series_mode === "weekly") {
+      previewRecurrenceRule = "weekly";
+    } else if (formData.series_mode === "monthly" && selectedOrdinals.length > 0) {
+      const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
+      const ordinalTexts = [...selectedOrdinals].sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b).map(o => ordinalWords[o] || `${o}th`);
+      previewRecurrenceRule = ordinalTexts.join("/");
+    } else if (formData.series_mode === "custom") {
+      previewRecurrenceRule = "custom";
+    }
     return {
       id: event?.id || "preview",
       title: formData.title || "Event Title",
@@ -294,6 +305,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       day_of_week: formData.day_of_week || undefined,
       start_time: formData.start_time || undefined,
       end_time: formData.end_time || undefined,
+      recurrence_rule: previewRecurrenceRule,
       venue_id: locationSelectionMode === "venue" ? formData.venue_id || undefined : undefined,
       venue_name: locationSelectionMode === "venue" ? selectedVenue?.name || undefined : undefined,
       location_mode: formData.location_mode as "venue" | "online" | "hybrid" | undefined,
@@ -330,6 +342,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     coverImageUrl,
     slotConfig.has_timeslots,
     slotConfig.total_slots,
+    formData.series_mode,
+    selectedOrdinals,
   ]);
 
   const handleImageUpload = async (file: File): Promise<string | null> => {
@@ -547,9 +561,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           effectiveRecurrenceRule = null; // single event
         }
         // Only preserve day_of_week for recurring modes (weekly/monthly); clear for single/custom
-        effectiveDayOfWeek = (formData.series_mode === "weekly" || formData.series_mode === "monthly")
-          ? (formData.day_of_week || null)
-          : null;
+        if (formData.series_mode === "weekly" || formData.series_mode === "monthly") {
+          // Use explicit day_of_week if set; otherwise derive from anchor date
+          effectiveDayOfWeek = formData.day_of_week || null;
+          if (!effectiveDayOfWeek && formData.start_date) {
+            effectiveDayOfWeek = weekdayNameFromDateMT(formData.start_date);
+          }
+        } else {
+          effectiveDayOfWeek = null;
+        }
       } else {
         // Create mode: derive from series_mode selection
         if (formData.series_mode === "weekly") {
@@ -614,6 +634,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         custom_latitude: locationSelectionMode === "custom" && formData.custom_latitude ? parseFloat(formData.custom_latitude) : null,
         custom_longitude: locationSelectionMode === "custom" && formData.custom_longitude ? parseFloat(formData.custom_longitude) : null,
         location_notes: formData.location_notes.trim() || null,
+        // Admin verification (inline with PATCH, no separate API call)
+        ...(mode === "edit" && isAdmin && isVerified !== wasVerified
+          ? { verify_action: isVerified ? "verify" : "unverify" }
+          : {}),
       };
 
       const res = await fetch(url, {
@@ -633,24 +657,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         const publishStatus = formData.is_published ? "published" : "draft";
         router.push(`/dashboard/my-events/${data.id}?created=true&status=${publishStatus}`);
       } else {
-        // Handle verification change (admin only) - call bulk-verify API
-        if (isAdmin && isVerified !== wasVerified) {
-          try {
-            const verifyRes = await fetch("/api/admin/ops/events/bulk-verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                eventIds: [event?.id],
-                action: isVerified ? "verify" : "unverify",
-              }),
-            });
-            if (!verifyRes.ok) {
-              console.error("Failed to update verification status");
-            }
-          } catch (verifyErr) {
-            console.error("Verification update error:", verifyErr);
-          }
-        }
         setSuccess("Changes saved successfully!");
         // Clear URL params (created, status) after edit to prevent stale banner
         if (window.location.search.includes("created=true")) {
@@ -1196,8 +1202,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
-          {/* Single Event Date */}
-          {formData.series_mode === "single" && (
+          {/* Sub-sections: Only in create mode (edit mode uses "Series Settings" section above) */}
+          {mode === "create" && formData.series_mode === "single" && (
             <div>
               <label className="block text-sm font-medium mb-2">
                 <span className="text-red-500">Event Date</span>
@@ -1219,8 +1225,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
-          {/* Weekly Series */}
-          {formData.series_mode === "weekly" && (
+          {mode === "create" && formData.series_mode === "weekly" && (
             <>
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -1333,8 +1338,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </>
           )}
 
-          {/* Monthly Pattern Series */}
-          {formData.series_mode === "monthly" && (
+          {mode === "create" && formData.series_mode === "monthly" && (
             <div className="space-y-4">
               <p className="text-sm text-[var(--color-text-secondary)]">
                 Choose which week(s) of the month your happening occurs. The day of week is set by your First Event Date below.
@@ -1466,8 +1470,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
-          {/* Custom Dates */}
-          {formData.series_mode === "custom" && (
+          {mode === "create" && formData.series_mode === "custom" && (
             <div className="space-y-3">
               <p className="text-sm text-[var(--color-text-secondary)]">
                 Add specific dates for your happening series. Each date will create a separate event.

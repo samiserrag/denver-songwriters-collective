@@ -161,6 +161,26 @@ export default async function HappeningsPage({
     }))
   );
 
+  // Pre-fetch venue names for overridden venue_ids so HappeningCard can display them
+  const overrideVenueIds = new Set<string>();
+  for (const o of overridesData || []) {
+    const patch = o.override_patch as Record<string, unknown> | null;
+    const vid = patch?.venue_id as string | undefined;
+    if (vid) overrideVenueIds.add(vid);
+  }
+  const overrideVenueMap = new Map<string, { name: string; slug?: string | null; google_maps_url?: string | null; website_url?: string | null }>();
+  if (overrideVenueIds.size > 0) {
+    const { data: overrideVenues } = await supabase
+      .from("venues")
+      .select("id, name, slug, google_maps_url, website_url")
+      .in("id", [...overrideVenueIds]);
+    if (overrideVenues) {
+      for (const v of overrideVenues) {
+        overrideVenueMap.set(v.id, { name: v.name, slug: v.slug, google_maps_url: v.google_maps_url, website_url: v.website_url });
+      }
+    }
+  }
+
   // Type filter (event_type)
   if (typeFilter === "open_mic") {
     query = query.eq("event_type", "open_mic");
@@ -465,6 +485,16 @@ export default async function HappeningsPage({
 
   const filterSummary = getFilterSummary();
 
+  // Helper: resolve override venue data for a given entry
+  const getOverrideVenueForEntry = (entry: EventOccurrenceEntry<any>) => {
+    const patch = entry.override?.override_patch as Record<string, unknown> | null | undefined;
+    const vid = patch?.venue_id as string | undefined;
+    if (vid && vid !== entry.event.venue_id) {
+      return overrideVenueMap.get(vid) || null;
+    }
+    return null;
+  };
+
   return (
     <>
       {showHero && (
@@ -631,43 +661,52 @@ export default async function HappeningsPage({
                     cancelledCount={cancelledForDate.length}
                     cancelledChildren={
                       cancelledForDate.length > 0
-                        ? cancelledForDate.map((entry: EventOccurrenceEntry<any>) => (
-                            <HappeningsCard
-                              key={`${entry.event.id}-${entry.dateKey}-cancelled`}
-                              event={entry.event}
-                              searchQuery={searchQuery}
-                              debugDates={debugDates}
-                              occurrence={{
-                                date: entry.dateKey,
-                                isToday: entry.dateKey === today,
-                                isTomorrow: entry.dateKey === tomorrow,
-                                isConfident: entry.isConfident,
-                              }}
-                              todayKey={today}
-                              override={entry.override}
-                              isCancelled={true}
-                            />
-                          ))
+                        ? cancelledForDate.map((entry: EventOccurrenceEntry<any>) => {
+                            const cardDate = entry.displayDate || entry.dateKey;
+                            return (
+                              <HappeningsCard
+                                key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                                event={entry.event}
+                                searchQuery={searchQuery}
+                                debugDates={debugDates}
+                                occurrence={{
+                                  date: cardDate,
+                                  isToday: cardDate === today,
+                                  isTomorrow: cardDate === tomorrow,
+                                  isConfident: entry.isConfident,
+                                }}
+                                todayKey={today}
+                                override={entry.override}
+                                isCancelled={true}
+                                overrideVenueData={getOverrideVenueForEntry(entry)}
+                              />
+                            );
+                          })
                         : undefined
                     }
                   >
-                    {entriesForDate.map((entry: EventOccurrenceEntry<any>) => (
-                      <HappeningsCard
-                        key={`${entry.event.id}-${entry.dateKey}`}
-                        event={entry.event}
-                        searchQuery={searchQuery}
-                        debugDates={debugDates}
-                        occurrence={{
-                          date: entry.dateKey,
-                          isToday: entry.dateKey === today,
-                          isTomorrow: entry.dateKey === tomorrow,
-                          isConfident: entry.isConfident,
-                        }}
-                        todayKey={today}
-                        override={entry.override}
-                        isCancelled={entry.isCancelled}
-                      />
-                    ))}
+                    {entriesForDate.map((entry: EventOccurrenceEntry<any>) => {
+                      // Use displayDate for rescheduled occurrences (shows new date on card)
+                      const cardDate = entry.displayDate || entry.dateKey;
+                      return (
+                        <HappeningsCard
+                          key={`${entry.event.id}-${entry.dateKey}`}
+                          event={entry.event}
+                          searchQuery={searchQuery}
+                          debugDates={debugDates}
+                          occurrence={{
+                            date: cardDate,
+                            isToday: cardDate === today,
+                            isTomorrow: cardDate === tomorrow,
+                            isConfident: entry.isConfident,
+                          }}
+                          todayKey={today}
+                          override={entry.override}
+                          isCancelled={entry.isCancelled}
+                          overrideVenueData={getOverrideVenueForEntry(entry)}
+                        />
+                      );
+                    })}
                   </DateSection>
                 );
               })}
@@ -709,23 +748,27 @@ export default async function HappeningsPage({
                   isCancelled
                   description="These occurrences have been cancelled. They may be rescheduled in the future."
                 >
-                  {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => (
-                    <HappeningsCard
-                      key={`${entry.event.id}-${entry.dateKey}-cancelled`}
-                      event={entry.event}
-                      searchQuery={searchQuery}
-                      debugDates={debugDates}
-                      occurrence={{
-                        date: entry.dateKey,
-                        isToday: entry.dateKey === today,
-                        isTomorrow: entry.dateKey === tomorrow,
-                        isConfident: entry.isConfident,
-                      }}
-                      todayKey={today}
-                      override={entry.override}
-                      isCancelled={true}
-                    />
-                  ))}
+                  {otherCancelledOccurrences.map((entry: EventOccurrenceEntry<any>) => {
+                    const cardDate = entry.displayDate || entry.dateKey;
+                    return (
+                      <HappeningsCard
+                        key={`${entry.event.id}-${entry.dateKey}-cancelled`}
+                        event={entry.event}
+                        searchQuery={searchQuery}
+                        debugDates={debugDates}
+                        occurrence={{
+                          date: cardDate,
+                          isToday: cardDate === today,
+                          isTomorrow: cardDate === tomorrow,
+                          isConfident: entry.isConfident,
+                        }}
+                        todayKey={today}
+                        override={entry.override}
+                        isCancelled={true}
+                        overrideVenueData={getOverrideVenueForEntry(entry)}
+                      />
+                    );
+                  })}
                 </DateSection>
               )}
 

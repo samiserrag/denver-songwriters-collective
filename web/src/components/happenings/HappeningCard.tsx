@@ -142,6 +142,17 @@ export interface HappeningCardProps {
    * Shorthand derived from override?.status === 'cancelled'.
    */
   isCancelled?: boolean;
+  /**
+   * Phase 4.81: Pre-resolved venue data for override venue_id.
+   * When override_patch.venue_id changes the venue, this provides the name/URLs
+   * without requiring a client-side fetch.
+   */
+  overrideVenueData?: {
+    name: string;
+    slug?: string | null;
+    google_maps_url?: string | null;
+    website_url?: string | null;
+  } | null;
 }
 
 // ============================================================
@@ -320,6 +331,7 @@ export function HappeningCard({
   todayKey: canonicalTodayKey,
   override,
   isCancelled = false,
+  overrideVenueData,
 }: HappeningCardProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
@@ -327,24 +339,63 @@ export function HappeningCard({
   // Use canonical todayKey if provided, otherwise compute fresh
   const todayKey = canonicalTodayKey ?? getTodayDenver();
 
-  // Phase 4.21: Apply override data
+  // Phase 4.21/4.81: Apply ALL override_patch fields
   // override_patch takes precedence over legacy columns, which take precedence over event fields
-  const patch = override?.override_patch;
+  const patch = override?.override_patch as Record<string, unknown> | null | undefined;
   const effectiveStartTime = (patch?.start_time as string | undefined) || override?.override_start_time || event.start_time;
+  const effectiveEndTime = (patch?.end_time as string | undefined) || event.end_time;
   const effectiveCoverUrl = (patch?.cover_image_url as string | undefined) || override?.override_cover_image_url || event.cover_image_url;
+  const effectiveTitle = (patch?.title as string | undefined) || event.title;
+  const effectiveLocationMode = (patch?.location_mode as typeof event.location_mode) || event.location_mode;
+  const effectiveVenueId = (patch?.venue_id as string | undefined) || event.venue_id;
+  const effectiveCustomLocationName = (patch?.custom_location_name as string | undefined) ?? event.custom_location_name;
+  const effectiveCategories = (patch?.categories as string[] | undefined) || event.categories;
+  const effectiveIsFree = patch?.is_free !== undefined ? (patch.is_free as boolean | null) : event.is_free;
+  const effectiveCostLabel = (patch?.cost_label as string | undefined) ?? event.cost_label;
+  const effectiveCapacity = patch?.capacity !== undefined ? (patch.capacity as number | null) : event.capacity;
+  const effectiveHasTimeslots = patch?.has_timeslots !== undefined ? (patch.has_timeslots as boolean | null) : event.has_timeslots;
+  const effectiveTotalSlots = patch?.total_slots !== undefined ? (patch.total_slots as number | null) : event.total_slots;
+  const effectiveAgePolicy = (patch?.age_policy as string | undefined) ?? event.age_policy;
+
+  // Build effective event for helpers that read from the event object
+  const effectiveEvent: HappeningEvent = {
+    ...event,
+    title: effectiveTitle,
+    start_time: effectiveStartTime,
+    end_time: effectiveEndTime,
+    cover_image_url: effectiveCoverUrl,
+    location_mode: effectiveLocationMode,
+    venue_id: effectiveVenueId,
+    custom_location_name: effectiveCustomLocationName,
+    categories: effectiveCategories,
+    is_free: effectiveIsFree,
+    cost_label: effectiveCostLabel,
+    capacity: effectiveCapacity,
+    has_timeslots: effectiveHasTimeslots,
+    total_slots: effectiveTotalSlots,
+    age_policy: effectiveAgePolicy,
+    // If venue_id is overridden, use resolved override venue data (from server pre-fetch)
+    ...(patch?.venue_id && patch.venue_id !== event.venue_id
+      ? overrideVenueData
+        ? { venue: { id: patch.venue_id as string, name: overrideVenueData.name, google_maps_url: overrideVenueData.google_maps_url, website_url: overrideVenueData.website_url }, venue_name: overrideVenueData.name }
+        : { venue: null, venue_name: null }
+      : {}),
+    // If custom_location_name is overridden, clear venue data so custom location displays
+    ...(patch?.custom_location_name && !patch?.venue_id ? { venue_name: null, venue: null } : {}),
+  };
 
   // Derived values - use pre-computed occurrence if available
   const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
-  const venueName = getVenueName(event);
-  const venueForLink = getVenueForLink(event);
-  const detailHref = getDetailHref(event);
+  const venueName = getVenueName(effectiveEvent);
+  const venueForLink = getVenueForLink(effectiveEvent);
+  const detailHref = getDetailHref(effectiveEvent);
   const startTime = formatTimeToAMPM(effectiveStartTime ?? null);
   const signupTime = event.signup_time ? formatTimeToAMPM(event.signup_time) : null;
 
-  const isOnlineOnly = event.location_mode === "online";
-  const isHybrid = event.location_mode === "hybrid";
+  const isOnlineOnly = effectiveLocationMode === "online";
+  const isHybrid = effectiveLocationMode === "hybrid";
   // Phase 4.52: Custom locations don't get venue links
-  const isCustomLocation = !event.venue_id && !!event.custom_location_name;
+  const isCustomLocation = !effectiveVenueId && !!effectiveCustomLocationName;
 
   // Phase 4.37: Use verification state helper for consistent badge logic
   const verificationResult = getPublicVerificationState({
@@ -367,27 +418,27 @@ export function HappeningCard({
   // "Ended" takes priority over "Unconfirmed" since the event already happened
   const showEnded = dateInfo.isPast;
 
-  // Cost display - NA standardization
+  // Cost display - NA standardization (uses effective override values)
   const getCostDisplay = (): string => {
-    if (event.is_free === true) return "Free";
-    if (event.is_free === false && event.cost_label) return event.cost_label;
+    if (effectiveIsFree === true) return "Free";
+    if (effectiveIsFree === false && effectiveCostLabel) return effectiveCostLabel;
     return "NA";
   };
 
-  // Age policy display
+  // Age policy display (uses effective override value)
   const getAgeDisplay = (): string | null => {
-    if (event.age_policy) return event.age_policy;
-    if (event.is_dsc_event && !event.age_policy) return "18+";
+    if (effectiveAgePolicy) return effectiveAgePolicy;
+    if (event.is_dsc_event && !effectiveAgePolicy) return "18+";
     return null;
   };
 
-  // Availability display
+  // Availability display (uses effective override values)
   const getAvailabilityDisplay = (): string | null => {
-    if (event.has_timeslots && event.total_slots) {
-      return `${event.total_slots} slots`;
+    if (effectiveHasTimeslots && effectiveTotalSlots) {
+      return `${effectiveTotalSlots} slots`;
     }
-    if (event.capacity && event.rsvp_count !== undefined) {
-      const remaining = event.capacity - (event.rsvp_count || 0);
+    if (effectiveCapacity && event.rsvp_count !== undefined) {
+      const remaining = effectiveCapacity - (event.rsvp_count || 0);
       if (remaining > 0) return `${remaining} spots`;
       return "Full";
     }
@@ -698,7 +749,7 @@ export function HappeningCard({
               "line-clamp-2"
             )}
           >
-            {event.title}
+            {effectiveTitle}
           </h3>
 
           {/* Tier 2 recurrence pill - always visible, below title */}
@@ -753,7 +804,7 @@ export function HappeningCard({
             )}
             <Chip variant="default">{eventTypeLabel}</Chip>
             {/* Categories (up to 3) */}
-            {event.categories && event.categories.length > 0 && event.categories.map((cat) => (
+            {effectiveCategories && effectiveCategories.length > 0 && effectiveCategories.map((cat) => (
               <Chip key={cat} variant="muted">{cat}</Chip>
             ))}
             {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}

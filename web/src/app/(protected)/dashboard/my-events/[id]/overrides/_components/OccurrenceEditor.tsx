@@ -170,10 +170,14 @@ export default function OccurrenceEditor({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <span className="font-medium text-[var(--color-text-primary)]">
-                      {formatDateGroupHeader(occ.dateKey, todayKey)}
+                      {isRescheduled && rescheduledTo
+                        ? formatDateGroupHeader(rescheduledTo, todayKey)
+                        : formatDateGroupHeader(occ.dateKey, todayKey)}
                     </span>
                     <span className="text-sm text-[var(--color-text-secondary)]">
-                      {occ.dateKey}
+                      {isRescheduled && rescheduledTo
+                        ? `(was ${occ.dateKey})`
+                        : occ.dateKey}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-sm flex-wrap">

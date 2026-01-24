@@ -396,8 +396,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   }
 
   // Keep legacy variable names for compatibility with rest of file
-  const venueName = locationName;
-  const venueAddress = locationAddress;
+  // NOTE: venueName/venueAddress are assigned AFTER override block below (line ~520)
+  // to ensure overridden venue_id is reflected in display variables.
 
   // Phase ABC4: Compute recurrence and upcoming occurrences for recurring events
   const recurrence = interpretRecurrence({
@@ -515,7 +515,24 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       venueSlug = overrideVenue.slug;
       isCustomLocation = false;
     }
+  } else if (patch?.custom_location_name) {
+    // Override switches to custom location
+    locationName = patch.custom_location_name as string;
+    const addressParts = [
+      patch.custom_address as string | undefined,
+      patch.custom_city as string | undefined,
+      patch.custom_state as string | undefined,
+    ].filter(Boolean);
+    locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+    venueGoogleMapsUrl = null;
+    venueWebsiteUrl = null;
+    venueSlug = null;
+    isCustomLocation = true;
   }
+
+  // Capture venue display vars AFTER override block so overridden venue_id is reflected
+  const venueName = locationName;
+  const venueAddress = locationAddress;
 
   // Phase ABC5: Format selected date for display (uses rescheduled date if overridden)
   const selectedDateDisplay = displayDate
