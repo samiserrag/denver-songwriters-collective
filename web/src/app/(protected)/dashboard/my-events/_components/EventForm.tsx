@@ -1673,10 +1673,31 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         )}
       </div>
 
-      {/* ============ SECTION 8: PUBLISH ============ */}
-      {/* Phase 4.44c: Always at bottom, always visible */}
+      {/* ============ SECTION 8: SAVE & PUBLISH ============ */}
       <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
-        <div className="flex items-center justify-between">
+        {/* Save / Back buttons */}
+        <div className="flex items-center gap-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? "Saving..." : mode === "create" ? "Create Happening" : "Save Changes"}
+          </button>
+          {mode === "edit" && (
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/my-events")}
+              className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] rounded-lg transition-colors"
+              aria-label="Back without saving (does not cancel event)"
+            >
+              Back without saving
+            </button>
+          )}
+        </div>
+
+        {/* Publish toggle */}
+        <div className="flex items-center justify-between pt-3 border-t border-[var(--color-border-default)]">
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
               {formData.is_published ? "Published" : "Draft"}
@@ -1799,25 +1820,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       </div>
 
-      {/* Submit */}
-      <div className="flex items-center gap-4 pt-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
-        >
-          {loading ? "Saving..." : mode === "create" ? "Create Happening" : "Save Changes"}
-        </button>
-        {mode === "edit" && (
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/my-events")}
-            className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] rounded-lg transition-colors"
-            aria-label="Back without saving (does not cancel event)"
-          >
-            Back without saving
-          </button>
-        )}
+      {/* Bottom message directing to save/publish at top */}
+      <div className="text-center pt-2">
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Scroll up to save{mode === "edit" ? " and publish" : ""} your happening.
+        </p>
       </div>
     </form>
   );
