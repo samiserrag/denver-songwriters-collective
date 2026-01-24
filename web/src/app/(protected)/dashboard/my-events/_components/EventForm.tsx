@@ -378,7 +378,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     }
 
     // Custom dates validation (when in custom series mode) — skip in occurrence mode
-    if (!occurrenceMode && mode === "create" && formData.series_mode === "custom" && customDates.length === 0) {
+    if (!occurrenceMode && formData.series_mode === "custom" && customDates.length === 0) {
       missingFields.push("Custom Dates (select at least one date)");
     }
 
@@ -826,7 +826,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* For non-recurring events: change the event date */}
       {/* For recurring events: change the anchor (start) date of the series */}
       {/* Hidden in occurrence mode (date is fixed to the occurrence date_key) */}
-      {!occurrenceMode && mode === "edit" && (
+      {/* Hidden for custom series (dates are managed via custom_dates array, server derives event_date) */}
+      {!occurrenceMode && mode === "edit" && formData.series_mode !== "custom" && (
         <div>
           <label className="block text-sm font-medium mb-2">
             <span className="text-red-500">{event?.recurrence_rule ? "Series Start Date" : "Event Date"}</span>
@@ -921,31 +922,86 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
-          {/* Custom Dates Display */}
+          {/* Custom Dates — Editable in edit mode */}
           {formData.series_mode === "custom" && (
-            <div>
-              <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
-                Custom Dates ({customDates.length} dates)
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                Custom Dates ({customDates.length}/12)
               </label>
-              <div className="flex flex-wrap gap-2">
-                {customDates
-                  .sort()
-                  .map(dateStr => (
-                    <span
+
+              {/* Existing date pills with remove buttons */}
+              {customDates.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {[...customDates].sort().map((dateStr) => (
+                    <div
                       key={dateStr}
-                      className="px-3 py-1.5 rounded-full text-sm bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/30 text-[var(--color-text-primary)]"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]"
                     >
-                      {new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        timeZone: "America/Denver",
-                      })}
-                    </span>
+                      <span className="text-sm text-[var(--color-text-primary)]">
+                        {new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          timeZone: "America/Denver",
+                        })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newDates = customDates.filter(d => d !== dateStr);
+                          setCustomDates(newDates);
+                        }}
+                        className="ml-1 text-[var(--color-text-secondary)] hover:text-red-500 transition-colors"
+                        aria-label={`Remove date ${dateStr}`}
+                        disabled={customDates.length <= 1}
+                        title={customDates.length <= 1 ? "At least one date is required" : "Remove date"}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   ))}
-              </div>
-              <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-                This is a custom-date series. Dates are managed as a fixed set.
+                </div>
+              )}
+
+              {/* Add new date */}
+              {customDates.length < 12 ? (
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    id="edit-custom-date"
+                    className="flex-1 px-4 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById("edit-custom-date") as HTMLInputElement;
+                      const newDate = input?.value;
+                      if (newDate && /^\d{4}-\d{2}-\d{2}$/.test(newDate) && !customDates.includes(newDate)) {
+                        setCustomDates([...customDates, newDate].sort());
+                        input.value = "";
+                      }
+                    }}
+                    className="px-4 py-2 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] rounded-lg font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
+                  >
+                    Add Date
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-amber-600">
+                  Maximum of 12 dates reached.
+                </p>
+              )}
+
+              {customDates.length === 0 && (
+                <p className="text-sm text-amber-600">
+                  At least one date is required for a custom schedule series.
+                </p>
+              )}
+
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Removing a date hides any per-date overrides for it. Re-adding the date restores them.
               </p>
             </div>
           )}
