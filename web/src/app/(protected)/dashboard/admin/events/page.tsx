@@ -53,7 +53,7 @@ export default async function AdminEventsPage() {
            </Link>
          </div>
          <Link
-           href="/dashboard/admin/events/new"
+           href="/dashboard/my-events/new"
            className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-[var(--color-text-primary)] font-medium transition-colors"
          >
            + Add New Happening

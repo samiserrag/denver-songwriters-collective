@@ -487,7 +487,7 @@ export default async function HappeningsPage({
             </span>
             {typeFilter === "open_mic" ? (
               <Link
-                href="/submit-open-mic"
+                href="/dashboard/my-events/new"
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-sm font-medium hover:opacity-90 transition"
               >
                 + Add Open Mic
