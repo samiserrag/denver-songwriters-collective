@@ -761,7 +761,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               type="button"
               onClick={() => {
                 updateField("series_mode", "monthly");
-                updateField("occurrence_count", "3");
+                updateField("occurrence_count", "0");
                 setCustomDates([]);
                 if (selectedOrdinals.length === 0) {
                   setSelectedOrdinals([1]); // Default to 1st
@@ -1005,19 +1005,45 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2 text-[var(--color-text-secondary)]">
-                    Number of Events
+                    Series Length
                   </label>
-                  <select
-                    value={formData.occurrence_count}
-                    onChange={(e) => updateField("occurrence_count", e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  >
-                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                      <option key={n} value={n.toString()}>
-                        {n} events
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="monthlySeriesEnd"
+                        checked={formData.occurrence_count === "0"}
+                        onChange={() => updateField("occurrence_count", "0")}
+                        className="accent-[var(--color-accent-primary)]"
+                      />
+                      <span className="text-sm text-[var(--color-text-primary)]">No end date (ongoing)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="monthlySeriesEnd"
+                        checked={formData.occurrence_count !== "0"}
+                        onChange={() => updateField("occurrence_count", "6")}
+                        className="accent-[var(--color-accent-primary)]"
+                      />
+                      <span className="text-sm text-[var(--color-text-primary)]">Ends after</span>
+                      <select
+                        value={formData.occurrence_count === "0" ? "6" : formData.occurrence_count}
+                        onChange={(e) => updateField("occurrence_count", e.target.value)}
+                        onFocus={(e) => {
+                          if (formData.occurrence_count === "0") {
+                            updateField("occurrence_count", (e.target as HTMLSelectElement).value);
+                          }
+                        }}
+                        disabled={formData.occurrence_count === "0"}
+                        className="px-2 py-1 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-sm text-[var(--color-text-primary)] disabled:opacity-50"
+                      >
+                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24].map(n => (
+                          <option key={n} value={n.toString()}>{n} occurrences</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
 
