@@ -315,6 +315,58 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Theme Auto Mode Fix (January 2026) — RESOLVED
+
+**Goal:** Fix "Auto" theme option so it actually follows OS light/dark preference.
+
+**Status:** Complete.
+
+**Root Cause:** When user selected "Auto" in ThemePicker, localStorage stored `"auto"` as the value. On page load, both the inline pre-hydration script and ThemeInitializer set `data-theme="auto"` on the `<html>` element — which matched no CSS selector in `presets.css`. The CSS fallback (`@media (prefers-color-scheme: light) { :root:not([data-theme]) }`) only activates when `data-theme` is **absent**, so Auto mode was broken.
+
+**Fix:** Both the inline script and ThemeInitializer now treat `"auto"` as "remove the `data-theme` attribute", allowing the CSS `@media (prefers-color-scheme)` rules to take effect naturally.
+
+**Behavior:**
+
+| Stored Value | Behavior |
+|-------------|----------|
+| `"auto"` | `data-theme` removed; CSS media query follows OS preference |
+| `"night"` | `data-theme="night"` set; OS changes ignored |
+| `"sunrise"` | `data-theme="sunrise"` set; OS changes ignored |
+| `null` (no preference) | SSR default applied; CSS handles OS preference |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/layout.tsx` | Inline script treats `"auto"` as remove-attribute |
+| `components/ui/ThemeInitializer.tsx` | Same: `"auto"` removes `data-theme` |
+
+---
+
+### Canonical Create Happening Entry Point (January 2026) — RESOLVED
+
+**Goal:** Make `/dashboard/my-events/new` the single canonical "create happening" form entry point from all dashboards.
+
+**Status:** Complete.
+
+**Problem:** Multiple "create happening" CTAs across dashboards pointed to different forms (admin-only `EventCreateForm` at `/dashboard/admin/events/new`, public submission form at `/submit-open-mic`). The canonical form at `/dashboard/my-events/new` already handles all roles (admin, host, member) via `canCreateDSC` and `canCreateVenue` props.
+
+**Fix:** Updated two CTAs to point to the canonical form.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/admin/events/page.tsx` | "+ Add New Happening" → `/dashboard/my-events/new` (was `/dashboard/admin/events/new`) |
+| `app/happenings/page.tsx` | "+ Add Open Mic" (open_mic filter) → `/dashboard/my-events/new` (was `/submit-open-mic`) |
+
+**Unchanged:**
+- "Correction" button on happenings page still links to `/submit-open-mic` (different purpose)
+- All other `/submit-open-mic` references unchanged (community submission/correction tool)
+- Old routes remain accessible via direct URL (not removed)
+
+---
+
 ### OG Image Redesign: Stronger DSC Branding + Improved Readability (January 2026) — RESOLVED
 
 **Goal:** Redesign OG (Open Graph) social sharing images with image-dominant layout, stronger branding, and readable badges at thumbnail scale.
