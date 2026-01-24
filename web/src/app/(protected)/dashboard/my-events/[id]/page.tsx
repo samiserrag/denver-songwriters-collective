@@ -216,7 +216,7 @@ export default async function EditEventPage({
                 is_recurring: event.is_recurring,
                 series_id: event.series_id,
               }}
-              showOverrideLink={isAdmin}
+              showOverrideLink={isPrimaryHost || isAdmin}
               seriesSiblings={seriesSiblings}
             />
 
