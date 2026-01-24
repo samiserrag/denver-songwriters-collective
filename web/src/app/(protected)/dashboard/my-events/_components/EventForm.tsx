@@ -320,9 +320,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     if (!formData.title.trim()) {
       missingFields.push("Title");
     }
-    // Day of Week required for weekly and monthly recurring series
-    // Single and custom modes use event_date instead
-    if (mode === "create" && (formData.series_mode === "weekly" || formData.series_mode === "monthly") && !formData.day_of_week) {
+    // Day of Week required for weekly series (user selects from dropdown)
+    // Monthly mode derives day_of_week from the date picker automatically
+    if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
       missingFields.push("Day of Week");
     }
     // In edit mode, day_of_week is only required if this is a recurring event
@@ -394,25 +394,28 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       const method = mode === "create" ? "POST" : "PATCH";
 
-      // Determine recurrence settings based on series mode
-      // Single mode: no recurrence (one-time event)
-      // Weekly mode: weekly recurrence
-      // Monthly mode: monthly ordinal recurrence (e.g., "1st", "2nd/4th")
-      // Custom mode: no recurrence (each date is a separate one-time event)
-      const isRecurring = formData.series_mode === "weekly" || formData.series_mode === "monthly";
-
-      // Build recurrence rule based on mode
+      // Determine recurrence settings
       let effectiveRecurrenceRule: string | null = null;
-      if (formData.series_mode === "weekly") {
-        effectiveRecurrenceRule = "weekly";
-      } else if (formData.series_mode === "monthly") {
-        // Convert ordinals to text format (e.g., [1, 3] => "1st/3rd")
-        const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
-        const ordinalTexts = selectedOrdinals.sort((a, b) => a - b).map(o => ordinalWords[o] || `${o}th`);
-        effectiveRecurrenceRule = ordinalTexts.join("/");
-      }
+      let effectiveDayOfWeek: string | null = null;
 
-      const effectiveDayOfWeek = isRecurring ? formData.day_of_week : null;
+      if (mode === "edit") {
+        // Edit mode: preserve the event's recurrence fields from the form state
+        // (user can change day_of_week via date picker, which updates formData.day_of_week)
+        effectiveRecurrenceRule = formData.recurrence_rule || null;
+        effectiveDayOfWeek = formData.day_of_week || null;
+      } else {
+        // Create mode: derive from series_mode selection
+        if (formData.series_mode === "weekly") {
+          effectiveRecurrenceRule = "weekly";
+        } else if (formData.series_mode === "monthly") {
+          // Convert ordinals to text format (e.g., [1, 3] => "1st/3rd")
+          const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
+          const ordinalTexts = selectedOrdinals.sort((a, b) => a - b).map(o => ordinalWords[o] || `${o}th`);
+          effectiveRecurrenceRule = ordinalTexts.join("/");
+        }
+        const isRecurring = formData.series_mode === "weekly" || formData.series_mode === "monthly";
+        effectiveDayOfWeek = isRecurring ? formData.day_of_week : null;
+      }
 
       const body = {
         ...formData,
@@ -622,10 +625,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* Phase 4.44c: When is this event? */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Day of Week - only shown for:
-            - Create mode with weekly or monthly series selected
-            - Edit mode for recurring events (has recurrence_rule)
+            - Create mode with weekly series selected (monthly derives from date picker)
+            - Edit mode for recurring events (has recurrence_rule) - shows derived value
             Single-date and custom-date events derive day_of_week from the selected date(s) */}
-        {((mode === "edit" && event?.recurrence_rule) || (mode === "create" && (formData.series_mode === "weekly" || formData.series_mode === "monthly"))) && (
+        {((mode === "edit" && event?.recurrence_rule) || (mode === "create" && formData.series_mode === "weekly")) && (
           <div>
             <label className="block text-sm font-medium mb-2">
               <span className="text-red-500">Day of Week</span>
@@ -684,12 +687,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       </div>
 
-      {/* ============ SECTION 3a: EVENT DATE (Edit Mode - Non-Recurring) ============ */}
-      {/* Allow editing event date for non-recurring events */}
-      {mode === "edit" && !event?.recurrence_rule && (
+      {/* ============ SECTION 3a: EVENT DATE (Edit Mode) ============ */}
+      {/* For non-recurring events: change the event date */}
+      {/* For recurring events: change the anchor (start) date of the series */}
+      {mode === "edit" && (
         <div>
           <label className="block text-sm font-medium mb-2">
-            <span className="text-red-500">Event Date</span>
+            <span className="text-red-500">{event?.recurrence_rule ? "Series Start Date" : "Event Date"}</span>
             <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
           </label>
           <input
@@ -705,7 +709,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
           />
           <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-            Change the date for this one-time happening.
+            {event?.recurrence_rule
+              ? "Changing this date will update the day of week and shift all future occurrences."
+              : "Change the date for this one-time happening."}
           </p>
         </div>
       )}
@@ -939,7 +945,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {formData.series_mode === "monthly" && (
             <div className="space-y-4">
               <p className="text-sm text-[var(--color-text-secondary)]">
-                Choose which week(s) of the month your happening occurs. Select the day of week above.
+                Choose which week(s) of the month your happening occurs. The day of week is set by your First Event Date below.
               </p>
 
               {/* Ordinal Selection - Which weeks of the month */}
