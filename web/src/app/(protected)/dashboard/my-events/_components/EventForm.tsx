@@ -24,6 +24,21 @@ import {
   weekdayNameFromDateMT,
 } from "@/lib/events/formDateHelpers";
 
+/**
+ * DateDayIndicator: Shows the day of week derived from a date value.
+ * Blank when no date is set, shows day name when date is entered.
+ */
+function DateDayIndicator({ dateValue }: { dateValue: string }) {
+  if (!dateValue) return null;
+  const dayName = weekdayNameFromDateMT(dateValue);
+  if (!dayName) return null;
+  return (
+    <span className="ml-2 text-sm font-medium text-[var(--color-accent-primary)]">
+      {dayName}
+    </span>
+  );
+}
+
 // Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
 const TIME_OPTIONS: { value: string; label: string }[] = [];
 for (let hour = 6; hour <= 23; hour++) {
@@ -150,8 +165,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     is_published: event?.is_published ?? false, // New events start as drafts
     // Event date field (for edit mode of non-recurring events)
     event_date: event?.event_date || "",
-    // Recurring series fields (only for create mode)
-    start_date: "",
+    // Series start date / event date (used by schedule section date inputs)
+    start_date: event?.event_date || "",
     occurrence_count: event?.max_occurrences ? event.max_occurrences.toString() : "0", // 0 = no end date (ongoing), >0 = finite series
     series_mode: (mode === "edit" && event?.recurrence_rule
       ? (event.recurrence_rule === "weekly" || event.recurrence_rule === "biweekly" ? "weekly"
@@ -519,7 +534,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         } else {
           effectiveRecurrenceRule = null; // single event
         }
-        effectiveDayOfWeek = formData.series_mode === "custom" ? null : (formData.day_of_week || null);
+        // Only preserve day_of_week for recurring modes (weekly/monthly); clear for single/custom
+        effectiveDayOfWeek = (formData.series_mode === "weekly" || formData.series_mode === "monthly")
+          ? (formData.day_of_week || null)
+          : null;
       } else {
         // Create mode: derive from series_mode selection
         if (formData.series_mode === "weekly") {
@@ -539,6 +557,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Override recurrence fields based on series mode
         recurrence_rule: effectiveRecurrenceRule,
         day_of_week: effectiveDayOfWeek,
+        is_recurring: formData.series_mode !== "single",
         // Phase 4.43: capacity is independent of timeslots (RSVP always available)
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: coverImageUrl,
@@ -550,6 +569,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
         slot_duration_minutes: slotConfig.has_timeslots ? slotConfig.slot_duration_minutes : null,
         allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
+        // Event date (anchor) - sync from start_date in edit mode
+        event_date: formData.start_date || formData.event_date || null,
         // Series configuration
         start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
         occurrence_count: parseInt(formData.occurrence_count) || 0,
@@ -828,36 +849,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       </div>
 
-      {/* ============ SECTION 3a: EVENT DATE (Edit Mode) ============ */}
-      {/* For non-recurring events: change the event date */}
-      {/* For recurring events: change the anchor (start) date of the series */}
-      {/* Hidden in occurrence mode (date is fixed to the occurrence date_key) */}
-      {/* Hidden for custom series (dates are managed via custom_dates array, server derives event_date) */}
-      {!occurrenceMode && mode === "edit" && formData.series_mode !== "custom" && (
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            <span className="text-red-500">{event?.recurrence_rule ? "Series Start Date" : "Event Date"}</span>
-            <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-          </label>
-          <input
-            type="date"
-            value={formData.event_date}
-            onChange={(e) => {
-              updateField("event_date", e.target.value);
-              // Update day_of_week to match the selected date
-              if (e.target.value) {
-                updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
-              }
-            }}
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          />
-          <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-            {event?.recurrence_rule
-              ? "Changing this date will update the day of week and shift all future occurrences."
-              : "Change the date for this one-time happening."}
-          </p>
-        </div>
-      )}
+      {/* Section 3a removed: Date field is now consolidated inside the schedule section (Section 3b) */}
 
       {/* ============ SECTION 3a-edit: SERIES CONTROLS (Edit Mode) ============ */}
       {/* Show ordinal checkboxes for monthly events, series length for weekly/monthly, or dates for custom */}
@@ -1173,15 +1165,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               <label className="block text-sm font-medium mb-2">
                 <span className="text-red-500">Event Date</span>
                 <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                <DateDayIndicator dateValue={formData.start_date} />
               </label>
               <input
                 type="date"
-                value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
+                value={formData.start_date || ""}
                 onChange={(e) => {
                   updateField("start_date", e.target.value);
-                  if (e.target.value) {
-                    updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
-                  }
                 }}
                 min={new Date().toISOString().split("T")[0]}
                 className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
@@ -1199,6 +1189,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 <label className="block text-sm font-medium mb-2">
                   <span className="text-red-500">First Event Date</span>
                   <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                  <DateDayIndicator dateValue={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")} />
                 </label>
                 <input
                   type="date"
@@ -1359,6 +1350,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   <label className="block text-sm font-medium mb-2">
                     <span className="text-red-500">First Event Date</span>
                     <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
+                    <DateDayIndicator dateValue={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")} />
                   </label>
                   <input
                     type="date"
@@ -1453,7 +1445,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                       className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]"
                     >
                       <span className="text-sm text-[var(--color-text-primary)]">
-                        {new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Denver" })}
+                        {new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/Denver" })}
                       </span>
                       <button
                         type="button"

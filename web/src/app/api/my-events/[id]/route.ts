@@ -145,7 +145,7 @@ export async function PATCH(
   // Only allow updating specific fields
   const allowedFields = [
     "title", "description", "event_type", "capacity", "host_notes",
-    "day_of_week", "start_time", "event_date",
+    "day_of_week", "start_time", "event_date", "is_recurring",
     "end_time", "status", "recurrence_rule", "cover_image_url", "is_published",
     // Phase 3 fields
     "timezone", "location_mode", "online_url", "is_free", "cost_label",
