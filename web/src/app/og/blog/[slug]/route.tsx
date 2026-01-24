@@ -22,7 +22,7 @@ export async function GET(
   const excerpt = post?.excerpt ?? "";
   const coverImage = post?.cover_image_url;
   const author = post?.author as { full_name?: string; avatar_url?: string } | null;
-  const authorName = author?.full_name ?? "Denver Songwriters Collective";
+  const authorName = author?.full_name;
   const authorAvatar = author?.avatar_url;
 
   return new ImageResponse(
@@ -34,10 +34,7 @@ export async function GET(
       fallbackEmoji: "📝",
       kindLabel: "Blog",
       kindVariant: "gold",
-      author: {
-        name: authorName,
-        avatarUrl: authorAvatar,
-      },
+      author: authorName ? { name: authorName, avatarUrl: authorAvatar } : undefined,
     }),
     {
       width: 1200,

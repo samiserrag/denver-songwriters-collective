@@ -36,7 +36,9 @@ export async function GET(
 
   // Build subtitle from location and neighborhood
   const subtitleParts = [location, neighborhood].filter(Boolean);
-  const subtitle = subtitleParts.join(" · ") || undefined;
+  const subtitle = subtitleParts.length > 0
+    ? `📍 ${subtitleParts.join(" · ")}`
+    : undefined;
 
   // Build chips
   const chips: OgChip[] = [];
@@ -56,7 +58,7 @@ export async function GET(
       fallbackEmoji: "📍",
       kindLabel: "Venue",
       kindVariant: "gold",
-      imageFit: "contain",
+      imageFit: "cover",
     }),
     {
       width: 1200,

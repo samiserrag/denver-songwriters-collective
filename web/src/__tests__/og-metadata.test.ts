@@ -235,3 +235,85 @@ describe("OG Image dimensions", () => {
     expect(dimensions.width / dimensions.height).toBeCloseTo(1.9, 1);
   });
 });
+
+describe("Venue OG card data logic", () => {
+  // Simulate the venue route's data → renderOgCard prop mapping
+  function buildVenueOgProps(venue: {
+    name?: string;
+    city?: string;
+    state?: string;
+    neighborhood?: string;
+    cover_image_url?: string | null;
+  } | null) {
+    const name = venue?.name ?? "Venue";
+    const location = venue ? [venue.city, venue.state].filter(Boolean).join(", ") : "";
+    const neighborhood = venue?.neighborhood;
+    const coverImage = venue?.cover_image_url;
+
+    const subtitleParts = [location, neighborhood].filter(Boolean);
+    const subtitle = subtitleParts.length > 0
+      ? `📍 ${subtitleParts.join(" · ")}`
+      : undefined;
+
+    return {
+      title: name,
+      subtitle,
+      imageUrl: coverImage,
+      imageFit: "cover" as const,
+      kindLabel: "Venue",
+      fallbackEmoji: "📍",
+    };
+  }
+
+  it("should pass cover_image_url as imageUrl when present", () => {
+    const props = buildVenueOgProps({
+      name: "A Lodge at Lyons",
+      city: "Lyons",
+      state: "CO",
+      cover_image_url: "https://example.com/lodge.jpg",
+    });
+    expect(props.imageUrl).toBe("https://example.com/lodge.jpg");
+  });
+
+  it("should use imageFit cover for venues", () => {
+    const props = buildVenueOgProps({
+      name: "Test Venue",
+      cover_image_url: "https://example.com/img.jpg",
+    });
+    expect(props.imageFit).toBe("cover");
+  });
+
+  it("should include city and state in subtitle with pin emoji", () => {
+    const props = buildVenueOgProps({
+      name: "Bar 404",
+      city: "Denver",
+      state: "CO",
+    });
+    expect(props.subtitle).toBe("📍 Denver, CO");
+  });
+
+  it("should include neighborhood in subtitle when present", () => {
+    const props = buildVenueOgProps({
+      name: "Brewery Rickoli",
+      city: "Wheat Ridge",
+      state: "CO",
+      neighborhood: "Olde Town",
+    });
+    expect(props.subtitle).toBe("📍 Wheat Ridge, CO · Olde Town");
+  });
+
+  it("should fallback to Venue title when name is null", () => {
+    const props = buildVenueOgProps(null);
+    expect(props.title).toBe("Venue");
+    expect(props.subtitle).toBeUndefined();
+    expect(props.imageUrl).toBeUndefined();
+  });
+
+  it("should handle venue with only neighborhood (no city/state)", () => {
+    const props = buildVenueOgProps({
+      name: "Mystery Spot",
+      neighborhood: "RiNo",
+    });
+    expect(props.subtitle).toBe("📍 RiNo");
+  });
+});

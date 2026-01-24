@@ -10,6 +10,12 @@ function isUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
+// Day abbreviation map for series labels
+const DAY_ABBREVS: Record<string, string> = {
+  monday: "Mon", tuesday: "Tue", wednesday: "Wed",
+  thursday: "Thu", friday: "Fri", saturday: "Sat", sunday: "Sun",
+};
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -17,16 +23,23 @@ export async function GET(
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
+  const selectFields = `
+    title, event_type, event_date, start_time,
+    venue_name, cover_image_url, status, last_verified_at,
+    recurrence_rule, day_of_week,
+    venue:venues!events_venue_id_fkey(name, city, state)
+  `;
+
   // Query event by slug or UUID
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
-        .select("title, event_type, event_date, start_time, venue_name, cover_image_url, status, last_verified_at")
+        .select(selectFields)
         .eq("id", id)
         .single()
     : await supabase
         .from("events")
-        .select("title, event_type, event_date, start_time, venue_name, cover_image_url, status, last_verified_at")
+        .select(selectFields)
         .eq("slug", id)
         .single();
 
@@ -34,12 +47,51 @@ export async function GET(
   const eventType = event?.event_type as EventType | undefined;
   const typeConfig = eventType ? EVENT_TYPE_CONFIG[eventType] : null;
   const typeLabel = typeConfig?.label ?? "Event";
-  const venue = event?.venue_name ?? "";
   const coverImage = event?.cover_image_url;
 
-  // Format date if available
-  let dateStr = "";
-  if (event?.event_date) {
+  // Extract venue info (prefer joined venue data, fall back to venue_name)
+  const venueData = event?.venue as { name?: string; city?: string; state?: string } | null;
+  const venueName = venueData?.name ?? event?.venue_name ?? "";
+  const venueCity = venueData?.city ?? "";
+  const venueState = venueData?.state ?? "";
+
+  // Build subtitle: venue name + city
+  const locationParts = [venueName, [venueCity, venueState].filter(Boolean).join(", ")].filter(Boolean);
+  const subtitle = locationParts.length > 0
+    ? `📍 ${locationParts.join(" · ")}`
+    : undefined;
+
+  // Format date overlay
+  const recurrenceRule = event?.recurrence_rule;
+  const dayOfWeek = event?.day_of_week;
+  let dateOverlay: string | undefined;
+
+  if (recurrenceRule || dayOfWeek) {
+    // Series event: show "Every Thu" or "1st & 3rd Sat" pattern
+    const dayAbbr = dayOfWeek
+      ? DAY_ABBREVS[dayOfWeek.toLowerCase().trim()] ?? dayOfWeek
+      : "";
+
+    if (recurrenceRule && recurrenceRule.includes("/")) {
+      // Monthly ordinal: "1st/3rd" → "1st & 3rd Thu"
+      const ordinals = recurrenceRule.split("/").map((o: string) => o.trim());
+      dateOverlay = `${ordinals.join(" & ")} ${dayAbbr}`;
+    } else if (recurrenceRule === "weekly" || (!recurrenceRule && dayOfWeek)) {
+      dateOverlay = dayAbbr ? `Every ${dayAbbr}` : undefined;
+    } else if (recurrenceRule === "biweekly") {
+      dateOverlay = dayAbbr ? `Every Other ${dayAbbr}` : undefined;
+    } else {
+      dateOverlay = dayAbbr ? `Every ${dayAbbr}` : undefined;
+    }
+
+    // Append time if available
+    if (dateOverlay && event?.start_time) {
+      const timeStr = formatTime(event.start_time);
+      if (timeStr) dateOverlay += ` · ${timeStr}`;
+    }
+  } else if (event?.event_date) {
+    // One-time event: "Sat Feb 14 · 9 PM"
+    let dateStr = "";
     try {
       const date = new Date(event.event_date + "T12:00:00Z");
       dateStr = date.toLocaleDateString("en-US", {
@@ -51,27 +103,9 @@ export async function GET(
     } catch {
       // Ignore date parsing errors
     }
+    const timeStr = event?.start_time ? formatTime(event.start_time) : "";
+    dateOverlay = [dateStr, timeStr].filter(Boolean).join(" · ") || undefined;
   }
-
-  // Format time if available
-  let timeStr = "";
-  if (event?.start_time) {
-    try {
-      const [hours, minutes] = event.start_time.split(":");
-      const hour = parseInt(hours, 10);
-      const ampm = hour >= 12 ? "PM" : "AM";
-      const displayHour = hour % 12 || 12;
-      timeStr = `${displayHour}:${minutes} ${ampm}`;
-    } catch {
-      // Ignore time parsing errors
-    }
-  }
-
-  // Build date overlay for image zone
-  const dateOverlay = [dateStr, timeStr].filter(Boolean).join(" · ") || undefined;
-
-  // Build subtitle from venue
-  const subtitle = venue ? `📍 ${venue}` : undefined;
 
   // Build chips
   const chips: OgChip[] = [];
@@ -114,4 +148,18 @@ export async function GET(
       height: 630,
     }
   );
+}
+
+function formatTime(startTime: string): string {
+  try {
+    const [hours, minutes] = startTime.split(":");
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return minutes === "00"
+      ? `${displayHour} ${ampm}`
+      : `${displayHour}:${minutes} ${ampm}`;
+  } catch {
+    return "";
+  }
 }

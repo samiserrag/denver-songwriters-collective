@@ -1,31 +1,45 @@
 /**
- * Shared OG Card Component — Image-Dominant Vertical Poster + Content Bar
+ * Shared OG Card Component — Image-Dominant Vertical Poster + Content Bar (v2)
  *
  * Layout (1200x630):
- *   Image Zone (top 420px): entity image fills top ~67%
- *   Content Bar (bottom 210px): card-spotlight gradient with title/subtitle/chips
+ *   Image Zone (top 400px): entity image fills top ~63%
+ *   Content Bar (bottom 230px): brighter card-spotlight gradient with title/subtitle/chips
  *
  * Design:
  *   - Kind badge overlaid top-left on image zone
- *   - "DSC" text top-right in gold
+ *   - "Denver Songwriters Collective" wordmark top-right (22px gold, dark scrim)
  *   - Bottom gradient on image blends into content bar
- *   - All chips use single gold pill style (no color differentiation)
- *   - No outer rounded corners (social platforms crop to rectangle)
+ *   - All chips use single gold pill style
+ *   - Title is large and dominant (52px default)
+ *   - Fallback: branded gradient + emoji (never blank)
+ *   - No outer rounded corners (social platforms crop)
+ *
+ * Colors derived from site Night theme tokens:
+ *   bg-primary: #0B0F1A
+ *   bg-secondary: #11162B
+ *   accent-gold: #FFD86A
+ *   text-primary: #FAF9F7
+ *   text-secondary: rgba(250, 249, 247, 0.70)
+ *   card-spotlight: radial-gradient with gold accent muted
  */
 
 import * as React from "react";
 
-// Colors matching night theme tokens
+// Colors matching Night theme tokens (brighter than pure #060F2C)
 const COLORS = {
-  background: "#060F2C",
-  goldAccent: "#FFD86A",
-  textPrimary: "#FAF9F7",
-  textSecondary: "rgba(250, 249, 247, 0.70)",
-  contentBarBorder: "rgba(255, 255, 255, 0.10)",
+  background: "#0B0F1A", // bg-primary (Night theme)
+  backgroundSecondary: "#11162B", // bg-secondary
+  backgroundTertiary: "#191F3A", // bg-tertiary
+  goldAccent: "#FFD86A", // --color-gold
+  goldMuted: "rgba(255, 216, 106, 0.15)", // --color-accent-muted
+  textPrimary: "#FAF9F7", // --color-warm-white
+  textSecondary: "rgba(250, 249, 247, 0.70)", // --color-text-secondary
+  textTertiary: "rgba(250, 249, 247, 0.55)", // --color-text-tertiary
+  contentBarBorder: "rgba(248, 250, 252, 0.14)", // --color-border-default (Night)
   pillBg: "rgba(255, 216, 106, 0.20)",
   pillBorder: "rgba(255, 216, 106, 0.35)",
   pillText: "#FFD86A",
-  kindBadgeBg: "rgba(0, 0, 0, 0.60)",
+  kindBadgeBg: "rgba(0, 0, 0, 0.55)",
 } as const;
 
 export type OgChip = {
@@ -46,7 +60,7 @@ export interface OgCardProps {
   fallbackEmoji?: string;
   /** Kind label shown in top-left badge on image */
   kindLabel: string;
-  /** Kind badge variant (ignored — all render same style) */
+  /** Kind badge variant (kept for compat, all render same) */
   kindVariant?: "gold" | "emerald" | "blue" | "purple";
   /** Optional author info for blog posts */
   author?: {
@@ -61,7 +75,6 @@ export interface OgCardProps {
 
 /**
  * Renders the OG card JSX for use with ImageResponse.
- * This is a pure function that returns React elements.
  */
 export function renderOgCard({
   title,
@@ -86,47 +99,54 @@ export function renderOgCard({
         overflow: "hidden",
       }}
     >
-      {/* ===== IMAGE ZONE (top 420px) ===== */}
+      {/* ===== IMAGE ZONE (top 400px) ===== */}
       <div
         style={{
           width: "1200px",
-          height: "420px",
+          height: "400px",
           position: "relative",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: COLORS.background,
           overflow: "hidden",
         }}
       >
-        {/* Entity image or fallback */}
+        {/* Entity image or branded fallback */}
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img
           <img
             src={imageUrl}
             width={1200}
-            height={420}
+            height={400}
             alt=""
             style={{
               width: "1200px",
-              height: "420px",
+              height: "400px",
               objectFit: imageFit,
-              objectPosition: "top",
+              objectPosition: imageFit === "contain" ? "center" : "top",
+              backgroundColor: COLORS.backgroundSecondary,
             }}
           />
         ) : (
+          /* Branded fallback: gradient + large emoji */
           <div
             style={{
               width: "1200px",
-              height: "420px",
+              height: "400px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "120px",
-              backgroundColor: COLORS.background,
+              background: `linear-gradient(135deg, ${COLORS.backgroundSecondary} 0%, ${COLORS.backgroundTertiary} 50%, ${COLORS.backgroundSecondary} 100%)`,
             }}
           >
-            {fallbackEmoji}
+            <div
+              style={{
+                fontSize: "140px",
+                opacity: 0.9,
+              }}
+            >
+              {fallbackEmoji}
+            </div>
           </div>
         )}
 
@@ -137,7 +157,7 @@ export function renderOgCard({
             bottom: 0,
             left: 0,
             right: 0,
-            height: "120px",
+            height: "140px",
             background: `linear-gradient(to bottom, transparent, ${COLORS.background})`,
           }}
         />
@@ -146,32 +166,56 @@ export function renderOgCard({
         <div
           style={{
             position: "absolute",
-            top: "24px",
+            top: "20px",
             left: "24px",
             backgroundColor: COLORS.kindBadgeBg,
             borderRadius: "8px",
             padding: "8px 16px",
-            fontSize: "20px",
+            fontSize: "18px",
             fontWeight: "600",
             color: COLORS.textPrimary,
+            letterSpacing: "0.3px",
           }}
         >
           {kindLabel}
         </div>
 
-        {/* DSC mark — top-right */}
+        {/* DSC Wordmark — top-right with dark scrim for readability */}
         <div
           style={{
             position: "absolute",
-            top: "24px",
-            right: "24px",
-            fontSize: "24px",
-            fontWeight: "700",
-            color: COLORS.goldAccent,
-            letterSpacing: "1px",
+            top: "16px",
+            right: "20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            backgroundColor: "rgba(0, 0, 0, 0.50)",
+            borderRadius: "10px",
+            padding: "10px 16px",
           }}
         >
-          DSC
+          <span
+            style={{
+              fontSize: "20px",
+              fontWeight: "700",
+              color: COLORS.goldAccent,
+              lineHeight: 1.25,
+              letterSpacing: "0.5px",
+            }}
+          >
+            Denver Songwriters
+          </span>
+          <span
+            style={{
+              fontSize: "20px",
+              fontWeight: "700",
+              color: COLORS.goldAccent,
+              lineHeight: 1.25,
+              letterSpacing: "0.5px",
+            }}
+          >
+            Collective
+          </span>
         </div>
 
         {/* Date overlay badge (events) — bottom-left above gradient */}
@@ -179,12 +223,12 @@ export function renderOgCard({
           <div
             style={{
               position: "absolute",
-              bottom: "24px",
+              bottom: "20px",
               left: "24px",
               backgroundColor: COLORS.kindBadgeBg,
               borderRadius: "8px",
               padding: "8px 16px",
-              fontSize: "20px",
+              fontSize: "18px",
               fontWeight: "600",
               color: COLORS.textPrimary,
             }}
@@ -194,41 +238,41 @@ export function renderOgCard({
         )}
       </div>
 
-      {/* ===== CONTENT BAR (bottom 210px) ===== */}
+      {/* ===== CONTENT BAR (bottom 230px) ===== */}
       <div
         style={{
           width: "1200px",
-          height: "210px",
+          height: "230px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           padding: "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
-          background: `radial-gradient(circle at top, rgba(255, 216, 106, 0.12), #0B0F1A)`,
+          background: `radial-gradient(ellipse at top, rgba(255, 216, 106, 0.14), ${COLORS.backgroundSecondary} 70%)`,
         }}
       >
-        {/* Title */}
+        {/* Title — large and dominant */}
         <div
           style={{
-            fontSize: title.length > 40 ? "36px" : "42px",
+            fontSize: title.length > 35 ? "40px" : title.length > 25 ? "46px" : "52px",
             fontWeight: "bold",
             color: COLORS.textPrimary,
-            lineHeight: 1.2,
+            lineHeight: 1.15,
+            maxWidth: "1050px",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            maxWidth: "1000px",
           }}
         >
-          {title.length > 50 ? title.slice(0, 50) + "..." : title}
+          {title.length > 55 ? title.slice(0, 55) + "…" : title}
         </div>
 
         {/* Subtitle */}
         {subtitle && (
           <div
             style={{
-              fontSize: "22px",
+              fontSize: "24px",
               color: COLORS.textSecondary,
               marginTop: "8px",
               lineHeight: 1.3,
@@ -238,7 +282,7 @@ export function renderOgCard({
               maxWidth: "900px",
             }}
           >
-            {subtitle.length > 70 ? subtitle.slice(0, 70) + "..." : subtitle}
+            {subtitle.length > 70 ? subtitle.slice(0, 70) + "…" : subtitle}
           </div>
         )}
 
@@ -248,7 +292,7 @@ export function renderOgCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginTop: "12px",
+            marginTop: "14px",
           }}
         >
           {/* Chips */}
@@ -265,9 +309,9 @@ export function renderOgCard({
                   style={{
                     backgroundColor: COLORS.pillBg,
                     border: `1.5px solid ${COLORS.pillBorder}`,
-                    borderRadius: "16px",
-                    padding: "6px 14px",
-                    fontSize: "16px",
+                    borderRadius: "14px",
+                    padding: "5px 14px",
+                    fontSize: "15px",
                     color: COLORS.pillText,
                     fontWeight: "500",
                   }}
@@ -286,18 +330,18 @@ export function renderOgCard({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "12px",
               }}
             >
               {author.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img
                 <img
                   src={author.avatarUrl}
-                  width={36}
-                  height={36}
+                  width={40}
+                  height={40}
                   alt=""
                   style={{
-                    borderRadius: "18px",
+                    borderRadius: "20px",
                     objectFit: "cover",
                     border: `2px solid ${COLORS.goldAccent}`,
                   }}
@@ -305,14 +349,14 @@ export function renderOgCard({
               ) : (
                 <div
                   style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "18px",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "20px",
                     backgroundColor: COLORS.goldAccent,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "16px",
+                    fontSize: "18px",
                     fontWeight: "bold",
                     color: COLORS.background,
                   }}
@@ -322,9 +366,9 @@ export function renderOgCard({
               )}
               <span
                 style={{
-                  fontSize: "18px",
+                  fontSize: "20px",
                   color: COLORS.goldAccent,
-                  fontWeight: "500",
+                  fontWeight: "600",
                 }}
               >
                 {author.name}
