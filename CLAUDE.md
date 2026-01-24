@@ -62,7 +62,7 @@ A community platform for Denver-area songwriters to discover open mics, connect 
 | Deployment status | `GET /v13/deployments/{id}` | ✅ Working |
 | Build logs | `GET /v3/deployments/{id}/events` | ✅ Working |
 | Project info | `GET /v9/projects` | ✅ Working |
-| Runtime logs | Streaming endpoint | ⚠️ Requires Log Drains |
+| Runtime logs | Axiom CLI (`axiom query`) | ✅ Working (via Axiom) |
 
 ### How to Use
 
@@ -88,14 +88,65 @@ The Vercel API token is available in the conversation context. If the agent need
 1. Query deployment status to confirm latest deploy
 2. Check build logs for compilation errors
 3. Test endpoints directly with `curl`
+4. Query runtime logs via `axiom query` for function errors, request details, and console output
 
-### Runtime Logs (Not Yet Available)
+### Runtime Logs (via Axiom Drain)
 
-Runtime logs (function invocations, errors) require either:
-1. **Log Drains** — Configure a webhook URL in Vercel dashboard to receive logs
-2. **Vercel CLI** — `vercel logs <url> --follow` (requires interactive terminal)
+Runtime logs (function invocations, errors, console output) are available via Axiom.
 
-**To enable runtime logs:** Set up a Log Drain in Vercel Dashboard → Project → Settings → Log Drains. This would allow the agent to see actual 500 errors, request/response details, and console.log output from production.
+**Infrastructure:**
+- Vercel Log Drain → Axiom dataset `vercel` (configured in Vercel Dashboard → Project Settings → Log Drains)
+- Dataset receives: function invocations, edge requests, build logs, static file requests
+- Retention: Axiom free tier (30 days)
+
+**How to Query (CLI-first):**
+
+```bash
+# Authenticate (one-time, token stored in ~/.axiom/auth)
+axiom auth login
+
+# List available datasets
+axiom dataset list
+
+# Recent errors (last 1 hour)
+axiom query "['vercel'] | where level == 'error' | sort by _time desc | take 50"
+
+# Specific route errors
+axiom query "['vercel'] | where path == '/api/my-events' and status >= 500 | sort by _time desc | take 20"
+
+# Search by request ID (from Vercel dashboard or error reports)
+axiom query "['vercel'] | where ['vercel.request_id'] == 'iad1::xxxxx' | sort by _time desc"
+
+# Tail logs in real-time (streaming)
+axiom query "['vercel'] | where _time > ago(5m)" --stream
+
+# Function duration analysis
+axiom query "['vercel'] | where type == 'function' | summarize avg(duration) by path | sort by avg_duration desc | take 10"
+```
+
+**APL (Axiom Processing Language) Quick Reference:**
+
+| Operation | Syntax |
+|-----------|--------|
+| Filter | `where field == 'value'` |
+| Time range | `where _time > ago(1h)` |
+| Sort | `sort by _time desc` |
+| Limit | `take 50` |
+| Aggregate | `summarize count() by path` |
+| String match | `where path contains '/api/'` |
+| Status codes | `where status >= 400 and status < 500` |
+
+**Security Notes:**
+- The Axiom API token is stored in `~/.axiom/auth` after `axiom auth login`
+- NEVER commit or display the Axiom token in logs/output
+- NEVER include the Axiom ingest endpoint URL in code or docs (it's configured in Vercel Dashboard only)
+- Dataset is read-only for debugging; write access is via the drain only
+
+**When to Use:**
+1. Production 500 errors — query by path + status
+2. Silent failures — search for specific request IDs
+3. Performance issues — aggregate duration by route
+4. User-reported bugs — filter by time window + path
 
 ---
 
@@ -303,6 +354,7 @@ After applying:
 3. **Reality beats reasoning** — verify in browser, not just code
 4. **One change = one contract** — no mixed refactors
 5. **Update this file** after every push to main
+6. **Production debugging** — when investigating production errors, query Axiom runtime logs (`axiom query`) before speculating about root causes
 
 ---
 
