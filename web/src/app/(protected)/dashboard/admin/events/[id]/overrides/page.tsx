@@ -53,6 +53,8 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
       is_recurring,
       start_time,
       cover_image_url,
+      custom_dates,
+      max_occurrences,
       venues(id, name)
     `)
     .eq("id", eventId)
@@ -63,9 +65,23 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
     notFound();
   }
 
-  // Build 90-day window
+  // Build date window for occurrence expansion
   const todayKey = getTodayDenver();
-  const endKey = addDaysDenver(todayKey, 90);
+  const isCustomSchedule = event.recurrence_rule === "custom" && Array.isArray(event.custom_dates) && event.custom_dates.length > 0;
+
+  // For custom schedules: span the full date range (past + future)
+  // For weekly/monthly: use next 90 days (standard)
+  let windowStartKey: string;
+  let windowEndKey: string;
+
+  if (isCustomSchedule) {
+    const sortedDates = [...event.custom_dates].sort();
+    windowStartKey = sortedDates[0]; // earliest date in array
+    windowEndKey = sortedDates[sortedDates.length - 1]; // latest date in array
+  } else {
+    windowStartKey = todayKey;
+    windowEndKey = addDaysDenver(todayKey, 90);
+  }
 
   // Expand occurrences for this event
   const occurrences = expandOccurrencesForEvent(
@@ -74,8 +90,10 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
       day_of_week: event.day_of_week,
       recurrence_rule: event.recurrence_rule,
       start_time: event.start_time,
+      custom_dates: event.custom_dates,
+      max_occurrences: event.max_occurrences,
     },
-    { startKey: todayKey, endKey, maxOccurrences: 40 }
+    { startKey: windowStartKey, endKey: windowEndKey, maxOccurrences: 40 }
   );
 
   // Fetch existing overrides for this event in the window
@@ -83,8 +101,8 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
     .from("occurrence_overrides")
     .select("*")
     .eq("event_id", eventId)
-    .gte("date_key", todayKey)
-    .lte("date_key", endKey);
+    .gte("date_key", windowStartKey)
+    .lte("date_key", windowEndKey);
 
   const overrides = (overridesData || []) as OccurrenceOverride[];
   const overrideMap = buildOverrideMap(overrides);
@@ -161,7 +179,9 @@ export default async function OverridesPage({ params, searchParams }: PageProps)
         </div>
 
         <p className="text-sm text-[var(--color-text-tertiary)]">
-          Showing next 90 days ({mergedOccurrences.length} occurrences)
+          {isCustomSchedule
+            ? `Showing all dates in this custom schedule (${mergedOccurrences.length} occurrences)`
+            : `Showing next 90 days (${mergedOccurrences.length} occurrences)`}
         </p>
       </div>
 
