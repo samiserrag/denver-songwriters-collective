@@ -319,6 +319,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
       has_timeslots: slotConfig.has_timeslots,
       total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : undefined,
+      // Bug #4 fix: Include last_verified_at so preview shows correct verification state
+      // When editing an existing verified event, the preview should show "Confirmed" not "Unconfirmed"
+      last_verified_at: event?.last_verified_at ?? null,
     };
   }, [
     event?.id,
@@ -344,6 +347,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     slotConfig.total_slots,
     formData.series_mode,
     selectedOrdinals,
+    event?.last_verified_at,
   ]);
 
   const handleImageUpload = async (file: File): Promise<string | null> => {
@@ -397,8 +401,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
         missingFields.push("Day of Week");
       }
-      // In edit mode, day_of_week is only required for weekly/monthly recurring events (not custom)
-      if (mode === "edit" && event?.recurrence_rule && formData.series_mode !== "custom" && !formData.day_of_week) {
+      // In edit mode, day_of_week is only required for weekly series (not monthly/custom)
+      // Monthly mode derives day_of_week from the date picker automatically via weekdayNameFromDateMT
+      if (mode === "edit" && event?.recurrence_rule && formData.series_mode === "weekly" && !formData.day_of_week) {
         missingFields.push("Day of Week");
       }
     }
