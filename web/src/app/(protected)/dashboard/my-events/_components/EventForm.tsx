@@ -23,6 +23,8 @@ import {
   getNextDayOfWeekMT,
   weekdayNameFromDateMT,
 } from "@/lib/events/formDateHelpers";
+// Phase 4.84: Rolling window notice for series settings
+import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 
 /**
  * DateDayIndicator: Shows the day of week derived from a date value.
@@ -1102,6 +1104,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           </div>
           )}
+
+          {/* Phase 4.84: Rolling window notice for recurring series */}
+          <p className="text-xs text-[var(--color-text-tertiary)] pt-2 border-t border-[var(--color-border-default)]">
+            {getOccurrenceWindowNotice().detail}
+          </p>
         </div>
       )}
 
@@ -1338,6 +1345,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                       </span>
                     )}
                   </div>
+                  {/* Phase 4.84: Rolling window notice */}
+                  <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+                    {getOccurrenceWindowNotice().detail}
+                  </p>
                 </div>
               )}
             </>
@@ -1469,6 +1480,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                         return `${ordinalTexts.join(" & ")} ${formData.day_of_week} of the month`;
                       })()}
                     </span>
+                  </p>
+                  {/* Phase 4.84: Rolling window notice */}
+                  <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+                    {getOccurrenceWindowNotice().detail}
                   </p>
                 </div>
               )}

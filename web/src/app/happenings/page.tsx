@@ -17,6 +17,7 @@ import {
   buildOverrideMap,
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
+import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -624,22 +625,34 @@ export default async function HappeningsPage({
         {/* Phase 4.54: Conditional rendering based on view mode */}
         {viewMode === "series" ? (
           /* Series View - one row per event/series */
-          list.length > 0 ? (
-            <SeriesView
-              events={list as SeriesEvent[]}
-              overrideMap={overrideMap}
-              startKey={windowStart}
-              endKey={windowEnd}
-            />
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-[var(--color-text-secondary)]">
-                {searchQuery || hasFilters
-                  ? "No happenings match your filters. Try adjusting your search."
-                  : "No happenings found. Check back soon!"}
-              </p>
-            </div>
-          )
+          <>
+            {/* Phase 4.84: Rolling window notice for series view */}
+            {(() => {
+              const windowNotice = getOccurrenceWindowNotice();
+              return (
+                <div className="mb-4 text-sm text-[var(--color-text-secondary)]">
+                  <p>{windowNotice.headline}</p>
+                  <p className="text-[var(--color-text-tertiary)]">{windowNotice.detail}</p>
+                </div>
+              );
+            })()}
+            {list.length > 0 ? (
+              <SeriesView
+                events={list as SeriesEvent[]}
+                overrideMap={overrideMap}
+                startKey={windowStart}
+                endKey={windowEnd}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-[var(--color-text-secondary)]">
+                  {searchQuery || hasFilters
+                    ? "No happenings match your filters. Try adjusting your search."
+                    : "No happenings found. Check back soon!"}
+                </p>
+              </div>
+            )}
+          </>
         ) : (
           /* Timeline View - grouped by date (default) */
           totalDisplayableEvents > 0 ? (

@@ -30,6 +30,7 @@ import {
   getTodayDenver,
   addDaysDenver,
 } from "@/lib/events/nextOccurrence";
+import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 
 export const dynamic = "force-dynamic";
 
@@ -1216,6 +1217,15 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                     </span>
                   )}
                 </div>
+                {/* Phase 4.84: Rolling window notice */}
+                {(() => {
+                  const windowNotice = getOccurrenceWindowNotice();
+                  return (
+                    <p className="mt-3 text-xs text-[var(--color-text-tertiary)]">
+                      {windowNotice.detail}
+                    </p>
+                  );
+                })()}
               </div>
             </div>
           )}
