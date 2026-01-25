@@ -471,6 +471,27 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Image Upload Primary CTA Saves Original (Phase 4.85, January 2026) — RESOLVED
+
+**Goal:** Make "Save original image" the primary action in all image upload/crop UIs.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2539, build success).
+
+**Problem:** Users who wanted to upload their original image unchanged had to look past the prominent "Save Crop" button to find "Use Original Image". This led to accidental crops and extra steps.
+
+**Fix:**
+
+| Component | Change |
+|-----------|--------|
+| `CropModal.tsx` | "Save original image" now primary (accent bg), "Save cropped image" secondary (border) |
+| `ImageUpload.tsx` | "Save original image" now primary (full-width, top), "Save cropped image" secondary |
+
+**Affected Surfaces (all inherit):** Event covers, venue photos, profile photos, blog covers, gallery bulk upload.
+
+**Commits:** `72acec3`
+
+---
+
 ### Recurrence Canonicalization — Server-Side day_of_week Derivation (Phase 4.83, January 2026) — RESOLVED
 
 **Goal:** Fix Bug #1 where ordinal monthly events with missing `day_of_week` disappeared from happenings.
