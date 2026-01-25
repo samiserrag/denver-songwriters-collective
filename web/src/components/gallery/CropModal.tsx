@@ -172,15 +172,15 @@ export function CropModal({ file, aspectRatio, onComplete, onCancel, onUseOrigin
 
         {/* Footer */}
         <div className="flex flex-col gap-3 p-4 border-t border-[var(--color-border-default)]">
-          {/* Use Original Image button - prominent option */}
+          {/* Primary action: Save original image */}
           {onUseOriginal && (
             <button
               type="button"
               onClick={onUseOriginal}
               disabled={isSaving}
-              className="w-full px-4 py-3 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50"
+              className="w-full px-4 py-3 rounded-lg bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium transition-colors disabled:opacity-50"
             >
-              Use Original Image (No Crop)
+              Save original image
             </button>
           )}
           <div className="flex justify-end gap-3">
@@ -191,10 +191,11 @@ export function CropModal({ file, aspectRatio, onComplete, onCancel, onUseOrigin
             >
               Cancel
             </button>
+            {/* Secondary action: Save cropped image */}
             <button
               onClick={handleSave}
               disabled={isSaving || !completedCrop}
-              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isSaving ? (
                 <>
@@ -202,7 +203,7 @@ export function CropModal({ file, aspectRatio, onComplete, onCancel, onUseOrigin
                   Saving...
                 </>
               ) : (
-                'Save Crop'
+                'Save cropped image'
               )}
             </button>
           </div>
