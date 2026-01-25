@@ -70,6 +70,6 @@ export function getOccurrenceWindowNotice(nowKey?: string): OccurrenceWindowNoti
 
   return {
     headline: "Occurrences are shown in a rolling 90-day window from today.",
-    detail: `Showing: ${startLabel} – ${endLabel}. New dates appear automatically as the window advances.`,
+    detail: `Showing: ${startLabel} – ${endLabel}. New dates appear automatically as the 3 month view window advances.`,
   };
 }

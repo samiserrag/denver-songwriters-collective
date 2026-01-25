@@ -86,7 +86,7 @@ describe("occurrenceWindow", () => {
       const notice = getOccurrenceWindowNotice("2026-06-01");
       // Jun 1 + 90 = Aug 30
       expect(notice.detail).toBe(
-        "Showing: Jun 1 – Aug 30. New dates appear automatically as the window advances."
+        "Showing: Jun 1 – Aug 30. New dates appear automatically as the 3 month view window advances."
       );
     });
   });
