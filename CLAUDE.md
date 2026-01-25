@@ -231,6 +231,7 @@ All must pass before merge:
 | VenueSelector | `web/src/components/ui/VenueSelector.tsx` |
 | Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
 | Recurrence contract | `web/src/lib/events/recurrenceContract.ts` |
+| Recurrence canonicalization | `web/src/lib/events/recurrenceCanonicalization.ts` |
 | Form date helpers | `web/src/lib/events/formDateHelpers.ts` |
 | CommentThread (shared) | `web/src/components/comments/CommentThread.tsx` |
 | ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
@@ -272,6 +273,63 @@ All must pass before merge:
 
 - `/events/[id]` — Canonical event detail page (supports both UUID and slug)
 - `/open-mics/[slug]` — Legacy entrypoint, redirects to `/events/[id]`
+
+---
+
+## Recurrence Invariants (Phase 4.83)
+
+### Required Field Combinations
+
+Ordinal monthly events (`recurrence_rule` IN `1st`, `2nd`, `3rd`, `4th`, `5th`, `last`, `1st/3rd`, `2nd/4th`, etc.) **MUST** have `day_of_week` set. Otherwise `interpretRecurrence()` returns `isConfident=false` and the event is hidden from happenings.
+
+| recurrence_rule | day_of_week Required | Example |
+|-----------------|---------------------|---------|
+| `weekly`, `biweekly` | Yes | `day_of_week='Monday'` |
+| `1st`, `2nd`, `3rd`, `4th`, `5th`, `last` | Yes | `day_of_week='Saturday'` |
+| `1st/3rd`, `2nd/4th`, `1st and 3rd`, etc. | Yes | `day_of_week='Thursday'` |
+| `monthly` | Yes | `day_of_week='Tuesday'` |
+| `custom` | No | Uses `custom_dates` array |
+| `NULL` (one-time) | No | Uses `event_date` only |
+
+### Canonicalization Behavior
+
+Server-side canonicalization (`recurrenceCanonicalization.ts`) runs on POST and PATCH:
+- If `recurrence_rule` is ordinal monthly AND `day_of_week` is NULL
+- Derive `day_of_week` from `event_date` (e.g., `2026-01-24` → `Saturday`)
+- This prevents invalid rows from being saved
+
+Defensive fallback (`recurrenceContract.ts` line 426):
+- If `day_of_week` is still NULL at render time, derive from `event_date`
+- Safety net for legacy data or edge cases
+
+### Data Integrity Audit Query
+
+Run after bulk imports or to verify no invalid rows:
+
+```sql
+-- Should return 0 rows (ordinal monthly with missing day_of_week)
+SELECT id, title, recurrence_rule, day_of_week, event_date
+FROM events
+WHERE recurrence_rule IN (
+  '1st', '2nd', '3rd', '4th', '5th', 'last',
+  '1st/3rd', '2nd/4th', '2nd/3rd',
+  '1st and 3rd', '2nd and 4th', '1st and Last',
+  'monthly'
+)
+AND day_of_week IS NULL;
+```
+
+### Axiom Production Monitoring
+
+Check for fallback derivation warnings (should be rare/zero after Phase 4.83):
+
+```bash
+# Query for recurrence fallback warnings in last 24h
+axiom query "['vercel'] | where message contains 'derived day_of_week' or message contains 'fallback' | where _time > ago(24h) | sort by _time desc | take 50"
+
+# Check specific event IDs with recurrence issues
+axiom query "['vercel'] | where path contains '/api/my-events' and status >= 400 | where _time > ago(24h) | sort by _time desc | take 20"
+```
 
 ---
 
