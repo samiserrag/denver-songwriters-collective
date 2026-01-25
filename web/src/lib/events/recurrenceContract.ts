@@ -419,6 +419,14 @@ function interpretLegacyRule(
     }
   }
 
+  // Phase 4.83: Defensive fallback - if day_of_week is missing but event_date exists,
+  // derive the day from the anchor date. This is a render-time safety net for events
+  // that somehow got saved without day_of_week. Server-side canonicalization should
+  // prevent this, but this fallback ensures correct display even for legacy data.
+  if (!dayInfo && event_date) {
+    dayInfo = getDayOfWeekFromDate(event_date);
+  }
+
   // "none" or empty - if we have a day, it's weekly
   if (r === "none" || r === "") {
     if (dayInfo) {

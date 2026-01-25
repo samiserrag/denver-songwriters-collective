@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
+import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -168,7 +169,13 @@ function buildEventInsert(params: EventInsertParams) {
     custom_latitude: customLocationFields.custom_latitude,
     custom_longitude: customLocationFields.custom_longitude,
     location_notes: customLocationFields.location_notes,
-    day_of_week: (body.day_of_week as string) || null,
+    // Phase 4.83: Canonicalize day_of_week for ordinal monthly rules
+    // If recurrence_rule is ordinal monthly and day_of_week is missing, derive from anchor date
+    day_of_week: canonicalizeDayOfWeek(
+      body.recurrence_rule as string | null,
+      body.day_of_week as string | null,
+      eventDate
+    ),
     start_time: body.start_time as string,
     end_time: (body.end_time as string) || null,
     recurrence_rule: (body.recurrence_rule as string) || null,

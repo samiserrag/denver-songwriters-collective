@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
+import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -299,10 +300,24 @@ export async function PATCH(
       is_published, published_at, status,
       has_timeslots, total_slots, slot_duration_minutes,
       event_date, start_time, end_time, venue_id, location_mode, day_of_week,
-      title, venue_name, venue_address, slug
+      title, venue_name, venue_address, slug,
+      recurrence_rule
     `)
     .eq("id", eventId)
     .single();
+
+  // Phase 4.83: Canonicalize day_of_week for ordinal monthly rules
+  // If recurrence_rule is ordinal monthly and day_of_week is missing, derive from anchor date
+  const effectiveRecurrenceRule = (updates.recurrence_rule as string | null) ?? prevEvent?.recurrence_rule ?? null;
+  const effectiveEventDate = (updates.event_date as string | null) ?? prevEvent?.event_date ?? null;
+  const effectiveDayOfWeek = (updates.day_of_week as string | null) ?? prevEvent?.day_of_week ?? null;
+
+  if (isOrdinalMonthlyRule(effectiveRecurrenceRule) && !effectiveDayOfWeek) {
+    const derivedDayOfWeek = canonicalizeDayOfWeek(effectiveRecurrenceRule, null, effectiveEventDate);
+    if (derivedDayOfWeek) {
+      updates.day_of_week = derivedDayOfWeek;
+    }
+  }
 
   // Phase 4.36: Require publish confirmation when transitioning from unpublished to published
   const wasPublished = prevEvent?.is_published ?? false;

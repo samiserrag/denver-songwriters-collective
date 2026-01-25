@@ -187,7 +187,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.82):** Lint warnings = 0. All tests passing (2503). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 4.83):** Lint warnings = 0. All tests passing (2528). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -410,6 +410,56 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Recurrence Canonicalization — Server-Side day_of_week Derivation (Phase 4.83, January 2026) — RESOLVED
+
+**Goal:** Fix Bug #1 where ordinal monthly events with missing `day_of_week` disappeared from happenings.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2528, build success).
+
+**Problem:**
+- Lone Tree Open Mic had `recurrence_rule='4th'` but `day_of_week=NULL`
+- `interpretRecurrence()` returned `isConfident=false` when day_of_week was missing
+- `expandOccurrencesForEvent()` returned empty array, hiding the event from happenings
+- Event should have appeared on 4th Saturdays (including Jan 24, 2026)
+
+**Fix (Three Layers of Protection):**
+
+| Layer | Implementation |
+|-------|----------------|
+| Data Repair | SQL UPDATE set `day_of_week='Saturday'` for Lone Tree Open Mic |
+| Server-Side Canonicalization | API routes derive `day_of_week` from `event_date` on save |
+| Defensive Fallback | `interpretRecurrence()` derives day from anchor date at render time |
+
+**New Helper Module:** `web/src/lib/events/recurrenceCanonicalization.ts`
+
+| Function | Purpose |
+|----------|---------|
+| `isOrdinalMonthlyRule()` | Checks if recurrence rule requires day_of_week |
+| `deriveDayOfWeekFromDate()` | Extracts day name from YYYY-MM-DD date |
+| `canonicalizeDayOfWeek()` | Main entry point — returns existing day or derives from date |
+
+**Integration Points:**
+- POST `/api/my-events` — Uses `canonicalizeDayOfWeek()` in `buildEventInsert()`
+- PATCH `/api/my-events/[id]` — Uses `canonicalizeDayOfWeek()` after fetching previous event
+- `interpretLegacyRule()` in `recurrenceContract.ts` — Fallback derivation at render time
+
+**Files Modified/Created:**
+
+| File | Change |
+|------|--------|
+| `lib/events/recurrenceCanonicalization.ts` | **NEW** — Server-side canonicalization helpers |
+| `app/api/my-events/route.ts` | Integrated canonicalization in POST |
+| `app/api/my-events/[id]/route.ts` | Integrated canonicalization in PATCH |
+| `lib/events/recurrenceContract.ts` | Added defensive fallback in `interpretLegacyRule()` |
+| `__tests__/recurrence-canonicalization.test.ts` | **NEW** — 19 tests for canonicalization |
+| `__tests__/bug1-diagnosis.test.ts` | Updated to test FIX behavior |
+
+**Test Coverage:** 2528 tests passing (25 new tests).
+
+**Investigation Doc:** `docs/investigation/phase4-83-bug1-bug3-stopgate-report.md`
 
 ---
 
