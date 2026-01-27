@@ -70,7 +70,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
     })
   )).filter((album) => album.imageCount > 0) : [];
 
-  // Fetch paginated images (excluding those in albums for the main grid)
+  // Fetch paginated images that ARE in albums (unassigned photos are private until assigned)
   const { data: images, count: totalCount } = await supabase
     .from("gallery_images")
     .select(`
@@ -85,7 +85,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
     `, { count: "exact" })
     .eq("is_published", true)
     .eq("is_hidden", false)
-    .is("album_id", null)
+    .not("album_id", "is", null)
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
