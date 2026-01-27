@@ -39,7 +39,7 @@ Before any PR merges:
 
 ### Investigation-Only PRs
 
-PRs containing only documentation (e.g., `docs/investigation/*.md`) are allowed without full execution approval, but must not include code, migration, or config changes.
+PRs containing only documentation (e.g., `docs/archived/investigations/*.md`) are allowed without full execution approval, but must not include code, migration, or config changes.
 
 ---
 
@@ -2386,7 +2386,7 @@ The EventPhotosSection uploads to `{eventId}/{uuid}.{ext}` but the old policy bl
 | `components/profile/ProfilePhotosSection.tsx` | Dashboard photo management component |
 | `__tests__/profile-images-rls-and-contract.test.ts` | RLS contract tests (62 tests) |
 | `__tests__/profile-photos-ui.test.tsx` | UI behavior tests (49 tests) |
-| `docs/investigation/phase-member-profile-photos.md` | Investigation document |
+| `docs/archived/investigations/phase-member-profile-photos.md` | Investigation document |
 
 **Files Modified:**
 
@@ -2450,7 +2450,7 @@ The EventPhotosSection uploads to `{eventId}/{uuid}.{ext}` but the old policy bl
 |------|---------|
 | `dashboard/_components/GettingStartedSection.tsx` | Client component with dismissable prompts |
 | `__tests__/getting-started-section.test.tsx` | 22 tests for visibility logic |
-| `docs/investigation/phase-role-based-onboarding-slice-3-prompts.md` | Investigation doc |
+| `docs/archived/investigations/phase-role-based-onboarding-slice-3-prompts.md` | Investigation doc |
 
 **Files Modified:**
 
@@ -2797,7 +2797,7 @@ When duplicate titles exist at a venue, the event with higher score wins.
 
 **Status:** Implementation complete.
 
-**Investigation Document:** `docs/investigation/phase-abc11-venue-outreach-workflow.md`
+**Investigation Document:** `docs/archived/investigations/phase-abc11-venue-outreach-workflow.md`
 
 **Problem:** ABC8 created the invite API but no UI existed to use it. Admins had to use curl/Postman to create invites.
 
@@ -2855,7 +2855,7 @@ npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/li
 
 **Status:** Implementation complete.
 
-**Investigation Document:** `docs/investigation/phase-abc8-venue-claiming.md`
+**Investigation Document:** `docs/archived/investigations/phase-abc8-venue-claiming.md`
 
 **Database Tables (3 new):**
 
@@ -2929,7 +2929,7 @@ npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/li
 - Lineup state upsert uses composite key `(event_id, date_key)`
 - Date selector UI for recurring events on host surfaces
 
-**Investigation Document:** `docs/investigation/phase-abc7-admin-host-date-awareness.md`
+**Investigation Document:** `docs/archived/investigations/phase-abc7-admin-host-date-awareness.md`
 
 ---
 
@@ -2939,7 +2939,7 @@ npx supabase gen types typescript --project-id oipozdbfxyskoscsgbfq > web/src/li
 
 **Status:** Implementation complete.
 
-**Investigation Document:** `docs/investigation/phase-abc6-per-occurrence-inventory.md`
+**Investigation Document:** `docs/archived/investigations/phase-abc6-per-occurrence-inventory.md`
 
 **Scope Summary:**
 
@@ -3147,7 +3147,7 @@ Happenings at [Venue Name]
 
 **Test Coverage:** 1624 tests passing (10 new).
 
-**Investigation Doc:** `docs/investigation/phase-abc4-venue-happenings.md` (RESOLVED)
+**Investigation Doc:** `docs/archived/investigations/phase-abc4-venue-happenings.md` (RESOLVED)
 
 ---
 
@@ -3181,7 +3181,7 @@ Happenings at [Venue Name]
 | `dashboard/admin/venues/AdminVenuesClient.tsx` | Added Data column with quality indicators |
 | `docs/GOVERNANCE.md` | Added Database Change Rules section (v1.1) |
 
-**Audit Log:** `docs/investigation/phase-abc3-duplicate-venue-merge.md` Section 8
+**Audit Log:** `docs/archived/investigations/phase-abc3-duplicate-venue-merge.md` Section 8
 
 ---
 
@@ -3552,7 +3552,7 @@ event_id,date_key,status,override_start_time,override_notes,override_cover_image
 | `app/venues/[id]/page.tsx` | Detail page |
 | `components/venue/VenueCard.tsx` | Card component |
 | `components/venue/VenueGrid.tsx` | Grid wrapper |
-| `docs/investigation/venue-directory-mvp.md` | Investigation doc |
+| `docs/archived/investigations/venue-directory-mvp.md` | Investigation doc |
 
 **Files Modified:**
 
@@ -4529,7 +4529,7 @@ This affected ALL 5 places that create notifications:
 | `dashboard/my-events/_components/EventForm.tsx` | Custom location header + helper text + "Venue wrong?" link |
 | `dashboard/my-events/_components/SlotConfigSection.tsx` | Restructured as "Join & Signup" section with mini preview |
 | `__tests__/phase4-46-join-signup-ux.test.tsx` | 13 new tests |
-| `docs/investigation/phase4-46-join-signup-ux-spotlight.md` | Investigation document |
+| `docs/archived/investigations/phase4-46-join-signup-ux-spotlight.md` | Investigation document |
 
 **Mini Preview Shows:**
 - "✓ RSVP Available (unlimited)" or "✓ RSVP Available (X spots)"
@@ -4568,7 +4568,7 @@ This affected ALL 5 places that create notifications:
 | `dashboard/my-events/new/page.tsx` | Passes `canCreateVenue={isAdmin}` |
 | `dashboard/my-events/[id]/page.tsx` | Passes `canCreateVenue={isAdmin}` |
 | `__tests__/venue-selector-phase445b.test.tsx` | 17 new tests for Phase 4.45b |
-| `docs/investigation/phase4-45a-venue-dropdown-location-workflow.md` | Investigation document |
+| `docs/archived/investigations/phase4-45a-venue-dropdown-location-workflow.md` | Investigation document |
 
 **Authorization Matrix:**
 
@@ -4968,10 +4968,6 @@ AFTER:  Same data
         → Generator: 12 occurrences (all Mondays starting Jan 12)
 ```
 
-**Documentation:**
-- `docs/recurrence/RECURRENCE-CONTRACT.md` — Full recurrence system contract
-- `docs/recurrence/RECURRENCE-TEST-MATRIX.md` — Test coverage matrix
-
 ---
 
 ### Phase 4.41 — Admin Verification Queue UX (January 2026)
@@ -5161,7 +5157,7 @@ AFTER:  Same data
 | `web/src/components/happenings/HappeningCard.tsx` | Card badge updates |
 | `web/src/components/events/EventSuggestionForm.tsx` | Status suggestion field |
 | `web/src/app/layout.tsx` | SpeedInsights component |
-| `docs/investigation/phase4-37-seeded-verification-status-system.md` | Investigation doc |
+| `docs/archived/investigations/phase4-37-seeded-verification-status-system.md` | Investigation doc |
 
 **Test Coverage:**
 
@@ -5198,7 +5194,7 @@ AFTER:  Same data
 | `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` | Publish confirmation checkbox UI |
 | `web/src/app/api/my-events/[id]/route.ts` | API gate + notification trigger |
 | `web/src/lib/notifications/eventUpdated.ts` | Attendee enumeration + preference-gated sending |
-| `docs/investigation/phase4-36-publish-confirm-and-attendee-updates.md` | Investigation doc |
+| `docs/archived/investigations/phase4-36-publish-confirm-and-attendee-updates.md` | Investigation doc |
 
 **Test Coverage:**
 
@@ -5500,8 +5496,6 @@ Email preferences gate delivery only. Dashboard notifications remain the canonic
 | GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
 | BlogComments | `web/src/components/blog/BlogComments.tsx` |
 
-**Investigation Doc:** `docs/investigation/comments-phase3-threading.md`
-
 ---
 
 ### v2.0 Visual System (December 2025)
@@ -5616,7 +5610,7 @@ See full backlog in previous CLAUDE.md version or `docs/known-issues.md`.
 - Duplicate VenueSelector components
 
 ### Future: Phase 4.38 — Hard Delete Admin Tools
-**Investigation completed in:** `docs/investigation/phase4-37-seeded-verification-status-system.md` (Section 6)
+**Investigation completed in:** `docs/archived/investigations/phase4-37-seeded-verification-status-system.md` (Section 6)
 
 Event hard delete is safe—all FKs use CASCADE or SET NULL:
 - `event_rsvps`, `event_timeslots`, `timeslot_claims`, `occurrence_overrides`, `event_claims`, `event_update_suggestions`, `change_reports`, `favorites`, `event_hosts`, `event_comments`, `guest_verifications` — CASCADE

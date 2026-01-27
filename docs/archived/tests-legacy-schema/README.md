@@ -152,5 +152,5 @@ tests-legacy-schema/
 ## Related Documentation
 
 - [CLAUDE.md](/CLAUDE.md) — Current test file locations
-- [docs/future-specs/progressive-identity.md](/docs/future-specs/progressive-identity.md) — Current guest verification spec
-- [docs/future-specs/white-label-mvp.md](/docs/future-specs/white-label-mvp.md) — Current timeslot system spec
+- [docs/archived/future-specs/progressive-identity.md](/docs/archived/future-specs/progressive-identity.md) — Current guest verification spec
+- [docs/archived/future-specs/white-label-mvp.md](/docs/archived/future-specs/white-label-mvp.md) — Current timeslot system spec

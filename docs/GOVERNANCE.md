@@ -32,7 +32,7 @@ This project uses stop-gates to prevent irreversible errors. However, once an ex
 
 - Investigations do not require approval and should be performed proactively
 - Findings should be reported clearly, especially if they affect safety or scope
-- Investigation documents go in `docs/investigation/phase{X}-{name}.md`
+- Investigation documents go in `docs/investigation/` during active work, then move to `docs/archived/investigations/` when complete
 
 ---
 
@@ -56,7 +56,7 @@ All non-trivial changes must follow this three-step protocol. No exceptions.
 The repo agent:
 1. Investigates the problem or feature request
 2. Produces evidence (file paths, line ranges, migration names, policy names)
-3. Documents findings in `docs/investigation/phase{X}-{name}.md`
+3. Documents findings in `docs/investigation/phase{X}-{name}.md` (move to `docs/archived/investigations/` when resolved)
 4. Identifies failure modes, coupling risks, and migration requirements
 
 **Output:** Investigation document with evidence, not speculation.
@@ -139,7 +139,7 @@ Each direct SQL execution must be logged in an investigation doc with:
 - Verification queries and results
 - Date and operator (who ran it)
 
-Example: `docs/investigation/phase-abc3-duplicate-venue-merge.md` Section 8 (Merge Audit Log)
+Example: `docs/archived/investigations/phase-abc3-duplicate-venue-merge.md` Section 8 (Merge Audit Log)
 
 ---
 
@@ -233,7 +233,7 @@ Before any PR merges:
 
 ## Investigation-Only PRs
 
-PRs that contain only documentation (e.g., `docs/investigation/*.md`) are allowed without full execution approval, but:
+PRs that contain only documentation (e.g., `docs/archived/investigations/*.md`) are allowed without full execution approval, but:
 
 - Must not include code changes
 - Must not include migration changes
@@ -266,7 +266,7 @@ For any new subsystem or major feature track:
 - Success criteria?
 
 ### Phase X.1 — Investigation
-- Produce `docs/investigation/phaseX-{name}.md`
+- Produce `docs/investigation/phaseX-{name}.md` (move to `docs/archived/investigations/` when resolved)
 - Inventory all affected files
 - Document failure modes
 - Identify migration requirements
