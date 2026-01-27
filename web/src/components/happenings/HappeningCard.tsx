@@ -270,13 +270,25 @@ function getVenueForLink(event: HappeningEvent): {
   return null;
 }
 
-function getDetailHref(event: HappeningEvent): string {
+/**
+ * Build the detail page href for an event.
+ *
+ * Phase 4.87: When dateKey is provided, includes `?date=YYYY-MM-DD` for
+ * occurrence-specific navigation. This ensures clicking a timeline card
+ * anchors to the correct occurrence on the detail page.
+ *
+ * @param event - The event to link to
+ * @param dateKey - Optional occurrence date (YYYY-MM-DD) to anchor the link
+ */
+function getDetailHref(event: HappeningEvent, dateKey?: string): string {
   // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
   const identifier = event.slug || event.id;
-  if (event.event_type === "open_mic") {
-    return `/open-mics/${identifier}`;
-  }
-  return `/events/${identifier}`;
+  const basePath = event.event_type === "open_mic"
+    ? `/open-mics/${identifier}`
+    : `/events/${identifier}`;
+
+  // Phase 4.87: Include ?date= when occurrence date is known
+  return dateKey ? `${basePath}?date=${dateKey}` : basePath;
 }
 
 // ============================================================
@@ -388,7 +400,9 @@ export function HappeningCard({
   const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
   const venueName = getVenueName(effectiveEvent);
   const venueForLink = getVenueForLink(effectiveEvent);
-  const detailHref = getDetailHref(effectiveEvent);
+  // Phase 4.87: Pass occurrence date for anchored links (if known and confident)
+  const occurrenceDateKey = dateInfo.occurrence.isConfident ? dateInfo.occurrence.date : undefined;
+  const detailHref = getDetailHref(effectiveEvent, occurrenceDateKey);
   const startTime = formatTimeToAMPM(effectiveStartTime ?? null);
   const signupTime = event.signup_time ? formatTimeToAMPM(event.signup_time) : null;
 
