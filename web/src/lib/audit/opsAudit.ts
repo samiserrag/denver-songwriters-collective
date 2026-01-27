@@ -16,6 +16,7 @@ type OpsAction =
   | "events_csv_export"
   | "events_csv_preview"
   | "events_csv_apply"
+  | "events_csv_import"
   | "events_bulk_verify"
   | "events_bulk_unverify"
   | "overrides_csv_export"
@@ -98,6 +99,9 @@ export const opsAudit = {
 
   eventsCsvApply: (actorId: string, ctx: OpsAuditContext = {}) =>
     logOpsAction("events_csv_apply", actorId, ctx),
+
+  eventsImport: (actorId: string, ctx: OpsAuditContext = {}) =>
+    logOpsAction("events_csv_import", actorId, ctx),
 
   eventsBulkVerify: (actorId: string, ctx: OpsAuditContext = {}) =>
     logOpsAction("events_bulk_verify", actorId, ctx),

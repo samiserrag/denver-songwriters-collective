@@ -522,6 +522,87 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Bulk Import v1 — CSV Event Import (Phase 4.88, January 2026) — RESOLVED
+
+**Goal:** Admin-only bulk import of events via CSV. INSERT-only mode (no UPDATE), 500 row max, with system-enforced defaults.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2641, build success).
+
+**How to Use:**
+1. Navigate to `/dashboard/admin/ops/events/import`
+2. Download the template CSV or create one with required columns
+3. Paste CSV content and click "Preview Import"
+4. Review valid/invalid/duplicate rows
+5. Check the confirmation box and click "Import X Events"
+
+**CSV Schema (16 columns):**
+```
+title,event_type,event_date,start_time,end_time,venue_id,venue_name,day_of_week,recurrence_rule,description,external_url,categories,is_free,cost_label,age_policy,pre_verified
+```
+
+**Required columns:** `title`, `event_type`, `event_date`
+
+**Optional columns:** All others (null values accepted)
+
+**System-Managed Defaults (enforced, not in CSV):**
+- `source = 'import'`
+- `host_id = null`
+- `is_published = true`
+- `status = 'active'`
+- `is_dsc_event = false`
+- `last_verified_at = null` (unless `pre_verified=true`)
+
+**Recurrence Rules:**
+- Weekly/biweekly: `day_of_week` derived from `event_date` if not provided
+- Ordinal monthly (1st, 2nd, 3rd, 4th, last, 1st/3rd, 2nd/4th): REQUIRES `day_of_week` (reject if missing)
+
+**Deduplication:**
+- Slug collision (generated slug matches existing event)
+- Title/date/venue match (exact title + event_date + venue_id match)
+
+**Venue Resolution:**
+- If `venue_name` provided without `venue_id`, attempts lookup by name
+- Invalid `venue_id` references cause row rejection
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/ops/eventImportParser.ts` | RFC4180-compliant CSV parser |
+| `lib/ops/eventImportValidation.ts` | Row validation + day_of_week derivation |
+| `lib/ops/eventImportDedupe.ts` | Duplicate detection + venue resolution |
+| `lib/ops/eventImportBuilder.ts` | INSERT payload builder with system defaults |
+| `api/admin/ops/events/import-preview/route.ts` | Preview endpoint (read-only) |
+| `api/admin/ops/events/import-apply/route.ts` | Apply endpoint (INSERT-only) |
+| `dashboard/admin/ops/events/import/page.tsx` | Admin UI |
+| `__tests__/bulk-import-v1.test.ts` | 65 tests |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/audit/opsAudit.ts` | Added `events_csv_import` action type |
+| `dashboard/admin/ops/events/page.tsx` | Added link to import page |
+
+**Test Coverage:** 65 tests covering parser, validation, builder, API contracts, recurrence rules.
+
+**Rollback Plan:**
+- Events created with `source='import'` can be identified via query
+- Admin can soft-delete via status='cancelled' or hard-delete if no RSVPs/claims
+
+**Axiom Query Snippets:**
+```bash
+# Track import actions in last 24h
+axiom query "['vercel'] | where message contains 'events_csv_import' | where _time > ago(24h) | sort by _time desc"
+
+# Find imported events by source
+# SQL: SELECT id, title, created_at FROM events WHERE source = 'import' ORDER BY created_at DESC;
+```
+
+**Investigation Doc:** `docs/investigation/phase4-88-bulk-import-stopgate.md`
+
+---
+
 ### Image Upload Primary CTA Saves Original (Phase 4.85, January 2026) — RESOLVED
 
 **Goal:** Make "Save original image" the primary action in all image upload/crop UIs.

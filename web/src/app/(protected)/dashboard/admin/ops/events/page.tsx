@@ -86,10 +86,17 @@ export default async function EventOpsPage() {
       </div>
 
       {/* Navigation */}
-      <div className="mt-8 flex gap-4">
+      <div className="mt-8 flex flex-wrap gap-4">
+        <Link
+          href="/dashboard/admin/ops/events/import"
+          className="text-[var(--color-accent-primary)] hover:underline text-sm"
+        >
+          Bulk Import (Create New) →
+        </Link>
+        <span className="text-[var(--color-text-tertiary)]">|</span>
         <Link
           href="/dashboard/admin/ops/overrides"
-          className="text-[var(--color-accent-primary)] hover:underline text-sm"
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm"
         >
           Occurrence Overrides →
         </Link>
