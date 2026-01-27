@@ -2,6 +2,8 @@
 
 > **All contributors and agents must read this file before making changes. This file supersedes README.md for operational context.**
 
+> **For UX principles and system design rules, see [DSC_UX_PRINCIPLES.md](./docs/DSC_UX_PRINCIPLES.md)** — Reference as "Checked against DSC UX Principles §X" in STOP-GATE reports.
+
 > **For product philosophy, UX rules, and design decisions, see [PRODUCT_NORTH_STAR.md](./docs/PRODUCT_NORTH_STAR.md)**
 
 > **For governance workflow and stop-gate protocol, see [GOVERNANCE.md](./docs/GOVERNANCE.md)**
@@ -519,6 +521,116 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### DSC UX Principles Document (January 2026) — ADDED
+
+**Goal:** Establish a living reference document for UX decisions and system design principles.
+
+**New File:** `docs/DSC_UX_PRINCIPLES.md`
+
+**Contains 15 core principles:**
+1. Primary Goal — Prevent dead-ends, preserve intent, enable recovery
+2. Visibility vs Trust vs Lifecycle — Core separation of concerns
+3. Rolling Windows Must Be Explained
+4. Centralize Logic, Never Rebuild It
+5. Previews Must Match Reality
+6. Anchored Navigation Is Mandatory
+7. UX Friction Is a Tool (Use It Precisely)
+8. Dead States Are Unacceptable
+9. Admin UX Exists to Repair, Not Control
+10. Defaults Should Match the Common Case
+11. Prefer Soft Constraints Over Hard Rules
+12. Test the Contract, Not the Implementation
+13. One Fix Per Phase
+14. If Something Feels Confusing, It Probably Is
+15. The North Star
+
+**Usage:**
+- Before any new feature: sanity-check against Sections 2, 4, 6, and 8
+- In STOP-GATE reports: reference explicitly as "Checked against DSC UX Principles §X"
+- For repo-agent prompts: say "must comply with DSC UX Principles" instead of restating intent
+
+---
+
+### Gallery Upload UX Tightening (Phase 4.91, January 2026) — RESOLVED
+
+**Goal:** Reduce "unassigned photo" creation by improving the upload flow with nudges and inline awareness.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2673, build success).
+
+**Checked against DSC UX Principles:** §7 (UX Friction), §8 (Dead States), §10 (Defaults), §11 (Soft Constraints)
+
+**UX Changes:**
+
+| Change | Before | After |
+|--------|--------|-------|
+| Album label | "Album (optional)" | "Album (recommended)" |
+| Destination visibility | None | Always shows "Uploading to: X" above dropzone |
+| No album warning | None | Amber nudge banner with explanation |
+| First unassigned upload | No friction | Confirm dialog with "Don't show again" checkbox |
+
+**localStorage Key:** `dsc_gallery_unassigned_warning_dismissed_v1`
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/gallery-upload-ux-nudges.test.tsx` | 15 tests for UX behaviors |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/gallery/UserGalleryUpload.tsx` | Destination label, nudge banner, confirm dialog, label text |
+| `docs/investigation/phase4-91-gallery-upload-ux-nudges.md` | Implementation report |
+
+**Test Coverage:** 15 new tests (2673 total).
+
+**Relationship to Phase 4.90:**
+- Phase 4.90: Fixed dead-end for managing existing unassigned photos
+- Phase 4.91: Reduces creation of new unassigned photos through UX friction
+
+---
+
+### Unassigned Photos Manager — Fix Dead-End UX (Phase 4.90, January 2026) — RESOLVED
+
+**Goal:** Fix the dead-end UX where photos uploaded without an album became stuck with no management options.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2658, build success).
+
+**Problem:** Users could upload photos to `/dashboard/gallery` with no album selected (`album_id = NULL`). These "unassigned photos" appeared in a read-only thumbnail grid with text saying "Add them to an album when uploading or via the admin panel" — but users cannot access the admin panel.
+
+**Fix:** Created `UnassignedPhotosManager` client component that mirrors the proven admin pattern from `GalleryAdminTabs`:
+- Select one or many photos (click to toggle selection)
+- Move selected photos to any of the user's albums (dropdown + Move button)
+- Delete selected photos with confirmation dialog
+- Clear selection button
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `dashboard/gallery/_components/UnassignedPhotosManager.tsx` | Client component with selection, move, delete actions |
+| `__tests__/unassigned-photos-manager.test.tsx` | 21 tests covering rendering, selection, move, delete, dead-end fix |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/gallery/page.tsx` | Replaced 40-line inline dead-end section with component usage (~6 lines) |
+| `docs/investigation/phase4-90-gallery-unassigned-stopgate.md` | Added STOP-GATE 2A/2B summaries |
+
+**Key Design Decisions:**
+- No RLS changes needed — existing `gallery_images_update_own` and `gallery_images_delete_own` policies allow owner operations
+- No schema changes — uses existing `album_id` and `sort_order` columns
+- Server component fetches data, client component handles interactivity
+- Sort order assigned sequentially after existing photos in target album
+
+**Test Coverage:** 21 new tests (2658 total).
+
+**Investigation Doc:** `docs/investigation/phase4-90-gallery-unassigned-stopgate.md`
 
 ---
 

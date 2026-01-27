@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import UserGalleryUpload from "./UserGalleryUpload";
+import { UnassignedPhotosManager } from "./_components/UnassignedPhotosManager";
 import { FolderOpen, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -234,47 +235,16 @@ export default async function UserGalleryPage() {
           />
         </section>
 
-        {/* Unassigned Photos Section */}
-        {unassignedPhotos.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-              Unassigned Photos ({unassignedPhotos.length})
-            </h2>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-              These photos are not in any album. Add them to an album when uploading or via the admin panel.
-            </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {unassignedPhotos.slice(0, 12).map((photo) => (
-                <div
-                  key={photo.id}
-                  className={`relative aspect-square rounded-lg overflow-hidden border ${
-                    photo.is_hidden ? "border-red-300 opacity-60" : "border-[var(--color-border-default)]"
-                  } bg-[var(--color-bg-tertiary)]`}
-                >
-                  <Image
-                    src={photo.image_url}
-                    alt={photo.caption || "Gallery photo"}
-                    fill
-                    sizes="100px"
-                    className="object-cover object-top"
-                  />
-                  {photo.is_hidden && (
-                    <div className="absolute top-1 right-1">
-                      <span className="px-1.5 py-0.5 bg-red-500/90 text-white text-[10px] rounded-full">
-                        Hidden
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {unassignedPhotos.length > 12 && (
-              <p className="text-sm text-[var(--color-text-tertiary)] mt-2">
-                +{unassignedPhotos.length - 12} more unassigned photos
-              </p>
-            )}
-          </section>
-        )}
+        {/* Unassigned Photos Section - with move/delete management */}
+        <UnassignedPhotosManager
+          photos={unassignedPhotos.map((p) => ({
+            id: p.id,
+            image_url: p.image_url,
+            caption: p.caption,
+            is_hidden: p.is_hidden,
+          }))}
+          albums={userAlbums?.map((a) => ({ id: a.id, name: a.name })) ?? []}
+        />
 
         {/* Info Box */}
         <div className="mt-8 p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Plus, GripVertical } from "lucide-react";
+import { Plus, GripVertical, AlertTriangle } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -168,6 +168,21 @@ export default function UserGalleryUpload({
   const [albumError, setAlbumError] = useState<string | null>(null);
   const [lastCreatedAlbum, setLastCreatedAlbum] = useState<{ id: string; name: string; isPublished: boolean } | null>(null);
 
+  // Unassigned upload confirmation state (Phase 4.91)
+  const [showUnassignedConfirm, setShowUnassignedConfirm] = useState(false);
+  const [suppressUnassignedWarning, setSuppressUnassignedWarning] = useState(false);
+
+  // localStorage key for "Don't show again" preference
+  const UNASSIGNED_WARNING_DISMISSED_KEY = "dsc_gallery_unassigned_warning_dismissed_v1";
+
+  // Load localStorage preference on mount
+  useEffect(() => {
+    const dismissed = localStorage.getItem(UNASSIGNED_WARNING_DISMISSED_KEY);
+    if (dismissed === "true") {
+      setSuppressUnassignedWarning(true);
+    }
+  }, []);
+
   // Drag-and-drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -308,6 +323,45 @@ export default function UserGalleryUpload({
     });
   };
 
+  // Check if user needs to confirm uploading to unassigned
+  const isUploadingToUnassigned = !albumId;
+
+  // Get the destination label text
+  const getDestinationLabel = () => {
+    if (albumId) {
+      const selectedAlbum = albums.find((a) => a.id === albumId);
+      return selectedAlbum?.name || "Selected Album";
+    }
+    return "Unassigned Photos";
+  };
+
+  // Handle the upload button click - may show confirm dialog
+  const handleUploadClick = () => {
+    if (files.length === 0) {
+      toast.error("Please select at least one photo");
+      return;
+    }
+
+    // If uploading to unassigned and user hasn't dismissed the warning, show confirm dialog
+    if (isUploadingToUnassigned && !suppressUnassignedWarning) {
+      setShowUnassignedConfirm(true);
+      return;
+    }
+
+    // Otherwise proceed directly
+    handleUpload();
+  };
+
+  // Handle confirm dialog confirmation
+  const handleConfirmUnassigned = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem(UNASSIGNED_WARNING_DISMISSED_KEY, "true");
+      setSuppressUnassignedWarning(true);
+    }
+    setShowUnassignedConfirm(false);
+    handleUpload();
+  };
+
   const handleUpload = async () => {
     if (files.length === 0) {
       toast.error("Please select at least one photo");
@@ -432,7 +486,7 @@ export default function UserGalleryUpload({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Album (optional)
+            Album (recommended)
           </label>
           <select
             value={albumId}
@@ -663,6 +717,34 @@ export default function UserGalleryUpload({
         />
       </div>
 
+      {/* Destination Label (Phase 4.91) */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-[var(--color-text-secondary)]">Uploading to:</span>
+        <span className={`text-sm font-medium ${
+          isUploadingToUnassigned
+            ? "text-amber-600 dark:text-amber-400"
+            : "text-[var(--color-text-accent)]"
+        }`}>
+          {getDestinationLabel()}
+        </span>
+      </div>
+
+      {/* Nudge Banner when uploading to Unassigned (Phase 4.91) */}
+      {isUploadingToUnassigned && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              No album selected
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+              Photos uploaded without an album go to &quot;Unassigned Photos&quot; and won&apos;t appear in the public gallery.
+              Select or create an album above to organize your photos.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Drop Zone */}
       <div
         onDrop={handleDrop}
@@ -727,7 +809,7 @@ export default function UserGalleryUpload({
       {/* Upload Button */}
       {pendingCount > 0 && (
         <button
-          onClick={handleUpload}
+          onClick={handleUploadClick}
           disabled={isUploading}
           className="w-full px-4 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
         >
@@ -736,6 +818,88 @@ export default function UserGalleryUpload({
             : `Upload ${pendingCount} Photo${pendingCount > 1 ? "s" : ""}`}
         </button>
       )}
+
+      {/* Unassigned Confirmation Dialog (Phase 4.91) */}
+      {showUnassignedConfirm && (
+        <UnassignedConfirmDialog
+          photoCount={pendingCount}
+          onConfirm={handleConfirmUnassigned}
+          onCancel={() => setShowUnassignedConfirm(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Confirmation dialog for uploading to Unassigned Photos
+ * Shows once per session unless user checks "Don't show again"
+ */
+function UnassignedConfirmDialog({
+  photoCount,
+  onConfirm,
+  onCancel,
+}: {
+  photoCount: number;
+  onConfirm: (dontShowAgain: boolean) => void;
+  onCancel: () => void;
+}) {
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={onCancel}
+        aria-hidden="true"
+      />
+
+      {/* Dialog */}
+      <div className="relative bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-xl shadow-lg max-w-md w-full p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              Upload to Unassigned Photos?
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              {photoCount === 1 ? "This photo" : `These ${photoCount} photos`} will go to &quot;Unassigned Photos&quot; and won&apos;t appear in the public gallery until you move {photoCount === 1 ? "it" : "them"} to an album.
+            </p>
+          </div>
+        </div>
+
+        {/* Don't show again checkbox */}
+        <label className="flex items-center gap-2 mb-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={dontShowAgain}
+            onChange={(e) => setDontShowAgain(e.target.checked)}
+            className="w-4 h-4 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+          />
+          <span className="text-sm text-[var(--color-text-secondary)]">
+            Don&apos;t show this again
+          </span>
+        </label>
+
+        {/* Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          >
+            Go back
+          </button>
+          <button
+            onClick={() => onConfirm(dontShowAgain)}
+            className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-medium rounded-lg transition-colors"
+          >
+            Upload anyway
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
