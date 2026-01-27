@@ -333,6 +333,57 @@ axiom query "['vercel'] | where path contains '/api/my-events' and status >= 400
 
 ---
 
+## Confirmation (Verified) Invariants (Phase 4.89)
+
+### Core Rule
+
+An event is **confirmed** if and only if `last_verified_at IS NOT NULL`.
+
+| State | Condition | Display |
+|-------|-----------|---------|
+| Confirmed | `last_verified_at IS NOT NULL` | Green "Confirmed" badge + "Confirmed: MMM D, YYYY" |
+| Unconfirmed | `last_verified_at IS NULL` | Amber "Unconfirmed" badge (no date shown) |
+| Cancelled | `status = 'cancelled'` | Red "Cancelled" badge |
+
+### What Confirmation Affects
+
+- **Trust display only** — Shows users the event has been verified
+- The "Confirmed" badge and "Confirmed: " date display are both derived from `last_verified_at`
+
+### What Confirmation Does NOT Affect
+
+**INVARIANT: Visibility must NEVER depend on `last_verified_at`**
+
+- `is_published` controls public visibility
+- `status` controls lifecycle (active/cancelled)
+- Unconfirmed events are still visible on `/happenings` if published
+
+### Auto-Confirmation Paths
+
+| Path | Sets `last_verified_at`? | `verified_by` |
+|------|-------------------------|---------------|
+| Community create + publish | ✅ YES | NULL (auto) |
+| Draft create | ❌ NO | — |
+| First publish (PATCH) | ✅ YES | NULL (auto) |
+| Republish (PATCH) | ✅ YES | NULL (auto) |
+| PublishButton | ✅ YES | NULL (auto) |
+| Admin bulk verify | ✅ YES | Admin user ID |
+| Admin inline verify | ✅ YES | Admin user ID |
+| Import/seed paths | ❌ NO | — |
+| Ops Console CSV import | ❌ NO | — |
+
+**Design intent:** Imported/seeded events start unconfirmed by design. They require explicit admin verification.
+
+### Helper Functions
+
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `getPublicVerificationState()` | `lib/events/verification.ts` | Returns `confirmed` / `unconfirmed` / `cancelled` |
+| `formatVerifiedDate()` | `lib/events/verification.ts` | Returns "MMM D, YYYY" in America/Denver timezone |
+| `shouldShowUnconfirmedBadge()` | `lib/events/verification.ts` | Suppresses badge for DSC TEST events |
+
+---
+
 ## Deploy Rules
 
 ### Supabase Migrations BEFORE Push

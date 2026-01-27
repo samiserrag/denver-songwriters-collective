@@ -847,13 +847,21 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
             )}
             {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
             {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
+            {/* Phase 4.89: Added confirmed date display */}
             {verificationState === "confirmed" && (
-              <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
-                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Confirmed
-              </span>
+              <>
+                <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)] border border-[var(--pill-border-success)]">
+                  <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Confirmed
+                </span>
+                {formatVerifiedDate(event.last_verified_at) && (
+                  <span className="text-sm text-[var(--color-text-secondary)]">
+                    Confirmed: {formatVerifiedDate(event.last_verified_at)}
+                  </span>
+                )}
+              </>
             )}
             {showUnconfirmedBadge && (
               <span className="inline-flex items-center px-2 py-1 text-sm font-medium rounded bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)] border border-[var(--pill-border-warning)]">
