@@ -99,8 +99,7 @@ export async function POST(
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
     // Create invite
-    // Type cast: event_invites table not yet in generated types (migration pending)
-    const { data: invite, error: insertError } = await (supabase as unknown as { from: (table: string) => { insert: (data: object) => { select: (cols: string) => { single: () => Promise<{ data: { id: string } | null; error: unknown }> } } } })
+    const { data: invite, error: insertError } = await supabase
       .from("event_invites")
       .insert({
         event_id: eventId,
@@ -182,19 +181,7 @@ export async function GET(
     }
 
     // Fetch all invites for this event (most recent first)
-    // Type cast: event_invites table not yet in generated types (migration pending)
-    type InviteRow = {
-      id: string;
-      role_to_grant: string;
-      email_restriction: string | null;
-      expires_at: string;
-      created_at: string;
-      created_by: string;
-      accepted_at: string | null;
-      accepted_by: string | null;
-      revoked_at: string | null;
-    };
-    const { data: invites, error } = await (supabase as unknown as { from: (table: string) => { select: (cols: string) => { eq: (col: string, val: string) => { order: (col: string, opts: { ascending: boolean }) => Promise<{ data: InviteRow[] | null; error: unknown }> } } } })
+    const { data: invites, error } = await supabase
       .from("event_invites")
       .select(
         "id, role_to_grant, email_restriction, expires_at, created_at, created_by, accepted_at, accepted_by, revoked_at"

@@ -673,6 +673,90 @@ export type Database = {
           },
         ]
       }
+      event_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          created_by: string
+          email_restriction: string | null
+          event_id: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason: string | null
+          role_to_grant: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by: string
+          email_restriction?: string | null
+          event_id: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          role_to_grant?: string
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by?: string
+          email_restriction?: string | null
+          event_id?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason?: string | null
+          role_to_grant?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_venue_match"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineup_state: {
         Row: {
           date_key: string
@@ -1026,6 +1110,7 @@ export type Database = {
           created_at: string | null
           custom_address: string | null
           custom_city: string | null
+          custom_dates: string[] | null
           custom_latitude: number | null
           custom_location_name: string | null
           custom_longitude: number | null
@@ -1050,6 +1135,7 @@ export type Database = {
           last_verified_at: string | null
           location_mode: string | null
           location_notes: string | null
+          max_occurrences: number | null
           notes: string | null
           online_url: string | null
           parent_event_id: string | null
@@ -1093,6 +1179,7 @@ export type Database = {
           created_at?: string | null
           custom_address?: string | null
           custom_city?: string | null
+          custom_dates?: string[] | null
           custom_latitude?: number | null
           custom_location_name?: string | null
           custom_longitude?: number | null
@@ -1117,6 +1204,7 @@ export type Database = {
           last_verified_at?: string | null
           location_mode?: string | null
           location_notes?: string | null
+          max_occurrences?: number | null
           notes?: string | null
           online_url?: string | null
           parent_event_id?: string | null
@@ -1160,6 +1248,7 @@ export type Database = {
           created_at?: string | null
           custom_address?: string | null
           custom_city?: string | null
+          custom_dates?: string[] | null
           custom_latitude?: number | null
           custom_location_name?: string | null
           custom_longitude?: number | null
@@ -1184,6 +1273,7 @@ export type Database = {
           last_verified_at?: string | null
           location_mode?: string | null
           location_notes?: string | null
+          max_occurrences?: number | null
           notes?: string | null
           online_url?: string | null
           parent_event_id?: string | null
@@ -2096,6 +2186,7 @@ export type Database = {
           id: string
           override_cover_image_url: string | null
           override_notes: string | null
+          override_patch: Json | null
           override_start_time: string | null
           status: string
           updated_at: string
@@ -2108,6 +2199,7 @@ export type Database = {
           id?: string
           override_cover_image_url?: string | null
           override_notes?: string | null
+          override_patch?: Json | null
           override_start_time?: string | null
           status?: string
           updated_at?: string
@@ -2120,6 +2212,7 @@ export type Database = {
           id?: string
           override_cover_image_url?: string | null
           override_notes?: string | null
+          override_patch?: Json | null
           override_start_time?: string | null
           status?: string
           updated_at?: string

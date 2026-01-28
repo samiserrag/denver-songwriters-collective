@@ -48,8 +48,7 @@ export async function DELETE(
     }
 
     // Fetch invite to check state
-    // Type cast: event_invites table not yet in generated types (migration pending)
-    const { data: invite, error: inviteError } = await (supabase as unknown as { from: (table: string) => { select: (cols: string) => { eq: (col: string, val: string) => { eq: (col: string, val: string) => { single: () => Promise<{ data: { id: string; accepted_at: string | null; revoked_at: string | null } | null; error: unknown }> } } } } })
+    const { data: invite, error: inviteError } = await supabase
       .from("event_invites")
       .select("id, accepted_at, revoked_at")
       .eq("id", inviteId)
@@ -86,8 +85,7 @@ export async function DELETE(
     }
 
     // Revoke the invite
-    // Type cast: event_invites table not yet in generated types (migration pending)
-    const { error: updateError } = await (supabase as unknown as { from: (table: string) => { update: (data: object) => { eq: (col: string, val: string) => Promise<{ error: unknown }> } } })
+    const { error: updateError } = await supabase
       .from("event_invites")
       .update({
         revoked_at: new Date().toISOString(),

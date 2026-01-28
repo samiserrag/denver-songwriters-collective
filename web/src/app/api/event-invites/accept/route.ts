@@ -42,8 +42,7 @@ export async function POST(request: NextRequest) {
     const serviceClient = createServiceRoleClient();
 
     // Find the invite
-    // Type cast: event_invites table not yet in generated types (migration pending)
-    const { data: invite, error: findError } = await (serviceClient as unknown as { from: (table: string) => { select: (cols: string) => { eq: (col: string, val: string) => { single: () => Promise<{ data: { id: string; event_id: string; email_restriction: string | null; role_to_grant: string; expires_at: string; accepted_at: string | null; revoked_at: string | null; created_by: string } | null; error: unknown }> } } } })
+    const { data: invite, error: findError } = await serviceClient
       .from("event_invites")
       .select(
         "id, event_id, email_restriction, role_to_grant, expires_at, accepted_at, revoked_at, created_by"
@@ -205,8 +204,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark invite as accepted
-    // Type cast: event_invites table not yet in generated types (migration pending)
-    const { error: acceptError } = await (serviceClient as unknown as { from: (table: string) => { update: (data: object) => { eq: (col: string, val: string) => Promise<{ error: unknown }> } } })
+    const { error: acceptError } = await serviceClient
       .from("event_invites")
       .update({
         accepted_at: new Date().toISOString(),
