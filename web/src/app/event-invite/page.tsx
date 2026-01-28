@@ -14,6 +14,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { setPendingRedirect } from "@/lib/auth/pendingRedirect";
 
 interface AcceptSuccessResponse {
   success: true;
@@ -30,6 +31,7 @@ function EventInviteContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<AcceptSuccessResponse | null>(null);
+  const [requiresLogin, setRequiresLogin] = useState(false);
 
   const handleAccept = async () => {
     if (!token) return;
@@ -48,10 +50,9 @@ function EventInviteContent() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Not logged in - redirect to login with return URL
-          router.push(
-            `/login?redirect=/event-invite?token=${encodeURIComponent(token)}`
-          );
+          // Not logged in - show requires login state
+          setRequiresLogin(true);
+          setIsLoading(false);
           return;
         }
         setError(data.error || "Failed to accept invite");
@@ -158,6 +159,71 @@ function EventInviteContent() {
             >
               Go to My Happenings
             </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Requires login state - show clear message before redirect
+  if (requiresLogin) {
+    const handleLoginRedirect = () => {
+      // Store pending redirect and navigate to login
+      const returnUrl = `/event-invite?token=${encodeURIComponent(token)}`;
+      setPendingRedirect(returnUrl);
+      router.push(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
+    };
+
+    const handleSignupRedirect = () => {
+      // Store pending redirect and navigate to signup
+      const returnUrl = `/event-invite?token=${encodeURIComponent(token)}`;
+      setPendingRedirect(returnUrl);
+      router.push(`/signup?redirectTo=${encodeURIComponent(returnUrl)}`);
+    };
+
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-[var(--color-accent-primary)]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
+            You&apos;ve Been Invited!
+          </h1>
+          <p className="text-[var(--color-text-secondary)] mb-2">
+            Someone invited you to help host a happening on the Denver Songwriters Collective.
+          </p>
+          <p className="text-[var(--color-text-secondary)] mb-6">
+            Please log in or sign up (free) to accept this invite.{" "}
+            <span className="text-[var(--color-text-accent)]">
+              We&apos;ll bring you right back here.
+            </span>
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleLoginRedirect}
+              className="inline-block px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded font-medium"
+            >
+              Log In
+            </button>
+            <button
+              onClick={handleSignupRedirect}
+              className="inline-block px-4 py-2 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded font-medium"
+            >
+              Sign Up (Free)
+            </button>
           </div>
         </div>
       </div>

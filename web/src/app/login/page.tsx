@@ -10,12 +10,16 @@ import { Button } from "@/components/ui";
 import { toast } from "sonner";
 import Link from "next/link";
 import { signInWithGoogle } from "@/lib/auth/google";
+import { consumePendingRedirect } from "@/lib/auth/pendingRedirect";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, resendConfirmationEmail } = useAuth();
-  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
+  // Check URL param first, then localStorage (for signup flows that lose the param)
+  const redirectParam = searchParams.get("redirectTo");
+  const pendingRedirect = typeof window !== "undefined" ? consumePendingRedirect() : null;
+  const redirectTo = redirectParam ?? pendingRedirect ?? "/dashboard";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);

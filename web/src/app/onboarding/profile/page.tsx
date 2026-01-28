@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
+import { consumePendingRedirect } from "@/lib/auth/pendingRedirect";
 
 // =============================================================================
 // Conditional Step Logic
@@ -242,10 +243,16 @@ export default function OnboardingProfile() {
         throw new Error(data.error || 'Failed to save profile');
       }
 
-      console.log("[Onboarding] Profile updated successfully, redirecting to dashboard");
+      console.log("[Onboarding] Profile updated successfully, checking for pending redirect");
+
+      // Check for pending redirect (e.g., invite link that started this signup)
+      const pendingRedirect = consumePendingRedirect();
+      const targetUrl = pendingRedirect || "/dashboard?welcome=1";
+
+      console.log(`[Onboarding] Redirecting to: ${targetUrl}`);
 
       // Use window.location for a hard redirect to ensure proxy re-runs with fresh state
-      window.location.href = "/dashboard?welcome=1";
+      window.location.href = targetUrl;
     } catch (err) {
       console.error("Unexpected error:", err);
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -291,10 +298,16 @@ export default function OnboardingProfile() {
         throw new Error(data.error || 'Failed to save profile');
       }
 
-      console.log("[Onboarding] Profile updated, redirecting to dashboard");
+      console.log("[Onboarding] Profile updated, checking for pending redirect");
+
+      // Check for pending redirect (e.g., invite link that started this signup)
+      const pendingRedirect = consumePendingRedirect();
+      const targetUrl = pendingRedirect || "/dashboard";
+
+      console.log(`[Onboarding] Redirecting to: ${targetUrl}`);
 
       // Use window.location for a hard redirect to ensure proxy re-runs with fresh state
-      window.location.href = "/dashboard";
+      window.location.href = targetUrl;
     } catch (err) {
       console.error("Unexpected error:", err);
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
