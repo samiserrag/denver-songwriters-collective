@@ -131,12 +131,22 @@ export default function ClaimsTable({
       console.error("Failed to insert event_host:", hostError);
     }
 
+    // Notify the claimant that their claim was approved
+    const eventTitle = claim.event?.title || "the event";
+    await supabase.rpc("create_user_notification", {
+      p_user_id: claim.requester_id,
+      p_type: "claim_approved",
+      p_title: `Your claim for "${eventTitle}" was approved!`,
+      p_message: `You're now the host of "${eventTitle}". You can manage it from your dashboard.`,
+      p_link: `/dashboard/my-events/${claim.event_id}`
+    });
+
     setLoadingId(null);
     router.refresh();
   };
 
-  const handleReject = async (claimId: string) => {
-    setLoadingId(claimId);
+  const handleReject = async (claim: EventClaim) => {
+    setLoadingId(claim.id);
     setError(null);
 
     const supabase = createSupabaseBrowserClient();
@@ -149,11 +159,26 @@ export default function ClaimsTable({
         reviewed_at: new Date().toISOString(),
         rejection_reason: rejectionReason.trim() || null,
       })
-      .eq("id", claimId);
+      .eq("id", claim.id);
 
     if (rejectError) {
       setError("Failed to reject claim: " + rejectError.message);
+      setLoadingId(null);
+      return;
     }
+
+    // Notify the claimant that their claim was rejected
+    const eventTitle = claim.event?.title || "the event";
+    const reason = rejectionReason.trim();
+    await supabase.rpc("create_user_notification", {
+      p_user_id: claim.requester_id,
+      p_type: "claim_rejected",
+      p_title: `Your claim for "${eventTitle}" was not approved`,
+      p_message: reason
+        ? `Reason: ${reason}. If you believe this is an error, contact an admin.`
+        : `If you believe this is an error, contact an admin.`,
+      p_link: `/happenings`
+    });
 
     setLoadingId(null);
     setRejectingId(null);
@@ -286,7 +311,7 @@ export default function ClaimsTable({
                           className="px-2 py-1 text-xs bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] w-32"
                         />
                         <button
-                          onClick={() => handleReject(claim.id)}
+                          onClick={() => handleReject(claim)}
                           disabled={loadingId === claim.id}
                           className="px-2 py-1 text-xs bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-800 dark:text-red-400 rounded disabled:opacity-50"
                         >

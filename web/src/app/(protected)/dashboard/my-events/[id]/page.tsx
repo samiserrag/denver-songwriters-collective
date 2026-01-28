@@ -10,7 +10,6 @@ import PublishButton from "./_components/PublishButton";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
-import { LeaveEventButton } from "@/components/events/LeaveEventButton";
 import { computeNextOccurrence } from "@/lib/events/nextOccurrence";
 import EventInviteSection from "./_components/EventInviteSection";
 
@@ -246,44 +245,15 @@ export default async function EditEventPage({
             {userHost && (
               <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
                 <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Co-hosts</h2>
-                {isPrimaryHost ? (
-                  // Primary hosts can manage co-hosts
-                  <CoHostManager
-                    eventId={eventId}
-                    eventTitle={event.title}
-                    hosts={hostsWithProfiles}
-                    currentUserId={session.user.id}
-                    currentUserRole={userHost.role as "host" | "cohost"}
-                    isSoleHost={hostsWithProfiles.filter(h => h.invitation_status === "accepted").length === 1}
-                  />
-                ) : (
-                  // Co-hosts see read-only list + their own leave button
-                  <div className="space-y-4">
-                    {/* Read-only host list */}
-                    <ul className="space-y-2">
-                      {hostsWithProfiles.filter(h => h.invitation_status === "accepted").map((host) => (
-                        <li key={host.id} className="flex items-center gap-3 p-2 bg-[var(--color-bg-tertiary)] rounded-lg">
-                          <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm">
-                            {host.user?.full_name?.[0]?.toUpperCase() || "?"}
-                          </div>
-                          <div>
-                            <p className="text-[var(--color-text-primary)] text-sm">{host.user?.full_name || "Unknown"}</p>
-                            <p className="text-xs text-[var(--color-text-secondary)]">
-                              {host.role === "host" ? "Primary Host" : "Co-host"}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                    {/* Leave button for co-host */}
-                    <LeaveEventButton
-                      eventId={eventId}
-                      eventTitle={event.title}
-                      userRole="cohost"
-                      userId={session.user.id}
-                    />
-                  </div>
-                )}
+                {/* All hosts (primary and cohosts) can manage co-hosts - they're equal partners */}
+                <CoHostManager
+                  eventId={eventId}
+                  eventTitle={event.title}
+                  hosts={hostsWithProfiles}
+                  currentUserId={session.user.id}
+                  currentUserRole={userHost.role as "host" | "cohost"}
+                  isSoleHost={hostsWithProfiles.filter(h => h.invitation_status === "accepted").length === 1}
+                />
               </section>
             )}
           </div>

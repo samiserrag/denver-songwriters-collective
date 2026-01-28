@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { LeaveEventButton } from "@/components/events/LeaveEventButton";
 
 interface Host {
@@ -127,6 +128,7 @@ export default function CoHostManager({
   const handleRemove = async (userId: string) => {
     if (!confirm("Remove this co-host?")) return;
 
+    setError("");
     try {
       const res = await fetch(`/api/my-events/${eventId}/cohosts`, {
         method: "DELETE",
@@ -134,17 +136,24 @@ export default function CoHostManager({
         body: JSON.stringify({ user_id: userId })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
+        setSuccess("Co-host removed");
         router.refresh();
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(data.error || "Failed to remove co-host");
       }
     } catch (err) {
-      console.error("Failed to remove co-host:", err);
+      setError(err instanceof Error ? err.message : "Failed to remove co-host");
     }
   };
 
   const handleCancelInvite = async (userId: string) => {
     if (!confirm("Cancel this invitation?")) return;
 
+    setError("");
     try {
       const res = await fetch(`/api/my-events/${eventId}/cohosts`, {
         method: "DELETE",
@@ -152,13 +161,17 @@ export default function CoHostManager({
         body: JSON.stringify({ user_id: userId })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         setSuccess("Invitation cancelled");
         router.refresh();
         setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(data.error || "Failed to cancel invitation");
       }
     } catch (err) {
-      console.error("Failed to cancel invitation:", err);
+      setError(err instanceof Error ? err.message : "Failed to cancel invitation");
     }
   };
 
@@ -194,9 +207,37 @@ Best,
 
   return (
     <div className="space-y-4">
+      {/* Permissions help block */}
+      {currentUserRole && (
+        <div className="p-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-sm">
+          {currentUserRole === "cohost" ? (
+            <p className="text-[var(--color-text-secondary)]">
+              You can invite other co-hosts, edit the event, and leave anytime. Only a primary host can remove co-hosts.
+            </p>
+          ) : (
+            <p className="text-[var(--color-text-secondary)]">
+              You can invite, remove, and leave. If you leave, another host will be auto-promoted.
+            </p>
+          )}
+          <Link
+            href="/feedback"
+            className="text-[var(--color-text-accent)] hover:underline text-xs mt-2 inline-block"
+          >
+            Need admin help?
+          </Link>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && inviteMode === null && (
+        <div className="p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-red-800 dark:text-red-300 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Success message */}
       {success && (
-        <div className="p-2 bg-green-900/30 border border-green-700 rounded text-green-300 text-sm">
+        <div className="p-2 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded text-green-800 dark:text-green-300 text-sm">
           {success}
         </div>
       )}
@@ -220,7 +261,8 @@ Best,
                 </p>
               </div>
             </div>
-            {host.role === "cohost" && (
+            {/* Only primary hosts can remove cohosts */}
+            {host.role === "cohost" && currentUserRole === "host" && (
               <button
                 onClick={() => handleRemove(host.user_id)}
                 className="text-xs text-red-400 hover:text-red-300"
@@ -393,15 +435,15 @@ Best,
         </div>
       )}
 
-      {/* Leave event button for primary hosts */}
-      {currentUserId && currentUserRole === "host" && (
+      {/* Leave event button for all hosts */}
+      {currentUserId && currentUserRole && (
         <div className="mt-6 pt-4 border-t border-[var(--color-border-default)]">
           <LeaveEventButton
             eventId={eventId}
             eventTitle={eventTitle}
-            userRole="host"
+            userRole={currentUserRole}
             userId={currentUserId}
-            isSoleHost={isSoleHost}
+            isSoleHost={currentUserRole === "host" ? isSoleHost : false}
           />
         </div>
       )}

@@ -17,7 +17,8 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if user is primary host or admin (using profiles.role, not app_metadata)
+  // Check if user is any accepted host (primary or cohost) or admin
+  // Cohosts are equal partners and can invite other cohosts
   const isAdmin = await checkAdminRole(supabase, session.user.id);
 
   if (!isAdmin) {
@@ -27,12 +28,11 @@ export async function POST(
       .eq("event_id", eventId)
       .eq("user_id", session.user.id)
       .eq("invitation_status", "accepted")
-      .eq("role", "host")
       .maybeSingle();
 
     if (!hostEntry) {
       return NextResponse.json({
-        error: "Only primary hosts can invite co-hosts"
+        error: "Only hosts can invite co-hosts"
       }, { status: 403 });
     }
   }
@@ -282,14 +282,58 @@ export async function DELETE(
   // Check if event now has zero accepted hosts
   const { data: remainingHosts } = await serviceClient
     .from("event_hosts")
-    .select("id")
+    .select("id, user_id, role, created_at")
     .eq("event_id", eventId)
-    .eq("invitation_status", "accepted");
+    .eq("invitation_status", "accepted")
+    .order("created_at", { ascending: true });
 
   const eventNowUnhosted = !remainingHosts || remainingHosts.length === 0;
+  let promotedUserId: string | null = null;
 
-  // If primary host left or event is now unhosted, set events.host_id = null
-  if (targetRole === "host" || eventNowUnhosted) {
+  // If primary host left, try to auto-promote another accepted host
+  if (targetRole === "host" && !eventNowUnhosted && remainingHosts && remainingHosts.length > 0) {
+    // Pick the longest-tenured remaining host (first by created_at)
+    const newPrimary = remainingHosts[0];
+    promotedUserId = newPrimary.user_id;
+
+    // Update the event_hosts row to make them primary host
+    const { error: promoteError } = await serviceClient
+      .from("event_hosts")
+      .update({ role: "host" })
+      .eq("id", newPrimary.id);
+
+    if (promoteError) {
+      console.error("Failed to promote new primary host:", promoteError);
+    } else {
+      // Update events.host_id to point to the new primary
+      const { error: updateEventError } = await serviceClient
+        .from("events")
+        .update({ host_id: promotedUserId })
+        .eq("id", eventId);
+
+      if (updateEventError) {
+        console.error("Failed to update event host_id:", updateEventError);
+      }
+
+      // Notify the promoted user
+      const { data: event } = await serviceClient
+        .from("events")
+        .select("title")
+        .eq("id", eventId)
+        .single();
+
+      const eventTitle = event?.title || "an event";
+
+      await supabase.rpc("create_user_notification", {
+        p_user_id: promotedUserId,
+        p_type: "host_promoted",
+        p_title: `You're now primary host of "${eventTitle}"`,
+        p_message: `The previous primary host left. You've been automatically promoted to primary host. You can now invite co-hosts and manage all event settings.`,
+        p_link: `/dashboard/my-events/${eventId}`
+      });
+    }
+  } else if (eventNowUnhosted || (targetRole === "host" && (!remainingHosts || remainingHosts.length === 0))) {
+    // No one left to promote - set events.host_id = null
     const { error: updateError } = await serviceClient
       .from("events")
       .update({ host_id: null })
@@ -333,6 +377,7 @@ export async function DELETE(
   return NextResponse.json({
     success: true,
     removedRole: targetRole,
-    eventNowUnhosted
+    eventNowUnhosted,
+    promotedUserId
   });
 }

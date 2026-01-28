@@ -68,9 +68,14 @@ export function LeaveEventButton({
         <p className="text-sm text-red-800 dark:text-red-300">
           Are you sure you want to leave &ldquo;{eventTitle}&rdquo; as {roleLabel}?
         </p>
-        {isSoleHost && (
+        {isSoleHost && userRole === "host" && (
           <p className="text-sm text-red-800 dark:text-red-300 font-medium">
             ⚠️ You are the only host. The event will become unhosted and appear as unclaimed.
+          </p>
+        )}
+        {!isSoleHost && userRole === "host" && (
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            Another host will be automatically promoted to primary host.
           </p>
         )}
         {error && (
