@@ -64,17 +64,17 @@ export function LeaveEventButton({
 
   if (isConfirming) {
     return (
-      <div className="p-4 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg space-y-3">
-        <p className="text-sm text-red-800 dark:text-red-300">
+      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg space-y-3">
+        <p className="text-sm text-red-900 dark:text-red-300">
           Are you sure you want to leave &ldquo;{eventTitle}&rdquo; as {roleLabel}?
         </p>
         {isSoleHost && userRole === "host" && (
-          <p className="text-sm text-red-800 dark:text-red-300 font-medium">
+          <p className="text-sm text-red-900 dark:text-red-300 font-medium">
             ⚠️ You are the only host. The event will become unhosted and appear as unclaimed.
           </p>
         )}
         {!isSoleHost && userRole === "host" && (
-          <p className="text-sm text-amber-800 dark:text-amber-300">
+          <p className="text-sm text-amber-900 dark:text-amber-300">
             Another host will be automatically promoted to primary host.
           </p>
         )}

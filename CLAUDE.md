@@ -524,6 +524,27 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Leave Event Dialog Contrast Fix (January 2026) — RESOLVED
+
+**Goal:** Fix red-on-red text contrast issue in the "Leave Event" confirmation dialog on the edit event page.
+
+**Problem:** The confirmation dialog for leaving an event had poor text contrast in the sunrise (light) theme. The `text-red-800` text on `bg-red-100` background was difficult to read.
+
+**Fix:** Changed to higher contrast colors:
+- Background: `bg-red-50` (lighter) instead of `bg-red-100`
+- Text: `text-red-900` (darker) instead of `text-red-800`
+- Amber text: `text-amber-900` instead of `text-amber-800`
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/events/LeaveEventButton.tsx` | Updated background and text colors for better contrast |
+
+**Quality Gates:** Lint 0, Tests 2818 passing.
+
+---
+
 ### TV Display Manager UX Hardening (Phase 4.99, January 2026) — RESOLVED
 
 **Goal:** Launch-blocking UX hardening for TV Display + Lineup Control to make these features "discoverable, safe, reliable, and stress-proof for hosts running a live event."
