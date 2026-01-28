@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import EventForm from "../_components/EventForm";
 import RSVPList from "../_components/RSVPList";
+import TimeslotClaimsTable from "../_components/TimeslotClaimsTable";
 import CoHostManager from "../_components/CoHostManager";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
@@ -294,10 +295,28 @@ export default async function EditEventPage({
               />
             )}
 
-            {/* RSVP Summary */}
+            {/* Phase 5.02: Performer Signups - visible when event has timeslots */}
+            {hasTimeslots && (
+              <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+                <TimeslotClaimsTable
+                  eventId={eventId}
+                  isRecurring={event.is_recurring ?? false}
+                  availableDates={availableDates}
+                  initialDateKey={nextOccurrenceDate ?? undefined}
+                />
+              </section>
+            )}
+
+            {/* RSVP Summary - Phase 5.02: Now date-scoped for recurring events */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Attendees</h2>
-              <RSVPList eventId={eventId} capacity={event.capacity} />
+              <RSVPList
+                eventId={eventId}
+                capacity={event.capacity}
+                isRecurring={event.is_recurring ?? false}
+                availableDates={availableDates}
+                initialDateKey={nextOccurrenceDate ?? undefined}
+              />
             </section>
 
             {/* Invite Links - Phase 4.94: Only visible to admins and primary hosts */}

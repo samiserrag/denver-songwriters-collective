@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
+import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -361,25 +362,36 @@ export async function PATCH(
 
   const regenNeeded = timeslotsNowEnabled && (timeslotsWereDisabled || totalSlotsChanged || slotDurationChanged);
 
-  // If regen needed, check for existing claims BEFORE applying update (fail fast)
+  // Phase 5.02: If regen needed, check for FUTURE claims only (past claims don't block)
+  // The blocking logic uses date_key >= todayKey to allow hosts to modify slot config
+  // even when past occurrences have claims.
   if (regenNeeded) {
-    const { data: existingSlots } = await supabase
-      .from("event_timeslots")
-      .select("id")
-      .eq("event_id", eventId);
+    const todayKey = getTodayDenver();
 
-    if (existingSlots && existingSlots.length > 0) {
-      const slotIds = existingSlots.map(s => s.id);
-      const { count: claimCount } = await supabase
+    // Query only FUTURE timeslots (today counts as future, >= not >)
+    const { data: futureSlots } = await supabase
+      .from("event_timeslots")
+      .select("id, date_key")
+      .eq("event_id", eventId)
+      .gte("date_key", todayKey);
+
+    if (futureSlots && futureSlots.length > 0) {
+      const futureSlotIds = futureSlots.map(s => s.id);
+      const { count: futureClaimCount } = await supabase
         .from("timeslot_claims")
         .select("*", { count: "exact", head: true })
-        .in("timeslot_id", slotIds)
+        .in("timeslot_id", futureSlotIds)
         .in("status", ["confirmed", "performed", "waitlist"]);
 
-      if (claimCount && claimCount > 0) {
-        // Has existing claims - reject the entire update with 409
+      if (futureClaimCount && futureClaimCount > 0) {
+        // Has FUTURE claims - reject the entire update with actionable error
         return NextResponse.json(
-          { error: "Slot configuration can't be changed after signups exist. Unclaim all slots first." },
+          {
+            error: "Can't change slot configuration while future signups exist.",
+            details: `${futureClaimCount} active signup(s) on upcoming dates. Remove them first or wait until those dates pass.`,
+            futureClaimCount,
+            actionUrl: `/dashboard/my-events/${eventId}`
+          },
           { status: 409 }
         );
       }
@@ -398,30 +410,65 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Regenerate timeslots if needed (we already verified no claims exist)
+  // Phase 5.02: Regenerate FUTURE timeslots only (preserve past slots with historical data)
+  // We already verified no FUTURE claims exist in the blocking check above.
   if (regenNeeded) {
-    const { data: existingSlots } = await supabase
-      .from("event_timeslots")
-      .select("id")
-      .eq("event_id", eventId);
+    const todayKey = getTodayDenver();
+    const newTotalSlots = body.total_slots ?? event.total_slots ?? 10;
+    const newSlotDuration = body.slot_duration_minutes ?? event.slot_duration_minutes ?? 15;
 
-    if (existingSlots && existingSlots.length > 0) {
-      // Slots exist but no claims - safe to regenerate
-      const { error: regenError } = await supabase.rpc("generate_event_timeslots", { p_event_id: eventId });
-      if (regenError) {
-        console.error(`[PATCH /api/my-events/${eventId}] Timeslot regeneration error:`, regenError.message);
-      } else {
-        console.log(`[PATCH /api/my-events/${eventId}] Timeslots regenerated (${body.total_slots} slots)`);
+    // 1. Delete ONLY future timeslots (past slots preserved)
+    const { error: deleteError } = await supabase
+      .from("event_timeslots")
+      .delete()
+      .eq("event_id", eventId)
+      .gte("date_key", todayKey);
+
+    if (deleteError) {
+      console.error(`[PATCH /api/my-events/${eventId}] Failed to delete future timeslots:`, deleteError.message);
+    }
+
+    // 2. Expand future occurrences and generate new slots
+    const occurrences = expandOccurrencesForEvent({
+      event_date: event.event_date,
+      day_of_week: event.day_of_week ?? updates.day_of_week as string | null,
+      recurrence_rule: event.recurrence_rule ?? updates.recurrence_rule as string | null,
+      custom_dates: event.custom_dates ?? updates.custom_dates as string[] | null,
+      max_occurrences: event.max_occurrences ?? updates.max_occurrences as number | null,
+    });
+
+    // Filter to only future dates
+    const futureDates = occurrences
+      .filter(occ => occ.dateKey >= todayKey)
+      .map(occ => occ.dateKey);
+
+    // 3. Generate slots for each future date
+    let slotsCreated = 0;
+    for (const dateKey of futureDates) {
+      const slots = [];
+      for (let i = 0; i < newTotalSlots; i++) {
+        const offset = event.start_time
+          ? i * newSlotDuration
+          : null;
+
+        slots.push({
+          event_id: eventId,
+          slot_index: i,
+          start_offset_minutes: offset,
+          duration_minutes: newSlotDuration,
+          date_key: dateKey,
+        });
       }
-    } else {
-      // No existing slots - generate fresh
-      const { error: genError } = await supabase.rpc("generate_event_timeslots", { p_event_id: eventId });
-      if (genError) {
-        console.error(`[PATCH /api/my-events/${eventId}] Timeslot generation error:`, genError.message);
+
+      const { error: insertError } = await supabase.from("event_timeslots").insert(slots);
+      if (insertError) {
+        console.error(`[PATCH /api/my-events/${eventId}] Failed to insert slots for ${dateKey}:`, insertError.message);
       } else {
-        console.log(`[PATCH /api/my-events/${eventId}] Timeslots generated (${body.total_slots} slots)`);
+        slotsCreated += slots.length;
       }
     }
+
+    console.log(`[PATCH /api/my-events/${eventId}] Future timeslots regenerated: ${slotsCreated} slots across ${futureDates.length} dates`);
   }
 
   // Phase 4.36: Send event updated notifications if major fields changed

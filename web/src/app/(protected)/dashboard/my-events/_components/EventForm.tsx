@@ -25,6 +25,11 @@ import {
 } from "@/lib/events/formDateHelpers";
 // Phase 4.84: Rolling window notice for series settings
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
+// Phase 4.86: Centralized ordinal building for preview label consistency
+import {
+  buildRecurrenceRuleFromOrdinals,
+  parseOrdinalsFromRecurrenceRule,
+} from "@/lib/events/recurrenceContract";
 
 /**
  * DateDayIndicator: Shows the day of week derived from a date value.
@@ -141,6 +146,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errorDetails, setErrorDetails] = useState<{
+    details?: string;
+    actionUrl?: string;
+    actionLabel?: string;
+  } | null>(null);
   const [success, setSuccess] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
 
@@ -229,12 +239,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   );
 
   // Phase 4.x: Monthly ordinal pattern state (e.g., 1st, 2nd/4th, etc.)
-  // Parse initial ordinals from event.recurrence_rule in edit mode (e.g., "3rd" → [3], "1st/3rd" → [1, 3])
+  // Phase 4.86: Use centralized parseOrdinalsFromRecurrenceRule() for round-trip consistency
   const [selectedOrdinals, setSelectedOrdinals] = useState<number[]>(() => {
-    if (mode === "edit" && event?.recurrence_rule && event.recurrence_rule !== "weekly" && event.recurrence_rule !== "biweekly" && event.recurrence_rule !== "custom") {
-      const ordinalMap: Record<string, number> = { "1st": 1, "2nd": 2, "3rd": 3, "4th": 4, "5th": 5, "last": -1 };
-      const parts = event.recurrence_rule.split("/").map(s => s.trim().toLowerCase());
-      const parsed = parts.map(p => ordinalMap[p]).filter((n): n is number => n !== undefined);
+    if (mode === "edit" && event?.recurrence_rule) {
+      const parsed = parseOrdinalsFromRecurrenceRule(event.recurrence_rule);
       return parsed.length > 0 ? parsed : [1];
     }
     return [1];
@@ -289,13 +297,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const previewEvent: HappeningEvent = useMemo(() => {
     const selectedVenue = venues.find(v => v.id === formData.venue_id);
     // Compute recurrence_rule from current form state for accurate preview
+    // Phase 4.86: Use centralized buildRecurrenceRuleFromOrdinals() for consistency
     let previewRecurrenceRule: string | undefined;
     if (formData.series_mode === "weekly") {
       previewRecurrenceRule = "weekly";
     } else if (formData.series_mode === "monthly" && selectedOrdinals.length > 0) {
-      const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
-      const ordinalTexts = [...selectedOrdinals].sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b).map(o => ordinalWords[o] || `${o}th`);
-      previewRecurrenceRule = ordinalTexts.join("/");
+      previewRecurrenceRule = buildRecurrenceRuleFromOrdinals(selectedOrdinals);
     } else if (formData.series_mode === "custom") {
       previewRecurrenceRule = "custom";
     }
@@ -385,6 +392,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     e.preventDefault();
     setLoading(true);
     setError("");
+    setErrorDetails(null);
     setSuccess("");
 
     // Phase 4.42k: Comprehensive validation with error summary
@@ -656,6 +664,17 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       const data = await res.json();
 
       if (!res.ok) {
+        // Phase 5.02: Parse actionable errors (e.g., slot config blocked by claims)
+        if (data.actionUrl || data.details) {
+          setError(data.error || "Failed to save event");
+          setErrorDetails({
+            details: data.details,
+            actionUrl: data.actionUrl,
+            actionLabel: "Manage Signups",
+          });
+          setLoading(false);
+          return;
+        }
         throw new Error(data.error || "Failed to save event");
       }
 
@@ -699,7 +718,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {error && (
         <div className="p-4 bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 rounded-lg text-red-800 dark:text-red-600">
-          {error}
+          <p className="font-medium">{error}</p>
+          {errorDetails?.details && (
+            <p className="mt-1 text-sm">{errorDetails.details}</p>
+          )}
+          {errorDetails?.actionUrl && (
+            <a
+              href={errorDetails.actionUrl}
+              className="mt-2 inline-block text-sm underline hover:no-underline font-medium"
+            >
+              {errorDetails.actionLabel || "Take action"} →
+            </a>
+          )}
         </div>
       )}
 

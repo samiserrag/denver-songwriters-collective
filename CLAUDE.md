@@ -524,6 +524,62 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### RSVP + Timeslots Host Control & Dashboard (Phase 5.02, January 2026) — RESOLVED
+
+**Goal:** Fix recurring events with past claims permanently locking slot configuration changes, and give hosts proper date-scoped dashboard surfaces.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 28 new, build success).
+
+**North-Star Model:** Option 2 — Series-Level Config with Future-Only Blocking
+
+**Hard Invariants:**
+1. `date_key >= todayKey` classifies as future (today counts as future)
+2. Past data is preserved — no auto-deletion of past timeslots or claims
+3. No migration needed — uses existing `date_key` column
+
+**Work Items Completed:**
+
+| Part | Description |
+|------|-------------|
+| A | Fixed blocking logic: only counts claims where `date_key >= todayKey` |
+| B | Future-only regeneration: preserves past timeslots, only regenerates future |
+| C1 | Created `TimeslotClaimsTable` component for hosts to manage claims |
+| C2 | Made `RSVPList` date-scoped for recurring events |
+| C3 | Integrated TimeslotClaimsTable and date-scoped RSVPList into event edit page |
+| D | Actionable error messaging with links to claims management |
+| E | 28 tests covering all parts |
+| F | Documentation updated |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `app/api/my-events/[id]/claims/route.ts` | Claims API (GET lists, DELETE soft-removes) |
+| `dashboard/my-events/_components/TimeslotClaimsTable.tsx` | Host-visible claims management table |
+| `__tests__/phase5-02-timeslots-rsvp-host-dashboard.test.ts` | 28 tests |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/[id]/route.ts` | Future-only blocking and regeneration logic |
+| `dashboard/my-events/_components/RSVPList.tsx` | Date selector + date-scoped API fetch |
+| `dashboard/my-events/_components/EventForm.tsx` | Actionable error details with links |
+| `dashboard/my-events/[id]/page.tsx` | TimeslotClaimsTable + updated RSVPList props |
+
+**Key Behavior Changes:**
+
+| Before | After |
+|--------|-------|
+| ANY timeslot claim blocked slot config changes | Only FUTURE claims block changes |
+| Regeneration deleted ALL timeslots | Only future timeslots regenerated |
+| RSVPList showed all RSVPs for series | Date selector scopes to specific occurrence |
+| Generic "signups exist" error | Actionable error with link to claims management |
+
+**Investigation Doc:** `docs/investigation/phase5-02-timeslots-rsvp-host-dashboard-stopgate.md`
+
+---
+
 ### Leave Event Dialog Contrast Fix (January 2026) — RESOLVED
 
 **Goal:** Fix red-on-red text contrast issue in the "Leave Event" confirmation dialog on the edit event page.

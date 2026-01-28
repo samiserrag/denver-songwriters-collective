@@ -3,9 +3,26 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
+/**
+ * Format a date key for short display.
+ * E.g., "2026-01-18" -> "Sat, Jan 18"
+ */
+function formatDateKeyShort(dateKey: string): string {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "America/Denver",
+  });
+}
+
 interface RSVPListProps {
   eventId: string;
   capacity: number | null;
+  isRecurring?: boolean;
+  availableDates?: string[];
+  initialDateKey?: string;
 }
 
 interface RSVPUser {
@@ -20,7 +37,22 @@ interface RSVPUser {
   } | null;
 }
 
-export default function RSVPList({ eventId, capacity }: RSVPListProps) {
+/**
+ * Phase 5.02: RSVPList — Host-visible RSVP list with date-scoping
+ *
+ * For recurring events:
+ * - Shows date selector to pick occurrence
+ * - Fetches RSVPs only for selected date_key
+ * - Does NOT aggregate across occurrences
+ */
+export default function RSVPList({
+  eventId,
+  capacity,
+  isRecurring = false,
+  availableDates = [],
+  initialDateKey,
+}: RSVPListProps) {
+  const [selectedDate, setSelectedDate] = useState(initialDateKey || availableDates[0] || "");
   const [data, setData] = useState<{
     confirmed: RSVPUser[];
     waitlist: RSVPUser[];
@@ -31,8 +63,11 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
 
   useEffect(() => {
     const fetchRSVPs = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/my-events/${eventId}/rsvps`);
+        // Phase 5.02: Pass date_key for occurrence-specific RSVPs
+        const dateParam = selectedDate ? `?date_key=${selectedDate}` : "";
+        const res = await fetch(`/api/my-events/${eventId}/rsvps${dateParam}`);
         if (res.ok) {
           setData(await res.json());
         }
@@ -43,7 +78,7 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
       }
     };
     fetchRSVPs();
-  }, [eventId]);
+  }, [eventId, selectedDate]);
 
   if (loading) {
     return <div className="animate-pulse h-32 bg-[var(--color-bg-secondary)] rounded-lg"></div>;
@@ -57,6 +92,26 @@ export default function RSVPList({ eventId, capacity }: RSVPListProps) {
 
   return (
     <div className="space-y-4">
+      {/* Date selector for recurring events */}
+      {isRecurring && availableDates.length > 1 && (
+        <div>
+          <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">
+            Select occurrence:
+          </label>
+          <select
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded px-3 py-2 text-[var(--color-text-primary)]"
+          >
+            {availableDates.map((date) => (
+              <option key={date} value={date}>
+                {formatDateKeyShort(date)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Summary */}
       <div className="flex items-center justify-between p-3 bg-[var(--color-bg-secondary)] rounded-lg">
         <div>

@@ -30,6 +30,7 @@ let mockUpdateResult: { data: Record<string, unknown> | null; error: Error | nul
 let mockRpcCalled = false;
 let mockRpcError: Error | null = null;
 let capturedUpdatePayload: Record<string, unknown> | null = null;
+let mockTimeslotInsertCalled = false;
 
 // Helper to create deeply chainable mock
 const createChainable = (result: unknown) => {
@@ -97,7 +98,12 @@ vi.mock("@/lib/supabase/server", () => ({
           select: () => createChainable({
             data: mockExistingSlots,
             error: null
-          })
+          }),
+          delete: () => createChainable({ error: null }),
+          insert: () => {
+            mockTimeslotInsertCalled = true;
+            return Promise.resolve({ error: null });
+          }
         };
       }
       if (table === "timeslot_claims") {
@@ -140,6 +146,16 @@ vi.mock("@/lib/auth/adminAuth", () => ({
   checkHostStatus: () => Promise.resolve(mockIsHost)
 }));
 
+// Mock nextOccurrence for Phase 5.02 TypeScript-based regeneration
+vi.mock("@/lib/events/nextOccurrence", () => ({
+  getTodayDenver: () => "2026-01-28",
+  expandOccurrencesForEvent: () => [
+    { dateKey: "2026-01-28" },
+    { dateKey: "2026-02-04" },
+    { dateKey: "2026-02-11" }
+  ]
+}));
+
 // Import AFTER mocks are set up
 import { PATCH } from "@/app/api/my-events/[id]/route";
 
@@ -162,6 +178,7 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
     mockRpcCalled = false;
     mockRpcError = null;
     capturedUpdatePayload = null;
+    mockTimeslotInsertCalled = false;
   });
 
   describe("409 Conflict - Claims exist + regen-needed change", () => {
@@ -181,7 +198,8 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       const data = await response.json();
 
       expect(response.status).toBe(409);
-      expect(data.error).toContain("Slot configuration can't be changed after signups exist");
+      // Phase 5.02: Error message updated to mention "future signups"
+      expect(data.error).toContain("Can't change slot configuration while future signups exist");
       expect(mockRpcCalled).toBe(false); // RPC should NOT be called
       expect(capturedUpdatePayload).toBeNull(); // Update should NOT be called
     });
@@ -254,7 +272,8 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       const response = await PATCH(request, { params: Promise.resolve({ id: "event-1" }) });
 
       expect(response.status).toBe(200);
-      expect(mockRpcCalled).toBe(true); // RPC should be called
+      // Phase 5.02: Regeneration now uses TypeScript-based insert, not RPC
+      expect(mockTimeslotInsertCalled).toBe(true);
       expect(capturedUpdatePayload).not.toBeNull(); // Update should be called
     });
 
@@ -273,7 +292,8 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       const response = await PATCH(request, { params: Promise.resolve({ id: "event-1" }) });
 
       expect(response.status).toBe(200);
-      expect(mockRpcCalled).toBe(true);
+      // Phase 5.02: Regeneration now uses TypeScript-based insert, not RPC
+      expect(mockTimeslotInsertCalled).toBe(true);
     });
   });
 
@@ -292,7 +312,8 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       const response = await PATCH(request, { params: Promise.resolve({ id: "event-1" }) });
 
       expect(response.status).toBe(200);
-      expect(mockRpcCalled).toBe(false); // No regen needed
+      // Phase 5.02: No regen needed, so no insert should be called
+      expect(mockTimeslotInsertCalled).toBe(false);
       expect(capturedUpdatePayload).not.toBeNull();
       expect(capturedUpdatePayload?.title).toBe("Updated Event Title");
     });
