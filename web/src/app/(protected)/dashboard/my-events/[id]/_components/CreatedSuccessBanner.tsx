@@ -7,9 +7,11 @@ interface CreatedSuccessBannerProps {
   isDraft: boolean;
   eventId: string;
   eventSlug?: string | null;
+  /** YYYY-MM-DD date to anchor the public page link (for occurrence-specific navigation) */
+  nextOccurrenceDate?: string | null;
 }
 
-export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: CreatedSuccessBannerProps) {
+export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug, nextOccurrenceDate }: CreatedSuccessBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
@@ -40,7 +42,7 @@ export default function CreatedSuccessBanner({ isDraft, eventId, eventSlug }: Cr
           </p>
         ) : (
           <Link
-            href={`/events/${eventSlug || eventId}`}
+            href={`/events/${eventSlug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
             className="inline-block mt-2 text-sm text-emerald-700 dark:text-emerald-600 hover:underline"
           >
             View Public Page →
