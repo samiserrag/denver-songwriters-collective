@@ -1,12 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/useAuth";
 import { Button } from "@/components/ui";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { LineupStateBanner } from "@/components/events/LineupStateBanner";
+import { LineupDatePicker } from "@/components/events/LineupDatePicker";
 import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 
 interface Performer {
@@ -32,6 +35,7 @@ interface Timeslot {
 interface EventInfo {
   id: string;
   title: string;
+  slug: string | null;
   venue_name: string | null;
   start_time: string | null;
   event_date: string | null;
@@ -63,9 +67,21 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
   return `${formatTime(startMinutes)} - ${formatTime(endMinutes)}`;
 }
 
+/**
+ * Lineup Control Page for hosts/admins to manage live event lineup.
+ *
+ * Phase 4.99: UX Hardening
+ * - Explicit date selection required for recurring events (no silent default)
+ * - Connection health indicator via LineupStateBanner
+ * - Confirmation dialogs for destructive actions (Stop Event, Reset)
+ * - Co-host authorization requires status='accepted'
+ *
+ * DSC UX Principles: §3 (Rolling Windows), §6 (Anchored Navigation), §7 (UX Friction)
+ */
 export default function LineupControlPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const eventId = params.id as string;
   const { user, loading: authLoading } = useAuth();
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
@@ -77,12 +93,28 @@ export default function LineupControlPage() {
   const [updating, setUpdating] = React.useState(false);
   const [isAuthorized, setIsAuthorized] = React.useState(false);
 
+  // Phase 4.99: Connection health tracking
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
+  const [connectionStatus, setConnectionStatus] = React.useState<"connected" | "disconnected" | "reconnecting">("connected");
+  const [failureCount, setFailureCount] = React.useState(0);
+
+  // Phase 4.99: Confirmation dialogs
+  const [showStopConfirm, setShowStopConfirm] = React.useState(false);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+
   // Phase ABC7: Track the effective date_key for this occurrence
   const [effectiveDateKey, setEffectiveDateKey] = React.useState<string | null>(null);
   const [availableDates, setAvailableDates] = React.useState<string[]>([]);
 
+  // Phase 4.99: Show date picker modal when date is required but not provided
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [needsDateSelection, setNeedsDateSelection] = React.useState(false);
+
   // Get date from URL param
   const urlDate = searchParams.get("date");
+
+  // Phase 4.99: Copyable display URL state
+  const [copied, setCopied] = React.useState(false);
 
   // Check authorization (admin or event host)
   React.useEffect(() => {
@@ -113,12 +145,14 @@ export default function LineupControlPage() {
         return;
       }
 
-      // Also check event_hosts table for co-hosts
+      // Phase 4.99 F11: Also check event_hosts table for co-hosts
+      // SECURITY FIX: Only accept hosts with invitation_status = 'accepted'
       const { data: hostEntry } = await supabase
         .from("event_hosts")
         .select("id")
         .eq("event_id", eventId)
         .eq("user_id", user.id)
+        .eq("invitation_status", "accepted")
         .single();
 
       if (hostEntry) {
@@ -131,108 +165,149 @@ export default function LineupControlPage() {
 
   // Fetch event data
   const fetchData = React.useCallback(async () => {
-    // Fetch event info with recurrence fields for date_key computation
-    const { data: eventData } = await supabase
-      .from("events")
-      .select("id, title, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
-      .eq("id", eventId)
-      .single();
+    try {
+      // Fetch event info with recurrence fields for date_key computation
+      const { data: eventData, error: eventError } = await supabase
+        .from("events")
+        .select("id, title, slug, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
+        .eq("id", eventId)
+        .single();
 
-    if (!eventData) {
-      setLoading(false);
-      return;
-    }
+      if (eventError) throw eventError;
 
-    setEvent(eventData);
-
-    // Phase ABC7: Compute effective date_key for this occurrence
-    let dateKey: string;
-    const dates: string[] = [];
-
-    if (eventData.is_recurring) {
-      // For recurring events, expand occurrences and find valid date
-      const occurrences = expandOccurrencesForEvent({
-        event_date: eventData.event_date,
-        day_of_week: eventData.day_of_week,
-        recurrence_rule: eventData.recurrence_rule,
-      });
-      occurrences.forEach(occ => dates.push(occ.dateKey));
-
-      if (urlDate && dates.includes(urlDate)) {
-        // Use URL-provided date if valid
-        dateKey = urlDate;
-      } else if (dates.length > 0) {
-        // Default to next upcoming occurrence
-        dateKey = dates[0];
-      } else {
-        // Fallback to today if no occurrences (edge case)
-        dateKey = new Date().toISOString().split("T")[0];
+      if (!eventData) {
+        setLoading(false);
+        return;
       }
-    } else {
-      // One-time event: date_key is the event_date
-      dateKey = eventData.event_date || new Date().toISOString().split("T")[0];
-      dates.push(dateKey);
-    }
 
-    setEffectiveDateKey(dateKey);
-    setAvailableDates(dates);
+      setEvent(eventData);
 
-    // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
-    const { data: slots } = await supabase
-      .from("event_timeslots")
-      .select("id, slot_index, start_offset_minutes, duration_minutes")
-      .eq("event_id", eventId)
-      .eq("date_key", dateKey)
-      .order("slot_index", { ascending: true });
+      // Phase ABC7: Compute effective date_key for this occurrence
+      let dateKey: string | null = null;
+      const dates: string[] = [];
 
-    if (slots && slots.length > 0) {
-      type SlotRow = { id: string; slot_index: number; start_offset_minutes: number; duration_minutes: number };
-      const slotIds = (slots as SlotRow[]).map((s) => s.id);
-
-      const { data: claims } = await supabase
-        .from("timeslot_claims")
-        .select(`
-          id, timeslot_id, status,
-          member:profiles!timeslot_claims_member_id_fkey(id, full_name, avatar_url)
-        `)
-        .in("timeslot_id", slotIds)
-        .in("status", ["confirmed", "performed"]);
-
-      type ClaimRow = { id: string; timeslot_id: string; status: string; member: Performer | null };
-      const claimsBySlot = new Map<string, TimeslotClaim>();
-      ((claims || []) as ClaimRow[]).forEach((claim) => {
-        claimsBySlot.set(claim.timeslot_id, {
-          id: claim.id,
-          status: claim.status,
-          member: claim.member,
+      if (eventData.is_recurring) {
+        // For recurring events, expand occurrences and find valid date
+        const occurrences = expandOccurrencesForEvent({
+          event_date: eventData.event_date,
+          day_of_week: eventData.day_of_week,
+          recurrence_rule: eventData.recurrence_rule,
         });
-      });
+        occurrences.forEach(occ => dates.push(occ.dateKey));
 
-      const slotsWithClaims = (slots as SlotRow[]).map((slot) => ({
-        ...slot,
-        claim: claimsBySlot.get(slot.id) || null,
-      }));
+        if (urlDate && dates.includes(urlDate)) {
+          // Use URL-provided date if valid
+          dateKey = urlDate;
+        } else if (dates.length > 1 && !urlDate) {
+          // Phase 4.99 B3: NO SILENT DEFAULT for recurring events
+          // If no date provided and multiple dates exist, require explicit selection
+          setAvailableDates(dates);
+          setNeedsDateSelection(true);
+          setShowDatePicker(true);
+          setLoading(false);
+          return;
+        } else if (dates.length === 1) {
+          // Single upcoming occurrence - use it
+          dateKey = dates[0];
+        } else if (dates.length === 0) {
+          // Fallback to today if no occurrences (edge case)
+          dateKey = new Date().toISOString().split("T")[0];
+        }
+      } else {
+        // One-time event: date_key is the event_date
+        const oneTimeDate = eventData.event_date || new Date().toISOString().split("T")[0];
+        dateKey = oneTimeDate;
+        dates.push(oneTimeDate);
+      }
 
-      setTimeslots(slotsWithClaims);
+      setEffectiveDateKey(dateKey);
+      setAvailableDates(dates);
+      setNeedsDateSelection(false);
+
+      if (!dateKey) {
+        setLoading(false);
+        return;
+      }
+
+      // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
+      const { data: slots, error: slotsError } = await supabase
+        .from("event_timeslots")
+        .select("id, slot_index, start_offset_minutes, duration_minutes")
+        .eq("event_id", eventId)
+        .eq("date_key", dateKey)
+        .order("slot_index", { ascending: true });
+
+      if (slotsError) throw slotsError;
+
+      if (slots && slots.length > 0) {
+        type SlotRow = { id: string; slot_index: number; start_offset_minutes: number; duration_minutes: number };
+        const slotIds = (slots as SlotRow[]).map((s) => s.id);
+
+        const { data: claims, error: claimsError } = await supabase
+          .from("timeslot_claims")
+          .select(`
+            id, timeslot_id, status,
+            member:profiles!timeslot_claims_member_id_fkey(id, full_name, avatar_url)
+          `)
+          .in("timeslot_id", slotIds)
+          .in("status", ["confirmed", "performed"]);
+
+        if (claimsError) throw claimsError;
+
+        type ClaimRow = { id: string; timeslot_id: string; status: string; member: Performer | null };
+        const claimsBySlot = new Map<string, TimeslotClaim>();
+        ((claims || []) as ClaimRow[]).forEach((claim) => {
+          claimsBySlot.set(claim.timeslot_id, {
+            id: claim.id,
+            status: claim.status,
+            member: claim.member,
+          });
+        });
+
+        const slotsWithClaims = (slots as SlotRow[]).map((slot) => ({
+          ...slot,
+          claim: claimsBySlot.get(slot.id) || null,
+        }));
+
+        setTimeslots(slotsWithClaims);
+      } else {
+        setTimeslots([]);
+      }
+
+      // Phase ABC7: Fetch lineup state filtered by (event_id, date_key)
+      const { data: state, error: stateError } = await supabase
+        .from("event_lineup_state")
+        .select("now_playing_timeslot_id, updated_at")
+        .eq("event_id", eventId)
+        .eq("date_key", dateKey)
+        .maybeSingle();
+
+      if (stateError) throw stateError;
+
+      if (state) {
+        setLineupState(state);
+      } else {
+        // Reset to default if no state for this date
+        setLineupState({ now_playing_timeslot_id: null, updated_at: null });
+      }
+
+      // Phase 4.99: Update connection health
+      setLastUpdated(new Date());
+      setFailureCount(0);
+      setConnectionStatus("connected");
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to fetch lineup data:", error);
+      // Phase 4.99: Track failures for connection health
+      setFailureCount(prev => prev + 1);
+      if (failureCount >= 2) {
+        setConnectionStatus("disconnected");
+      } else {
+        setConnectionStatus("reconnecting");
+      }
+      setLoading(false);
     }
-
-    // Phase ABC7: Fetch lineup state filtered by (event_id, date_key)
-    const { data: state } = await supabase
-      .from("event_lineup_state")
-      .select("now_playing_timeslot_id, updated_at")
-      .eq("event_id", eventId)
-      .eq("date_key", dateKey)
-      .maybeSingle();
-
-    if (state) {
-      setLineupState(state);
-    } else {
-      // Reset to default if no state for this date
-      setLineupState({ now_playing_timeslot_id: null, updated_at: null });
-    }
-
-    setLoading(false);
-  }, [eventId, supabase, urlDate]);
+  }, [eventId, supabase, urlDate, failureCount]);
 
   React.useEffect(() => {
     fetchData();
@@ -265,6 +340,7 @@ export default function LineupControlPage() {
       alert("Failed to update: " + error.message);
     } else {
       setLineupState({ now_playing_timeslot_id: newTimeslotId, updated_at: new Date().toISOString() });
+      setLastUpdated(new Date());
     }
 
     setUpdating(false);
@@ -288,7 +364,19 @@ export default function LineupControlPage() {
     }
   };
 
-  const stopLive = () => updateLineupState(null);
+  // Phase 4.99: Stop with confirmation
+  const handleStopClick = () => setShowStopConfirm(true);
+  const confirmStop = () => {
+    updateLineupState(null);
+    setShowStopConfirm(false);
+  };
+
+  // Phase 4.99: Reset with confirmation
+  const handleResetClick = () => setShowResetConfirm(true);
+  const confirmReset = () => {
+    updateLineupState(null);
+    setShowResetConfirm(false);
+  };
 
   const nextPerformer = () => {
     const nextIdx = currentSlotIndex + 1;
@@ -306,7 +394,43 @@ export default function LineupControlPage() {
 
   const setCurrentSlot = (slotId: string) => updateLineupState(slotId);
 
-  const resetLineup = () => updateLineupState(null);
+  // Phase 4.99: Handle date selection from picker
+  const handleDateSelect = (date: string) => {
+    setShowDatePicker(false);
+    router.push(`/events/${eventId}/lineup?date=${date}`);
+  };
+
+  // Phase 4.99: Build display URL
+  const eventIdentifier = event?.slug || eventId;
+  const displayUrl = effectiveDateKey
+    ? `/events/${eventIdentifier}/display?date=${effectiveDateKey}`
+    : `/events/${eventIdentifier}/display`;
+  const fullDisplayUrl = typeof window !== "undefined"
+    ? `${window.location.origin}${displayUrl}`
+    : displayUrl;
+
+  const handleCopyDisplayUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(fullDisplayUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // Phase 4.99: Date picker modal for recurring events without date param
+  if (needsDateSelection && showDatePicker && event) {
+    return (
+      <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center p-4">
+        <LineupDatePicker
+          eventTitle={event.title}
+          availableDates={availableDates}
+          onSelectDate={handleDateSelect}
+        />
+      </div>
+    );
+  }
 
   if (authLoading || loading) {
     return (
@@ -346,12 +470,19 @@ export default function LineupControlPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] p-4 md:p-8">
+      {/* Phase 4.99: Connection status banner */}
+      <LineupStateBanner
+        lastUpdated={lastUpdated}
+        connectionStatus={connectionStatus}
+        variant="prominent"
+      />
+
       {/* Header */}
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <Link
-              href={`/events/${eventId}${effectiveDateKey ? `?date=${effectiveDateKey}` : ""}`}
+              href={`/events/${eventIdentifier}${effectiveDateKey ? `?date=${effectiveDateKey}` : ""}`}
               className="text-sm text-[var(--color-text-accent)] hover:underline mb-2 inline-block"
             >
               &larr; Back to event
@@ -360,29 +491,32 @@ export default function LineupControlPage() {
               Lineup Control
             </h1>
             <p className="text-[var(--color-text-secondary)]">{event?.title}</p>
-            {/* Phase ABC7: Show effective date for this occurrence */}
+            {/* Phase 4.99 B4: Show effective date for this occurrence prominently */}
             {effectiveDateKey && (
-              <p className="text-sm text-[var(--color-text-tertiary)]">
-                {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                  timeZone: "America/Denver",
-                })}
-              </p>
+              <div className="mt-2 px-3 py-2 bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/30 rounded-lg inline-block">
+                <span className="text-xs text-[var(--color-text-tertiary)]">Controlling lineup for:</span>
+                <p className="font-semibold text-[var(--color-text-accent)]">
+                  {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "America/Denver",
+                  })}
+                </p>
+              </div>
             )}
             {/* Phase ABC7: Date selector for recurring events */}
             {event?.is_recurring && availableDates.length > 1 && (
-              <div className="mt-2">
-                <label className="text-xs text-[var(--color-text-tertiary)] mr-2">Select date:</label>
+              <div className="mt-3">
+                <label className="text-xs text-[var(--color-text-tertiary)] mr-2">Change date:</label>
                 <select
                   value={effectiveDateKey || ""}
                   onChange={(e) => {
                     const newDate = e.target.value;
-                    window.location.href = `/events/${eventId}/lineup?date=${newDate}`;
+                    router.push(`/events/${eventId}/lineup?date=${newDate}`);
                   }}
-                  className="text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded px-2 py-1 text-[var(--color-text-primary)]"
+                  className="text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded px-3 py-1.5 text-[var(--color-text-primary)]"
                 >
                   {availableDates.map((date) => (
                     <option key={date} value={date}>
@@ -398,14 +532,42 @@ export default function LineupControlPage() {
               </div>
             )}
           </div>
-          {/* Phase ABC7: TV display link includes date_key */}
+          {/* Phase 4.99 C5: TV display link with target="_blank" */}
           <Link
-            href={`/events/${eventId}/display${effectiveDateKey ? `?date=${effectiveDateKey}` : ""}`}
+            href={displayUrl}
             target="_blank"
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-medium text-sm"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-medium text-sm inline-flex items-center gap-2"
           >
-            📺 Open TV Display
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Open TV Display
+            <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
           </Link>
+        </div>
+
+        {/* Phase 4.99 C6: Copyable display URL */}
+        <div className="mb-6 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
+          <label className="block text-xs text-[var(--color-text-tertiary)] mb-2">
+            TV Display URL (copy for projector):
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={fullDisplayUrl}
+              className="flex-1 text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded px-3 py-2 text-[var(--color-text-secondary)] font-mono"
+            />
+            <button
+              onClick={handleCopyDisplayUrl}
+              className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] font-medium transition-colors"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
         </div>
 
         {/* Live Status Control */}
@@ -421,7 +583,8 @@ export default function LineupControlPage() {
             </div>
             <div className="flex gap-3">
               {isLive ? (
-                <Button variant="outline" onClick={stopLive} disabled={updating}>
+                // Phase 4.99 E9: Stop Event with confirmation
+                <Button variant="outline" onClick={handleStopClick} disabled={updating}>
                   Stop Event
                 </Button>
               ) : (
@@ -429,7 +592,8 @@ export default function LineupControlPage() {
                   Go Live
                 </Button>
               )}
-              <Button variant="outline" onClick={resetLineup} disabled={updating}>
+              {/* Phase 4.99 E10: Reset with confirmation */}
+              <Button variant="outline" onClick={handleResetClick} disabled={updating}>
                 Reset
               </Button>
             </div>
@@ -561,6 +725,32 @@ export default function LineupControlPage() {
           </div>
         </div>
       </div>
+
+      {/* Phase 4.99 E9: Stop Event Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showStopConfirm}
+        onClose={() => setShowStopConfirm(false)}
+        onConfirm={confirmStop}
+        title="Stop Event?"
+        message="This will end the live event. The TV display will show 'Not started yet' until you go live again."
+        confirmLabel="Stop Event"
+        cancelLabel="Keep Running"
+        variant="warning"
+        loading={updating}
+      />
+
+      {/* Phase 4.99 E10: Reset Lineup Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={confirmReset}
+        title="Reset Lineup?"
+        message="This will reset the lineup to the beginning. The TV display will show 'Not started yet'."
+        confirmLabel="Reset Lineup"
+        cancelLabel="Cancel"
+        variant="warning"
+        loading={updating}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import QRCode from "qrcode";
 import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
+import { LineupStateBanner } from "@/components/events/LineupStateBanner";
 
 interface Performer {
   id: string;
@@ -75,6 +76,11 @@ export default function EventDisplayPage() {
   const [loading, setLoading] = React.useState(true);
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
+  // Phase 4.99: Connection health tracking
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
+  const [connectionStatus, setConnectionStatus] = React.useState<"connected" | "disconnected" | "reconnecting">("connected");
+  const [failureCount, setFailureCount] = React.useState(0);
+
   // Phase ABC7: Track effective date_key for this occurrence
   const [effectiveDateKey, setEffectiveDateKey] = React.useState<string | null>(null);
 
@@ -89,19 +95,22 @@ export default function EventDisplayPage() {
 
   // Fetch event data
   const fetchData = React.useCallback(async () => {
-    // Fetch event info with recurrence fields for date_key computation
-    const { data: eventData } = await supabase
-      .from("events")
-      .select("id, title, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
-      .eq("id", eventId)
-      .single();
+    try {
+      // Fetch event info with recurrence fields for date_key computation
+      const { data: eventData, error: eventError } = await supabase
+        .from("events")
+        .select("id, title, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
+        .eq("id", eventId)
+        .single();
 
-    if (!eventData) {
-      setLoading(false);
-      return;
-    }
+      if (eventError) throw eventError;
 
-    setEvent(eventData);
+      if (!eventData) {
+        setLoading(false);
+        return;
+      }
+
+      setEvent(eventData);
 
     // Phase ABC7: Compute effective date_key for this occurrence
     let dateKey: string;
@@ -133,16 +142,18 @@ export default function EventDisplayPage() {
     setEffectiveDateKey(dateKey);
 
     // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
-    const { data: slots } = await supabase
+    const { data: slots, error: slotsError } = await supabase
       .from("event_timeslots")
       .select("id, slot_index, start_offset_minutes, duration_minutes")
       .eq("event_id", eventId)
       .eq("date_key", dateKey)
       .order("slot_index", { ascending: true });
 
+    if (slotsError) throw slotsError;
+
     if (slots && slots.length > 0) {
       const slotIds = slots.map((s: { id: string }) => s.id);
-      const { data: claims } = await supabase
+      const { data: claims, error: claimsError } = await supabase
         .from("timeslot_claims")
         .select(`
           id, timeslot_id, status,
@@ -150,6 +161,8 @@ export default function EventDisplayPage() {
         `)
         .in("timeslot_id", slotIds)
         .in("status", ["confirmed", "performed"]);
+
+      if (claimsError) throw claimsError;
 
       type ClaimRow = {
         id: string;
@@ -202,12 +215,14 @@ export default function EventDisplayPage() {
     }
 
     // Phase ABC7: Fetch lineup state filtered by (event_id, date_key)
-    const { data: state } = await supabase
+    const { data: state, error: stateError } = await supabase
       .from("event_lineup_state")
       .select("now_playing_timeslot_id, updated_at")
       .eq("event_id", eventId)
       .eq("date_key", dateKey)
       .maybeSingle();
+
+    if (stateError) throw stateError;
 
     if (state) {
       setLineupState(state);
@@ -215,8 +230,23 @@ export default function EventDisplayPage() {
       setLineupState(null);
     }
 
+    // Phase 4.99: Update connection health
+    setLastUpdated(new Date());
+    setFailureCount(0);
+    setConnectionStatus("connected");
     setLoading(false);
-  }, [eventId, supabase, urlDate]);
+    } catch (error) {
+      console.error("Failed to fetch display data:", error);
+      // Phase 4.99: Track failures for connection health
+      setFailureCount(prev => prev + 1);
+      if (failureCount >= 2) {
+        setConnectionStatus("disconnected");
+      } else {
+        setConnectionStatus("reconnecting");
+      }
+      setLoading(false);
+    }
+  }, [eventId, supabase, urlDate, failureCount]);
 
   // Initial fetch and auto-refresh every 5 seconds
   React.useEffect(() => {
@@ -248,6 +278,13 @@ export default function EventDisplayPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-8 overflow-hidden">
+      {/* Phase 4.99: Subtle connection status for TV display */}
+      <LineupStateBanner
+        lastUpdated={lastUpdated}
+        connectionStatus={connectionStatus}
+        variant="subtle"
+      />
+
       {/* Header */}
       <header className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
         <div className="flex items-center gap-6">

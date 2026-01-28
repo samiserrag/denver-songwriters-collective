@@ -10,8 +10,9 @@ import PublishButton from "./_components/PublishButton";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
-import { computeNextOccurrence } from "@/lib/events/nextOccurrence";
+import { computeNextOccurrence, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import EventInviteSection from "./_components/EventInviteSection";
+import LineupControlSection from "./_components/LineupControlSection";
 
 export const dynamic = "force-dynamic";
 
@@ -142,6 +143,28 @@ export default async function EditEventPage({
   });
   const nextOccurrenceDate = nextOccurrence.isConfident ? nextOccurrence.date : null;
 
+  // Phase 4.99: Compute available dates for recurring events (for lineup control)
+  const availableDates: string[] = [];
+  if (event.is_recurring) {
+    const occurrences = expandOccurrencesForEvent({
+      event_date: event.event_date,
+      day_of_week: event.day_of_week,
+      recurrence_rule: event.recurrence_rule,
+      custom_dates: event.custom_dates,
+      max_occurrences: event.max_occurrences,
+    });
+    occurrences.forEach(occ => availableDates.push(occ.dateKey));
+  } else if (event.event_date) {
+    availableDates.push(event.event_date);
+  }
+
+  // Phase 4.99: Check if event has timeslots configured
+  const { count: timeslotCount } = await supabase
+    .from("event_timeslots")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId);
+  const hasTimeslots = (timeslotCount ?? 0) > 0 || event.has_timeslots;
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
@@ -260,6 +283,17 @@ export default async function EditEventPage({
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Phase 4.99: Lineup Control Section - visible to hosts/cohosts/admins */}
+            {hasTimeslots && (
+              <LineupControlSection
+                eventId={eventId}
+                eventSlug={event.slug}
+                isRecurring={event.is_recurring ?? false}
+                availableDates={availableDates}
+                nextOccurrenceDate={nextOccurrenceDate}
+              />
+            )}
+
             {/* RSVP Summary */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Attendees</h2>

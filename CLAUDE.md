@@ -524,6 +524,56 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### TV Display Manager UX Hardening (Phase 4.99, January 2026) — RESOLVED
+
+**Goal:** Launch-blocking UX hardening for TV Display + Lineup Control to make these features "discoverable, safe, reliable, and stress-proof for hosts running a live event."
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2818, build success).
+
+**Checked against DSC UX Principles:** §3 (Rolling Windows), §6 (Anchored Navigation), §7 (UX Friction), §8 (Dead States)
+
+**Work Items Completed:**
+
+| Work Item | Description |
+|-----------|-------------|
+| A1-A2 | Added `LineupControlSection` to `/dashboard/my-events/[id]` with date selector |
+| B3-B4 | `LineupDatePicker` modal for recurring events — no silent date defaulting |
+| C5-C6 | TV Display link opens in new tab + copyable display URL field |
+| D7-D8 | `LineupStateBanner` showing connection health + "Last updated" timestamp |
+| E9-E10 | Confirmation dialogs for "Stop Event" and "Reset Lineup" actions |
+| F11 | Security fix: Co-host authorization requires `invitation_status='accepted'` |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `hooks/useLineupPolling.ts` | Shared polling hook |
+| `components/events/LineupStateBanner.tsx` | Connection health banner |
+| `components/events/LineupDatePicker.tsx` | Date selection modal for recurring events |
+| `components/ui/ConfirmDialog.tsx` | Generic confirmation dialog component |
+| `dashboard/my-events/[id]/_components/LineupControlSection.tsx` | Dashboard lineup entry point |
+| `__tests__/phase4-99-tv-display-manager.test.ts` | 51 tests covering all work items |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/lineup/page.tsx` | Date picker integration, confirmation dialogs, connection health, security fix |
+| `app/events/[id]/display/page.tsx` | Connection health banner (subtle variant) |
+| `dashboard/my-events/[id]/page.tsx` | LineupControlSection integration |
+
+**Key Features:**
+
+- **Dashboard Entry Point:** Hosts can now access lineup control directly from `/dashboard/my-events/[id]` without navigating to the public event page
+- **No Silent Defaults:** Recurring events with multiple upcoming dates require explicit date selection before controlling lineup
+- **Connection Health:** Both control and display pages show real-time connection status with "Last updated" timestamps
+- **Confirmation Dialogs:** Destructive actions (Stop Event, Reset Lineup) require explicit confirmation
+- **Security:** Pending/rejected co-hosts can no longer access lineup control
+
+**Investigation Doc:** `docs/investigation/phase4-99-tv-display-manager-stopgate.md`
+
+---
+
 ### Host/Cohost Equality + Safe Guardrails (Phase 4.98, January 2026) — RESOLVED
 
 **Goal:** Implement host/cohost equality where cohosts are equal partners operationally, with safe guardrails to prevent accidental orphaning of events.
