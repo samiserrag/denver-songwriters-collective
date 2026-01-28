@@ -524,6 +524,51 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Host/Cohost Equality + Safe Guardrails (Phase 4.98, January 2026) — RESOLVED
+
+**Goal:** Implement host/cohost equality where cohosts are equal partners operationally, with safe guardrails to prevent accidental orphaning of events.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2767, build success).
+
+**North-Star Rules Implemented:**
+1. Cohosts have full operational control — Can invite others, edit event, leave anytime
+2. Single exception — Cohost cannot remove primary host; Primary host can remove cohost
+3. Auto-promotion — If primary host leaves, oldest remaining host is auto-promoted
+4. No silent failures — Forbidden actions show clear UI messages
+5. Admin safety net — Copy communicates admins can repair issues
+
+**Work Items Completed:**
+
+| Work Item | Description |
+|-----------|-------------|
+| A | Remove button only visible to primary hosts; API errors displayed inline |
+| B | Auto-promotion when primary host leaves (oldest remaining host promoted, notification sent) |
+| C | Cohosts can invite others (equal partners operationally) |
+| D | Claim approval/rejection now sends notifications to claimant |
+| E | Permissions help block added showing what each role can do |
+| F | Leave button shows auto-promotion message for non-sole primary hosts |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase4-98-host-cohost-equality.test.ts` | 45 tests covering all work items |
+| `docs/investigation/phase4-98-host-cohost-equality-report.md` | Final report |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `cohosts/route.ts` | Removed role="host" constraint from POST, added auto-promotion logic in DELETE, notification to promoted user |
+| `CoHostManager.tsx` | Remove button visibility fix, error handling, permissions help block, Leave button for all hosts |
+| `my-events/[id]/page.tsx` | Full CoHostManager for all hosts (removed read-only list for cohosts) |
+| `ClaimsTable.tsx` | Added approval/rejection notifications |
+| `LeaveEventButton.tsx` | Added auto-promotion message for non-sole primary hosts |
+
+**Checked against DSC UX Principles:** §7 (UX Friction), §8 (Dead States), §10 (Defaults), §11 (Soft Constraints)
+
+---
+
 ### "Why Host on DSC?" Public Page (Phase 4.96, January 2026) — RESOLVED
 
 **Goal:** Create a public marketing page explaining hosting benefits and update invite-related UX to reference it.
@@ -5842,6 +5887,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/notification-interactions.test.ts` | Notification controls: mark-on-click, mark-all, hide-read, deep-links (21 tests) |
 | `__tests__/venue-page-fixes.test.ts` | Venue page count filters + de-duplication logic (17 tests) |
 | `__tests__/edit-form-series-controls.test.ts` | Edit form ordinal parsing, recurrence rebuild, series mode detection, max_occurrences (59 tests) |
+| `__tests__/phase4-98-host-cohost-equality.test.ts` | Host/cohost equality, auto-promotion, claim notifications (45 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
