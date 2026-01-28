@@ -524,6 +524,97 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### "Why Host on DSC?" Public Page (Phase 4.96, January 2026) — RESOLVED
+
+**Goal:** Create a public marketing page explaining hosting benefits and update invite-related UX to reference it.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2737, build success).
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `app/host/page.tsx` | Public "Why Host on DSC?" page |
+| `docs/investigation/phase4-96-host-page-stopgate.md` | STOP-GATE investigation |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/event-invite/page.tsx` | Added "Learn more about hosting on DSC" link |
+| `app/venue-invite/page.tsx` | Added "Learn more about hosting on DSC" link |
+| `dashboard/my-events/[id]/_components/EventInviteSection.tsx` | Email template includes host page URL |
+
+**Page Sections:**
+
+| Section | Content |
+|---------|---------|
+| Hero | "Host on DSC" headline with signup/browse CTAs |
+| What You Get | 3 benefit cards (Manage Lineup, Track Attendance, Reach Musicians) |
+| Two Ways to Host | Cards for "Create Your Own" vs "Claim Existing" |
+| Lineup Display | Description of TV/projector display feature |
+| FAQ | 5 common questions (cost, co-hosts, cancellations, etc.) |
+| Call to Action | Signup + Browse Happenings buttons |
+
+**Invite Page Updates:**
+
+- Added "Learn more about hosting on DSC" link in the "requires login" state
+- Link appears below the login/signup buttons
+- Uses subtle tertiary text styling with underline hover
+
+**Email Template Update:**
+
+- EventInviteSection email template now includes: "New to hosting? Learn what to expect: {host_url}"
+- URL derived from `window.location.origin` for client-side compatibility
+
+---
+
+### Event Invite Redirect Preservation (Phase 4.95, January 2026) — RESOLVED
+
+**Goal:** Preserve invite token through login AND signup + onboarding flows, auto-continue invite acceptance after auth completes.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2737, build success).
+
+**Problem:** Invite token was lost when users needed to log in or sign up before accepting an invite. The redirect URL was dropped during onboarding.
+
+**Solution:** localStorage-based redirect preservation with 1-hour expiry:
+1. Invite pages store return URL in localStorage before redirecting to login/signup
+2. Login page checks for pending redirect
+3. Onboarding completion checks for pending redirect
+4. Redirect is consumed (removed) when used
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/auth/pendingRedirect.ts` | localStorage helpers for redirect preservation |
+| `docs/investigation/phase4-95-event-invite-redirect.md` | STOP-GATE investigation |
+| `__tests__/phase4-95-event-invite-redirect.test.ts` | 16 tests |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/event-invite/page.tsx` | Added `requiresLogin` state, improved messaging, store pending redirect |
+| `app/venue-invite/page.tsx` | Same updates for consistency |
+| `app/login/page.tsx` | Consumes pending redirect |
+| `app/onboarding/profile/page.tsx` | Consumes pending redirect on completion |
+
+**Helper Functions (`lib/auth/pendingRedirect.ts`):**
+
+| Function | Purpose |
+|----------|---------|
+| `setPendingRedirect(url)` | Store URL with timestamp |
+| `consumePendingRedirect()` | Get and remove URL (returns null if expired) |
+| `hasPendingRedirect()` | Non-destructive check |
+| `clearPendingRedirect()` | Force clear |
+
+**Expiry:** 1 hour (sufficient for signup + onboarding flow)
+
+**Test Coverage:** 16 new tests covering storage, consumption, expiry, and integration flows.
+
+---
+
 ### Event Invites v1 (Phase 4.94, January 2026) — RESOLVED
 
 **Goal:** Token-based invite system for event ownership, allowing admins and primary hosts to invite users to become hosts or co-hosts of events.

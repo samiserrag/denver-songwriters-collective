@@ -144,12 +144,19 @@ export default function EventInviteSection({
       day: "numeric",
     });
 
+    const hostPageUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/host`
+        : "https://denversongwriterscollective.org/host";
+
     return `You've been invited to help host "${eventTitle}" on Denver Songwriters Collective!
 
 Click this link to accept:
 ${url}
 
-This invite expires on ${expiryDate}.`;
+This invite expires on ${expiryDate}.
+
+New to hosting? Learn what to expect: ${hostPageUrl}`;
   };
 
   // Status chip styling

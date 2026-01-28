@@ -177,11 +177,19 @@ function VenueInviteContent() {
           <p className="text-[var(--color-text-secondary)] mb-2">
             Someone invited you to help manage a venue on the Denver Songwriters Collective.
           </p>
-          <p className="text-[var(--color-text-secondary)] mb-6">
+          <p className="text-[var(--color-text-secondary)] mb-4">
             Please log in or sign up (free) to accept this invite.{" "}
             <span className="text-[var(--color-text-accent)]">
               We&apos;ll bring you right back here.
             </span>
+          </p>
+          <p className="text-sm text-[var(--color-text-tertiary)] mb-6">
+            <Link
+              href="/host"
+              className="underline hover:text-[var(--color-text-secondary)]"
+            >
+              Learn more about hosting on DSC
+            </Link>
           </p>
           <div className="flex flex-col gap-3">
             <button

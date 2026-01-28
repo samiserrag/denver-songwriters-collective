@@ -5,7 +5,7 @@
  * that require login or signup.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock localStorage
 const localStorageMock = (() => {
