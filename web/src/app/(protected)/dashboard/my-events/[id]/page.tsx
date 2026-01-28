@@ -11,6 +11,8 @@ import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
 import { LeaveEventButton } from "@/components/events/LeaveEventButton";
+import { computeNextOccurrence } from "@/lib/events/nextOccurrence";
+import EventInviteSection from "./_components/EventInviteSection";
 
 export const dynamic = "force-dynamic";
 
@@ -131,13 +133,24 @@ export default async function EditEventPage({
     seriesSiblings = siblings ?? [];
   }
 
+  // Phase 4.86: Compute next occurrence date for "View Public Page" link anchoring
+  const nextOccurrence = computeNextOccurrence({
+    event_date: event.event_date,
+    recurrence_rule: event.recurrence_rule,
+    day_of_week: event.day_of_week,
+    custom_dates: event.custom_dates,
+    max_occurrences: event.max_occurrences,
+  });
+  const nextOccurrenceDate = nextOccurrence.isConfident ? nextOccurrence.date : null;
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
         {/* Success Banner for newly created events */}
         {/* Phase 4.73: Use event.is_published for current state, not stale URL params */}
+        {/* Phase 4.86: Pass nextOccurrenceDate for date-anchored public page links */}
         {created === "true" && (
-          <CreatedSuccessBanner isDraft={!event.is_published} eventId={eventId} eventSlug={event.slug} />
+          <CreatedSuccessBanner isDraft={!event.is_published} eventId={eventId} eventSlug={event.slug} nextOccurrenceDate={nextOccurrenceDate} />
         )}
 
         {/* Header */}
@@ -181,10 +194,11 @@ export default async function EditEventPage({
             />
 
             {/* Phase 4.44c: Preview/View links based on event state */}
+            {/* Phase 4.86: Include ?date= param for occurrence-specific navigation */}
             {event.status === "active" && (
               event.is_published ? (
                 <Link
-                  href={`/events/${event.slug || eventId}`}
+                  href={`/events/${event.slug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
                   className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
                   target="_blank"
                 >
@@ -192,7 +206,7 @@ export default async function EditEventPage({
                 </Link>
               ) : (
                 <Link
-                  href={`/events/${event.slug || eventId}`}
+                  href={`/events/${event.slug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
                   className="px-3 py-1 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm rounded border border-[var(--color-border-default)]"
                   target="_blank"
                   title="Preview how this event will appear when published (only visible to you)"
@@ -281,6 +295,11 @@ export default async function EditEventPage({
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Attendees</h2>
               <RSVPList eventId={eventId} capacity={event.capacity} />
             </section>
+
+            {/* Invite Links - Phase 4.94: Only visible to admins and primary hosts */}
+            {(isAdmin || isEventOwner) && (
+              <EventInviteSection eventId={eventId} eventTitle={event.title} />
+            )}
 
             {/* Danger Zone */}
             {isPrimaryHost && event.status === "active" && (

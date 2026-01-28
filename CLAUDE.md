@@ -524,6 +524,92 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Event Invites v1 (Phase 4.94, January 2026) — RESOLVED
+
+**Goal:** Token-based invite system for event ownership, allowing admins and primary hosts to invite users to become hosts or co-hosts of events.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 48 new, build success).
+
+**Checked against DSC UX Principles:** §8 (Dead States), §11 (Soft Constraints)
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260127000000_event_invites.sql` | Creates `event_invites` table with token-based invite system |
+
+**Schema:**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | UUID | Primary key |
+| `event_id` | UUID | FK to events |
+| `token_hash` | TEXT | SHA-256 hash of invite token |
+| `email_restriction` | TEXT | Optional email restriction |
+| `role_to_grant` | TEXT | `'host'` or `'cohost'` |
+| `expires_at` | TIMESTAMPTZ | Invite expiry |
+| `accepted_at` | TIMESTAMPTZ | When accepted |
+| `revoked_at` | TIMESTAMPTZ | When revoked |
+
+**API Routes:**
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/my-events/[id]/invite` | POST | Create invite (admin/primary host) |
+| `/api/my-events/[id]/invite` | GET | List invites (admin/primary host) |
+| `/api/my-events/[id]/invite/[inviteId]` | DELETE | Revoke invite (admin/primary host) |
+| `/api/event-invites/accept` | POST | Accept invite (authenticated user) |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260127000000_event_invites.sql` | Migration |
+| `app/api/my-events/[id]/invite/route.ts` | Create + list API |
+| `app/api/my-events/[id]/invite/[inviteId]/route.ts` | Revoke API |
+| `app/api/event-invites/accept/route.ts` | Accept API |
+| `app/event-invite/page.tsx` | Acceptance landing page |
+| `dashboard/my-events/[id]/_components/EventInviteSection.tsx` | Dashboard UI |
+| `__tests__/event-invites-v1.test.ts` | 48 tests |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/[id]/page.tsx` | Added EventInviteSection for admin/primary host |
+
+**Key Design Decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| Token stored as SHA-256 hash | Security - plaintext shown once on create |
+| Service role client for accept | Bypasses RLS for token lookup |
+| `role_to_grant='host'` only if `events.host_id IS NULL` | No ownership transfers in v1 |
+| Email restriction validated in API | Avoids RLS auth.users permission issues |
+| Acceptance survives login redirect | Token preserved in URL during auth flow |
+
+**Authorization Matrix:**
+
+| Action | Admin | Primary Host | Co-host | Member |
+|--------|-------|--------------|---------|--------|
+| Create invite | ✅ | ✅ | ❌ | ❌ |
+| List invites | ✅ | ✅ | ❌ | ❌ |
+| Revoke invite | ✅ | ✅ | ❌ | ❌ |
+| Accept invite | ✅ | ✅ | ✅ | ✅ |
+
+**Invite Status States:**
+
+| State | Condition |
+|-------|-----------|
+| `pending` | Not accepted, not revoked, not expired |
+| `accepted` | `accepted_at IS NOT NULL` |
+| `revoked` | `revoked_at IS NOT NULL` |
+| `expired` | `expires_at < NOW()` |
+
+**Test Coverage:** 48 new tests covering schema, status computation, authorization, acceptance flow, URL patterns, and notifications.
+
+---
+
 ### DSC UX Principles Document (January 2026) — ADDED
 
 **Goal:** Establish a living reference document for UX decisions and system design principles.
