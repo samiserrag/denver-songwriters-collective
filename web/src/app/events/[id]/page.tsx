@@ -1042,8 +1042,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               )}
 
               {/* Venue - Phase ABC4: Link to internal venue page using slug when available */}
+              {/* Phase 5.07: Map action buttons inline with venue name */}
               {venueName && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[var(--color-text-accent)]">📍</span>
                   {(overrideVenueId || event.venue_id) && !isCustomLocation ? (
                     <Link
@@ -1057,6 +1058,40 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                       name={venueName}
                       venue={isCustomLocation ? null : { google_maps_url: venueGoogleMapsUrl, website_url: venueWebsiteUrl }}
                     />
+                  )}
+                  {/* Phase 5.07: Compact map buttons inline */}
+                  {(directionsUrl || viewOnMapsUrl) && (
+                    <div data-testid="venue-map-buttons" className="flex items-center gap-1.5 ml-1">
+                      {directionsUrl && (
+                        <a
+                          href={directionsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-secondary)] text-xs font-medium transition-colors"
+                          title="Get Directions"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Directions
+                        </a>
+                      )}
+                      {viewOnMapsUrl && (
+                        <a
+                          href={viewOnMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-secondary)] text-xs font-medium transition-colors"
+                          title="View Venue Page on Google Maps"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Venue Page
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -1089,39 +1124,6 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               <p className="mt-1 text-[var(--color-text-secondary)] text-sm pl-6 italic">
                 {event.location_notes}
               </p>
-            )}
-
-            {/* Phase 5.07: Map action buttons under venue block */}
-            {(directionsUrl || viewOnMapsUrl) && (
-              <div data-testid="venue-map-buttons" className="flex flex-wrap gap-2 mt-3 pl-6">
-                {directionsUrl && (
-                  <a
-                    href={directionsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] text-sm font-medium transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Get Directions
-                  </a>
-                )}
-                {viewOnMapsUrl && (
-                  <a
-                    href={viewOnMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] text-sm font-medium transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    Venue Page
-                  </a>
-                )}
-              </div>
             )}
 
             {/* Phase 4.x: Cost/Admission info */}
