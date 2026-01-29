@@ -31,6 +31,7 @@ import {
   addDaysDenver,
 } from "@/lib/events/nextOccurrence";
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
+import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -129,55 +130,6 @@ export async function generateMetadata({
       canonical: canonicalUrl,
     },
   };
-}
-
-/**
- * Phase 4.53: Validate HTTP/HTTPS URLs for Get Directions
- * Only accepts http:// or https:// URLs
- */
-function isValidHttpUrl(url: string | null | undefined): boolean {
-  if (!url) return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Phase 4.0/4.53/4.60: Generate Google Maps URL
- * Priority: venue.google_maps_url > lat/lng > venue name + address search > address search > null
- * Phase 4.60: Include venue name in fallback search to find the actual place, not just the building
- */
-function getGoogleMapsUrl(
-  address: string | null,
-  latitude?: number | null,
-  longitude?: number | null,
-  venueGoogleMapsUrl?: string | null,
-  venueName?: string | null
-): string | null {
-  // Priority 1: venue's google_maps_url if valid
-  if (isValidHttpUrl(venueGoogleMapsUrl)) {
-    return venueGoogleMapsUrl!;
-  }
-  // Priority 2: lat/lng if available (precise for custom locations)
-  if (latitude && longitude) {
-    return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-  }
-  // Priority 3: venue name + address search (finds the actual place, not just the building)
-  if (venueName && address) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venueName} ${address}`)}`;
-  }
-  // Priority 4: address-only search (fallback when no venue name)
-  if (address) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-  }
-  // Priority 5: name-only search (fallback when no address)
-  if (venueName) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueName)}`;
-  }
-  return null;
 }
 
 /**
@@ -341,9 +293,12 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   let isCustomLocation = false;
   // Phase 4.52: Venue URLs for VenueLink
   // Phase ABC4: Venue slug for internal links
+  // Phase 5.06: Track city/state for directions URL
   let venueGoogleMapsUrl: string | null = null;
   let venueWebsiteUrl: string | null = null;
   let venueSlug: string | null = null;
+  let venueCity: string | null = null;
+  let venueState: string | null = null;
 
   // Fetch venue details if we have a venue_id but missing name OR address
   // Phase 4.52: Also fetch google_maps_url and website_url for venue links
@@ -368,18 +323,24 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       venueWebsiteUrl = venue.website_url;
       // Phase ABC4: Store venue slug
       venueSlug = venue.slug;
+      // Phase 5.06: Store city/state for directions URL
+      venueCity = venue.city;
+      venueState = venue.state;
     }
   } else if (event.venue_id) {
     // We have name and address but still need URLs for venue links
+    // Phase 5.06: Also fetch city/state for directions URL
     const { data: venue } = await supabase
       .from("venues")
-      .select("google_maps_url, website_url, slug")
+      .select("google_maps_url, website_url, slug, city, state")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
       venueGoogleMapsUrl = venue.google_maps_url;
       venueWebsiteUrl = venue.website_url;
       venueSlug = venue.slug;
+      venueCity = venue.city;
+      venueState = venue.state;
     }
   }
 
@@ -394,6 +355,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       event.custom_state
     ].filter(Boolean);
     locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+    // Phase 5.06: Custom locations use custom_city/custom_state
+    venueCity = event.custom_city;
+    venueState = event.custom_state;
   }
 
   // Keep legacy variable names for compatibility with rest of file
@@ -514,6 +478,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       venueGoogleMapsUrl = overrideVenue.google_maps_url;
       venueWebsiteUrl = overrideVenue.website_url;
       venueSlug = overrideVenue.slug;
+      // Phase 5.06: Store city/state for directions URL
+      venueCity = overrideVenue.city;
+      venueState = overrideVenue.state;
       isCustomLocation = false;
     }
   } else if (patch?.custom_location_name) {
@@ -528,6 +495,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     venueGoogleMapsUrl = null;
     venueWebsiteUrl = null;
     venueSlug = null;
+    // Phase 5.06: Custom locations use custom_city/custom_state
+    venueCity = (patch.custom_city as string) || null;
+    venueState = (patch.custom_state as string) || null;
     isCustomLocation = true;
   }
 
@@ -689,15 +659,29 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   const signupLaneExists = hasSignupLane(event, timeslotCount);
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
-  // Phase 4.0/4.53/4.60: Pass venueGoogleMapsUrl as first priority, then lat/lng for custom locations
-  // Phase 4.60: Pass venueName to improve fallback search (finds actual place, not just building)
-  const mapsUrl = getGoogleMapsUrl(
-    venueAddress,
-    isCustomLocation ? event.custom_latitude : null,
-    isCustomLocation ? event.custom_longitude : null,
-    isCustomLocation ? null : venueGoogleMapsUrl,
-    isCustomLocation ? event.custom_location_name : venueName
-  );
+
+  // Phase 5.06: Use getVenueDirectionsUrl for "Get Directions" button (returns /maps/dir/ format)
+  // For custom locations, use lat/lng or name+address fallback
+  const directionsUrl = isCustomLocation
+    ? (event.custom_latitude && event.custom_longitude
+        ? `https://www.google.com/maps/dir/?api=1&destination=${event.custom_latitude},${event.custom_longitude}`
+        : getVenueDirectionsUrl({
+            name: event.custom_location_name,
+            address: event.custom_address,
+            city: event.custom_city,
+            state: event.custom_state,
+          }))
+    : getVenueDirectionsUrl({
+        name: venueName,
+        address: venueAddress?.split(",")[0] || null, // Extract just street address
+        city: venueCity,
+        state: venueState,
+      });
+
+  // Phase 4.65: venueGoogleMapsUrl is for "View on Maps" button (place page with reviews, hours)
+  // Only show when a venue has an explicit google_maps_url set
+  const viewOnMapsUrl = venueGoogleMapsUrl;
+
   const remaining = event.capacity ? Math.max(0, event.capacity - attendanceCount) : null;
 
   // Format recurrence pattern for display (available for future use)
@@ -1281,9 +1265,10 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 endDate={calendarEndDate || undefined}
               />
             )}
-            {mapsUrl && (
+            {/* Phase 5.06: "Get Directions" uses directionsUrl (/maps/dir/ format) */}
+            {directionsUrl && (
               <a
-                href={mapsUrl}
+                href={directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] font-medium transition-colors"
@@ -1293,6 +1278,20 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 Get Directions
+              </a>
+            )}
+            {/* Phase 5.06: "View on Maps" uses venue's google_maps_url (place page with reviews, hours) */}
+            {viewOnMapsUrl && viewOnMapsUrl !== directionsUrl && (
+              <a
+                href={viewOnMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] text-[var(--color-text-primary)] font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                View on Maps
               </a>
             )}
           </div>

@@ -133,11 +133,12 @@ export default async function HappeningsPage({
   // Build base query with venue join for search
   // Phase 4.52: Include google_maps_url and website_url for venue links
   // Phase ABC4: Include slug for venue internal links
+  // Phase 5.06: Alias 'venues' to 'venue' so components can read event.venue.city/state
   let query = supabase
     .from("events")
     .select(`
       *,
-      venues!left(id, slug, name, address, city, state, google_maps_url, website_url)
+      venue:venues!left(id, slug, name, address, city, state, google_maps_url, website_url)
     `)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification", "unverified"]);
@@ -258,6 +259,8 @@ export default async function HappeningsPage({
     console.error("Error fetching happenings:", error);
   }
 
+  // Cast to any[] because Supabase query result type doesn't include the joined 'venue' relation.
+  // Removing this would require cascading type definitions for the joined result shape.
   let list = (events || []) as any[];
 
   // Client-side search filtering (case-insensitive across multiple fields)
@@ -335,6 +338,7 @@ export default async function HappeningsPage({
     unknownEvents,
     metrics: expansionMetrics,
   } = expandAndGroupEvents(
+    // Same any[] cast as above — Supabase types don't include joined relations
     list as any[],
     {
       startKey: windowStart,

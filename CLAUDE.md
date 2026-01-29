@@ -189,7 +189,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 4.83):** Lint warnings = 0. All tests passing (2528). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 5.06):** Lint warnings = 0. All tests passing (2908). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -521,6 +521,69 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### UX Polish — City/State, Monthly Edit, Event Detail (Phase 5.06, January 2026) — RESOLVED
+
+**Goal:** Fix three UX issues: A) City/state not showing on happenings cards, B) Monthly series edit missing day-of-week change, C) Event detail "Get Directions" using wrong URL format.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2908, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction), §8 (Dead States), §14 (Confusing = Wrong)
+
+**Goal A: City/State Visibility**
+
+**Root Cause:** PostgREST query returned venue data at `event.venues` (plural) but components expected `event.venue` (singular).
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Changed `venues!left(...)` to `venue:venues!left(...)` PostgREST alias |
+| `components/happenings/HappeningsCard.tsx` | Added `city` and `state` to `overrideVenueData` type |
+
+**Decision:** Kept `as any[]` casts with explanatory comments. Removing them would require cascading type definitions.
+
+**Goal B: Monthly Edit Day-of-Week**
+
+**Root Cause:** Edit mode for monthly series had no way to change the anchor date and derive a new `day_of_week`.
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Added "Anchor Date (First Event)" field to edit mode monthly section |
+
+**Features:**
+- Date picker initialized with `event.event_date`
+- Shows derived weekday via `DateDayIndicator`
+- Persistent amber warning when `day_of_week` changes: "This series will move to {day}s"
+- Warning explains impact on future occurrences
+
+**Goal C: Directions URL**
+
+**Root Cause:** Event detail page used `getGoogleMapsUrl()` (search/place format) instead of `getVenueDirectionsUrl()` (directions format).
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | Import `getVenueDirectionsUrl`, track `venueCity`/`venueState`, separate `directionsUrl` and `viewOnMapsUrl` |
+
+**Changes:**
+- "Get Directions" uses `getVenueDirectionsUrl()` — opens in directions mode
+- "View on Maps" uses `google_maps_url` when available — opens place page
+- Removed unused `getGoogleMapsUrl` function
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase5-06-ux-polish.test.ts` | 26 tests covering all goals |
+
+**Test Coverage:** 26 new tests (2908 total).
+
+**Smoke Checklist:**
+1. `/happenings` — Verify city/state shows after venue name on cards
+2. `/dashboard/my-events/[monthly-id]` — Change anchor date, verify warning banner
+3. `/events/[id]` — Click "Get Directions", verify opens in directions mode (not search)
+
+**Investigation Doc:** `docs/investigation/phase5-06-ux-polish-stopgate.md`
 
 ---
 

@@ -32,6 +32,8 @@ type Props = {
     slug?: string | null;
     google_maps_url?: string | null;
     website_url?: string | null;
+    city?: string | null;
+    state?: string | null;
   } | null;
 };
 

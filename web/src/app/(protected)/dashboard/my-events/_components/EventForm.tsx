@@ -166,6 +166,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [isVerified, setIsVerified] = useState(!!event?.last_verified_at);
   const wasVerified = !!event?.last_verified_at;
 
+  // Phase 5.06: Track original day_of_week for edit mode monthly series warning
+  // This is used to show a persistent warning when the user changes the anchor date
+  const originalDayOfWeek = event?.day_of_week || null;
+
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
@@ -1000,6 +1004,40 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   </p>
                 </div>
               )}
+
+              {/* Phase 5.06: First Event Date for monthly series in edit mode */}
+              <div className="mt-4 pt-4 border-t border-[var(--color-border-default)]">
+                <label className="block text-sm font-medium mb-2">
+                  <span className="text-[var(--color-text-secondary)]">Anchor Date (First Event)</span>
+                  <DateDayIndicator dateValue={formData.start_date || event?.event_date || ""} />
+                </label>
+                <input
+                  type="date"
+                  value={formData.start_date || event?.event_date || ""}
+                  onChange={(e) => {
+                    updateField("start_date", e.target.value);
+                    if (e.target.value) {
+                      updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  Changing this date will shift the series to a different day of the week.
+                </p>
+
+                {/* Phase 5.06: Persistent warning when day_of_week changes */}
+                {formData.day_of_week && originalDayOfWeek && formData.day_of_week !== originalDayOfWeek && (
+                  <div className="mt-3 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                      ⚠️ This series will move to <span className="font-bold">{formData.day_of_week}s</span>
+                    </p>
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                      All future occurrences will shift from {originalDayOfWeek}s to {formData.day_of_week}s. Past RSVPs and overrides will remain attached to their original dates.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
