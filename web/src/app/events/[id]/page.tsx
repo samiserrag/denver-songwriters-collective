@@ -1115,22 +1115,35 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                     </p>
                   )}
 
-                  {/* Line 3: Hosted by (inline with host links) */}
+                  {/* Line 3: Hosted by (avatar cards) */}
                   {hosts.length > 0 && (
-                    <div className="flex items-center gap-1 flex-wrap pl-6 text-sm">
-                      <span className="text-[var(--color-text-secondary)]">Hosted by</span>
-                      {hosts.map((host, index) => host && (
-                        <span key={host.id}>
-                          <Link
-                            href={`/songwriters/${host.slug || host.id}`}
-                            className="text-[var(--color-link)] hover:underline font-medium"
-                          >
-                            {host.full_name || "Anonymous Host"}
-                          </Link>
-                          {index < hosts.length - 1 && (
-                            <span className="text-[var(--color-text-secondary)]">,</span>
+                    <div className="flex items-center gap-2 flex-wrap pl-6 mt-1">
+                      <span className="text-[var(--color-text-secondary)] text-sm">Hosted by</span>
+                      {hosts.map((host) => host && (
+                        <Link
+                          key={host.id}
+                          href={`/songwriters/${host.slug || host.id}`}
+                          className="flex items-center gap-2 px-2 py-1 rounded-lg bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border-default)] hover:border-[var(--color-border-accent)] transition-colors"
+                        >
+                          {host.avatar_url ? (
+                            <Image
+                              src={host.avatar_url}
+                              alt={host.full_name || "Host"}
+                              width={24}
+                              height={24}
+                              className="rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                              <span className="text-[var(--color-text-accent)] text-xs">
+                                {host.full_name?.[0] || "?"}
+                              </span>
+                            </div>
                           )}
-                        </span>
+                          <span className="text-[var(--color-text-primary)] text-sm font-medium">
+                            {host.full_name || "Anonymous Host"}
+                          </span>
+                        </Link>
                       ))}
                     </div>
                   )}

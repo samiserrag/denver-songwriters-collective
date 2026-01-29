@@ -204,48 +204,45 @@ describe("Phase 5.07: Button placement contract", () => {
     expect(expectedTestId).toBe("venue-map-buttons");
   });
 
-  it("should define button labels as 'Get Directions' and 'Venue Page'", () => {
+  it("should define button labels as 'Directions' and 'Venue Page on Google Maps'", () => {
     // Contract: Button text must match specification
-    const getDirectionsLabel = "Get Directions";
-    const venuePageLabel = "Venue Page";
+    const getDirectionsLabel = "Directions";
+    const venuePageLabel = "Venue Page on Google Maps";
 
     // These labels are hardcoded in page.tsx
-    expect(getDirectionsLabel).toBe("Get Directions");
-    expect(venuePageLabel).toBe("Venue Page");
-    // Note: Old label was "View on Maps", now renamed to "Venue Page"
+    expect(getDirectionsLabel).toBe("Directions");
+    expect(venuePageLabel).toBe("Venue Page on Google Maps");
+    // Note: "Venue Page on Google Maps" is more honest since venue name links to DSC venue page
   });
 
-  it("should place buttons after location_notes in DOM order", () => {
-    // Contract: In page.tsx, the venue-map-buttons div comes after:
-    // 1. Venue name/link (📍)
-    // 2. Address (if exists)
-    // 3. Location notes (if exists)
+  it("should place venue block in three-line layout", () => {
+    // Contract: In page.tsx, the venue block uses a three-line layout:
+    // Line 1: 📍 Venue Name (link to DSC venue page)
+    // Line 2: Address + Directions + "Venue Page on Google Maps" buttons
+    // Line 3: Location notes (if exists)
+    // Line 4: "Hosted by" with host avatar cards
     //
-    // And before:
-    // 4. Cost/Admission info (💵)
-    //
-    // This ordering is verified by the structure in page.tsx:
-    // - Lines 1044-1062: Venue name
-    // - Lines 1081-1085: Address
-    // - Lines 1087-1092: Location notes
-    // - Lines 1094+ (NEW): Map buttons container
-    // - Lines ~1120+: Cost info
+    // This is followed by:
+    // - Spots remaining (if applicable)
+    // - Cost/Admission info (💵)
 
     const expectedOrder = [
-      "venue-name",      // 📍 Venue
-      "venue-address",   // Address line
-      "location-notes",  // Italic notes
-      "venue-map-buttons", // NEW: Map action buttons
-      "cost-info",       // 💵 Cost
+      "venue-name",        // 📍 Venue (Line 1)
+      "venue-address",     // Address + map buttons (Line 2)
+      "venue-map-buttons", // Part of Line 2
+      "location-notes",    // Italic notes (Line 3)
+      "hosted-by",         // Host avatar cards (Line 4)
+      "spots-remaining",   // Spots left
+      "cost-info",         // 💵 Cost
     ];
 
-    // Verify the expected order includes venue-map-buttons after location-notes
+    // Verify venue-map-buttons comes before location-notes (same line as address)
     const mapButtonsIndex = expectedOrder.indexOf("venue-map-buttons");
-    const locationNotesIndex = expectedOrder.indexOf("location-notes");
-    const costInfoIndex = expectedOrder.indexOf("cost-info");
+    const addressIndex = expectedOrder.indexOf("venue-address");
+    const hostedByIndex = expectedOrder.indexOf("hosted-by");
 
-    expect(mapButtonsIndex).toBeGreaterThan(locationNotesIndex);
-    expect(mapButtonsIndex).toBeLessThan(costInfoIndex);
+    expect(mapButtonsIndex).toBeGreaterThan(addressIndex);
+    expect(hostedByIndex).toBeGreaterThan(mapButtonsIndex);
   });
 });
 
