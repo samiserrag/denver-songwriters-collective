@@ -1186,8 +1186,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 <p className="text-sm text-[var(--color-text-secondary)] mb-2">Upcoming dates:</p>
                 <div className="flex flex-wrap gap-2">
                   {upcomingOccurrences.slice(0, 5).map((occ) => {
-                    // Check if this occurrence is rescheduled
+                    // Check if this occurrence is rescheduled or cancelled
                     const occOverride = allOverrides.find((o) => o.date_key === occ.dateKey);
+                    const isCancelled = occOverride?.status === "cancelled";
                     const patch = occOverride?.override_patch;
                     const rescheduledDate = (patch as Record<string, unknown> | null)?.event_date as string | undefined;
                     const isRescheduled = !!(rescheduledDate && rescheduledDate !== occ.dateKey);
@@ -1208,13 +1209,16 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           isSelected
                             ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                            : isRescheduled
-                              ? "bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-300 dark:border-amber-500/30"
-                              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
+                            : isCancelled
+                              ? "bg-red-100/50 dark:bg-red-500/5 text-red-400 dark:text-red-500 border border-red-300 dark:border-red-500/30 line-through opacity-70"
+                              : isRescheduled
+                                ? "bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-300 dark:border-amber-500/30"
+                                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
                         }`}
-                        title={isRescheduled ? "Rescheduled" : undefined}
+                        title={isCancelled ? "Cancelled" : isRescheduled ? "Rescheduled" : undefined}
                       >
-                        {isRescheduled && <span className="mr-1">↻</span>}
+                        {isCancelled && <span className="mr-1">✕</span>}
+                        {isRescheduled && !isCancelled && <span className="mr-1">↻</span>}
                         {dateDisplay}
                       </Link>
                     );

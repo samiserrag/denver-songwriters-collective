@@ -223,12 +223,14 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
   // Build date pill data for DatePillRow
   // Uses displayDate for labels (so rescheduled shows new date)
   // Uses dateKey for hrefs (identity for routing/RSVPs/comments)
+  // Includes isCancelled flag for cancelled occurrence styling
   const eventIdentifier = event.slug || event.id;
   const datePills: DatePillData[] = upcomingOccurrences.map((occ) => ({
     label: formatDateShort(occ.displayDate || occ.dateKey),
     href: `/events/${eventIdentifier}?date=${occ.dateKey}`,
     dateKey: occ.dateKey,
     isRescheduled: occ.isRescheduled,
+    isCancelled: occ.isCancelled,
   }));
 
   // Handle toggle click

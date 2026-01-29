@@ -524,6 +524,54 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Occurrence Cancellation UX (Phase 5.03, January 2026) — RESOLVED
+
+**Goal:** Fix occurrence cancellation UX where cancelled dates disappeared from the UI, with no way to undo cancellations, and no immediate visual feedback.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2863, build success).
+
+**Checked against DSC UX Principles:** §7 (UX Friction), §8 (Dead States), §10 (Defaults)
+
+**Bugs Fixed:**
+
+| Bug | Before | After |
+|-----|--------|-------|
+| #1 Cancelled dates disappear | After refresh, cancelled occurrences vanished | Cancelled dates stay visible with red styling + ✕ prefix |
+| #2 No way to undo cancellation | No "Restore" button existed | "Restore" button appears for cancelled occurrences |
+| #3 No immediate UI feedback | Cancel required page refresh to see change | Optimistic UI updates immediately, reconciles with server |
+| #4 Public pages show blank | Date pills disappeared for cancelled dates | Cancelled pills show with line-through + opacity + red styling |
+
+**Key Design Decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| Default `showCancelled=true` | Cancelled dates shouldn't silently vanish (DSC UX §8: Dead States) |
+| Optimistic UI + server reconcile | Immediate feedback while ensuring data consistency |
+| Include cancelled in series view | Public pages show all dates with visual cancelled indicator |
+| Active occurrence count excludes cancelled | "12 upcoming" counts only non-cancelled dates |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/events/nextOccurrence.ts` | Added `isCancelled` to `ExpandedOccurrence`, changed filtering to include cancelled with flag |
+| `components/happenings/DatePillRow.tsx` | Added `isCancelled` prop with red styling, line-through, ✕ prefix |
+| `components/happenings/SeriesCard.tsx` | Pass `isCancelled` flag to DatePillRow |
+| `app/events/[id]/page.tsx` | Cancelled styling for inline date pills |
+| `dashboard/my-events/[id]/overrides/_components/OccurrenceEditor.tsx` | Default showCancelled=true, optimistic UI, useEffect sync |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase5-03-occurrence-cancellation-ux.test.ts` | 17 tests covering all parts |
+
+**Test Coverage:** 17 new tests (2863 total).
+
+**Investigation Doc:** `docs/investigation/phase5-03-occurrence-cancellation-ux-stopgate.md`
+
+---
+
 ### RSVP + Timeslots Host Control & Dashboard (Phase 5.02, January 2026) — RESOLVED
 
 **Goal:** Fix recurring events with past claims permanently locking slot configuration changes, and give hosts proper date-scoped dashboard surfaces.
@@ -5963,6 +6011,11 @@ See full backlog in previous CLAUDE.md version or `docs/known-issues.md`.
 - Typography token docs drift
 - Loading.tsx coverage gaps
 - Duplicate VenueSelector components
+
+### Known UX Follow-ups
+- **A) City always visible on timeline cards + series rows** — City/venue location should be consistently shown
+- **B) "Signup time" field restored on create/edit forms everywhere** — Field may be missing from some form surfaces
+- **C) Venue Google Maps + Get Directions links shown on event occurrences** — Per `date_key`, supporting mixed-venue series
 
 ### Future: Phase 4.38 — Hard Delete Admin Tools
 **Investigation completed in:** `docs/investigation/phase4-37-seeded-verification-status-system.md` (Section 6)

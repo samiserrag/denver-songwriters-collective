@@ -27,6 +27,8 @@ export interface DatePillData {
   dateKey: string;
   /** Whether this pill represents a rescheduled occurrence */
   isRescheduled?: boolean;
+  /** Whether this pill represents a cancelled occurrence */
+  isCancelled?: boolean;
 }
 
 export interface DatePillRowProps {
@@ -72,14 +74,17 @@ export function DatePillRow({
               "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
               isSelected
                 ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                : date.isRescheduled
-                  ? "bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-300 dark:border-amber-500/30"
-                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
+                : date.isCancelled
+                  ? "bg-red-100/50 dark:bg-red-500/5 text-red-400 dark:text-red-500 border border-red-300 dark:border-red-500/30 line-through opacity-70"
+                  : date.isRescheduled
+                    ? "bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-500/20 border border-amber-300 dark:border-amber-500/30"
+                    : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)]"
             )}
             onClick={(e) => e.stopPropagation()}
-            title={date.isRescheduled ? "Rescheduled" : undefined}
+            title={date.isCancelled ? "Cancelled" : date.isRescheduled ? "Rescheduled" : undefined}
           >
-            {date.isRescheduled && <span className="mr-1">↻</span>}
+            {date.isCancelled && <span className="mr-1">✕</span>}
+            {date.isRescheduled && !date.isCancelled && <span className="mr-1">↻</span>}
             {date.label}
           </Link>
         );

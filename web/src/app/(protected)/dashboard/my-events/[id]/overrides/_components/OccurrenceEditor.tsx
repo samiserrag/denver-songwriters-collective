@@ -12,7 +12,7 @@
  * but accessible to hosts via the API route at /api/my-events/[id]/overrides.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
@@ -45,12 +45,20 @@ interface Props {
 export default function OccurrenceEditor({
   eventId,
   baseEvent,
-  occurrences,
+  occurrences: initialOccurrences,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
-  const [showCancelled, setShowCancelled] = useState(false);
+  // Phase 5.03: Default to showing cancelled occurrences so they don't "disappear"
+  const [showCancelled, setShowCancelled] = useState(true);
+  // Optimistic state: start with server data, update optimistically on actions
+  const [occurrences, setOccurrences] = useState(initialOccurrences);
   const todayKey = getTodayDenver();
+
+  // Sync optimistic state when server data changes (after router.refresh reconciliation)
+  useEffect(() => {
+    setOccurrences(initialOccurrences);
+  }, [initialOccurrences]);
 
   const normalOccurrences = occurrences.filter((o) => !o.isCancelled);
   const cancelledOccurrences = occurrences.filter((o) => o.isCancelled);
@@ -58,6 +66,16 @@ export default function OccurrenceEditor({
 
   const handleCancel = async (dateKey: string) => {
     setLoading(dateKey);
+    // Optimistic update: immediately show as cancelled
+    const previousState = occurrences;
+    setOccurrences((prev) =>
+      prev.map((occ) =>
+        occ.dateKey === dateKey
+          ? { ...occ, isCancelled: true, override: { ...occ.override, status: "cancelled" } as OccurrenceOverride }
+          : occ
+      )
+    );
+
     try {
       const res = await fetch(`/api/my-events/${eventId}/overrides`, {
         method: "POST",
@@ -66,18 +84,34 @@ export default function OccurrenceEditor({
       });
       if (!res.ok) {
         const data = await res.json();
+        // Revert optimistic update on failure
+        setOccurrences(previousState);
         alert("Failed to cancel: " + (data.error || "Unknown error"));
+      } else {
+        // Reconcile with server state
+        router.refresh();
       }
     } catch (err) {
       console.error("Cancel error:", err);
+      // Revert optimistic update on error
+      setOccurrences(previousState);
       alert("Failed to cancel occurrence");
     }
     setLoading(null);
-    router.refresh();
   };
 
   const handleRevert = async (dateKey: string) => {
     setLoading(dateKey);
+    // Optimistic update: clear override
+    const previousState = occurrences;
+    setOccurrences((prev) =>
+      prev.map((occ) =>
+        occ.dateKey === dateKey
+          ? { ...occ, isCancelled: false, override: null }
+          : occ
+      )
+    );
+
     try {
       const res = await fetch(`/api/my-events/${eventId}/overrides`, {
         method: "DELETE",
@@ -86,18 +120,34 @@ export default function OccurrenceEditor({
       });
       if (!res.ok) {
         const data = await res.json();
+        // Revert optimistic update on failure
+        setOccurrences(previousState);
         alert("Failed to revert: " + (data.error || "Unknown error"));
+      } else {
+        // Reconcile with server state
+        router.refresh();
       }
     } catch (err) {
       console.error("Revert error:", err);
+      // Revert optimistic update on error
+      setOccurrences(previousState);
       alert("Failed to revert override");
     }
     setLoading(null);
-    router.refresh();
   };
 
   const handleRestore = async (dateKey: string) => {
     setLoading(dateKey);
+    // Optimistic update: immediately show as normal (not cancelled)
+    const previousState = occurrences;
+    setOccurrences((prev) =>
+      prev.map((occ) =>
+        occ.dateKey === dateKey
+          ? { ...occ, isCancelled: false, override: { ...occ.override, status: "normal" } as OccurrenceOverride }
+          : occ
+      )
+    );
+
     try {
       const res = await fetch(`/api/my-events/${eventId}/overrides`, {
         method: "POST",
@@ -106,14 +156,20 @@ export default function OccurrenceEditor({
       });
       if (!res.ok) {
         const data = await res.json();
+        // Revert optimistic update on failure
+        setOccurrences(previousState);
         alert("Failed to restore: " + (data.error || "Unknown error"));
+      } else {
+        // Reconcile with server state
+        router.refresh();
       }
     } catch (err) {
       console.error("Restore error:", err);
+      // Revert optimistic update on error
+      setOccurrences(previousState);
       alert("Failed to restore occurrence");
     }
     setLoading(null);
-    router.refresh();
   };
 
   if (occurrences.length === 0) {

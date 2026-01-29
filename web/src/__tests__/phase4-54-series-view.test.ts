@@ -179,7 +179,7 @@ describe("groupEventsAsSeriesView", () => {
       );
     });
 
-    it("should exclude cancelled occurrences from upcoming list", () => {
+    it("should include cancelled occurrences with isCancelled flag", () => {
       mockToday("2026-01-10");
 
       const events: TestEvent[] = [
@@ -194,9 +194,16 @@ describe("groupEventsAsSeriesView", () => {
 
       const result = groupEventsAsSeriesView(events, { overrideMap });
 
-      // First occurrence should NOT be 2026-01-12
+      // Phase 5.03: Cancelled occurrences are now INCLUDED with isCancelled flag
+      // (previously they were filtered out, causing UX confusion)
       const firstOccurrence = result.series[0].upcomingOccurrences[0];
-      expect(firstOccurrence?.dateKey).not.toBe("2026-01-12");
+      expect(firstOccurrence?.dateKey).toBe("2026-01-12");
+      expect(firstOccurrence?.isCancelled).toBe(true);
+
+      // Second occurrence should be normal (not cancelled)
+      const secondOccurrence = result.series[0].upcomingOccurrences[1];
+      expect(secondOccurrence?.dateKey).toBe("2026-01-19");
+      expect(secondOccurrence?.isCancelled).toBe(false);
     });
   });
 

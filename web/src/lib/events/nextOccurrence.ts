@@ -542,6 +542,8 @@ export interface ExpandedOccurrence {
   displayDate?: string;
   /** Whether this occurrence was rescheduled to a different date */
   isRescheduled?: boolean;
+  /** Whether this occurrence has been cancelled via override */
+  isCancelled?: boolean;
 }
 
 /**
@@ -1363,29 +1365,30 @@ export function groupEventsAsSeriesView<T extends EventForOccurrence & { id: str
       continue;
     }
 
-    // Filter out cancelled occurrences and apply reschedule display dates
-    const activeOccurrences = allOccurrences
-      .filter((occ) => {
-        const overrideKey = buildOverrideKey(event.id, occ.dateKey);
-        const override = overrideMap.get(overrideKey);
-        return override?.status !== "cancelled";
-      })
+    // Include ALL occurrences (including cancelled) with status flags for UI rendering
+    // Cancelled occurrences are kept visible in pills but marked with isCancelled flag
+    const allOccurrencesWithStatus = allOccurrences
       .map((occ) => {
         const overrideKey = buildOverrideKey(event.id, occ.dateKey);
         const override = overrideMap.get(overrideKey);
         const { displayDate, isRescheduled } = getDisplayDateForOccurrence(occ.dateKey, override);
-        return { ...occ, displayDate, isRescheduled };
+        const isCancelled = override?.status === "cancelled";
+        return { ...occ, displayDate, isRescheduled, isCancelled };
       })
       // Sort by display date so rescheduled occurrences appear in correct order
       .sort((a, b) => (a.displayDate || a.dateKey).localeCompare(b.displayDate || b.dateKey));
+
+    // For counting "active" occurrences, exclude cancelled ones
+    const activeOccurrences = allOccurrencesWithStatus.filter((occ) => !occ.isCancelled);
 
     // Get recurrence summary using the contract
     const recurrence = interpretRecurrence(event);
     const recurrenceSummary = labelFromRecurrence(recurrence);
     const isOneTime = !recurrence.isRecurring || recurrence.frequency === "one-time";
 
-    // Cap upcoming occurrences
-    const upcomingOccurrences = activeOccurrences.slice(0, SERIES_VIEW_MAX_UPCOMING);
+    // Cap upcoming occurrences - include ALL (with cancelled marked) for pills display
+    // This allows cancelled dates to be visible in the UI with cancelled styling
+    const upcomingOccurrences = allOccurrencesWithStatus.slice(0, SERIES_VIEW_MAX_UPCOMING);
 
     seriesEntries.push({
       event,
@@ -1393,6 +1396,7 @@ export function groupEventsAsSeriesView<T extends EventForOccurrence & { id: str
       upcomingOccurrences,
       recurrenceSummary,
       isOneTime,
+      // totalUpcomingCount reflects ACTIVE occurrences only (for "+X more" label)
       totalUpcomingCount: activeOccurrences.length,
     });
   }
