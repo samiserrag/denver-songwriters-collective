@@ -32,6 +32,7 @@ import {
 } from "@/lib/events/nextOccurrence";
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
+import { getSignupMeta } from "@/lib/events/signupMeta";
 
 export const dynamic = "force-dynamic";
 
@@ -180,6 +181,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase 4.37: Added slug, source, last_verified_at, verified_by for verification display
   // Phase ABC4: Added recurrence_rule for recurrence display + upcoming dates
   // Phase 4.x: Added cost_label, external_url, timezone, online_url, signup_url, signup_mode for full event info display
+  // Phase 5.08: Added signup_time for signup meta display
   const eventSelectQuery = `
       id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
@@ -191,7 +193,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       is_free, cost_label, age_policy, host_id,
       source, last_verified_at, verified_by,
       series_id, external_url, timezone, online_url, signup_url, signup_mode,
-      custom_dates
+      custom_dates, signup_time
     `;
   const { data: event, error } = isUUID(id)
     ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
@@ -515,6 +517,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         timeZone: "America/Denver",
       })
     : null;
+
+  // Phase 5.08: Compute signup meta for display
+  // Timeslots take precedence over in-person signup_time
+  const signupMeta = getSignupMeta({
+    hasTimeslots: event.has_timeslots,
+    signupTime: (event as { signup_time?: string | null }).signup_time,
+  });
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles
   // Phase 4.39: Use event.id (UUID) not route param which could be a slug
@@ -1038,6 +1047,16 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                   <span>
                     {formatTime(displayStartTime)}{displayEndTime ? ` - ${formatTime(displayEndTime)}` : ""}
                   </span>
+                </div>
+              )}
+
+              {/* Phase 5.08: Signup method meta - shows "Online signup" or "Signups at X PM" */}
+              {signupMeta.show && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--color-text-accent)]">
+                    {signupMeta.type === "online" ? "🎫" : "📝"}
+                  </span>
+                  <span>{signupMeta.label}</span>
                 </div>
               )}
 

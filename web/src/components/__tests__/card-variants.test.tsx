@@ -108,13 +108,15 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
 
     it('should display signup chip when signup info exists', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
-      expect(screen.getByText('Sign-up: 6:30 PM')).toBeInTheDocument();
+      // Phase 5.08: Updated format from "Sign-up: X" to "Signups at X"
+      expect(screen.getByText('Signups at 6:30 PM')).toBeInTheDocument();
     });
 
     it('should not display signup chip when no signup info', () => {
       const noSignupEvent = { ...mockOpenMicEvent, signup_time: null, signup_mode: null };
       render(<HappeningCard event={noSignupEvent} />);
-      expect(screen.queryByText(/Sign-up:/)).not.toBeInTheDocument();
+      // Phase 5.08: Updated format check
+      expect(screen.queryByText(/Signups at/)).not.toBeInTheDocument();
     });
 
     it('should display Online for online-only events', () => {

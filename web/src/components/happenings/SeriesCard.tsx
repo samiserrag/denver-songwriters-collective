@@ -24,6 +24,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import { getPublicVerificationState, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
+import { getSignupMeta } from "@/lib/events/signupMeta";
 import {
   type SeriesEntry,
   type EventForOccurrence,
@@ -54,6 +55,9 @@ export interface SeriesEvent extends EventForOccurrence {
   source?: string | null;
   host_id?: string | null;
   categories?: string[] | null;
+  // Phase 5.08: Signup meta fields
+  signup_time?: string | null;
+  has_timeslots?: boolean | null;
   venue?: {
     id?: string;
     slug?: string | null;  // Phase ABC4: Add slug for friendly URLs
@@ -228,6 +232,12 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
     last_verified_at: event.last_verified_at,
   });
 
+  // Phase 5.08: Signup meta with timeslots precedence
+  const signupMeta = getSignupMeta({
+    hasTimeslots: event.has_timeslots,
+    signupTime: event.signup_time,
+  });
+
   // Image logic (same tiers as HappeningCard)
   const cardImageUrl = event.cover_image_card_url;
   const fullPosterUrl = event.cover_image_url;
@@ -391,6 +401,8 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
               {event.categories && event.categories.length > 0 && event.categories.map((cat) => (
                 <Chip key={cat} variant="muted">{cat}</Chip>
               ))}
+              {/* Phase 5.08: Signup meta chip */}
+              {signupMeta.show && <Chip variant="muted">{signupMeta.label}</Chip>}
             </div>
           </div>
         </div>

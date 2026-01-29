@@ -23,6 +23,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTimeToAMPM, getRecurrenceSummary } from "@/lib/recurrenceHumanizer";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
+import { getSignupMeta } from "@/lib/events/signupMeta";
 import {
   computeNextOccurrence,
   getTodayDenver,
@@ -430,7 +431,6 @@ export function HappeningCard({
   const occurrenceDateKey = dateInfo.occurrence.isConfident ? dateInfo.occurrence.date : undefined;
   const detailHref = getDetailHref(effectiveEvent, occurrenceDateKey);
   const startTime = formatTimeToAMPM(effectiveStartTime ?? null);
-  const signupTime = event.signup_time ? formatTimeToAMPM(event.signup_time) : null;
 
   const isOnlineOnly = effectiveLocationMode === "online";
   const isHybrid = effectiveLocationMode === "hybrid";
@@ -587,14 +587,13 @@ export function HappeningCard({
   const hasFullPoster = (!hasCardImage && !!fullPosterUrl) || hasOverrideCover;
   const hasDefaultImage = !hasCardImage && !hasFullPoster && !!defaultImageUrl;
 
-  // Signup chip
-  const getSignupChipState = (): { label: string; show: boolean } => {
-    if (signupTime) return { label: signupTime, show: true };
-    if (event.signup_mode === "online") return { label: "Online", show: true };
-    if (event.signup_mode === "walk_in") return { label: "Walk-in", show: true };
-    return { label: "N/A", show: false };
-  };
-  const signupChip = getSignupChipState();
+  // Phase 5.08: Signup chip with timeslots precedence
+  // If timeslots enabled: "Online signup"
+  // If timeslots disabled + signup_time: "Signups at {time}"
+  const signupMeta = getSignupMeta({
+    hasTimeslots: effectiveHasTimeslots,
+    signupTime: event.signup_time,
+  });
   const ageDisplay = getAgeDisplay();
   const availabilityDisplay = getAvailabilityDisplay();
 
@@ -853,7 +852,7 @@ export function HappeningCard({
               <Chip key={cat} variant="muted">{cat}</Chip>
             ))}
             {ageDisplay && <Chip variant="muted">{ageDisplay}</Chip>}
-            {signupChip.show && <Chip variant="muted">Sign-up: {signupChip.label}</Chip>}
+            {signupMeta.show && <Chip variant="muted">{signupMeta.label}</Chip>}
             {availabilityDisplay && <Chip variant="muted">{availabilityDisplay}</Chip>}
             {/* Missing details as warning badge, not link */}
             {hasMissing && <Chip variant="warning">Missing details</Chip>}
