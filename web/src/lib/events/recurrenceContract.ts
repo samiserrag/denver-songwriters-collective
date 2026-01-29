@@ -632,6 +632,74 @@ export function shouldExpandToMultiple(rec: NormalizedRecurrence): boolean {
   return rec.isRecurring && rec.isConfident;
 }
 
+// ============================================================================
+// Phase 4.86: Centralized ordinal<->string conversion for preview consistency
+// ============================================================================
+
+/**
+ * Map numeric ordinals to canonical string format.
+ * This is the INVERSE of LEGACY_ORDINAL_TO_NUMBER and must be kept in sync.
+ */
+const NUMBER_TO_ORDINAL: Record<number, string> = {
+  1: "1st",
+  2: "2nd",
+  3: "3rd",
+  4: "4th",
+  5: "5th",
+  [-1]: "last",
+};
+
+/**
+ * Build a recurrence_rule string from numeric ordinals.
+ * This is the single source of truth for converting form state to DB format.
+ *
+ * @param ordinals - Array of numeric ordinals (1-5 or -1 for last)
+ * @returns Canonical recurrence_rule string (e.g., "4th", "1st/3rd", "2nd/last")
+ */
+export function buildRecurrenceRuleFromOrdinals(ordinals: number[]): string {
+  if (ordinals.length === 0) return "";
+
+  // Sort with "last" (-1) always at the end
+  const sorted = [...ordinals].sort((a, b) => {
+    if (a === -1) return 1;
+    if (b === -1) return -1;
+    return a - b;
+  });
+
+  return sorted.map(o => NUMBER_TO_ORDINAL[o] || `${o}th`).join("/");
+}
+
+/**
+ * Parse a recurrence_rule string into numeric ordinals.
+ * This is the single source of truth for extracting ordinals from DB format.
+ *
+ * @param rule - recurrence_rule string (e.g., "4th", "1st/3rd", "2nd and 4th")
+ * @returns Array of numeric ordinals, empty if not a monthly ordinal pattern
+ */
+export function parseOrdinalsFromRecurrenceRule(rule: string | null | undefined): number[] {
+  if (!rule) return [];
+
+  const r = rule.toLowerCase().trim();
+
+  // Skip non-ordinal patterns
+  if (r === "weekly" || r === "biweekly" || r === "custom" || r === "monthly" || r === "none" || r === "") {
+    return [];
+  }
+
+  // Split on common separators: /, &, "and", comma
+  const parts = r.split(/[\/&,]|\band\b/).map(p => p.trim()).filter(Boolean);
+  const ordinals: number[] = [];
+
+  for (const part of parts) {
+    const ordinal = LEGACY_ORDINAL_TO_NUMBER[part];
+    if (ordinal !== undefined) {
+      ordinals.push(ordinal);
+    }
+  }
+
+  return ordinals;
+}
+
 /**
  * Development/test invariant check: warn if a recurring event only produced one occurrence.
  * This catches the exact bug class we're fixing.

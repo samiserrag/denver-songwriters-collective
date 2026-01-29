@@ -354,4 +354,97 @@ describe("Phase 4.42c: Recurrence Unification", () => {
       expect(label).toBe("Every Monday");
     });
   });
+
+  /**
+   * Phase 4.86 Work Item D: "Today occurrence missing" proof
+   *
+   * These tests prove that when today matches a recurrence pattern,
+   * today's occurrence appears in the expansion (not skipped or excluded).
+   */
+  describe("Today occurrence always appears in timeline", () => {
+    it("weekly event: today IS included when today matches the day_of_week", () => {
+      // 2026-01-05 is a Monday (verified via Date calculation)
+      const todayKey = "2026-01-05"; // Monday
+      const endKey = addDaysDenver(todayKey, 90);
+
+      const occurrences = expandOccurrencesForEvent(
+        {
+          day_of_week: "Monday",
+          recurrence_rule: "weekly",
+        },
+        { startKey: todayKey, endKey }
+      );
+
+      // First occurrence should be today (Monday)
+      expect(occurrences.length).toBeGreaterThan(0);
+      expect(occurrences[0].dateKey).toBe("2026-01-05");
+    });
+
+    it("monthly ordinal event: today IS included when today matches pattern", () => {
+      // 2nd Tuesday of January 2026 is January 13 (verified via Date calculation)
+      const todayKey = "2026-01-13"; // 2nd Tuesday
+      const endKey = addDaysDenver(todayKey, 90);
+
+      const occurrences = expandOccurrencesForEvent(
+        {
+          day_of_week: "Tuesday",
+          recurrence_rule: "2nd",
+        },
+        { startKey: todayKey, endKey }
+      );
+
+      // First occurrence should be 2nd Tuesday of January (Jan 13)
+      expect(occurrences.length).toBeGreaterThan(0);
+      expect(occurrences[0].dateKey).toBe("2026-01-13");
+    });
+
+    it("one-time event: today IS included when event_date is today", () => {
+      const todayKey = "2026-02-15";
+      const endKey = addDaysDenver(todayKey, 90);
+
+      const occurrences = expandOccurrencesForEvent(
+        {
+          event_date: "2026-02-15",
+        },
+        { startKey: todayKey, endKey }
+      );
+
+      expect(occurrences.length).toBe(1);
+      expect(occurrences[0].dateKey).toBe("2026-02-15");
+    });
+
+    it("custom dates event: today IS included when today is in custom_dates", () => {
+      const todayKey = "2026-03-10";
+      const endKey = addDaysDenver(todayKey, 90);
+
+      const occurrences = expandOccurrencesForEvent(
+        {
+          recurrence_rule: "custom",
+          custom_dates: ["2026-03-10", "2026-03-20", "2026-04-05"],
+        },
+        { startKey: todayKey, endKey }
+      );
+
+      // Today (Mar 10) should be included as first occurrence
+      expect(occurrences.length).toBe(3);
+      expect(occurrences[0].dateKey).toBe("2026-03-10");
+    });
+
+    it("window starts exactly on occurrence date (boundary test)", () => {
+      // 2026-01-07 is a Wednesday (verified via Date calculation)
+      const todayKey = "2026-01-07"; // Wednesday
+      const endKey = addDaysDenver(todayKey, 90);
+
+      const occurrences = expandOccurrencesForEvent(
+        {
+          day_of_week: "Wednesday",
+          recurrence_rule: "weekly",
+        },
+        { startKey: todayKey, endKey }
+      );
+
+      // First occurrence should be exactly today (Wednesday)
+      expect(occurrences[0].dateKey).toBe("2026-01-07");
+    });
+  });
 });
