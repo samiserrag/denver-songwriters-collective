@@ -524,6 +524,44 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Event Detail Map Actions Polish (Phase 5.07, January 2026) — RESOLVED
+
+**Goal:** Move map action buttons (Get Directions + Venue Page) to sit directly under the venue block, and rename "View on Maps" to "Venue Page".
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2921, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §14 (Confusing = Wrong)
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/page.tsx` | Moved map buttons from CTA row to under venue block; renamed "View on Maps" to "Venue Page" |
+
+**Button Placement:**
+- Buttons now appear after venue address/location notes, before cost info
+- Container uses `data-testid="venue-map-buttons"` for DOM verification
+- Smaller button size (`text-sm`, `px-3 py-1.5`) to fit under venue block
+
+**Button Visibility:**
+
+| Scenario | Get Directions | Venue Page |
+|----------|----------------|------------|
+| Venue + curated URL | ✅ Shows | ✅ Shows |
+| Venue + no curated URL | ✅ Shows | ❌ Hidden |
+| Online-only / custom location | ❌ Hidden (unless coords) | ❌ Hidden |
+| Override venue | ✅ Uses override venue | ✅ Uses override venue |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase5-07-venue-map-buttons.test.ts` | 13 tests for button visibility and placement |
+
+**Test Coverage:** 13 new tests (2921 total).
+
+---
+
 ### UX Polish — City/State, Monthly Edit, Event Detail (Phase 5.06, January 2026) — RESOLVED
 
 **Goal:** Fix three UX issues: A) City/state not showing on happenings cards, B) Monthly series edit missing day-of-week change, C) Event detail "Get Directions" using wrong URL format.
