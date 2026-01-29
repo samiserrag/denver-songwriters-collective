@@ -59,6 +59,8 @@ export interface SeriesEvent extends EventForOccurrence {
     slug?: string | null;  // Phase ABC4: Add slug for friendly URLs
     name?: string | null;
     address?: string | null;
+    city?: string | null;  // Phase 5.04: Add city for display
+    state?: string | null;  // Phase 5.04: Add state for display
     google_maps_url?: string | null;
     website_url?: string | null;
   } | null;
@@ -81,6 +83,21 @@ function getVenueName(event: SeriesEvent): string | null {
     return event.venue.name;
   }
   if (event.custom_location_name) return event.custom_location_name;
+  return null;
+}
+
+/**
+ * Phase 5.04: Get venue city/state for display
+ * Returns formatted string like "Denver, CO" or null if not available
+ */
+function getVenueCityState(event: SeriesEvent): string | null {
+  // Check venue object
+  if (event.venue && typeof event.venue === "object") {
+    const city = event.venue.city;
+    const state = event.venue.state;
+    if (city && state) return `${city}, ${state}`;
+    if (city) return city;
+  }
   return null;
 }
 
@@ -187,6 +204,8 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
 
   const venueName = getVenueName(event);
   const venueIdentifier = getVenueIdentifierForLink(event);
+  // Phase 5.04: Get city/state for display
+  const venueCityState = getVenueCityState(event);
   const detailHref = getDetailHref(event);
   const startTime = formatTimeToAMPM(event.start_time ?? null);
   const isOnlineOnly = event.location_mode === "online";
@@ -295,22 +314,26 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
             </div>
 
             {/* Venue - Phase 4.58/ABC4: Internal link to /venues/[slug|id] when venue exists */}
+            {/* Phase 5.04: City/state always shown after venue name */}
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 truncate">
               {isOnlineOnly ? (
                 "Online"
               ) : venueName ? (
                 venueIdentifier && !isCustomLocation ? (
                   // Internal link to venue detail page
-                  <Link
-                    href={`/venues/${venueIdentifier}`}
-                    className="hover:underline text-[var(--color-link)]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {venueName}
-                  </Link>
+                  <>
+                    <Link
+                      href={`/venues/${venueIdentifier}`}
+                      className="hover:underline text-[var(--color-link)]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {venueName}
+                    </Link>
+                    {venueCityState && <>, {venueCityState}</>}
+                  </>
                 ) : (
                   // Plain text for custom locations (no venue_id)
-                  <span>{venueName}</span>
+                  <span>{venueName}{venueCityState && <>, {venueCityState}</>}</span>
                 )
               ) : (
                 "Location TBD"

@@ -116,6 +116,7 @@ interface EventFormProps {
     signup_mode?: string | null;
     signup_url?: string | null;
     signup_deadline?: string | null;
+    signup_time?: string | null;
     age_policy?: string | null;
     is_dsc_event?: boolean;
     // External website URL
@@ -195,6 +196,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     signup_mode: event?.signup_mode || "",
     signup_url: event?.signup_url || "",
     signup_deadline: event?.signup_deadline || "",
+    signup_time: event?.signup_time || "",
     age_policy: event?.age_policy || "",
     is_dsc_event: event?.is_dsc_event ?? false,
     external_url: event?.external_url || "",
@@ -634,6 +636,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         signup_mode: formData.signup_mode || null,
         signup_url: formData.signup_url || null,
         signup_deadline: formData.signup_deadline || null,
+        signup_time: formData.signup_time || null,
         age_policy: formData.age_policy || null,
         is_dsc_event: canCreateDSC ? formData.is_dsc_event : false,
         external_url: formData.external_url.trim() || null,
@@ -2009,6 +2012,24 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   <option value="online">Online signup (external)</option>
                   <option value="both">Both (in person + online)</option>
                 </select>
+              </div>
+
+              {/* Signup Time - always visible, for in-person signup time at venue */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                  Signup Time <span className="font-normal">(optional)</span>
+                </label>
+                <select
+                  value={formData.signup_time}
+                  onChange={(e) => setFormData(prev => ({ ...prev, signup_time: e.target.value }))}
+                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                >
+                  <option value="">Select time...</option>
+                  {TIME_OPTIONS.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">When does in-person signup typically begin?</p>
               </div>
 
               {(formData.signup_mode === "online" || formData.signup_mode === "both") && (

@@ -202,6 +202,7 @@ function buildEventInsert(params: EventInsertParams) {
     signup_mode: (body.signup_mode as string) || null,
     signup_url: (body.signup_url as string) || null,
     signup_deadline: (body.signup_deadline as string) || null,
+    signup_time: (body.signup_time as string) || null,
     age_policy: (body.age_policy as string) || (isDSCEvent ? "18+ only" : null),
     external_url: (body.external_url as string) || null,
     // Categories (multi-select array)

@@ -146,10 +146,13 @@ export interface HappeningCardProps {
    * Phase 4.81: Pre-resolved venue data for override venue_id.
    * When override_patch.venue_id changes the venue, this provides the name/URLs
    * without requiring a client-side fetch.
+   * Phase 5.04: Added city/state for display.
    */
   overrideVenueData?: {
     name: string;
     slug?: string | null;
+    city?: string | null;
+    state?: string | null;
     google_maps_url?: string | null;
     website_url?: string | null;
   } | null;
@@ -271,6 +274,26 @@ function getVenueForLink(event: HappeningEvent): {
 }
 
 /**
+ * Phase 5.04: Get venue city/state for display
+ * Returns formatted string like "Denver, CO" or null if not available
+ */
+function getVenueCityState(event: HappeningEvent): string | null {
+  // Check venue object first
+  if (event.venue && typeof event.venue === "object") {
+    const city = event.venue.city;
+    const state = event.venue.state;
+    if (city && state) return `${city}, ${state}`;
+    if (city) return city;
+  }
+  // Check custom location fields
+  if (event.custom_city && event.custom_state) {
+    return `${event.custom_city}, ${event.custom_state}`;
+  }
+  if (event.custom_city) return event.custom_city;
+  return null;
+}
+
+/**
  * Build the detail page href for an event.
  *
  * Phase 4.87: When dateKey is provided, includes `?date=YYYY-MM-DD` for
@@ -387,9 +410,10 @@ export function HappeningCard({
     total_slots: effectiveTotalSlots,
     age_policy: effectiveAgePolicy,
     // If venue_id is overridden, use resolved override venue data (from server pre-fetch)
+    // Phase 5.04: Include city/state in override venue object
     ...(patch?.venue_id && patch.venue_id !== event.venue_id
       ? overrideVenueData
-        ? { venue: { id: patch.venue_id as string, name: overrideVenueData.name, google_maps_url: overrideVenueData.google_maps_url, website_url: overrideVenueData.website_url }, venue_name: overrideVenueData.name }
+        ? { venue: { id: patch.venue_id as string, name: overrideVenueData.name, city: overrideVenueData.city, state: overrideVenueData.state, google_maps_url: overrideVenueData.google_maps_url, website_url: overrideVenueData.website_url }, venue_name: overrideVenueData.name }
         : { venue: null, venue_name: null }
       : {}),
     // If custom_location_name is overridden, clear venue data so custom location displays
@@ -400,6 +424,8 @@ export function HappeningCard({
   const dateInfo = getDateInfo(event, precomputedOccurrence, todayKey);
   const venueName = getVenueName(effectiveEvent);
   const venueForLink = getVenueForLink(effectiveEvent);
+  // Phase 5.04: Get city/state for display
+  const venueCityState = getVenueCityState(effectiveEvent);
   // Phase 4.87: Pass occurrence date for anchored links (if known and confident)
   const occurrenceDateKey = dateInfo.occurrence.isConfident ? dateInfo.occurrence.date : undefined;
   const detailHref = getDetailHref(effectiveEvent, occurrenceDateKey);
@@ -773,8 +799,9 @@ export function HappeningCard({
             {event.is_dsc_event && <Chip variant="accent">DSC</Chip>}
           </div>
 
-          {/* Meta line: Time · Venue · Cost - promoted visibility */}
+          {/* Meta line: Time · Venue, City · Cost - promoted visibility */}
           {/* Phase 4.52: Venue name is linkable when venue has google_maps_url or website_url */}
+          {/* Phase 5.04: City/state always shown after venue name */}
           <p className="text-sm md:text-base text-[var(--color-text-secondary)] truncate">
             {startTime || "NA"} ·{" "}
             {isOnlineOnly ? (
@@ -785,15 +812,19 @@ export function HappeningCard({
                   name={venueName}
                   venue={isCustomLocation ? null : venueForLink}
                 />
+                {venueCityState && <>, {venueCityState}</>}
                 {" + Online"}
               </>
             ) : venueName ? (
-              <VenueLink
-                name={venueName}
-                venue={isCustomLocation ? null : venueForLink}
-              />
+              <>
+                <VenueLink
+                  name={venueName}
+                  venue={isCustomLocation ? null : venueForLink}
+                />
+                {venueCityState && <>, {venueCityState}</>}
+              </>
             ) : (
-              "NA"
+              "—"
             )}{" "}
             · {getCostDisplay()}
           </p>

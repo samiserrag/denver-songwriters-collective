@@ -151,7 +151,7 @@ export async function PATCH(
     "end_time", "status", "recurrence_rule", "cover_image_url", "is_published",
     // Phase 3 fields
     "timezone", "location_mode", "online_url", "is_free", "cost_label",
-    "signup_mode", "signup_url", "signup_deadline", "age_policy",
+    "signup_mode", "signup_url", "signup_deadline", "signup_time", "age_policy",
     // Timeslot configuration fields
     "has_timeslots", "total_slots", "slot_duration_minutes",
     // External link field

@@ -524,6 +524,66 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Event Clarity & Host Confidence (Phase 5.04, January 2026) — RESOLVED
+
+**Goal:** Improve event clarity with city visibility on cards and restore signup_time field for hosts.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2863, build success).
+
+**Checked against DSC UX Principles:** §7 (UX Friction), §8 (Dead States)
+
+**Work Items Completed:**
+
+| Part | Description |
+|------|-------------|
+| C | Per-occurrence venue/maps verified as already implemented (no changes needed) |
+| B | Restored `signup_time` field to EventForm interface, state, UI, and API routes |
+| A | Added city/state visibility to HappeningCard and SeriesCard meta lines |
+
+**Part B: signup_time Field**
+
+| Location | Change |
+|----------|--------|
+| EventForm interface | Added `signup_time?: string \| null` |
+| EventForm state | Initialized with `event?.signup_time \|\| ""` |
+| EventForm UI | TIME_OPTIONS dropdown in Signup section |
+| EventForm payload | Added to create body |
+| POST /api/my-events | Added to `buildEventInsert()` |
+| PATCH /api/my-events/[id] | Added to `allowedFields` array |
+
+**Part A: City Visibility**
+
+| Component | Change |
+|-----------|--------|
+| HappeningCard | Added `getVenueCityState()` helper, updated meta line format |
+| SeriesCard | Added city/state to venue interface, display in venue line |
+| happenings/page.tsx | Extended overrideVenueMap to include city/state |
+
+**Meta Line Format:** `{Time} · {Venue}, {City}, {ST} · {Cost}`
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | signup_time interface, state, field UI, payload |
+| `app/api/my-events/route.ts` | signup_time in buildEventInsert |
+| `app/api/my-events/[id]/route.ts` | signup_time in allowedFields |
+| `components/happenings/HappeningCard.tsx` | getVenueCityState helper, meta line update, overrideVenueData interface |
+| `components/happenings/SeriesCard.tsx` | city/state in venue interface, getVenueCityState helper, venue display |
+| `app/happenings/page.tsx` | overrideVenueMap city/state |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase5-04-event-clarity.test.ts` | 19 tests covering signup_time and city formatting |
+
+**Test Coverage:** 19 new tests (2863 total).
+
+**Investigation Doc:** `docs/investigation/phase5-04-event-clarity-stopgate.md`
+
+---
+
 ### Occurrence Cancellation UX (Phase 5.03, January 2026) — RESOLVED
 
 **Goal:** Fix occurrence cancellation UX where cancelled dates disappeared from the UI, with no way to undo cancellations, and no immediate visual feedback.

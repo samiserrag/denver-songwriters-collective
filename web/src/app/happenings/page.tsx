@@ -169,15 +169,16 @@ export default async function HappeningsPage({
     const vid = patch?.venue_id as string | undefined;
     if (vid) overrideVenueIds.add(vid);
   }
-  const overrideVenueMap = new Map<string, { name: string; slug?: string | null; google_maps_url?: string | null; website_url?: string | null }>();
+  // Phase 5.04: Include city/state in override venue map for HappeningCard display
+  const overrideVenueMap = new Map<string, { name: string; slug?: string | null; city?: string | null; state?: string | null; google_maps_url?: string | null; website_url?: string | null }>();
   if (overrideVenueIds.size > 0) {
     const { data: overrideVenues } = await supabase
       .from("venues")
-      .select("id, name, slug, google_maps_url, website_url")
+      .select("id, name, slug, city, state, google_maps_url, website_url")
       .in("id", [...overrideVenueIds]);
     if (overrideVenues) {
       for (const v of overrideVenues) {
-        overrideVenueMap.set(v.id, { name: v.name, slug: v.slug, google_maps_url: v.google_maps_url, website_url: v.website_url });
+        overrideVenueMap.set(v.id, { name: v.name, slug: v.slug, city: v.city, state: v.state, google_maps_url: v.google_maps_url, website_url: v.website_url });
       }
     }
   }
