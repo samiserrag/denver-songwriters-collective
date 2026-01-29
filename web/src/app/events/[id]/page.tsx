@@ -518,11 +518,17 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       })
     : null;
 
-  // Phase 5.08: Compute signup meta for display
+  // Phase 5.08/5.10: Compute signup meta for display
+  // Override values take precedence over series values
   // Timeslots take precedence over in-person signup_time
+  const effectiveHasTimeslots = patch?.has_timeslots !== undefined
+    ? (patch.has_timeslots as boolean | null)
+    : event.has_timeslots;
+  const effectiveSignupTime = (patch?.signup_time as string | undefined)
+    ?? (event as { signup_time?: string | null }).signup_time;
   const signupMeta = getSignupMeta({
-    hasTimeslots: event.has_timeslots,
-    signupTime: (event as { signup_time?: string | null }).signup_time,
+    hasTimeslots: effectiveHasTimeslots,
+    signupTime: effectiveSignupTime,
   });
 
   // Fetch hosts separately since there's no FK relationship between event_hosts and profiles

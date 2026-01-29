@@ -935,6 +935,7 @@ export const ALLOWED_OVERRIDE_FIELDS = new Set([
   "cost_label",
   "signup_url",
   "signup_deadline",
+  "signup_time", // Phase 5.10: Per-occurrence signup time override (keep in sync with overrides/route.ts)
   "age_policy",
   "external_url",
   "categories",

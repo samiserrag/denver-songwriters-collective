@@ -392,6 +392,8 @@ export function HappeningCard({
   const effectiveHasTimeslots = patch?.has_timeslots !== undefined ? (patch.has_timeslots as boolean | null) : event.has_timeslots;
   const effectiveTotalSlots = patch?.total_slots !== undefined ? (patch.total_slots as number | null) : event.total_slots;
   const effectiveAgePolicy = (patch?.age_policy as string | undefined) ?? event.age_policy;
+  // Phase 5.10: Per-occurrence signup_time override
+  const effectiveSignupTime = (patch?.signup_time as string | undefined) ?? event.signup_time;
 
   // Build effective event for helpers that read from the event object
   const effectiveEvent: HappeningEvent = {
@@ -587,12 +589,12 @@ export function HappeningCard({
   const hasFullPoster = (!hasCardImage && !!fullPosterUrl) || hasOverrideCover;
   const hasDefaultImage = !hasCardImage && !hasFullPoster && !!defaultImageUrl;
 
-  // Phase 5.08: Signup chip with timeslots precedence
-  // If timeslots enabled: "Online signup"
-  // If timeslots disabled + signup_time: "Signups at {time}"
+  // Phase 5.08/5.10: Signup chip with timeslots precedence
+  // If timeslots enabled (override or series): "Online signup"
+  // If timeslots disabled + signup_time (override or series): "Signups at {time}"
   const signupMeta = getSignupMeta({
     hasTimeslots: effectiveHasTimeslots,
-    signupTime: event.signup_time,
+    signupTime: effectiveSignupTime,
   });
   const ageDisplay = getAgeDisplay();
   const availabilityDisplay = getAvailabilityDisplay();

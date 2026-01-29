@@ -189,7 +189,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 5.08):** Lint warnings = 0. All tests passing (2942). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 5.10):** Lint warnings = 0. All tests passing (2959). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -521,6 +521,51 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Signup Time Per-Occurrence Overrides (Phase 5.10, January 2026) — RESOLVED
+
+**Goal:** Enable `signup_time` to be overridden per-occurrence, completing the signup configuration override system.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2959, build success).
+
+**Checked against DSC UX Principles:** §4 (Centralize Logic), §5 (Previews Match Reality)
+
+**Problem:** While `signup_time` existed at the series level and all create/edit forms already supported it, the field was blocked from per-occurrence overrides by `ALLOWED_OVERRIDE_FIELDS`, and display surfaces didn't merge override values.
+
+**Solution:**
+1. Add `signup_time` to `ALLOWED_OVERRIDE_FIELDS` in both locations
+2. Merge `override_patch.signup_time` in HappeningCard and event detail page
+3. Also fix event detail to respect `override_patch.has_timeslots` (was only reading series value)
+
+**Precedence Rules (unchanged from Phase 5.08):**
+1. `has_timeslots` (override → series) === true → "Online signup"
+2. Else `signup_time` (override → series) present → "Signups at {time}"
+3. Else → show nothing
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/[id]/overrides/route.ts` | Added `signup_time` to ALLOWED_OVERRIDE_FIELDS |
+| `lib/events/nextOccurrence.ts` | Added `signup_time` to ALLOWED_OVERRIDE_FIELDS (keep in sync) |
+| `components/happenings/HappeningCard.tsx` | Added `effectiveSignupTime` merge from override_patch |
+| `app/events/[id]/page.tsx` | Added `effectiveHasTimeslots` and `effectiveSignupTime` merge from override_patch |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase5-10-signup-time-override.test.ts` | 17 tests for allowlist, precedence, merge logic |
+| `docs/investigation/phase5-10-signup-time-editing-stopgate.md` | STOP-GATE investigation document |
+
+**Key Implementation Details:**
+- Uses nullish coalescing (`??`) for string overrides (signup_time)
+- Uses `!== undefined` check for boolean overrides (has_timeslots) to allow explicit `false`
+- Both HappeningCard and event detail now respect per-occurrence signup configuration
+
+**Test Coverage:** 17 new tests (2959 total).
 
 ---
 
