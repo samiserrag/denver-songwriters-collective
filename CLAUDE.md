@@ -189,7 +189,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 5.06):** Lint warnings = 0. All tests passing (2908). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 5.08):** Lint warnings = 0. All tests passing (2942). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -521,6 +521,47 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Signup Time + Online Signup Meta (Phase 5.08, January 2026) — RESOLVED
+
+**Goal:** Add consistent signup meta display across all event surfaces with timeslots-over-signup-time precedence rule.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2942, build success).
+
+**Checked against DSC UX Principles:** §4 (Centralize Logic), §5 (Previews Match Reality), §12 (Test the Contract)
+
+**Precedence Rule:**
+1. `has_timeslots === true` → Display **"Online signup"** (type: `online`)
+2. Else if `signup_time` present → Display **"Signups at {time}"** (type: `in_person`)
+3. Else → Display nothing (`show: false`)
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/events/signupMeta.ts` | `getSignupMeta()` helper with precedence logic |
+| `__tests__/phase5-08-signup-meta.test.ts` | 21 tests for helper function |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningCard.tsx` | Uses `getSignupMeta()` for chip display |
+| `components/happenings/SeriesCard.tsx` | Added signupMeta chip display |
+| `app/events/[id]/page.tsx` | Added `signup_time` to query, signupMeta display with emoji |
+| `components/__tests__/card-variants.test.tsx` | Updated test expectations for new label format |
+
+**Display Locations:**
+
+| Surface | Display |
+|---------|---------|
+| HappeningCard | Chip: "Online signup" or "Signups at 6:30 PM" |
+| SeriesCard | Chip: same format |
+| Event detail | Row with emoji: 🎫 Online signup or 📝 Signups at X PM |
+
+**Test Coverage:** 21 new tests (2942 total).
 
 ---
 
