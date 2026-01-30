@@ -189,7 +189,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 0.6):** Lint warnings = 0. All tests passing (2994). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 1.0):** Lint warnings = 0. All tests passing (3033). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -521,6 +521,116 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Map View Discovery (Phase 1.0, January 2026) — RESOLVED
+
+**Goal:** Add a map view mode to `/happenings` that displays events as clustered pins on an interactive map, grouped by venue.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 3033, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §4 (Centralize Logic)
+
+**Features:**
+- New `?view=map` toggle on `/happenings` page (timeline is default)
+- Interactive Leaflet + OpenStreetMap map (zero-cost provider)
+- Clustered pins via `react-leaflet-cluster` (pins group when zoomed out)
+- One pin per venue with multiple events grouped
+- Center on Denver (39.7392, -104.9903), zoom level 11
+- Max 500 pins before showing fallback message
+- Lazy-loaded map component (client-side only, not in initial bundle)
+- Filter parity with Timeline/Series views
+- Hover tooltips showing venue name and event count
+- Default to showing only today's events when no date params
+
+**Non-Goals (Intentional):**
+- No new routes, API endpoints, or database queries
+- No geo-radius filtering (use existing filters)
+- No custom pin styling (uses Leaflet defaults)
+
+**View Mode URL Handling:**
+- `?view=timeline` or no param → Timeline view (default)
+- `?view=series` → Series view
+- `?view=map` → Map view
+
+**Default Today Behavior:**
+- When no date-affecting params (`?date=`, `?time=`, `?days=`, `?all=`) are present, shows only today's events
+- Use `?all=1` to see all upcoming events
+- "See all upcoming →" link visible when viewing today's default
+
+**Coordinate Resolution Priority:**
+1. `override_patch.venue_id` → lookup override venue coords
+2. `event.venue_id` → lookup event venue coords
+3. `event.custom_latitude/custom_longitude` → use custom location coords
+4. No coordinates → excluded from map (logged as warning)
+
+**Online-Only Exclusion:**
+- Events with `location_mode='online'` are excluded from map view
+- Stats bar shows count of excluded online-only events
+
+**CSP + Icon Fixes (January 2026):**
+- Added OSM tile domains to CSP img-src (`https://tile.openstreetmap.org https://*.tile.openstreetmap.org`)
+- Marker icons hosted locally in `/public/leaflet/` (avoids CDN CSP issues)
+- Stats wording changed from "X venues · Y happenings" to "X venues with Y happenings"
+- Exclusion label changed from "missing coords" to "no venue assigned"
+- Server-side warning specifies "location_mode='venue' but venue_id is NULL" for data quality issues
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/map/mapPinAdapter.ts` | Transforms occurrences to map pins, groups by venue |
+| `lib/map/index.ts` | Map module exports |
+| `components/happenings/MapView.tsx` | Client-side Leaflet map component with tooltips |
+| `public/leaflet/*.png` | Local Leaflet marker icons (marker-icon, marker-icon-2x, marker-shadow) |
+| `__tests__/phase1-0-map-view.test.ts` | 26 tests for map pin adapter and view modes |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `next.config.ts` | Added OSM tile domains to CSP img-src |
+| `components/happenings/ViewModeSelector.tsx` | Added "map" to HappeningsViewMode, added MapIcon, 3-column grid |
+| `app/happenings/page.tsx` | Map view mode handling, venue lat/lng queries, MapView rendering, default today filter |
+
+**Key Interfaces:**
+
+```typescript
+interface MapPinData {
+  venueId: string;
+  latitude: number;
+  longitude: number;
+  venueName: string;
+  venueSlug: string | null;
+  events: MapPinEvent[];
+}
+
+interface MapPinResult {
+  pins: MapPinData[];
+  excludedMissingCoords: number;
+  excludedOnlineOnly: number;
+  limitExceeded: boolean;
+  totalProcessed: number;
+}
+```
+
+**MAP_DEFAULTS:**
+```typescript
+{
+  CENTER: { lat: 39.7392, lng: -104.9903 },  // Denver
+  ZOOM: 11,
+  MAX_PINS: 500
+}
+```
+
+**Test Coverage:** 26 new tests (3020 total).
+
+**Dependencies Added:**
+- `react-leaflet` ^5.0.0
+- `leaflet` ^1.9.4
+- `react-leaflet-cluster` ^2.1.0
+- `@types/leaflet` ^1.9.18
 
 ---
 
