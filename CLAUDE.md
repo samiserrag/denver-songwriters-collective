@@ -524,6 +524,58 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Mobile Bottom Sheet for Map Pins (Phase 1.3, January 2026) — RESOLVED
+
+**Goal:** Add responsive detail panel for map pins - mobile bottom sheet (≤768px) while preserving desktop Leaflet popup behavior.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3079, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**Work Done:**
+- Created `useIsMobile` hook using `useSyncExternalStore` for SSR-safe mobile detection
+- Created `MapVenueSheet` bottom sheet component with accessibility features
+- Modified `MapView` to conditionally render popup (desktop) vs sheet (mobile)
+- Added slide-up animation for sheet appearance
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `hooks/useIsMobile.ts` | SSR-safe hook returning true when viewport < 768px |
+| `components/happenings/MapVenueSheet.tsx` | Mobile bottom sheet with focus trap, escape key, backdrop |
+| `__tests__/phase1-3-map-mobile-sheet.test.tsx` | 17 tests covering hook and sheet contracts |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/MapView.tsx` | Added isMobile detection, selectedPin state, conditional popup/sheet rendering |
+| `app/globals.css` | Added `@keyframes slide-up` and `.animate-slide-up` class |
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| SSR-safe | `useSyncExternalStore` with server snapshot returning false |
+| Breakpoint | 768px (matches Tailwind `md:` prefix) |
+| Focus trap | Tab wrapping within sheet |
+| Body scroll lock | Prevents background scrolling when sheet open |
+| Escape key | Closes sheet |
+| Backdrop click | Closes sheet |
+| Accessibility | `role="dialog"`, `aria-modal`, `aria-label` |
+
+**Desktop vs Mobile Behavior:**
+
+| Viewport | Pin Click | Detail Display |
+|----------|-----------|----------------|
+| ≥768px | Opens Leaflet popup | Inline popup over map |
+| <768px | Opens bottom sheet | Slides up from bottom |
+
+**Test Coverage:** 17 new tests (3079 total).
+
+---
+
 ### Map Popup Pure Component Extraction (Phase 1.2b, January 2026) — RESOLVED
 
 **Goal:** Extract MapPinPopup from MapView.tsx to a pure component for testability without Leaflet DOM.

@@ -360,6 +360,20 @@ body > footer {
   animation: scroll-bounce 2s ease-in-out infinite;
 }
 
+/* Phase 1.3: Bottom sheet slide-up animation for mobile map */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
 /* Leaflet MarkerCluster - ensure black text on cluster badges for both themes */
 .marker-cluster div {
   color: #000000 !important;

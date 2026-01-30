@@ -2,6 +2,7 @@
 
 /**
  * Phase 1.0: Map View Component
+ * Phase 1.3: Added mobile bottom sheet support
  *
  * Renders happenings as clustered map pins using Leaflet + OpenStreetMap.
  * Groups multiple events at the same venue into a single pin.
@@ -12,13 +13,20 @@
  * - Center on Denver (39.7392, -104.9903), zoom 11
  * - Uses react-leaflet for React integration
  * - Uses leaflet.markercluster for pin clustering
+ *
+ * Phase 1.3 Contract:
+ * - Desktop (≥768px): Leaflet Popup on marker click
+ * - Mobile (<768px): Bottom sheet on marker click, no Popup
+ * - SSR-safe mobile detection (initial false)
  */
 
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { MapPinData, MapPinResult } from "@/lib/map";
 import { MAP_DEFAULTS } from "@/lib/map";
 import { MapPinPopup } from "./MapPinPopup";
+import { MapVenueSheet } from "./MapVenueSheet";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Leaflet CSS must be imported for proper rendering
 import "leaflet/dist/leaflet.css";
@@ -37,10 +45,24 @@ interface MapViewProps {
  * Shows a fallback message if pin limit is exceeded.
  */
 export function MapView({ pinResult, className }: MapViewProps) {
+  const isMobile = useIsMobile();
+  const [selectedPin, setSelectedPin] = useState<MapPinData | null>(null);
   const [MapComponent, setMapComponent] = useState<React.ComponentType<{
     pins: MapPinData[];
+    isMobile: boolean;
+    onMarkerClick: (pin: MapPinData) => void;
   }> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Marker click handler - stable reference to avoid stale closures
+  const handleMarkerClick = useCallback((pin: MapPinData) => {
+    setSelectedPin(pin);
+  }, []);
+
+  // Close sheet handler
+  const handleCloseSheet = useCallback(() => {
+    setSelectedPin(null);
+  }, []);
 
   // Dynamically import Leaflet components (client-side only)
   useEffect(() => {
@@ -60,7 +82,16 @@ export function MapView({ pinResult, className }: MapViewProps) {
         });
 
         // Create the inner map component
-        const InnerMap = ({ pins }: { pins: MapPinData[] }) => (
+        // Props passed in to avoid stale closures from useEffect scope
+        const InnerMap = ({
+          pins,
+          isMobile: isMobileProp,
+          onMarkerClick,
+        }: {
+          pins: MapPinData[];
+          isMobile: boolean;
+          onMarkerClick: (pin: MapPinData) => void;
+        }) => (
           <MapContainer
             center={[MAP_DEFAULTS.CENTER.lat, MAP_DEFAULTS.CENTER.lng]}
             zoom={MAP_DEFAULTS.ZOOM}
@@ -79,7 +110,17 @@ export function MapView({ pinResult, className }: MapViewProps) {
               maxClusterRadius={60}
             >
               {pins.map((pin) => (
-                <Marker key={pin.venueId} position={[pin.latitude, pin.longitude]}>
+                <Marker
+                  key={pin.venueId}
+                  position={[pin.latitude, pin.longitude]}
+                  eventHandlers={
+                    isMobileProp
+                      ? {
+                          click: () => onMarkerClick(pin),
+                        }
+                      : undefined
+                  }
+                >
                   <Tooltip direction="top" offset={[0, -20]} opacity={0.9}>
                     <span className="font-medium">{pin.venueName}</span>
                     <br />
@@ -87,9 +128,12 @@ export function MapView({ pinResult, className }: MapViewProps) {
                       {pin.events.length} happening{pin.events.length !== 1 ? "s" : ""}
                     </span>
                   </Tooltip>
-                  <Popup>
-                    <MapPinPopup pin={pin} />
-                  </Popup>
+                  {/* Only render Popup on desktop - mobile uses bottom sheet */}
+                  {!isMobileProp && (
+                    <Popup>
+                      <MapPinPopup pin={pin} />
+                    </Popup>
+                  )}
                 </Marker>
               ))}
             </MarkerClusterGroup>
@@ -194,8 +238,19 @@ export function MapView({ pinResult, className }: MapViewProps) {
 
       {/* Map container */}
       <div className="h-[500px] md:h-[600px] rounded-xl overflow-hidden border border-[var(--color-border-default)]">
-        {MapComponent && <MapComponent pins={pinResult.pins} />}
+        {MapComponent && (
+          <MapComponent
+            pins={pinResult.pins}
+            isMobile={isMobile}
+            onMarkerClick={handleMarkerClick}
+          />
+        )}
       </div>
+
+      {/* Mobile bottom sheet - only renders when pin selected on mobile */}
+      {isMobile && (
+        <MapVenueSheet pin={selectedPin} onClose={handleCloseSheet} />
+      )}
     </div>
   );
 }
