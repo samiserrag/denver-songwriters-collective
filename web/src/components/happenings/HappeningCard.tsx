@@ -510,12 +510,13 @@ export function HappeningCard({
           if (mounted) setFavorited(false);
           return;
         }
+        // Use maybeSingle() instead of single() to avoid 406 errors when no favorite exists
         const { data, error } = await supabase
           .from("favorites")
           .select("id")
           .eq("user_id", user.id)
           .eq("event_id", event.id)
-          .single();
+          .maybeSingle();
         if (!error && mounted) {
           setFavorited(!!data);
         }

@@ -41,12 +41,6 @@ export const dynamic = "force-dynamic";
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
  * - view: timeline|series|map (Phase 4.54/1.0, default: timeline)
- * - date: YYYY-MM-DD single date filter (Phase 1.0)
- * - all: 1 = show all upcoming (bypasses today default, Phase 1.0)
- *
- * Phase 1.0 Default Today Behavior:
- * When no date-affecting params (date, time, days, all) are present, defaults to showing today only.
- * Use ?all=1 to see all upcoming events.
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -61,10 +55,6 @@ interface HappeningsSearchParams {
   showCancelled?: string;
   pastOffset?: string;
   view?: string;
-  /** Phase 1.0: Single date filter (YYYY-MM-DD). Defaults to today when no date params present. */
-  date?: string;
-  /** Phase 1.0: Explicit "show all upcoming" mode (bypasses today default) */
-  all?: string;
 }
 
 export default async function HappeningsPage({
@@ -77,6 +67,7 @@ export default async function HappeningsPage({
 
   // Extract all filter params
   const searchQuery = params.q || "";
+  const timeFilter = params.time || "upcoming";
   const typeFilter = params.type || "";
   const dscFilter = params.dsc === "1";
   const verifyFilter = params.verify || "";
@@ -97,13 +88,6 @@ export default async function HappeningsPage({
     "timeline";
 
   const today = getTodayDenver();
-
-  // Phase 1.0: Default Today Behavior
-  // When no date-affecting params are present, show only today's events
-  // User can see all upcoming with ?all=1 or by setting other date params
-  const hasDateParams = !!(params.date || params.time || params.days || params.all === "1");
-  const dateFilter = params.date || (hasDateParams ? null : today); // Default to today when no date params
-  const timeFilter = params.time || "upcoming";
   const yesterday = addDaysDenver(today, -1);
 
   // Phase 4.50b: Compute window bounds based on timeFilter
@@ -378,15 +362,8 @@ export default async function HappeningsPage({
   // - past: reverse chronological (DESC) - most recent first
   let filteredGroups = rescheduledGroups;
 
-  // Phase 1.0: Apply single-date filter if present (includes default-to-today)
-  if (dateFilter) {
-    // Filter to only the specified date
-    filteredGroups = new Map(
-      [...rescheduledGroups.entries()]
-        .filter(([dateKey]) => dateKey === dateFilter)
-    );
-  } else if (timeFilter === "upcoming") {
-    // Filter to only upcoming occurrences
+  if (timeFilter === "upcoming") {
+    // Filter to only upcoming occurrences (default behavior: rolling ~3 month window)
     filteredGroups = new Map(
       [...rescheduledGroups.entries()]
         .filter(([dateKey]) => dateKey >= today)
@@ -463,10 +440,7 @@ export default async function HappeningsPage({
   }
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  // Phase 1.0: Default today is NOT considered a filter (it's the default state)
-  // Explicit ?date= param IS considered a filter
-  const hasExplicitDateFilter = !!(params.date || params.time || params.days);
-  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || hasExplicitDateFilter;
+  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming");
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -608,25 +582,10 @@ export default async function HappeningsPage({
           />
         </Suspense>
 
-        {/* Results summary - humanized, Phase 4.55/1.0 */}
+        {/* Results summary - humanized, Phase 4.55 */}
         <div className="py-3">
-          {/* Phase 1.0: Default today view shows tonight count + link to see all */}
-          {dateFilter === today && !hasExplicitDateFilter ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              <span>
-                <span className="font-bold text-[var(--color-text-primary)]">{tonightCount}</span>
-                <span className="text-[var(--color-text-secondary)]"> tonight</span>
-              </span>
-              <span className="text-[var(--color-text-tertiary)]">•</span>
-              <Link
-                href="/happenings?all=1"
-                className="text-[var(--color-accent-primary)] hover:underline"
-              >
-                See all upcoming →
-              </Link>
-            </div>
-          ) : timeFilter === "upcoming" && !hasFilters ? (
-            /* Humanized summary for explicit all-upcoming view */
+          {timeFilter === "upcoming" && !hasFilters ? (
+            /* Humanized summary for default view (rolling ~3 month upcoming window) */
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               {tonightCount > 0 && (
                 <span>

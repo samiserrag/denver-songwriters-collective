@@ -524,6 +524,68 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Restore Pre-Phase-1.0 Default Window (Phase 1.01, January 2026) — RESOLVED
+
+**Goal:** Revert Phase 1.0's "default today/tonight filter" behavior back to the pre-Phase-1.0 rolling ~3 month window.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 3045, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §3 (Rolling Windows Must Be Explained)
+
+**Problems Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Default shows only today's events | Phase 1.0 added `dateFilter` logic that defaulted to today when no date params | Removed `date` and `all` params, removed dateFilter logic |
+| Map view defaulted to today-only | Map view inherited the Phase 1.0 today-default behavior | Map now uses same rolling ~3 month window as Timeline/Series |
+| Favorites 406 spam in console | `.single()` returns 406 when 0 rows match | Changed to `.maybeSingle()` which returns null for 0 rows |
+
+**What Was Removed:**
+
+| Removed | Rationale |
+|---------|-----------|
+| `date` search param | Phase 1.0 addition for single-date filtering |
+| `all` search param | Phase 1.0 addition to show all upcoming (workaround for today-default) |
+| `hasDateParams` variable | Used to detect if date-affecting params were present |
+| `dateFilter` variable | Used to apply single-date filtering |
+| Single-date filter application | Logic that filtered to a specific date |
+| "See all upcoming →" link | No longer needed since default is already all upcoming |
+
+**Default Window Behavior (Restored):**
+
+| View | Default Window |
+|------|---------------|
+| Timeline | Rolling ~3 months (today → today+90) |
+| Series | Rolling ~3 months (today → today+90) |
+| Map | Rolling ~3 months (today → today+90) |
+
+**Results Summary (Restored):**
+- Default view shows humanized summary: "X tonight · Y this weekend · Z this week · Total in the next 3 months"
+- Filtered views show: "X happenings across Y dates (context)"
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Removed `date`/`all` params, dateFilter logic, restored rolling window default |
+| `components/happenings/HappeningCard.tsx` | Fixed `.single()` → `.maybeSingle()` for favorites check |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase1-01-default-window-revert.test.ts` | 12 tests for Phase 1.01 contracts |
+
+**Test Coverage:** 12 new tests (3045 total).
+
+**Smoke Checklist:**
+1. `/happenings` — Shows rolling ~3 month window by default (not just today)
+2. `/happenings?view=map` — Shows all venues with events in ~3 month window
+3. `/happenings?view=series` — Shows series with occurrences in ~3 month window
+4. No 406 errors in console when viewing happenings cards
+
+---
+
 ### Map View Discovery (Phase 1.0, January 2026) — RESOLVED
 
 **Goal:** Add a map view mode to `/happenings` that displays events as clustered pins on an interactive map, grouped by venue.
@@ -542,7 +604,6 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Lazy-loaded map component (client-side only, not in initial bundle)
 - Filter parity with Timeline/Series views
 - Hover tooltips showing venue name and event count
-- Default to showing only today's events when no date params
 
 **Non-Goals (Intentional):**
 - No new routes, API endpoints, or database queries
@@ -553,11 +614,6 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - `?view=timeline` or no param → Timeline view (default)
 - `?view=series` → Series view
 - `?view=map` → Map view
-
-**Default Today Behavior:**
-- When no date-affecting params (`?date=`, `?time=`, `?days=`, `?all=`) are present, shows only today's events
-- Use `?all=1` to see all upcoming events
-- "See all upcoming →" link visible when viewing today's default
 
 **Coordinate Resolution Priority:**
 1. `override_patch.venue_id` → lookup override venue coords
@@ -592,7 +648,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 |------|--------|
 | `next.config.ts` | Added OSM tile domains to CSP img-src |
 | `components/happenings/ViewModeSelector.tsx` | Added "map" to HappeningsViewMode, added MapIcon, 3-column grid |
-| `app/happenings/page.tsx` | Map view mode handling, venue lat/lng queries, MapView rendering, default today filter |
+| `app/happenings/page.tsx` | Map view mode handling, venue lat/lng queries, MapView rendering |
 
 **Key Interfaces:**
 
