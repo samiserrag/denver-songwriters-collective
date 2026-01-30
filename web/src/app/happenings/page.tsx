@@ -18,6 +18,8 @@ import {
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
+import { occurrencesToMapPins, type MapPinConfig } from "@/lib/map";
+import { MapView } from "@/components/happenings/MapView";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -38,7 +40,13 @@ export const dynamic = "force-dynamic";
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.)
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
- * - view: timeline|series (Phase 4.54, default: timeline)
+ * - view: timeline|series|map (Phase 4.54/1.0, default: timeline)
+ * - date: YYYY-MM-DD single date filter (Phase 1.0)
+ * - all: 1 = show all upcoming (bypasses today default, Phase 1.0)
+ *
+ * Phase 1.0 Default Today Behavior:
+ * When no date-affecting params (date, time, days, all) are present, defaults to showing today only.
+ * Use ?all=1 to see all upcoming events.
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -53,6 +61,10 @@ interface HappeningsSearchParams {
   showCancelled?: string;
   pastOffset?: string;
   view?: string;
+  /** Phase 1.0: Single date filter (YYYY-MM-DD). Defaults to today when no date params present. */
+  date?: string;
+  /** Phase 1.0: Explicit "show all upcoming" mode (bypasses today default) */
+  all?: string;
 }
 
 export default async function HappeningsPage({
@@ -65,7 +77,6 @@ export default async function HappeningsPage({
 
   // Extract all filter params
   const searchQuery = params.q || "";
-  const timeFilter = params.time || "upcoming";
   const typeFilter = params.type || "";
   const dscFilter = params.dsc === "1";
   const verifyFilter = params.verify || "";
@@ -79,10 +90,20 @@ export default async function HappeningsPage({
   const showCancelled = params.showCancelled === "1";
   // Progressive loading offset for past events (each offset = 90 days further back)
   const pastOffset = parseInt(params.pastOffset || "0", 10) || 0;
-  // Phase 4.54: View mode (timeline = grouped by date, series = grouped by event)
-  const viewMode: HappeningsViewMode = params.view === "series" ? "series" : "timeline";
+  // Phase 4.54/1.0: View mode (timeline = grouped by date, series = grouped by event, map = geographic)
+  const viewMode: HappeningsViewMode =
+    params.view === "series" ? "series" :
+    params.view === "map" ? "map" :
+    "timeline";
 
   const today = getTodayDenver();
+
+  // Phase 1.0: Default Today Behavior
+  // When no date-affecting params are present, show only today's events
+  // User can see all upcoming with ?all=1 or by setting other date params
+  const hasDateParams = !!(params.date || params.time || params.days || params.all === "1");
+  const dateFilter = params.date || (hasDateParams ? null : today); // Default to today when no date params
+  const timeFilter = params.time || "upcoming";
   const yesterday = addDaysDenver(today, -1);
 
   // Phase 4.50b: Compute window bounds based on timeFilter
@@ -134,11 +155,12 @@ export default async function HappeningsPage({
   // Phase 4.52: Include google_maps_url and website_url for venue links
   // Phase ABC4: Include slug for venue internal links
   // Phase 5.06: Alias 'venues' to 'venue' so components can read event.venue.city/state
+  // Phase 1.0: Include latitude/longitude for map view
   let query = supabase
     .from("events")
     .select(`
       *,
-      venue:venues!left(id, slug, name, address, city, state, google_maps_url, website_url)
+      venue:venues!left(id, slug, name, address, city, state, google_maps_url, website_url, latitude, longitude)
     `)
     .eq("is_published", true)
     .in("status", ["active", "needs_verification", "unverified"]);
@@ -170,16 +192,16 @@ export default async function HappeningsPage({
     const vid = patch?.venue_id as string | undefined;
     if (vid) overrideVenueIds.add(vid);
   }
-  // Phase 5.04: Include city/state in override venue map for HappeningCard display
-  const overrideVenueMap = new Map<string, { name: string; slug?: string | null; city?: string | null; state?: string | null; google_maps_url?: string | null; website_url?: string | null }>();
+  // Phase 5.04/1.0: Include city/state and lat/lng in override venue map for HappeningCard and MapView
+  const overrideVenueMap = new Map<string, { name: string; slug?: string | null; city?: string | null; state?: string | null; google_maps_url?: string | null; website_url?: string | null; latitude?: number | null; longitude?: number | null }>();
   if (overrideVenueIds.size > 0) {
     const { data: overrideVenues } = await supabase
       .from("venues")
-      .select("id, name, slug, city, state, google_maps_url, website_url")
+      .select("id, name, slug, city, state, google_maps_url, website_url, latitude, longitude")
       .in("id", [...overrideVenueIds]);
     if (overrideVenues) {
       for (const v of overrideVenues) {
-        overrideVenueMap.set(v.id, { name: v.name, slug: v.slug, city: v.city, state: v.state, google_maps_url: v.google_maps_url, website_url: v.website_url });
+        overrideVenueMap.set(v.id, { name: v.name, slug: v.slug, city: v.city, state: v.state, google_maps_url: v.google_maps_url, website_url: v.website_url, latitude: v.latitude, longitude: v.longitude });
       }
     }
   }
@@ -355,7 +377,15 @@ export default async function HappeningsPage({
   // - upcoming/all: chronological (ASC) - earliest first
   // - past: reverse chronological (DESC) - most recent first
   let filteredGroups = rescheduledGroups;
-  if (timeFilter === "upcoming") {
+
+  // Phase 1.0: Apply single-date filter if present (includes default-to-today)
+  if (dateFilter) {
+    // Filter to only the specified date
+    filteredGroups = new Map(
+      [...rescheduledGroups.entries()]
+        .filter(([dateKey]) => dateKey === dateFilter)
+    );
+  } else if (timeFilter === "upcoming") {
     // Filter to only upcoming occurrences
     filteredGroups = new Map(
       [...rescheduledGroups.entries()]
@@ -433,7 +463,10 @@ export default async function HappeningsPage({
   }
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || timeFilter !== "upcoming";
+  // Phase 1.0: Default today is NOT considered a filter (it's the default state)
+  // Explicit ?date= param IS considered a filter
+  const hasExplicitDateFilter = !!(params.date || params.time || params.days);
+  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || hasExplicitDateFilter;
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -575,10 +608,25 @@ export default async function HappeningsPage({
           />
         </Suspense>
 
-        {/* Results summary - humanized, Phase 4.55 */}
+        {/* Results summary - humanized, Phase 4.55/1.0 */}
         <div className="py-3">
-          {timeFilter === "upcoming" && !hasFilters ? (
-            /* Humanized summary for default view */
+          {/* Phase 1.0: Default today view shows tonight count + link to see all */}
+          {dateFilter === today && !hasExplicitDateFilter ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span>
+                <span className="font-bold text-[var(--color-text-primary)]">{tonightCount}</span>
+                <span className="text-[var(--color-text-secondary)]"> tonight</span>
+              </span>
+              <span className="text-[var(--color-text-tertiary)]">•</span>
+              <Link
+                href="/happenings?all=1"
+                className="text-[var(--color-accent-primary)] hover:underline"
+              >
+                See all upcoming →
+              </Link>
+            </div>
+          ) : timeFilter === "upcoming" && !hasFilters ? (
+            /* Humanized summary for explicit all-upcoming view */
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               {tonightCount > 0 && (
                 <span>
@@ -627,8 +675,46 @@ export default async function HappeningsPage({
           )}
         </div>
 
-        {/* Phase 4.54: Conditional rendering based on view mode */}
-        {viewMode === "series" ? (
+        {/* Phase 4.54/1.0: Conditional rendering based on view mode */}
+        {viewMode === "map" ? (
+          /* Map View - geographic pins (Phase 1.0) */
+          (() => {
+            // Flatten all occurrences from filteredGroups for map rendering
+            const allOccurrences: EventOccurrenceEntry<any>[] = [];
+            for (const entries of filteredGroups.values()) {
+              allOccurrences.push(...entries);
+            }
+
+            // Build override venue map for MapPinConfig (includes lat/lng for venue resolution)
+            const mapOverrideVenueMap = new Map<string, {
+              name: string;
+              slug?: string | null;
+              latitude?: number | null;
+              longitude?: number | null;
+              city?: string | null;
+              state?: string | null;
+            }>();
+            for (const [vid, data] of overrideVenueMap.entries()) {
+              mapOverrideVenueMap.set(vid, {
+                name: data.name,
+                slug: data.slug,
+                latitude: data.latitude,
+                longitude: data.longitude,
+                city: data.city,
+                state: data.state,
+              });
+            }
+
+            const mapConfig: MapPinConfig = {
+              maxPins: 500,
+              overrideVenueMap: mapOverrideVenueMap,
+            };
+
+            const pinResult = occurrencesToMapPins(allOccurrences, mapConfig);
+
+            return <MapView pinResult={pinResult} className="mt-4" />;
+          })()
+        ) : viewMode === "series" ? (
           /* Series View - one row per event/series */
           <>
             {/* Phase 4.84: Rolling window notice for series view */}
