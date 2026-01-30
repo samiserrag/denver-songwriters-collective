@@ -524,6 +524,33 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Signup Time Field Visibility Fix (Phase 5.11, January 2026) — RESOLVED
+
+**Goal:** Make the `signup_time` field visible in the event create/edit forms instead of hiding it in collapsed Advanced Options.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2959, build success).
+
+**Problem:** The `signup_time` field was buried inside the "Advanced Options" collapsed section, making it effectively invisible to users. Users had to expand the Advanced Options to find and set the signup time.
+
+**Solution:** Moved the `signup_time` field from Advanced Options (Section 7) to the Schedule section, placing it directly after the End Time field where users would naturally expect to find time-related settings.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Moved `signup_time` dropdown to Schedule section after End Time; removed duplicate from Advanced Options |
+
+**Visibility Change:**
+
+| Before | After |
+|--------|-------|
+| Hidden in collapsed Advanced Options | Prominently displayed in Schedule section |
+| Required expanding Advanced Options to access | Visible by default alongside Start Time / End Time |
+
+**No database or API changes required** — this was a UI-only fix to improve field discoverability.
+
+---
+
 ### Signup Time Per-Occurrence Overrides (Phase 5.10, January 2026) — RESOLVED
 
 **Goal:** Enable `signup_time` to be overridden per-occurrence, completing the signup configuration override system.

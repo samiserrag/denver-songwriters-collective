@@ -934,6 +934,23 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             ))}
           </select>
         </div>
+        {/* Signup Time - prominently displayed for in-person signup time at venue */}
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            Signup Time <span className="font-normal">(optional)</span>
+          </label>
+          <select
+            value={formData.signup_time}
+            onChange={(e) => updateField("signup_time", e.target.value)}
+            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+          >
+            <option value="">Select time...</option>
+            {TIME_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">When does in-person signup typically begin?</p>
+        </div>
       </div>
 
       {/* Section 3a removed: Date field is now consolidated inside the schedule section (Section 3b) */}
@@ -2050,24 +2067,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   <option value="online">Online signup (external)</option>
                   <option value="both">Both (in person + online)</option>
                 </select>
-              </div>
-
-              {/* Signup Time - always visible, for in-person signup time at venue */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                  Signup Time <span className="font-normal">(optional)</span>
-                </label>
-                <select
-                  value={formData.signup_time}
-                  onChange={(e) => setFormData(prev => ({ ...prev, signup_time: e.target.value }))}
-                  className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                >
-                  <option value="">Select time...</option>
-                  {TIME_OPTIONS.map(({ value, label }) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">When does in-person signup typically begin?</p>
               </div>
 
               {(formData.signup_mode === "online" || formData.signup_mode === "both") && (
