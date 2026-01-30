@@ -20,8 +20,8 @@ export interface VenueAuditContext {
   previousValues: Record<string, unknown>;
   /** Values after the edit */
   newValues: Record<string, unknown>;
-  /** Role of actor: manager or admin */
-  actorRole: "manager" | "admin";
+  /** Role of actor: manager, admin, or host (Phase 0.6: event hosts can edit venues) */
+  actorRole: "manager" | "admin" | "host";
   /** Optional reason (e.g., for reverts) */
   reason?: string;
   /** For reverts: the log_id being reverted */

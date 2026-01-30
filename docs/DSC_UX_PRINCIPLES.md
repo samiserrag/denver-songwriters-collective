@@ -217,3 +217,24 @@ If the system answers those three questions consistently, the UX is succeeding.
 | Phase 4.89 | §2 Visibility vs Trust — Confirmation separate from visibility |
 | Phase 4.82 | §4 Centralize Logic — Override patch field propagation |
 | Phase 4.83 | §4 Centralize Logic — Recurrence canonicalization |
+| Phase 4.92 | §16 Ownership & Invites — Event invite primitives audit |
+
+---
+
+## 16. Ownership & Invitation Systems (Mandatory Checklist)
+
+Any feature involving ownership, invites, claims, roles, delegation, approvals, revocation, or acceptance flows **must** follow the [Ownership & Invitation UX Checklist](ux/ownership-invitation-ux-checklist.md).
+
+**Before implementation:**
+1. Complete STOP-GATE 1 using the checklist's YES/NO matrix
+2. Answer all STOP-GATE questions in the checklist
+3. Document dead-ends and missing primitives
+4. Only proceed to design after confirming primitives exist
+
+**Key invariants:**
+- Every invite/claim must have system-tracked status (no manual-email-only paths)
+- Token-based invites store hash only; plaintext shown exactly once
+- Acceptance must survive login/signup redirects (token in URL)
+- Parallel ownership tracks (e.g., Events + Venues) are separate unless explicitly linked
+
+**Reference:** Phase 4.92 investigation established this checklist after finding Events lacked all invite primitives that Venues had

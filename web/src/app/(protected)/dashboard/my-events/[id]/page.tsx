@@ -119,8 +119,11 @@ export default async function EditEventPage({
   // Phase 4.42e: Event owner (host_id) is also a primary host
   const isPrimaryHost = userHost?.role === "host" || isAdmin || isEventOwner;
 
-  // Get venue name from the joined relation
-  const venueName = (event.venues as { name: string } | null)?.name ?? "TBA";
+  // Get venue info from the joined relation
+  // Phase 0.6: Include venue_id for Edit Venue link
+  const venueData = event.venues as { id: string; name: string } | null;
+  const venueName = venueData?.name ?? "TBA";
+  const venueId = venueData?.id ?? null;
 
   // Phase 4.42k C3: Fetch series siblings if this event is part of a series
   let seriesSiblings: Array<{ id: string; event_date: string | null; title: string }> = [];
@@ -189,7 +192,24 @@ export default async function EditEventPage({
               <span className="text-3xl">{config.icon}</span>
               <div>
                 <h1 className="font-[var(--font-family-serif)] text-2xl text-[var(--color-text-primary)]">{event.title}</h1>
-                <p className="text-[var(--color-text-secondary)] text-sm">{config.label} • {venueName}</p>
+                <p className="text-[var(--color-text-secondary)] text-sm">
+                  {config.label} •{" "}
+                  {venueId ? (
+                    <>
+                      {venueName}
+                      {/* Phase 0.6: Edit Venue link for hosts/cohosts */}
+                      <Link
+                        href={`/dashboard/my-venues/${venueId}`}
+                        className="ml-2 text-[var(--color-text-accent)] hover:underline"
+                        title="Edit venue details"
+                      >
+                        (Edit Venue)
+                      </Link>
+                    </>
+                  ) : (
+                    venueName
+                  )}
+                </p>
               </div>
             </div>
           </div>

@@ -189,7 +189,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 5.10):** Lint warnings = 0. All tests passing (2959). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 0.6):** Lint warnings = 0. All tests passing (2994). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -521,6 +521,62 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Venue Editing by Event Hosts — Trust-First Model (Phase 0.6, January 2026) — RESOLVED
+
+**Goal:** Allow event hosts and cohosts to edit venues associated with their events, with automatic geocoding when address fields change.
+
+**Status:** Complete. All quality gates pass (lint 0, tests 2994, build success).
+
+**Trust-First Model:**
+- Hosts and cohosts can FULLY edit venues tied to their events
+- No field-level restrictions — ALL 16 venue fields editable
+- No approval queues or permission tables
+- Server-side enforcement via relationship check (event.venue_id === venue.id)
+
+**Geocoding Behavior:**
+- If lat/lng explicitly provided → use them, set `geocode_source: 'manual'`
+- Else if address fields changed → auto-geocode via Google API
+- Geocoding failure never blocks save (silent fallback)
+- Colorado boundary check prevents out-of-area coordinates
+
+**Authorization Flow:**
+1. Check if user is venue manager (existing `venue_managers` table)
+2. Check if user is admin
+3. **NEW:** Check if user is event host/cohost at this venue (`isEventHostAtVenue()`)
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/venue/geocoding.ts` | Geocoding service module with Google API integration |
+| `__tests__/phase0-6-venue-host-editing.test.ts` | 34 tests for geocoding and authorization contracts |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/venue/managerAuth.ts` | Added `isEventHostAtVenue()`, expanded `canEditVenue()`, added lat/lng to MANAGER_EDITABLE_VENUE_FIELDS (now 16 fields) |
+| `lib/audit/venueAudit.ts` | Added `"host"` to `actorRole` type |
+| `api/venues/[id]/route.ts` | Geocoding integration, host authorization |
+| `api/admin/venues/[id]/route.ts` | Geocoding integration |
+| `dashboard/my-events/[id]/page.tsx` | Added "Edit Venue" link for hosts/cohosts |
+| `dashboard/my-venues/[id]/page.tsx` | Added "Event Host" badge when accessing via hosting relationship |
+| `__tests__/phase-abc9-venue-manager-controls.test.ts` | Updated field count from 14 to 16, added coordinate field tests |
+| `__tests__/phase-abc10a-venue-audit.test.ts` | Updated for 16 fields, numeric coordinate handling |
+
+**MANAGER_EDITABLE_VENUE_FIELDS (16 total):**
+```
+name, address, city, state, zip, phone, website_url, google_maps_url,
+map_link, contact_link, neighborhood, accessibility_notes, parking_notes,
+cover_image_url, latitude, longitude
+```
+
+**Test Coverage:** 34 new tests (2994 total).
+
+**Investigation Doc:** `docs/investigation/phase0-6-venue-geocoding-automation-stopgate.md`
 
 ---
 

@@ -3,6 +3,9 @@
  *
  * Provides authorization checks for venue management operations.
  * Used by API routes and UI components to determine user capabilities.
+ *
+ * Phase 0.6: Added event host/cohost authorization for venue editing.
+ * Trust-First Model: If a user hosts an event at a venue, they can edit that venue.
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -32,10 +35,12 @@ export interface VenueManagerGrant {
 // =============================================================================
 
 /**
- * Fields that venue managers (owner or manager role) can edit.
+ * Fields that venue editors (managers, hosts, cohosts) can edit.
+ *
+ * Phase 0.6: Trust-First Model - All venue fields are editable by authorized users.
  *
  * EXCLUDED (system-managed):
- * - id, slug, created_at, updated_at
+ * - id, slug, created_at, updated_at, geocoded_at, geocode_source
  *
  * EXCLUDED (admin-only):
  * - notes (internal admin notes, not public)
@@ -57,6 +62,9 @@ export const MANAGER_EDITABLE_VENUE_FIELDS = [
   "accessibility_notes",
   "parking_notes",
   "cover_image_url",
+  // Phase 0.6: Coordinates are now editable (trust-first model)
+  "latitude",
+  "longitude",
 ] as const;
 
 export type ManagerEditableVenueField =
@@ -70,16 +78,33 @@ export type ManagerEditableVenuePatch = Pick<
 /**
  * Validates that a patch object only contains allowed fields.
  * Returns the sanitized patch with only allowed fields.
+ *
+ * Phase 0.6: Now handles numeric fields (latitude, longitude).
  */
 export function sanitizeVenuePatch(
   patch: Record<string, unknown>
 ): Partial<ManagerEditableVenuePatch> {
-  const sanitized: Record<string, string | null> = {};
+  const sanitized: Record<string, string | number | null> = {};
   const allowedSet = new Set<string>(MANAGER_EDITABLE_VENUE_FIELDS);
+  const numericFields = new Set(["latitude", "longitude"]);
 
   for (const key of Object.keys(patch)) {
     if (allowedSet.has(key)) {
-      sanitized[key] = patch[key] as string | null;
+      const value = patch[key];
+      if (numericFields.has(key)) {
+        // Handle numeric fields (latitude, longitude)
+        if (typeof value === "number") {
+          sanitized[key] = value;
+        } else if (value === null || value === undefined || value === "") {
+          sanitized[key] = null;
+        } else if (typeof value === "string") {
+          const parsed = parseFloat(value);
+          sanitized[key] = isNaN(parsed) ? null : parsed;
+        }
+      } else {
+        // Handle string fields
+        sanitized[key] = value as string | null;
+      }
     }
   }
 
@@ -165,7 +190,8 @@ export async function getVenueRole(
  * Check if user can edit a venue.
  * User can edit if they are:
  * - A venue manager (owner or manager role) for this venue, OR
- * - An admin
+ * - An admin (checked separately by caller), OR
+ * - An accepted host/cohost of an event at this venue (Phase 0.6)
  *
  * Note: This function does NOT check admin status - caller should check separately.
  */
@@ -174,7 +200,66 @@ export async function canEditVenue(
   venueId: string,
   userId: string
 ): Promise<boolean> {
-  return isVenueManager(supabase, venueId, userId);
+  // Check venue manager first (faster query)
+  const isManager = await isVenueManager(supabase, venueId, userId);
+  if (isManager) return true;
+
+  // Check if user is an event host/cohost at this venue (Phase 0.6)
+  const isEventHost = await isEventHostAtVenue(supabase, venueId, userId);
+  return isEventHost;
+}
+
+/**
+ * Phase 0.6: Check if user is an accepted host or cohost of any event at this venue.
+ *
+ * Trust-First Model: Hosts and cohosts can fully edit venues for their events.
+ */
+export async function isEventHostAtVenue(
+  supabase: SupabaseClient<Database>,
+  venueId: string,
+  userId: string
+): Promise<boolean> {
+  // First, check if user is a primary host (events.host_id) of any event at this venue
+  const { data: primaryHostEvents, error: primaryError } = await supabase
+    .from("events")
+    .select("id")
+    .eq("venue_id", venueId)
+    .eq("host_id", userId)
+    .limit(1);
+
+  if (!primaryError && primaryHostEvents && primaryHostEvents.length > 0) {
+    return true;
+  }
+
+  // Second, check if user is in event_hosts table with accepted status for events at this venue
+  const { data: cohostEvents, error: cohostError } = await supabase
+    .from("event_hosts")
+    .select(`
+      id,
+      events!inner(venue_id)
+    `)
+    .eq("user_id", userId)
+    .eq("invitation_status", "accepted")
+    .limit(1);
+
+  if (cohostError) {
+    console.error("[VenueAuth] Error checking event host status:", cohostError);
+    return false;
+  }
+
+  // Filter to check if any of these events are at the target venue
+  if (cohostEvents && cohostEvents.length > 0) {
+    for (const host of cohostEvents) {
+      const events = host.events as unknown as { venue_id: string } | { venue_id: string }[];
+      // Handle both single object and array cases
+      const eventVenueId = Array.isArray(events) ? events[0]?.venue_id : events?.venue_id;
+      if (eventVenueId === venueId) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**

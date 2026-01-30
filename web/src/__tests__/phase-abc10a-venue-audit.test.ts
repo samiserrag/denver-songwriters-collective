@@ -75,6 +75,7 @@ describe("Venue Audit - ABC10a", () => {
 
   describe("Manager-editable fields allowlist", () => {
     it("should include all expected fields", () => {
+      // Phase 0.6: Added latitude and longitude to editable fields
       const expectedFields = [
         "name",
         "address",
@@ -90,18 +91,22 @@ describe("Venue Audit - ABC10a", () => {
         "accessibility_notes",
         "parking_notes",
         "cover_image_url",
+        "latitude",
+        "longitude",
       ];
 
       expect(MANAGER_EDITABLE_VENUE_FIELDS).toEqual(expectedFields);
     });
 
-    it("should have exactly 14 editable fields", () => {
-      expect(MANAGER_EDITABLE_VENUE_FIELDS).toHaveLength(14);
+    // Phase 0.6: Expanded from 14 to 16 fields (added latitude, longitude)
+    it("should have exactly 16 editable fields", () => {
+      expect(MANAGER_EDITABLE_VENUE_FIELDS).toHaveLength(16);
     });
 
     it("should NOT include sensitive fields", () => {
       // These fields should never be editable by managers
-      const sensitiveFields = ["id", "slug", "created_at", "notes", "latitude", "longitude"];
+      // Phase 0.6: latitude and longitude are now editable (trust-first model)
+      const sensitiveFields = ["id", "slug", "created_at", "notes"];
 
       for (const field of sensitiveFields) {
         expect(MANAGER_EDITABLE_VENUE_FIELDS).not.toContain(field);
@@ -199,17 +204,31 @@ describe("Venue Audit - ABC10a", () => {
       });
     });
 
-    it("should handle all 14 manager-editable fields in revert", () => {
-      const previousValues: Record<string, string | null> = {};
+    // Phase 0.6: Expanded from 14 to 16 fields (added latitude, longitude)
+    it("should handle all 16 manager-editable fields in revert", () => {
+      const previousValues: Record<string, string | number | null> = {};
       for (const field of MANAGER_EDITABLE_VENUE_FIELDS) {
-        previousValues[field] = `original_${field}`;
+        // Phase 0.6: latitude and longitude are numeric fields
+        if (field === "latitude") {
+          previousValues[field] = 39.7392;
+        } else if (field === "longitude") {
+          previousValues[field] = -104.9903;
+        } else {
+          previousValues[field] = `original_${field}`;
+        }
       }
 
       const sanitized = sanitizeVenuePatch(previousValues);
 
-      expect(Object.keys(sanitized)).toHaveLength(14);
+      expect(Object.keys(sanitized)).toHaveLength(16);
       for (const field of MANAGER_EDITABLE_VENUE_FIELDS) {
-        expect(sanitized[field]).toBe(`original_${field}`);
+        if (field === "latitude") {
+          expect(sanitized[field]).toBe(39.7392);
+        } else if (field === "longitude") {
+          expect(sanitized[field]).toBe(-104.9903);
+        } else {
+          expect(sanitized[field]).toBe(`original_${field}`);
+        }
       }
     });
   });

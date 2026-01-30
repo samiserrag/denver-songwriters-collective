@@ -43,8 +43,15 @@ describe("ABC9: Venue Manager Controls", () => {
       expect(fields).not.toContain("notes"); // Admin-only internal notes
     });
 
-    it("should have exactly 14 editable fields", () => {
-      expect(MANAGER_EDITABLE_VENUE_FIELDS.length).toBe(14);
+    // Phase 0.6: Added latitude and longitude to editable fields
+    it("should have exactly 16 editable fields", () => {
+      expect(MANAGER_EDITABLE_VENUE_FIELDS.length).toBe(16);
+    });
+
+    // Phase 0.6: Verify coordinate fields are included
+    it("should contain coordinate fields (Phase 0.6)", () => {
+      expect(MANAGER_EDITABLE_VENUE_FIELDS).toContain("latitude");
+      expect(MANAGER_EDITABLE_VENUE_FIELDS).toContain("longitude");
     });
   });
 

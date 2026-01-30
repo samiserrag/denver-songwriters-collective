@@ -1,14 +1,16 @@
 /**
  * Edit Venue Page - ABC9
  *
- * Allows venue managers to edit venue information.
+ * Allows venue managers and event hosts to edit venue information.
+ *
+ * Phase 0.6: Event hosts/cohosts can now edit venues for their events.
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
-import { isVenueManager, getVenueRole } from "@/lib/venue/managerAuth";
+import { canEditVenue, getVenueRole, isEventHostAtVenue } from "@/lib/venue/managerAuth";
 import VenueEditForm from "./_components/VenueEditForm";
 import { VenuePhotosSection } from "@/components/venue/VenuePhotosSection";
 
@@ -47,14 +49,16 @@ export default async function EditVenuePage({
     notFound();
   }
 
-  // Check authorization: must be venue manager OR admin
-  const [isManager, isAdmin, role] = await Promise.all([
-    isVenueManager(supabase, venueId, session.user.id),
+  // Check authorization: must be venue manager OR admin OR event host at this venue
+  // Phase 0.6: canEditVenue now includes event host check
+  const [canEdit, isAdmin, role, isEventHost] = await Promise.all([
+    canEditVenue(supabase, venueId, session.user.id),
     checkAdminRole(supabase, session.user.id),
     getVenueRole(supabase, venueId, session.user.id),
+    isEventHostAtVenue(supabase, venueId, session.user.id),
   ]);
 
-  if (!isManager && !isAdmin) {
+  if (!canEdit && !isAdmin) {
     redirect("/dashboard/my-venues");
   }
 
@@ -97,7 +101,13 @@ export default async function EditVenuePage({
                 {role === "owner" ? "Owner" : "Manager"}
               </span>
             )}
-            {isAdmin && !isManager && (
+            {/* Phase 0.6: Show Event Host badge when accessing via event hosting relationship */}
+            {isEventHost && !role && (
+              <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
+                Event Host
+              </span>
+            )}
+            {isAdmin && !role && !isEventHost && (
               <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-500/20 text-purple-400">
                 Admin
               </span>

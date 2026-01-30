@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-01-17
+> **Last Updated:** 2026-01-28
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -158,6 +158,65 @@ Polish member profiles before external test users see them. Three scope areas:
 ---
 
 ## Completed Work (Ground Truth)
+
+### Phase 5.07 — Venue Map Buttons (January 2026) — COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Two-button system | "Directions" + "Venue Page on Google Maps" buttons on event detail | DONE |
+| Venue block layout | Three-line layout: Venue Name → Address+Buttons → Hosted by | DONE |
+| Host avatar cards | Hosts displayed with profile pics and links | DONE |
+| Override venue support | Buttons update when occurrence overrides change venue | DONE |
+| Tests | 9 tests covering all button scenarios | DONE |
+
+**Files Modified:** `app/events/[id]/page.tsx`, `__tests__/phase5-07-venue-map-buttons.test.ts`
+
+### Phase 5.06 — UX Polish (January 2026) — COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| City/State visibility | Fixed PostgREST alias from `venues` to `venue` for HappeningCard/SeriesCard | DONE |
+| Monthly day-of-week edit | Added anchor date picker to edit mode for monthly series | DONE |
+| Directions URL fix | Event detail now uses `getVenueDirectionsUrl()` for directions mode | DONE |
+| Tests | 26 tests covering all goals | DONE |
+
+**Investigation Doc:** `docs/investigation/phase5-06-ux-polish-stopgate.md`
+
+### Phase 5.04 — Signup Time UX (January 2026) — PARTIALLY COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| `signup_time` column | DB column exists for performer signup time display | DONE |
+| API support | PATCH/POST routes handle `signup_time` field | DONE |
+| **Form UI** | **Create/edit form input for signup_time** | **NOT IMPLEMENTED** |
+| Public display | Event detail shows signup time when set | DONE |
+
+**Note:** The `signup_time` field exists in the database and is displayed on event detail pages, but no form UI exists for hosts to set it during event creation/editing. This requires adding a time input to EventForm.tsx.
+
+### Phase 5.03 — Occurrence Cancellation UX (January 2026) — COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Cancelled dates visible | Cancelled occurrences stay in UI with red styling + ✕ prefix | DONE |
+| Restore button | "Restore" button for cancelled occurrences | DONE |
+| Optimistic UI | Immediate feedback with server reconciliation | DONE |
+| Public pages | Cancelled pills show with line-through + opacity | DONE |
+| Tests | 17 tests covering all parts | DONE |
+
+**Investigation Doc:** `docs/investigation/phase5-03-occurrence-cancellation-ux-stopgate.md`
+
+### Phase 5.02 — Timeslots Host Dashboard (January 2026) — COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Future-only blocking | Only future claims block slot config changes | DONE |
+| Future-only regeneration | Past timeslots preserved, only future regenerated | DONE |
+| TimeslotClaimsTable | Host-visible claims management component | DONE |
+| Date-scoped RSVPList | Date selector for recurring events | DONE |
+| Actionable errors | Error messages with links to claims management | DONE |
+| Tests | 28 tests covering all parts | DONE |
+
+**Investigation Doc:** `docs/investigation/phase5-02-timeslots-rsvp-host-dashboard-stopgate.md`
 
 ### Public Changelog Page (January 2026) — DONE
 
@@ -315,6 +374,139 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Deferred (Future Phases)
 
+### Map-Based Event Discovery View
+
+**Status:** OPEN
+**Priority:** P2
+**Added:** 2026-01-28
+
+**Problem Statement:**
+Users who want to find happenings near a specific location (their neighborhood, a venue they like, or when traveling) have no spatial way to browse. The current list/timeline view requires scanning venue names and mentally mapping locations.
+
+**User Value:**
+- Enables location-first discovery ("what's happening near me tonight?")
+- Supports users exploring new neighborhoods or visiting from out of town
+- Visual clustering shows event density at popular venues
+- Natural complement to existing timeline/series views
+
+**Scope:**
+| Item | Description |
+|------|-------------|
+| Map view toggle | Third view option alongside Timeline and Series |
+| Venue clustering | Events at same venue cluster into single marker |
+| Full filter support | All existing filters (day, type, cost, etc.) work on map |
+| Click-to-detail | Click marker → event card popup → link to detail page |
+| Mobile responsive | Touch-friendly pan/zoom on mobile |
+
+**Risk Level:** Medium
+- Requires geocoding venues (lat/lng columns exist but many are NULL)
+- Map library selection (Mapbox vs Google Maps vs Leaflet)
+- Performance with 100+ markers
+- Mobile UX complexity
+
+**Dependencies:** Venue lat/lng backfill, map library integration
+
+---
+
+### Artist & Venue Media Embeds (YouTube, Spotify)
+
+**Status:** OPEN
+**Priority:** P2
+**Added:** 2026-01-28
+
+**Problem Statement:**
+Songwriters and venues cannot showcase their music or atmosphere directly on DSC. Users must leave the site to hear a songwriter's work or see a venue's vibe, creating friction and losing context.
+
+**User Value:**
+- Songwriters can showcase their music without users leaving DSC
+- Venues can embed videos showing their space and past events
+- Increases time-on-site and engagement
+- Differentiates profiles from simple directory listings
+
+**Scope:**
+| Item | Description |
+|------|-------------|
+| Songwriter profiles | Spotify artist/track embed, YouTube video embed |
+| Venue profiles | YouTube video embed for venue tours/past events |
+| URL-based embeds | Paste URL → auto-detect platform → render embed |
+| Embed limits | Max 2 embeds per profile to prevent clutter |
+| No OAuth | Simple URL paste, no account connection required |
+
+**Risk Level:** Low
+- Standard iframe embeds (well-documented APIs)
+- No auth complexity
+- Main risk is content moderation (inappropriate videos)
+
+**Dependencies:** Profile page layout updates, embed URL validation
+
+---
+
+### TV Display / Lineup Control Audit & Reliability Fixes
+
+**Status:** OPEN
+**Priority:** P1
+**Added:** 2026-01-28
+
+**Problem Statement:**
+The TV Display and Lineup Control features are live but have not been stress-tested under real event conditions. Unknown failure modes exist around network interruptions, browser memory over multi-hour displays, and concurrent host control access.
+
+**User Value:**
+- Hosts can trust the display won't freeze or crash during a 3-hour event
+- Multiple co-hosts can coordinate lineup without conflicts
+- Clear recovery path when issues occur
+- Reduced host anxiety about technical failures
+
+**Scope:**
+| Item | Description |
+|------|-------------|
+| Connection health audit | Test reconnection after network drops |
+| Memory profiling | Ensure 4+ hour display sessions don't leak memory |
+| Concurrent access | Define behavior when 2+ hosts control simultaneously |
+| Error recovery | Clear UI feedback and recovery actions when things fail |
+| Stress testing | Simulate 50+ performer lineups, rapid slot changes |
+
+**Risk Level:** Medium
+- Requires dedicated testing time with real hardware
+- May surface architectural issues with polling/websockets
+- Some fixes may require breaking changes to lineup state model
+
+**Dependencies:** Access to test hardware (TV, projector), dedicated QA time
+
+---
+
+### Signup Time Field UX Completion
+
+**Status:** OPEN (completes Phase 5.04)
+**Priority:** P1
+**Added:** 2026-01-28
+
+**Problem Statement:**
+The `signup_time` database field exists and displays on event detail pages, but hosts have no way to set it during event creation or editing. This creates a dead-end where the feature appears broken.
+
+**User Value:**
+- Hosts can communicate when performer signups open (e.g., "6:30 PM")
+- Attendees know when to arrive to get on the list
+- Reduces "when do I sign up?" questions to hosts
+- Completes a partially-shipped feature
+
+**Scope:**
+| Item | Description |
+|------|-------------|
+| Form field | Time input in EventForm.tsx (create + edit modes) |
+| Field placement | In "Join & Signup" section near timeslots config |
+| Validation | Optional field, must be valid time format if provided |
+| Display confirmation | Preview card shows signup time when set |
+| Tests | Form behavior, API round-trip, display |
+
+**Risk Level:** Low
+- Form field addition (well-understood pattern)
+- No schema changes needed
+- Single-file change to EventForm.tsx
+
+**Dependencies:** None
+
+---
+
 ### Community Profile Activity Visibility Decision
 
 **Status:** DEFERRED (needs product decision)
@@ -446,8 +638,8 @@ Before any milestone:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status:** 2005 tests passing, 0 lint warnings.
+**Current Status:** 2921 tests passing, 0 lint warnings.
 
 ---
 
-*This document reconciles all TODO sources as of 2026-01-17. See git history for changes.*
+*This document reconciles all TODO sources as of 2026-01-28. See git history for changes.*
