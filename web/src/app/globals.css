@@ -360,5 +360,10 @@ body > footer {
   animation: scroll-bounce 2s ease-in-out infinite;
 }
 
+/* Leaflet MarkerCluster - ensure black text on cluster badges for both themes */
+.marker-cluster div {
+  color: #000000 !important;
+}
+
 /* Theme presets - must load after base tokens */
 @import "./themes/presets.css";
