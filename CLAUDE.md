@@ -524,6 +524,49 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Map Popup Pure Component Extraction (Phase 1.2b, January 2026) — RESOLVED
+
+**Goal:** Extract MapPinPopup from MapView.tsx to a pure component for testability without Leaflet DOM.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3062, build success).
+
+**Checked against DSC UX Principles:** §4 (Centralize Logic), §12 (Test the Contract)
+
+**Work Done:**
+- Extracted `MapPinPopup` function from `MapView.tsx` to standalone `MapPinPopup.tsx`
+- Pure component (no Leaflet imports) enables React Testing Library tests
+- No functional changes — exact same markup preserved
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/happenings/MapPinPopup.tsx` | Pure presentational component for popup content |
+| `__tests__/map-pin-popup.test.tsx` | 17 tests covering all popup contracts |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/MapView.tsx` | Removed inline MapPinPopup function, imports from new component |
+
+**Contracts Tested (17 tests):**
+
+| Contract | Tests |
+|----------|-------|
+| Venue link when slug exists | 2 tests — link to `/venues/{slug}`, correct classes |
+| Venue text when slug is null | 1 test — renders as plain span |
+| Event links with date params | 2 tests — hrefs correct, link classes |
+| 5-event limit with overflow | 3 tests — all visible ≤5, "+X more" format, plural handling |
+| Scroll container styling | 1 test — `space-y-2 max-h-[200px] overflow-y-auto` classes |
+| Happening count display | 2 tests — singular/plural handling |
+| Status indicators | 3 tests — CANCELLED, RESCHEDULED, precedence |
+| Event details | 3 tests — date, time, time-hidden when null |
+
+**Test Coverage:** 17 new tests (3062 total).
+
+---
+
 ### Restore Pre-Phase-1.0 Default Window (Phase 1.01, January 2026) — RESOLVED
 
 **Goal:** Revert Phase 1.0's "default today/tonight filter" behavior back to the pre-Phase-1.0 rolling ~3 month window.
