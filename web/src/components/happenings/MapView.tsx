@@ -73,15 +73,10 @@ export function MapView({ pinResult, className }: MapViewProps) {
             />
             <MarkerClusterGroup
               chunkedLoading
-              // Show cluster count on hover
-              iconCreateFunction={(cluster: any) => {
-                const count = cluster.getChildCount();
-                return L.divIcon({
-                  html: `<div class="leaflet-cluster-icon">${count}</div>`,
-                  className: "leaflet-marker-cluster",
-                  iconSize: L.point(40, 40),
-                });
-              }}
+              showCoverageOnHover={true}
+              spiderfyOnMaxZoom={true}
+              removeOutsideVisibleBounds={true}
+              maxClusterRadius={60}
             >
               {pins.map((pin) => (
                 <Marker key={pin.venueId} position={[pin.latitude, pin.longitude]}>
