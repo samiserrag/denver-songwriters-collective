@@ -3151,8 +3151,12 @@ export type Database = {
           contact_link: string | null
           cover_image_url: string | null
           created_at: string | null
+          geocode_source: string | null
+          geocoded_at: string | null
           google_maps_url: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           map_link: string | null
           name: string
           neighborhood: string | null
@@ -3172,8 +3176,12 @@ export type Database = {
           contact_link?: string | null
           cover_image_url?: string | null
           created_at?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
           google_maps_url?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           map_link?: string | null
           name: string
           neighborhood?: string | null
@@ -3193,8 +3201,12 @@ export type Database = {
           contact_link?: string | null
           cover_image_url?: string | null
           created_at?: string | null
+          geocode_source?: string | null
+          geocoded_at?: string | null
           google_maps_url?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           map_link?: string | null
           name?: string
           neighborhood?: string | null

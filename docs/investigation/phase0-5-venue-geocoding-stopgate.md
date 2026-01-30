@@ -429,19 +429,19 @@ Before Map View implementation begins, the following must be true:
 
 1. [x] Create migration: `20260130011020_add_venue_coordinates.sql`
 2. [x] Apply migration to production
-3. [ ] Run geocoding backfill script (BLOCKED - needs API key)
-4. [ ] Run verification queries
-5. [ ] Admin reviews flagged venues
-6. [ ] Update CLAUDE.md with Phase 0.5 completion
+3. [x] Run geocoding backfill script
+4. [x] Run verification queries
+5. [x] Admin reviews flagged venues (0 flagged - all succeeded)
+6. [x] Update CLAUDE.md with Phase 0.5 completion
 7. [ ] Open STOP-GATE 1 for Map View implementation
 
 ### Blockers for STOP-GATE 1
 
 STOP-GATE 1 (Map View) cannot begin until:
 - [x] Migration applied
-- [ ] ≥95% venue coord coverage achieved
-- [ ] Verification complete
-- [ ] This document updated with "Phase 0.5 Complete" status
+- [x] ≥95% venue coord coverage achieved (100% achieved)
+- [x] Verification complete
+- [x] This document updated with "Phase 0.5 Complete" status
 
 ---
 
@@ -465,27 +465,59 @@ STOP-GATE 1 (Map View) cannot begin until:
 **Index created:**
 - `idx_venues_coordinates` partial index on (latitude, longitude) WHERE NOT NULL
 
-**Current state:**
-- 77 venues total
-- 0 venues with coordinates
-- 77 venues awaiting geocoding
+### 2026-01-30: Backfill Complete ✅
 
-### Backfill Script Ready
+**Script:** `web/scripts/geocode-venues.js --key=API_KEY --apply`
 
-**Script:** `web/scripts/geocode-venues.js`
+**Results:**
+- 77 venues processed
+- 77 SUCCESS (100%)
+- 0 FAILED
+- Geocoding completed in ~18 seconds
 
-**Usage:**
-```bash
-cd web
-node scripts/geocode-venues.js --key=YOUR_GOOGLE_API_KEY           # Dry-run
-node scripts/geocode-venues.js --key=YOUR_GOOGLE_API_KEY --apply   # Apply
+**Verification Queries:**
+
+```sql
+-- Coverage: 100% (target was ≥95%)
+SELECT COUNT(*) as total, COUNT(latitude) as with_coords FROM venues;
+-- Result: 77 total, 77 with_coords
+
+-- Zero (0,0) coordinates: 0 found ✅
+SELECT COUNT(*) FROM venues WHERE latitude = 0 AND longitude = 0;
+-- Result: 0
+
+-- Colorado boundary check: 0 outliers ✅
+SELECT * FROM venues WHERE latitude NOT BETWEEN 36.99 AND 41.00
+                        OR longitude NOT BETWEEN -109.05 AND -102.05;
+-- Result: 0 rows
+
+-- Geocode source verification
+SELECT geocode_source, COUNT(*) FROM venues GROUP BY geocode_source;
+-- Result: api = 77
 ```
 
-**BLOCKED:** Requires Google Geocoding API key. The key must be provided via `--key=` argument or `GOOGLE_GEOCODING_API_KEY` environment variable.
+**All venues geocoded via Google Geocoding API.**
+**All coordinates fall within Colorado boundary.**
+**No manual review needed - 100% success rate.**
+
+---
+
+## 9. Phase 0.5 Complete ✅
+
+**Status:** COMPLETE
+
+**Summary:**
+- Schema: 4 columns added (latitude, longitude, geocode_source, geocoded_at)
+- Backfill: 77/77 venues geocoded (100% coverage)
+- Verification: All checks passed
+- Quality gates: Lint 0, Tests 2959, Build success
+
+**STOP-GATE 1 (Map View) is now unblocked.**
 
 ---
 
 **Document created:** 2026-01-29
 **Author:** Claude (repo agent)
 **Migration applied:** 2026-01-30
-**Status:** Migration complete, backfill blocked on API key
+**Backfill completed:** 2026-01-30
+**Status:** ✅ PHASE 0.5 COMPLETE
