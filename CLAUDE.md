@@ -622,6 +622,187 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### TV Mode HUGE Now Playing + Balanced Header (Phase 4.113, January 2026) — RESOLVED
+
+**Goal:** Make the Now Playing section dramatically larger and more impactful for TV display, with balanced header layout.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3292, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**Requirements Implemented:**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| NOW PLAYING header | `text-2xl` bold in accent color, uppercase with tracking |
+| Avatar size | Increased from 100px to 180px |
+| Performer name | Increased from `text-4xl` to `text-5xl` bold |
+| QR code size | Increased from 64px to 100px |
+| CTA text | "SCAN TO FOLLOW + TIP" in `text-xl` accent color |
+| Balanced header | Centered title/venue/time with date on left, QRs on right |
+
+**Header Layout Structure:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Date Box]     [Centered: Title, Venue • Time, CTA]  [QRs] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Now Playing Layout:**
+```
+┌─────────────────────────────────────┐
+│         NOW PLAYING                 │  ← text-2xl bold accent
+│                                     │
+│        ┌──────────┐                 │
+│        │  Avatar  │                 │  ← 180px
+│        │  (180px) │                 │
+│        └──────────┘                 │
+│                                     │
+│      Performer Name                 │  ← text-5xl bold
+│                                     │
+│   ┌────────┐                        │
+│   │  QR    │  SCAN TO FOLLOW + TIP  │  ← 100px QR + text-xl
+│   │ (100px)│                        │
+│   └────────┘                        │
+└─────────────────────────────────────┘
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/display/page.tsx` | HUGE Now Playing section, balanced header layout |
+
+**Test Coverage:** 3292 tests passing.
+
+---
+
+### Profile Photo Auto-Avatar UX (Phase 4.112, January 2026) — RESOLVED
+
+**Goal:** When a user uploads their FIRST profile photo and has no avatar, automatically set that photo as their profile picture. Also add a banner prompting users to choose a profile picture if they have photos but no avatar.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3292, build success).
+
+**Checked against DSC UX Principles:** §7 (UX Friction), §10 (Defaults)
+
+**Features Implemented:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Auto-set avatar on first upload | If `images.length === 0` AND `!currentAvatarUrl`, auto-set uploaded photo as avatar |
+| Combined success toast | "Photo uploaded and set as your profile picture!" for auto-set |
+| Choose profile photo banner | Amber banner appears when `activeImages.length > 0 && !currentAvatarUrl` |
+| Banner instruction | "👆 Choose your profile picture! Hover over a photo and click the ✓ button to set it as your profile picture." |
+
+**Auto-Avatar Logic:**
+```typescript
+const isFirstPhoto = images.length === 0;
+const hasNoAvatar = !currentAvatarUrl;
+if (isFirstPhoto && hasNoAvatar) {
+  // Auto-set this as the profile photo
+  await supabase.from("profiles").update({ avatar_url: urlWithTimestamp }).eq("id", userId);
+  onAvatarChange(urlWithTimestamp);
+  toast.success("Photo uploaded and set as your profile picture!");
+}
+```
+
+**Banner Visibility Logic:**
+- Show when: `activeImages.length > 0 && !currentAvatarUrl`
+- Purpose: Prompt users who uploaded photos but haven't chosen a profile pic
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/profile/ProfilePhotosSection.tsx` | Auto-avatar on first upload, amber banner prompt |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase4-112-profile-photo-auto-avatar.test.ts` | 12 tests for auto-avatar logic, banner visibility, toast messages |
+
+**Test Coverage:** 12 new tests (3292 total).
+
+---
+
+### Verification Status Fix + Slug Fixes (Phase 4.111, January 2026) — RESOLVED
+
+**Goal:** Fix verification status badge not appearing on happenings cards and fix slug generation for single-occurrence events.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3261, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §5 (Previews Match Reality)
+
+**Issues Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Verification badge missing on cards | `shouldShowUnconfirmedBadge()` called but badge JSX not rendered | Added badge rendering in HappeningCard chips row |
+| Single-occurrence slugs collide | Events on same date got same slug (e.g., "open-mic-2026-01-18") | Added date suffix for single-occurrence events |
+
+**Verification Badge Display:**
+- Green "Confirmed" badge with checkmark for verified events
+- Amber "Unconfirmed" badge for unverified events
+- Badge appears in chips row on HappeningCard
+
+**Slug Generation for Single-Occurrence Events:**
+- Format: `{title-slug}-{YYYY-MM-DD}` (e.g., "words-open-mic-2026-01-18")
+- Prevents collisions when multiple single events occur on same date
+- Recurring events continue to use title-only slugs
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningCard.tsx` | Added verification badge rendering in chips row |
+| `lib/events/slugGeneration.ts` | Date suffix for single-occurrence event slugs |
+
+**Test Coverage:** 3261 tests passing.
+
+---
+
+### TV Mode 20-Slot Fit (Phase 4.110, January 2026) — RESOLVED
+
+**Goal:** Fit up to 20 performer slots on TV display without scrolling by implementing 3-tier adaptive sizing.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3255, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**3-Tier Adaptive Sizing:**
+
+| Slot Count | Tier | Avatar | Name Font | QR Size | Row Padding |
+|------------|------|--------|-----------|---------|-------------|
+| 1-6 | large | 48px | text-lg | 44px | py-2.5 |
+| 7-12 | medium | 40px | text-base | 36px | py-2 |
+| 13-20 | compact | 32px | text-sm | 28px | py-1.5 |
+
+**Key Implementation:**
+```typescript
+// Tier selection based on total slot count
+const densityTier = totalSlots <= 6 ? "large" : totalSlots <= 12 ? "medium" : "compact";
+
+// Consistent sizing per tier
+const avatarSize = { large: 48, medium: 40, compact: 32 }[densityTier];
+const qrSize = { large: 44, medium: 36, compact: 28 }[densityTier];
+```
+
+**Layout Changes:**
+- Up Next section uses CSS Grid with 2 columns when >10 slots
+- Tier computed from **total timeslots** (stable) not remaining slots (avoids reflow on Go Live)
+- All 20 slots visible without scrolling on 1080p TV
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/display/page.tsx` | 3-tier adaptive sizing, 2-column layout for >10 slots |
+
+**Test Coverage:** 3255 tests passing.
+
+---
+
 ### TV Poster Mode Final Polish (Phase 4.109, January 2026) — RESOLVED
 
 **Goal:** Final 10% polish for TV Poster Mode to make it production-ready for live events with 10-20 performers.
