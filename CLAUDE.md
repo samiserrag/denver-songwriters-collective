@@ -622,6 +622,78 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### TV Poster Mode Completion (Phase 4.108, January 2026) — RESOLVED
+
+**Goal:** Complete TV Poster Mode to be pixel-max, stable, and complete for live events. Fixes 8 issues from Phase 4.104.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3223, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**Issues Fixed:**
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Layout instability on Go Live | `densityTier` computed from `upNextSlots.length` (variable) | Compute from `timeslots.length` (stable total) |
+| Up Next list clipping | Flex layout couldn't fill remaining space | CSS Grid with `grid-rows-[auto_auto_minmax(0,1fr)]` |
+| QR only for first performer | Gate: `index === 0 && densityTier === "large"` | QR for ALL performers with adaptive sizing |
+| HOST label not prominent | Small text below avatar | Badge above name with accent background |
+| Cover art cropped | `object-cover` crops to fill | `object-contain` with dark letterbox background |
+| Slot times in Now Playing | Individual times displayed | Removed; event time window shown in header instead |
+| Missing DSC Join QR | Not implemented | Added 80px QR to homepage in header |
+| Wasted space | Large padding/margins/gaps | Reduced: `p-6`, `gap-4`, `mb-4` |
+
+**Density Tier Contract (STABLE):**
+
+| Total Slots | Tier | QR Size | Row Height |
+|-------------|------|---------|------------|
+| 1-6 | large | 48px | 64px |
+| 7-12 | medium | 40px | 52px |
+| 13+ | compact | 32px | 44px |
+
+Tier computed from **total timeslots** (stable), not remaining slots (changes on Go Live).
+
+**New Helper Functions:**
+
+| Function | Purpose |
+|----------|---------|
+| `formatEventTimeWindow(startTime, endTime)` | Returns "6:00 PM – 9:00 PM" or "Starts 6:00 PM" |
+
+**Layout Structure (CSS Grid):**
+```
+grid-rows-[auto_auto_minmax(0,1fr)]
+├── Row 1 (auto): Header with date, title, venue, time window, DSC Join QR
+├── Row 2 (auto): Host badges row
+└── Row 3 (1fr): Main content (Flyer | Now Playing | Up Next)
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/display/page.tsx` | All 8 fixes, `end_time` query, `formatEventTimeWindow`, DSC Join QR |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase4-108-tv-poster-mode.test.ts` | 30 tests for density tier, time formatting, QR sizing, layout contracts |
+
+**Test Coverage:** 30 new tests (3223 total).
+
+**Manual Smoke Tests:**
+1. Load TV mode with 10 slots → all visible, QRs for all
+2. Load TV mode with 20 slots → compact tier, all visible
+3. Click "Go Live" → no layout reflow
+4. Upload tall/wide flyer → fully visible (letterboxed)
+5. View from 8-12 feet → HOST label clearly readable
+6. Scan DSC QR → goes to homepage
+7. Scan performer QR → goes to profile
+
+**Investigation Doc:** `docs/investigation/phase4-108-tv-poster-mode-completion-stopgate.md`
+
+---
+
 ### TV Poster Mode (Phase 4.104, January 2026) — RESOLVED
 
 **Goal:** Transform `/events/[id]/display?tv=1` into a full-screen concert poster aesthetic with blurred cover art background, host/cohost badges with QR codes, and past demo support.

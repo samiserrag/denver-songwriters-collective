@@ -57,6 +57,7 @@ interface EventInfo {
   slug: string | null;
   venue_name: string | null;
   start_time: string | null;
+  end_time: string | null; // Phase 4.108: For event time window display
   event_date: string | null;
   is_recurring: boolean;
   day_of_week: string | null;
@@ -102,6 +103,24 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
   return `${formatTime(startMinutes)} - ${formatTime(endMinutes)}`;
 }
 
+/**
+ * Phase 4.108: Format event time window (e.g., "7:00 PM – 10:00 PM" or "Starts 7:00 PM")
+ */
+function formatEventTimeWindow(startTime: string, endTime: string | null): string {
+  const formatTime = (time: string) => {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  if (endTime) {
+    return `${formatTime(startTime)} – ${formatTime(endTime)}`;
+  }
+  return `Starts ${formatTime(startTime)}`;
+}
+
 export default function EventDisplayPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -132,6 +151,8 @@ export default function EventDisplayPage() {
   // Phase 4.105: Event QR code (generated locally, tied to dateKey changes)
   const [eventQrCode, setEventQrCode] = React.useState<string | null>(null);
   const [eventQrError, setEventQrError] = React.useState(false);
+  // Phase 4.108: DSC Join QR code for homepage
+  const [dscJoinQrCode, setDscJoinQrCode] = React.useState<string | null>(null);
 
   // Phase 4.99: Connection health tracking
   const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
@@ -280,9 +301,10 @@ export default function EventDisplayPage() {
     try {
       // Phase 4.100.2: Conditionally query by UUID or slug
       // Phase 4.102: Include additional fields for media + QR
+      // Phase 4.108: Added end_time for event time window display
       const eventQuery = supabase
         .from("events")
-        .select("id, title, slug, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule, cover_image_url, venue_id, host_id");
+        .select("id, title, slug, venue_name, start_time, end_time, event_date, is_recurring, day_of_week, recurrence_rule, cover_image_url, venue_id, host_id");
 
       const { data: eventData, error: eventError } = isUUID(routeParam)
         ? await eventQuery.eq("id", routeParam).single()
@@ -487,6 +509,7 @@ export default function EventDisplayPage() {
   }, [fetchData]);
 
   // Phase 4.105: Generate Event QR locally (tied to dateKey/event changes)
+  // Phase 4.108: Also generate DSC Join QR for homepage
   React.useEffect(() => {
     async function generateEventQr() {
       if (!event) return;
@@ -507,6 +530,18 @@ export default function EventDisplayPage() {
       } catch (err) {
         console.error("Event QR generation error:", err);
         setEventQrError(true);
+      }
+
+      // Phase 4.108: Generate DSC Join QR (homepage)
+      try {
+        const joinQr = await QRCode.toDataURL(SITE_URL, {
+          width: 80,
+          margin: 1,
+          color: { dark: "#1a1a1a", light: "#ffffff" },
+        });
+        setDscJoinQrCode(joinQr);
+      } catch (err) {
+        console.error("DSC Join QR generation error:", err);
       }
     }
 
@@ -575,14 +610,15 @@ export default function EventDisplayPage() {
 
   // Phase 4.105: Density tier for TV mode (no scrollbars)
   // Large (≤8 slots): full-size avatars, QR codes
-  // Medium (9-14 slots): smaller avatars, no QR
-  // Compact (15-20 slots): minimal avatars, names only
+  // Medium (9-14 slots): smaller avatars, smaller QR
+  // Compact (15-20 slots): minimal avatars, tiny QR for first few
+  // Phase 4.108: Compute from TOTAL timeslots (stable) not upNextSlots (variable on Go Live)
   const getDensityTier = (slotCount: number): "large" | "medium" | "compact" => {
     if (slotCount <= 8) return "large";
     if (slotCount <= 14) return "medium";
     return "compact";
   };
-  const densityTier = getDensityTier(upNextSlots.length);
+  const densityTier = getDensityTier(timeslots.length);
 
   if (loading) {
     return (
@@ -595,6 +631,7 @@ export default function EventDisplayPage() {
   }
 
   // Phase 4.104: TV Poster Mode - Full-screen artistic overlay
+  // Phase 4.108: Complete overhaul - stable layout, QR for all, prominent HOST, object-contain flyer
   if (tvMode) {
     // Check if we have roster data for this date
     const hasRosterData = timeslots.length > 0;
@@ -617,8 +654,8 @@ export default function EventDisplayPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-accent-primary)]/5 via-transparent to-transparent" />
         </div>
 
-        {/* Content layer */}
-        <div className="relative z-10 h-full flex flex-col p-8">
+        {/* Phase 4.108: Content layer with CSS Grid for stable layout */}
+        <div className="relative z-10 h-full grid grid-rows-[auto_auto_minmax(0,1fr)] p-6 gap-4">
           {/* Connection status (subtle) */}
           <LineupStateBanner
             lastUpdated={lastUpdated}
@@ -628,16 +665,16 @@ export default function EventDisplayPage() {
             showExtendedHint={showExtendedHint}
           />
 
-          {/* Top section: Event info + QR */}
-          <header className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-6">
+          {/* Row 1: Header - Event info + QR codes */}
+          <header className="flex items-start justify-between">
+            <div className="flex items-center gap-5">
               {/* Date box */}
               {effectiveDateKey && (
-                <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black shadow-lg">
-                  <span className="text-sm font-semibold uppercase tracking-wide">
+                <div className="flex-shrink-0 w-20 h-20 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black shadow-lg">
+                  <span className="text-xs font-semibold uppercase tracking-wide">
                     {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
                   </span>
-                  <span className="text-4xl font-bold leading-none">
+                  <span className="text-3xl font-bold leading-none">
                     {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
                   </span>
                   <span className="text-xs font-medium uppercase">
@@ -646,57 +683,68 @@ export default function EventDisplayPage() {
                 </div>
               )}
               <div>
-                <h1 className="text-5xl font-bold text-white drop-shadow-lg">
+                <h1 className="text-4xl font-bold text-white drop-shadow-lg">
                   {event?.title || "Event"}
                 </h1>
                 {event?.venue_name && (
-                  <p className="text-2xl text-gray-200 mt-2 drop-shadow">{event.venue_name}</p>
+                  <p className="text-xl text-gray-200 mt-1 drop-shadow">{event.venue_name}</p>
                 )}
+                {/* Phase 4.108: Event time window (not slot times) */}
                 {event?.start_time && (
-                  <p className="text-xl text-[var(--color-text-accent)] mt-1">
-                    {new Date(`2000-01-01T${event.start_time}`).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
+                  <p className="text-lg text-[var(--color-text-accent)] mt-1">
+                    {formatEventTimeWindow(event.start_time, event.end_time)}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Phase 4.105: Event QR + LIVE badge (clock removed per B7) */}
-            <div className="flex flex-col items-end gap-4">
+            {/* Phase 4.108: Right side - LIVE badge + DSC Join + Event QR */}
+            <div className="flex items-start gap-4">
               {isLive && (
-                <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 rounded-full text-lg font-semibold animate-pulse shadow-lg">
-                  <span className="w-3 h-3 bg-white rounded-full"></span>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-full text-base font-semibold animate-pulse shadow-lg">
+                  <span className="w-2.5 h-2.5 bg-white rounded-full"></span>
                   LIVE
                 </span>
               )}
-              {/* Phase 4.105: Event QR on white tile (generated locally) */}
-              {eventQrCode && !eventQrError && (
-                <>
-                  <div className="bg-white rounded-lg p-2 shadow-lg">
+              {/* Phase 4.108: DSC Join QR */}
+              {dscJoinQrCode && (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="bg-white rounded-lg p-1.5 shadow-lg">
                     <Image
-                      src={eventQrCode}
-                      alt="Event QR"
-                      width={120}
-                      height={120}
+                      src={dscJoinQrCode}
+                      alt="Join DSC"
+                      width={70}
+                      height={70}
                       className="rounded"
                     />
                   </div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">SCAN FOR HAPPENING DETAILS</p>
-                </>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Join DSC</p>
+                </div>
+              )}
+              {/* Event QR */}
+              {eventQrCode && !eventQrError && (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="bg-white rounded-lg p-1.5 shadow-lg">
+                    <Image
+                      src={eventQrCode}
+                      alt="Event QR"
+                      width={90}
+                      height={90}
+                      className="rounded"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">This Event</p>
+                </div>
               )}
             </div>
           </header>
 
-          {/* Phase 4.105: Host badges row with emphasized labels */}
+          {/* Row 2: Host badges row with Phase 4.108 prominent HOST label */}
           {allHosts.length > 0 && (
-            <div className="mb-6">
-              <p className="text-sm text-gray-400 uppercase tracking-wider mb-3">Hosted by</p>
-              <div className="flex flex-wrap gap-4">
+            <div>
+              <div className="flex flex-wrap gap-3">
                 {allHosts.map((h) => (
-                  <div key={h.id} className={`flex items-center gap-3 backdrop-blur-sm rounded-xl px-4 py-3 border ${
+                  <div key={h.id} className={`flex items-center gap-2 backdrop-blur-sm rounded-xl px-3 py-2 border ${
                     h.role === "host"
                       ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/40"
                       : "bg-black/40 border-white/10"
@@ -705,50 +753,50 @@ export default function EventDisplayPage() {
                       <Image
                         src={h.avatar_url}
                         alt={h.full_name || "Host"}
-                        width={h.role === "host" ? 56 : 44}
-                        height={h.role === "host" ? 56 : 44}
+                        width={h.role === "host" ? 48 : 40}
+                        height={h.role === "host" ? 48 : 40}
                         className={`rounded-full object-cover ${
                           h.role === "host"
-                            ? "border-3 border-[var(--color-accent-primary)] shadow-lg"
-                            : "border-2 border-white/30"
+                            ? "border-2 border-[var(--color-accent-primary)] shadow-lg"
+                            : "border border-white/30"
                         }`}
                       />
                     ) : (
                       <div className={`rounded-full flex items-center justify-center ${
                         h.role === "host"
-                          ? "w-14 h-14 bg-[var(--color-accent-primary)]/40"
-                          : "w-11 h-11 bg-gray-700/50"
+                          ? "w-12 h-12 bg-[var(--color-accent-primary)]/40"
+                          : "w-10 h-10 bg-gray-700/50"
                       }`}>
-                        <span className={`text-[var(--color-text-accent)] ${h.role === "host" ? "text-2xl" : "text-lg"}`}>
+                        <span className={`text-[var(--color-text-accent)] ${h.role === "host" ? "text-xl" : "text-base"}`}>
                           {h.full_name?.[0] || "?"}
                         </span>
                       </div>
                     )}
-                    <div>
+                    <div className="flex flex-col">
+                      {/* Phase 4.108: Prominent HOST badge ABOVE name */}
+                      {h.role === "host" ? (
+                        <div className="px-2 py-0.5 bg-[var(--color-accent-primary)] rounded-full mb-1 self-start">
+                          <span className="text-xs font-bold text-black uppercase tracking-wider">★ HOST</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Co-host</span>
+                      )}
                       <p className={`font-semibold ${
                         h.role === "host"
-                          ? "text-xl text-[var(--color-text-accent)]"
+                          ? "text-lg text-[var(--color-text-accent)]"
                           : "text-base text-white"
                       }`}>
                         {h.full_name || "Host"}
                       </p>
-                      {/* Phase 4.105: Emphasized role labels */}
-                      <p className={`text-xs uppercase tracking-wider ${
-                        h.role === "host"
-                          ? "text-[var(--color-accent-primary)] font-bold"
-                          : "text-gray-400"
-                      }`}>
-                        {h.role === "host" ? "★ HOST" : "Co-host"}
-                      </p>
                     </div>
                     {/* Host QR on white tile */}
                     {hostQrCodes.get(h.id) && (
-                      <div className="bg-white rounded-md p-1 ml-2">
+                      <div className="bg-white rounded-md p-1 ml-1">
                         <Image
                           src={hostQrCodes.get(h.id)!}
                           alt={`${h.full_name} QR`}
-                          width={h.role === "host" ? 80 : 60}
-                          height={h.role === "host" ? 80 : 60}
+                          width={h.role === "host" ? 56 : 44}
+                          height={h.role === "host" ? 56 : 44}
                         />
                       </div>
                     )}
@@ -758,68 +806,68 @@ export default function EventDisplayPage() {
             </div>
           )}
 
-          {/* Main content: Lineup with optional flyer panel */}
-          <div className="flex-1 grid grid-cols-12 gap-6 min-h-0">
-            {/* Phase 4.105: Foreground flyer panel (when cover image exists) */}
+          {/* Row 3: Main content - fills remaining space */}
+          <div className="grid grid-cols-12 gap-4 min-h-0">
+            {/* Phase 4.108: Foreground flyer panel with object-contain (no cropping) */}
             {displayCoverImage && (
-              <div className="col-span-3 flex flex-col">
-                <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+              <div className="col-span-3 flex flex-col min-h-0">
+                <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-gray-900 flex items-center justify-center min-h-0">
                   <Image
                     src={displayCoverImage}
                     alt={event?.title || "Event flyer"}
                     width={400}
                     height={600}
-                    className="w-full h-full object-cover"
+                    className="max-w-full max-h-full object-contain"
                     priority
                   />
                 </div>
               </div>
             )}
 
-            {/* Now Playing - Large left panel (adjusts based on flyer presence) */}
-            <div className={`${displayCoverImage ? "col-span-4" : "col-span-5"} flex flex-col`}>
-              <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            {/* Now Playing - adjusts based on flyer presence */}
+            <div className={`${displayCoverImage ? "col-span-4" : "col-span-5"} flex flex-col min-h-0`}>
+              <h2 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-2 flex-shrink-0">
                 Now Playing
               </h2>
-              <div className="flex-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="flex-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-4 min-h-0 flex flex-col">
                 {nowPlayingSlot?.claim?.member ? (
-                  <div className="flex flex-col items-center text-center h-full justify-center">
+                  <div className="flex flex-col items-center text-center flex-1 justify-center">
                     {nowPlayingSlot.claim.member.avatar_url ? (
                       <Image
                         src={nowPlayingSlot.claim.member.avatar_url}
                         alt={nowPlayingSlot.claim.member.full_name || "Performer"}
-                        width={180}
-                        height={180}
-                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-4 shadow-lg"
+                        width={140}
+                        height={140}
+                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-3 shadow-lg"
                       />
                     ) : (
-                      <div className="w-44 h-44 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-4">
-                        <span className="text-7xl text-[var(--color-text-accent)]">
+                      <div className="w-36 h-36 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-3">
+                        <span className="text-6xl text-[var(--color-text-accent)]">
                           {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
                         </span>
                       </div>
                     )}
-                    <h3 className="text-4xl font-bold text-white mb-2 drop-shadow">
+                    <h3 className="text-3xl font-bold text-white mb-1 drop-shadow">
                       {nowPlayingSlot.claim.member.full_name || "Anonymous"}
                     </h3>
-                    <p className="text-xl text-[var(--color-text-accent)]">
-                      {formatSlotTime(event?.start_time || null, nowPlayingSlot.start_offset_minutes, nowPlayingSlot.duration_minutes)}
-                    </p>
+                    {/* Phase 4.108: Removed slot time from Now Playing */}
                     {/* Performer QR on white tile */}
                     {qrCodes.get(nowPlayingSlot.claim.member.id) && (
-                      <div className="mt-4 bg-white rounded-lg p-2 shadow-lg">
+                      <div className="mt-3 bg-white rounded-lg p-1.5 shadow-lg">
                         <Image
                           src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
                           alt="Profile QR"
-                          width={100}
-                          height={100}
+                          width={80}
+                          height={80}
                         />
                       </div>
                     )}
+                    {/* Phase 4.108: QR guidance text */}
+                    <p className="text-xs text-gray-500 mt-2 italic">Scan to follow + tip</p>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-2xl text-gray-500">
+                  <div className="flex items-center justify-center flex-1">
+                    <p className="text-xl text-gray-500">
                       {isLive ? "Intermission" : "Not started yet"}
                     </p>
                   </div>
@@ -827,25 +875,25 @@ export default function EventDisplayPage() {
               </div>
             </div>
 
-            {/* Phase 4.105: Up Next - Right panel with density tiers (no scroll) */}
+            {/* Phase 4.108: Up Next - fills remaining space with adaptive QR for ALL performers */}
             <div className={`${displayCoverImage ? "col-span-5" : "col-span-7"} flex flex-col min-h-0`}>
-              <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              <h2 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-2 flex-shrink-0">
                 Up Next
               </h2>
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden min-h-0">
                 {hasRosterData ? (
                   <div className={`h-full flex flex-col ${
-                    densityTier === "large" ? "gap-3" :
-                    densityTier === "medium" ? "gap-2" : "gap-1"
+                    densityTier === "large" ? "gap-2" :
+                    densityTier === "medium" ? "gap-1.5" : "gap-1"
                   }`}>
                     {upNextSlots.length > 0 ? (
                       upNextSlots.map((slot, index) => (
                         <div
                           key={slot.id}
-                          className={`flex items-center transition-all ${
-                            densityTier === "large" ? "gap-4 p-4 rounded-xl" :
-                            densityTier === "medium" ? "gap-3 p-3 rounded-lg" :
-                            "gap-2 p-2 rounded-md"
+                          className={`flex items-center transition-all flex-shrink-0 ${
+                            densityTier === "large" ? "gap-3 p-3 rounded-xl" :
+                            densityTier === "medium" ? "gap-2 p-2 rounded-lg" :
+                            "gap-1.5 p-1.5 rounded-md"
                           } border ${
                             index === 0
                               ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/50"
@@ -853,10 +901,10 @@ export default function EventDisplayPage() {
                           }`}
                         >
                           {/* Slot number - size varies by tier */}
-                          <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 ${
-                            densityTier === "large" ? "w-12 h-12 text-lg" :
-                            densityTier === "medium" ? "w-10 h-10 text-base" :
-                            "w-8 h-8 text-sm"
+                          <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 ${
+                            densityTier === "large" ? "w-10 h-10 text-base" :
+                            densityTier === "medium" ? "w-8 h-8 text-sm" :
+                            "w-6 h-6 text-xs"
                           }`}>
                             {slot.slot_index + 1}
                           </div>
@@ -868,16 +916,16 @@ export default function EventDisplayPage() {
                                   <Image
                                     src={slot.claim.member.avatar_url}
                                     alt={slot.claim.member.full_name || ""}
-                                    width={densityTier === "large" ? 48 : 36}
-                                    height={densityTier === "large" ? 48 : 36}
-                                    className="rounded-full object-cover"
+                                    width={densityTier === "large" ? 40 : 32}
+                                    height={densityTier === "large" ? 40 : 32}
+                                    className="rounded-full object-cover flex-shrink-0"
                                   />
                                 ) : (
-                                  <div className={`rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center ${
-                                    densityTier === "large" ? "w-12 h-12" : "w-9 h-9"
+                                  <div className={`rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0 ${
+                                    densityTier === "large" ? "w-10 h-10" : "w-8 h-8"
                                   }`}>
                                     <span className={`text-[var(--color-text-accent)] ${
-                                      densityTier === "large" ? "text-base" : "text-sm"
+                                      densityTier === "large" ? "text-sm" : "text-xs"
                                     }`}>
                                       {slot.claim.member.full_name?.[0] || "?"}
                                     </span>
@@ -886,83 +934,79 @@ export default function EventDisplayPage() {
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className={`font-semibold truncate ${
-                                  densityTier === "large" ? (index === 0 ? "text-white text-xl" : "text-gray-300 text-lg") :
-                                  densityTier === "medium" ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base") :
-                                  (index === 0 ? "text-white text-base" : "text-gray-300 text-sm")
+                                  densityTier === "large" ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base") :
+                                  densityTier === "medium" ? (index === 0 ? "text-white text-base" : "text-gray-300 text-sm") :
+                                  (index === 0 ? "text-white text-sm" : "text-gray-300 text-xs")
                                 }`}>
                                   {slot.claim.member.full_name || "Anonymous"}
                                 </p>
-                                {/* Only show time in large tier */}
-                                {densityTier === "large" && (
-                                  <p className="text-sm text-gray-500">
-                                    {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
-                                  </p>
-                                )}
                               </div>
-                              {/* Only show QR for next up performer (index 0) in large tier */}
-                              {densityTier === "large" && index === 0 && qrCodes.get(slot.claim.member.id) && (
-                                <div className="bg-white rounded-md p-1 flex-shrink-0">
-                                  <Image
-                                    src={qrCodes.get(slot.claim.member.id)!}
-                                    alt="QR"
-                                    width={60}
-                                    height={60}
-                                  />
-                                </div>
+                              {/* Phase 4.108: QR for ALL performers with profiles, adaptive sizing */}
+                              {qrCodes.get(slot.claim.member.id) && (
+                                (() => {
+                                  // Compact: only first 3 get QR
+                                  if (densityTier === "compact" && index > 2) return null;
+                                  const qrSize = densityTier === "large" ? 48 : densityTier === "medium" ? 40 : 32;
+                                  return (
+                                    <div className="bg-white rounded-md p-0.5 flex-shrink-0">
+                                      <Image
+                                        src={qrCodes.get(slot.claim.member.id)!}
+                                        alt="QR"
+                                        width={qrSize}
+                                        height={qrSize}
+                                      />
+                                    </div>
+                                  );
+                                })()
                               )}
                             </>
                           ) : (
                             <>
                               {/* Open slot - only show placeholder avatar in large/medium */}
                               {densityTier !== "compact" && (
-                                <div className={`rounded-full bg-gray-800/50 flex items-center justify-center ${
-                                  densityTier === "large" ? "w-12 h-12" : "w-9 h-9"
+                                <div className={`rounded-full bg-gray-800/50 flex items-center justify-center flex-shrink-0 ${
+                                  densityTier === "large" ? "w-10 h-10" : "w-8 h-8"
                                 }`}>
-                                  <span className={`text-gray-600 ${densityTier === "large" ? "text-base" : "text-sm"}`}>?</span>
+                                  <span className={`text-gray-600 ${densityTier === "large" ? "text-sm" : "text-xs"}`}>?</span>
                                 </div>
                               )}
                               <div className="flex-1">
                                 <p className={`font-semibold text-gray-500 ${
-                                  densityTier === "large" ? "text-lg" :
-                                  densityTier === "medium" ? "text-base" : "text-sm"
+                                  densityTier === "large" ? "text-base" :
+                                  densityTier === "medium" ? "text-sm" : "text-xs"
                                 }`}>Open Slot</p>
-                                {densityTier === "large" && (
-                                  <p className="text-sm text-gray-600">
-                                    {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
-                                  </p>
-                                )}
                               </div>
                             </>
                           )}
                         </div>
                       ))
                     ) : (
-                      <div className="p-6 text-center text-lg text-gray-500">
+                      <div className="p-4 text-center text-base text-gray-500">
                         No more performers scheduled
                       </div>
                     )}
 
-                    {/* Completed performers - only show in large tier */}
-                    {densityTier === "large" && completedSlots.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <p className="text-sm text-gray-500 uppercase tracking-wider mb-3">Already Performed</p>
-                        <div className="flex flex-wrap gap-2">
-                          {completedSlots.map(slot => (
+                    {/* Completed performers - only show in large tier when space allows */}
+                    {densityTier === "large" && completedSlots.length > 0 && upNextSlots.length <= 5 && (
+                      <div className="mt-2 pt-2 border-t border-white/10 flex-shrink-0">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Already Performed</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {completedSlots.slice(0, 6).map(slot => (
                             slot.claim?.member && (
                               <div
                                 key={slot.id}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-black/30 rounded-full text-sm text-gray-500"
+                                className="flex items-center gap-1.5 px-2 py-1 bg-black/30 rounded-full text-xs text-gray-500"
                               >
                                 {slot.claim.member.avatar_url ? (
                                   <Image
                                     src={slot.claim.member.avatar_url}
                                     alt=""
-                                    width={24}
-                                    height={24}
+                                    width={20}
+                                    height={20}
                                     className="rounded-full object-cover opacity-50"
                                   />
                                 ) : (
-                                  <div className="w-6 h-6 rounded-full bg-gray-800" />
+                                  <div className="w-5 h-5 rounded-full bg-gray-800" />
                                 )}
                                 <span>{slot.claim.member.full_name}</span>
                               </div>
@@ -975,9 +1019,9 @@ export default function EventDisplayPage() {
                 ) : (
                   /* Empty state for past dates with no roster */
                   <div className="flex items-center justify-center h-full">
-                    <div className="text-center p-8">
-                      <p className="text-2xl text-gray-400 mb-2">No performer data</p>
-                      <p className="text-gray-500">No lineup information available for this date</p>
+                    <div className="text-center p-6">
+                      <p className="text-xl text-gray-400 mb-1">No performer data</p>
+                      <p className="text-sm text-gray-500">No lineup information available for this date</p>
                     </div>
                   </div>
                 )}
