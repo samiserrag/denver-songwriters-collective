@@ -86,7 +86,27 @@ export function ProfilePhotosSection({
 
         // Add to local state
         setImages((prev) => [newImage, ...prev]);
-        toast.success("Photo uploaded!");
+
+        // Auto-set as profile photo if this is the first photo AND user has no avatar
+        const isFirstPhoto = images.length === 0;
+        const hasNoAvatar = !currentAvatarUrl;
+        if (isFirstPhoto && hasNoAvatar) {
+          // Auto-set this as the profile photo
+          const { error: avatarError } = await supabase
+            .from("profiles")
+            .update({ avatar_url: urlWithTimestamp })
+            .eq("id", userId);
+
+          if (!avatarError) {
+            onAvatarChange(urlWithTimestamp);
+            toast.success("Photo uploaded and set as your profile picture!");
+          } else {
+            toast.success("Photo uploaded!");
+          }
+        } else {
+          toast.success("Photo uploaded!");
+        }
+
         return urlWithTimestamp;
       } catch (err) {
         console.error("Upload error:", err);
@@ -94,7 +114,7 @@ export function ProfilePhotosSection({
         return null;
       }
     },
-    [supabase, userId]
+    [supabase, userId, images.length, currentAvatarUrl, onAvatarChange]
   );
 
   // Delete (soft-delete) an image
@@ -201,6 +221,16 @@ export function ProfilePhotosSection({
           Click or drag to upload. JPG, PNG, WebP, or GIF. Max 5MB.
         </p>
       </div>
+
+      {/* Prompt to choose profile photo if photos exist but no avatar set */}
+      {activeImages.length > 0 && !currentAvatarUrl && (
+        <div className="mb-4 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+          <p className="text-amber-800 dark:text-amber-300 text-sm font-medium">
+            👆 Choose your profile picture! Hover over a photo and click the ✓
+            button to set it as your profile picture.
+          </p>
+        </div>
+      )}
 
       {/* Photo grid */}
       {activeImages.length > 0 ? (
