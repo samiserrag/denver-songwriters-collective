@@ -535,9 +535,9 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - CSV import now enforces venue presence (Phase 1.41)
 
 **Location Filter Empty States:**
-- Added specific messaging when location filter returns zero results
-- ZIP: "No venues found for ZIP {zip}. Try a nearby ZIP or a larger radius."
-- City: "No venues found in {city}. Try increasing the radius or clearing the location filter."
+- Added `getEmptyStateMessage()` helper for location-aware messaging
+- ZIP: `No venues found for ZIP ${zipParam}` + "Try a nearby ZIP or a larger radius." (dynamic, uses user's input)
+- City: `No venues found in ${cityParam}` + "Try increasing the radius or clearing the location filter." (dynamic, uses user's input)
 
 **Files Modified:**
 
