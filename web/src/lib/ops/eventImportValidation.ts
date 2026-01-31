@@ -2,7 +2,7 @@
  * Event Import Validation
  *
  * Validates import rows against business rules:
- * - Required fields (title, event_type, event_date)
+ * - Required fields (title, event_type, event_date, venue_id or venue_name)
  * - Event type enum
  * - Recurrence invariants (ordinal monthly requires day_of_week)
  * - Day of week derivation for weekly/biweekly
@@ -128,6 +128,11 @@ function validateRow(row: ImportRow): string[] {
     errors.push(
       `Invalid event_date format: "${row.event_date}". Expected YYYY-MM-DD`
     );
+  }
+
+  // Venue is required - must have either venue_id or venue_name
+  if (!row.venue_id && !row.venue_name) {
+    errors.push("Missing required field: venue_id or venue_name (at least one is required)");
   }
 
   // Time format validation (optional fields)

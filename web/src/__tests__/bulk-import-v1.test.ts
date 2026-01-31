@@ -149,7 +149,7 @@ describe("eventImportValidation", () => {
       start_time: null,
       end_time: null,
       venue_id: null,
-      venue_name: null,
+      venue_name: "Test Venue", // venue_name or venue_id is required
       day_of_week: null,
       recurrence_rule: null,
       description: null,
@@ -186,6 +186,27 @@ describe("eventImportValidation", () => {
       const result = validateImportRows([row]);
       expect(result.invalidRows).toHaveLength(1);
       expect(result.invalidRows[0].errors.some(e => e.toLowerCase().includes("event_date"))).toBe(true);
+    });
+
+    it("rejects row missing both venue_id and venue_name", () => {
+      const row = { ...minimalValidRow, venue_id: null, venue_name: null };
+      const result = validateImportRows([row]);
+      expect(result.invalidRows).toHaveLength(1);
+      expect(result.invalidRows[0].errors.some(e => e.toLowerCase().includes("venue"))).toBe(true);
+    });
+
+    it("accepts row with venue_id but no venue_name", () => {
+      const row = { ...minimalValidRow, venue_id: "550e8400-e29b-41d4-a716-446655440000", venue_name: null };
+      const result = validateImportRows([row]);
+      expect(result.invalidRows).toHaveLength(0);
+      expect(result.validRows).toHaveLength(1);
+    });
+
+    it("accepts row with venue_name but no venue_id", () => {
+      const row = { ...minimalValidRow, venue_id: null, venue_name: "The Rusty Mic" };
+      const result = validateImportRows([row]);
+      expect(result.invalidRows).toHaveLength(0);
+      expect(result.validRows).toHaveLength(1);
     });
 
     it("rejects invalid event_type", () => {
@@ -475,7 +496,7 @@ describe("recurrence invariants", () => {
     start_time: null,
     end_time: null,
     venue_id: null,
-    venue_name: null,
+    venue_name: "Test Venue", // venue_name or venue_id is required
     day_of_week: null,
     recurrence_rule: null,
     description: null,
@@ -557,7 +578,7 @@ describe("system defaults", () => {
     start_time: null,
     end_time: null,
     venue_id: null,
-    venue_name: null,
+    venue_name: "Test Venue", // venue_name or venue_id is required
     day_of_week: null,
     recurrence_rule: null,
     description: null,
