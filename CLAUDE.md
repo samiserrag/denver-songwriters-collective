@@ -524,6 +524,67 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### City/ZIP Nearby Filter for Happenings (Phase 1.4, January 2026) — RESOLVED
+
+**Goal:** Add city/ZIP-based filtering with radius-based "nearby" expansion to the /happenings page.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3115, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §4 (Centralize Logic)
+
+**Work Done:**
+- Created `locationFilter.ts` helper module with Haversine distance calculation
+- Wired location filter into happenings page pipeline (Timeline, Series, Map views)
+- Added UI controls (city input, ZIP input, radius dropdown) to HappeningsFilters
+- Filter respects `override_patch.venue_id` for per-occurrence venue changes
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/happenings/locationFilter.ts` | Core filter logic: normalization, Haversine, bounding box, venue filtering |
+| `lib/happenings/index.ts` | Barrel export for happenings module |
+| `__tests__/phase1-4-location-filter.test.ts` | 36 tests covering helper functions and contracts |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Added city/zip/radius params, location filtering for all views, filter summary |
+| `components/happenings/HappeningsFilters.tsx` | Added Location section with city/ZIP inputs and radius dropdown |
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| ZIP wins over city | When both provided, ZIP is used for filtering |
+| Valid radii | 5, 10, 25, 50 miles (default 10) |
+| Haversine distance | Calculates great-circle distance without PostGIS |
+| Bounding box pre-filter | Performance optimization before Haversine computation |
+| Centroid calculation | Average lat/lng of exact-match venues with coordinates |
+| Override venue support | Uses `override_patch.venue_id` when present |
+
+**URL Parameters:**
+
+| Param | Description |
+|-------|-------------|
+| `city` | City name for nearby filter (e.g., "Denver") |
+| `zip` | ZIP code for nearby filter (e.g., "80202") |
+| `radius` | Radius in miles (5, 10, 25, or 50; default 10) |
+
+**View Parity:**
+- Timeline view: Filters occurrences by effective venue_id
+- Series view: Filters series entries by venue_id
+- Map view: Filters pins by venue_id
+
+**Filter Summary Display:**
+- Shows location context in results summary (e.g., "ZIP 80202 (3 + 5 nearby, 10mi)")
+- Active filter pill with MapPin icon for easy removal
+
+**Test Coverage:** 36 new tests (3115 total).
+
+---
+
 ### Mobile Bottom Sheet for Map Pins (Phase 1.3, January 2026) — RESOLVED
 
 **Goal:** Add responsive detail panel for map pins - mobile bottom sheet (≤768px) while preserving desktop Leaflet popup behavior.

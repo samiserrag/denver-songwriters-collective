@@ -20,6 +20,9 @@
  * - location: all|venue|online|hybrid
  * - cost: all|free|paid|unknown
  * - days: comma-separated day abbreviations (mon,tue,wed,etc.) - Phase 4.8
+ * - city: city name for nearby filter - Phase 1.4
+ * - zip: ZIP code for nearby filter - Phase 1.4
+ * - radius: radius in miles (5|10|25|50, default 10) - Phase 1.4
  */
 
 import * as React from "react";
@@ -172,6 +175,14 @@ const DAY_OPTIONS = [
   { value: "sun", label: "Sun", full: "Sunday" },
 ] as const;
 
+// Phase 1.4: Radius options for location filter
+const RADIUS_OPTIONS = [
+  { value: "5", label: "5 miles" },
+  { value: "10", label: "10 miles" },
+  { value: "25", label: "25 miles" },
+  { value: "50", label: "50 miles" },
+] as const;
+
 interface HappeningsFiltersProps {
   className?: string;
 }
@@ -192,14 +203,34 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const daysParam = searchParams.get("days") || "";
   const selectedDays = daysParam ? daysParam.split(",").filter(Boolean) : [];
 
+  // Phase 1.4: Location filter params
+  const city = searchParams.get("city") || "";
+  const zip = searchParams.get("zip") || "";
+  const radius = searchParams.get("radius") || "10";
+
   // Local search input state (debounced)
   const [searchInput, setSearchInput] = React.useState(q);
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Phase 1.4: Local state for location inputs (debounced)
+  const [cityInput, setCityInput] = React.useState(city);
+  const [zipInput, setZipInput] = React.useState(zip);
+  const cityTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const zipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Sync search input when URL changes externally
   React.useEffect(() => {
     setSearchInput(q);
   }, [q]);
+
+  // Phase 1.4: Sync location inputs when URL changes externally
+  React.useEffect(() => {
+    setCityInput(city);
+  }, [city]);
+
+  React.useEffect(() => {
+    setZipInput(zip);
+  }, [zip]);
 
   // Build URL with updated params
   const buildUrl = React.useCallback((updates: Record<string, string | null>) => {
@@ -248,6 +279,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   // Clear all filters
   const clearAll = () => {
     setSearchInput("");
+    setCityInput("");
+    setZipInput("");
     router.push("/happenings");
   };
 
@@ -257,6 +290,40 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       ? selectedDays.filter((d) => d !== day)
       : [...selectedDays, day];
     updateFilter("days", newDays.length > 0 ? newDays.join(",") : null);
+  };
+
+  // Phase 1.4: Handle city input with debounce
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCityInput(value);
+
+    if (cityTimeoutRef.current) {
+      clearTimeout(cityTimeoutRef.current);
+    }
+    cityTimeoutRef.current = setTimeout(() => {
+      // When setting city, clear zip (city and zip are mutually exclusive for filtering)
+      router.push(buildUrl({ city: value || null, zip: null }));
+    }, 400);
+  };
+
+  // Phase 1.4: Handle ZIP input with debounce
+  const handleZipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setZipInput(value);
+
+    if (zipTimeoutRef.current) {
+      clearTimeout(zipTimeoutRef.current);
+    }
+    zipTimeoutRef.current = setTimeout(() => {
+      // When setting zip, clear city (zip takes precedence)
+      router.push(buildUrl({ zip: value || null, city: null }));
+    }, 400);
+  };
+
+  // Phase 1.4: Handle radius change
+  const handleRadiusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    updateFilter("radius", value === "10" ? null : value);
   };
 
   // Collect active filter pills for display
@@ -305,6 +372,22 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     const dayLabels = selectedDays.map((d) => DAY_OPTIONS.find((o) => o.value === d)?.label || d).join(", ");
     activeFilters.push({ key: "days", label: `Days: ${dayLabels}` });
   }
+  // Phase 1.4: Location filter (ZIP takes precedence over city)
+  if (zip) {
+    const radiusLabel = RADIUS_OPTIONS.find(o => o.value === radius)?.label || `${radius} mi`;
+    activeFilters.push({
+      key: "zip",
+      label: `ZIP ${zip} (${radiusLabel})`,
+      icon: <MapPinIcon className="w-3 h-3" />
+    });
+  } else if (city) {
+    const radiusLabel = RADIUS_OPTIONS.find(o => o.value === radius)?.label || `${radius} mi`;
+    activeFilters.push({
+      key: "city",
+      label: `${city} (${radiusLabel})`,
+      icon: <MapPinIcon className="w-3 h-3" />
+    });
+  }
 
   // Check which quick filter is active
   const isOpenMicsActive = type === "open_mic";
@@ -323,6 +406,12 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   if (cost === "paid") activeFilterSummary.push("Paid");
   if (time === "past") activeFilterSummary.push("Past");
   if (time === "all") activeFilterSummary.push("All time");
+  // Phase 1.4: Location summary (ZIP wins over city)
+  if (zip) {
+    activeFilterSummary.push(`Near ${zip}`);
+  } else if (city) {
+    activeFilterSummary.push(`Near ${city}`);
+  }
 
   // Count active filters (excluding quick filters and search)
   const advancedFilterCount = [
@@ -332,6 +421,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     location,
     cost,
     verify,
+    zip || city, // Phase 1.4: Location filter counts as one
   ].filter(Boolean).length;
 
   return (
@@ -506,6 +596,57 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             </div>
           </div>
 
+          {/* Phase 1.4: Location Filter Row */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location</label>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  placeholder="City (e.g. Denver)"
+                  value={cityInput}
+                  onChange={handleCityChange}
+                  disabled={Boolean(zip)}
+                  className={cn(
+                    "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
+                    zip && "opacity-50 cursor-not-allowed"
+                  )}
+                />
+              </div>
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  placeholder="ZIP code"
+                  value={zipInput}
+                  onChange={handleZipChange}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+                />
+              </div>
+              <div className="space-y-1">
+                <select
+                  value={radius}
+                  onChange={handleRadiusChange}
+                  disabled={!city && !zip}
+                  className={cn(
+                    "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
+                    !city && !zip && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {RADIUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {zip && city && (
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                ZIP code takes precedence over city
+              </p>
+            )}
+          </div>
+
           {/* When + Type + Cost Row */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
@@ -583,6 +724,17 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                 onClick={() => {
                   if (filter.key === "q") {
                     setSearchInput("");
+                  }
+                  // Phase 1.4: Clear location inputs when removing location filter
+                  if (filter.key === "city") {
+                    setCityInput("");
+                    router.push(buildUrl({ city: null, radius: null }));
+                    return;
+                  }
+                  if (filter.key === "zip") {
+                    setZipInput("");
+                    router.push(buildUrl({ zip: null, radius: null }));
+                    return;
                   }
                   updateFilter(filter.key, null);
                 }}

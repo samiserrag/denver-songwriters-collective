@@ -20,6 +20,7 @@ import {
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 import { occurrencesToMapPins, type MapPinConfig } from "@/lib/map";
 import { MapView } from "@/components/happenings/MapView";
+import { getLocationFilteredVenues, type LocationFilterResult } from "@/lib/happenings";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -41,6 +42,9 @@ export const dynamic = "force-dynamic";
  * - showCancelled: 1 = show cancelled occurrences (default: hidden)
  * - pastOffset: number of 90-day chunks to go back for progressive loading (default: 0)
  * - view: timeline|series|map (Phase 4.54/1.0, default: timeline)
+ * - city: city name for location filter (Phase 1.4)
+ * - zip: ZIP code for location filter (Phase 1.4, wins over city if both present)
+ * - radius: radius in miles for nearby venues (Phase 1.4, default: 10, valid: 5|10|25|50)
  */
 interface HappeningsSearchParams {
   q?: string;
@@ -55,6 +59,9 @@ interface HappeningsSearchParams {
   showCancelled?: string;
   pastOffset?: string;
   view?: string;
+  city?: string;
+  zip?: string;
+  radius?: string;
 }
 
 export default async function HappeningsPage({
@@ -86,6 +93,11 @@ export default async function HappeningsPage({
     params.view === "series" ? "series" :
     params.view === "map" ? "map" :
     "timeline";
+
+  // Phase 1.4: City/ZIP location filter params
+  const cityParam = params.city;
+  const zipParam = params.zip;
+  const radiusParam = params.radius;
 
   const today = getTodayDenver();
   const yesterday = addDaysDenver(today, -1);
@@ -188,6 +200,19 @@ export default async function HappeningsPage({
         overrideVenueMap.set(v.id, { name: v.name, slug: v.slug, city: v.city, state: v.state, google_maps_url: v.google_maps_url, website_url: v.website_url, latitude: v.latitude, longitude: v.longitude });
       }
     }
+  }
+
+  // Phase 1.4: Location filter (city/ZIP with radius-based nearby expansion)
+  // Call BEFORE other filters so we get the venue IDs to filter by
+  let locationFilterResult: LocationFilterResult | null = null;
+  const hasLocationFilter = Boolean(cityParam || zipParam);
+
+  if (hasLocationFilter) {
+    locationFilterResult = await getLocationFilteredVenues(supabase, {
+      zip: zipParam,
+      city: cityParam,
+      radiusMiles: radiusParam ? parseInt(radiusParam, 10) : undefined,
+    });
   }
 
   // Type filter (event_type)
@@ -383,8 +408,49 @@ export default async function HappeningsPage({
     );
   }
 
+  // Phase 1.4: Apply location filter to occurrences (filter by effective venue_id)
+  // This happens AFTER time filtering but BEFORE count calculations
+  if (locationFilterResult && locationFilterResult.includedVenueIds.length > 0) {
+    const includedVenueIds = new Set(locationFilterResult.includedVenueIds);
+
+    // Helper to get effective venue_id for an occurrence (override takes precedence)
+    const getEffectiveVenueId = (entry: EventOccurrenceEntry<any>): string | null => {
+      const patch = entry.override?.override_patch as Record<string, unknown> | null | undefined;
+      const overrideVid = patch?.venue_id as string | undefined;
+      if (overrideVid) return overrideVid;
+      return entry.event.venue_id || null;
+    };
+
+    // Filter each date group's entries
+    const locationFilteredGroups = new Map<string, EventOccurrenceEntry<any>[]>();
+    for (const [dateKey, entries] of filteredGroups.entries()) {
+      const filtered = entries.filter((entry) => {
+        const effectiveVenueId = getEffectiveVenueId(entry);
+        return effectiveVenueId && includedVenueIds.has(effectiveVenueId);
+      });
+      if (filtered.length > 0) {
+        locationFilteredGroups.set(dateKey, filtered);
+      }
+    }
+    filteredGroups = locationFilteredGroups;
+  } else if (hasLocationFilter && locationFilterResult?.emptyReason) {
+    // Location filter active but no venues found - empty all groups
+    filteredGroups = new Map();
+  }
+
   // Sort unknown schedule events alphabetically by title
-  const sortedUnknownEvents = [...unknownEvents].sort((a: any, b: any) => {
+  // Phase 1.4: Also filter by location if active
+  let filteredUnknownEvents = [...unknownEvents];
+  if (locationFilterResult && locationFilterResult.includedVenueIds.length > 0) {
+    const includedVenueIds = new Set(locationFilterResult.includedVenueIds);
+    filteredUnknownEvents = filteredUnknownEvents.filter((event: any) => {
+      return event.venue_id && includedVenueIds.has(event.venue_id);
+    });
+  } else if (hasLocationFilter && locationFilterResult?.emptyReason) {
+    // Location filter active but no venues found - empty unknown events too
+    filteredUnknownEvents = [];
+  }
+  const sortedUnknownEvents = filteredUnknownEvents.sort((a: any, b: any) => {
     const titleA = a.title || "";
     const titleB = b.title || "";
     return titleA.localeCompare(titleB);
@@ -440,7 +506,7 @@ export default async function HappeningsPage({
   }
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming");
+  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter;
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -492,6 +558,17 @@ export default async function HappeningsPage({
     }
     if (timeFilter && timeFilter !== "upcoming") {
       parts.push(timeFilter === "past" ? "Past" : "All time");
+    }
+    // Phase 1.4: Location filter summary
+    if (locationFilterResult) {
+      const { mode, normalized, exactMatchCount, nearbyCount } = locationFilterResult;
+      if (mode === "zip") {
+        const nearbyText = nearbyCount > 0 ? ` + ${nearbyCount} nearby` : "";
+        parts.push(`ZIP ${normalized.zip} (${exactMatchCount}${nearbyText}, ${normalized.radiusMiles}mi)`);
+      } else if (mode === "city") {
+        const nearbyText = nearbyCount > 0 ? ` + ${nearbyCount} nearby` : "";
+        parts.push(`${normalized.city} (${exactMatchCount}${nearbyText}, ${normalized.radiusMiles}mi)`);
+      }
     }
     return parts;
   };
@@ -675,34 +752,49 @@ export default async function HappeningsPage({
           })()
         ) : viewMode === "series" ? (
           /* Series View - one row per event/series */
-          <>
-            {/* Phase 4.84: Rolling window notice for series view */}
-            {(() => {
-              const windowNotice = getOccurrenceWindowNotice();
-              return (
-                <div className="mb-4 text-sm text-[var(--color-text-secondary)]">
-                  <p>{windowNotice.headline}</p>
-                  <p className="text-[var(--color-text-tertiary)]">{windowNotice.detail}</p>
-                </div>
-              );
-            })()}
-            {list.length > 0 ? (
-              <SeriesView
-                events={list as SeriesEvent[]}
-                overrideMap={overrideMap}
-                startKey={windowStart}
-                endKey={windowEnd}
-              />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-[var(--color-text-secondary)]">
-                  {searchQuery || hasFilters
-                    ? "No happenings match your filters. Try adjusting your search."
-                    : "No happenings found. Check back soon!"}
-                </p>
-              </div>
-            )}
-          </>
+          (() => {
+            // Phase 1.4: Filter series list by location if active
+            let seriesList = list;
+            if (locationFilterResult && locationFilterResult.includedVenueIds.length > 0) {
+              const includedVenueIds = new Set(locationFilterResult.includedVenueIds);
+              seriesList = list.filter((event: any) => {
+                return event.venue_id && includedVenueIds.has(event.venue_id);
+              });
+            } else if (hasLocationFilter && locationFilterResult?.emptyReason) {
+              seriesList = [];
+            }
+
+            return (
+              <>
+                {/* Phase 4.84: Rolling window notice for series view */}
+                {(() => {
+                  const windowNotice = getOccurrenceWindowNotice();
+                  return (
+                    <div className="mb-4 text-sm text-[var(--color-text-secondary)]">
+                      <p>{windowNotice.headline}</p>
+                      <p className="text-[var(--color-text-tertiary)]">{windowNotice.detail}</p>
+                    </div>
+                  );
+                })()}
+                {seriesList.length > 0 ? (
+                  <SeriesView
+                    events={seriesList as SeriesEvent[]}
+                    overrideMap={overrideMap}
+                    startKey={windowStart}
+                    endKey={windowEnd}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-[var(--color-text-secondary)]">
+                      {searchQuery || hasFilters
+                        ? "No happenings match your filters. Try adjusting your search."
+                        : "No happenings found. Check back soon!"}
+                    </p>
+                  </div>
+                )}
+              </>
+            );
+          })()
         ) : (
           /* Timeline View - grouped by date (default) */
           totalDisplayableEvents > 0 ? (
