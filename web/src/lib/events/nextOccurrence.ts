@@ -378,8 +378,13 @@ export function computeNextOccurrence(
     };
   }
 
-  // Case 1: One-time event with specific date
-  if (event.event_date) {
+  // Case 1: One-time event with specific date (NOT recurring)
+  // Phase 4.105.1: Use interpretRecurrence to check if event is recurring
+  // Previously, this returned event_date immediately for ANY event with event_date,
+  // including recurring events with past anchor dates. This caused bugs where
+  // "next occurrence" returned a past anchor date instead of the next future date.
+  const recurrence = interpretRecurrence(event as RecurrenceInput);
+  if (!recurrence.isRecurring && event.event_date) {
     const eventDateKey = event.event_date;
     return {
       date: eventDateKey,

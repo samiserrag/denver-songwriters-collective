@@ -120,6 +120,50 @@ describe("nextOccurrence", () => {
         // Next Thursday is Jan 16
         expect(result.date).toBe("2025-01-16");
       });
+
+      /**
+       * Phase 4.105.1: Recurring events with past anchor dates
+       *
+       * CRITICAL BUG FIX: Previously, computeNextOccurrence() would return
+       * event_date (anchor date) immediately for ANY event with event_date,
+       * even if the event was recurring. This caused bugs where:
+       *
+       * - Event: Weekly Thursday recurring, anchor date = 2025-01-09 (past Thursday)
+       * - Today: 2025-01-31 (Friday)
+       * - Expected: 2025-02-06 (next Thursday)
+       * - Actual (bug): 2025-01-09 (past anchor date)
+       *
+       * The fix uses interpretRecurrence() to check if event is recurring
+       * before returning event_date.
+       */
+      it("returns next future occurrence for recurring events with past anchor dates", () => {
+        // Friday, Jan 31, 2025
+        mockDate("2025-01-31");
+        const event = {
+          event_date: "2025-01-09", // Past Thursday (anchor date)
+          day_of_week: "Thursday",
+          recurrence_rule: "weekly",
+        };
+        const result = computeNextOccurrence(event);
+
+        // Should return next Thursday (Feb 6), NOT the past anchor date
+        expect(result.date).toBe("2025-02-06");
+        expect(result.isConfident).toBe(true);
+      });
+
+      it("returns anchor date for one-time events (no day_of_week)", () => {
+        // Friday, Jan 31, 2025
+        mockDate("2025-01-31");
+        const event = {
+          event_date: "2025-01-09", // Past date (one-time event)
+          // No day_of_week, no recurrence_rule = one-time event
+        };
+        const result = computeNextOccurrence(event);
+
+        // One-time event returns event_date even if in past
+        expect(result.date).toBe("2025-01-09");
+        expect(result.isConfident).toBe(true);
+      });
     });
 
     describe("nth weekday of month (RRULE)", () => {
