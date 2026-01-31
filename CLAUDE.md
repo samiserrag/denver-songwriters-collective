@@ -524,6 +524,86 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Lineup/Display Slug Fix + TV QR Strip (Phase 4.100.2 + 4.102, January 2026) — RESOLVED
+
+**Goal:** Fix 400 Bad Request errors on lineup and display pages when accessed via slug URLs, and add TV-optimized QR codes for Event/Venue/Host.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3191, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §4 (Centralize Logic)
+
+**Phase 4.100.2: Slug/UUID Bugfix**
+
+**Problem:** Lineup and display pages threw 400 Bad Request errors when accessed via slug URLs (e.g., `/events/words-open-mic/lineup`) because queries used `.eq("id", slugString)` which fails PostgreSQL UUID type comparison.
+
+**Solution:**
+- Added `isUUID()` helper function to detect UUID vs slug format
+- Renamed `eventId` to `routeParam` for clarity
+- Added `eventUuid` state to store the resolved UUID after initial fetch
+- Modified `fetchData` to conditionally query by `id` OR `slug`
+- Updated all downstream queries (timeslots, lineup state, claims, upserts) to use `eventUuid`
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/lineup/page.tsx` | isUUID helper, conditional query, eventUuid state, 7 query locations fixed |
+| `app/events/[id]/display/page.tsx` | isUUID helper, conditional query, eventUuid state, 3 query locations fixed |
+
+**Phase 4.102: TV Display QR Strip**
+
+**New Component:**
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| TvQrStrip | `components/events/TvQrStrip.tsx` | TV-optimized QR codes: Event (240px), Venue (200px), Host (200px) |
+
+**Display Page Enhancements:**
+- Split static vs dynamic data fetching (venue/host fetched once, timeslots/lineup polled every 5s)
+- Added `VenueInfo` and `HostInfo` interfaces and state
+- Created `fetchStaticData` callback for one-time venue/host lookup
+- Increased typography for TV distance readability:
+  - Titles: `text-5xl` (was `text-4xl`)
+  - Headers: `text-2xl` (was `text-lg`)
+  - Date box: `w-28 h-28` (was `w-24 h-24`)
+  - LIVE badge: `text-lg`
+  - Performer names: `text-2xl` for next up, `text-xl` for others
+  - Completed performers: Larger pills with `text-base`
+- Replaced footer with `TvQrStrip` component showing Event/Venue/Host QR codes
+
+**TvQrStrip Props:**
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `eventSlugOrId` | string | Event slug or UUID for QR URL |
+| `venueSlugOrId` | string \| null | Venue slug or UUID (optional) |
+| `venueName` | string \| null | Venue name for label |
+| `hostSlugOrId` | string \| null | Host slug or UUID (optional) |
+| `hostName` | string \| null | Host name for label |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `components/events/TvQrStrip.tsx` | TV-optimized QR strip component |
+| `__tests__/phase4-100-2-slug-uuid-fix.test.ts` | 29 tests for isUUID helper and query patterns |
+
+**Test Coverage:** 29 new tests (3191 total).
+
+**Key Pattern (isUUID helper):**
+```typescript
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+// Conditional query pattern
+const { data } = isUUID(routeParam)
+  ? await query.eq("id", routeParam).single()
+  : await query.eq("slug", routeParam).single();
+```
+
+---
+
 ### Venue Integrity Audit + Location Filter Empty States (Phase 1.42, January 2026) — RESOLVED
 
 **Goal:** Audit venue data integrity and improve empty state messaging for location filters.

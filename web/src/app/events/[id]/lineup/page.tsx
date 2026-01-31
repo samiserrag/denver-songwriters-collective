@@ -12,6 +12,14 @@ import { LineupStateBanner } from "@/components/events/LineupStateBanner";
 import { LineupDatePicker } from "@/components/events/LineupDatePicker";
 import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 
+/**
+ * Phase 4.100.2: Check if string is a valid UUID
+ * Used to determine whether to query by id (UUID) or slug
+ */
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 interface Performer {
   id: string;
   full_name: string | null;
@@ -82,9 +90,13 @@ export default function LineupControlPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const eventId = params.id as string;
+  // Phase 4.100.2: Rename to routeParam - may be UUID or slug
+  const routeParam = params.id as string;
   const { user, loading: authLoading } = useAuth();
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
+
+  // Phase 4.100.2: Resolved UUID after fetching event (used for all subsequent queries)
+  const [eventUuid, setEventUuid] = React.useState<string | null>(null);
 
   const [event, setEvent] = React.useState<EventInfo | null>(null);
   const [timeslots, setTimeslots] = React.useState<Timeslot[]>([]);
@@ -122,9 +134,10 @@ export default function LineupControlPage() {
   const [copied, setCopied] = React.useState(false);
 
   // Check authorization (admin or event host)
+  // Phase 4.100.2: Only runs after eventUuid is resolved
   React.useEffect(() => {
     async function checkAuth() {
-      if (!user) return;
+      if (!user || !eventUuid) return;
 
       // Check if admin
       const { data: profile } = await supabase
@@ -142,7 +155,7 @@ export default function LineupControlPage() {
       const { data: eventData } = await supabase
         .from("events")
         .select("host_id")
-        .eq("id", eventId)
+        .eq("id", eventUuid)
         .single();
 
       if (eventData?.host_id === user.id) {
@@ -155,7 +168,7 @@ export default function LineupControlPage() {
       const { data: hostEntry } = await supabase
         .from("event_hosts")
         .select("id")
-        .eq("event_id", eventId)
+        .eq("event_id", eventUuid)
         .eq("user_id", user.id)
         .eq("invitation_status", "accepted")
         .single();
@@ -165,18 +178,21 @@ export default function LineupControlPage() {
       }
     }
 
-    if (user) checkAuth();
-  }, [user, eventId, supabase]);
+    if (user && eventUuid) checkAuth();
+  }, [user, eventUuid, supabase]);
 
   // Fetch event data
   const fetchData = React.useCallback(async () => {
     try {
+      // Phase 4.100.2: Conditionally query by UUID or slug
       // Fetch event info with recurrence fields for date_key computation
-      const { data: eventData, error: eventError } = await supabase
+      const eventQuery = supabase
         .from("events")
-        .select("id, title, slug, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
-        .eq("id", eventId)
-        .single();
+        .select("id, title, slug, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule");
+
+      const { data: eventData, error: eventError } = isUUID(routeParam)
+        ? await eventQuery.eq("id", routeParam).single()
+        : await eventQuery.eq("slug", routeParam).single();
 
       if (eventError) throw eventError;
 
@@ -185,6 +201,9 @@ export default function LineupControlPage() {
         return;
       }
 
+      // Phase 4.100.2: Store the resolved UUID for all subsequent queries
+      const resolvedUuid = eventData.id;
+      setEventUuid(resolvedUuid);
       setEvent(eventData);
 
       // Phase ABC7: Compute effective date_key for this occurrence
@@ -235,10 +254,11 @@ export default function LineupControlPage() {
       }
 
       // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
+      // Phase 4.100.2: Use resolvedUuid instead of routeParam
       const { data: slots, error: slotsError } = await supabase
         .from("event_timeslots")
         .select("id, slot_index, start_offset_minutes, duration_minutes")
-        .eq("event_id", eventId)
+        .eq("event_id", resolvedUuid)
         .eq("date_key", dateKey)
         .order("slot_index", { ascending: true });
 
@@ -280,10 +300,11 @@ export default function LineupControlPage() {
       }
 
       // Phase ABC7: Fetch lineup state filtered by (event_id, date_key)
+      // Phase 4.100.2: Use resolvedUuid instead of routeParam
       const { data: state, error: stateError } = await supabase
         .from("event_lineup_state")
         .select("now_playing_timeslot_id, updated_at")
-        .eq("event_id", eventId)
+        .eq("event_id", resolvedUuid)
         .eq("date_key", dateKey)
         .maybeSingle();
 
@@ -329,7 +350,7 @@ export default function LineupControlPage() {
       }
       setLoading(false);
     }
-  }, [eventId, supabase, urlDate, failureCount]);
+  }, [routeParam, supabase, urlDate, failureCount]);
 
   React.useEffect(() => {
     fetchData();
@@ -383,8 +404,9 @@ export default function LineupControlPage() {
   }, []);
 
   // Phase ABC7: Update lineup state with date_key for per-occurrence control
+  // Phase 4.100.2: Use eventUuid instead of routeParam for upsert
   const updateLineupState = async (newTimeslotId: string | null) => {
-    if (!effectiveDateKey) return;
+    if (!effectiveDateKey || !eventUuid) return;
 
     setUpdating(true);
 
@@ -392,7 +414,7 @@ export default function LineupControlPage() {
     const { error } = await supabase
       .from("event_lineup_state")
       .upsert({
-        event_id: eventId,
+        event_id: eventUuid,
         date_key: effectiveDateKey,
         now_playing_timeslot_id: newTimeslotId,
         updated_at: new Date().toISOString(),
@@ -461,13 +483,15 @@ export default function LineupControlPage() {
   const setCurrentSlot = (slotId: string) => updateLineupState(slotId);
 
   // Phase 4.99: Handle date selection from picker
+  // Phase 4.100.2: Use routeParam (preserves slug if originally accessed via slug)
   const handleDateSelect = (date: string) => {
     setShowDatePicker(false);
-    router.push(`/events/${eventId}/lineup?date=${date}`);
+    router.push(`/events/${routeParam}/lineup?date=${date}`);
   };
 
   // Phase 4.99: Build display URL
-  const eventIdentifier = event?.slug || eventId;
+  // Phase 4.100.2: Use event slug if available, otherwise routeParam
+  const eventIdentifier = event?.slug || routeParam;
   const displayUrl = effectiveDateKey
     ? `/events/${eventIdentifier}/display?date=${effectiveDateKey}`
     : `/events/${eventIdentifier}/display`;
@@ -510,7 +534,7 @@ export default function LineupControlPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-background)] p-8">
         <p className="text-[var(--color-text-secondary)] mb-4">Please log in to access lineup controls.</p>
-        <Link href={`/login?redirectTo=/events/${eventId}/lineup`} className="text-[var(--color-text-accent)] hover:underline">
+        <Link href={`/login?redirectTo=/events/${routeParam}/lineup`} className="text-[var(--color-text-accent)] hover:underline">
           Log in
         </Link>
       </div>
@@ -521,7 +545,7 @@ export default function LineupControlPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-background)] p-8">
         <p className="text-red-400 mb-4">Access denied. Only event hosts and admins can control the lineup.</p>
-        <Link href={`/events/${eventId}`} className="text-[var(--color-text-accent)] hover:underline">
+        <Link href={`/events/${routeParam}`} className="text-[var(--color-text-accent)] hover:underline">
           Back to event
         </Link>
       </div>
@@ -574,6 +598,7 @@ export default function LineupControlPage() {
               </div>
             )}
             {/* Phase ABC7: Date selector for recurring events */}
+            {/* Phase 4.100.2: Use routeParam to preserve slug in URL */}
             {event?.is_recurring && availableDates.length > 1 && (
               <div className="mt-3">
                 <label className="text-xs text-[var(--color-text-tertiary)] mr-2">Change date:</label>
@@ -581,7 +606,7 @@ export default function LineupControlPage() {
                   value={effectiveDateKey || ""}
                   onChange={(e) => {
                     const newDate = e.target.value;
-                    router.push(`/events/${eventId}/lineup?date=${newDate}`);
+                    router.push(`/events/${routeParam}/lineup?date=${newDate}`);
                   }}
                   className="text-sm bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded px-3 py-1.5 text-[var(--color-text-primary)]"
                 >

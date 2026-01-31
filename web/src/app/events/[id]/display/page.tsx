@@ -7,6 +7,15 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import QRCode from "qrcode";
 import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { LineupStateBanner } from "@/components/events/LineupStateBanner";
+import { TvQrStrip } from "@/components/events/TvQrStrip";
+
+/**
+ * Phase 4.100.2: Check if string is a valid UUID
+ * Used to determine whether to query by id (UUID) or slug
+ */
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
 
 interface Performer {
   id: string;
@@ -35,12 +44,30 @@ interface LineupState {
 interface EventInfo {
   id: string;
   title: string;
+  slug: string | null;
   venue_name: string | null;
   start_time: string | null;
   event_date: string | null;
   is_recurring: boolean;
   day_of_week: string | null;
   recurrence_rule: string | null;
+  // Phase 4.102: Additional fields for TV display media + QR
+  cover_image_url: string | null;
+  venue_id: string | null;
+  host_id: string | null;
+}
+
+// Phase 4.102: Static venue/host data (fetched once)
+interface VenueInfo {
+  id: string;
+  name: string;
+  slug: string | null;
+}
+
+interface HostInfo {
+  id: string;
+  full_name: string | null;
+  slug: string | null;
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
@@ -66,8 +93,12 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
 export default function EventDisplayPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const eventId = params.id as string;
+  // Phase 4.100.2: Rename to routeParam - may be UUID or slug
+  const routeParam = params.id as string;
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
+
+  // Phase 4.100.2: Resolved UUID after fetching event (used for all subsequent queries)
+  const [eventUuid, setEventUuid] = React.useState<string | null>(null);
 
   const [event, setEvent] = React.useState<EventInfo | null>(null);
   const [timeslots, setTimeslots] = React.useState<TimeslotWithClaim[]>([]);
@@ -75,6 +106,11 @@ export default function EventDisplayPage() {
   const [qrCodes, setQrCodes] = React.useState<Map<string, string>>(new Map());
   const [loading, setLoading] = React.useState(true);
   const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  // Phase 4.102: Static data (fetched once on initial load)
+  const [venue, setVenue] = React.useState<VenueInfo | null>(null);
+  const [host, setHost] = React.useState<HostInfo | null>(null);
+  const [staticDataLoaded, setStaticDataLoaded] = React.useState(false);
 
   // Phase 4.99: Connection health tracking
   const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
@@ -100,15 +136,47 @@ export default function EventDisplayPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Phase 4.102: Fetch static data (venue, host) once on initial load
+  const fetchStaticData = React.useCallback(async (venueId: string | null, hostId: string | null) => {
+    // Fetch venue if we have venue_id
+    if (venueId) {
+      const { data: venueData } = await supabase
+        .from("venues")
+        .select("id, name, slug")
+        .eq("id", venueId)
+        .single();
+      if (venueData) {
+        setVenue(venueData);
+      }
+    }
+
+    // Fetch host if we have host_id
+    if (hostId) {
+      const { data: hostData } = await supabase
+        .from("profiles")
+        .select("id, full_name, slug")
+        .eq("id", hostId)
+        .single();
+      if (hostData) {
+        setHost(hostData);
+      }
+    }
+
+    setStaticDataLoaded(true);
+  }, [supabase]);
+
   // Fetch event data
   const fetchData = React.useCallback(async () => {
     try {
-      // Fetch event info with recurrence fields for date_key computation
-      const { data: eventData, error: eventError } = await supabase
+      // Phase 4.100.2: Conditionally query by UUID or slug
+      // Phase 4.102: Include additional fields for media + QR
+      const eventQuery = supabase
         .from("events")
-        .select("id, title, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule")
-        .eq("id", eventId)
-        .single();
+        .select("id, title, slug, venue_name, start_time, event_date, is_recurring, day_of_week, recurrence_rule, cover_image_url, venue_id, host_id");
+
+      const { data: eventData, error: eventError } = isUUID(routeParam)
+        ? await eventQuery.eq("id", routeParam).single()
+        : await eventQuery.eq("slug", routeParam).single();
 
       if (eventError) throw eventError;
 
@@ -117,7 +185,15 @@ export default function EventDisplayPage() {
         return;
       }
 
+      // Phase 4.100.2: Store the resolved UUID for all subsequent queries
+      const resolvedUuid = eventData.id;
+      setEventUuid(resolvedUuid);
       setEvent(eventData);
+
+      // Phase 4.102: Fetch static data (venue, host) only once
+      if (!staticDataLoaded) {
+        fetchStaticData(eventData.venue_id, eventData.host_id);
+      }
 
     // Phase ABC7: Compute effective date_key for this occurrence
     let dateKey: string;
@@ -149,10 +225,11 @@ export default function EventDisplayPage() {
     setEffectiveDateKey(dateKey);
 
     // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
+    // Phase 4.100.2: Use resolvedUuid instead of routeParam
     const { data: slots, error: slotsError } = await supabase
       .from("event_timeslots")
       .select("id, slot_index, start_offset_minutes, duration_minutes")
-      .eq("event_id", eventId)
+      .eq("event_id", resolvedUuid)
       .eq("date_key", dateKey)
       .order("slot_index", { ascending: true });
 
@@ -222,10 +299,11 @@ export default function EventDisplayPage() {
     }
 
     // Phase ABC7: Fetch lineup state filtered by (event_id, date_key)
+    // Phase 4.100.2: Use resolvedUuid instead of routeParam
     const { data: state, error: stateError } = await supabase
       .from("event_lineup_state")
       .select("now_playing_timeslot_id, updated_at")
-      .eq("event_id", eventId)
+      .eq("event_id", resolvedUuid)
       .eq("date_key", dateKey)
       .maybeSingle();
 
@@ -284,7 +362,7 @@ export default function EventDisplayPage() {
       }
       setLoading(false);
     }
-  }, [eventId, supabase, urlDate, failureCount]);
+  }, [routeParam, supabase, urlDate, failureCount, staticDataLoaded, fetchStaticData]);
 
   // Initial fetch and auto-refresh every 5 seconds
   React.useEffect(() => {
@@ -372,33 +450,37 @@ export default function EventDisplayPage() {
         showExtendedHint={showExtendedHint}
       />
 
-      {/* Header */}
+      {/* Header - Phase 4.102: Increased typography for TV readability */}
       <header className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           {/* Date Box - Phase ABC7: Use effectiveDateKey for occurrence date */}
+          {/* Phase 4.102: Larger date box for TV visibility */}
           {effectiveDateKey && (
-            <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black">
-              <span className="text-sm font-semibold uppercase tracking-wide">
+            <div className="flex-shrink-0 w-28 h-28 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black">
+              <span className="text-base font-semibold uppercase tracking-wide">
                 {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
               </span>
-              <span className="text-4xl font-bold leading-none">
+              <span className="text-5xl font-bold leading-none">
                 {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
               </span>
-              <span className="text-xs font-medium uppercase">
+              <span className="text-sm font-medium uppercase">
                 {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
               </span>
             </div>
           )}
           <div>
-            <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">
+            {/* Phase 4.102: text-5xl for TV readability (was text-4xl) */}
+            <h1 className="text-5xl font-bold text-[var(--color-text-accent)]">
               {event?.title || "Event"}
             </h1>
+            {/* Phase 4.102: text-2xl for TV readability (was text-xl) */}
             {event?.venue_name && (
-              <p className="text-xl text-gray-400 mt-1">{event.venue_name}</p>
+              <p className="text-2xl text-gray-400 mt-2">{event.venue_name}</p>
             )}
             {/* Phase ABC7: Use effectiveDateKey for occurrence date display */}
+            {/* Phase 4.102: text-lg for TV readability (was text-sm) */}
             {effectiveDateKey && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-lg text-gray-500 mt-1">
                 {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
@@ -411,7 +493,8 @@ export default function EventDisplayPage() {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-5xl font-mono text-white">
+          {/* Phase 4.102: text-6xl for TV readability (was text-5xl) */}
+          <p className="text-6xl font-mono text-white">
             {currentTime.toLocaleTimeString("en-US", {
               hour: "numeric",
               minute: "2-digit",
@@ -419,42 +502,46 @@ export default function EventDisplayPage() {
             })}
           </p>
           {isLive && (
-            <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-red-600 rounded-full text-sm font-semibold animate-pulse">
-              <span className="w-2 h-2 bg-white rounded-full"></span>
+            <span className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-red-600 rounded-full text-lg font-semibold animate-pulse">
+              <span className="w-3 h-3 bg-white rounded-full"></span>
               LIVE
             </span>
           )}
         </div>
       </header>
 
-      <div className="grid grid-cols-12 gap-8 h-[calc(100vh-200px)]">
+      {/* Phase 4.102: Adjusted grid height to accommodate QR strip at bottom */}
+      <div className="grid grid-cols-12 gap-8 h-[calc(100vh-380px)]">
         {/* Now Playing - Left side (large) */}
         <div className="col-span-5">
-          <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wider mb-4">
+          {/* Phase 4.102: text-2xl for TV readability (was text-lg) */}
+          <h2 className="text-2xl font-semibold text-gray-400 uppercase tracking-wider mb-4">
             Now Playing
           </h2>
           {nowPlayingSlot?.claim?.member ? (
-            <div className="bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-transparent border-2 border-[var(--color-accent-primary)] rounded-2xl p-8 h-[calc(100%-40px)]">
+            <div className="bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-transparent border-2 border-[var(--color-accent-primary)] rounded-2xl p-8 h-[calc(100%-48px)]">
               <div className="flex flex-col items-center text-center h-full justify-center">
                 {nowPlayingSlot.claim.member.avatar_url ? (
                   <Image
                     src={nowPlayingSlot.claim.member.avatar_url}
                     alt={nowPlayingSlot.claim.member.full_name || "Performer"}
-                    width={192}
-                    height={192}
+                    width={224}
+                    height={224}
                     className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-6"
                   />
                 ) : (
-                  <div className="w-48 h-48 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-6">
-                    <span className="text-7xl text-[var(--color-text-accent)]">
+                  <div className="w-56 h-56 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-6">
+                    <span className="text-8xl text-[var(--color-text-accent)]">
                       {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
                     </span>
                   </div>
                 )}
-                <h3 className="text-4xl font-bold text-white mb-2">
+                {/* Phase 4.102: text-5xl for TV readability (was text-4xl) */}
+                <h3 className="text-5xl font-bold text-white mb-3">
                   {nowPlayingSlot.claim.member.full_name || "Anonymous"}
                 </h3>
-                <p className="text-xl text-[var(--color-text-accent)]">
+                {/* Phase 4.102: text-2xl for TV readability (was text-xl) */}
+                <p className="text-2xl text-[var(--color-text-accent)]">
                   {formatSlotTime(event?.start_time || null, nowPlayingSlot.start_offset_minutes, nowPlayingSlot.duration_minutes)}
                 </p>
                 {qrCodes.get(nowPlayingSlot.claim.member.id) && (
@@ -462,18 +549,19 @@ export default function EventDisplayPage() {
                     <Image
                       src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
                       alt="Profile QR Code"
-                      width={96}
-                      height={96}
+                      width={120}
+                      height={120}
                       className="mx-auto"
                     />
-                    <p className="text-xs text-gray-500 mt-2">Scan for profile</p>
+                    <p className="text-sm text-gray-500 mt-2">Scan for profile</p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 h-[calc(100%-40px)] flex items-center justify-center">
-              <p className="text-2xl text-gray-500">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 h-[calc(100%-48px)] flex items-center justify-center">
+              {/* Phase 4.102: text-3xl for TV readability (was text-2xl) */}
+              <p className="text-3xl text-gray-500">
                 {isLive ? "Intermission" : "Not started yet"}
               </p>
             </div>
@@ -482,21 +570,24 @@ export default function EventDisplayPage() {
 
         {/* Up Next - Right side */}
         <div className="col-span-7">
-          <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wider mb-4">
+          {/* Phase 4.102: text-2xl for TV readability (was text-lg) */}
+          <h2 className="text-2xl font-semibold text-gray-400 uppercase tracking-wider mb-4">
             Up Next
           </h2>
-          <div className="space-y-3">
+          {/* Phase 4.102: Increased spacing and typography for TV readability */}
+          <div className="space-y-4">
             {upNextSlots.length > 0 ? (
               upNextSlots.map((slot, index) => (
                 <div
                   key={slot.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                  className={`flex items-center gap-5 p-5 rounded-xl border transition-all ${
                     index === 0
                       ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/50"
                       : "bg-gray-900/30 border-gray-800"
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-lg font-bold text-gray-400">
+                  {/* Phase 4.102: Larger slot number for TV */}
+                  <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-xl font-bold text-gray-400">
                     {slot.slot_index + 1}
                   </div>
                   {slot.claim?.member ? (
@@ -505,22 +596,23 @@ export default function EventDisplayPage() {
                         <Image
                           src={slot.claim.member.avatar_url}
                           alt={slot.claim.member.full_name || ""}
-                          width={48}
-                          height={48}
+                          width={56}
+                          height={56}
                           className="rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
-                          <span className="text-[var(--color-text-accent)]">
+                        <div className="w-14 h-14 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                          <span className="text-lg text-[var(--color-text-accent)]">
                             {slot.claim.member.full_name?.[0] || "?"}
                           </span>
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className={`font-semibold ${index === 0 ? "text-white text-xl" : "text-gray-300"}`}>
+                        {/* Phase 4.102: text-2xl for next up, text-xl for others */}
+                        <p className={`font-semibold ${index === 0 ? "text-white text-2xl" : "text-gray-300 text-xl"}`}>
                           {slot.claim.member.full_name || "Anonymous"}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-base text-gray-500">
                           {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
                         </p>
                       </div>
@@ -528,19 +620,19 @@ export default function EventDisplayPage() {
                         <Image
                           src={qrCodes.get(slot.claim.member.id)!}
                           alt="QR"
-                          width={64}
-                          height={64}
+                          width={80}
+                          height={80}
                         />
                       )}
                     </>
                   ) : (
                     <>
-                      <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
-                        <span className="text-gray-600">?</span>
+                      <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center">
+                        <span className="text-lg text-gray-600">?</span>
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-500">Open Slot</p>
-                        <p className="text-sm text-gray-600">
+                        <p className="font-semibold text-xl text-gray-500">Open Slot</p>
+                        <p className="text-base text-gray-600">
                           {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
                         </p>
                       </div>
@@ -549,35 +641,35 @@ export default function EventDisplayPage() {
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-xl text-gray-500">
                 No more performers scheduled
               </div>
             )}
           </div>
 
-          {/* Completed performers (smaller) */}
+          {/* Completed performers - Phase 4.102: Larger for TV visibility */}
           {completedSlots.length > 0 && (
             <div className="mt-8">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              <h3 className="text-base font-semibold text-gray-500 uppercase tracking-wider mb-4">
                 Already Performed
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {completedSlots.map(slot => (
                   slot.claim?.member && (
                     <div
                       key={slot.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-900/30 rounded-full text-sm text-gray-500"
+                      className="flex items-center gap-3 px-4 py-2 bg-gray-900/30 rounded-full text-base text-gray-500"
                     >
                       {slot.claim.member.avatar_url ? (
                         <Image
                           src={slot.claim.member.avatar_url}
                           alt=""
-                          width={20}
-                          height={20}
+                          width={28}
+                          height={28}
                           className="rounded-full object-cover opacity-50"
                         />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-gray-800" />
+                        <div className="w-7 h-7 rounded-full bg-gray-800" />
                       )}
                       <span>{slot.claim.member.full_name}</span>
                     </div>
@@ -589,9 +681,15 @@ export default function EventDisplayPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="absolute bottom-4 left-0 right-0 text-center text-gray-600 text-sm">
-        Denver Songwriters Collective
+      {/* Phase 4.102: QR Strip Footer with Event, Venue, Host QR codes */}
+      <footer className="absolute bottom-0 left-0 right-0 bg-black/80 border-t border-white/10">
+        <TvQrStrip
+          eventSlugOrId={event?.slug || eventUuid || routeParam}
+          venueSlugOrId={venue?.slug || venue?.id}
+          venueName={venue?.name}
+          hostSlugOrId={host?.slug || host?.id}
+          hostName={host?.full_name}
+        />
       </footer>
     </div>
   );
