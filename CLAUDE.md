@@ -622,6 +622,84 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### TV Poster Mode Final Polish (Phase 4.109, January 2026) — RESOLVED
+
+**Goal:** Final 10% polish for TV Poster Mode to make it production-ready for live events with 10-20 performers.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3224, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**Requirements Implemented:**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Up Next 2-column layout | When >10 slots, uses `grid grid-cols-2 gap-2` to fit up to 20 |
+| Adaptive slot sizing | `slotSize = count <= 10 ? "large" : "small"` |
+| Now Playing smaller | Avatar reduced from 140px to 100px |
+| Now Playing name bigger | Font increased from `text-3xl` to `text-4xl` |
+| Performer QR black/white | Changed from gold `#d4a853` to `#000000` on `#ffffff` |
+| CTA text in header | "Scan the QR codes to Follow and Support the Artists and our Collective" |
+| DSC QR label | Changed from "Join DSC" to "OUR COLLECTIVE" |
+| Event QR label | Changed from "This Event" to "EVENT PAGE" |
+| QR sizing equalized | Both top-right QRs now 80px (was 70px/90px) |
+
+**Layout Behavior by Slot Count:**
+
+| Slots | Layout | Slot Size | QR Size |
+|-------|--------|-----------|---------|
+| 1-10 | 1 column, flex | large (py-2.5) | 44px |
+| 11-20 | 2 columns, grid | small (py-1.5) | 32px |
+
+**Key Code Patterns:**
+
+```typescript
+// 2-column detection
+const use2Columns = upNextSlots.length > 10;
+const slotDisplayCount = Math.min(allUpNextSlots.length, 20);
+const slotSize = slotDisplayCount <= 10 ? "large" : "small";
+
+// Performer QR generation (black on white)
+const qrDataUrl = await QRCode.toDataURL(profileUrl, {
+  width: 100,
+  margin: 1,
+  color: { dark: "#000000", light: "#ffffff" },
+});
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/display/page.tsx` | 2-column layout, adaptive sizing, QR colors, CTA text, label changes |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase4-109-tv-poster-mode.test.ts` | 31 tests for Phase 4.109 contracts |
+
+**Files Deleted:**
+
+| File | Reason |
+|------|--------|
+| `__tests__/phase4-108-tv-poster-mode.test.ts` | Superseded by Phase 4.109 tests |
+
+**Test Coverage:** 31 tests (3224 total).
+
+**Manual Smoke Tests:**
+1. Load TV mode with 8 slots → 1-column layout, large slots, 44px QRs
+2. Load TV mode with 15 slots → 2-column layout, small slots, 32px QRs
+3. Verify performer QRs scan correctly (black on white)
+4. Verify CTA text visible in header
+5. Verify DSC QR label says "OUR COLLECTIVE"
+6. Verify Event QR label says "EVENT PAGE"
+7. Verify both top-right QRs are same size (80px)
+
+**Investigation Doc:** `docs/investigation/phase4-109-tv-poster-mode-final-10.md`
+
+---
+
 ### TV Poster Mode Completion (Phase 4.108, January 2026) — RESOLVED
 
 **Goal:** Complete TV Poster Mode to be pixel-max, stable, and complete for live events. Fixes 8 issues from Phase 4.104.

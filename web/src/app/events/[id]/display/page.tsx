@@ -421,10 +421,11 @@ export default function EventDisplayPage() {
         if (slot.claim?.member?.id) {
           const profileUrl = `${SITE_URL}/songwriters/${slot.claim.member.slug || slot.claim.member.id}`;
           try {
+            // Phase 4.109: Black on white for consistent scanning (was gold #d4a853 on transparent)
             const qrDataUrl = await QRCode.toDataURL(profileUrl, {
               width: 100,
               margin: 1,
-              color: { dark: "#d4a853", light: "#00000000" },
+              color: { dark: "#000000", light: "#ffffff" },
             });
             newQrCodes.set(slot.claim.member.id, qrDataUrl);
           } catch (err) {
@@ -695,6 +696,10 @@ export default function EventDisplayPage() {
                     {formatEventTimeWindow(event.start_time, event.end_time)}
                   </p>
                 )}
+                {/* Phase 4.109: CTA text to explain QR codes */}
+                <p className="text-sm text-gray-300 mt-3 max-w-md">
+                  Scan the QR codes to Follow and Support the Artists and our Collective
+                </p>
               </div>
             </div>
 
@@ -706,34 +711,34 @@ export default function EventDisplayPage() {
                   LIVE
                 </span>
               )}
-              {/* Phase 4.108: DSC Join QR */}
+              {/* Phase 4.109: DSC Join QR - same size as Event QR (80px both) */}
               {dscJoinQrCode && (
                 <div className="flex flex-col items-center gap-1">
                   <div className="bg-white rounded-lg p-1.5 shadow-lg">
                     <Image
                       src={dscJoinQrCode}
-                      alt="Join DSC"
-                      width={70}
-                      height={70}
+                      alt="Our Collective"
+                      width={80}
+                      height={80}
                       className="rounded"
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Join DSC</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">OUR COLLECTIVE</p>
                 </div>
               )}
-              {/* Event QR */}
+              {/* Phase 4.109: Event QR - same size as DSC QR (80px both) */}
               {eventQrCode && !eventQrError && (
                 <div className="flex flex-col items-center gap-1">
                   <div className="bg-white rounded-lg p-1.5 shadow-lg">
                     <Image
                       src={eventQrCode}
-                      alt="Event QR"
-                      width={90}
-                      height={90}
+                      alt="Event Page"
+                      width={80}
+                      height={80}
                       className="rounded"
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">This Event</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">EVENT PAGE</p>
                 </div>
               )}
             </div>
@@ -830,24 +835,25 @@ export default function EventDisplayPage() {
                 Now Playing
               </h2>
               <div className="flex-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-4 min-h-0 flex flex-col">
+                {/* Phase 4.109: Now Playing - smaller avatar (100px), bigger name (text-4xl) */}
                 {nowPlayingSlot?.claim?.member ? (
                   <div className="flex flex-col items-center text-center flex-1 justify-center">
                     {nowPlayingSlot.claim.member.avatar_url ? (
                       <Image
                         src={nowPlayingSlot.claim.member.avatar_url}
                         alt={nowPlayingSlot.claim.member.full_name || "Performer"}
-                        width={140}
-                        height={140}
-                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-3 shadow-lg"
+                        width={100}
+                        height={100}
+                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-2 shadow-lg"
                       />
                     ) : (
-                      <div className="w-36 h-36 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-3">
-                        <span className="text-6xl text-[var(--color-text-accent)]">
+                      <div className="w-24 h-24 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-2">
+                        <span className="text-5xl text-[var(--color-text-accent)]">
                           {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
                         </span>
                       </div>
                     )}
-                    <h3 className="text-3xl font-bold text-white mb-1 drop-shadow">
+                    <h3 className="text-4xl font-bold text-white mb-1 drop-shadow">
                       {nowPlayingSlot.claim.member.full_name || "Anonymous"}
                     </h3>
                     {/* Phase 4.108: Removed slot time from Now Playing */}
@@ -875,147 +881,145 @@ export default function EventDisplayPage() {
               </div>
             </div>
 
-            {/* Phase 4.108: Up Next - fills remaining space with adaptive QR for ALL performers */}
+            {/* Phase 4.109: Up Next - 2-column layout when >10 slots, adaptive sizing */}
             <div className={`${displayCoverImage ? "col-span-5" : "col-span-7"} flex flex-col min-h-0`}>
               <h2 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-2 flex-shrink-0">
                 Up Next
               </h2>
               <div className="flex-1 overflow-hidden min-h-0">
                 {hasRosterData ? (
-                  <div className={`h-full flex flex-col ${
-                    densityTier === "large" ? "gap-2" :
-                    densityTier === "medium" ? "gap-1.5" : "gap-1"
-                  }`}>
-                    {upNextSlots.length > 0 ? (
-                      upNextSlots.map((slot, index) => (
-                        <div
-                          key={slot.id}
-                          className={`flex items-center transition-all flex-shrink-0 ${
-                            densityTier === "large" ? "gap-3 p-3 rounded-xl" :
-                            densityTier === "medium" ? "gap-2 p-2 rounded-lg" :
-                            "gap-1.5 p-1.5 rounded-md"
-                          } border ${
-                            index === 0
-                              ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/50"
-                              : "bg-black/40 border-white/10"
-                          }`}
-                        >
-                          {/* Slot number - size varies by tier */}
-                          <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 ${
-                            densityTier === "large" ? "w-10 h-10 text-base" :
-                            densityTier === "medium" ? "w-8 h-8 text-sm" :
-                            "w-6 h-6 text-xs"
-                          }`}>
-                            {slot.slot_index + 1}
-                          </div>
-                          {slot.claim?.member ? (
-                            <>
-                              {/* Avatar - only show in large/medium tiers */}
-                              {densityTier !== "compact" && (
-                                slot.claim.member.avatar_url ? (
-                                  <Image
-                                    src={slot.claim.member.avatar_url}
-                                    alt={slot.claim.member.full_name || ""}
-                                    width={densityTier === "large" ? 40 : 32}
-                                    height={densityTier === "large" ? 40 : 32}
-                                    className="rounded-full object-cover flex-shrink-0"
-                                  />
-                                ) : (
-                                  <div className={`rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0 ${
-                                    densityTier === "large" ? "w-10 h-10" : "w-8 h-8"
-                                  }`}>
-                                    <span className={`text-[var(--color-text-accent)] ${
-                                      densityTier === "large" ? "text-sm" : "text-xs"
+                  (() => {
+                    // Phase 4.109: Use 2 columns when >10 slots to fit up to 20
+                    const use2Columns = upNextSlots.length > 10;
+                    // Phase 4.109: Adaptive slot sizing based on count
+                    const slotDisplayCount = Math.min(allUpNextSlots.length, 20);
+                    const slotSize = slotDisplayCount <= 10 ? "large" : "small";
+
+                    return (
+                      <div className={`h-full ${use2Columns ? "grid grid-cols-2 gap-2" : "flex flex-col"} ${
+                        !use2Columns && (densityTier === "large" ? "gap-2" : densityTier === "medium" ? "gap-1.5" : "gap-1")
+                      }`}>
+                        {upNextSlots.length > 0 ? (
+                          upNextSlots.map((slot, index) => (
+                            <div
+                              key={slot.id}
+                              className={`flex items-center transition-all ${use2Columns ? "" : "flex-shrink-0"} ${
+                                slotSize === "large" ? "gap-3 p-3 rounded-xl" : "gap-2 p-2 rounded-lg"
+                              } border ${
+                                index === 0
+                                  ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/50"
+                                  : "bg-black/40 border-white/10"
+                              }`}
+                            >
+                              {/* Slot number - size varies by slot count */}
+                              <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 ${
+                                slotSize === "large" ? "w-10 h-10 text-base" : "w-7 h-7 text-sm"
+                              }`}>
+                                {slot.slot_index + 1}
+                              </div>
+                              {slot.claim?.member ? (
+                                <>
+                                  {/* Avatar - show in large size, hide in small to save space */}
+                                  {slotSize === "large" && (
+                                    slot.claim.member.avatar_url ? (
+                                      <Image
+                                        src={slot.claim.member.avatar_url}
+                                        alt={slot.claim.member.full_name || ""}
+                                        width={36}
+                                        height={36}
+                                        className="rounded-full object-cover flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-9 h-9 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-[var(--color-text-accent)] text-sm">
+                                          {slot.claim.member.full_name?.[0] || "?"}
+                                        </span>
+                                      </div>
+                                    )
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`font-semibold truncate ${
+                                      slotSize === "large"
+                                        ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base")
+                                        : (index === 0 ? "text-white text-sm" : "text-gray-300 text-sm")
                                     }`}>
-                                      {slot.claim.member.full_name?.[0] || "?"}
-                                    </span>
+                                      {slot.claim.member.full_name || "Anonymous"}
+                                    </p>
+                                  </div>
+                                  {/* Phase 4.109: QR for ALL performers with profiles, adaptive sizing */}
+                                  {qrCodes.get(slot.claim.member.id) && (
+                                    (() => {
+                                      // In 2-column mode with many slots, limit QR to first 6
+                                      if (use2Columns && index > 5) return null;
+                                      const qrSize = slotSize === "large" ? 44 : 32;
+                                      return (
+                                        <div className="bg-white rounded-md p-0.5 flex-shrink-0">
+                                          <Image
+                                            src={qrCodes.get(slot.claim.member.id)!}
+                                            alt="QR"
+                                            width={qrSize}
+                                            height={qrSize}
+                                          />
+                                        </div>
+                                      );
+                                    })()
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  {/* Open slot - only show placeholder avatar in large mode */}
+                                  {slotSize === "large" && (
+                                    <div className="w-9 h-9 rounded-full bg-gray-800/50 flex items-center justify-center flex-shrink-0">
+                                      <span className="text-gray-600 text-sm">?</span>
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <p className={`font-semibold text-gray-500 ${
+                                      slotSize === "large" ? "text-base" : "text-sm"
+                                    }`}>Open Slot</p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-base text-gray-500 col-span-2">
+                            No more performers scheduled
+                          </div>
+                        )}
+
+                        {/* Completed performers - only show when space allows */}
+                        {!use2Columns && completedSlots.length > 0 && upNextSlots.length <= 5 && (
+                          <div className="mt-2 pt-2 border-t border-white/10 flex-shrink-0">
+                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Already Performed</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {completedSlots.slice(0, 6).map(slot => (
+                                slot.claim?.member && (
+                                  <div
+                                    key={slot.id}
+                                    className="flex items-center gap-1.5 px-2 py-1 bg-black/30 rounded-full text-xs text-gray-500"
+                                  >
+                                    {slot.claim.member.avatar_url ? (
+                                      <Image
+                                        src={slot.claim.member.avatar_url}
+                                        alt=""
+                                        width={20}
+                                        height={20}
+                                        className="rounded-full object-cover opacity-50"
+                                      />
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full bg-gray-800" />
+                                    )}
+                                    <span>{slot.claim.member.full_name}</span>
                                   </div>
                                 )
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className={`font-semibold truncate ${
-                                  densityTier === "large" ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base") :
-                                  densityTier === "medium" ? (index === 0 ? "text-white text-base" : "text-gray-300 text-sm") :
-                                  (index === 0 ? "text-white text-sm" : "text-gray-300 text-xs")
-                                }`}>
-                                  {slot.claim.member.full_name || "Anonymous"}
-                                </p>
-                              </div>
-                              {/* Phase 4.108: QR for ALL performers with profiles, adaptive sizing */}
-                              {qrCodes.get(slot.claim.member.id) && (
-                                (() => {
-                                  // Compact: only first 3 get QR
-                                  if (densityTier === "compact" && index > 2) return null;
-                                  const qrSize = densityTier === "large" ? 48 : densityTier === "medium" ? 40 : 32;
-                                  return (
-                                    <div className="bg-white rounded-md p-0.5 flex-shrink-0">
-                                      <Image
-                                        src={qrCodes.get(slot.claim.member.id)!}
-                                        alt="QR"
-                                        width={qrSize}
-                                        height={qrSize}
-                                      />
-                                    </div>
-                                  );
-                                })()
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              {/* Open slot - only show placeholder avatar in large/medium */}
-                              {densityTier !== "compact" && (
-                                <div className={`rounded-full bg-gray-800/50 flex items-center justify-center flex-shrink-0 ${
-                                  densityTier === "large" ? "w-10 h-10" : "w-8 h-8"
-                                }`}>
-                                  <span className={`text-gray-600 ${densityTier === "large" ? "text-sm" : "text-xs"}`}>?</span>
-                                </div>
-                              )}
-                              <div className="flex-1">
-                                <p className={`font-semibold text-gray-500 ${
-                                  densityTier === "large" ? "text-base" :
-                                  densityTier === "medium" ? "text-sm" : "text-xs"
-                                }`}>Open Slot</p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-base text-gray-500">
-                        No more performers scheduled
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    {/* Completed performers - only show in large tier when space allows */}
-                    {densityTier === "large" && completedSlots.length > 0 && upNextSlots.length <= 5 && (
-                      <div className="mt-2 pt-2 border-t border-white/10 flex-shrink-0">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Already Performed</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {completedSlots.slice(0, 6).map(slot => (
-                            slot.claim?.member && (
-                              <div
-                                key={slot.id}
-                                className="flex items-center gap-1.5 px-2 py-1 bg-black/30 rounded-full text-xs text-gray-500"
-                              >
-                                {slot.claim.member.avatar_url ? (
-                                  <Image
-                                    src={slot.claim.member.avatar_url}
-                                    alt=""
-                                    width={20}
-                                    height={20}
-                                    className="rounded-full object-cover opacity-50"
-                                  />
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full bg-gray-800" />
-                                )}
-                                <span>{slot.claim.member.full_name}</span>
-                              </div>
-                            )
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    );
+                  })()
                 ) : (
                   /* Empty state for past dates with no roster */
                   <div className="flex items-center justify-center h-full">
