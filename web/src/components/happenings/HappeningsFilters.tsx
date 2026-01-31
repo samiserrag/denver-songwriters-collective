@@ -551,6 +551,57 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         )}
       </div>
 
+      {/* Phase 1.41: Location Filter Row - Always visible (moved outside <details>) */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <input
+              type="text"
+              placeholder="City (e.g. Denver)"
+              value={cityInput}
+              onChange={handleCityChange}
+              disabled={Boolean(zip)}
+              className={cn(
+                "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
+                zip && "opacity-50 cursor-not-allowed"
+              )}
+            />
+          </div>
+          <div className="space-y-1">
+            <input
+              type="text"
+              placeholder="ZIP code"
+              value={zipInput}
+              onChange={handleZipChange}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+            />
+          </div>
+          <div className="space-y-1">
+            <select
+              value={radius}
+              onChange={handleRadiusChange}
+              disabled={!city && !zip}
+              className={cn(
+                "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
+                !city && !zip && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {RADIUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {zip && city && (
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            ZIP code takes precedence over city
+          </p>
+        )}
+      </div>
+
       {/* Collapsed Filters - Progressive Disclosure */}
       <details className="group rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
         <summary className="cursor-pointer px-4 py-3 flex items-center justify-between list-none">
@@ -594,57 +645,6 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Phase 1.4: Location Filter Row */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location</label>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <input
-                  type="text"
-                  placeholder="City (e.g. Denver)"
-                  value={cityInput}
-                  onChange={handleCityChange}
-                  disabled={Boolean(zip)}
-                  className={cn(
-                    "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
-                    zip && "opacity-50 cursor-not-allowed"
-                  )}
-                />
-              </div>
-              <div className="space-y-1">
-                <input
-                  type="text"
-                  placeholder="ZIP code"
-                  value={zipInput}
-                  onChange={handleZipChange}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
-                />
-              </div>
-              <div className="space-y-1">
-                <select
-                  value={radius}
-                  onChange={handleRadiusChange}
-                  disabled={!city && !zip}
-                  className={cn(
-                    "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]",
-                    !city && !zip && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {RADIUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {zip && city && (
-              <p className="text-xs text-[var(--color-text-tertiary)]">
-                ZIP code takes precedence over city
-              </p>
-            )}
           </div>
 
           {/* When + Type + Cost Row */}

@@ -585,6 +585,46 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Location Filter Visibility Fix (Phase 1.41, January 2026) — RESOLVED
+
+**Goal:** Make Location filters (City/ZIP/Radius) visible by default on /happenings without requiring users to expand the Filters disclosure.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3115, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility)
+
+**Problem:** Phase 1.4 added Location filters but placed them inside a collapsed `<details>` element (Phase 4.55 progressive disclosure). Users had to expand "Filters" to see City/ZIP/Radius controls.
+
+**Solution:** Moved Location block outside the `<details>` element while keeping other advanced filters (Days, When, Type, Cost) inside for progressive disclosure.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningsFilters.tsx` | Moved Location section outside `<details>`, updated grid to responsive `grid-cols-1 sm:grid-cols-3` |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase1-41-location-visible.test.tsx` | Visibility contract tests for Location controls |
+
+**Key Changes:**
+
+| Change | Implementation |
+|--------|----------------|
+| Location visibility | Always visible below Search, above collapsed Filters |
+| Responsive layout | `grid-cols-1` on mobile, `sm:grid-cols-3` on desktop |
+| Progressive disclosure preserved | Days, When, Type, Cost remain in collapsed `<details>` |
+| Badge logic unchanged | Location filter still counted in `advancedFilterCount` |
+
+**Smoke Checklist:**
+1. `/happenings` — City/ZIP/Radius visible without expanding Filters
+2. Mobile viewport — inputs stack 1-per-row; desktop: 3 columns
+3. Set city/zip/radius, collapse Filters — active filter badge/summary still reflects location filter
+
+---
+
 ### Mobile Bottom Sheet for Map Pins (Phase 1.3, January 2026) — RESOLVED
 
 **Goal:** Add responsive detail panel for map pins - mobile bottom sheet (≤768px) while preserving desktop Leaflet popup behavior.
