@@ -152,6 +152,104 @@ axiom query "['vercel'] | where type == 'function' | summarize avg(duration) by 
 
 ---
 
+## Chrome Browser Integration (for Production Testing)
+
+**The repo agent can control a Chrome browser to test production websites, verify deployments, and debug UI issues.**
+
+### Prerequisites
+
+| Requirement | Minimum Version |
+|-------------|-----------------|
+| Claude Code CLI | 2.0.73+ |
+| Claude in Chrome extension | 1.0.36+ |
+| Google Chrome | Latest |
+| Claude Plan | Pro, Team, or Enterprise |
+
+### How to Launch
+
+```bash
+# Start Claude Code with Chrome integration
+claude --chrome
+
+# Or enable within an existing session
+/chrome
+```
+
+### Available Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| Navigate pages | Open URLs, click links, use back/forward |
+| Click & type | Interact with buttons, forms, inputs |
+| Read console | Access browser console logs and errors |
+| Take screenshots | Capture current page state |
+| Record GIFs | Create recordings of browser interactions |
+| Read DOM | Extract text, check for elements, verify content |
+| Multi-tab | Work across multiple browser tabs |
+| Authenticated sites | Access sites you're logged into (Gmail, Notion, etc.) |
+
+### Common Investigation Patterns
+
+**Verify a deployment is live:**
+```
+Go to https://denversongwriterscollective.org/events/words-open-mic/display?tv=1
+Check if the page contains "SCAN FOR HAPPENING DETAILS"
+Report PASS if found, FAIL if not
+```
+
+**Test a specific user flow:**
+```
+1. Go to https://denversongwriterscollective.org/happenings
+2. Click on the first event card
+3. Find and click the "RSVP" button
+4. Report any console errors
+```
+
+**Check link generation:**
+```
+Go to https://denversongwriterscollective.org/events/words-open-mic/lineup
+Find the "Open TV Display" button
+Click it and report the exact URL it navigates to
+Confirm whether the URL includes tv=1 parameter
+```
+
+**Debug with console logs:**
+```
+Open the event detail page and check the console for any errors
+Filter for warnings containing "hydration" or "undefined"
+```
+
+### When to Use Chrome Integration
+
+| Scenario | Use Chrome? |
+|----------|-------------|
+| Verify client-rendered content | ✅ Yes (WebFetch only sees initial HTML) |
+| Test button/link behavior | ✅ Yes |
+| Check authenticated pages | ✅ Yes |
+| Debug JavaScript errors | ✅ Yes |
+| Verify API responses | ❌ No (use curl) |
+| Check static HTML content | ❌ No (use WebFetch) |
+| Read server logs | ❌ No (use Axiom) |
+
+### Limitations
+
+- **Chrome only** — Not supported on Brave, Arc, or other browsers
+- **No headless mode** — Requires visible browser window
+- **Modal blockers** — JS alerts/confirms block commands (dismiss manually)
+- **WSL not supported** — Use native macOS/Windows/Linux
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Extension not detected" | Verify extension v1.0.36+, restart Chrome, run `/chrome` → "Reconnect" |
+| Commands not working | Check for modal dialogs blocking the page |
+| Version too old | Run `claude update` (requires 2.0.73+) |
+
+**Documentation:** https://code.claude.com/docs/en/chrome
+
+---
+
 ## Commands
 
 ```bash
