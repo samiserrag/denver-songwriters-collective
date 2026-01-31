@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 
 interface QrShareBlockProps {
@@ -46,22 +45,28 @@ export function QrShareBlock({
       </h3>
 
       <div className="flex flex-col md:flex-row gap-4 items-center md:items-start">
-        {/* Cover image (optional) */}
+        {/* Cover image (optional) - uses native img with onError fallback */}
         {imageSrc && (
           <div className="flex-shrink-0 w-full md:w-48 h-32 md:h-32 relative overflow-hidden rounded-lg bg-[var(--color-bg-tertiary)]">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={imageSrc}
               alt={imageAlt}
-              fill
-              sizes="(max-width: 768px) 100vw, 192px"
-              className="object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         )}
 
-        {/* QR code */}
+        {/* QR code with accessibility label */}
         <div className="flex flex-col items-center gap-2">
-          <div className="p-3 bg-white rounded-xl">
+          <div
+            className="p-3 bg-white rounded-xl"
+            role="img"
+            aria-label={`QR code linking to ${url}`}
+          >
             <QRCodeSVG
               value={url}
               size={qrSize}

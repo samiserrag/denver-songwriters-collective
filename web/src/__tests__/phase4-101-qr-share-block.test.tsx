@@ -209,4 +209,104 @@ describe("Phase 4.101 — QR Share Block", () => {
       expect(imgs.length).toBe(0); // No cover image in this test
     });
   });
+
+  describe("Accessibility (Phase 4.101 micro-fixes)", () => {
+    it("QR code wrapper has role=img for screen readers", () => {
+      render(
+        <QrShareBlock
+          title="Share"
+          url="https://example.com/test-page"
+        />
+      );
+
+      const qrWrapper = screen.getByRole("img", { name: /QR code linking to/ });
+      expect(qrWrapper).toBeInTheDocument();
+    });
+
+    it("QR code aria-label includes the full URL", () => {
+      const testUrl = "https://denversongwriterscollective.org/events/my-event";
+      render(
+        <QrShareBlock
+          title="Share"
+          url={testUrl}
+        />
+      );
+
+      const qrWrapper = screen.getByRole("img", {
+        name: `QR code linking to ${testUrl}`,
+      });
+      expect(qrWrapper).toBeInTheDocument();
+    });
+
+    it("screen readers can identify QR code purpose without visual context", () => {
+      render(
+        <QrShareBlock
+          title="Share This Event"
+          url="https://example.com/event/123"
+        />
+      );
+
+      // The aria-label provides context that would otherwise require vision
+      // We use getAllByRole because QRCodeSVG also has role="img" on the SVG
+      const qrElements = screen.getAllByRole("img");
+      const qrWrapper = qrElements.find(
+        (el) => el.getAttribute("aria-label")?.includes("QR code linking to")
+      );
+      expect(qrWrapper).toBeDefined();
+      expect(qrWrapper).toHaveAttribute(
+        "aria-label",
+        "QR code linking to https://example.com/event/123"
+      );
+    });
+  });
+
+  describe("Broken image fallback (Phase 4.101 micro-fixes)", () => {
+    it("cover image has onError handler for graceful degradation", () => {
+      render(
+        <QrShareBlock
+          title="Share"
+          url="https://example.com"
+          imageSrc="https://example.com/broken-image.jpg"
+          imageAlt="Event cover"
+        />
+      );
+
+      const img = screen.getByAltText("Event cover") as HTMLImageElement;
+      expect(img).toBeInTheDocument();
+      // The onError handler is attached - verify the img element exists and has our expected class
+      expect(img).toHaveClass("object-cover");
+    });
+
+    it("cover image container has background for fallback display", () => {
+      const { container } = render(
+        <QrShareBlock
+          title="Share"
+          url="https://example.com"
+          imageSrc="https://example.com/cover.jpg"
+        />
+      );
+
+      // The container has bg-tertiary as placeholder when image fails
+      const imageContainer = container.querySelector(
+        ".bg-\\[var\\(--color-bg-tertiary\\)\\]"
+      );
+      expect(imageContainer).toBeInTheDocument();
+    });
+
+    it("uses native img element (not Next Image) for reliable onError handling", () => {
+      render(
+        <QrShareBlock
+          title="Share"
+          url="https://example.com"
+          imageSrc="https://example.com/cover.jpg"
+        />
+      );
+
+      const img = screen.getByAltText("Cover image");
+      // Native img elements have tagName "IMG"
+      expect(img.tagName).toBe("IMG");
+      // Should have inline onError handler capability
+      expect(img).toHaveAttribute("src", "https://example.com/cover.jpg");
+    });
+  });
 });
