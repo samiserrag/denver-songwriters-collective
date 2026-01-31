@@ -14,27 +14,15 @@ describe("Phase 1.01 — Default Window Behavior", () => {
     it("should NOT have a dateFilter param in HappeningsSearchParams", () => {
       // The 'date' param should not exist in the interface
       // This is a contract test - the happenings page should not look for ?date=
-      // Verify by checking that the interface definition doesn't include 'date'
-      const searchParamsFields = [
-        "q",
-        "time",
-        "type",
-        "dsc",
-        "verify",
-        "location",
-        "cost",
-        "days",
-        "debugDates",
-        "showCancelled",
-        "pastOffset",
-        "view",
-      ];
+      // Phase 1.01 removed the 'date' and 'all' params that were added in Phase 1.0
 
       // These fields should NOT be in the interface for Phase 1.01
       const removedFields = ["date", "all"];
 
       // This is a documentation test - verifies the contract
+      // 'q' is a valid param that should NOT be in the removed list
       expect(removedFields).not.toContain("q");
+      // 'date' and 'all' are explicitly removed in Phase 1.01
       expect(removedFields).toContain("date");
       expect(removedFields).toContain("all");
     });
