@@ -10,6 +10,16 @@ import { LineupStateBanner } from "@/components/events/LineupStateBanner";
 import { TvQrStrip } from "@/components/events/TvQrStrip";
 
 /**
+ * Phase 4.104: TV Poster Mode
+ *
+ * When ?tv=1 is present, renders a full-screen artistic overlay that:
+ * - Shows cover art as blurred background with dark gradient
+ * - Displays host + accepted cohosts with avatars and QR codes
+ * - Hides header/footer visually (overlay covers them)
+ * - Accepts any valid YYYY-MM-DD date for past demo support
+ */
+
+/**
  * Phase 4.100.2: Check if string is a valid UUID
  * Used to determine whether to query by id (UUID) or slug
  */
@@ -68,6 +78,8 @@ interface HostInfo {
   id: string;
   full_name: string | null;
   slug: string | null;
+  avatar_url?: string | null;
+  role?: "host" | "cohost";
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
@@ -112,6 +124,12 @@ export default function EventDisplayPage() {
   const [host, setHost] = React.useState<HostInfo | null>(null);
   const [staticDataLoaded, setStaticDataLoaded] = React.useState(false);
 
+  // Phase 4.104: TV Poster Mode
+  const tvMode = searchParams.get("tv") === "1";
+  const [allHosts, setAllHosts] = React.useState<HostInfo[]>([]); // Primary host + accepted cohosts
+  const [displayCoverImage, setDisplayCoverImage] = React.useState<string | null>(null);
+  const [hostQrCodes, setHostQrCodes] = React.useState<Map<string, string>>(new Map());
+
   // Phase 4.99: Connection health tracking
   const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<"connected" | "disconnected" | "reconnecting">("connected");
@@ -136,8 +154,26 @@ export default function EventDisplayPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Phase 4.102: Fetch static data (venue, host) once on initial load
-  const fetchStaticData = React.useCallback(async (venueId: string | null, hostId: string | null) => {
+  // Phase 4.104: Scroll lock for TV mode
+  React.useEffect(() => {
+    if (tvMode) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [tvMode]);
+
+  // Phase 4.102 + 4.104: Fetch static data (venue, hosts, cover image) once on initial load
+  const fetchStaticData = React.useCallback(async (
+    eventId: string,
+    venueId: string | null,
+    hostId: string | null,
+    baseCoverImage: string | null,
+    dateKey: string
+  ) => {
     // Fetch venue if we have venue_id
     if (venueId) {
       const { data: venueData } = await supabase
@@ -150,17 +186,88 @@ export default function EventDisplayPage() {
       }
     }
 
-    // Fetch host if we have host_id
+    // Fetch primary host if we have host_id (legacy)
     if (hostId) {
       const { data: hostData } = await supabase
         .from("profiles")
-        .select("id, full_name, slug")
+        .select("id, full_name, slug, avatar_url")
         .eq("id", hostId)
         .single();
       if (hostData) {
-        setHost(hostData);
+        setHost({ ...hostData, role: "host" });
       }
     }
+
+    // Phase 4.104: Fetch all accepted hosts (primary + cohosts) from event_hosts
+    const { data: eventHosts } = await supabase
+      .from("event_hosts")
+      .select("user_id, role")
+      .eq("event_id", eventId)
+      .eq("invitation_status", "accepted");
+
+    if (eventHosts && eventHosts.length > 0) {
+      const hostIds = eventHosts.map((h: { user_id: string }) => h.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, slug, avatar_url")
+        .in("id", hostIds);
+
+      if (profiles) {
+        // Map profiles with their roles, primary hosts first
+        type ProfileRow = { id: string; full_name: string | null; slug: string | null; avatar_url: string | null };
+        const hostsWithRoles: HostInfo[] = (profiles as ProfileRow[]).map((p: ProfileRow) => {
+          const hostEntry = eventHosts.find((h: { user_id: string; role: string }) => h.user_id === p.id);
+          return {
+            ...p,
+            role: (hostEntry?.role === "host" ? "host" : "cohost") as "host" | "cohost",
+          };
+        });
+        // Sort: primary hosts first, then cohosts
+        hostsWithRoles.sort((a, b) => {
+          if (a.role === "host" && b.role !== "host") return -1;
+          if (a.role !== "host" && b.role === "host") return 1;
+          return 0;
+        });
+        setAllHosts(hostsWithRoles);
+
+        // Generate QR codes for hosts (TV mode only - smaller sizes)
+        const newHostQrCodes = new Map<string, string>();
+        for (const h of hostsWithRoles) {
+          const profileUrl = `${SITE_URL}/songwriters/${h.slug || h.id}`;
+          try {
+            // Primary host: 80px, cohosts: 60px
+            const size = h.role === "host" ? 80 : 60;
+            const qrDataUrl = await QRCode.toDataURL(profileUrl, {
+              width: size,
+              margin: 1,
+              color: { dark: "#1a1a1a", light: "#ffffff" }, // Dark on white for scan reliability
+            });
+            newHostQrCodes.set(h.id, qrDataUrl);
+          } catch (err) {
+            console.error("Host QR generation error:", err);
+          }
+        }
+        setHostQrCodes(newHostQrCodes);
+      }
+    }
+
+    // Phase 4.104: Fetch cover image with override precedence
+    // Priority: override_patch.cover_image_url > override_cover_image_url > event.cover_image_url
+    let coverImage = baseCoverImage;
+    const { data: override } = await supabase
+      .from("occurrence_overrides")
+      .select("override_cover_image_url, override_patch")
+      .eq("event_id", eventId)
+      .eq("date_key", dateKey)
+      .maybeSingle();
+
+    if (override) {
+      const patch = override.override_patch as Record<string, unknown> | null;
+      coverImage = (patch?.cover_image_url as string | undefined)
+        || override.override_cover_image_url
+        || baseCoverImage;
+    }
+    setDisplayCoverImage(coverImage);
 
     setStaticDataLoaded(true);
   }, [supabase]);
@@ -190,15 +297,15 @@ export default function EventDisplayPage() {
       setEventUuid(resolvedUuid);
       setEvent(eventData);
 
-      // Phase 4.102: Fetch static data (venue, host) only once
-      if (!staticDataLoaded) {
-        fetchStaticData(eventData.venue_id, eventData.host_id);
-      }
-
-    // Phase ABC7: Compute effective date_key for this occurrence
+    // Phase ABC7 + 4.104: Compute effective date_key for this occurrence
+    // Phase 4.104: In TV mode, accept any valid YYYY-MM-DD for past demo support
     let dateKey: string;
+    const isValidDateFormat = urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate);
 
-    if (eventData.is_recurring) {
+    if (tvMode && isValidDateFormat) {
+      // TV mode: accept any valid date format for demo purposes
+      dateKey = urlDate;
+    } else if (eventData.is_recurring) {
       // For recurring events, expand occurrences and find valid date
       const occurrences = expandOccurrencesForEvent({
         event_date: eventData.event_date,
@@ -223,6 +330,11 @@ export default function EventDisplayPage() {
     }
 
     setEffectiveDateKey(dateKey);
+
+      // Phase 4.102 + 4.104: Fetch static data (venue, hosts, cover) only once
+      if (!staticDataLoaded) {
+        fetchStaticData(resolvedUuid, eventData.venue_id, eventData.host_id, eventData.cover_image_url, dateKey);
+      }
 
     // Phase ABC7: Fetch timeslots filtered by (event_id, date_key)
     // Phase 4.100.2: Use resolvedUuid instead of routeParam
@@ -362,7 +474,7 @@ export default function EventDisplayPage() {
       }
       setLoading(false);
     }
-  }, [routeParam, supabase, urlDate, failureCount, staticDataLoaded, fetchStaticData]);
+  }, [routeParam, supabase, urlDate, failureCount, staticDataLoaded, fetchStaticData, tvMode]);
 
   // Initial fetch and auto-refresh every 5 seconds
   React.useEffect(() => {
@@ -439,6 +551,333 @@ export default function EventDisplayPage() {
     );
   }
 
+  // Phase 4.104: TV Poster Mode - Full-screen artistic overlay
+  if (tvMode) {
+    // Check if we have roster data for this date
+    const hasRosterData = timeslots.length > 0;
+
+    return (
+      <div className="fixed inset-0 z-[9999] overflow-hidden">
+        {/* Background: Cover art blurred with dark gradient overlay */}
+        {displayCoverImage ? (
+          <>
+            <Image
+              src={displayCoverImage}
+              alt=""
+              fill
+              className="object-cover blur-sm scale-105"
+              priority
+            />
+            {/* Dark gradient overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/90" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+        )}
+
+        {/* Content layer */}
+        <div className="relative z-10 h-full flex flex-col p-8">
+          {/* Connection status (subtle) */}
+          <LineupStateBanner
+            lastUpdated={lastUpdated}
+            connectionStatus={connectionStatus}
+            variant="subtle"
+            showRecovered={showRecovered}
+            showExtendedHint={showExtendedHint}
+          />
+
+          {/* Top section: Event info + QR */}
+          <header className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-6">
+              {/* Date box */}
+              {effectiveDateKey && (
+                <div className="flex-shrink-0 w-24 h-24 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black shadow-lg">
+                  <span className="text-sm font-semibold uppercase tracking-wide">
+                    {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                  </span>
+                  <span className="text-4xl font-bold leading-none">
+                    {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
+                  </span>
+                  <span className="text-xs font-medium uppercase">
+                    {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
+                  </span>
+                </div>
+              )}
+              <div>
+                <h1 className="text-5xl font-bold text-white drop-shadow-lg">
+                  {event?.title || "Event"}
+                </h1>
+                {event?.venue_name && (
+                  <p className="text-2xl text-gray-200 mt-2 drop-shadow">{event.venue_name}</p>
+                )}
+                {event?.start_time && (
+                  <p className="text-xl text-[var(--color-text-accent)] mt-1">
+                    {new Date(`2000-01-01T${event.start_time}`).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Event QR + Current time */}
+            <div className="flex flex-col items-end gap-4">
+              <p className="text-5xl font-mono text-white drop-shadow-lg">
+                {currentTime.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </p>
+              {isLive && (
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 rounded-full text-lg font-semibold animate-pulse shadow-lg">
+                  <span className="w-3 h-3 bg-white rounded-full"></span>
+                  LIVE
+                </span>
+              )}
+              {/* Event QR on white tile */}
+              <div className="bg-white rounded-lg p-2 shadow-lg">
+                <Image
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`${SITE_URL}/events/${event?.slug || eventUuid || routeParam}`)}`}
+                  alt="Event QR"
+                  width={120}
+                  height={120}
+                  className="rounded"
+                />
+              </div>
+              <p className="text-xs text-gray-400 uppercase tracking-wider">Scan for Event</p>
+            </div>
+          </header>
+
+          {/* Host badges row */}
+          {allHosts.length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm text-gray-400 uppercase tracking-wider mb-3">Hosted by</p>
+              <div className="flex flex-wrap gap-4">
+                {allHosts.map((h) => (
+                  <div key={h.id} className="flex items-center gap-3 bg-black/40 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10">
+                    {h.avatar_url ? (
+                      <Image
+                        src={h.avatar_url}
+                        alt={h.full_name || "Host"}
+                        width={h.role === "host" ? 48 : 40}
+                        height={h.role === "host" ? 48 : 40}
+                        className="rounded-full object-cover border-2 border-[var(--color-accent-primary)]"
+                      />
+                    ) : (
+                      <div className={`${h.role === "host" ? "w-12 h-12" : "w-10 h-10"} rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center`}>
+                        <span className={`${h.role === "host" ? "text-xl" : "text-lg"} text-[var(--color-text-accent)]`}>
+                          {h.full_name?.[0] || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className={`font-semibold text-white ${h.role === "host" ? "text-lg" : "text-base"}`}>
+                        {h.full_name || "Host"}
+                      </p>
+                      <p className="text-xs text-gray-400 uppercase">
+                        {h.role === "host" ? "Host" : "Co-host"}
+                      </p>
+                    </div>
+                    {/* Host QR on white tile */}
+                    {hostQrCodes.get(h.id) && (
+                      <div className="bg-white rounded-md p-1 ml-2">
+                        <Image
+                          src={hostQrCodes.get(h.id)!}
+                          alt={`${h.full_name} QR`}
+                          width={h.role === "host" ? 80 : 60}
+                          height={h.role === "host" ? 80 : 60}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Main content: Lineup */}
+          <div className="flex-1 grid grid-cols-12 gap-6 min-h-0">
+            {/* Now Playing - Large left panel */}
+            <div className="col-span-5 flex flex-col">
+              <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Now Playing
+              </h2>
+              <div className="flex-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                {nowPlayingSlot?.claim?.member ? (
+                  <div className="flex flex-col items-center text-center h-full justify-center">
+                    {nowPlayingSlot.claim.member.avatar_url ? (
+                      <Image
+                        src={nowPlayingSlot.claim.member.avatar_url}
+                        alt={nowPlayingSlot.claim.member.full_name || "Performer"}
+                        width={180}
+                        height={180}
+                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-4 shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-44 h-44 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-4">
+                        <span className="text-7xl text-[var(--color-text-accent)]">
+                          {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <h3 className="text-4xl font-bold text-white mb-2 drop-shadow">
+                      {nowPlayingSlot.claim.member.full_name || "Anonymous"}
+                    </h3>
+                    <p className="text-xl text-[var(--color-text-accent)]">
+                      {formatSlotTime(event?.start_time || null, nowPlayingSlot.start_offset_minutes, nowPlayingSlot.duration_minutes)}
+                    </p>
+                    {/* Performer QR on white tile */}
+                    {qrCodes.get(nowPlayingSlot.claim.member.id) && (
+                      <div className="mt-4 bg-white rounded-lg p-2 shadow-lg">
+                        <Image
+                          src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
+                          alt="Profile QR"
+                          width={100}
+                          height={100}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-2xl text-gray-500">
+                      {isLive ? "Intermission" : "Not started yet"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Up Next - Right panel */}
+            <div className="col-span-7 flex flex-col min-h-0">
+              <h2 className="text-lg font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Up Next
+              </h2>
+              <div className="flex-1 overflow-hidden">
+                {hasRosterData ? (
+                  <div className="space-y-3 h-full overflow-y-auto pr-2">
+                    {upNextSlots.length > 0 ? (
+                      upNextSlots.map((slot, index) => (
+                        <div
+                          key={slot.id}
+                          className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                            index === 0
+                              ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/50"
+                              : "bg-black/40 border-white/10"
+                          }`}
+                        >
+                          <div className="w-12 h-12 rounded-full bg-gray-800/80 flex items-center justify-center text-lg font-bold text-gray-400">
+                            {slot.slot_index + 1}
+                          </div>
+                          {slot.claim?.member ? (
+                            <>
+                              {slot.claim.member.avatar_url ? (
+                                <Image
+                                  src={slot.claim.member.avatar_url}
+                                  alt={slot.claim.member.full_name || ""}
+                                  width={48}
+                                  height={48}
+                                  className="rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center">
+                                  <span className="text-base text-[var(--color-text-accent)]">
+                                    {slot.claim.member.full_name?.[0] || "?"}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-semibold truncate ${index === 0 ? "text-white text-xl" : "text-gray-300 text-lg"}`}>
+                                  {slot.claim.member.full_name || "Anonymous"}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
+                                </p>
+                              </div>
+                              {/* Only show QR for next up performer (index 0) */}
+                              {index === 0 && qrCodes.get(slot.claim.member.id) && (
+                                <div className="bg-white rounded-md p-1 flex-shrink-0">
+                                  <Image
+                                    src={qrCodes.get(slot.claim.member.id)!}
+                                    alt="QR"
+                                    width={60}
+                                    height={60}
+                                  />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-12 h-12 rounded-full bg-gray-800/50 flex items-center justify-center">
+                                <span className="text-base text-gray-600">?</span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-semibold text-lg text-gray-500">Open Slot</p>
+                                <p className="text-sm text-gray-600">
+                                  {formatSlotTime(event?.start_time || null, slot.start_offset_minutes, slot.duration_minutes)}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-lg text-gray-500">
+                        No more performers scheduled
+                      </div>
+                    )}
+
+                    {/* Completed performers */}
+                    {completedSlots.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <p className="text-sm text-gray-500 uppercase tracking-wider mb-3">Already Performed</p>
+                        <div className="flex flex-wrap gap-2">
+                          {completedSlots.map(slot => (
+                            slot.claim?.member && (
+                              <div
+                                key={slot.id}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-black/30 rounded-full text-sm text-gray-500"
+                              >
+                                {slot.claim.member.avatar_url ? (
+                                  <Image
+                                    src={slot.claim.member.avatar_url}
+                                    alt=""
+                                    width={24}
+                                    height={24}
+                                    className="rounded-full object-cover opacity-50"
+                                  />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-gray-800" />
+                                )}
+                                <span>{slot.claim.member.full_name}</span>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Empty state for past dates with no roster */
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center p-8">
+                      <p className="text-2xl text-gray-400 mb-2">No performer data</p>
+                      <p className="text-gray-500">No lineup information available for this date</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default (non-TV) mode
   return (
     <div className="min-h-screen bg-black text-white p-8 overflow-hidden">
       {/* Phase 4.99: Subtle connection status for TV display */}

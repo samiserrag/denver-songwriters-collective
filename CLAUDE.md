@@ -524,6 +524,86 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### TV Poster Mode (Phase 4.104, January 2026) — RESOLVED
+
+**Goal:** Transform `/events/[id]/display?tv=1` into a full-screen concert poster aesthetic with blurred cover art background, host/cohost badges with QR codes, and past demo support.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3191, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**TV Mode Trigger:** `?tv=1` query parameter activates full-screen poster mode.
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Full-screen overlay | `fixed inset-0 z-[9999]` covers header/footer without route restructure |
+| Cover art background | Blurred cover image with dark gradient overlay for text readability |
+| Scroll lock | `document.documentElement.style.overflow = "hidden"` when TV mode active |
+| Host badges row | Primary host + all accepted cohosts with avatars and QR codes on white tiles |
+| Event QR | 120px QR code on white tile labeled "EVENT" |
+| Past demo support | In TV mode only, accepts any valid `YYYY-MM-DD` date (outside 90-day window) |
+| Lineup display | Now Playing / Up Next sections preserved in overlay |
+| Empty state | Friendly message for past dates with no roster data |
+
+**Cover Image Precedence:**
+1. `override_patch.cover_image_url` (per-occurrence override)
+2. `override_cover_image_url` (legacy override column)
+3. `event.cover_image_url` (base event)
+
+**QR Code Sizes:**
+
+| Element | QR Size | Avatar Size |
+|---------|---------|-------------|
+| Event | 120px | — |
+| Host | 80px | 120px |
+| Cohost | 60px | 80px |
+
+**Host Fetching:**
+- Queries `event_hosts` table for all accepted hosts (`invitation_status = 'accepted'`)
+- Joins with `profiles` for avatar_url, full_name, slug
+- Primary host (`role = 'host'`) sorted first, then cohosts
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/events/[id]/display/page.tsx` | TV mode overlay, scroll lock, host badges, cover background, past demo support |
+
+**URL Examples:**
+- TV Mode: `/events/words-open-mic/display?tv=1&date=2026-01-18`
+- Normal Mode: `/events/words-open-mic/display?date=2026-01-18`
+
+**Key Implementation Details:**
+
+```typescript
+// TV mode detection
+const tvMode = searchParams.get("tv") === "1";
+
+// Past date acceptance (TV mode only)
+const isValidDateFormat = urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate);
+if (tvMode && isValidDateFormat) {
+  dateKey = urlDate; // Bypass 90-day window check
+}
+
+// Scroll lock effect
+React.useEffect(() => {
+  if (tvMode) {
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  return () => {
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  };
+}, [tvMode]);
+```
+
+**No Migrations Required:** UI-only change.
+
+---
+
 ### Lineup/Display Slug Fix + TV QR Strip (Phase 4.100.2 + 4.102, January 2026) — RESOLVED
 
 **Goal:** Fix 400 Bad Request errors on lineup and display pages when accessed via slug URLs, and add TV-optimized QR codes for Event/Venue/Host.
