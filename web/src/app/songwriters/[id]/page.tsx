@@ -18,6 +18,7 @@ import { sortProfileImagesAvatarFirst } from "@/lib/profile/sortProfileImages";
 import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import Link from "next/link";
 import Image from "next/image";
+import { QrShareBlock } from "@/components/shared/QrShareBlock";
 export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
@@ -932,6 +933,17 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
 
           {/* Profile Comments Section */}
           <ProfileComments profileId={songwriter.id} profileOwnerId={songwriter.id} />
+
+          {/* Phase 4.101: QR Share Block */}
+          <div className="mt-8">
+            <QrShareBlock
+              title="Share This Profile"
+              url={`${siteUrl}/songwriters/${songwriter.slug || songwriter.id}`}
+              imageSrc={songwriter.avatar_url}
+              imageAlt={`${songwriter.full_name}'s profile photo`}
+              label="Scan to view profile"
+            />
+          </div>
         </div>
       </PageContainer>
     </>

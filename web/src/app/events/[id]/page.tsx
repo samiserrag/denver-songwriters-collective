@@ -21,6 +21,7 @@ import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, formatVerifiedDate, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
 import { VenueLink } from "@/components/venue/VenueLink";
+import { QrShareBlock } from "@/components/shared/QrShareBlock";
 import {
   interpretRecurrence,
   labelFromRecurrence,
@@ -1459,6 +1460,15 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               <span className="font-medium text-[var(--color-text-primary)]">{config.label}:</span> {config.description}
             </p>
           </div>
+
+          {/* Phase 4.101: QR Share Block */}
+          <QrShareBlock
+            title="Share This Happening"
+            url={`${siteUrl}/events/${event.slug || event.id}${effectiveSelectedDate ? `?date=${effectiveSelectedDate}` : ""}`}
+            imageSrc={displayCoverImage}
+            imageAlt={`${event.title} cover`}
+            label="Scan to view happening details"
+          />
 
           {/* Phase 4.22.3: Host confirmation or Claim Event Section */}
           {isUserTheHost && (

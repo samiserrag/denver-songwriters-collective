@@ -14,6 +14,7 @@ import {
   groupEventsAsSeriesView,
   buildOverrideMap,
 } from "@/lib/events/nextOccurrence";
+import { QrShareBlock } from "@/components/shared/QrShareBlock";
 
 // Check if string is a valid UUID
 function isUUID(str: string): boolean {
@@ -428,6 +429,17 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
               )}
             </div>
           )}
+
+          {/* Phase 4.101: QR Share Block */}
+          <div className="mt-6">
+            <QrShareBlock
+              title="Share This Venue"
+              url={`${siteUrl}/venues/${venue.slug || id}`}
+              imageSrc={venue.cover_image_url}
+              imageAlt={`${venue.name} cover`}
+              label="Scan to view venue details"
+            />
+          </div>
         </div>
 
         {/* Photos Section */}
