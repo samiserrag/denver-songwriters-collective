@@ -56,6 +56,10 @@ export interface Event {
   capacity?: number | null;
   rsvp_count?: number | null;
   is_dsc_event?: boolean | null;
+  // Verification fields (Phase 4.37)
+  last_verified_at?: string | null;
+  verified_by?: string | null;
+  source?: string | null;
 }
 
 export interface EventWithVenue extends Event {
