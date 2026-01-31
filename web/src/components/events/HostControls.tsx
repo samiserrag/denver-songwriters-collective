@@ -4,13 +4,20 @@ import * as React from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/useAuth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getEventDisplayUrl, getEventLineupUrl } from "@/lib/events/urls";
 
 interface HostControlsProps {
   eventId: string;
+  eventSlug?: string | null;
+  dateKey?: string | null;
   hasTimeslots: boolean;
 }
 
-export function HostControls({ eventId, hasTimeslots }: HostControlsProps) {
+export function HostControls({ eventId, eventSlug, dateKey, hasTimeslots }: HostControlsProps) {
+  // Phase 4.105: Use centralized URL helpers with tv=1 and date
+  const eventIdentifier = eventSlug || eventId;
+  const lineupUrl = getEventLineupUrl({ eventIdentifier, dateKey });
+  const displayUrl = getEventDisplayUrl({ eventIdentifier, dateKey, tv: true });
   const { user, loading: authLoading } = useAuth();
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
   const [isAuthorized, setIsAuthorized] = React.useState(false);
@@ -88,7 +95,7 @@ export function HostControls({ eventId, hasTimeslots }: HostControlsProps) {
       <div className="flex flex-wrap gap-3">
         {hasTimeslots && (
           <Link
-            href={`/events/${eventId}/lineup`}
+            href={lineupUrl}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +105,7 @@ export function HostControls({ eventId, hasTimeslots }: HostControlsProps) {
           </Link>
         )}
         <Link
-          href={`/events/${eventId}/display`}
+          href={displayUrl}
           target="_blank"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] font-medium transition-colors"
         >

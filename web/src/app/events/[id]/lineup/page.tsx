@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { LineupStateBanner } from "@/components/events/LineupStateBanner";
 import { LineupDatePicker } from "@/components/events/LineupDatePicker";
 import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
+import { getEventDisplayUrl } from "@/lib/events/urls";
 
 /**
  * Phase 4.100.2: Check if string is a valid UUID
@@ -489,12 +490,9 @@ export default function LineupControlPage() {
     router.push(`/events/${routeParam}/lineup?date=${date}`);
   };
 
-  // Phase 4.99: Build display URL
-  // Phase 4.100.2: Use event slug if available, otherwise routeParam
+  // Phase 4.99 + 4.105: Build display URL with tv=1
   const eventIdentifier = event?.slug || routeParam;
-  const displayUrl = effectiveDateKey
-    ? `/events/${eventIdentifier}/display?date=${effectiveDateKey}`
-    : `/events/${eventIdentifier}/display`;
+  const displayUrl = getEventDisplayUrl({ eventIdentifier, dateKey: effectiveDateKey, tv: true });
   const fullDisplayUrl = typeof window !== "undefined"
     ? `${window.location.origin}${displayUrl}`
     : displayUrl;

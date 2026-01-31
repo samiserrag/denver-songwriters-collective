@@ -30,3 +30,48 @@ export function getEventUrl(event: Event): string {
 export function getHappeningsUrl(type?: "open_mic" | "dsc" | "gig"): string {
   return type ? `/happenings?type=${type}` : "/happenings";
 }
+
+/**
+ * Phase 4.105: URL for event display page (TV mode)
+ * Used by LineupControlSection, lineup page, HostControls
+ *
+ * @param eventIdentifier - slug or UUID
+ * @param dateKey - YYYY-MM-DD date key (optional)
+ * @param tv - whether to include tv=1 (defaults to true for "TV Display")
+ */
+export function getEventDisplayUrl(options: {
+  eventIdentifier: string;
+  dateKey?: string | null;
+  tv?: boolean;
+}): string {
+  const { eventIdentifier, dateKey, tv = true } = options;
+  const params = new URLSearchParams();
+
+  if (tv) {
+    params.set("tv", "1");
+  }
+  if (dateKey) {
+    params.set("date", dateKey);
+  }
+
+  const queryString = params.toString();
+  return `/events/${eventIdentifier}/display${queryString ? `?${queryString}` : ""}`;
+}
+
+/**
+ * Phase 4.105: URL for event lineup control page
+ *
+ * @param eventIdentifier - slug or UUID
+ * @param dateKey - YYYY-MM-DD date key (optional)
+ */
+export function getEventLineupUrl(options: {
+  eventIdentifier: string;
+  dateKey?: string | null;
+}): string {
+  const { eventIdentifier, dateKey } = options;
+
+  if (dateKey) {
+    return `/events/${eventIdentifier}/lineup?date=${dateKey}`;
+  }
+  return `/events/${eventIdentifier}/lineup`;
+}

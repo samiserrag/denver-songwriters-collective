@@ -1372,6 +1372,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           {(event as { has_timeslots?: boolean }).has_timeslots && (
             <HostControls
               eventId={event.id}
+              eventSlug={event.slug}
+              dateKey={effectiveSelectedDate}
               hasTimeslots={true}
             />
           )}

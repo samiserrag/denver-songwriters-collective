@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { getEventDisplayUrl, getEventLineupUrl } from "@/lib/events/urls";
 
 interface LineupControlSectionProps {
   eventId: string;
@@ -31,15 +32,9 @@ export default function LineupControlSection({
 
   const eventIdentifier = eventSlug || eventId;
 
-  // Build lineup URL with date param
-  const lineupUrl = selectedDate
-    ? `/events/${eventIdentifier}/lineup?date=${selectedDate}`
-    : `/events/${eventIdentifier}/lineup`;
-
-  // Build display URL
-  const displayUrl = selectedDate
-    ? `/events/${eventIdentifier}/display?date=${selectedDate}`
-    : `/events/${eventIdentifier}/display`;
+  // Phase 4.105: Use centralized URL helpers
+  const lineupUrl = getEventLineupUrl({ eventIdentifier, dateKey: selectedDate || null });
+  const displayUrl = getEventDisplayUrl({ eventIdentifier, dateKey: selectedDate || null, tv: true });
 
   const fullDisplayUrl = typeof window !== "undefined"
     ? `${window.location.origin}${displayUrl}`
