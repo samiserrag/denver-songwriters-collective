@@ -524,6 +524,29 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Venue Integrity Audit + Location Filter Empty States (Phase 1.42, January 2026) — RESOLVED
+
+**Goal:** Audit venue data integrity and improve empty state messaging for location filters.
+
+**Venue Integrity Audit (January 2026):**
+- All 66 published+active events verified to have valid `venue_id`
+- Zero events with `location_mode IN ('venue','hybrid')` AND `venue_id IS NULL`
+- No remediation required
+- CSV import now enforces venue presence (Phase 1.41)
+
+**Location Filter Empty States:**
+- Added specific messaging when location filter returns zero results
+- ZIP: "No venues found for ZIP {zip}. Try a nearby ZIP or a larger radius."
+- City: "No venues found in {city}. Try increasing the radius or clearing the location filter."
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/happenings/page.tsx` | Location-aware empty state helper function + updated both empty state locations |
+
+---
+
 ### City/ZIP Nearby Filter for Happenings (Phase 1.4, January 2026) — RESOLVED
 
 **Goal:** Add city/ZIP-based filtering with radius-based "nearby" expansion to the /happenings page.

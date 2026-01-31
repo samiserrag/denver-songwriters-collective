@@ -575,6 +575,37 @@ export default async function HappeningsPage({
 
   const filterSummary = getFilterSummary();
 
+  // Phase 1.42: Location-aware empty state message
+  const getEmptyStateMessage = (): { headline: string; detail?: string } => {
+    // Location filter active but no venues found
+    if (hasLocationFilter && locationFilterResult?.emptyReason) {
+      if (zipParam) {
+        return {
+          headline: `No venues found for ZIP ${zipParam}`,
+          detail: "Try a nearby ZIP or a larger radius."
+        };
+      }
+      if (cityParam) {
+        return {
+          headline: `No venues found in ${cityParam}`,
+          detail: "Try increasing the radius or clearing the location filter."
+        };
+      }
+    }
+    // Other filters active
+    if (searchQuery || hasFilters) {
+      return {
+        headline: "No happenings match your filters.",
+        detail: "Try adjusting your search."
+      };
+    }
+    // Default
+    return {
+      headline: "No happenings found.",
+      detail: "Check back soon!"
+    };
+  };
+
   // Helper: resolve override venue data for a given entry
   const getOverrideVenueForEntry = (entry: EventOccurrenceEntry<any>) => {
     const patch = entry.override?.override_patch as Record<string, unknown> | null | undefined;
@@ -785,11 +816,17 @@ export default async function HappeningsPage({
                   />
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-[var(--color-text-secondary)]">
-                      {searchQuery || hasFilters
-                        ? "No happenings match your filters. Try adjusting your search."
-                        : "No happenings found. Check back soon!"}
-                    </p>
+                    {(() => {
+                      const msg = getEmptyStateMessage();
+                      return (
+                        <>
+                          <p className="text-[var(--color-text-secondary)]">{msg.headline}</p>
+                          {msg.detail && (
+                            <p className="text-[var(--color-text-tertiary)] text-sm mt-1">{msg.detail}</p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </>
@@ -949,11 +986,17 @@ export default async function HappeningsPage({
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-[var(--color-text-secondary)]">
-                {searchQuery || hasFilters
-                  ? "No happenings match your filters. Try adjusting your search."
-                  : "No happenings found. Check back soon!"}
-              </p>
+              {(() => {
+                const msg = getEmptyStateMessage();
+                return (
+                  <>
+                    <p className="text-[var(--color-text-secondary)]">{msg.headline}</p>
+                    {msg.detail && (
+                      <p className="text-[var(--color-text-tertiary)] text-sm mt-1">{msg.detail}</p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )
         )}
