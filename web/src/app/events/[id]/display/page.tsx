@@ -668,79 +668,81 @@ export default function EventDisplayPage() {
             showExtendedHint={showExtendedHint}
           />
 
-          {/* Row 1: Header - Event info + QR codes */}
-          <header className="flex items-start justify-between">
-            <div className="flex items-center gap-5">
-              {/* Date box */}
-              {effectiveDateKey && (
-                <div className="flex-shrink-0 w-20 h-20 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black shadow-lg">
-                  <span className="text-xs font-semibold uppercase tracking-wide">
-                    {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
-                  </span>
-                  <span className="text-3xl font-bold leading-none">
-                    {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
-                  </span>
-                  <span className="text-xs font-medium uppercase">
-                    {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h1 className="text-4xl font-bold text-white drop-shadow-lg">
-                  {event?.title || "Event"}
-                </h1>
-                {event?.venue_name && (
-                  <p className="text-xl text-gray-200 mt-1 drop-shadow">{event.venue_name}</p>
-                )}
-                {/* Phase 4.108: Event time window (not slot times) */}
-                {event?.start_time && (
-                  <p className="text-lg text-[var(--color-text-accent)] mt-1">
-                    {formatEventTimeWindow(event.start_time, event.end_time)}
-                  </p>
-                )}
-                {/* Phase 4.110: CTA text - increased to text-lg for 8-12 foot readability */}
-                <p className="text-lg text-gray-200 mt-2 max-w-lg font-medium">
-                  Scan the QR codes to Follow and Support the Artists and our Collective
-                </p>
+          {/* Row 1: Header - Centered/balanced layout with all key info */}
+          <header className="flex items-center justify-between">
+            {/* Left: Date box */}
+            {effectiveDateKey && (
+              <div className="flex-shrink-0 w-20 h-20 bg-[var(--color-accent-primary)] rounded-xl flex flex-col items-center justify-center text-black shadow-lg">
+                <span className="text-xs font-semibold uppercase tracking-wide">
+                  {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "America/Denver" })}
+                </span>
+                <span className="text-3xl font-bold leading-none">
+                  {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", timeZone: "America/Denver" })}
+                </span>
+                <span className="text-xs font-medium uppercase">
+                  {new Date(effectiveDateKey + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Denver" })}
+                </span>
               </div>
+            )}
+
+            {/* Center: Event title, venue, time - all centered */}
+            <div className="flex-1 text-center px-4">
+              <h1 className="text-3xl font-bold text-white drop-shadow-lg">
+                {event?.title || "Event"}
+              </h1>
+              <div className="flex items-center justify-center gap-3 mt-1">
+                {event?.venue_name && (
+                  <span className="text-lg text-gray-200 drop-shadow">{event.venue_name}</span>
+                )}
+                {event?.venue_name && event?.start_time && (
+                  <span className="text-gray-500">•</span>
+                )}
+                {event?.start_time && (
+                  <span className="text-lg text-[var(--color-text-accent)]">
+                    {formatEventTimeWindow(event.start_time, event.end_time)}
+                  </span>
+                )}
+              </div>
+              {/* CTA text centered */}
+              <p className="text-base text-gray-300 mt-2 font-medium">
+                Scan the QR codes to Follow and Support the Artists and our Collective
+              </p>
             </div>
 
-            {/* Phase 4.108: Right side - LIVE badge + DSC Join + Event QR */}
-            <div className="flex items-start gap-4">
+            {/* Right: LIVE badge + QR codes */}
+            <div className="flex items-center gap-4 flex-shrink-0">
               {isLive && (
                 <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-full text-base font-semibold animate-pulse shadow-lg">
                   <span className="w-2.5 h-2.5 bg-white rounded-full"></span>
                   LIVE
                 </span>
               )}
-              {/* Phase 4.109: DSC Join QR - same size as Event QR (80px both) */}
               {dscJoinQrCode && (
                 <div className="flex flex-col items-center gap-1">
                   <div className="bg-white rounded-lg p-1.5 shadow-lg">
                     <Image
                       src={dscJoinQrCode}
                       alt="Our Collective"
-                      width={80}
-                      height={80}
+                      width={70}
+                      height={70}
                       className="rounded"
                     />
                   </div>
-                  <p className="text-sm text-gray-300 uppercase tracking-wider font-semibold">OUR COLLECTIVE</p>
+                  <p className="text-xs text-gray-300 uppercase tracking-wider font-semibold">OUR COLLECTIVE</p>
                 </div>
               )}
-              {/* Phase 4.109: Event QR - same size as DSC QR (80px both) */}
               {eventQrCode && !eventQrError && (
                 <div className="flex flex-col items-center gap-1">
                   <div className="bg-white rounded-lg p-1.5 shadow-lg">
                     <Image
                       src={eventQrCode}
                       alt="Event Page"
-                      width={80}
-                      height={80}
+                      width={70}
+                      height={70}
                       className="rounded"
                     />
                   </div>
-                  <p className="text-sm text-gray-300 uppercase tracking-wider font-semibold">EVENT PAGE</p>
+                  <p className="text-xs text-gray-300 uppercase tracking-wider font-semibold">EVENT PAGE</p>
                 </div>
               )}
             </div>
@@ -831,51 +833,56 @@ export default function EventDisplayPage() {
               </div>
             )}
 
-            {/* Now Playing - adjusts based on flyer presence */}
+            {/* Now Playing - HUGE frame-filling layout */}
             <div className={`${displayCoverImage ? "col-span-4" : "col-span-5"} flex flex-col min-h-0`}>
-              <h2 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-2 flex-shrink-0">
-                Now Playing
+              <h2 className="text-2xl font-bold text-[var(--color-text-accent)] uppercase tracking-wider mb-3 flex-shrink-0">
+                NOW PLAYING
               </h2>
-              <div className="flex-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-4 min-h-0 flex flex-col">
-                {/* Phase 4.109: Now Playing - smaller avatar (100px), bigger name (text-4xl) */}
+              <div className="flex-1 bg-black/60 backdrop-blur-sm border-2 border-[var(--color-accent-primary)]/50 rounded-2xl p-6 min-h-0 flex flex-col">
+                {/* Phase 4.113: Now Playing - HUGE layout with frame-filling avatar */}
                 {nowPlayingSlot?.claim?.member ? (
-                  <div className="flex flex-col items-center text-center flex-1 justify-center">
+                  <div className="flex flex-col items-center text-center flex-1 justify-center gap-4">
+                    {/* Large avatar that dominates the frame */}
                     {nowPlayingSlot.claim.member.avatar_url ? (
                       <Image
                         src={nowPlayingSlot.claim.member.avatar_url}
                         alt={nowPlayingSlot.claim.member.full_name || "Performer"}
-                        width={100}
-                        height={100}
-                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] mb-2 shadow-lg"
+                        width={180}
+                        height={180}
+                        className="rounded-full object-cover border-4 border-[var(--color-accent-primary)] shadow-2xl"
                       />
                     ) : (
-                      <div className="w-24 h-24 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center mb-2">
-                        <span className="text-5xl text-[var(--color-text-accent)]">
+                      <div className="w-44 h-44 rounded-full bg-[var(--color-accent-primary)]/30 flex items-center justify-center">
+                        <span className="text-7xl text-[var(--color-text-accent)]">
                           {nowPlayingSlot.claim.member.full_name?.[0] || "?"}
                         </span>
                       </div>
                     )}
-                    <h3 className="text-4xl font-bold text-white mb-1 drop-shadow">
+                    {/* HUGE performer name */}
+                    <h3 className="text-5xl font-bold text-white drop-shadow-lg leading-tight">
                       {nowPlayingSlot.claim.member.full_name || "Anonymous"}
                     </h3>
-                    {/* Phase 4.108: Removed slot time from Now Playing */}
-                    {/* Performer QR on white tile */}
+                    {/* QR code with prominent CTA */}
                     {qrCodes.get(nowPlayingSlot.claim.member.id) && (
-                      <div className="mt-3 bg-white rounded-lg p-1.5 shadow-lg">
-                        <Image
-                          src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
-                          alt="Profile QR"
-                          width={80}
-                          height={80}
-                        />
+                      <div className="flex flex-col items-center">
+                        <div className="bg-white rounded-xl p-2 shadow-xl">
+                          <Image
+                            src={qrCodes.get(nowPlayingSlot.claim.member.id)!}
+                            alt="Profile QR"
+                            width={100}
+                            height={100}
+                          />
+                        </div>
+                        {/* HUGE CTA text */}
+                        <p className="text-xl text-[var(--color-text-accent)] mt-3 font-semibold">
+                          SCAN TO FOLLOW + TIP
+                        </p>
                       </div>
                     )}
-                    {/* Phase 4.110: QR guidance text - increased to text-sm for readability */}
-                    <p className="text-sm text-gray-400 mt-2">Scan to follow + tip</p>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center flex-1">
-                    <p className="text-xl text-gray-500">
+                    <p className="text-2xl text-gray-500">
                       {isLive ? "Intermission" : "Not started yet"}
                     </p>
                   </div>
@@ -885,8 +892,8 @@ export default function EventDisplayPage() {
 
             {/* Phase 4.109: Up Next - 2-column layout when >10 slots, adaptive sizing */}
             <div className={`${displayCoverImage ? "col-span-5" : "col-span-7"} flex flex-col min-h-0`}>
-              <h2 className="text-base font-semibold text-gray-400 uppercase tracking-wider mb-2 flex-shrink-0">
-                Up Next
+              <h2 className="text-xl font-bold text-gray-300 uppercase tracking-wider mb-3 flex-shrink-0">
+                UP NEXT
               </h2>
               <div className="flex-1 overflow-hidden min-h-0">
                 {hasRosterData ? (
