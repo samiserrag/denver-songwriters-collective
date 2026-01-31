@@ -612,14 +612,16 @@ export default function EventDisplayPage() {
   // Phase 4.105: Density tier for TV mode (no scrollbars)
   // Large (≤8 slots): full-size avatars, QR codes
   // Medium (9-14 slots): smaller avatars, smaller QR
-  // Compact (15-20 slots): minimal avatars, tiny QR for first few
-  // Phase 4.108: Compute from TOTAL timeslots (stable) not upNextSlots (variable on Go Live)
-  const getDensityTier = (slotCount: number): "large" | "medium" | "compact" => {
-    if (slotCount <= 8) return "large";
+  // Phase 4.110: 3-tier adaptive slot sizing for 20 slots
+  // Computed from TOTAL timeslots.length (stable) not upNextSlots.length (variable on Go Live)
+  // This ensures no layout reflow when transitioning from pre-live to live state
+  const getSlotTier = (slotCount: number): "large" | "medium" | "compact" => {
+    if (slotCount <= 10) return "large";
     if (slotCount <= 14) return "medium";
     return "compact";
   };
-  const densityTier = getDensityTier(timeslots.length);
+  const slotTier = getSlotTier(timeslots.length);
+  const use2Columns = timeslots.length > 10;
 
   if (loading) {
     return (
@@ -655,8 +657,8 @@ export default function EventDisplayPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-accent-primary)]/5 via-transparent to-transparent" />
         </div>
 
-        {/* Phase 4.108: Content layer with CSS Grid for stable layout */}
-        <div className="relative z-10 h-full grid grid-rows-[auto_auto_minmax(0,1fr)] p-6 gap-4">
+        {/* Phase 4.110: Reduced padding/gap for 20-slot fit at 720p */}
+        <div className="relative z-10 h-full grid grid-rows-[auto_auto_minmax(0,1fr)] p-4 gap-2">
           {/* Connection status (subtle) */}
           <LineupStateBanner
             lastUpdated={lastUpdated}
@@ -696,8 +698,8 @@ export default function EventDisplayPage() {
                     {formatEventTimeWindow(event.start_time, event.end_time)}
                   </p>
                 )}
-                {/* Phase 4.109: CTA text to explain QR codes */}
-                <p className="text-sm text-gray-300 mt-3 max-w-md">
+                {/* Phase 4.110: CTA text - increased to text-lg for 8-12 foot readability */}
+                <p className="text-lg text-gray-200 mt-2 max-w-lg font-medium">
                   Scan the QR codes to Follow and Support the Artists and our Collective
                 </p>
               </div>
@@ -723,7 +725,7 @@ export default function EventDisplayPage() {
                       className="rounded"
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">OUR COLLECTIVE</p>
+                  <p className="text-sm text-gray-300 uppercase tracking-wider font-semibold">OUR COLLECTIVE</p>
                 </div>
               )}
               {/* Phase 4.109: Event QR - same size as DSC QR (80px both) */}
@@ -738,7 +740,7 @@ export default function EventDisplayPage() {
                       className="rounded"
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">EVENT PAGE</p>
+                  <p className="text-sm text-gray-300 uppercase tracking-wider font-semibold">EVENT PAGE</p>
                 </div>
               )}
             </div>
@@ -868,8 +870,8 @@ export default function EventDisplayPage() {
                         />
                       </div>
                     )}
-                    {/* Phase 4.108: QR guidance text */}
-                    <p className="text-xs text-gray-500 mt-2 italic">Scan to follow + tip</p>
+                    {/* Phase 4.110: QR guidance text - increased to text-sm for readability */}
+                    <p className="text-sm text-gray-400 mt-2">Scan to follow + tip</p>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center flex-1">
@@ -889,69 +891,71 @@ export default function EventDisplayPage() {
               <div className="flex-1 overflow-hidden min-h-0">
                 {hasRosterData ? (
                   (() => {
-                    // Phase 4.109: Use 2 columns when >10 slots to fit up to 20
-                    const use2Columns = upNextSlots.length > 10;
-                    // Phase 4.109: Adaptive slot sizing based on count
-                    const slotDisplayCount = Math.min(allUpNextSlots.length, 20);
-                    const slotSize = slotDisplayCount <= 10 ? "large" : "small";
+                    // Phase 4.110: Tier-specific styling (slotTier and use2Columns computed at component level for stability)
+                    const slotPadding = slotTier === "large" ? "p-2.5 gap-3" : slotTier === "medium" ? "p-1.5 gap-2" : "p-1 gap-1.5";
+                    const slotRounding = slotTier === "large" ? "rounded-xl" : "rounded-lg";
+                    const containerGap = slotTier === "large" ? "gap-2" : slotTier === "medium" ? "gap-1.5" : "gap-1";
 
                     return (
-                      <div className={`h-full ${use2Columns ? "grid grid-cols-2 gap-2" : "flex flex-col"} ${
-                        !use2Columns && (densityTier === "large" ? "gap-2" : densityTier === "medium" ? "gap-1.5" : "gap-1")
-                      }`}>
+                      <div className={`h-full ${use2Columns ? `grid grid-cols-2 ${containerGap}` : `flex flex-col ${containerGap}`}`}>
                         {upNextSlots.length > 0 ? (
                           upNextSlots.map((slot, index) => (
                             <div
                               key={slot.id}
-                              className={`flex items-center transition-all ${use2Columns ? "" : "flex-shrink-0"} ${
-                                slotSize === "large" ? "gap-3 p-3 rounded-xl" : "gap-2 p-2 rounded-lg"
-                              } border ${
+                              className={`flex items-center transition-all ${use2Columns ? "" : "flex-shrink-0"} ${slotPadding} ${slotRounding} border ${
                                 index === 0
                                   ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)]/50"
                                   : "bg-black/40 border-white/10"
                               }`}
                             >
-                              {/* Slot number - size varies by slot count */}
+                              {/* Phase 4.110: Slot number badge - size varies by tier */}
                               <div className={`rounded-full bg-gray-800/80 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 ${
-                                slotSize === "large" ? "w-10 h-10 text-base" : "w-7 h-7 text-sm"
+                                slotTier === "large" ? "w-10 h-10 text-base" : slotTier === "medium" ? "w-8 h-8 text-sm" : "w-6 h-6 text-xs"
                               }`}>
                                 {slot.slot_index + 1}
                               </div>
                               {slot.claim?.member ? (
                                 <>
-                                  {/* Avatar - show in large size, hide in small to save space */}
-                                  {slotSize === "large" && (
+                                  {/* Phase 4.110: Avatar - show in large/medium tier, hide in compact to save space */}
+                                  {slotTier !== "compact" && (
                                     slot.claim.member.avatar_url ? (
                                       <Image
                                         src={slot.claim.member.avatar_url}
                                         alt={slot.claim.member.full_name || ""}
-                                        width={36}
-                                        height={36}
+                                        width={slotTier === "large" ? 36 : 28}
+                                        height={slotTier === "large" ? 36 : 28}
                                         className="rounded-full object-cover flex-shrink-0"
                                       />
                                     ) : (
-                                      <div className="w-9 h-9 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-[var(--color-text-accent)] text-sm">
+                                      <div className={`rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center flex-shrink-0 ${
+                                        slotTier === "large" ? "w-9 h-9" : "w-7 h-7"
+                                      }`}>
+                                        <span className={`text-[var(--color-text-accent)] ${slotTier === "large" ? "text-sm" : "text-xs"}`}>
                                           {slot.claim.member.full_name?.[0] || "?"}
                                         </span>
                                       </div>
                                     )
                                   )}
                                   <div className="flex-1 min-w-0">
+                                    {/* Phase 4.110: Name font size by tier */}
                                     <p className={`font-semibold truncate ${
-                                      slotSize === "large"
+                                      slotTier === "large"
                                         ? (index === 0 ? "text-white text-lg" : "text-gray-300 text-base")
-                                        : (index === 0 ? "text-white text-sm" : "text-gray-300 text-sm")
+                                        : slotTier === "medium"
+                                          ? (index === 0 ? "text-white text-base" : "text-gray-300 text-sm")
+                                          : (index === 0 ? "text-white text-sm" : "text-gray-300 text-xs")
                                     }`}>
                                       {slot.claim.member.full_name || "Anonymous"}
                                     </p>
                                   </div>
-                                  {/* Phase 4.109: QR for ALL performers with profiles, adaptive sizing */}
+                                  {/* Phase 4.110: QR for performers with profiles, adaptive sizing by tier */}
                                   {qrCodes.get(slot.claim.member.id) && (
                                     (() => {
-                                      // In 2-column mode with many slots, limit QR to first 6
-                                      if (use2Columns && index > 5) return null;
-                                      const qrSize = slotSize === "large" ? 44 : 32;
+                                      // In compact mode, only show QR for first 4 performers
+                                      if (slotTier === "compact" && index > 3) return null;
+                                      // In medium mode, limit QR to first 6
+                                      if (slotTier === "medium" && index > 5) return null;
+                                      const qrSize = slotTier === "large" ? 44 : slotTier === "medium" ? 36 : 28;
                                       return (
                                         <div className="bg-white rounded-md p-0.5 flex-shrink-0">
                                           <Image
@@ -967,15 +971,15 @@ export default function EventDisplayPage() {
                                 </>
                               ) : (
                                 <>
-                                  {/* Open slot - only show placeholder avatar in large mode */}
-                                  {slotSize === "large" && (
+                                  {/* Phase 4.110: Open slot - only show placeholder avatar in large mode */}
+                                  {slotTier === "large" && (
                                     <div className="w-9 h-9 rounded-full bg-gray-800/50 flex items-center justify-center flex-shrink-0">
                                       <span className="text-gray-600 text-sm">?</span>
                                     </div>
                                   )}
                                   <div className="flex-1">
                                     <p className={`font-semibold text-gray-500 ${
-                                      slotSize === "large" ? "text-base" : "text-sm"
+                                      slotTier === "large" ? "text-base" : slotTier === "medium" ? "text-sm" : "text-xs"
                                     }`}>Open Slot</p>
                                   </div>
                                 </>
