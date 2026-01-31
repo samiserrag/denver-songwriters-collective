@@ -98,6 +98,11 @@ export default function LineupControlPage() {
   const [connectionStatus, setConnectionStatus] = React.useState<"connected" | "disconnected" | "reconnecting">("connected");
   const [failureCount, setFailureCount] = React.useState(0);
 
+  // Phase 4.100: Reliability polish
+  const [showRecovered, setShowRecovered] = React.useState(false);
+  const wasDisconnectedRef = React.useRef(false);
+  const recoveredTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Phase 4.99: Confirmation dialogs
   const [showStopConfirm, setShowStopConfirm] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -294,6 +299,21 @@ export default function LineupControlPage() {
       // Phase 4.99: Update connection health
       setLastUpdated(new Date());
       setFailureCount(0);
+
+      // Phase 4.100: Show "Connection restored" banner when recovering from disconnected
+      if (wasDisconnectedRef.current) {
+        setShowRecovered(true);
+        wasDisconnectedRef.current = false;
+        // Clear any existing timeout
+        if (recoveredTimeoutRef.current) {
+          clearTimeout(recoveredTimeoutRef.current);
+        }
+        // Auto-hide after 5 seconds
+        recoveredTimeoutRef.current = setTimeout(() => {
+          setShowRecovered(false);
+        }, 5000);
+      }
+
       setConnectionStatus("connected");
       setLoading(false);
     } catch (error) {
@@ -302,6 +322,8 @@ export default function LineupControlPage() {
       setFailureCount(prev => prev + 1);
       if (failureCount >= 2) {
         setConnectionStatus("disconnected");
+        // Phase 4.100: Track that we were disconnected for recovery banner
+        wasDisconnectedRef.current = true;
       } else {
         setConnectionStatus("reconnecting");
       }
@@ -315,6 +337,50 @@ export default function LineupControlPage() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Phase 4.100: Immediate refresh on visibility/focus with debounce
+  React.useEffect(() => {
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const debouncedFetch = () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+      debounceTimeout = setTimeout(() => {
+        fetchData();
+      }, 50); // 50ms debounce to prevent double-fetch
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        debouncedFetch();
+      }
+    };
+
+    const handleFocus = () => {
+      debouncedFetch();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  }, [fetchData]);
+
+  // Phase 4.100: Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (recoveredTimeoutRef.current) {
+        clearTimeout(recoveredTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Phase ABC7: Update lineup state with date_key for per-occurrence control
   const updateLineupState = async (newTimeslotId: string | null) => {
@@ -475,6 +541,7 @@ export default function LineupControlPage() {
         lastUpdated={lastUpdated}
         connectionStatus={connectionStatus}
         variant="prominent"
+        showRecovered={showRecovered}
       />
 
       {/* Header */}
