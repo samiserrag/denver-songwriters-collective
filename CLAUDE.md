@@ -736,6 +736,61 @@ if (existing?.status === "cancelled") {
 
 ---
 
+### Search Input Text Erasure Fix (Phase 5.14b Continuation, January 2026) — RESOLVED
+
+**Goal:** Fix search input on /happenings page erasing user's text while typing.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3499, build success).
+
+**Problem:** When typing in the search input on /happenings, text would erase itself. Users had to type fast to "beat" the bug. The same issue affected city and ZIP inputs.
+
+**Root Cause:** A sync loop between local state and URL parameters:
+1. User types "br" in input
+2. After 300ms debounce, URL updates to `?q=br`
+3. useEffect watching URL param runs and resets input to "br"
+4. But user has typed "brew" by now → "ew" gets erased
+
+**Solution:** Track when we initiate URL changes using refs, skip sync in those cases:
+
+```typescript
+// Track if we're the source of the URL change
+const isLocalSearchUpdate = React.useRef(false);
+
+// In handleSearchChange debounce:
+isLocalSearchUpdate.current = true;  // Mark as local change
+updateFilter("q", value || null);
+
+// In useEffect:
+if (isLocalSearchUpdate.current) {
+  isLocalSearchUpdate.current = false;  // Reset flag
+  return;  // Skip sync - we initiated this change
+}
+setSearchInput(q);  // Only sync for external changes (browser back/forward)
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/HappeningsFilters.tsx` | Added `isLocalSearchUpdate`, `isLocalCityUpdate`, `isLocalZipUpdate` refs; skip sync when local change initiated URL update |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/happenings-search-input-fix.test.ts` | 14 tests for sync loop prevention pattern |
+
+**Key Invariants (Tested):**
+1. Local URL changes skip sync (prevents text erasure)
+2. External URL changes (browser back/forward) still sync correctly
+3. Search debounces at 300ms, city/zip at 400ms
+4. Rapid typing preserves all characters
+5. Clear search action works correctly
+
+**Test Coverage:** 14 new tests (3499 total).
+
+---
+
 ### Tabbed Event Management Layout (Phase 5.14, January 2026) — RESOLVED
 
 **Goal:** Reorganize the event management dashboard with a tabbed layout separating Details, Attendees, Lineup, and Settings into distinct tabs for improved UX.
