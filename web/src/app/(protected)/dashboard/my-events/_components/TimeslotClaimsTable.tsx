@@ -22,8 +22,8 @@ interface ClaimData {
   id: string;
   timeslot_id: string;
   member_id: string | null;
-  performer_name: string | null;
-  performer_email: string | null;
+  guest_name: string | null;
+  guest_email: string | null;
   status: string;
   created_at: string;
   slot_index: number | null;
@@ -283,11 +283,11 @@ export default function TimeslotClaimsTable({
                         href={`/songwriters/${claim.profiles.slug}`}
                         className="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)]"
                       >
-                        {claim.profiles.full_name || claim.performer_name || "Unknown"}
+                        {claim.profiles.full_name || claim.guest_name || "Unknown"}
                       </Link>
                     ) : (
                       <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                        {claim.performer_name || "Unknown"}
+                        {claim.guest_name || "Unknown"}
                         {claim.is_guest && (
                           <span className="text-[var(--color-text-tertiary)]"> (guest)</span>
                         )}
@@ -302,14 +302,14 @@ export default function TimeslotClaimsTable({
                     {claim.start_offset_minutes !== null && (
                       <span>{formatSlotTime(claim.start_offset_minutes, claim.duration_minutes)}</span>
                     )}
-                    {claim.is_guest && claim.performer_email && (
+                    {claim.is_guest && claim.guest_email && (
                       <>
                         <span>·</span>
                         <a
-                          href={`mailto:${claim.performer_email}`}
+                          href={`mailto:${claim.guest_email}`}
                           className="hover:text-[var(--color-text-accent)] underline"
                         >
-                          {claim.performer_email}
+                          {claim.guest_email}
                         </a>
                       </>
                     )}

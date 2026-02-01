@@ -96,8 +96,8 @@ export async function GET(
       id,
       timeslot_id,
       member_id,
-      performer_name,
-      performer_email,
+      guest_name,
+      guest_email,
       status,
       created_at,
       profiles:member_id(id, full_name, avatar_url, slug)
@@ -198,7 +198,7 @@ export async function DELETE(
     .select(`
       id,
       member_id,
-      performer_name,
+      guest_name,
       status,
       timeslot_id,
       event_timeslots!inner(event_id)
@@ -258,6 +258,6 @@ export async function DELETE(
     success: true,
     claimId,
     previousStatus: claim.status,
-    performerName: claim.performer_name || "Unknown",
+    performerName: claim.guest_name || "Unknown",
   });
 }
