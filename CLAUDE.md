@@ -359,20 +359,25 @@ All must pass before merge:
 | Route | Schedule | Purpose |
 |-------|----------|---------|
 | `/api/cron/weekly-open-mics` | `0 3 * * 0` (Sunday 3:00 UTC) | Weekly Open Mics Digest email |
+| `/api/cron/weekly-happenings` | `0 3 * * 0` (Sunday 3:00 UTC) | Weekly Happenings Digest email (ALL event types) |
 
 **Cron Configuration:** `web/vercel.json`
 
 **Kill Switches:**
-- `ENABLE_WEEKLY_DIGEST=true` — Required to enable weekly digest emails
+- `ENABLE_WEEKLY_DIGEST=true` — Required to enable weekly open mics digest
+- `ENABLE_WEEKLY_HAPPENINGS_DIGEST=true` — Required to enable weekly happenings digest (ALL types)
 
 **Key Files:**
 
 | File | Purpose |
 |------|---------|
 | `lib/digest/weeklyOpenMics.ts` | Business logic for fetching open mics and building digest data |
-| `lib/email/templates/weeklyOpenMicsDigest.ts` | Email template for weekly digest |
-| `app/api/cron/weekly-open-mics/route.ts` | Cron endpoint handler |
-| `lib/featureFlags.ts` | Kill switch: `isWeeklyDigestEnabled()` |
+| `lib/digest/weeklyHappenings.ts` | Business logic for fetching ALL happenings and building digest data |
+| `lib/email/templates/weeklyOpenMicsDigest.ts` | Email template for weekly open mics digest |
+| `lib/email/templates/weeklyHappeningsDigest.ts` | Email template for weekly happenings digest (ALL types) |
+| `app/api/cron/weekly-open-mics/route.ts` | Cron endpoint handler for open mics digest |
+| `app/api/cron/weekly-happenings/route.ts` | Cron endpoint handler for happenings digest |
+| `lib/featureFlags.ts` | Kill switches: `isWeeklyDigestEnabled()`, `isWeeklyHappeningsDigestEnabled()` |
 
 **Cron Authentication:**
 - Vercel Cron jobs include `authorization: Bearer ${CRON_SECRET}` header automatically
@@ -649,6 +654,78 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Weekly Happenings Digest Email (GTM-1, January 2026) — IMPLEMENTED — AWAITING DEPLOY
+
+**Goal:** Expand Weekly Open Mics Digest into Weekly Happenings Digest covering ALL 9 event types.
+
+**Status:** Implementation complete. Awaiting quality gates verification and deploy.
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**Features Implemented:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Query filters | ALL event types, `is_published=true`, `status="active"` |
+| Event types (9) | song_circle, workshop, meetup, showcase, open_mic, gig, kindred_group, jam_session, other |
+| Date window | 7-day window (Sunday through Saturday) |
+| Timezone handling | Denver timezone for all date calculations |
+| Occurrence expansion | Recurring events expanded, cancelled occurrences excluded |
+| Recipient filtering | Users with `email IS NOT NULL` and `email_event_updates` preference enabled |
+| Kill switch | `ENABLE_WEEKLY_HAPPENINGS_DIGEST=true` env var required (default false) |
+| Cron schedule | `0 3 * * 0` (Sunday 3:00 UTC = Saturday 8/9 PM Denver) |
+
+**Email Template Structure:**
+- Personalized greeting (first name or "there")
+- Intro: "Here's what's happening in the Denver songwriter community this week."
+- Summary line: "That's X happenings across Y venues this week."
+- Day-grouped event listings with emoji by event type, time, venue, cost
+- Browse All CTA linking to `/happenings`
+- Aspirational copy: "Want to see more or tailor this to you? Browse all happenings with your filters applied!"
+- Unsubscribe link to `/dashboard/settings`
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/digest/weeklyHappenings.ts` | Business logic: `getUpcomingHappenings()`, `getDigestRecipients()` |
+| `lib/email/templates/weeklyHappeningsDigest.ts` | Email template with day-grouped layout + event type emojis |
+| `app/api/cron/weekly-happenings/route.ts` | Cron handler with auth, kill switch, batched sending |
+| `__tests__/weekly-happenings-digest.test.ts` | ~45 tests for all components |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/registry.ts` | Registered `weeklyHappeningsDigest` template |
+| `lib/notifications/preferences.ts` | Added `weeklyHappeningsDigest` to `EMAIL_CATEGORY_MAP` under `event_updates` |
+| `lib/featureFlags.ts` | Added `isWeeklyHappeningsDigestEnabled()` kill switch |
+| `vercel.json` | Added `/api/cron/weekly-happenings` cron entry |
+
+**Key Design Decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| Separate kill switch | Independent from Open Mics digest for rollback safety |
+| Parallel file strategy | New files alongside existing ones, no modification to weeklyOpenMics |
+| No schema changes | Uses existing `email_event_updates` preference |
+| No UI changes | Email-only feature |
+| Event type emojis | Uses `EVENT_TYPE_CONFIG` for consistent iconography |
+
+**Rollback Plan:**
+- Set `ENABLE_WEEKLY_HAPPENINGS_DIGEST=false` (or remove env var)
+- No code rollback needed - kill switch disables feature completely
+
+**Test Coverage:** ~45 tests covering:
+- Date helper functions
+- All 9 event types coverage
+- Email template copy assertions
+- Kill switch behavior
+- Registry integration
+- Edge cases (empty happenings, unknown event types)
 
 ---
 

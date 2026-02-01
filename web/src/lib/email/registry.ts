@@ -93,6 +93,10 @@ import {
   getWeeklyOpenMicsDigestEmail,
   type WeeklyOpenMicsDigestParams,
 } from "./templates/weeklyOpenMicsDigest";
+import {
+  getWeeklyHappeningsDigestEmail,
+  type WeeklyHappeningsDigestParams,
+} from "./templates/weeklyHappeningsDigest";
 
 /**
  * All available email template keys
@@ -119,7 +123,8 @@ export type EmailTemplateKey =
   | "occurrenceCancelledHost"
   | "occurrenceModifiedHost"
   | "feedbackNotification"
-  | "weeklyOpenMicsDigest";
+  | "weeklyOpenMicsDigest"
+  | "weeklyHappeningsDigest";
 
 /**
  * Map of template keys to their parameter types
@@ -147,6 +152,7 @@ export interface EmailTemplateParams {
   occurrenceModifiedHost: OccurrenceModifiedHostEmailParams;
   feedbackNotification: FeedbackNotificationEmailParams;
   weeklyOpenMicsDigest: WeeklyOpenMicsDigestParams;
+  weeklyHappeningsDigest: WeeklyHappeningsDigestParams;
 }
 
 /**
@@ -350,6 +356,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: false,
   },
+  weeklyHappeningsDigest: {
+    key: "weeklyHappeningsDigest",
+    name: "Weekly Happenings Digest",
+    description: "Weekly email listing all upcoming happenings",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: false,
+  },
 };
 
 /**
@@ -412,6 +426,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getFeedbackNotificationEmail(params as FeedbackNotificationEmailParams);
     case "weeklyOpenMicsDigest":
       return getWeeklyOpenMicsDigestEmail(params as WeeklyOpenMicsDigestParams);
+    case "weeklyHappeningsDigest":
+      return getWeeklyHappeningsDigestEmail(params as WeeklyHappeningsDigestParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -458,6 +474,7 @@ export {
   getOccurrenceModifiedHostEmail,
   getFeedbackNotificationEmail,
   getWeeklyOpenMicsDigestEmail,
+  getWeeklyHappeningsDigestEmail,
 };
 
 // Re-export param types
@@ -484,4 +501,5 @@ export type {
   OccurrenceModifiedHostEmailParams,
   FeedbackNotificationEmailParams,
   WeeklyOpenMicsDigestParams,
+  WeeklyHappeningsDigestParams,
 };

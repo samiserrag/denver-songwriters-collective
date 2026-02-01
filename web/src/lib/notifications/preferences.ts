@@ -120,6 +120,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
   eventCommentNotification: "event_updates",
   rsvpHostNotification: "event_updates",
   weeklyOpenMicsDigest: "event_updates",
+  weeklyHappeningsDigest: "event_updates",
 
   // Admin-related templates
   adminEventClaimNotification: "admin_notifications",

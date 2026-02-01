@@ -14,10 +14,22 @@ export function isGuestVerificationEnabled(): boolean {
 }
 
 /**
- * Check if weekly comment digest emails are enabled (server-side).
+ * Check if weekly open mics digest emails are enabled (server-side).
  * Set ENABLE_WEEKLY_DIGEST=true in environment to enable.
  * Default: false (kill switch - must explicitly enable)
  */
 export function isWeeklyDigestEnabled(): boolean {
   return process.env.ENABLE_WEEKLY_DIGEST === "true";
+}
+
+/**
+ * Check if weekly happenings digest emails are enabled (server-side).
+ * Set ENABLE_WEEKLY_HAPPENINGS_DIGEST=true in environment to enable.
+ * Default: false (kill switch - must explicitly enable)
+ *
+ * NOTE: Only one digest kill switch should be enabled at a time.
+ * Both crons run at the same time (Sunday 3:00 UTC).
+ */
+export function isWeeklyHappeningsDigestEnabled(): boolean {
+  return process.env.ENABLE_WEEKLY_HAPPENINGS_DIGEST === "true";
 }
