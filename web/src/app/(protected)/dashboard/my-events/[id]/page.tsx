@@ -169,6 +169,15 @@ export default async function EditEventPage({
     .eq("event_id", eventId);
   const hasTimeslots = (timeslotCount ?? 0) > 0 || event.has_timeslots;
 
+  // Phase 5.12: Check if there are any active claims (even if timeslots are now off)
+  // This ensures hosts can manage signups even when slot config was reverted
+  const { count: activeClaimCount } = await supabase
+    .from("timeslot_claims")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .in("status", ["confirmed", "performed", "waitlist"]);
+  const hasActiveClaims = (activeClaimCount ?? 0) > 0;
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
@@ -274,7 +283,7 @@ export default async function EditEventPage({
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Happening Details</h2>
-              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} />
+              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} hasActiveClaims={hasActiveClaims} />
             </section>
 
             {/* Co-hosts section - visible to all hosts */}
@@ -307,9 +316,10 @@ export default async function EditEventPage({
               />
             )}
 
-            {/* Phase 5.02: Performer Signups - visible when event has timeslots */}
-            {hasTimeslots && (
-              <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+            {/* Phase 5.02/5.12: Performer Signups - visible when event has timeslots OR has existing claims */}
+            {/* Shows even if has_timeslots is false but claims exist (e.g., after failed slot config change) */}
+            {(hasTimeslots || hasActiveClaims) && (
+              <section id="performer-signups" className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
                 <TimeslotClaimsTable
                   eventId={eventId}
                   isRecurring={event.is_recurring ?? false}

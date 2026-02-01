@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 // Phase 4.47: Removed TIMESLOT_EVENT_TYPES - no event type auto-enables performer slots
 // All event types default to RSVP only; performer slots are fully opt-in
 
@@ -18,6 +20,10 @@ interface SlotConfigSectionProps {
   /** Optional attendance capacity (null = unlimited) */
   capacity: number | null;
   onCapacityChange: (capacity: number | null) => void;
+  /** Phase 5.12: Event ID for linking to signups management in edit mode */
+  eventId?: string;
+  /** Phase 5.12: Whether there are active claims that may block slot config changes */
+  hasActiveClaims?: boolean;
 }
 
 export default function SlotConfigSection({
@@ -26,6 +32,8 @@ export default function SlotConfigSection({
   disabled = false,
   capacity,
   onCapacityChange,
+  eventId,
+  hasActiveClaims = false,
 }: SlotConfigSectionProps) {
   // Phase 4.47: Removed useEffect that auto-enabled timeslots based on eventType
   // Performer slots are now fully opt-in for ALL event types
@@ -152,6 +160,23 @@ export default function SlotConfigSection({
             />
           </button>
         </div>
+
+        {/* Phase 5.12: Manage Signups link when in edit mode with active claims */}
+        {eventId && hasActiveClaims && (
+          <div className="mt-3 p-3 bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                <strong>Active signups exist.</strong> You may need to remove signups before changing slot settings.
+              </p>
+              <Link
+                href={`/dashboard/my-events/${eventId}#performer-signups`}
+                className="shrink-0 px-3 py-1.5 text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors"
+              >
+                Manage Signups →
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Phase 4.47: Value proposition when slots are OFF */}
         {!config.has_timeslots && (

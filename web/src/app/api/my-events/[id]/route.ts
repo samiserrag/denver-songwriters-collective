@@ -367,12 +367,13 @@ export async function PATCH(
 
       if (futureClaimCount && futureClaimCount > 0) {
         // Has FUTURE claims - reject the entire update with actionable error
+        // Phase 5.12: Link directly to performer signups section with anchor
         return NextResponse.json(
           {
             error: "Can't change slot configuration while future signups exist.",
             details: `${futureClaimCount} active signup(s) on upcoming dates. Remove them first or wait until those dates pass.`,
             futureClaimCount,
-            actionUrl: `/dashboard/my-events/${eventId}`
+            actionUrl: `/dashboard/my-events/${eventId}#performer-signups`
           },
           { status: 409 }
         );

@@ -91,6 +91,8 @@ interface EventFormProps {
   occurrenceEventId?: string;
   /** Existing occurrence dates for this series (for conflict detection when rescheduling) */
   existingOccurrenceDates?: string[];
+  /** Phase 5.12: Whether event has active timeslot claims (blocks slot config changes) */
+  hasActiveClaims?: boolean;
   event?: {
     id: string;
     title: string;
@@ -145,7 +147,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [] }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -1933,6 +1935,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         disabled={loading}
         capacity={formData.capacity ? parseInt(formData.capacity) : null}
         onCapacityChange={(cap) => updateField("capacity", cap?.toString() || "")}
+        eventId={mode === "edit" ? event?.id : undefined}
+        hasActiveClaims={hasActiveClaims}
       />
 
       {/* Warning: Timeslot duration exceeds event duration */}
