@@ -264,8 +264,8 @@ export function RSVPSection({
         initialConfirmedCount={initialConfirmedCount}
         dateKey={dateKey}
       />
-      {/* Phase 4.43: RSVP meaning clarification */}
-      <p className="text-xs text-[var(--color-text-secondary)]">
+      {/* Phase 4.43: RSVP meaning clarification - larger and more prominent */}
+      <p className="text-base text-[var(--color-text-secondary)] mt-2">
         RSVP means you plan to attend. It is not a performer sign-up.
       </p>
       <CancelRSVPModal

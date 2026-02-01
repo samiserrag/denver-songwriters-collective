@@ -131,11 +131,6 @@ export function AttendeeList({ eventId, hasTimeslots = false, performerCount = 0
         </span>
       </h2>
 
-      {/* RSVP meaning clarification */}
-      <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        RSVP means you plan to attend. It is not a performer sign-up.
-      </p>
-
       <div className="flex flex-wrap gap-2">
         {attendees.map((attendee) => {
           // Check if this is a guest RSVP (no user, has guest_name)
