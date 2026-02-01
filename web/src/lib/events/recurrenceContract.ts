@@ -701,35 +701,62 @@ export function parseOrdinalsFromRecurrenceRule(rule: string | null | undefined)
 }
 
 /**
- * Development/test invariant check: warn if a recurring event only produced one occurrence.
- * This catches the exact bug class we're fixing.
+ * Development/test invariant check: warn if a recurring event only produced one occurrence
+ * when the window is large enough that multiple occurrences are mathematically expected.
+ *
+ * Phase 1.5.1: Fixed false positives for small windows (e.g., weekly digest 7-day window).
+ *
+ * Minimum window sizes to expect ≥2 occurrences:
+ * - weekly: 14 days (need 2 weeks to guarantee 2 occurrences)
+ * - biweekly: 28 days (need 4 weeks for 2 occurrences)
+ * - monthly: 56 days (need ~2 months for 2 occurrences)
  *
  * NOTE: Does NOT warn when:
  * - Event has explicit count or endDate bounds
- * - Window is too small (< 14 days) to expect multiple occurrences
- * - This is a test environment with intentionally small windows
+ * - Window is smaller than minimum expected for the frequency
+ * - This is a test environment (NODE_ENV === "test")
  */
 export function assertRecurrenceInvariant(
   rec: NormalizedRecurrence,
   occurrenceCount: number,
   eventId?: string,
-  windowDays?: number
+  windowDays?: number,
+  windowStart?: string,
+  windowEnd?: string
 ): void {
   // Skip check for bounded events (count or endDate set)
   if (rec.count || rec.endDate) return;
 
-  // Skip check for small windows (likely test scenarios)
-  // Weekly events need at least 7 days, biweekly at least 14
-  const minWindow = rec.frequency === "biweekly" ? 14 : rec.frequency === "monthly" ? 28 : 7;
-  if (windowDays !== undefined && windowDays < minWindow) return;
+  // Minimum window sizes required to expect ≥2 occurrences
+  // - Weekly: 14 days (at least 2 weeks needed)
+  // - Biweekly: 28 days (at least 4 weeks needed)
+  // - Monthly: 56 days (at least 2 months needed)
+  const minWindowForMultiple: Record<string, number> = {
+    weekly: 14,
+    biweekly: 28,
+    monthly: 56,
+  };
+  const minWindow = minWindowForMultiple[rec.frequency] ?? 14;
+
+  // If window is provided and smaller than minimum, this is NOT a bug
+  // (1 occurrence is mathematically valid for small windows)
+  if (windowDays !== undefined && windowDays < minWindow) {
+    return;
+  }
 
   // Only warn if this should have produced multiple but didn't
   if (shouldExpandToMultiple(rec) && occurrenceCount === 1) {
-    const warning = `[RECURRENCE INVARIANT VIOLATION] Event ${eventId ?? "unknown"} is recurring (${rec.frequency}) but only produced 1 occurrence. This indicates a generator bug.`;
+    const windowInfo = windowStart && windowEnd
+      ? ` in ${windowDays ?? "?"}-day window [${windowStart}→${windowEnd}]`
+      : windowDays !== undefined
+        ? ` in ${windowDays}-day window`
+        : "";
+    const warning = `[RECURRENCE INVARIANT VIOLATION] Event ${eventId ?? "unknown"} (${rec.frequency}) produced ${occurrenceCount} occurrence${windowInfo}. Expected ≥2 for this window size.`;
+
     if (process.env.NODE_ENV === "development") {
       console.error(warning);
     }
-    // In production/test, just warn (don't spam test output)
+    // In production, just warn (don't spam test output)
     if (process.env.NODE_ENV !== "test") {
       console.warn(warning);
     }

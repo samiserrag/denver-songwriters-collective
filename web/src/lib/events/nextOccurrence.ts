@@ -209,6 +209,12 @@ export interface EventForOccurrence {
   start_time?: string | null;
   max_occurrences?: number | null;
   custom_dates?: string[] | null;
+  /** Optional: Event identifier for debugging/logging */
+  id?: string;
+  /** Optional: Event title for debugging/logging */
+  title?: string;
+  /** Optional: Event slug for debugging/logging */
+  slug?: string | null;
 }
 
 export interface NextOccurrenceResult {
@@ -662,7 +668,17 @@ export function expandOccurrencesForEvent(
   // Phase 4.42c: Invariant check - recurring events should produce multiple occurrences
   // Skip check for bounded series (max_occurrences limits expansion count)
   if (!event.max_occurrences || event.max_occurrences > 1) {
-    assertRecurrenceInvariant(recurrence, occurrences.length);
+    // Calculate window size in days for the invariant check
+    const startDate = new Date(`${startKey}T12:00:00Z`);
+    const endDate = new Date(`${endKey}T12:00:00Z`);
+    const windowDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Build event identifier for debugging (prefer title, fallback to id/slug)
+    const eventIdentifier = event.title
+      ? `${event.id ?? "?"} "${event.title}"`
+      : event.slug ?? event.id ?? "unknown";
+
+    assertRecurrenceInvariant(recurrence, occurrences.length, eventIdentifier, windowDays, startKey, endKey);
   }
 
   return occurrences;

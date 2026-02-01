@@ -652,6 +652,53 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Recurrence Invariant False Positive Fix (Phase 1.5.1, January 2026) — RESOLVED
+
+**Goal:** Fix false positive `[RECURRENCE INVARIANT VIOLATION]` warnings in Vercel logs for weekly digest 7-day windows.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3345, build success).
+
+**Problem:** Weekly digest (7-day window) was logging warnings like:
+```
+[RECURRENCE INVARIANT VIOLATION] Event unknown is recurring (weekly) but only produced 1 occurrence.
+```
+
+This was a false positive because:
+1. For weekly events in a 7-day window, 0-2 occurrences is mathematically valid
+2. The `eventId` was never passed, resulting in "Event unknown"
+3. The `windowDays` was never passed, so the minimum window check was bypassed
+
+**Fix:**
+
+| Change | Implementation |
+|--------|----------------|
+| Pass event identifier | Added `id`, `title`, `slug` to `EventForOccurrence` interface |
+| Pass window size | Calculate `windowDays` from startKey/endKey and pass to invariant |
+| Correct minimum windows | Weekly: 14 days, Biweekly: 28 days, Monthly: 56 days |
+| Improved log format | `Event {id} "{title}" ({freq}) produced N occurrence in M-day window [start→end]. Expected ≥2.` |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/events/nextOccurrence.ts` | Added `id`/`title`/`slug` to interface, calculate windowDays, pass to invariant |
+| `lib/events/recurrenceContract.ts` | Updated `assertRecurrenceInvariant` with correct minWindow values, improved log format |
+| `lib/digest/weeklyOpenMics.ts` | Pass event `id`/`title`/`slug` to expansion function |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/recurrence-invariant-window.test.ts` | 19 tests for invariant behavior |
+
+**Test Coverage:** 19 new tests covering:
+- Weekly in 7-day window → 1 occurrence → NO warning
+- Weekly in 14-day window → 1 occurrence → WARNING
+- Biweekly/monthly small window handling
+- Log message format includes event ID, title, window bounds
+
+---
+
 ### Open Mic Spotlight + EventForm Simplifications (January 2026) — RESOLVED
 
 **Goal:** Add featured Open Mic Spotlight section on homepage and simplify event creation flow.

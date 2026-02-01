@@ -220,8 +220,12 @@ export async function getUpcomingOpenMics(
 
   for (const event of events) {
     // Expand occurrences within the date range
+    // Pass event identifier for improved debugging in invariant warnings
     const occurrences = expandOccurrencesForEvent(
       {
+        id: event.id,
+        title: event.title,
+        slug: event.slug,
         event_date: event.event_date,
         day_of_week: event.day_of_week,
         recurrence_rule: event.recurrence_rule,
