@@ -23,6 +23,8 @@ interface RSVPListProps {
   isRecurring?: boolean;
   availableDates?: string[];
   initialDateKey?: string;
+  /** Phase 5.13: When true, hides the internal date selector (parent controls date) */
+  hideOwnSelector?: boolean;
 }
 
 interface RSVPUser {
@@ -55,8 +57,18 @@ export default function RSVPList({
   isRecurring = false,
   availableDates = [],
   initialDateKey,
+  hideOwnSelector = false,
 }: RSVPListProps) {
+  // Phase 5.13: Sync with parent's date selector when controlled externally
   const [selectedDate, setSelectedDate] = useState(initialDateKey || availableDates[0] || "");
+
+  // Sync with parent's date when it changes (controlled mode)
+  useEffect(() => {
+    if (initialDateKey && initialDateKey !== selectedDate) {
+      setSelectedDate(initialDateKey);
+    }
+  }, [initialDateKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [data, setData] = useState<{
     confirmed: RSVPUser[];
     waitlist: RSVPUser[];
@@ -96,8 +108,8 @@ export default function RSVPList({
 
   return (
     <div className="space-y-4">
-      {/* Date selector for recurring events */}
-      {isRecurring && availableDates.length > 1 && (
+      {/* Date selector for recurring events - hidden when parent controls date */}
+      {!hideOwnSelector && isRecurring && availableDates.length > 1 && (
         <div>
           <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">
             Select occurrence:

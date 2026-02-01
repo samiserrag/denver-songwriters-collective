@@ -2,9 +2,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import EventForm from "../_components/EventForm";
-import RSVPList from "../_components/RSVPList";
-import TimeslotClaimsTable from "../_components/TimeslotClaimsTable";
 import CoHostManager from "../_components/CoHostManager";
+import SidebarManagementPanels from "./_components/SidebarManagementPanels";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
@@ -316,30 +315,16 @@ export default async function EditEventPage({
               />
             )}
 
-            {/* Phase 5.02/5.12: Performer Signups - visible when event has timeslots OR has existing claims */}
-            {/* Shows even if has_timeslots is false but claims exist (e.g., after failed slot config change) */}
-            {(hasTimeslots || hasActiveClaims) && (
-              <section id="performer-signups" className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-                <TimeslotClaimsTable
-                  eventId={eventId}
-                  isRecurring={event.is_recurring ?? false}
-                  availableDates={availableDates}
-                  initialDateKey={nextOccurrenceDate ?? undefined}
-                />
-              </section>
-            )}
-
-            {/* RSVP Summary - Phase 5.02: Now date-scoped for recurring events */}
-            <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Attendees</h2>
-              <RSVPList
-                eventId={eventId}
-                capacity={event.capacity}
-                isRecurring={event.is_recurring ?? false}
-                availableDates={availableDates}
-                initialDateKey={nextOccurrenceDate ?? undefined}
-              />
-            </section>
+            {/* Phase 5.13: Unified management panels with shared occurrence selector */}
+            <SidebarManagementPanels
+              eventId={eventId}
+              capacity={event.capacity}
+              isRecurring={event.is_recurring ?? false}
+              availableDates={availableDates}
+              initialDateKey={nextOccurrenceDate ?? undefined}
+              hasTimeslots={hasTimeslots}
+              hasActiveClaims={hasActiveClaims}
+            />
 
             {/* Invite Links - Phase 4.94: Only visible to admins and primary hosts */}
             {(isAdmin || isEventOwner) && (

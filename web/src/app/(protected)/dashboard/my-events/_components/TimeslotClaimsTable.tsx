@@ -44,6 +44,8 @@ interface TimeslotClaimsTableProps {
   isRecurring: boolean;
   availableDates: string[];
   initialDateKey?: string;
+  /** Phase 5.13: When true, hides the internal date selector (parent controls date) */
+  hideOwnSelector?: boolean;
 }
 
 /**
@@ -61,8 +63,17 @@ export default function TimeslotClaimsTable({
   isRecurring,
   availableDates,
   initialDateKey,
+  hideOwnSelector = false,
 }: TimeslotClaimsTableProps) {
+  // Phase 5.13: Sync with parent's date selector when controlled externally
   const [selectedDate, setSelectedDate] = React.useState(initialDateKey || availableDates[0] || "");
+
+  // Sync with parent's date when it changes (controlled mode)
+  React.useEffect(() => {
+    if (initialDateKey && initialDateKey !== selectedDate) {
+      setSelectedDate(initialDateKey);
+    }
+  }, [initialDateKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [claims, setClaims] = React.useState<ClaimData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -225,8 +236,8 @@ export default function TimeslotClaimsTable({
         )}
       </div>
 
-      {/* Date selector for recurring events */}
-      {isRecurring && availableDates.length > 1 && (
+      {/* Date selector for recurring events - hidden when parent controls date */}
+      {!hideOwnSelector && isRecurring && availableDates.length > 1 && (
         <div>
           <label className="block text-xs text-[var(--color-text-tertiary)] mb-1">
             Select occurrence:
