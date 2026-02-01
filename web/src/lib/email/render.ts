@@ -94,7 +94,7 @@ export function wrapEmailHtml(content: string): string {
           <!-- Header -->
           <tr>
             <td style="background-color: ${EMAIL_COLORS.headerBg}; padding: 24px; text-align: center;">
-              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/logo-email.png" alt="Denver Songwriters Collective" style="max-width: 280px; height: auto;" />
+              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png" alt="Denver Songwriters Collective" style="max-width: 280px; height: auto;" />
             </td>
           </tr>
 

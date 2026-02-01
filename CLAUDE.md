@@ -657,6 +657,28 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Email Header Image Update (January 2026) — RESOLVED
+
+**Goal:** Update the email header image to the new DSC branding.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, build success).
+
+**Change:** Updated the email header image URL in the shared email layout wrapper.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/render.ts` | Updated header image URL from `logo-email.png` to `DSC%20Email%20Header1.png` |
+
+**Image URLs:**
+- **Old:** `https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/logo-email.png`
+- **New:** `https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png`
+
+**Scope:** All transactional emails (RSVP confirmations, event updates, verification codes, weekly digests, host notifications, etc.) now use the new header image.
+
+---
+
 ### Email Date Format Change to MM-DD-YYYY (January 2026) — RESOLVED
 
 **Goal:** Change email date display from YYYY-MM-DD to MM-DD-YYYY format for better readability.
