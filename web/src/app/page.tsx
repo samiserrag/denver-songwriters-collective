@@ -72,7 +72,7 @@ export default async function HomePage() {
     data: { session: _session },
   } = await supabase.auth.getSession();
 
-  const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes] = await Promise.all([
+  const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes, spotlightOpenMicEventsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)
     supabase
       .from("events")
@@ -182,6 +182,19 @@ export default async function HomePage() {
       .or(`end_date.is.null,end_date.gte.${new Date().toISOString().split("T")[0]}`)
       .order("display_order", { ascending: true })
       .limit(4),
+    // Spotlight Open Mic Events - admin-selected open mics using is_spotlight flag
+    supabase
+      .from("events")
+      .select(`
+        *,
+        venues!left(name, address, city, state)
+      `)
+      .eq("event_type", "open_mic")
+      .eq("is_spotlight", true)
+      .eq("is_published", true)
+      .eq("status", "active")
+      .order("event_date", { ascending: true })
+      .limit(6),
   ]);
 
   // Fetch RSVP counts or claimed slots for DSC events
@@ -280,6 +293,9 @@ export default async function HomePage() {
   // Spotlight happenings (admin-selected)
   const spotlightHappenings = (spotlightHappeningsRes.data ?? []) as any[];
 
+  // Spotlight open mic events (admin-selected open mics using is_spotlight)
+  const spotlightOpenMicEvents = (spotlightOpenMicEventsRes.data ?? []) as any[];
+
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasTonightsHappenings = tonightsHappenings.length > 0;
   const hasSpotlightHappenings = spotlightHappenings.length > 0;
@@ -287,6 +303,7 @@ export default async function HomePage() {
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = allBlogPosts.length > 0;
   const hasHighlights = highlights.length > 0;
+  const hasSpotlightOpenMicEvents = spotlightOpenMicEvents.length > 0;
 
   return (
     <>
@@ -802,6 +819,48 @@ export default async function HomePage() {
                   </div>
                 </article>
               </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Open Mic Spotlight - Admin-selected open mics below the blog */}
+      {hasSpotlightOpenMicEvents && (
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
+                  <span className="text-[var(--color-accent-primary)]">🎤</span> Open Mic Spotlight
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Featured open mics from the Denver songwriting scene.
+                </p>
+              </div>
+              <Link
+                href="/happenings?type=open_mic"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                See all open mics
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {spotlightOpenMicEvents.slice(0, 6).map((event: any) => (
+                <HappeningsCard
+                  key={event.id}
+                  event={event}
+                  occurrence={{
+                    date: event.event_date || today,
+                    isToday: event.event_date === today,
+                    isTomorrow: false,
+                    isConfident: true,
+                  }}
+                  todayKey={today}
+                />
+              ))}
             </div>
           </div>
         </section>

@@ -320,36 +320,9 @@ export async function PATCH(
     }
   }
 
-  // Phase 4.36: Require publish confirmation when transitioning from unpublished to published
-  const wasPublished = prevEvent?.is_published ?? false;
-  const willPublish = body.is_published === true;
-  const isNewPublish = willPublish && !wasPublished;
-
-  if (isNewPublish && body.host_publish_confirmed !== true) {
-    return NextResponse.json(
-      { error: "Publish confirmation required. Please confirm you're ready to publish." },
-      { status: 400 }
-    );
-  }
-
-  // Track publishing state changes
-  if (body.is_published === true) {
-    // Phase 4.73: Auto-confirm on ANY publish (first or republish)
-    // When transitioning from unpublished to published, always set last_verified_at
-    // Skip if admin explicitly set verify_action (their intent takes precedence)
-    if (!wasPublished && body.verify_action === undefined) {
-      updates.last_verified_at = now;
-      // verified_by remains null to indicate auto-confirmed (not admin-verified)
-    }
-    // Track first publish timestamp (only set once)
-    if (!prevEvent?.published_at) {
-      updates.published_at = now;
-    }
-    // Also set status to active when publishing
-    if (!updates.status) {
-      updates.status = "active";
-    }
-  }
+  // All events are always published - no publish confirmation needed
+  // Events are auto-published and auto-confirmed on creation
+  // This PATCH route only handles field edits, not publish state changes
 
   // Alias for backward compat with timeslot logic
   const currentEvent = prevEvent;
@@ -472,9 +445,10 @@ export async function PATCH(
   }
 
   // Phase 4.36: Send event updated notifications if major fields changed
-  // Skip if: first publish (no attendees yet), or cancellation (handled by DELETE)
+  // Skip if: event becoming cancelled (handled by DELETE handler)
+  // All events are always published now, so we just check for major changes on active events
   const statusBecomingCancelled = body.status === "cancelled" && prevEvent?.status !== "cancelled";
-  const shouldNotifyUpdate = hasMajorChange && wasPublished && !isNewPublish && !statusBecomingCancelled;
+  const shouldNotifyUpdate = hasMajorChange && prevEvent?.is_published && !statusBecomingCancelled;
 
   if (shouldNotifyUpdate && prevEvent) {
     // Build changes object comparing prev to new values

@@ -7,7 +7,6 @@ import TimeslotClaimsTable from "../_components/TimeslotClaimsTable";
 import CoHostManager from "../_components/CoHostManager";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import CancelEventButton from "./_components/CancelEventButton";
-import PublishButton from "./_components/PublishButton";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
@@ -173,10 +172,9 @@ export default async function EditEventPage({
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
         {/* Success Banner for newly created events */}
-        {/* Phase 4.73: Use event.is_published for current state, not stale URL params */}
-        {/* Phase 4.86: Pass nextOccurrenceDate for date-anchored public page links */}
+        {/* All events are now auto-published on creation */}
         {created === "true" && (
-          <CreatedSuccessBanner isDraft={!event.is_published} eventId={eventId} eventSlug={event.slug} nextOccurrenceDate={nextOccurrenceDate} />
+          <CreatedSuccessBanner eventId={eventId} eventSlug={event.slug} nextOccurrenceDate={nextOccurrenceDate} />
         )}
 
         {/* Header */}
@@ -214,14 +212,10 @@ export default async function EditEventPage({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Status badge - single badge showing overall state */}
+            {/* Status badge - all events are published by default */}
             {event.status === "cancelled" ? (
               <span className="px-3 py-1 rounded text-sm bg-red-100 text-red-700">
                 Cancelled
-              </span>
-            ) : !event.is_published ? (
-              <span className="px-3 py-1 rounded text-sm bg-amber-100 text-amber-700">
-                Draft
               </span>
             ) : (
               <span className="px-3 py-1 rounded text-sm bg-emerald-100 text-emerald-700">
@@ -229,34 +223,15 @@ export default async function EditEventPage({
               </span>
             )}
 
-            {/* Publish/Unpublish button */}
-            <PublishButton
-              eventId={eventId}
-              isPublished={event.is_published}
-              status={event.status}
-            />
-
-            {/* Phase 4.44c: Preview/View links based on event state */}
-            {/* Phase 4.86: Include ?date= param for occurrence-specific navigation */}
+            {/* View public page link */}
             {event.status === "active" && (
-              event.is_published ? (
-                <Link
-                  href={`/events/${event.slug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
-                  className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
-                  target="_blank"
-                >
-                  View Public Page →
-                </Link>
-              ) : (
-                <Link
-                  href={`/events/${event.slug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
-                  className="px-3 py-1 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] text-sm rounded border border-[var(--color-border-default)]"
-                  target="_blank"
-                  title="Preview how this event will appear when published (only visible to you)"
-                >
-                  Preview as visitor →
-                </Link>
-              )
+              <Link
+                href={`/events/${event.slug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
+                className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"
+                target="_blank"
+              >
+                View Public Page →
+              </Link>
             )}
           </div>
         </div>
@@ -282,7 +257,7 @@ export default async function EditEventPage({
             {/* Event Details */}
             <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
               <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Happening Details</h2>
-              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} isAdmin={isAdmin} />
+              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} />
             </section>
 
             {/* Co-hosts section - visible to all hosts */}

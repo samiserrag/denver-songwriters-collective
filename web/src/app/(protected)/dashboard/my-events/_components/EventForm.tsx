@@ -83,8 +83,6 @@ interface EventFormProps {
   canCreateDSC?: boolean; // Whether user can create DSC-branded events
   /** Phase 4.45b: Whether user can create new venues (admin only) */
   canCreateVenue?: boolean;
-  /** Whether user is admin (can verify events directly) */
-  isAdmin?: boolean;
   /** Occurrence mode: form edits a single occurrence, not the series */
   occurrenceMode?: boolean;
   /** The date_key for the occurrence being edited (YYYY-MM-DD) */
@@ -142,7 +140,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, isAdmin = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [] }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [] }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -156,15 +154,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
 
 
-  // Publish confirmation state - only needed when transitioning from unpublished to published
-  const [publishConfirmed, setPublishConfirmed] = useState(false);
-
   // Phase 4.44c: Advanced section collapse state (collapsed by default)
   const [showAdvanced, setShowAdvanced] = useState(false);
-
-  // Verification state - for admin/host to confirm event is real and happening
-  const [isVerified, setIsVerified] = useState(!!event?.last_verified_at);
-  const wasVerified = !!event?.last_verified_at;
 
   // Phase 5.06: Track original day_of_week for edit mode monthly series warning
   // This is used to show a persistent warning when the user changes the anchor date
@@ -181,7 +172,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     end_time: event?.end_time || "",
     recurrence_rule: event?.recurrence_rule || "",
     host_notes: event?.host_notes || "",
-    is_published: event?.is_published ?? false, // New events start as drafts
+    is_published: event?.is_published ?? true, // All events are published by default
     // Event date field (for edit mode of non-recurring events)
     event_date: event?.event_date || "",
     // Series start date / event date (used by schedule section date inputs)
@@ -470,18 +461,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       return;
     }
 
-    // Phase 4.36: Require publish confirmation when transitioning to published
-    // Skip in occurrence mode (occurrence publish state is per-date, not series)
-    const wasPublished = event?.is_published ?? false;
-    const willPublish = formData.is_published;
-    const isNewPublish = willPublish && !wasPublished;
-
-    if (!occurrenceMode && isNewPublish && !publishConfirmed) {
-      setError("Please confirm you're ready to publish before making this event visible.");
-      setLoading(false);
-      return;
-    }
-
     try {
       // ─── OCCURRENCE MODE: Submit as override patch ───
       if (occurrenceMode && occurrenceDateKey && occurrenceEventId) {
@@ -615,8 +594,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         cover_image_url: coverImageUrl,
         is_published: formData.is_published,
-        // Phase 4.36: Include publish confirmation flag when publishing
-        host_publish_confirmed: isNewPublish ? publishConfirmed : undefined,
         // Slot configuration
         has_timeslots: slotConfig.has_timeslots,
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
@@ -656,10 +633,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         custom_latitude: locationSelectionMode === "custom" && formData.custom_latitude ? parseFloat(formData.custom_latitude) : null,
         custom_longitude: locationSelectionMode === "custom" && formData.custom_longitude ? parseFloat(formData.custom_longitude) : null,
         location_notes: formData.location_notes.trim() || null,
-        // Admin verification (inline with PATCH, no separate API call)
-        ...(mode === "edit" && isAdmin && isVerified !== wasVerified
-          ? { verify_action: isVerified ? "verify" : "unverify" }
-          : {}),
       };
 
       const res = await fetch(url, {
@@ -2176,90 +2149,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           </div>
         )}
       </div>
-
-      {/* ============ SECTION 8: PUBLISH ============ */}
-      {/* Hidden in occurrence mode (publish is series-level) */}
-      {!occurrenceMode && <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
-        {/* Publish toggle */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
-              {formData.is_published ? "Published" : "Draft"}
-            </h3>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-              {formData.is_published
-                ? "This happening is visible to the public and accepting signups."
-                : "This happening is hidden from the public. Publish when ready."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const newPublished = !formData.is_published;
-              setFormData(prev => ({ ...prev, is_published: newPublished }));
-              // Reset confirmation when toggling off
-              if (!newPublished) {
-                setPublishConfirmed(false);
-              }
-            }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              formData.is_published
-                ? "bg-emerald-600"
-                : "bg-[var(--color-bg-secondary)]"
-            }`}
-            role="switch"
-            aria-checked={formData.is_published}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                formData.is_published ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Phase 4.36/4.37: Publish confirmation checkbox - only show when publishing a new/draft event */}
-        {formData.is_published && !(event?.is_published) && (
-          <label className="flex items-start gap-3 cursor-pointer p-3 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-            <input
-              type="checkbox"
-              checked={publishConfirmed}
-              onChange={(e) => setPublishConfirmed(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded border-[var(--color-border-default)] text-emerald-600 focus:ring-emerald-500"
-            />
-            <div>
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                Ready to publish
-              </span>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                This will make your happening visible to the community. You can unpublish at any time.
-              </p>
-            </div>
-          </label>
-        )}
-
-        {/* Verification checkbox - for admin only in edit mode */}
-        {mode === "edit" && isAdmin && formData.is_published && (
-          <label className="flex items-start gap-3 cursor-pointer p-3 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-            <input
-              type="checkbox"
-              checked={isVerified}
-              onChange={(e) => setIsVerified(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded border-[var(--color-border-default)] text-emerald-600 focus:ring-emerald-500"
-            />
-            <div>
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                ✓ Confirm this happening
-              </span>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                {wasVerified
-                  ? "This happening has been verified. Uncheck to mark as unconfirmed."
-                  : "Mark this happening as confirmed (verified) once you know it&apos;s real and happening."}
-              </p>
-            </div>
-          </label>
-        )}
-      </div>}
 
       {/* ============ LIVE PREVIEW SECTION ============ */}
       {/* Hidden in occurrence mode */}
