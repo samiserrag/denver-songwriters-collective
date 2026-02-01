@@ -563,6 +563,7 @@ export async function DELETE(
   }
 
   // Phase 4.42l: Hard delete for drafts only
+  // Note: RSVPs/claims guardrails removed - users were already notified when event was cancelled
   if (hardDelete) {
     // Only allow hard delete for unpublished (draft) events
     if (event.is_published) {
@@ -572,42 +573,7 @@ export async function DELETE(
       );
     }
 
-    // Check for RSVPs (shouldn't exist for drafts, but be safe)
-    const { count: rsvpCount } = await supabase
-      .from("event_rsvps")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId);
-
-    if (rsvpCount && rsvpCount > 0) {
-      return NextResponse.json(
-        { error: `Cannot delete: event has ${rsvpCount} RSVP${rsvpCount > 1 ? "s" : ""}` },
-        { status: 409 }
-      );
-    }
-
-    // Check for timeslot claims
-    const { data: eventTimeslots } = await supabase
-      .from("event_timeslots")
-      .select("id")
-      .eq("event_id", eventId);
-
-    const timeslotIds = (eventTimeslots || []).map((t) => t.id);
-
-    if (timeslotIds.length > 0) {
-      const { count: claimCount } = await supabase
-        .from("timeslot_claims")
-        .select("id", { count: "exact", head: true })
-        .in("timeslot_id", timeslotIds);
-
-      if (claimCount && claimCount > 0) {
-        return NextResponse.json(
-          { error: `Cannot delete: event has ${claimCount} timeslot claim${claimCount > 1 ? "s" : ""}` },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Safe to hard delete
+    // Hard delete - database cascades will handle RSVPs, timeslots, claims, etc.
     const { error: deleteError } = await supabase
       .from("events")
       .delete()
