@@ -939,8 +939,6 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             <QrShareBlock
               title="Share This Profile"
               url={`${siteUrl}/songwriters/${songwriter.slug || songwriter.id}`}
-              imageSrc={songwriter.avatar_url}
-              imageAlt={`${songwriter.full_name}'s profile photo`}
               label="Scan to view profile"
             />
           </div>

@@ -1467,8 +1467,6 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           <QrShareBlock
             title="Share This Happening"
             url={`${siteUrl}/events/${event.slug || event.id}${effectiveSelectedDate ? `?date=${effectiveSelectedDate}` : ""}`}
-            imageSrc={displayCoverImage}
-            imageAlt={`${event.title} cover`}
             label="Scan to view happening details"
           />
 

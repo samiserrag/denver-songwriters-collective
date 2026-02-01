@@ -435,8 +435,6 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
             <QrShareBlock
               title="Share This Venue"
               url={`${siteUrl}/venues/${venue.slug || id}`}
-              imageSrc={venue.cover_image_url}
-              imageAlt={`${venue.name} cover`}
               label="Scan to view venue details"
             />
           </div>

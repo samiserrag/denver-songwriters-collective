@@ -657,11 +657,79 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### Weekly Happenings Digest Email (GTM-1, January 2026) — IMPLEMENTED — AWAITING DEPLOY
+### QR Share Block Simplification (January 2026) — RESOLVED
+
+**Goal:** Remove cropped cover image from QR Share Block, showing only QR code + URL.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3381, build success).
+
+**Problem:** The QrShareBlock component displayed a cover image alongside the QR code, but:
+1. Cover images were heavily cropped (fixed `w-48 h-32` container)
+2. QR code and URL were getting cut off on some viewports
+3. The cover image didn't add value — it was already shown elsewhere on the page
+
+**Solution:** Removed cover image feature entirely. Component now shows only:
+- Title (e.g., "SHARE THIS HAPPENING")
+- Centered QR code
+- URL text below QR
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/shared/QrShareBlock.tsx` | Removed `imageSrc` and `imageAlt` props, simplified layout |
+| `app/events/[id]/page.tsx` | Removed `imageSrc` and `imageAlt` props from usage |
+| `app/songwriters/[id]/page.tsx` | Removed `imageSrc` and `imageAlt` props from usage |
+| `app/venues/[id]/page.tsx` | Removed `imageSrc` and `imageAlt` props from usage |
+| `__tests__/phase4-101-qr-share-block.test.tsx` | Removed cover image tests, updated layout test |
+
+---
+
+### Publish/Draft Flow Re-implementation (January 2026) — RESOLVED
+
+**Goal:** Re-implement publish/draft flow for events as a stop-gate between creation and public visibility.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3391, build success).
+
+**Problem:** Events were auto-published on creation with no draft state. Hosts needed a way to:
+- Create events without immediately making them public
+- Review and edit before publishing
+- Easily unpublish/revert to draft state
+
+**Solution:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Default draft state | Events start with `is_published: false` by default |
+| PublishButton in header | Prominent publish/unpublish toggle in edit page header |
+| Status badges | Draft (amber), Live (emerald), Cancelled (red) badges |
+| Conditional View link | "View Public Page" only shows when published |
+| Auto-verification | `last_verified_at` set when transitioning to published |
+| CreatedSuccessBanner | Draft-specific messaging with publish instructions |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Default `is_published: false` |
+| `app/api/my-events/route.ts` | Respect `body.is_published`, conditional `published_at` |
+| `app/api/my-events/[id]/route.ts` | Detect publish transitions, auto-verify on publish |
+| `dashboard/my-events/[id]/page.tsx` | PublishButton, status badges, conditional View link |
+| `dashboard/my-events/[id]/_components/CreatedSuccessBanner.tsx` | Draft/published conditional messaging |
+
+**Auto-Verification Invariant:**
+- `last_verified_at` is set when `is_published` transitions from `false` to `true`
+- Both first publish and republish trigger auto-verification
+- Explicit `verify_action` in body takes precedence (admin intent preserved)
+- PublishButton already had correct `last_verified_at` logic
+
+---
+
+### Weekly Happenings Digest Email (GTM-1, January 2026) — DEPLOYED
 
 **Goal:** Expand Weekly Open Mics Digest into Weekly Happenings Digest covering ALL 9 event types.
 
-**Status:** Implementation complete. Awaiting quality gates verification and deploy.
+**Status:** Deployed to main. Ready to enable via `ENABLE_WEEKLY_HAPPENINGS_DIGEST=true`.
 
 **Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
 

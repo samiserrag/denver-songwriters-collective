@@ -5,6 +5,9 @@
  * - QrShareBlock component rendering
  * - Props handling
  * - Integration points on event/venue/profile pages
+ *
+ * NOTE: Cover image feature was removed to simplify the component.
+ * QR code and URL are now the only elements displayed.
  */
 
 import { describe, it, expect } from "vitest";
@@ -28,34 +31,6 @@ describe("Phase 4.101 — QR Share Block", () => {
       expect(screen.getByText(/denversongwriterscollective\.org/)).toBeInTheDocument();
     });
 
-    it("renders cover image when imageSrc provided", () => {
-      render(
-        <QrShareBlock
-          title="Share"
-          url="https://example.com"
-          imageSrc="https://example.com/cover.jpg"
-          imageAlt="Event cover"
-        />
-      );
-
-      const img = screen.getByAltText("Event cover");
-      expect(img).toBeInTheDocument();
-    });
-
-    it("works without imageSrc (image is optional)", () => {
-      render(
-        <QrShareBlock
-          title="Share"
-          url="https://example.com"
-        />
-      );
-
-      // Should not have any <img> element (only SVG for QR)
-      expect(document.querySelector("img")).not.toBeInTheDocument();
-      // But should still have QR code
-      expect(document.querySelector("svg")).toBeInTheDocument();
-    });
-
     it("renders label when provided", () => {
       render(
         <QrShareBlock
@@ -66,18 +41,6 @@ describe("Phase 4.101 — QR Share Block", () => {
       );
 
       expect(screen.getByText("Scan to view event")).toBeInTheDocument();
-    });
-
-    it("uses default imageAlt when not provided", () => {
-      render(
-        <QrShareBlock
-          title="Share"
-          url="https://example.com"
-          imageSrc="https://example.com/cover.jpg"
-        />
-      );
-
-      expect(screen.getByAltText("Cover image")).toBeInTheDocument();
     });
 
     it("uses custom qrSize when provided", () => {
@@ -107,42 +70,17 @@ describe("Phase 4.101 — QR Share Block", () => {
       expect(svg).toHaveAttribute("height", "160");
     });
 
-    it("has responsive layout classes", () => {
+    it("renders centered layout", () => {
       const { container } = render(
         <QrShareBlock
           title="Share"
           url="https://example.com"
-          imageSrc="https://example.com/cover.jpg"
         />
       );
 
-      // Should have flex-col md:flex-row for responsive layout
-      const flexContainer = container.querySelector(".flex-col.md\\:flex-row");
+      // Should have flex-col items-center for centered layout
+      const flexContainer = container.querySelector(".flex-col.items-center");
       expect(flexContainer).toBeInTheDocument();
-    });
-  });
-
-  describe("Cover image sources", () => {
-    it("documents event cover image source: events.cover_image_url", () => {
-      // Events have cover_image_url field
-      const eventCoverSource = "events.cover_image_url";
-      expect(eventCoverSource).toBe("events.cover_image_url");
-    });
-
-    it("documents event override cover: override_patch.cover_image_url", () => {
-      // Per-occurrence overrides can have different covers
-      const overrideCoverSource = "override_patch.cover_image_url";
-      expect(overrideCoverSource).toBe("override_patch.cover_image_url");
-    });
-
-    it("documents venue cover image source: venues.cover_image_url", () => {
-      const venueCoverSource = "venues.cover_image_url";
-      expect(venueCoverSource).toBe("venues.cover_image_url");
-    });
-
-    it("documents profile avatar source: profiles.avatar_url", () => {
-      const profileAvatarSource = "profiles.avatar_url";
-      expect(profileAvatarSource).toBe("profiles.avatar_url");
     });
   });
 
@@ -203,10 +141,9 @@ describe("Phase 4.101 — QR Share Block", () => {
       const svg = document.querySelector("svg");
       expect(svg).toBeInTheDocument();
 
-      // Should not have any img elements for the QR code itself
-      // (only the optional cover image)
+      // Should not have any img elements (no cover image feature)
       const imgs = document.querySelectorAll("img");
-      expect(imgs.length).toBe(0); // No cover image in this test
+      expect(imgs.length).toBe(0);
     });
   });
 
@@ -257,56 +194,6 @@ describe("Phase 4.101 — QR Share Block", () => {
         "aria-label",
         "QR code linking to https://example.com/event/123"
       );
-    });
-  });
-
-  describe("Broken image fallback (Phase 4.101 micro-fixes)", () => {
-    it("cover image has onError handler for graceful degradation", () => {
-      render(
-        <QrShareBlock
-          title="Share"
-          url="https://example.com"
-          imageSrc="https://example.com/broken-image.jpg"
-          imageAlt="Event cover"
-        />
-      );
-
-      const img = screen.getByAltText("Event cover") as HTMLImageElement;
-      expect(img).toBeInTheDocument();
-      // The onError handler is attached - verify the img element exists and has our expected class
-      expect(img).toHaveClass("object-cover");
-    });
-
-    it("cover image container has background for fallback display", () => {
-      const { container } = render(
-        <QrShareBlock
-          title="Share"
-          url="https://example.com"
-          imageSrc="https://example.com/cover.jpg"
-        />
-      );
-
-      // The container has bg-tertiary as placeholder when image fails
-      const imageContainer = container.querySelector(
-        ".bg-\\[var\\(--color-bg-tertiary\\)\\]"
-      );
-      expect(imageContainer).toBeInTheDocument();
-    });
-
-    it("uses native img element (not Next Image) for reliable onError handling", () => {
-      render(
-        <QrShareBlock
-          title="Share"
-          url="https://example.com"
-          imageSrc="https://example.com/cover.jpg"
-        />
-      );
-
-      const img = screen.getByAltText("Cover image");
-      // Native img elements have tagName "IMG"
-      expect(img.tagName).toBe("IMG");
-      // Should have inline onError handler capability
-      expect(img).toHaveAttribute("src", "https://example.com/cover.jpg");
     });
   });
 });
