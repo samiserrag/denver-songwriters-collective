@@ -652,6 +652,50 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Open Mic Spotlight + EventForm Simplifications (January 2026) — RESOLVED
+
+**Goal:** Add featured Open Mic Spotlight section on homepage and simplify event creation flow.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3326, build success).
+
+**Homepage Open Mic Spotlight:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Spotlight section | Displays admin-selected open mics using `is_spotlight` flag |
+| Position | Below blog section, above footer |
+| Branding | 🎤 Open Mic Spotlight header with "See all open mics" link |
+| Layout | 3-column grid with HappeningCard components |
+| Limit | Up to 6 spotlighted open mics |
+
+**EventForm Simplifications:**
+
+| Change | Before | After |
+|--------|--------|-------|
+| `isAdmin` prop | Required for inline verification | Removed |
+| Publish confirmation | Checkbox required before publish | Removed |
+| Default `is_published` | `false` (drafts) | `true` (publish by default) |
+| Section 8 (Publish) | Large publish toggle section | Removed |
+| `verify_action` | Sent in PATCH body | Removed from form |
+
+**Design Rationale:**
+- Events now publish directly without extra confirmation friction
+- Verification handled separately by admins via existing admin tools
+- Simplifies user flow for community event creation
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Added Open Mic Spotlight section |
+| `EventForm.tsx` | Removed isAdmin prop, publish confirmation, verification logic, Section 8 |
+| `api/my-events/route.ts` | Simplified event creation |
+| `api/my-events/[id]/route.ts` | Simplified event update |
+| `my-events/[id]/page.tsx` | Removed isAdmin prop pass-through |
+| `CreatedSuccessBanner.tsx` | Simplified success messaging |
+
+---
+
 ### Weekly Open Mics Digest Email (Phase 1.5, January 2026) — RESOLVED
 
 **Goal:** Send personalized weekly email to members listing upcoming open mics in the Denver area.
