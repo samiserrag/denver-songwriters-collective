@@ -657,6 +657,47 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Email URL Fix — SITE_URL Centralization (January 2026) — RESOLVED
+
+**Goal:** Fix broken email links caused by `undefined` in notification URLs.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3381, build success).
+
+**Problem:** Email notification links (e.g., "View Attendees" button in RSVP host notifications) were generating malformed URLs like `undefined/events/...` instead of valid URLs.
+
+**Root Cause:** `process.env.NEXT_PUBLIC_SITE_URL` evaluates to `undefined` in server-side API routes. The `NEXT_PUBLIC_` prefix makes the variable available client-side, but without special handling it's not available server-side.
+
+**Solution:** Replace all instances of `process.env.NEXT_PUBLIC_SITE_URL` with the centralized `SITE_URL` constant from `lib/email/render.ts`, which has the proper fallback chain:
+```typescript
+const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/events/[id]/rsvp/route.ts` | Use SITE_URL for eventUrl in host notifications |
+| `app/api/events/[id]/comments/route.ts` | Use SITE_URL for comment notification URLs |
+| `app/api/guest/event-comment/verify-code/route.ts` | Use SITE_URL for eventUrl |
+| `app/api/guest/profile-comment/verify-code/route.ts` | Use SITE_URL for contentUrl (2 occurrences) |
+| `app/api/guest/timeslot-claim/verify-code/route.ts` | Use SITE_URL for cancelUrl and eventUrl (3 occurrences) |
+| `app/api/guest/gallery-photo-comment/verify-code/route.ts` | Use SITE_URL for photoUrl (2 occurrences) |
+| `app/api/guest/gallery-album-comment/verify-code/route.ts` | Use SITE_URL for albumUrl (2 occurrences) |
+| `app/api/guest/blog-comment/verify-code/route.ts` | Use SITE_URL for postUrl (2 occurrences) |
+| `app/api/guest/rsvp/verify-code/route.ts` | Use SITE_URL for eventUrl in host notifications |
+
+**Pattern to Follow:**
+When constructing URLs for email notifications in API routes, always use:
+```typescript
+import { SITE_URL } from "@/lib/email/render";
+// ...
+const fullUrl = `${SITE_URL}${relativePath}`;
+```
+
+Never use `process.env.NEXT_PUBLIC_SITE_URL` directly in server-side code.
+
+---
+
 ### QR Share Block Simplification (January 2026) — RESOLVED
 
 **Goal:** Remove cropped cover image from QR Share Block, showing only QR code + URL.
