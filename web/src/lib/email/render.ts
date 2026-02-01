@@ -93,8 +93,8 @@ export function wrapEmailHtml(content: string): string {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: ${EMAIL_COLORS.bgCard}; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <!-- Header -->
           <tr>
-            <td style="background-color: ${EMAIL_COLORS.headerBg}; padding: 24px; text-align: center;">
-              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png" alt="Denver Songwriters Collective" style="max-width: 100%; width: 512px; height: auto;" />
+            <td style="background-color: ${EMAIL_COLORS.headerBg}; padding: 0; text-align: center;">
+              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png" alt="Denver Songwriters Collective" style="display: block; width: 100%; max-width: 560px; height: auto;" />
             </td>
           </tr>
 
