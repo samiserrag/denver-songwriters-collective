@@ -30,6 +30,10 @@ interface RSVPUser {
   status: string;
   waitlist_position: number | null;
   created_at: string;
+  /** Phase 5.12: Guest name for non-member RSVPs */
+  guest_name: string | null;
+  /** Phase 5.12: Guest email for non-member RSVPs */
+  guest_email: string | null;
   user: {
     id: string;
     full_name: string | null;
@@ -139,18 +143,30 @@ export default function RSVPList({
         <div>
           <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Confirmed</h3>
           <ul className="space-y-2">
-            {data.confirmed.map((rsvp) => (
-              <li key={rsvp.id} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-900/50 text-green-400 rounded-full flex items-center justify-center text-sm">
-                  {rsvp.user?.avatar_url ? (
-                    <Image src={rsvp.user.avatar_url} alt="" width={32} height={32} className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    rsvp.user?.full_name?.[0]?.toUpperCase() || "?"
-                  )}
-                </div>
-                <span className="text-[var(--color-text-primary)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>
-              </li>
-            ))}
+            {data.confirmed.map((rsvp) => {
+              // Phase 5.12: Support both member and guest RSVPs
+              const isGuest = !rsvp.user && rsvp.guest_name;
+              const displayName = rsvp.user?.full_name || rsvp.guest_name || "Anonymous";
+              const initial = displayName[0]?.toUpperCase() || "?";
+
+              return (
+                <li key={rsvp.id} className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-900/50 text-green-400 rounded-full flex items-center justify-center text-sm">
+                    {rsvp.user?.avatar_url ? (
+                      <Image src={rsvp.user.avatar_url} alt="" width={32} height={32} className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      initial
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--color-text-primary)] text-sm">{displayName}</span>
+                    {isGuest && (
+                      <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -160,14 +176,25 @@ export default function RSVPList({
         <div>
           <h3 className="text-sm font-medium text-[var(--color-text-accent)] mb-2">Waitlist</h3>
           <ul className="space-y-2">
-            {data.waitlist.map((rsvp, index) => (
-              <li key={rsvp.id} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm font-medium">
-                  {index + 1}
-                </div>
-                <span className="text-[var(--color-text-secondary)] text-sm">{rsvp.user?.full_name || "Anonymous"}</span>
-              </li>
-            ))}
+            {data.waitlist.map((rsvp, index) => {
+              // Phase 5.12: Support both member and guest RSVPs
+              const isGuest = !rsvp.user && rsvp.guest_name;
+              const displayName = rsvp.user?.full_name || rsvp.guest_name || "Anonymous";
+
+              return (
+                <li key={rsvp.id} className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm font-medium">
+                    {index + 1}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--color-text-secondary)] text-sm">{displayName}</span>
+                    {isGuest && (
+                      <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
