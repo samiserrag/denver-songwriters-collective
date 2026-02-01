@@ -59,8 +59,8 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Fetch profiles for all RSVP user_ids
-  const rsvpUserIds = rsvps?.map(r => r.user_id) || [];
+  // Fetch profiles for all RSVP user_ids (filter out nulls from guest RSVPs)
+  const rsvpUserIds = rsvps?.map(r => r.user_id).filter((id): id is string => id !== null) || [];
   let profileMap = new Map<string, { id: string; full_name: string | null; avatar_url: string | null }>();
 
   if (rsvpUserIds.length > 0) {

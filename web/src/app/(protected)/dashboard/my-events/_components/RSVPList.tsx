@@ -170,10 +170,21 @@ export default function RSVPList({
                       initial
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[var(--color-text-primary)] text-sm">{displayName}</span>
-                    {isGuest && (
-                      <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--color-text-primary)] text-sm">{displayName}</span>
+                      {isGuest && (
+                        <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+                      )}
+                    </div>
+                    {/* Show guest email for hosts to contact attendees */}
+                    {isGuest && rsvp.guest_email && (
+                      <a
+                        href={`mailto:${rsvp.guest_email}`}
+                        className="text-xs text-[var(--color-text-accent)] hover:underline"
+                      >
+                        {rsvp.guest_email}
+                      </a>
                     )}
                   </div>
                 </li>
@@ -198,10 +209,21 @@ export default function RSVPList({
                   <div className="w-8 h-8 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] rounded-full flex items-center justify-center text-sm font-medium">
                     {index + 1}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[var(--color-text-secondary)] text-sm">{displayName}</span>
-                    {isGuest && (
-                      <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--color-text-secondary)] text-sm">{displayName}</span>
+                      {isGuest && (
+                        <span className="text-xs text-[var(--color-text-tertiary)]">(guest)</span>
+                      )}
+                    </div>
+                    {/* Show guest email for hosts to contact attendees */}
+                    {isGuest && rsvp.guest_email && (
+                      <a
+                        href={`mailto:${rsvp.guest_email}`}
+                        className="text-xs text-[var(--color-text-accent)] hover:underline"
+                      >
+                        {rsvp.guest_email}
+                      </a>
                     )}
                   </div>
                 </li>
