@@ -209,15 +209,18 @@ export function formatDateKeyShort(dateKey: string): string {
 }
 
 /**
- * Format a date key for email display in MM-DD-YYYY format.
- * E.g., "2026-01-18" -> "01-18-2026"
+ * Format a date key for email display with day of week.
+ * E.g., "2026-01-18" -> "Saturday, January 18, 2026"
  */
 export function formatDateKeyForEmail(dateKey: string): string {
   const date = new Date(`${dateKey}T12:00:00Z`);
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  const year = date.getUTCFullYear();
-  return `${month}-${day}-${year}`;
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "America/Denver",
+  });
 }
 
 /**
