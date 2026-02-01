@@ -70,6 +70,7 @@ export function DatePillRow({
           <Link
             key={date.dateKey}
             href={date.href}
+            scroll={false}
             className={cn(
               "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
               isSelected

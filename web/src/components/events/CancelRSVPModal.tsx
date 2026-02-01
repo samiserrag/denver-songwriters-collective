@@ -156,7 +156,10 @@ export function CancelRSVPModal({
                 View My RSVPs
               </a>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  // Force reload to reflect the cancelled state
+                  window.location.reload();
+                }}
                 className="px-4 py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
               >
                 Stay on this page

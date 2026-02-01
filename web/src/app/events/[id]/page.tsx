@@ -1291,6 +1291,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                       <Link
                         key={occ.dateKey}
                         href={`/events/${eventSlug}?date=${occ.dateKey}`}
+                        scroll={false}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                           isSelected
                             ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
