@@ -24,6 +24,8 @@ export interface EventUpdatedEmailParams {
   eventId: string;
   /** Prefer slug for SEO-friendly URLs, falls back to eventId */
   eventSlug?: string | null;
+  /** Phase ABC6: date_key for per-occurrence RSVP scoping */
+  dateKey?: string;
   changes: {
     date?: { old: string; new: string };
     time?: { old: string; new: string };
@@ -47,6 +49,7 @@ export function getEventUpdatedEmail(params: EventUpdatedEmailParams): {
     eventTitle,
     eventId,
     eventSlug,
+    dateKey,
     changes,
     eventDate,
     eventTime,
@@ -62,8 +65,10 @@ export function getEventUpdatedEmail(params: EventUpdatedEmailParams): {
 
   // Prefer slug for SEO-friendly URLs, fallback to id
   const eventIdentifier = eventSlug || eventId;
-  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
-  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
+  // Phase ABC6: Include date_key in URLs for per-occurrence RSVP scoping
+  const dateParam = dateKey ? `?date=${dateKey}` : "";
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam}`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam ? dateParam + "&" : "?"}cancel=true`;
 
   const subject = `Update: ${eventTitle} details have changed — The Denver Songwriters Collective`;
 

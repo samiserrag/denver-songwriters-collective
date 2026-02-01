@@ -287,7 +287,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 1.0):** Lint warnings = 0. All tests passing (3033). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (Phase 5.14):** Lint warnings = 0. All tests passing (3438). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -654,6 +654,113 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Tabbed Event Management Layout (Phase 5.14, January 2026) — RESOLVED
+
+**Goal:** Reorganize the event management dashboard with a tabbed layout separating Details, Attendees, Lineup, and Settings into distinct tabs for improved UX.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3438, build success).
+
+**Problem:** The event management page was a long scrolling form mixing event details with RSVP management, performer lineup, and settings. Hosts had difficulty finding specific management features.
+
+**Solution:** Implemented a tabbed layout that separates concerns:
+
+| Tab | Purpose |
+|-----|---------|
+| Details | Event form editing (title, schedule, location, etc.) |
+| Attendees | RSVPs with profile cards and per-occurrence filtering |
+| Lineup | Performer signups with per-occurrence filtering (only when `has_timeslots=true`) |
+| Settings | Co-hosts, invites, danger zone actions |
+
+**Key Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Tab visibility | Lineup tab only shows when `has_timeslots=true` |
+| Badge counts | Attendees and Lineup tabs show count badges |
+| Date selector | For recurring events, syncs selected date across tabs |
+| Per-occurrence filtering | RSVPs and claims filter by `date_key` for recurring events |
+| Guest display | Guest RSVPs/claims show `guest_name` with "(guest)" label |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `dashboard/my-events/[id]/_components/EventManagementTabs.tsx` | Tab navigation with conditional Lineup visibility |
+| `dashboard/my-events/[id]/_components/EventManagementClient.tsx` | Client-side tab state management |
+| `dashboard/my-events/[id]/_components/AttendeesTab.tsx` | RSVPs with date selector + guest display |
+| `dashboard/my-events/[id]/_components/LineupTab.tsx` | Performer claims with date selector |
+| `dashboard/my-events/[id]/_components/SettingsTab.tsx` | Co-hosts, invites, danger zone |
+| `__tests__/event-management-tabs.test.ts` | 30 tests for tab behavior |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/[id]/page.tsx` | Integrated tabbed layout, passes props to tabs |
+
+**Invariants (Tested):**
+1. Tab navigation preserves the selected date for recurring events
+2. Attendees and Lineup tabs filter by `date_key` for recurring events
+3. Lineup tab only shows when `has_timeslots=true`
+4. Guest RSVPs display `guest_name` and `guest_email` (not "Anonymous")
+5. Date selector syncs across tabs for recurring events
+
+---
+
+### Email Cancel Link Per-Occurrence Fix (Phase ABC6 Continuation, January 2026) — RESOLVED
+
+**Goal:** Fix RSVP cancel links in emails missing the `date_key` parameter for per-occurrence scoping, and fix the CancelRSVPModal causing a loop when cancel succeeded.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3438, build success).
+
+**Problem 1: Cancel URLs Missing date_key**
+
+Cancel links in email templates were not including the `date_key` parameter. When users clicked cancel links for recurring event RSVPs, the cancel action could fail or target the wrong occurrence.
+
+**Problem 2: Cancel Modal Loop Bug**
+
+After successfully cancelling an RSVP, the CancelRSVPModal did not clear the `?cancel=true` URL parameter. On page refresh, the modal would try to reopen, causing a "No RSVP found" error loop.
+
+**Problem 3: Guest Timeslot Cancel URL Wrong Format**
+
+Guest timeslot claim cancel URLs were using raw verification IDs instead of proper action tokens, which could fail validation.
+
+**Solutions:**
+
+| Fix | Implementation |
+|-----|----------------|
+| Email cancel URLs | Added `dateKey?: string` param to templates, generates `?date={dateKey}&cancel=true` format |
+| URL cleanup | CancelRSVPModal now uses `window.history.replaceState()` to remove `?cancel=true` after success |
+| Guest cancel URLs | Changed to use `createActionToken()` for proper JWT-based action tokens |
+| RSVPSection | Now passes `dateKey` prop to CancelRSVPModal |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/templates/eventUpdated.ts` | Added `dateKey` param, generates cancel URL with date |
+| `lib/email/templates/eventReminder.ts` | Added `dateKey` param, generates cancel URL with date |
+| `lib/email/templates/occurrenceModifiedHost.ts` | Added `dateKey` param, generates cancel URL with date |
+| `components/events/CancelRSVPModal.tsx` | Added `dateKey` prop, URL cleanup after success |
+| `components/events/RSVPSection.tsx` | Passes `dateKey` to CancelRSVPModal |
+| `api/guest/timeslot-claim/verify-code/route.ts` | Fixed cancel URL to use `createActionToken()` |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/email-cancel-links.test.ts` | 15 tests for email cancel URL invariants |
+
+**Cancel URL Format Invariants (Tested):**
+1. Cancel URLs MUST include `date_key` when provided for per-occurrence scoping
+2. Cancel URLs MUST use the pattern: `?date={dateKey}&cancel=true` (date before cancel)
+3. Guest cancel URLs MUST use action tokens (not raw verification IDs)
+4. CancelRSVPModal MUST clear `?cancel=true` from URL after successful cancel
+
+**Test Coverage:** 45 new tests total (15 email + 30 tabs).
 
 ---
 

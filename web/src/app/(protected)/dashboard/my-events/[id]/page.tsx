@@ -2,10 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import EventForm from "../_components/EventForm";
-import CoHostManager from "../_components/CoHostManager";
-import SidebarManagementPanels from "./_components/SidebarManagementPanels";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
-import CancelEventButton from "./_components/CancelEventButton";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
@@ -13,6 +10,7 @@ import { computeNextOccurrence, expandOccurrencesForEvent } from "@/lib/events/n
 import EventInviteSection from "./_components/EventInviteSection";
 import LineupControlSection from "./_components/LineupControlSection";
 import PublishButton from "./_components/PublishButton";
+import EventManagementClient from "./_components/EventManagementClient";
 
 export const dynamic = "force-dynamic";
 
@@ -177,9 +175,12 @@ export default async function EditEventPage({
     .in("status", ["confirmed", "performed", "waitlist"]);
   const hasActiveClaims = (activeClaimCount ?? 0) > 0;
 
+  // Determine user's role for the client component
+  const currentUserRole: "host" | "cohost" = userHost?.role === "host" ? "host" : "cohost";
+
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Success Banner for newly created events */}
         {/* Events start as drafts; banner tells user to publish when ready */}
         {created === "true" && (
@@ -261,11 +262,47 @@ export default async function EditEventPage({
           </div>
         </div>
 
-        {/* Tabs / Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Series Editing Notice - Phase 4.22.1, updated 4.42k C3 */}
+        {/* Phase 5.14: Tabbed Layout */}
+        <EventManagementClient
+          eventId={eventId}
+          eventSlug={event.slug}
+          eventTitle={event.title}
+          eventStatus={event.status}
+          capacity={event.capacity}
+          isRecurring={event.is_recurring ?? false}
+          availableDates={availableDates}
+          initialDateKey={nextOccurrenceDate ?? undefined}
+          hasTimeslots={hasTimeslots}
+          hasActiveClaims={hasActiveClaims}
+          hosts={hostsWithProfiles}
+          currentUserId={session.user.id}
+          currentUserRole={currentUserRole}
+          isPrimaryHost={isPrimaryHost}
+          isAdmin={isAdmin}
+          isEventOwner={isEventOwner}
+          DetailsContent={
+            <EventForm
+              mode="edit"
+              venues={venues ?? []}
+              event={event}
+              canCreateDSC={canCreateDSC}
+              canCreateVenue={isAdmin}
+              hasActiveClaims={hasActiveClaims}
+            />
+          }
+          EventInviteSection={
+            <EventInviteSection eventId={eventId} eventTitle={event.title} />
+          }
+          LineupControlSection={
+            <LineupControlSection
+              eventId={eventId}
+              eventSlug={event.slug}
+              isRecurring={event.is_recurring ?? false}
+              availableDates={availableDates}
+              nextOccurrenceDate={nextOccurrenceDate}
+            />
+          }
+          SeriesEditingNotice={
             <SeriesEditingNotice
               event={{
                 id: event.id,
@@ -278,68 +315,8 @@ export default async function EditEventPage({
               showOverrideLink={isPrimaryHost || isAdmin}
               seriesSiblings={seriesSiblings}
             />
-
-            {/* Event Details */}
-            <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Happening Details</h2>
-              <EventForm mode="edit" venues={venues ?? []} event={event} canCreateDSC={canCreateDSC} canCreateVenue={isAdmin} hasActiveClaims={hasActiveClaims} />
-            </section>
-
-            {/* Co-hosts section - visible to all hosts */}
-            {userHost && (
-              <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Co-hosts</h2>
-                {/* All hosts (primary and cohosts) can manage co-hosts - they're equal partners */}
-                <CoHostManager
-                  eventId={eventId}
-                  eventTitle={event.title}
-                  hosts={hostsWithProfiles}
-                  currentUserId={session.user.id}
-                  currentUserRole={userHost.role as "host" | "cohost"}
-                  isSoleHost={hostsWithProfiles.filter(h => h.invitation_status === "accepted").length === 1}
-                />
-              </section>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Phase 4.99: Lineup Control Section - visible to hosts/cohosts/admins */}
-            {hasTimeslots && (
-              <LineupControlSection
-                eventId={eventId}
-                eventSlug={event.slug}
-                isRecurring={event.is_recurring ?? false}
-                availableDates={availableDates}
-                nextOccurrenceDate={nextOccurrenceDate}
-              />
-            )}
-
-            {/* Phase 5.13: Unified management panels with shared occurrence selector */}
-            <SidebarManagementPanels
-              eventId={eventId}
-              capacity={event.capacity}
-              isRecurring={event.is_recurring ?? false}
-              availableDates={availableDates}
-              initialDateKey={nextOccurrenceDate ?? undefined}
-              hasTimeslots={hasTimeslots}
-              hasActiveClaims={hasActiveClaims}
-            />
-
-            {/* Invite Links - Phase 4.94: Only visible to admins and primary hosts */}
-            {(isAdmin || isEventOwner) && (
-              <EventInviteSection eventId={eventId} eventTitle={event.title} />
-            )}
-
-            {/* Danger Zone */}
-            {isPrimaryHost && event.status === "active" && (
-              <section className="p-6 bg-red-100 dark:bg-red-950/30 border border-red-300 dark:border-red-900/50 rounded-lg">
-                <h2 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-4">Danger Zone</h2>
-                <CancelEventButton eventId={eventId} />
-              </section>
-            )}
-          </div>
-        </div>
+          }
+        />
       </div>
     </main>
   );

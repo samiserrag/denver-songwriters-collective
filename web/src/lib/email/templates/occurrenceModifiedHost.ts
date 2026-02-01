@@ -28,6 +28,8 @@ export interface OccurrenceModifiedHostEmailParams {
   eventId: string;
   /** Prefer slug for SEO-friendly URLs, falls back to eventId */
   eventSlug?: string | null;
+  /** Phase ABC6: date_key for per-occurrence RSVP scoping (typically same as occurrenceDate in YYYY-MM-DD format) */
+  dateKey?: string;
   changes: {
     time?: { old: string; new: string };
   };
@@ -41,7 +43,7 @@ export function getOccurrenceModifiedHostEmail(params: OccurrenceModifiedHostEma
   html: string;
   text: string;
 } {
-  const { userName, eventTitle, occurrenceDate, eventId, eventSlug, changes, newTime, venueName, notes } = params;
+  const { userName, eventTitle, occurrenceDate, eventId, eventSlug, dateKey, changes, newTime, venueName, notes } = params;
 
   const safeTitle = escapeHtml(eventTitle);
   const safeDate = escapeHtml(occurrenceDate);
@@ -51,8 +53,10 @@ export function getOccurrenceModifiedHostEmail(params: OccurrenceModifiedHostEma
 
   // Prefer slug for SEO-friendly URLs, fallback to id
   const eventIdentifier = eventSlug || eventId;
-  const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
-  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}?cancel=true`;
+  // Phase ABC6: Include date_key in URLs for per-occurrence RSVP scoping
+  const dateParam = dateKey ? `?date=${dateKey}` : "";
+  const eventUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam}`;
+  const cancelUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam ? dateParam + "&" : "?"}cancel=true`;
 
   const subject = `Update: ${eventTitle} on ${occurrenceDate} — The Denver Songwriters Collective`;
 

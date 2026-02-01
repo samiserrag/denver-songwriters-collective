@@ -274,6 +274,7 @@ export function RSVPSection({
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onSuccess={handleCancelSuccess}
+        dateKey={dateKey}
       />
     </section>
   );

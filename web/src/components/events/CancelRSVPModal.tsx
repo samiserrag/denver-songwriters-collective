@@ -9,6 +9,8 @@ interface CancelRSVPModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Phase ABC6: date_key for per-occurrence RSVP scoping */
+  dateKey?: string;
 }
 
 export function CancelRSVPModal({
@@ -17,6 +19,7 @@ export function CancelRSVPModal({
   isOpen,
   onClose,
   onSuccess,
+  dateKey,
 }: CancelRSVPModalProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -70,7 +73,11 @@ export function CancelRSVPModal({
     setError("");
 
     try {
-      const res = await fetch(`/api/events/${eventId}/rsvp`, {
+      // Phase ABC6: Include date_key in DELETE request for per-occurrence RSVP scoping
+      const apiUrl = dateKey
+        ? `/api/events/${eventId}/rsvp?date_key=${dateKey}`
+        : `/api/events/${eventId}/rsvp`;
+      const res = await fetch(apiUrl, {
         method: "DELETE",
       });
 
@@ -80,6 +87,10 @@ export function CancelRSVPModal({
       }
 
       setSuccess(true);
+      // Clear the cancel param from URL to prevent "No RSVP Found" loop on page reload
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete("cancel");
+      window.history.replaceState({}, "", currentUrl.toString());
       router.refresh();
       onSuccess?.();
     } catch (err) {
@@ -87,7 +98,7 @@ export function CancelRSVPModal({
     } finally {
       setLoading(false);
     }
-  }, [eventId, router, onSuccess]);
+  }, [eventId, router, onSuccess, dateKey]);
 
   if (!isOpen) return null;
 
