@@ -657,6 +657,40 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Manage Signups UX Improvements (Phase 5.12, January 2026) — RESOLVED
+
+**Goal:** Fix "Manage Signups" link that just reloaded the same page, and make signup management more discoverable for hosts.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3393, build success).
+
+**Problem:** When hosts tried to switch an event back to timeslots after it was reverted to RSVP-only, they couldn't because active signups existed. The "Manage Signups" link in the error message just reloaded the same page without navigating to the claims management section.
+
+**Solution:**
+
+| Fix | Implementation |
+|-----|----------------|
+| Deep-link anchor | Added `id="performer-signups"` to TimeslotClaimsTable section |
+| API actionUrl | Changed from `/dashboard/my-events/${eventId}` to `/dashboard/my-events/${eventId}#performer-signups` |
+| Claims visibility | TimeslotClaimsTable now shows when `hasTimeslots OR hasActiveClaims` |
+| Proactive link | Added "Manage Signups →" banner in SlotConfigSection when editing with active claims |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/[id]/page.tsx` | Added activeClaimCount query, anchor ID, visibility condition change |
+| `app/api/my-events/[id]/route.ts` | Updated actionUrl with `#performer-signups` anchor |
+| `dashboard/my-events/_components/SlotConfigSection.tsx` | Added eventId/hasActiveClaims props, "Manage Signups" banner |
+| `dashboard/my-events/_components/EventForm.tsx` | Added hasActiveClaims prop pass-through |
+
+**Key Behavior:**
+
+- TimeslotClaimsTable shows even if `has_timeslots=false` but claims exist (e.g., after failed slot config change)
+- Error messages link directly to `#performer-signups` section
+- SlotConfigSection shows amber banner: "Active signups exist. You may need to remove signups before changing slot settings." with "Manage Signups →" link
+
+---
+
 ### Timeslots Per-Occurrence Fix (January 2026) — RESOLVED
 
 **Goal:** Fix two critical timeslot bugs: (A) timeslots status reverting to RSVP on edit, and (B) timeslots only created for first occurrence when enabling on a recurring series.
