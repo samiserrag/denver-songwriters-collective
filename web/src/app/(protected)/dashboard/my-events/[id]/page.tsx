@@ -13,6 +13,7 @@ import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
 import { computeNextOccurrence, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import EventInviteSection from "./_components/EventInviteSection";
 import LineupControlSection from "./_components/LineupControlSection";
+import PublishButton from "./_components/PublishButton";
 
 export const dynamic = "force-dynamic";
 
@@ -172,9 +173,14 @@ export default async function EditEventPage({
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
       <div className="max-w-4xl mx-auto">
         {/* Success Banner for newly created events */}
-        {/* All events are now auto-published on creation */}
+        {/* Events start as drafts; banner tells user to publish when ready */}
         {created === "true" && (
-          <CreatedSuccessBanner eventId={eventId} eventSlug={event.slug} nextOccurrenceDate={nextOccurrenceDate} />
+          <CreatedSuccessBanner
+            eventId={eventId}
+            eventSlug={event.slug}
+            nextOccurrenceDate={nextOccurrenceDate}
+            isDraft={!event.is_published}
+          />
         )}
 
         {/* Header */}
@@ -211,11 +217,22 @@ export default async function EditEventPage({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Status badge - all events are published by default */}
+          <div className="flex items-center gap-3">
+            {/* Publish/Unpublish Button - the primary action for controlling visibility */}
+            <PublishButton
+              eventId={eventId}
+              isPublished={event.is_published}
+              status={event.status}
+            />
+
+            {/* Status badge */}
             {event.status === "cancelled" ? (
               <span className="px-3 py-1 rounded text-sm bg-red-100 text-red-700">
                 Cancelled
+              </span>
+            ) : !event.is_published ? (
+              <span className="px-3 py-1 rounded text-sm bg-amber-100 text-amber-700">
+                Draft
               </span>
             ) : (
               <span className="px-3 py-1 rounded text-sm bg-emerald-100 text-emerald-700">
@@ -223,8 +240,8 @@ export default async function EditEventPage({
               </span>
             )}
 
-            {/* View public page link */}
-            {event.status === "active" && (
+            {/* View public page link - only visible when published */}
+            {event.status === "active" && event.is_published && (
               <Link
                 href={`/events/${event.slug || eventId}${nextOccurrenceDate ? `?date=${nextOccurrenceDate}` : ""}`}
                 className="px-3 py-1 bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] text-sm rounded"

@@ -320,9 +320,17 @@ export async function PATCH(
     }
   }
 
-  // All events are always published - no publish confirmation needed
-  // Events are auto-published and auto-confirmed on creation
-  // This PATCH route only handles field edits, not publish state changes
+  // Auto-verification on publish: When an event transitions from unpublished to published,
+  // set last_verified_at to auto-confirm. This happens both on first publish and republish.
+  const wasPublished = prevEvent?.is_published === true;
+  const willBePublished = body.is_published === true;
+  const isPublishTransition = !wasPublished && willBePublished;
+
+  // Skip auto-confirm when explicit verify_action is present (admin intent takes precedence)
+  if (isPublishTransition && body.verify_action === undefined) {
+    updates.last_verified_at = now;
+    updates.published_at = now;
+  }
 
   // Alias for backward compat with timeslot logic
   const currentEvent = prevEvent;

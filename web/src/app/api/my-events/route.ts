@@ -181,7 +181,8 @@ function buildEventInsert(params: EventInsertParams) {
     recurrence_rule: (body.recurrence_rule as string) || null,
     cover_image_url: (body.cover_image_url as string) || null,
     status: eventStatus,
-    is_published: true, // All events are published by default
+    // Events start as drafts by default; host must explicitly publish
+    is_published: (body.is_published as boolean) ?? false,
     published_at: publishedAt,
     has_timeslots: (body.has_timeslots as boolean) ?? false,
     total_slots: body.has_timeslots ? (body.total_slots as number) : null,
@@ -379,10 +380,11 @@ export async function POST(request: Request) {
     // Determine if this should be a DSC event
     const isDSCEvent = canCreateDSC && body.is_dsc_event === true;
 
-    // All new events are automatically published and confirmed
-    // No draft mode - events go live immediately when created
+    // Events start as drafts by default; host must explicitly publish
+    // When published, events are auto-confirmed (last_verified_at set)
+    const isPublished = (body.is_published as boolean) ?? false;
     const eventStatus = "active";
-    const publishedAt = new Date().toISOString();
+    const publishedAt = isPublished ? new Date().toISOString() : null;
 
     // Phase 4.42d: Use unified insert builder to ensure host_id is always set
     // This fixes RLS violation for series creation where host_id was missing

@@ -172,7 +172,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     end_time: event?.end_time || "",
     recurrence_rule: event?.recurrence_rule || "",
     host_notes: event?.host_notes || "",
-    is_published: event?.is_published ?? true, // All events are published by default
+    // Events start as drafts by default; host must explicitly publish
+    is_published: event?.is_published ?? false, // All events are published by default
     // Event date field (for edit mode of non-recurring events)
     event_date: event?.event_date || "",
     // Series start date / event date (used by schedule section date inputs)
