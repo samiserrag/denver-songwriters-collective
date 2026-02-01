@@ -354,6 +354,36 @@ All must pass before merge:
 | Host occurrence editor | `web/src/app/(protected)/dashboard/my-events/[id]/overrides/page.tsx` |
 | Per-date edit | `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/page.tsx` |
 
+### Cron Jobs
+
+| Route | Schedule | Purpose |
+|-------|----------|---------|
+| `/api/cron/weekly-open-mics` | `0 3 * * 0` (Sunday 3:00 UTC) | Weekly Open Mics Digest email |
+
+**Cron Configuration:** `web/vercel.json`
+
+**Kill Switches:**
+- `ENABLE_WEEKLY_DIGEST=true` — Required to enable weekly digest emails
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `lib/digest/weeklyOpenMics.ts` | Business logic for fetching open mics and building digest data |
+| `lib/email/templates/weeklyOpenMicsDigest.ts` | Email template for weekly digest |
+| `app/api/cron/weekly-open-mics/route.ts` | Cron endpoint handler |
+| `lib/featureFlags.ts` | Kill switch: `isWeeklyDigestEnabled()` |
+
+**Cron Authentication:**
+- Vercel Cron jobs include `authorization: Bearer ${CRON_SECRET}` header automatically
+- Cron routes validate this header before processing
+
+**Timezone Notes:**
+- Cron schedule `0 3 * * 0` = Sunday 3:00 UTC
+- MST (winter): 8:00 PM Saturday Denver time
+- MDT (summer): 9:00 PM Saturday Denver time
+- Digest covers Sunday through Saturday (7-day window)
+
 ---
 
 ## Routing Rules
@@ -619,6 +649,63 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### Weekly Open Mics Digest Email (Phase 1.5, January 2026) — RESOLVED
+
+**Goal:** Send personalized weekly email to members listing upcoming open mics in the Denver area.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests passing, build success).
+
+**Checked against DSC UX Principles:** §2 (Visibility), §7 (UX Friction)
+
+**Features Implemented:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Query filters | `event_type="open_mic"`, `is_published=true`, `status="active"` |
+| Date window | 7-day window (Sunday through Saturday) |
+| Timezone handling | Denver timezone for all date calculations |
+| Occurrence expansion | Recurring events expanded, cancelled occurrences excluded |
+| Recipient filtering | Users with `email IS NOT NULL` and `email_event_updates` preference enabled |
+| Kill switch | `ENABLE_WEEKLY_DIGEST=true` env var required |
+| Cron schedule | `0 3 * * 0` (Sunday 3:00 UTC = Saturday 8/9 PM Denver) |
+
+**Email Template Structure:**
+- Personalized greeting (first name or "there")
+- Summary line: "X open mics across Y venues this week"
+- Day-grouped event listings with time, venue, cost
+- Browse All CTA linking to `/happenings?type=open_mic`
+- Unsubscribe link to `/dashboard/settings`
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/digest/weeklyOpenMics.ts` | Business logic: `getUpcomingOpenMics()`, `getDigestRecipients()` |
+| `lib/email/templates/weeklyOpenMicsDigest.ts` | Email template with day-grouped layout |
+| `app/api/cron/weekly-open-mics/route.ts` | Cron handler with auth, kill switch, batched sending |
+| `vercel.json` | Vercel Cron configuration |
+| `__tests__/weekly-open-mics-digest.test.ts` | 30+ tests for all components |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/registry.ts` | Registered `weeklyOpenMicsDigest` template |
+| `lib/notifications/preferences.ts` | Added to `EMAIL_CATEGORY_MAP` under `event_updates` |
+
+**Key Design Decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| Kill switch required | Prevents accidental sends during development/testing |
+| 100ms delay between emails | Rate limiting for email provider |
+| Service role client | Bypasses RLS for cron jobs |
+| Preference gating | Respects user's `email_event_updates` setting |
+
+**Test Coverage:** 30+ tests covering date helpers, email template, registry, feature flags, edge cases.
 
 ---
 

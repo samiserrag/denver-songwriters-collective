@@ -371,7 +371,8 @@ describe("Email Registry", () => {
     expect(keys).toContain("occurrenceCancelledHost");
     expect(keys).toContain("occurrenceModifiedHost");
     expect(keys).toContain("feedbackNotification");
-    expect(keys.length).toBe(21);
+    expect(keys).toContain("weeklyOpenMicsDigest");
+    expect(keys.length).toBe(22);
   });
 
   it("getTemplate returns valid output for all templates", () => {
