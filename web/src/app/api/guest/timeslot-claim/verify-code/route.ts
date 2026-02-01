@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/mailer";
 import { getTimeslotClaimConfirmationEmail } from "@/lib/email/templates/timeslotClaimConfirmation";
 import { getTimeslotSignupHostNotificationEmail } from "@/lib/email/templates/timeslotSignupHostNotification";
 import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
+import { SITE_URL } from "@/lib/email/render";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -268,7 +269,7 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email to guest
     if (guestEmail) {
-      const cancelUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/guest/action?type=cancel_timeslot&id=${verification.id}`;
+      const cancelUrl = `${SITE_URL}/guest/action?type=cancel_timeslot&id=${verification.id}`;
 
       const confirmationEmail = getTimeslotClaimConfirmationEmail({
         performerName: guestName,
@@ -279,7 +280,7 @@ export async function POST(request: NextRequest) {
         venueAddress: event.venue_address || undefined,
         slotTime: slotTime || `Slot ${slotNumber}`,
         slotNumber,
-        eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+        eventUrl: `${SITE_URL}${eventUrl}`,
         cancelUrl,
         isGuest: true,
       });
@@ -367,7 +368,7 @@ async function notifyEventHost(
 
   const emailData = getTimeslotSignupHostNotificationEmail({
     eventTitle,
-    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+    eventUrl: `${SITE_URL}${eventUrl}`,
     performerName: guestName,
     slotNumber,
     slotTime: slotTime || undefined,

@@ -17,6 +17,7 @@ import {
   dateKeyErrorResponse,
   formatDateKeyShort,
 } from "@/lib/events/dateKeyContract";
+import { SITE_URL } from "@/lib/email/render";
 
 // GET - Get current user's RSVP status for this event (per occurrence)
 export async function GET(
@@ -461,7 +462,7 @@ async function notifyUserOfRsvp(
   // Build email content (Phase ABC6: URL includes ?date=)
   const emailData = getRsvpHostNotificationEmail({
     eventTitle,
-    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+    eventUrl: `${SITE_URL}${eventUrl}`,
     rsvpUserName,
     isWaitlist,
     occurrenceDate: occurrenceDateDisplay,

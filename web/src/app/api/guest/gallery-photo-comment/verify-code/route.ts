@@ -8,6 +8,7 @@ import {
 import { verifyCodeHash } from "@/lib/guest-verification/crypto";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getContentCommentNotificationEmail } from "@/lib/email/templates/contentCommentNotification";
+import { SITE_URL } from "@/lib/email/render";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -284,7 +285,7 @@ async function notifyPhotoUploader(
   const emailData = getContentCommentNotificationEmail({
     contentType: "photo",
     contentTitle: photoTitle,
-    contentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${photoUrl}`,
+    contentUrl: `${SITE_URL}${photoUrl}`,
     commenterName: guestName,
     commentPreview: commentPreview.slice(0, 200),
     isReply: false,
@@ -351,7 +352,7 @@ async function notifyParentCommentAuthor(
     const emailData = getContentCommentNotificationEmail({
       contentType: "photo",
       contentTitle: photoTitle,
-      contentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${photoUrl}`,
+      contentUrl: `${SITE_URL}${photoUrl}`,
       commenterName: guestName,
       commentPreview: replyPreview.slice(0, 200),
       isReply: true,

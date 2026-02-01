@@ -14,6 +14,7 @@ import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getRsvpConfirmationEmail } from "@/lib/emailTemplates";
 import { getRsvpHostNotificationEmail } from "@/lib/email/templates/rsvpHostNotification";
 import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
+import { SITE_URL } from "@/lib/email/render";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -482,7 +483,7 @@ async function notifyUserOfGuestRsvp(
   // Build email content
   const emailData = getRsvpHostNotificationEmail({
     eventTitle,
-    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}`,
+    eventUrl: `${SITE_URL}${eventUrl}`,
     rsvpUserName: `${guestName} (guest)`,
     isWaitlist,
     occurrenceDate, // Phase ABC6: Pass occurrence date to email

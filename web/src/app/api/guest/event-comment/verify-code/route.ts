@@ -9,6 +9,7 @@ import { verifyCodeHash } from "@/lib/guest-verification/crypto";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getEventCommentNotificationEmail } from "@/lib/email/templates/eventCommentNotification";
 import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
+import { SITE_URL } from "@/lib/email/render";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -444,7 +445,7 @@ async function notifyUser(
   // Build email content
   const emailData = getEventCommentNotificationEmail({
     eventTitle,
-    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}#comments`,
+    eventUrl: `${SITE_URL}${eventUrl}#comments`,
     commenterName,
     commentPreview: commentPreview.slice(0, 200),
     isReply,

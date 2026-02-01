@@ -8,6 +8,7 @@ import {
   dateKeyErrorResponse,
   formatDateKeyShort,
 } from "@/lib/events/dateKeyContract";
+import { SITE_URL } from "@/lib/email/render";
 
 // GET - Get comments for event (includes replies)
 // Phase ABC6: Comments are scoped by date_key for per-occurrence threads
@@ -338,7 +339,7 @@ async function notifyUser(
   // Build email content
   const emailData = getEventCommentNotificationEmail({
     eventTitle,
-    eventUrl: `${process.env.NEXT_PUBLIC_SITE_URL}${eventUrl}#comments`,
+    eventUrl: `${SITE_URL}${eventUrl}#comments`,
     commenterName,
     commentPreview: commentPreview.slice(0, 200),
     isReply,
