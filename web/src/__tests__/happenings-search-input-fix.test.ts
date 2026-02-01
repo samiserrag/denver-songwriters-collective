@@ -255,7 +255,8 @@ describe("HappeningsFilters Search Input Sync Loop Fix", () => {
     });
 
     it("should sync when clearAll is called", () => {
-      let isLocalSearchUpdate = false;
+      // Note: clearAll directly sets state without going through debounce,
+      // so isLocalSearchUpdate ref is NOT set - this is intentional
       let searchInput = "search text";
       let cityInput = "Denver";
       let zipInput = "80202";

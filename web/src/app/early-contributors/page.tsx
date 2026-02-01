@@ -51,6 +51,13 @@ export default function EarlyContributorsPage() {
       <HeroSection minHeight="xs" showVignette showBottomFade>
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
+            {/* Homepage navigation notice */}
+            <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg px-4 py-3 text-amber-800 dark:text-amber-300 text-sm">
+              <span className="font-medium">This is not the homepage.</span>{" "}
+              <Link href="/" className="underline hover:no-underline font-medium">
+                Go to the homepage →
+              </Link>
+            </div>
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
               Early Contributors
             </h1>
