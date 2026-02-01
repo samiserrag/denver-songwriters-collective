@@ -24,7 +24,7 @@ describe("EventManagementTabs Component", () => {
     { id: "details", label: "Details", icon: "📝" },
     { id: "attendees", label: "Attendees", icon: "👥" },
     { id: "lineup", label: "Lineup", icon: "🎤" },
-    { id: "settings", label: "Settings", icon: "⚙️" },
+    { id: "settings", label: "Host & Co-Host Settings", icon: "⚙️" },
   ];
 
   describe("Tab visibility rules", () => {

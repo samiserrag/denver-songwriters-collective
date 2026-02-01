@@ -12,7 +12,7 @@ const TABS: Tab[] = [
   { id: "details", label: "Details", icon: "📝" },
   { id: "attendees", label: "Attendees", icon: "👥" },
   { id: "lineup", label: "Lineup", icon: "🎤" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
+  { id: "settings", label: "Host & Co-Host Settings", icon: "⚙️" },
 ];
 
 interface EventManagementTabsProps {
@@ -40,8 +40,8 @@ export default function EventManagementTabs({
   lineupCount,
 }: EventManagementTabsProps) {
   return (
-    <div className="border-b border-[var(--color-border-default)] mb-6">
-      <nav className="flex gap-1" aria-label="Event management tabs">
+    <div className="border-b-2 border-[var(--color-border-default)] mb-8 bg-[var(--color-bg-secondary)] rounded-t-xl">
+      <nav className="flex gap-2 px-2 pt-2" aria-label="Event management tabs">
         {TABS.map((tab) => {
           // Hide Lineup tab if event doesn't have timeslots
           if (tab.id === "lineup" && !hasTimeslots) {
@@ -56,21 +56,21 @@ export default function EventManagementTabs({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`
-                px-4 py-3 text-sm font-medium transition-colors relative
+                px-6 py-4 text-base font-semibold transition-all relative rounded-t-lg
                 ${isActive
-                  ? "text-[var(--color-text-primary)] border-b-2 border-[var(--color-accent-primary)]"
-                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border-b-2 border-transparent"
+                  ? "text-[var(--color-text-primary)] bg-[var(--color-bg-primary)] border-t-2 border-x-2 border-[var(--color-accent-primary)] -mb-[2px]"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] border-t-2 border-x-2 border-transparent"
                 }
               `}
               aria-selected={isActive}
               role="tab"
             >
               <span className="flex items-center gap-2">
-                <span>{tab.icon}</span>
+                <span className="text-xl">{tab.icon}</span>
                 <span>{tab.label}</span>
                 {count !== null && count > 0 && (
                   <span className={`
-                    px-1.5 py-0.5 text-xs rounded-full
+                    px-2 py-0.5 text-sm font-bold rounded-full
                     ${isActive
                       ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
                       : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
