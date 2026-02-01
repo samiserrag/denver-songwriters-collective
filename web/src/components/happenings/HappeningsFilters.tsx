@@ -211,24 +211,41 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   // Local search input state (debounced)
   const [searchInput, setSearchInput] = React.useState(q);
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  // Track if we're the source of the URL change to avoid sync loops
+  const isLocalSearchUpdate = React.useRef(false);
 
   // Phase 1.4: Local state for location inputs (debounced)
   const [cityInput, setCityInput] = React.useState(city);
   const [zipInput, setZipInput] = React.useState(zip);
   const cityTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const zipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isLocalCityUpdate = React.useRef(false);
+  const isLocalZipUpdate = React.useRef(false);
 
-  // Sync search input when URL changes externally
+  // Sync search input when URL changes externally (e.g., browser back/forward)
+  // Skip sync if we initiated the change to avoid erasing user's typing
   React.useEffect(() => {
+    if (isLocalSearchUpdate.current) {
+      isLocalSearchUpdate.current = false;
+      return;
+    }
     setSearchInput(q);
   }, [q]);
 
   // Phase 1.4: Sync location inputs when URL changes externally
   React.useEffect(() => {
+    if (isLocalCityUpdate.current) {
+      isLocalCityUpdate.current = false;
+      return;
+    }
     setCityInput(city);
   }, [city]);
 
   React.useEffect(() => {
+    if (isLocalZipUpdate.current) {
+      isLocalZipUpdate.current = false;
+      return;
+    }
     setZipInput(zip);
   }, [zip]);
 
@@ -266,6 +283,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       clearTimeout(searchTimeoutRef.current);
     }
     searchTimeoutRef.current = setTimeout(() => {
+      // Mark that we're initiating this URL change to prevent sync loop
+      isLocalSearchUpdate.current = true;
       updateFilter("q", value || null);
     }, 300);
   };
@@ -301,6 +320,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       clearTimeout(cityTimeoutRef.current);
     }
     cityTimeoutRef.current = setTimeout(() => {
+      // Mark that we're initiating this URL change to prevent sync loop
+      isLocalCityUpdate.current = true;
       // When setting city, clear zip (city and zip are mutually exclusive for filtering)
       router.push(buildUrl({ city: value || null, zip: null }));
     }, 400);
@@ -315,6 +336,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       clearTimeout(zipTimeoutRef.current);
     }
     zipTimeoutRef.current = setTimeout(() => {
+      // Mark that we're initiating this URL change to prevent sync loop
+      isLocalZipUpdate.current = true;
       // When setting zip, clear city (zip takes precedence)
       router.push(buildUrl({ zip: value || null, city: null }));
     }, 400);
