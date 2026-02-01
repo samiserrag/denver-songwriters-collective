@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
+import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -446,16 +447,55 @@ export async function POST(request: Request) {
       console.error("[POST /api/my-events] Host assignment error:", hostError.message, "| Code:", hostError.code);
     }
 
-    // Generate timeslots using the database function if has_timeslots is enabled
+    // Phase 5.11 Fix: Generate timeslots for ALL occurrences (not just the first)
+    // This replaces the legacy database function that didn't handle recurring events properly
     if (body.has_timeslots && body.total_slots) {
-      const { error: timeslotsError } = await supabase
-        .rpc("generate_event_timeslots", { p_event_id: event.id });
+      const todayKey = getTodayDenver();
+      const totalSlots = body.total_slots as number;
+      const slotDuration = (body.slot_duration_minutes as number) ?? 15;
 
-      if (timeslotsError) {
-        console.error("[POST /api/my-events] Timeslot generation error:", timeslotsError.message);
-      } else {
-        console.log("[POST /api/my-events] Timeslots generated for event:", event.id);
+      // Expand occurrences for this event to get all future dates
+      const occurrences = expandOccurrencesForEvent({
+        event_date: event.event_date,
+        day_of_week: event.day_of_week,
+        recurrence_rule: event.recurrence_rule,
+        custom_dates: event.custom_dates,
+        max_occurrences: event.max_occurrences,
+      });
+
+      // Filter to only future dates (including today)
+      const futureDates = occurrences
+        .filter(occ => occ.dateKey >= todayKey)
+        .map(occ => occ.dateKey);
+
+      // Generate slots for each occurrence date
+      let slotsCreated = 0;
+      for (const dateKey of futureDates) {
+        const slots = [];
+        for (let slotIdx = 0; slotIdx < totalSlots; slotIdx++) {
+          // Calculate offset from event start time
+          const offset = event.start_time
+            ? slotIdx * slotDuration
+            : null;
+
+          slots.push({
+            event_id: event.id,
+            slot_index: slotIdx,
+            start_offset_minutes: offset,
+            duration_minutes: slotDuration,
+            date_key: dateKey,  // Key fix: scope each slot to its occurrence date
+          });
+        }
+
+        const { error: insertError } = await supabase.from("event_timeslots").insert(slots);
+        if (insertError) {
+          console.error(`[POST /api/my-events] Failed to insert slots for ${dateKey}:`, insertError.message);
+        } else {
+          slotsCreated += slots.length;
+        }
       }
+
+      console.log(`[POST /api/my-events] Timeslots generated for event ${event.id}: ${slotsCreated} slots across ${futureDates.length} dates`);
     }
   }
 

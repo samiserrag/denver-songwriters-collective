@@ -137,6 +137,11 @@ interface EventFormProps {
     max_occurrences?: number | null;
     // Custom dates (for custom-date series)
     custom_dates?: string[] | null;
+    // Timeslot configuration fields
+    has_timeslots?: boolean | null;
+    total_slots?: number | null;
+    slot_duration_minutes?: number | null;
+    allow_guests?: boolean | null;
   };
 }
 
@@ -216,11 +221,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   // Phase 4.47: Slot configuration state - always defaults to no performer slots
   // Performer slots are fully opt-in, no event type auto-enables them
+  // Phase 5.11: Initialize from event prop in edit mode to preserve existing timeslot config
   const [slotConfig, setSlotConfig] = useState<SlotConfig>({
-    has_timeslots: false,
-    total_slots: 10,
-    slot_duration_minutes: 10,
-    allow_guests: true,
+    has_timeslots: event?.has_timeslots ?? false,
+    total_slots: event?.total_slots ?? 10,
+    slot_duration_minutes: event?.slot_duration_minutes ?? 10,
+    allow_guests: event?.allow_guests ?? true,
   });
 
   // Phase 4.x: Custom dates state for non-predictable series

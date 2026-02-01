@@ -657,6 +657,74 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Timeslots Per-Occurrence Fix (January 2026) — RESOLVED
+
+**Goal:** Fix two critical timeslot bugs: (A) timeslots status reverting to RSVP on edit, and (B) timeslots only created for first occurrence when enabling on a recurring series.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3381, build success).
+
+**Bug A: Timeslots Status Reverting to RSVP**
+
+**Problem:** User enables timeslots on an event, saves, but later when editing the event (without touching timeslots section), timeslots would revert to RSVP-only mode.
+
+**Root Cause:** `EventForm` component's `slotConfig` state was initialized with hardcoded defaults (`has_timeslots: false`) instead of reading from the `event` prop. When user saved the form (even without changing timeslots), it sent `has_timeslots: false` to the API.
+
+**Solution:**
+1. Added `has_timeslots`, `total_slots`, `slot_duration_minutes`, `allow_guests` fields to the `EventFormProps.event` interface
+2. Changed `slotConfig` initialization to read from `event` prop in edit mode
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Added slot fields to interface, initialize `slotConfig` from `event` prop |
+
+**Bug B: Timeslots Only Created for First Occurrence**
+
+**Problem:** When enabling timeslots on a recurring series (e.g., weekly event), timeslot rows were only created for the first occurrence, not for each future occurrence.
+
+**Root Cause:** The POST handler for event creation used a legacy database function `generate_event_timeslots` that:
+- Did NOT set `date_key` on timeslot rows
+- Only created one set of timeslots (not per-occurrence)
+
+**Solution:** Replaced the legacy database function call with proper occurrence expansion logic (mirroring the PATCH handler):
+1. Added import for `expandOccurrencesForEvent` and `getTodayDenver`
+2. Expand all future occurrences using `expandOccurrencesForEvent()`
+3. Create timeslot rows for EACH occurrence date with proper `date_key` scoping
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/route.ts` | Added imports, replaced legacy `generate_event_timeslots` RPC with occurrence expansion + per-date slot creation |
+
+**Key Code Pattern (POST handler):**
+```typescript
+// Expand occurrences for this event to get all future dates
+const occurrences = expandOccurrencesForEvent({
+  event_date: event.event_date,
+  day_of_week: event.day_of_week,
+  recurrence_rule: event.recurrence_rule,
+  // ...
+});
+
+// Generate slots for EACH occurrence date
+for (const dateKey of futureDates) {
+  const slots = [];
+  for (let slotIdx = 0; slotIdx < totalSlots; slotIdx++) {
+    slots.push({
+      event_id: event.id,
+      slot_index: slotIdx,
+      date_key: dateKey,  // Key fix: scope each slot to its occurrence date
+      // ...
+    });
+  }
+  await supabase.from("event_timeslots").insert(slots);
+}
+```
+
+---
+
 ### RSVP Per-Occurrence Display Fix (January 2026) — RESOLVED
 
 **Goal:** Fix RSVP confirmation ("You're going!") incorrectly showing on ALL occurrences of a recurring event instead of only the specific date the user RSVP'd to.
