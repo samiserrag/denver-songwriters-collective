@@ -657,6 +657,40 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Email Date Format Change to MM-DD-YYYY (January 2026) — RESOLVED
+
+**Goal:** Change email date display from YYYY-MM-DD to MM-DD-YYYY format for better readability.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3381, build success).
+
+**Problem:** Email notifications were showing dates in ISO format (e.g., "2026-02-01") which is less familiar to US users.
+
+**Solution:** Added `formatDateKeyForEmail()` helper function that formats dates as MM-DD-YYYY (e.g., "02-01-2026").
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/events/dateKeyContract.ts` | Added `formatDateKeyForEmail()` helper function |
+| `app/api/events/[id]/rsvp/route.ts` | Use `formatDateKeyForEmail()` for RSVP confirmation emails |
+| `app/api/guest/rsvp/verify-code/route.ts` | Use `formatDateKeyForEmail()` for guest RSVP emails |
+| `app/api/guest/timeslot-claim/verify-code/route.ts` | Use `formatDateKeyForEmail()` for timeslot claim emails |
+| `app/api/my-events/[id]/route.ts` | Use `formatDateKeyForEmail()` for event update notifications |
+| `lib/waitlistOffer.ts` | Use `formatDateKeyForEmail()` for waitlist promotion emails |
+
+**Helper Function:**
+```typescript
+export function formatDateKeyForEmail(dateKey: string): string {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${month}-${day}-${year}`;
+}
+```
+
+---
+
 ### Email URL Fix — SITE_URL Centralization (January 2026) — RESOLVED
 
 **Goal:** Fix broken email links caused by `undefined` in notification URLs.
