@@ -13,7 +13,7 @@ import { sendEmail } from "@/lib/email";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getRsvpConfirmationEmail } from "@/lib/emailTemplates";
 import { getRsvpHostNotificationEmail } from "@/lib/email/templates/rsvpHostNotification";
-import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
+import { formatDateKeyShort, formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { SITE_URL } from "@/lib/email/render";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
     // Phase ABC6: Include dateKey for per-occurrence links in email
     const emailContent = getRsvpConfirmationEmail({
       eventTitle: event.title || "Event",
-      eventDate: event.event_date || "TBA",
+      eventDate: event.event_date ? formatDateKeyForEmail(event.event_date) : "TBA",
       eventTime: event.start_time || "TBA",
       venueName: event.venue_name || "TBA",
       venueAddress: event.venue_address || undefined,

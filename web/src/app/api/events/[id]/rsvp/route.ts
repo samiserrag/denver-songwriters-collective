@@ -16,6 +16,7 @@ import {
   resolveEffectiveDateKey,
   dateKeyErrorResponse,
   formatDateKeyShort,
+  formatDateKeyForEmail,
 } from "@/lib/events/dateKeyContract";
 import { SITE_URL } from "@/lib/email/render";
 
@@ -190,7 +191,7 @@ export async function POST(
     if (userEmail && event.title) {
       const emailData = getRsvpConfirmationEmail({
         eventTitle: event.title,
-        eventDate: effectiveDateKey,
+        eventDate: formatDateKeyForEmail(effectiveDateKey),
         eventTime: event.start_time || "TBA",
         venueName: event.venue_name || "TBA",
         venueAddress: event.venue_address || undefined,

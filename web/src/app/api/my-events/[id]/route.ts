@@ -5,6 +5,7 @@ import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
+import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -503,12 +504,13 @@ export async function PATCH(
     // Only notify if there are actual visible changes
     if (Object.keys(changes).length > 0) {
       // Fire-and-forget - don't block the response
+      const effectiveEventDate = body.event_date || prevEvent.event_date;
       sendEventUpdatedNotifications(supabase, {
         eventId,
         eventSlug: prevEvent.slug,
         eventTitle: prevEvent.title || "Event",
         changes,
-        eventDate: body.event_date || prevEvent.event_date || body.day_of_week || prevEvent.day_of_week || "",
+        eventDate: effectiveEventDate ? formatDateKeyForEmail(effectiveEventDate) : (body.day_of_week || prevEvent.day_of_week || ""),
         eventTime: body.start_time || prevEvent.start_time || "",
         venueName: newVenueName,
         venueAddress: (updates.venue_address as string) || prevEvent.venue_address || undefined

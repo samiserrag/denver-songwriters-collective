@@ -9,6 +9,7 @@ import {
   calculateOfferExpiry,
   isOfferExpired,
 } from "@/lib/waitlistOfferClient";
+import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 
 // Re-export client utilities for server-side usage
 export { calculateOfferExpiry, isOfferExpired, formatTimeRemaining } from "@/lib/waitlistOfferClient";
@@ -203,7 +204,7 @@ export async function sendOfferNotifications(
     try {
       const emailData = getWaitlistPromotionEmail({
         eventTitle: eventData.title,
-        eventDate: occurrenceDate,
+        eventDate: occurrenceDate ? formatDateKeyForEmail(occurrenceDate) : "TBA",
         eventTime: eventData.start_time || "TBA",
         venueName: eventData.venue_name || "TBA",
         eventId,

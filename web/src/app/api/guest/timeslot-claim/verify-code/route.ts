@@ -10,7 +10,7 @@ import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { sendEmail } from "@/lib/email/mailer";
 import { getTimeslotClaimConfirmationEmail } from "@/lib/email/templates/timeslotClaimConfirmation";
 import { getTimeslotSignupHostNotificationEmail } from "@/lib/email/templates/timeslotSignupHostNotification";
-import { formatDateKeyShort } from "@/lib/events/dateKeyContract";
+import { formatDateKeyShort, formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { SITE_URL } from "@/lib/email/render";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
@@ -251,12 +251,7 @@ export async function POST(request: NextRequest) {
     // Phase ABC6: Use date_key for occurrence date, fallback to event_date
     const dateKeyForDisplay = effectiveDateKey || event.event_date;
     const eventDate = dateKeyForDisplay
-      ? new Date(dateKeyForDisplay + "T12:00:00Z").toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          timeZone: "America/Denver",
-        })
+      ? formatDateKeyForEmail(dateKeyForDisplay)
       : "TBD";
 
     // Phase ABC6: Short date for notifications
