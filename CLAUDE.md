@@ -657,6 +657,85 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### My Happenings 3-Tab Dashboard + RSVP Reactivation + Tab UX (Phase 5.14b, February 2026) — RESOLVED
+
+**Goal:** Add third "Cancelled" tab to My Happenings dashboard, fix RSVP reactivation for cancelled RSVPs, and enhance event management tab UX.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3485, build success).
+
+**Problem 1: My Happenings Dashboard Missing Cancelled Tab**
+
+The My Happenings dashboard had 2 tabs (Live, Drafts) plus a collapsed disclosure section for cancelled events. Users expected 3 proper tabs.
+
+**Problem 2: RSVP Reactivation Constraint Violation**
+
+When a user cancelled their RSVP and tried to RSVP again, they got a constraint violation error: "duplicate key value violates unique constraint 'event_rsvps_event_user_date_key'". This affected both member and guest RSVPs.
+
+**Problem 3: Event Management Tabs Not Prominent Enough**
+
+The event management tabs were too small and the Settings tab label was unclear.
+
+**Solutions:**
+
+| Fix | Implementation |
+|-----|----------------|
+| 3-tab layout | Changed from 2 tabs + collapsed disclosure to 3 proper tabs: Live, Drafts, Cancelled |
+| RSVP reactivation | Check for cancelled RSVPs and UPDATE instead of INSERT |
+| Larger tabs | Increased padding (`px-6 py-4`), font size (`text-base`), and icon size (`text-xl`) |
+| Settings rename | Changed "Settings" to "Host & Co-Host Settings" |
+
+**My Happenings Tab Details:**
+
+| Tab | Badge Color | Filter Logic |
+|-----|-------------|--------------|
+| Live | Emerald | `status === "active" && is_published === true` |
+| Drafts | Amber | `!is_published && status !== "cancelled"` |
+| Cancelled | Red | `status === "cancelled"` |
+
+**Cancelled Event Styling:**
+- Muted date box (grey instead of accent color)
+- Strikethrough title with red decoration
+- Reduced opacity (70% → 90% on hover)
+
+**RSVP Reactivation Pattern:**
+```typescript
+// Check for existing RSVP including cancelled
+const { data: existing } = await supabase
+  .from("event_rsvps")
+  .select("id, status")
+  .eq("event_id", eventId)
+  .eq("date_key", effectiveDateKey)
+  .eq("user_id", session.user.id)
+  .maybeSingle();
+
+if (existing?.status === "cancelled") {
+  // Reactivate instead of insert
+  await supabase.from("event_rsvps").update({...}).eq("id", existing.id);
+} else {
+  // Insert new RSVP
+  await supabase.from("event_rsvps").insert({...});
+}
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/MyEventsFilteredList.tsx` | 3-tab layout with Live, Drafts, Cancelled tabs |
+| `api/events/[id]/rsvp/route.ts` | RSVP reactivation for members |
+| `api/guest/rsvp/verify-code/route.ts` | RSVP reactivation for guests |
+| `dashboard/my-events/[id]/_components/EventManagementTabs.tsx` | Larger tabs, renamed Settings tab |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `__tests__/phase5-14b-dashboard-and-rsvp-fixes.test.ts` | 47 tests for 3-tab layout, RSVP reactivation, tab UX |
+
+**Test Coverage:** 47 new tests (3485 total).
+
+---
+
 ### Tabbed Event Management Layout (Phase 5.14, January 2026) — RESOLVED
 
 **Goal:** Reorganize the event management dashboard with a tabbed layout separating Details, Attendees, Lineup, and Settings into distinct tabs for improved UX.
@@ -8067,6 +8146,8 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/venue-page-fixes.test.ts` | Venue page count filters + de-duplication logic (17 tests) |
 | `__tests__/edit-form-series-controls.test.ts` | Edit form ordinal parsing, recurrence rebuild, series mode detection, max_occurrences (59 tests) |
 | `__tests__/phase4-98-host-cohost-equality.test.ts` | Host/cohost equality, auto-promotion, claim notifications (45 tests) |
+| `__tests__/event-management-tabs.test.ts` | Event management tabs, per-occurrence filtering, guest display (30 tests) |
+| `__tests__/phase5-14b-dashboard-and-rsvp-fixes.test.ts` | 3-tab dashboard, RSVP reactivation, tab UX (47 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 
 ### Archived Tests
