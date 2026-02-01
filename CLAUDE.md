@@ -657,6 +657,45 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### RSVP Per-Occurrence Display Fix (January 2026) — RESOLVED
+
+**Goal:** Fix RSVP confirmation ("You're going!") incorrectly showing on ALL occurrences of a recurring event instead of only the specific date the user RSVP'd to.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3381, build success).
+
+**Problem:** User RSVP'd to Feb 1st occurrence but the green "You're going!" confirmation was showing on all occurrences (Feb 1, Feb 8, Feb 15, etc.).
+
+**Root Cause:** React preserves client-side component state when navigating between occurrences. When navigating from `?date=2026-02-01` to `?date=2026-02-08`:
+- Component re-renders with new `dateKey` prop
+- But the `rsvp` state keeps its old "confirmed" value
+- The stale state shows before the useEffect can re-fetch for the new date
+
+**Solution:** Added useEffect hooks to immediately clear RSVP state when `dateKey` changes, before the API re-fetch completes.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `components/events/RSVPButton.tsx` | Added useEffect to clear `rsvp` state when `dateKey` changes |
+| `components/events/RSVPSection.tsx` | Added useEffect to clear `hasRsvp` and `hasOffer` state when `dateKey` changes |
+
+**Key Code Pattern:**
+```typescript
+// Phase ABC6 Fix: Clear RSVP state immediately when dateKey changes
+// This prevents stale state when navigating between occurrences
+useEffect(() => {
+  setRsvp(null);  // or setHasRsvp(false); setHasOffer(false);
+}, [dateKey]);
+```
+
+**Why This Works:**
+- The useEffect with `[dateKey]` dependency fires immediately when the prop changes
+- This clears the stale state before the next render cycle
+- The separate data-fetching useEffect then populates the correct state for the new date
+- Order of operations: prop change → clear state → re-render (shows null/loading) → fetch completes → re-render (shows correct state)
+
+---
+
 ### Email Header Image Update (January 2026) — RESOLVED
 
 **Goal:** Update the email header image to the new DSC branding.

@@ -60,6 +60,12 @@ export function RSVPButton({
     capacity !== null ? Math.max(0, capacity - confirmedCount) : null;
   const isFull = remaining !== null && remaining === 0;
 
+  // Phase ABC6 Fix: Clear RSVP state immediately when dateKey changes
+  // This prevents stale "You're going!" showing on different occurrences
+  useEffect(() => {
+    setRsvp(null);
+  }, [dateKey]);
+
   useEffect(() => {
     const init = async () => {
       const {
@@ -74,6 +80,9 @@ export function RSVPButton({
           const data = await res.json();
           if (data && data.status) {
             setRsvp(data);
+          } else {
+            // No RSVP for this occurrence - ensure state is cleared
+            setRsvp(null);
           }
         }
       }

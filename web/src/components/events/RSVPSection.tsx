@@ -73,6 +73,13 @@ export function RSVPSection({
     }
   }, [eventId, confirmTriggered, confirmLoading, router, buildRsvpUrl]);
 
+  // Phase ABC6 Fix: Clear RSVP state immediately when dateKey changes
+  // This prevents stale state when navigating between occurrences
+  useEffect(() => {
+    setHasRsvp(false);
+    setHasOffer(false);
+  }, [dateKey]);
+
   // Check if user has RSVP and if cancel/confirm param is present
   useEffect(() => {
     const checkRsvpAndParams = async () => {
