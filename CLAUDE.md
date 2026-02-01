@@ -657,6 +657,33 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Guest RSVPs Display Fix (January 2026) — RESOLVED
+
+**Goal:** Fix guest RSVPs showing as "Anonymous" with "?" avatar in the dashboard Attendees panel.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3393, build success).
+
+**Problem:** Guest RSVPs (non-member users who RSVP'd via email verification) were displaying as "Anonymous" in the host dashboard's RSVPList component, even though the database had their `guest_name` and `guest_email` stored.
+
+**Root Cause:** The `RSVPUser` interface in `RSVPList.tsx` didn't include `guest_name` and `guest_email` fields, and the rendering logic only checked `rsvp.user?.full_name` which is null for guest RSVPs.
+
+**Solution:**
+
+| Fix | Implementation |
+|-----|----------------|
+| Interface update | Added `guest_name` and `guest_email` fields to `RSVPUser` interface |
+| Display logic | Use `rsvp.user?.full_name || rsvp.guest_name || "Anonymous"` for name display |
+| Guest indicator | Added "(guest)" label next to guest names |
+| Initial display | Show first letter of guest name instead of "?" |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/RSVPList.tsx` | Added guest fields to interface, updated rendering for confirmed and waitlist sections |
+
+---
+
 ### Manage Signups UX Improvements (Phase 5.12, January 2026) — RESOLVED
 
 **Goal:** Fix "Manage Signups" link that just reloaded the same page, and make signup management more discoverable for hosts.
