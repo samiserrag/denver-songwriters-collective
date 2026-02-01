@@ -107,11 +107,14 @@ export async function POST(
     .eq("event_id", eventId)
     .eq("date_key", effectiveDateKey)
     .eq("user_id", session.user.id)
-    .neq("status", "cancelled")
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ error: "Already RSVP'd to this occurrence" }, { status: 400 });
+    // If there's an active (non-cancelled) RSVP, reject
+    if (existing.status !== "cancelled") {
+      return NextResponse.json({ error: "Already RSVP'd to this occurrence" }, { status: 400 });
+    }
+    // If there's a cancelled RSVP, we'll reactivate it below instead of inserting
   }
 
   // Get event - must be active and published (Phase 4.43c: RSVP available for all events)
@@ -163,23 +166,48 @@ export async function POST(
     waitlistPosition = (lastWaitlist?.waitlist_position || 0) + 1;
   }
 
-  // Phase ABC6: Create RSVP with date_key
-  const { data: rsvp, error: insertError } = await supabase
-    .from("event_rsvps")
-    .insert({
-      event_id: eventId,
-      user_id: session.user.id,
-      date_key: effectiveDateKey,
-      status,
-      waitlist_position: waitlistPosition,
-      notes
-    })
-    .select()
-    .single();
+  // Phase ABC6: Create RSVP with date_key (or reactivate cancelled one)
+  let rsvp;
+  let rsvpError;
 
-  if (insertError) {
-    console.error("RSVP insert error:", insertError);
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  if (existing?.status === "cancelled") {
+    // Reactivate the cancelled RSVP instead of inserting a new one
+    // This avoids unique constraint violation
+    const { data, error } = await supabase
+      .from("event_rsvps")
+      .update({
+        status,
+        waitlist_position: waitlistPosition,
+        notes,
+        offer_expires_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+    rsvp = data;
+    rsvpError = error;
+  } else {
+    // Insert new RSVP
+    const { data, error } = await supabase
+      .from("event_rsvps")
+      .insert({
+        event_id: eventId,
+        user_id: session.user.id,
+        date_key: effectiveDateKey,
+        status,
+        waitlist_position: waitlistPosition,
+        notes
+      })
+      .select()
+      .single();
+    rsvp = data;
+    rsvpError = error;
+  }
+
+  if (rsvpError) {
+    console.error("RSVP insert/update error:", rsvpError);
+    return NextResponse.json({ error: rsvpError.message }, { status: 500 });
   }
 
   // Phase ABC6: Include occurrence date in confirmation email

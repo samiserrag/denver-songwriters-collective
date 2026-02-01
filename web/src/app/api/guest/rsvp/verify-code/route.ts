@@ -190,18 +190,21 @@ export async function POST(request: NextRequest) {
     // Phase ABC6: RSVPs are scoped by date_key
     const { data: existingRsvp } = await supabase
       .from("event_rsvps")
-      .select("id")
+      .select("id, status")
       .eq("event_id", verification.event_id)
       .eq("date_key", effectiveDateKey)
       .eq("guest_email", verification.email)
-      .neq("status", "cancelled")
       .maybeSingle();
 
     if (existingRsvp) {
-      return NextResponse.json(
-        { error: "You already have an RSVP for this occurrence" },
-        { status: 409 }
-      );
+      // If there's an active (non-cancelled) RSVP, reject
+      if (existingRsvp.status !== "cancelled") {
+        return NextResponse.json(
+          { error: "You already have an RSVP for this occurrence" },
+          { status: 409 }
+        );
+      }
+      // If there's a cancelled RSVP, we'll reactivate it below instead of inserting
     }
 
     // Determine status: confirmed or waitlist based on capacity
@@ -237,34 +240,62 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create the RSVP (no user_id for guests)
+    // Create the RSVP (or reactivate cancelled one)
     // Phase ABC6: Include date_key for per-occurrence scoping
-    const { data: rsvp, error: rsvpError } = await supabase
-      .from("event_rsvps")
-      .insert({
-        event_id: verification.event_id,
-        user_id: null, // Guest RSVP
-        guest_name: verification.guest_name,
-        guest_email: verification.email,
-        guest_verified: true,
-        guest_verification_id: verification.id,
-        status,
-        waitlist_position: waitlistPosition,
-        notes: null,
-        date_key: effectiveDateKey,
-      })
-      .select("*")
-      .single();
+    let rsvp;
+    let rsvpError;
 
-    if (rsvpError) {
+    if (existingRsvp?.status === "cancelled") {
+      // Reactivate the cancelled RSVP instead of inserting a new one
+      // This avoids unique constraint violation
+      const { data, error } = await supabase
+        .from("event_rsvps")
+        .update({
+          guest_name: verification.guest_name,
+          guest_verified: true,
+          guest_verification_id: verification.id,
+          status,
+          waitlist_position: waitlistPosition,
+          notes: null,
+          offer_expires_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingRsvp.id)
+        .select("*")
+        .single();
+      rsvp = data;
+      rsvpError = error;
+    } else {
+      // Insert new RSVP (no user_id for guests)
+      const { data, error } = await supabase
+        .from("event_rsvps")
+        .insert({
+          event_id: verification.event_id,
+          user_id: null, // Guest RSVP
+          guest_name: verification.guest_name,
+          guest_email: verification.email,
+          guest_verified: true,
+          guest_verification_id: verification.id,
+          status,
+          waitlist_position: waitlistPosition,
+          notes: null,
+          date_key: effectiveDateKey,
+        })
+        .select("*")
+        .single();
+      rsvp = data;
+      rsvpError = error;
+    }
+
+    if (rsvpError || !rsvp) {
       // Handle race condition
-      if (rsvpError.code === "23505") {
+      if (rsvpError?.code === "23505") {
         return NextResponse.json(
           { error: "You already have an RSVP for this event" },
           { status: 409 }
         );
       }
-      console.error("Create RSVP error:", rsvpError);
+      console.error("Create/reactivate RSVP error:", rsvpError);
       return NextResponse.json(
         { error: "Failed to create RSVP" },
         { status: 500 }
