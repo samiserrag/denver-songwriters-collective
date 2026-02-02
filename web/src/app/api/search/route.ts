@@ -210,8 +210,38 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  // Sort results to prioritize exact matches and group by type for better relevance
+  // Priority: exact title match > starts with query > contains query
+  // Within same priority, order: venues > members > open_mics > events > blogs
+  const queryLower = query.toLowerCase();
+  const typeOrder: Record<SearchResult["type"], number> = {
+    venue: 1,
+    member: 2,
+    open_mic: 3,
+    event: 4,
+    blog: 5,
+  };
+
+  const sortedResults = results.sort((a, b) => {
+    const aTitle = a.title.toLowerCase();
+    const bTitle = b.title.toLowerCase();
+
+    // Exact match gets highest priority
+    const aExact = aTitle === queryLower ? 0 : 1;
+    const bExact = bTitle === queryLower ? 0 : 1;
+    if (aExact !== bExact) return aExact - bExact;
+
+    // Starts with query gets second priority
+    const aStarts = aTitle.startsWith(queryLower) ? 0 : 1;
+    const bStarts = bTitle.startsWith(queryLower) ? 0 : 1;
+    if (aStarts !== bStarts) return aStarts - bStarts;
+
+    // Then sort by type order (venues/members before events)
+    return typeOrder[a.type] - typeOrder[b.type];
+  });
+
   return NextResponse.json({
-    results: results.slice(0, 15), // Limit total results
+    results: sortedResults.slice(0, 15), // Limit total results
     query,
   });
 }
