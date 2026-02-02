@@ -72,15 +72,20 @@ export default async function HomePage() {
     data: { session: _session },
   } = await supabase.auth.getSession();
 
+  // Get today's date for filtering past events
+  const today = getTodayDenver();
+
   const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes, spotlightOpenMicEventsRes] = await Promise.all([
     // Single events query - upcoming DSC events (published only)
+    // Filter: one-time events must be today or future, OR recurring events (have recurrence_rule)
     supabase
       .from("events")
       .select("*")
       .eq("is_dsc_event", true)
       .eq("is_published", true)
       .eq("status", "active")
-      .order("created_at", { ascending: false })
+      .or(`event_date.gte.${today},recurrence_rule.not.is.null`)
+      .order("event_date", { ascending: true })
       .limit(6),
     // Tonight's happenings - all event types, published only
     // Limit to MAX_EVENTS to prevent performance issues
@@ -243,7 +248,6 @@ export default async function HomePage() {
   }));
 
   // Get tonight's happenings using occurrence expansion
-  const today = getTodayDenver();
   const allEventsForTonight = (tonightsHappeningsRes.data ?? []) as any[];
   const { groupedEvents, metrics } = expandAndGroupEvents(allEventsForTonight, {
     startKey: today,
