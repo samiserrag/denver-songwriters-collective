@@ -682,6 +682,47 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Homepage DSC Events Recurrence Fields Fix (February 2026) — RESOLVED
+
+**Goal:** Fix homepage DSC Happenings cards showing "SCHEDULE UNKNOWN" for recurring events that have valid schedules.
+
+**Status:** Complete.
+
+**Problem:** TEST DSC events on the homepage showed "SCHEDULE UNKNOWN" badge, while the same events on `/happenings?dsc=1` correctly displayed their schedules ("Every Thursday", "Every Sunday"). The event data was being queried but schedule computation was failing.
+
+**Root Cause:** The `mapDBEventToEvent()` function in `page.tsx` was NOT mapping several critical fields from the database response:
+- `day_of_week` — Required for recurrence pattern computation
+- `recurrence_rule` — Required for occurrence expansion
+- `event_date` — Needed separately from the legacy `date` field
+- `slug` — For URL generation
+
+When `HappeningCard` called `computeNextOccurrence()`, these undefined fields caused `isConfident: false`, resulting in "SCHEDULE UNKNOWN" display.
+
+**Fix:** Added the missing fields to `mapDBEventToEvent()`:
+
+```typescript
+return {
+  id: dbEvent.id,
+  slug: dbEvent.slug,
+  title: dbEvent.title,
+  // ...
+  event_date: dbEvent.event_date,  // Added
+  day_of_week: dbEvent.day_of_week,  // Added - critical for schedule
+  recurrence_rule: dbEvent.recurrence_rule,  // Added - critical for schedule
+  // ...
+};
+```
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Added `slug`, `event_date`, `day_of_week`, `recurrence_rule` to `mapDBEventToEvent()` function |
+
+**Key Invariant:** Any event mapper function MUST include `day_of_week` and `recurrence_rule` fields for `HappeningCard` to compute schedules correctly.
+
+---
+
 ### Advanced Options Expanded by Default (February 2026) — RESOLVED
 
 **Goal:** Make the Advanced Options section expanded by default on event creation and edit forms.
