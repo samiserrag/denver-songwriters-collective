@@ -161,8 +161,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
 
 
-  // Phase 4.44c: Advanced section collapse state (collapsed by default)
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // Phase 4.44c: Advanced section collapse state (expanded by default)
+  const [showAdvanced, setShowAdvanced] = useState(true);
 
   // Phase 5.06: Track original day_of_week for edit mode monthly series warning
   // This is used to show a persistent warning when the user changes the anchor date
