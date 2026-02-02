@@ -657,6 +657,26 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Advanced Options Expanded by Default (February 2026) — RESOLVED
+
+**Goal:** Make the Advanced Options section expanded by default on event creation and edit forms.
+
+**Status:** Complete.
+
+**Change:** Changed `showAdvanced` initial state from `false` to `true` in EventForm.tsx.
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `dashboard/my-events/_components/EventForm.tsx` | Changed `useState(false)` to `useState(true)` for showAdvanced state |
+
+**Behavior:**
+- Advanced Options section now visible by default when creating or editing events
+- Users can still collapse the section by clicking "Advanced Options" header
+
+---
+
 ### Event Restore Feature (Phase 5.15, February 2026) — RESOLVED
 
 **Goal:** Allow hosts/admins to restore cancelled events and notify affected users.
