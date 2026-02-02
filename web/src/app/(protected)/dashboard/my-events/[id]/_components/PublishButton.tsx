@@ -14,12 +14,41 @@ export default function PublishButton({ eventId, isPublished, status }: Props) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Cancelled events cannot be published directly
+  // Handle restore for cancelled events
+  const handleRestore = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/my-events/${eventId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restore: true }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error("Failed to restore event:", data.error);
+        setIsLoading(false);
+        return;
+      }
+
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to restore event:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Cancelled events show restore button
   if (status === "cancelled") {
     return (
-      <div className="text-sm text-[var(--color-text-secondary)]">
-        Restore this event before publishing.
-      </div>
+      <button
+        onClick={handleRestore}
+        disabled={isLoading}
+        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+      >
+        {isLoading ? "Restoring..." : "Restore Event"}
+      </button>
     );
   }
 

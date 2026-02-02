@@ -6,6 +6,7 @@ import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated"
 import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
+import { sendEventRestoredNotifications } from "@/lib/notifications/eventRestored";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -295,6 +296,16 @@ export async function PATCH(
     }
   }
 
+  // Track restoration (uncancelling an event)
+  const isRestoreAction = body.restore === true;
+
+  // Handle restore action - change status from cancelled to active
+  if (isRestoreAction) {
+    updates.status = "active";
+    updates.cancelled_at = null;
+    updates.cancel_reason = null;
+  }
+
   // Get current event state before update (for first publish check, timeslot regeneration, and notifications)
   const { data: prevEvent } = await supabase
     .from("events")
@@ -452,6 +463,22 @@ export async function PATCH(
     }
 
     console.log(`[PATCH /api/my-events/${eventId}] Future timeslots regenerated: ${slotsCreated} slots across ${futureDates.length} dates`);
+  }
+
+  // Send restore notifications if event was uncancelled
+  const wasRestored = isRestoreAction && prevEvent?.status === "cancelled";
+  if (wasRestored && prevEvent) {
+    // Fire-and-forget - don't block the response
+    sendEventRestoredNotifications(supabase, {
+      eventId,
+      eventSlug: prevEvent.slug,
+      eventTitle: prevEvent.title || "Event",
+      eventDate: prevEvent.event_date ? formatDateKeyForEmail(prevEvent.event_date) : (prevEvent.day_of_week || ""),
+      eventTime: prevEvent.start_time || undefined,
+      venueName: prevEvent.venue_name || "TBD",
+    }).catch((err) => {
+      console.error(`[PATCH /api/my-events/${eventId}] Failed to send restore notifications:`, err);
+    });
   }
 
   // Phase 4.36: Send event updated notifications if major fields changed

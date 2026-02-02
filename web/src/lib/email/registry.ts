@@ -97,6 +97,10 @@ import {
   getWeeklyHappeningsDigestEmail,
   type WeeklyHappeningsDigestParams,
 } from "./templates/weeklyHappeningsDigest";
+import {
+  getEventRestoredEmail,
+  type EventRestoredEmailParams,
+} from "./templates/eventRestored";
 
 /**
  * All available email template keys
@@ -114,6 +118,7 @@ export type EmailTemplateKey =
   | "eventReminder"
   | "eventUpdated"
   | "eventCancelled"
+  | "eventRestored"
   | "suggestionResponse"
   | "eventClaimSubmitted"
   | "eventClaimApproved"
@@ -142,6 +147,7 @@ export interface EmailTemplateParams {
   eventReminder: EventReminderEmailParams;
   eventUpdated: EventUpdatedEmailParams;
   eventCancelled: EventCancelledEmailParams;
+  eventRestored: EventRestoredEmailParams;
   suggestionResponse: SuggestionResponseEmailParams;
   eventClaimSubmitted: EventClaimSubmittedEmailParams;
   eventClaimApproved: EventClaimApprovedEmailParams;
@@ -276,6 +282,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: true,
   },
+  eventRestored: {
+    key: "eventRestored",
+    name: "Event Restored",
+    description: "Cancelled event is back on - invites re-RSVP or re-claim",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
   suggestionResponse: {
     key: "suggestionResponse",
     name: "Suggestion Response",
@@ -406,6 +420,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getEventUpdatedEmail(params as EventUpdatedEmailParams);
     case "eventCancelled":
       return getEventCancelledEmail(params as EventCancelledEmailParams);
+    case "eventRestored":
+      return getEventRestoredEmail(params as EventRestoredEmailParams);
     case "suggestionResponse":
       return getSuggestionResponseEmail(params as SuggestionResponseEmailParams);
     case "eventClaimSubmitted":
@@ -464,6 +480,7 @@ export {
   getEventReminderEmail,
   getEventUpdatedEmail,
   getEventCancelledEmail,
+  getEventRestoredEmail,
   getSuggestionResponseEmail,
   getEventClaimSubmittedEmail,
   getEventClaimApprovedEmail,
@@ -491,6 +508,7 @@ export type {
   EventReminderEmailParams,
   EventUpdatedEmailParams,
   EventCancelledEmailParams,
+  EventRestoredEmailParams,
   SuggestionResponseEmailParams,
   EventClaimSubmittedEmailParams,
   EventClaimApprovedEmailParams,

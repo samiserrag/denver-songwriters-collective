@@ -113,6 +113,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
   eventReminder: "event_updates",
   eventUpdated: "event_updates",
   eventCancelled: "event_updates",
+  eventRestored: "event_updates",
   occurrenceCancelledHost: "event_updates",
   occurrenceModifiedHost: "event_updates",
   rsvpConfirmation: "event_updates",

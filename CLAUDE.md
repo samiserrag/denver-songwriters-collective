@@ -657,6 +657,46 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Event Restore Feature (Phase 5.15, February 2026) — RESOLVED
+
+**Goal:** Allow hosts/admins to restore cancelled events and notify affected users.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3499, build success).
+
+**Features:**
+
+| Feature | Implementation |
+|---------|----------------|
+| Restore API | PATCH `/api/my-events/[id]` with `{ restore: true }` sets status back to "active" |
+| Restore Button | PublishButton shows "Restore Event" for cancelled events |
+| Notifications | Emails sent to all users who had cancelled RSVPs or timeslot claims |
+| Guest Support | Guests receive direct emails; members receive preference-gated emails |
+| Dashboard Notifications | Members get dashboard notification in addition to email |
+
+**Key Behavior:**
+- RSVPs and timeslot claims are NOT restored — users must re-RSVP or re-claim
+- Email informs users the event is back on and provides a link to RSVP/claim again
+- Different messaging for RSVP users vs timeslot claimants
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `lib/email/templates/eventRestored.ts` | Email template for event restored notification |
+| `lib/notifications/eventRestored.ts` | Helper to query cancelled signups and send notifications |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `lib/email/registry.ts` | Registered `eventRestored` template (24 total templates) |
+| `lib/notifications/preferences.ts` | Added `eventRestored` to `event_updates` category |
+| `app/api/my-events/[id]/route.ts` | Added restore action handling with notification sending |
+| `dashboard/my-events/[id]/_components/PublishButton.tsx` | Added Restore Event button for cancelled events |
+| `lib/email/email.test.ts` | Updated template count from 23 to 24 |
+
+---
+
 ### My Happenings 3-Tab Dashboard + RSVP Reactivation + Tab UX (Phase 5.14b, February 2026) — RESOLVED
 
 **Goal:** Add third "Cancelled" tab to My Happenings dashboard, fix RSVP reactivation for cancelled RSVPs, and enhance event management tab UX.

@@ -373,7 +373,8 @@ describe("Email Registry", () => {
     expect(keys).toContain("feedbackNotification");
     expect(keys).toContain("weeklyOpenMicsDigest");
     expect(keys).toContain("weeklyHappeningsDigest");
-    expect(keys.length).toBe(23);
+    expect(keys).toContain("eventRestored");
+    expect(keys.length).toBe(24);
   });
 
   it("getTemplate returns valid output for all templates", () => {
