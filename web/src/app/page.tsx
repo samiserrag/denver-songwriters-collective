@@ -30,12 +30,17 @@ function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number; claimed_slo
 
   return {
     id: dbEvent.id,
+    slug: dbEvent.slug,
     title: dbEvent.title,
     description: dbEvent.description ?? undefined,
     date: dbEvent.event_date,
+    event_date: dbEvent.event_date,
     time: dbEvent.start_time,
     start_time: dbEvent.start_time,
     end_time: dbEvent.end_time,
+    // Recurrence fields - critical for HappeningCard schedule computation
+    day_of_week: dbEvent.day_of_week,
+    recurrence_rule: dbEvent.recurrence_rule,
     venue: dbEvent.venue_name ?? "TBA",
     venue_address: dbEvent.venue_address ?? undefined,
     location: dbEvent.venue_address ?? undefined,
