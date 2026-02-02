@@ -697,6 +697,51 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Search Result Ordering Fix (February 2026) — RESOLVED
+
+**Goal:** Fix search results returning events before venues/members when searching for venue or member names.
+
+**Status:** Complete. Deployed and verified in production.
+
+**Problem:** Searching for "brewery" returned events (like "Brewery Rickoli Open Mic") before the actual venue ("Brewery Rickoli"). Similarly, searching "sami" returned events before the member profile.
+
+**Root Cause:** Search results were not sorted by relevance. Results were added to the array in query order (events before venues/members).
+
+**Solution:** Added sorting logic with three-tier priority:
+1. **Exact match** - Title exactly matches query (highest priority)
+2. **Starts with** - Title starts with query
+3. **Type order** - venues (1) > members (2) > open_mics (3) > events (4) > blogs (5)
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/search/route.ts` | Added result sorting with `typeOrder` priority map and multi-tier comparison |
+
+**Key Code Pattern:**
+```typescript
+const typeOrder: Record<SearchResult["type"], number> = {
+  venue: 1,
+  member: 2,
+  open_mic: 3,
+  event: 4,
+  blog: 5,
+};
+
+const sortedResults = results.sort((a, b) => {
+  // Exact match priority
+  // Starts with priority
+  // Then type order
+  return typeOrder[a.type] - typeOrder[b.type];
+});
+```
+
+**Verified Results:**
+- `q=brewery` → Returns "Brewery Rickoli" venue first
+- `q=sami` → Returns "Sami Serrag" member first
+
+---
+
 ### My Happenings 3-Tab Dashboard + RSVP Reactivation + Tab UX (Phase 5.14b, February 2026) — RESOLVED
 
 **Goal:** Add third "Cancelled" tab to My Happenings dashboard, fix RSVP reactivation for cancelled RSVPs, and enhance event management tab UX.
