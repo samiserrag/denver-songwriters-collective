@@ -657,6 +657,31 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Homepage DSC Events Past Date Filter Fix (February 2026) — RESOLVED
+
+**Goal:** Fix homepage DSC Happenings section showing past one-time events with incorrect badges.
+
+**Status:** Complete.
+
+**Problem:** The Sloan Lake Song Circle / Jam event (Feb 1, 2026 - past one-time event) was still appearing on the homepage DSC section on Feb 2, 2026 with incorrect badges: "UNCONFIRMED", "SCHEDULE UNKNOWN", "Schedule TBD", "Missing details". The event detail page correctly showed it as "Confirmed" with proper schedule.
+
+**Root Cause:** The DSC events query in `page.tsx` had NO date filter - it fetched all DSC events regardless of whether they were past. Past one-time events got included, and occurrence expansion returned empty for them (since they're in the past), causing them to display incorrectly.
+
+**Fix:** Added date filter to DSC events query:
+- One-time events: `event_date >= today` (filter out past)
+- Recurring events: allowed via `recurrence_rule.not.is.null` (they may have future occurrences)
+- Also changed ordering from `created_at DESC` to `event_date ASC` for more logical display
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Added `.or(\`event_date.gte.${today},recurrence_rule.not.is.null\`)` to DSC events query |
+
+**Key Invariant:** Homepage event sections must filter out past one-time events to prevent them from displaying with incorrect "Schedule Unknown" badges.
+
+---
+
 ### Advanced Options Expanded by Default (February 2026) — RESOLVED
 
 **Goal:** Make the Advanced Options section expanded by default on event creation and edit forms.
