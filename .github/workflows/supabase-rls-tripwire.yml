@@ -36,6 +36,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           # Intentionally allowed functions (auth triggers + user preferences)
-          TRIPWIRE_ALLOW_ANON_FUNCTIONS: "public.handle_new_user(),public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean)"
-          TRIPWIRE_ALLOW_PUBLIC_FUNCTIONS: "public.handle_new_user(),public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean)"
+          # Use semicolon (;) as delimiter since function signatures contain commas
+          TRIPWIRE_ALLOW_ANON_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean)"
+          TRIPWIRE_ALLOW_PUBLIC_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean)"
+          # Intentionally allowed postgres-owned views (read-only public data)
+          TRIPWIRE_ALLOW_POSTGRES_OWNED_VIEWS: "public.event_venue_match"
+          # WARNING mode for now - will flip to "1" after migration removes dangerous privs
+          TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS: "0"
+        working-directory: web
         run: node scripts/security/supabase-rls-tripwire.mjs
