@@ -3,7 +3,7 @@
 
 -- Update the handle_new_user() trigger to set is_fan = true by default
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, avatar_url, is_fan, created_at, updated_at)
   VALUES (
@@ -16,7 +16,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Backfill: Set is_fan = true for existing users who have no identity flags
 -- This ensures they appear on the Members page

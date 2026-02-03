@@ -5,13 +5,6 @@
 -- (events where host_id IS NULL). Admins can approve/reject.
 
 -- =====================================================
--- CLEANUP: Drop existing policies to make idempotent
--- =====================================================
-DROP POLICY IF EXISTS "Users can create own claims" ON public.event_claims;
-DROP POLICY IF EXISTS "Users can view own claims" ON public.event_claims;
-DROP POLICY IF EXISTS "Admins can manage all claims" ON public.event_claims;
-
--- =====================================================
 -- TABLE: event_claims
 -- =====================================================
 CREATE TABLE IF NOT EXISTS public.event_claims (
@@ -45,6 +38,11 @@ ON public.event_claims(status);
 -- RLS POLICIES
 -- =====================================================
 ALTER TABLE public.event_claims ENABLE ROW LEVEL SECURITY;
+
+-- CLEANUP: Drop existing policies to make idempotent (now safe since table exists)
+DROP POLICY IF EXISTS "Users can create own claims" ON public.event_claims;
+DROP POLICY IF EXISTS "Users can view own claims" ON public.event_claims;
+DROP POLICY IF EXISTS "Admins can manage all claims" ON public.event_claims;
 
 -- Users can insert claims where requester_id = auth.uid()
 CREATE POLICY "Users can create own claims"

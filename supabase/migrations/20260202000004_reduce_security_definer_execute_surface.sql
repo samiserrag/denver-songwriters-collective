@@ -23,79 +23,163 @@
 -- ============================================================================
 -- CATEGORY B: Trigger-only functions
 -- These are bound to triggers and don't need direct EXECUTE from anon/public
+-- Using conditional revokes to handle fresh databases where functions may not exist
 -- ============================================================================
 
--- handle_profile_slug: trigger on profiles
-REVOKE EXECUTE ON FUNCTION public.handle_profile_slug() FROM anon, public;
+DO $$
+BEGIN
+  -- handle_profile_slug: trigger on profiles
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'handle_profile_slug' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.handle_profile_slug() FROM anon, public;
+  END IF;
 
--- venue_slug_trigger: trigger on venues
-REVOKE EXECUTE ON FUNCTION public.venue_slug_trigger() FROM anon, public;
+  -- venue_slug_trigger: trigger on venues
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'venue_slug_trigger' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.venue_slug_trigger() FROM anon, public;
+  END IF;
 
--- cleanup_event_watchers_on_host_assign: trigger on events
-REVOKE EXECUTE ON FUNCTION public.cleanup_event_watchers_on_host_assign() FROM anon, public;
+  -- cleanup_event_watchers_on_host_assign: trigger on events
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'cleanup_event_watchers_on_host_assign' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.cleanup_event_watchers_on_host_assign() FROM anon, public;
+  END IF;
 
--- enforce_event_status_invariants: trigger on events
-REVOKE EXECUTE ON FUNCTION public.enforce_event_status_invariants() FROM anon, public;
+  -- enforce_event_status_invariants: trigger on events
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'enforce_event_status_invariants' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.enforce_event_status_invariants() FROM anon, public;
+  END IF;
 
--- prevent_admin_delete: trigger on profiles
-REVOKE EXECUTE ON FUNCTION public.prevent_admin_delete() FROM anon, public;
+  -- prevent_admin_delete: trigger on profiles
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'prevent_admin_delete' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.prevent_admin_delete() FROM anon, public;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- CATEGORY B: Helper functions (called by triggers, not direct RPC)
 -- ============================================================================
 
--- generate_profile_slug: called by handle_profile_slug trigger
-REVOKE EXECUTE ON FUNCTION public.generate_profile_slug(text, uuid) FROM anon, public;
+DO $$
+BEGIN
+  -- generate_profile_slug: called by handle_profile_slug trigger
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_profile_slug' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.generate_profile_slug(text, uuid) FROM anon, public;
+  END IF;
 
--- generate_venue_slug: called by venue_slug_trigger
-REVOKE EXECUTE ON FUNCTION public.generate_venue_slug(text, uuid) FROM anon, public;
+  -- generate_venue_slug: called by venue_slug_trigger
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_venue_slug' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.generate_venue_slug(text, uuid) FROM anon, public;
+  END IF;
 
--- generate_event_timeslots: not used in app code
-REVOKE EXECUTE ON FUNCTION public.generate_event_timeslots(uuid) FROM anon, public;
+  -- generate_event_timeslots: not used in app code
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_event_timeslots' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.generate_event_timeslots(uuid) FROM anon, public;
+  END IF;
 
--- generate_recurring_event_instances: not used in app code
-REVOKE EXECUTE ON FUNCTION public.generate_recurring_event_instances(uuid, integer) FROM anon, public;
+  -- generate_recurring_event_instances: not used in app code
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_recurring_event_instances' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.generate_recurring_event_instances(uuid, integer) FROM anon, public;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- CATEGORY B: Unused functions (not called in app code)
 -- ============================================================================
 
--- mark_timeslot_no_show: not used in current app code
-REVOKE EXECUTE ON FUNCTION public.mark_timeslot_no_show(uuid, uuid) FROM anon, public;
+DO $$
+BEGIN
+  -- mark_timeslot_no_show: not used in current app code
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'mark_timeslot_no_show' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.mark_timeslot_no_show(uuid, uuid) FROM anon, public;
+  END IF;
 
--- mark_timeslot_performed: not used in current app code
-REVOKE EXECUTE ON FUNCTION public.mark_timeslot_performed(uuid, uuid) FROM anon, public;
+  -- mark_timeslot_performed: not used in current app code
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'mark_timeslot_performed' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.mark_timeslot_performed(uuid, uuid) FROM anon, public;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- CATEGORY C: Server-only RPC (uses service_role client)
 -- ============================================================================
 
--- promote_timeslot_waitlist: called from /api/guest/action via createServiceRoleClient()
-REVOKE EXECUTE ON FUNCTION public.promote_timeslot_waitlist(uuid, integer) FROM anon, public;
+DO $$
+BEGIN
+  -- promote_timeslot_waitlist: called from /api/guest/action via createServiceRoleClient()
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'promote_timeslot_waitlist' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.promote_timeslot_waitlist(uuid, integer) FROM anon, public;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- CATEGORY A: RLS-dependent - REVOKE anon/public ONLY, keep authenticated
 -- ============================================================================
 
--- is_admin: used in 59 RLS policies - MUST keep authenticated, revoke anon/public only
-REVOKE EXECUTE ON FUNCTION public.is_admin() FROM anon, public;
+DO $$
+BEGIN
+  -- is_admin: used in 59 RLS policies - MUST keep authenticated, revoke anon/public only
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_admin' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.is_admin() FROM anon, public;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- Ensure service_role retains EXECUTE on all functions
+-- Using conditional grants to handle fresh databases where functions may not exist
 -- ============================================================================
-GRANT EXECUTE ON FUNCTION public.handle_profile_slug() TO service_role;
-GRANT EXECUTE ON FUNCTION public.venue_slug_trigger() TO service_role;
-GRANT EXECUTE ON FUNCTION public.cleanup_event_watchers_on_host_assign() TO service_role;
-GRANT EXECUTE ON FUNCTION public.enforce_event_status_invariants() TO service_role;
-GRANT EXECUTE ON FUNCTION public.prevent_admin_delete() TO service_role;
-GRANT EXECUTE ON FUNCTION public.generate_profile_slug(text, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.generate_venue_slug(text, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.generate_event_timeslots(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.generate_recurring_event_instances(uuid, integer) TO service_role;
-GRANT EXECUTE ON FUNCTION public.mark_timeslot_no_show(uuid, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.mark_timeslot_performed(uuid, uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.promote_timeslot_waitlist(uuid, integer) TO service_role;
-GRANT EXECUTE ON FUNCTION public.is_admin() TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'handle_profile_slug' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.handle_profile_slug() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'venue_slug_trigger' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.venue_slug_trigger() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'cleanup_event_watchers_on_host_assign' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.cleanup_event_watchers_on_host_assign() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'enforce_event_status_invariants' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.enforce_event_status_invariants() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'prevent_admin_delete' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.prevent_admin_delete() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_profile_slug' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.generate_profile_slug(text, uuid) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_venue_slug' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.generate_venue_slug(text, uuid) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_event_timeslots' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.generate_event_timeslots(uuid) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'generate_recurring_event_instances' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.generate_recurring_event_instances(uuid, integer) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'mark_timeslot_no_show' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.mark_timeslot_no_show(uuid, uuid) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'mark_timeslot_performed' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.mark_timeslot_performed(uuid, uuid) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'promote_timeslot_waitlist' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.promote_timeslot_waitlist(uuid, integer) TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_admin' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.is_admin() TO service_role;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- DO NOT TOUCH: These functions need authenticated access
