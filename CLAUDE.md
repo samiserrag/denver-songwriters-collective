@@ -657,6 +657,67 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Supabase RLS Security Hardening + CI Regression Tripwire (February 2026) — RESOLVED
+
+**Goal:** Harden Supabase permissions and add CI regression tripwire to prevent security drift.
+
+**Status:** Complete.
+
+**Summary:** Hardened Supabase permissions + added CI regression tripwire (RLS, secdef, views, privileges).
+
+**Work Completed:**
+
+| Item | Description |
+|------|-------------|
+| RLS enabled check | CI fails if any public table has RLS disabled |
+| SECURITY DEFINER audit | CI fails if anon/public can EXECUTE non-allowlisted functions |
+| View ownership check | CI fails if postgres-owned views lack `security_invoker=true` (unless allowlisted) |
+| Privilege drift check | CI fails if anon/authenticated have TRUNCATE/TRIGGER/REFERENCES on any table |
+| Migration applied | Revoked dangerous privileges from all existing tables + set ALTER DEFAULT PRIVILEGES |
+| Governance doc | Added allowlist justification requirements to prevent "just add it" culture |
+| Posture script | Human-readable security summary for local verification |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `web/scripts/security/supabase-rls-tripwire.mjs` | CI tripwire script with 4 security checks |
+| `web/scripts/security/security-posture.mjs` | Human-readable security posture summary |
+| `web/scripts/security/README.md` | Allowlist governance documentation |
+| `.github/workflows/supabase-rls-tripwire.yml` | GitHub Actions workflow with job summary |
+| `supabase/migrations/20260202000005_revoke_dangerous_table_privs.sql` | Revoke dangerous privileges |
+
+**Current Allowlist (with justification):**
+
+| Entry | Justification |
+|-------|---------------|
+| `public.handle_new_user()` | Auth trigger — must run during signup before user has session |
+| `public.upsert_notification_preferences(...)` | User preferences — called during onboarding flow |
+| `public.event_venue_match` (view) | Read-only view joining events and venues for public display |
+
+**Tripwire Checks:**
+
+1. **RLS Status** — All public tables must have RLS enabled
+2. **SECURITY DEFINER Functions** — No anon/public EXECUTE unless allowlisted
+3. **View Ownership** — postgres-owned views must have `security_invoker=true` or be allowlisted
+4. **Dangerous Privileges** — No TRUNCATE/TRIGGER/REFERENCES for anon/authenticated
+
+**Running Locally:**
+
+```bash
+# Quick posture check
+cd web && source .env.local && node scripts/security/security-posture.mjs
+
+# Full tripwire (with allowlists)
+TRIPWIRE_ALLOW_ANON_FUNCTIONS="..." \
+TRIPWIRE_ALLOW_PUBLIC_FUNCTIONS="..." \
+TRIPWIRE_ALLOW_POSTGRES_OWNED_VIEWS="..." \
+TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS="1" \
+node scripts/security/supabase-rls-tripwire.mjs
+```
+
+---
+
 ### Homepage DSC Events Past Date Filter Fix (February 2026) — RESOLVED
 
 **Goal:** Fix homepage DSC Happenings section showing past one-time events with incorrect badges.
