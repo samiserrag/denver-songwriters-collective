@@ -96,6 +96,16 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'mark_timeslot_performed' AND pronamespace = 'public'::regnamespace) THEN
     REVOKE EXECUTE ON FUNCTION public.mark_timeslot_performed(uuid, uuid) FROM anon, public;
   END IF;
+
+  -- notify_new_user: trigger/helper function, not direct RPC
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'notify_new_user' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.notify_new_user() FROM anon, public;
+  END IF;
+
+  -- rpc_book_studio_service: unused studio booking function
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'rpc_book_studio_service' AND pronamespace = 'public'::regnamespace) THEN
+    REVOKE EXECUTE ON FUNCTION public.rpc_book_studio_service(uuid, timestamp with time zone) FROM anon, public;
+  END IF;
 END $$;
 
 -- ============================================================================
@@ -178,6 +188,14 @@ BEGIN
 
   IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_admin' AND pronamespace = 'public'::regnamespace) THEN
     GRANT EXECUTE ON FUNCTION public.is_admin() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'notify_new_user' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.notify_new_user() TO service_role;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'rpc_book_studio_service' AND pronamespace = 'public'::regnamespace) THEN
+    GRANT EXECUTE ON FUNCTION public.rpc_book_studio_service(uuid, timestamp with time zone) TO service_role;
   END IF;
 END $$;
 
