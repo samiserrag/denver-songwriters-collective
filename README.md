@@ -39,6 +39,7 @@ npm run dev
 | Document | Purpose |
 |----------|---------|
 | [CLAUDE.md](./CLAUDE.md) | Repo operations (start here for agents) |
+| [SECURITY.md](./SECURITY.md) | Database security invariants (CI-enforced) |
 | [docs/GOVERNANCE.md](./docs/GOVERNANCE.md) | Stop-gate workflow & shipping process |
 | [docs/PRODUCT_NORTH_STAR.md](./docs/PRODUCT_NORTH_STAR.md) | Philosophy & UX laws |
 | [docs/CONTRACTS.md](./docs/CONTRACTS.md) | Enforceable UI/data contracts |

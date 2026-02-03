@@ -8,7 +8,31 @@
 
 > **For governance workflow and stop-gate protocol, see [GOVERNANCE.md](./docs/GOVERNANCE.md)**
 
+> **For database security invariants, see [SECURITY.md](./SECURITY.md)** — CI-enforced, non-negotiable.
+
 This file contains **repo-specific operational knowledge** for agents working in this codebase.
+
+---
+
+## Security: Database Invariants (Non-Negotiable)
+
+**All agents must comply with database security rules enforced by CI.**
+
+Four invariants are checked on every push/PR:
+1. All public tables must have RLS enabled
+2. SECURITY DEFINER functions must not be callable by anon/public (unless allowlisted)
+3. Postgres-owned views must use `security_invoker=true` (unless allowlisted)
+4. No TRUNCATE/TRIGGER/REFERENCES privileges for anon/authenticated
+
+**Do NOT bypass CI by adding allowlist entries.** Fix the root cause instead:
+- Missing RLS → Add `ENABLE ROW LEVEL SECURITY` to migration
+- SECURITY DEFINER → Change to SECURITY INVOKER or move to API route
+- Postgres-owned view → Add `WITH (security_invoker = true)`
+- Dangerous privileges → Use specific grants (SELECT/INSERT/UPDATE/DELETE)
+
+Allowlisting requires documented justification and explicit approval from Sami.
+
+See: [SECURITY.md](./SECURITY.md) and `web/scripts/security/README.md`
 
 ---
 
