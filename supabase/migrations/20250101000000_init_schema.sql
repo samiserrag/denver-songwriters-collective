@@ -1,4 +1,4 @@
-CREATE TYPE user_role AS ENUM ('performer', 'host', 'studio', 'admin');-- ============================================
+-- ============================================
 -- OPEN MIC DROP - DATABASE INITIALIZATION
 -- Migration: 20250101000000_init_schema.sql
 -- ============================================
@@ -29,17 +29,18 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-        DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
         CREATE TYPE user_role AS ENUM ('performer', 'host', 'studio', 'admin');
     END IF;
 END
 $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'appointment_status') THEN
+        CREATE TYPE appointment_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled');
     END IF;
 END
 $$;
-CREATE TYPE appointment_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled');
 
 -- ==========================================================
 -- 1. PROFILES TABLE
