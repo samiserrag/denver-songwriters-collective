@@ -70,6 +70,38 @@ TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS="1" \
 node scripts/security/supabase-rls-tripwire.mjs
 ```
 
+## When CI Fails
+
+### Step 1: Identify which check failed
+
+| Failure Message | Check | Likely Cause |
+|-----------------|-------|--------------|
+| "RLS disabled on public tables" | Check 1 | New table missing `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` |
+| "SECURITY DEFINER functions executable by anon/public" | Check 2 | New function with `SECURITY DEFINER` callable by anon/public |
+| "Views owned by postgres without security_invoker=true" | Check 3 | View created by migration (runs as postgres) without `security_invoker=true` |
+| "Dangerous table privileges detected" | Check 4 | `GRANT ALL` or explicit TRUNCATE/TRIGGER/REFERENCES grant |
+
+### Step 2: Fix the root cause (don't allowlist first)
+
+| Check | Preferred Fix |
+|-------|---------------|
+| RLS disabled | Add `ALTER TABLE public.{table} ENABLE ROW LEVEL SECURITY;` to migration |
+| SECURITY DEFINER | Change to `SECURITY INVOKER`, or move logic to API route/edge function |
+| postgres-owned view | Add `WITH (security_invoker = true)` to view definition |
+| Dangerous privileges | Use specific grants (`SELECT, INSERT, UPDATE, DELETE`) instead of `ALL` |
+
+### Step 3: If allowlisting is truly necessary
+
+1. **Document justification** in this README under "Current Allowlist Entries"
+2. **Get approval** from project maintainer (Sami)
+3. **Add to workflow** with explanatory comment
+4. **Create PR** with security context in description
+
+### Who Can Approve Allowlist Additions
+
+- **Project maintainer (Sami)** — Required for all allowlist changes
+- **No self-approvals** — The person adding the allowlist entry cannot approve it
+
 ## Anti-Patterns to Avoid
 
 - ❌ "Just add it to the allowlist" without justification
