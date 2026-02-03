@@ -4,22 +4,32 @@
 
 -- =====================================================
 -- CLEANUP: Drop existing policies to make idempotent
+-- (Only if tables exist - fresh installs won't have them)
 -- =====================================================
+DO $$
+BEGIN
+  -- approved_hosts policies
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'approved_hosts' AND relnamespace = 'public'::regnamespace) THEN
+    DROP POLICY IF EXISTS "Users can view own host status" ON public.approved_hosts;
+    DROP POLICY IF EXISTS "Admins can manage approved hosts" ON public.approved_hosts;
+  END IF;
 
--- approved_hosts policies
-DROP POLICY IF EXISTS "Users can view own host status" ON public.approved_hosts;
-DROP POLICY IF EXISTS "Admins can manage approved hosts" ON public.approved_hosts;
+  -- host_requests policies
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'host_requests' AND relnamespace = 'public'::regnamespace) THEN
+    DROP POLICY IF EXISTS "Users can create own host requests" ON public.host_requests;
+    DROP POLICY IF EXISTS "Users can view own host requests" ON public.host_requests;
+    DROP POLICY IF EXISTS "Admins can manage all host requests" ON public.host_requests;
+  END IF;
 
--- host_requests policies
-DROP POLICY IF EXISTS "Users can create own host requests" ON public.host_requests;
-DROP POLICY IF EXISTS "Users can view own host requests" ON public.host_requests;
-DROP POLICY IF EXISTS "Admins can manage all host requests" ON public.host_requests;
-
--- event_hosts policies
-DROP POLICY IF EXISTS "Public can view accepted event hosts" ON public.event_hosts;
-DROP POLICY IF EXISTS "Users can view own host invitations" ON public.event_hosts;
-DROP POLICY IF EXISTS "Users can respond to own invitations" ON public.event_hosts;
-DROP POLICY IF EXISTS "Admins can manage all event hosts" ON public.event_hosts;
+  -- event_hosts policies
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'event_hosts' AND relnamespace = 'public'::regnamespace) THEN
+    DROP POLICY IF EXISTS "Public can view accepted event hosts" ON public.event_hosts;
+    DROP POLICY IF EXISTS "Users can view own host invitations" ON public.event_hosts;
+    DROP POLICY IF EXISTS "Users can respond to own invitations" ON public.event_hosts;
+    DROP POLICY IF EXISTS "Admins can manage all event hosts" ON public.event_hosts;
+  END IF;
+END
+$$;
 
 -- =====================================================
 -- TABLES

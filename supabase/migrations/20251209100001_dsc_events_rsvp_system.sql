@@ -4,12 +4,19 @@
 
 -- =====================================================
 -- CLEANUP: Drop existing policies to make idempotent
+-- (Only if table exists - fresh installs won't have it)
 -- =====================================================
-DROP POLICY IF EXISTS "Anyone can view non-cancelled RSVPs" ON public.event_rsvps;
-DROP POLICY IF EXISTS "Users can create own RSVPs" ON public.event_rsvps;
-DROP POLICY IF EXISTS "Users can update own RSVPs" ON public.event_rsvps;
-DROP POLICY IF EXISTS "Users can delete own RSVPs" ON public.event_rsvps;
-DROP POLICY IF EXISTS "Admins can manage all RSVPs" ON public.event_rsvps;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'event_rsvps' AND relnamespace = 'public'::regnamespace) THEN
+    DROP POLICY IF EXISTS "Anyone can view non-cancelled RSVPs" ON public.event_rsvps;
+    DROP POLICY IF EXISTS "Users can create own RSVPs" ON public.event_rsvps;
+    DROP POLICY IF EXISTS "Users can update own RSVPs" ON public.event_rsvps;
+    DROP POLICY IF EXISTS "Users can delete own RSVPs" ON public.event_rsvps;
+    DROP POLICY IF EXISTS "Admins can manage all RSVPs" ON public.event_rsvps;
+  END IF;
+END
+$$;
 
 -- =====================================================
 -- SCHEMA

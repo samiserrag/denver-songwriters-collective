@@ -4,22 +4,30 @@
 
 -- =====================================================
 -- CLEANUP: Drop existing policies to make idempotent
+-- (Only if tables exist - fresh installs won't have them)
 -- =====================================================
+DO $$
+BEGIN
+  -- event_comments policies
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'event_comments' AND relnamespace = 'public'::regnamespace) THEN
+    DROP POLICY IF EXISTS "Anyone can view public comments" ON public.event_comments;
+    DROP POLICY IF EXISTS "Hosts can view host-only comments" ON public.event_comments;
+    DROP POLICY IF EXISTS "Users can view own comments" ON public.event_comments;
+    DROP POLICY IF EXISTS "Users can create comments" ON public.event_comments;
+    DROP POLICY IF EXISTS "Users can edit own comments" ON public.event_comments;
+    DROP POLICY IF EXISTS "Users can delete own comments" ON public.event_comments;
+    DROP POLICY IF EXISTS "Admins can manage all comments" ON public.event_comments;
+  END IF;
 
--- event_comments policies
-DROP POLICY IF EXISTS "Anyone can view public comments" ON public.event_comments;
-DROP POLICY IF EXISTS "Hosts can view host-only comments" ON public.event_comments;
-DROP POLICY IF EXISTS "Users can view own comments" ON public.event_comments;
-DROP POLICY IF EXISTS "Users can create comments" ON public.event_comments;
-DROP POLICY IF EXISTS "Users can edit own comments" ON public.event_comments;
-DROP POLICY IF EXISTS "Users can delete own comments" ON public.event_comments;
-DROP POLICY IF EXISTS "Admins can manage all comments" ON public.event_comments;
-
--- notifications policies
-DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Admins can create notifications" ON public.notifications;
-DROP POLICY IF EXISTS "System can create notifications for users" ON public.notifications;
+  -- notifications policies
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'notifications' AND relnamespace = 'public'::regnamespace) THEN
+    DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
+    DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+    DROP POLICY IF EXISTS "Admins can create notifications" ON public.notifications;
+    DROP POLICY IF EXISTS "System can create notifications for users" ON public.notifications;
+  END IF;
+END
+$$;
 
 -- =====================================================
 -- TABLES
