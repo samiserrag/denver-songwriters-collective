@@ -41,7 +41,7 @@ jobs:
           TRIPWIRE_ALLOW_PUBLIC_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean)"
           # Intentionally allowed postgres-owned views (read-only public data)
           TRIPWIRE_ALLOW_POSTGRES_OWNED_VIEWS: "public.event_venue_match"
-          # WARNING mode for now - will flip to "1" after migration removes dangerous privs
-          TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS: "0"
+          # Fail CI if dangerous privileges are detected (migration 20260202000005 removed them)
+          TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS: "1"
         working-directory: web
         run: node scripts/security/supabase-rls-tripwire.mjs
