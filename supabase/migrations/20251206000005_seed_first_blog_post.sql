@@ -1,7 +1,17 @@
 -- Seed the first blog post: Open Mic Etiquette and Tips
 -- This will be authored by the admin user (Sami Serrag)
+-- Note: Only inserts if an admin profile exists (skips in CI environments)
 
-INSERT INTO blog_posts (
+DO $$
+DECLARE
+  admin_user_id UUID;
+BEGIN
+  -- Find the admin user
+  SELECT id INTO admin_user_id FROM profiles WHERE role = 'admin' LIMIT 1;
+
+  -- Only insert if admin exists
+  IF admin_user_id IS NOT NULL THEN
+    INSERT INTO blog_posts (
   author_id,
   slug,
   title,
@@ -12,7 +22,7 @@ INSERT INTO blog_posts (
   published_at,
   tags
 ) VALUES (
-  (SELECT id FROM profiles WHERE role = 'admin' LIMIT 1),
+      admin_user_id,
   'open-mic-etiquette-and-tips',
   'Open Mic Etiquette and Tips: A Guide for Denver Songwriters',
   'Whether you''re stepping up to the mic for the first time or you''re a seasoned performer, these guidelines will help you make the most of your open mic experience while being a supportive community member.',
@@ -134,4 +144,7 @@ See you at the next open mic!
   NOW(),
   ARRAY['tips', 'etiquette', 'beginners', 'open mic', 'community']
 )
-ON CONFLICT (slug) DO NOTHING;
+    ON CONFLICT (slug) DO NOTHING;
+  END IF;
+END
+$$;
