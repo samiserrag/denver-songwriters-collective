@@ -118,11 +118,19 @@ async function main() {
   // ========================================
   // Check 3: Views owned by postgres without SECURITY INVOKER
   // ========================================
+  // A view with security_invoker=true runs queries as the calling user (safe).
+  // A view owned by postgres WITHOUT security_invoker runs as postgres (dangerous).
+  // We fail on postgres-owned views that lack security_invoker, unless allowlisted.
   const views = await client.query(`
     select
       n.nspname as schema,
       c.relname as view_name,
-      pg_get_userbyid(c.relowner) as owner
+      pg_get_userbyid(c.relowner) as owner,
+      -- Check reloptions for security_invoker=true (PostgreSQL 15+)
+      coalesce(
+        (select true from unnest(c.reloptions) opt where opt = 'security_invoker=true'),
+        false
+      ) as has_security_invoker
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     where c.relkind = 'v'
@@ -133,14 +141,19 @@ async function main() {
   const postgresOwnedViewsBad = [];
   for (const v of views.rows) {
     const fqn = `${v.schema}.${v.view_name}`;
-    if (v.owner === "postgres" && !allowPostgresOwnedViews.has(fqn)) {
-      postgresOwnedViewsBad.push(fqn);
+    // Safe if: not postgres-owned, OR has security_invoker=true, OR explicitly allowlisted
+    const isPostgresOwned = v.owner === "postgres";
+    const hasSecurityInvoker = v.has_security_invoker === true;
+    const isAllowlisted = allowPostgresOwnedViews.has(fqn);
+
+    if (isPostgresOwned && !hasSecurityInvoker && !isAllowlisted) {
+      postgresOwnedViewsBad.push(`${fqn} (owner: postgres, security_invoker: false)`);
     }
   }
 
   if (postgresOwnedViewsBad.length) {
     failures.push({
-      title: "Views owned by postgres (not allowlisted) - potential privilege escalation vector",
+      title: "Views owned by postgres without security_invoker=true (not allowlisted) - privilege escalation risk",
       items: postgresOwnedViewsBad
     });
   }
