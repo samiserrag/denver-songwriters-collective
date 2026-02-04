@@ -231,7 +231,7 @@ export default function SettingsPage() {
                 <div>
                   <span className="text-[var(--color-text-primary)]">Event updates</span>
                   <p className="text-[var(--color-text-tertiary)] text-sm">
-                    Reminders and changes for events you&apos;re attending or hosting
+                    Weekly digest, reminders, and changes for events you&apos;re attending or hosting
                   </p>
                 </div>
                 <button

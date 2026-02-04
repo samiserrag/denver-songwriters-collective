@@ -273,9 +273,10 @@ describe("getWeeklyOpenMicsDigestEmail", () => {
       venueCount: 1,
     });
 
-    expect(email.html).toContain("/dashboard/settings");
-    expect(email.html).toContain("Manage your email preferences");
-    expect(email.text).toContain("/dashboard/settings");
+    // GTM-2: HMAC-signed one-click unsubscribe link + warm community copy
+    expect(email.html).toContain("unsubscribe with one click");
+    expect(email.html).toContain("re-subscribe");
+    expect(email.text).toContain("unsubscribe");
   });
 
   it("includes Browse All Open Mics CTA", () => {

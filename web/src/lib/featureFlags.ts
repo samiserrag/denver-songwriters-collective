@@ -16,7 +16,10 @@ export function isGuestVerificationEnabled(): boolean {
 /**
  * Check if weekly open mics digest emails are enabled (server-side).
  * Set ENABLE_WEEKLY_DIGEST=true in environment to enable.
- * Default: false (kill switch - must explicitly enable)
+ *
+ * NOTE (GTM-2): Primary control is now the DB toggle in digest_settings.
+ * This env var serves as an emergency kill switch only.
+ * Precedence: env var OFF → blocked | env var ON → check DB toggle → check idempotency.
  */
 export function isWeeklyDigestEnabled(): boolean {
   return process.env.ENABLE_WEEKLY_DIGEST === "true";
@@ -25,9 +28,10 @@ export function isWeeklyDigestEnabled(): boolean {
 /**
  * Check if weekly happenings digest emails are enabled (server-side).
  * Set ENABLE_WEEKLY_HAPPENINGS_DIGEST=true in environment to enable.
- * Default: false (kill switch - must explicitly enable)
  *
- * NOTE: Only one digest kill switch should be enabled at a time.
+ * NOTE (GTM-2): Primary control is now the DB toggle in digest_settings.
+ * This env var serves as an emergency kill switch only.
+ * Precedence: env var OFF → blocked | env var ON → check DB toggle → check idempotency.
  * Both crons run at the same time (Sunday 3:00 UTC).
  */
 export function isWeeklyHappeningsDigestEnabled(): boolean {

@@ -8,7 +8,10 @@
  * - No personalization (all recipients get same list)
  * - Simple day-grouped list format
  * - Links to event detail pages
- * - Unsubscribe links to /dashboard/settings
+ *
+ * GTM-2:
+ * - HMAC-signed one-click unsubscribe link (no login required)
+ * - Warm community-forward footer copy
  */
 
 import { escapeHtml } from "@/lib/highlight";
@@ -22,6 +25,7 @@ import {
 import type { HappeningOccurrence } from "@/lib/digest/weeklyHappenings";
 import { formatTimeDisplay } from "@/lib/digest/weeklyHappenings";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { buildUnsubscribeUrl } from "@/lib/digest/unsubscribeToken";
 
 // ============================================================
 // Types
@@ -30,6 +34,8 @@ import { EVENT_TYPE_CONFIG } from "@/types/events";
 export interface WeeklyHappeningsDigestParams {
   /** Recipient's first name (null for "friend" fallback) */
   firstName: string | null;
+  /** Recipient's user ID (for HMAC unsubscribe link) */
+  userId: string;
   /** Happenings grouped by date key */
   byDate: Map<string, HappeningOccurrence[]>;
   /** Total count of happenings */
@@ -157,7 +163,10 @@ function formatHappeningText(occurrence: HappeningOccurrence): string {
 export function getWeeklyHappeningsDigestEmail(
   params: WeeklyHappeningsDigestParams
 ): { subject: string; html: string; text: string } {
-  const { firstName, byDate, totalCount, venueCount } = params;
+  const { firstName, userId, byDate, totalCount, venueCount } = params;
+
+  // Build one-click unsubscribe URL (HMAC-signed, no login required)
+  const unsubscribeUrl = buildUnsubscribeUrl(userId) || `${SITE_URL}/dashboard/settings`;
 
   const subject = "Happenings This Week in Denver";
 
@@ -221,9 +230,15 @@ export function getWeeklyHappeningsDigestEmail(
 
     <hr style="border: none; border-top: 1px solid ${EMAIL_COLORS.border}; margin: 24px 0;" />
 
+    <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
+      You're receiving this weekly digest because you're part of the Denver Songwriters Collective community.
+      If you'd rather not receive these, you can
+      <a href="${unsubscribeUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">unsubscribe with one click</a>
+      — you can always re-subscribe from your
+      <a href="${SITE_URL}/dashboard/settings" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">settings</a>.
+    </p>
     <p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
-      You're receiving this because you opted in to event updates.
-      <a href="${SITE_URL}/dashboard/settings" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Manage your email preferences</a>
+      Questions or feedback? Just reply to this email.
     </p>
   `;
 
@@ -265,8 +280,11 @@ export function getWeeklyHappeningsDigestEmail(
     "Want to see more or tailor this to you? Browse all happenings with your filters applied!",
     "",
     "---",
-    "You're receiving this because you opted in to event updates.",
-    `Manage your email preferences: ${SITE_URL}/dashboard/settings`,
+    "You're receiving this weekly digest because you're part of the Denver Songwriters Collective community.",
+    `If you'd rather not receive these, unsubscribe here: ${unsubscribeUrl}`,
+    `You can always re-subscribe from your settings: ${SITE_URL}/dashboard/settings`,
+    "",
+    "Questions or feedback? Just reply to this email.",
   ].filter((line) => line !== undefined);
 
   const text = wrapEmailText(textParts.join("\n"));

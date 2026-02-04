@@ -4,22 +4,23 @@
  * Triggered by Vercel Cron at 0 3 * * 0 (Sunday 3:00 AM UTC = 8:00 PM Denver MST)
  * Sends weekly digest emails covering ALL event types to all opted-in users.
  *
- * GTM-1 MVP:
- * - Kill switch: ENABLE_WEEKLY_HAPPENINGS_DIGEST must be "true"
- * - Auth: CRON_SECRET header required
- * - All recipients get the same email (no personalization)
- * - Includes all 9 event types
+ * Control hierarchy (GTM-2):
+ * 1. Env var kill switch OFF → skip (emergency override, highest priority)
+ * 2. DB digest_settings toggle → primary control (admin panel)
+ * 3. Idempotency guard → automatic duplicate prevention
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { isWeeklyHappeningsDigestEnabled } from "@/lib/featureFlags";
-import { sendEmail } from "@/lib/email/mailer";
 import {
   getUpcomingHappenings,
   getDigestRecipients,
 } from "@/lib/digest/weeklyHappenings";
 import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHappeningsDigest";
+import { claimDigestSendLock, computeWeekKey } from "@/lib/digest/digestSendLog";
+import { isDigestEnabled } from "@/lib/digest/digestSettings";
+import { sendDigestEmails } from "@/lib/digest/sendDigest";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for sending all emails
@@ -32,10 +33,10 @@ export const maxDuration = 60; // Allow up to 60 seconds for sending all emails
  */
 export async function GET(request: NextRequest) {
   // ============================================================
-  // Kill Switch Check
+  // Kill Switch Check (emergency override — env var)
   // ============================================================
   if (!isWeeklyHappeningsDigestEnabled()) {
-    console.log("[WeeklyHappenings] Kill switch OFF - skipping");
+    console.log("[WeeklyHappenings] Env var kill switch OFF - skipping");
     return NextResponse.json(
       { success: true, message: "Kill switch disabled", sent: 0 },
       { status: 200 }
@@ -70,6 +71,24 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceRoleClient();
 
+    // ============================================================
+    // DB Toggle Check (primary control — admin panel)
+    // ============================================================
+    const dbEnabled = await isDigestEnabled(supabase, "weekly_happenings");
+    if (!dbEnabled) {
+      console.log("[WeeklyHappenings] DB toggle OFF - skipping");
+      return NextResponse.json(
+        { success: true, message: "Digest disabled in admin settings", sent: 0 },
+        { status: 200 }
+      );
+    }
+
+    // ============================================================
+    // Idempotency Guard — prevent duplicate sends
+    // ============================================================
+    const weekKey = computeWeekKey();
+    console.log(`[WeeklyHappenings] Week key: ${weekKey}`);
+
     // Fetch happenings for the week (all event types)
     console.log("[WeeklyHappenings] Fetching upcoming happenings...");
     const digestData = await getUpcomingHappenings(supabase);
@@ -87,46 +106,51 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Send emails to all recipients
-    let sentCount = 0;
-    let failedCount = 0;
+    // Attempt to claim idempotency lock before sending
+    const lock = await claimDigestSendLock(
+      supabase,
+      "weekly_happenings",
+      recipients.length,
+      weekKey
+    );
 
-    for (const recipient of recipients) {
-      // Build email with recipient's name
-      const email = getWeeklyHappeningsDigestEmail({
-        firstName: recipient.firstName,
-        byDate: digestData.byDate,
-        totalCount: digestData.totalCount,
-        venueCount: digestData.venueCount,
-      });
-
-      // Send email
-      const sent = await sendEmail({
-        to: recipient.email,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        templateName: "weeklyHappeningsDigest",
-      });
-
-      if (sent) {
-        sentCount++;
-      } else {
-        failedCount++;
+    if (!lock.acquired) {
+      if (lock.reason === "lock_error") {
+        console.error(`[WeeklyHappenings] Idempotency lock error for ${weekKey}; skipping send to prevent duplicates`);
+        return NextResponse.json(
+          { error: "Idempotency lock error", skipped: true, reason: "lock_error", weekKey },
+          { status: 500 }
+        );
       }
-
-      // Small delay to avoid overwhelming SMTP
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      console.log(`[WeeklyHappenings] Already sent for ${weekKey} — skipping`);
+      return NextResponse.json(
+        { success: true, message: `Already sent for ${weekKey}`, sent: 0, skipped: true, reason: "already_sent" },
+        { status: 200 }
+      );
     }
 
-    console.log(`[WeeklyHappenings] Complete: ${sentCount} sent, ${failedCount} failed`);
+    // Send emails to all recipients using shared send function
+    const result = await sendDigestEmails({
+      mode: "full",
+      recipients,
+      buildEmail: (recipient) =>
+        getWeeklyHappeningsDigestEmail({
+          firstName: recipient.firstName,
+          userId: recipient.userId,
+          byDate: digestData.byDate,
+          totalCount: digestData.totalCount,
+          venueCount: digestData.venueCount,
+        }),
+      templateName: "weeklyHappeningsDigest",
+      logPrefix: "[WeeklyHappenings]",
+    });
 
     return NextResponse.json(
       {
         success: true,
         message: "Weekly happenings digest sent",
-        sent: sentCount,
-        failed: failedCount,
+        sent: result.sent,
+        failed: result.failed,
         totalHappenings: digestData.totalCount,
         totalVenues: digestData.venueCount,
       },

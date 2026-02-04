@@ -65,6 +65,10 @@ Before any PR merges:
 
 PRs containing only documentation (e.g., `docs/investigation/*.md`) are allowed without full execution approval, but must not include code, migration, or config changes.
 
+### Email Systems Philosophy
+
+Email systems in DSC prioritize community value over marketing optimization. The weekly digest is community infrastructure — it connects songwriters with stages, sessions, and each other. Dark patterns, forced retention, deceptive unsubscribe flows, or guilt-based copy are **not permitted**. See `docs/gtm/weekly-personalized-digest-north-star.md` §3.5 for the full email philosophy.
+
 ---
 
 ## Project Overview
@@ -311,7 +315,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (Phase 5.14):** Lint warnings = 0. All tests passing (3438). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (GTM-2):** Lint warnings = 0. All tests passing (3520). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -387,9 +391,10 @@ All must pass before merge:
 
 **Cron Configuration:** `web/vercel.json`
 
-**Kill Switches:**
-- `ENABLE_WEEKLY_DIGEST=true` — Required to enable weekly open mics digest
-- `ENABLE_WEEKLY_HAPPENINGS_DIGEST=true` — Required to enable weekly happenings digest (ALL types)
+**Control Hierarchy (GTM-2):**
+1. **Env var kill switch** (emergency only): `ENABLE_WEEKLY_DIGEST=false` / `ENABLE_WEEKLY_HAPPENINGS_DIGEST=false` — blocks sending regardless of DB toggle
+2. **DB toggle** (primary): `digest_settings` table — admin-controlled via `/dashboard/admin/email`
+3. **Idempotency guard** (automatic): `digest_send_log` unique constraint prevents duplicate sends
 
 **Key Files:**
 
@@ -397,11 +402,22 @@ All must pass before merge:
 |------|---------|
 | `lib/digest/weeklyOpenMics.ts` | Business logic for fetching open mics and building digest data |
 | `lib/digest/weeklyHappenings.ts` | Business logic for fetching ALL happenings and building digest data |
+| `lib/digest/digestSendLog.ts` | Idempotency guard: `computeWeekKey()`, `claimDigestSendLock()` |
+| `lib/digest/digestSettings.ts` | DB toggle helpers: `isDigestEnabled()`, `getDigestSettings()`, `updateDigestSettings()` |
+| `lib/digest/sendDigest.ts` | Shared send function with 3 modes: full, test, dryRun |
+| `lib/digest/unsubscribeToken.ts` | HMAC-signed unsubscribe URL generation/validation |
 | `lib/email/templates/weeklyOpenMicsDigest.ts` | Email template for weekly open mics digest |
 | `lib/email/templates/weeklyHappeningsDigest.ts` | Email template for weekly happenings digest (ALL types) |
 | `app/api/cron/weekly-open-mics/route.ts` | Cron endpoint handler for open mics digest |
 | `app/api/cron/weekly-happenings/route.ts` | Cron endpoint handler for happenings digest |
-| `lib/featureFlags.ts` | Kill switches: `isWeeklyDigestEnabled()`, `isWeeklyHappeningsDigestEnabled()` |
+| `app/api/digest/unsubscribe/route.ts` | One-click HMAC-signed unsubscribe endpoint |
+| `app/api/admin/digest/settings/route.ts` | Admin digest toggle API |
+| `app/api/admin/digest/send/route.ts` | Admin send (test/full) API |
+| `app/api/admin/digest/preview/route.ts` | Admin preview API (dryRun) |
+| `app/api/admin/digest/history/route.ts` | Admin send history API |
+| `app/(protected)/dashboard/admin/email/page.tsx` | Admin Email Control Panel UI |
+| `app/digest/unsubscribed/page.tsx` | Public unsubscribe confirmation page |
+| `lib/featureFlags.ts` | Env var kill switches (emergency only): `isWeeklyDigestEnabled()`, `isWeeklyHappeningsDigestEnabled()` |
 
 **Cron Authentication:**
 - Vercel Cron jobs include `authorization: Bearer ${CRON_SECRET}` header automatically
@@ -678,6 +694,213 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### GTM-2: Admin Email Control Panel + Friendly Opt-Out (February 2026) — RESOLVED
+
+**Goal:** Give admins full control over weekly digest automation and provide recipients with a one-click, no-login, HMAC-signed unsubscribe flow with warm community-forward copy.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3520, build success). Migration applied. `UNSUBSCRIBE_SECRET` set in Vercel.
+
+**Phase:** GTM-2
+
+**6 Guiding Principles (Non-Negotiable):**
+1. Auto opt-in is permanent policy (correct default for free community digest)
+2. One-click, no-login opt-out required in every digest email
+3. Easy opt-back-in (link to settings in unsubscribe confirmation)
+4. Warm, human, community-forward tone
+5. Encourage reconsideration, never block or shame
+6. Idempotency must remain intact
+
+**Control Hierarchy (Precedence):**
+1. Env var kill switch OFF → blocks everything (emergency only)
+2. DB `digest_settings` toggle → primary admin control
+3. Idempotency guard → automatic duplicate prevention
+
+**Database Migration:**
+
+| Migration | Purpose | Status |
+|-----------|---------|--------|
+| `20260204000000_digest_settings.sql` | Create `digest_settings` table for admin automation toggles | Applied (MODE B) |
+
+**Schema (`digest_settings`):**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | UUID | Primary key |
+| `digest_type` | TEXT UNIQUE | `'weekly_open_mics'` or `'weekly_happenings'` |
+| `is_enabled` | BOOLEAN | Admin toggle (default false, seeds both as disabled) |
+| `updated_at` | TIMESTAMPTZ | Last toggle change |
+| `updated_by` | UUID | Admin who toggled |
+
+RLS enabled with no policies = service role only access.
+
+**New Env Var Required:**
+
+| Variable | Purpose |
+|----------|---------|
+| `UNSUBSCRIBE_SECRET` | HMAC-SHA256 key for signing unsubscribe URLs (no expiry, no auth needed) |
+
+**Files Added (11):**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260204000000_digest_settings.sql` | Migration: digest_settings table with RLS, seeds both types as disabled |
+| `lib/digest/digestSettings.ts` | CRUD helpers: `getDigestSettings()`, `getAllDigestSettings()`, `updateDigestSettings()`, `isDigestEnabled()` |
+| `lib/digest/unsubscribeToken.ts` | HMAC-SHA256 token generation/validation: `generateUnsubscribeToken()`, `validateUnsubscribeToken()`, `buildUnsubscribeUrl()` |
+| `lib/digest/sendDigest.ts` | Shared send function with 3 modes: `full` (all recipients, 100ms delay), `test` (single recipient, bypasses lock, [TEST] prefix), `dryRun` (returns HTML, no send) |
+| `app/api/digest/unsubscribe/route.ts` | One-click unsubscribe GET endpoint: validates HMAC, sets `email_event_updates=false`, redirects to confirmation |
+| `app/digest/unsubscribed/page.tsx` | Public confirmation page with warm copy + re-subscribe CTA to `/dashboard/settings` |
+| `app/api/admin/digest/settings/route.ts` | GET/PATCH digest settings (admin-only) |
+| `app/api/admin/digest/preview/route.ts` | GET `?type=` preview via dryRun mode (admin-only) |
+| `app/api/admin/digest/send/route.ts` | POST `{ digestType, mode }` for test/full sends (admin-only) |
+| `app/api/admin/digest/history/route.ts` | GET send history from `digest_send_log` (admin-only) |
+| `app/(protected)/dashboard/admin/email/page.tsx` | Admin Email Control Panel: toggles, send buttons, preview, history table |
+
+**Files Modified (10):**
+
+| File | Change |
+|------|--------|
+| `lib/email/templates/weeklyHappeningsDigest.ts` | Added `userId` param, HMAC unsubscribe URL, warm community footer |
+| `lib/email/templates/weeklyOpenMicsDigest.ts` | Same changes as happenings template |
+| `app/api/cron/weekly-happenings/route.ts` | Added DB toggle check via `isDigestEnabled()`, replaced inline loop with `sendDigestEmails()`, passes `userId` to template |
+| `app/api/cron/weekly-open-mics/route.ts` | Same structural changes as happenings route |
+| `app/(protected)/dashboard/admin/page.tsx` | Added "Email & Digests" link in admin hub Operations section |
+| `app/(protected)/dashboard/settings/page.tsx` | Updated `email_event_updates` toggle description to mention weekly digest |
+| `lib/featureFlags.ts` | Updated comments: env vars are emergency-only (DB toggle is primary) |
+| `__tests__/digest-send-log.test.ts` | Updated 2 tests to search for `sendDigestEmails(` (replaced inline loop) |
+| `__tests__/weekly-happenings-digest.test.ts` | Updated unsubscribe assertion to match warm community copy |
+| `__tests__/weekly-open-mics-digest.test.ts` | Same assertion update as happenings test |
+
+**Admin Email Control Panel (`/dashboard/admin/email`):**
+
+| Feature | Behavior |
+|---------|----------|
+| Automation toggle | DB-backed on/off per digest type (primary control) |
+| Send weekly happenings now | Full send to all opted-in recipients (respects idempotency) |
+| Send test to me | Sends to admin only with [TEST] prefix (bypasses idempotency) |
+| Preview | Renders HTML without sending (dryRun mode) |
+| Last sent status | Shows most recent send timestamp and recipient count |
+| Send history | Table of recent sends from `digest_send_log` |
+
+**Unsubscribe Flow:**
+
+| Step | Implementation |
+|------|----------------|
+| 1. Email footer link | HMAC-signed URL: `/api/digest/unsubscribe?uid={userId}&sig={hmac}` |
+| 2. One-click action | GET request validates HMAC, sets `email_event_updates=false` via service role |
+| 3. Confirmation page | Warm copy: "We'll miss you..." + re-subscribe CTA to `/dashboard/settings` |
+| 4. Idempotent | Multiple clicks = same result, no errors |
+
+**Unsubscribe URL Security:**
+- HMAC-SHA256 signature = `HMAC(UNSUBSCRIBE_SECRET, "${userId}:unsubscribe_digest")`
+- No expiry (permanent unsubscribe links)
+- No login required (works in any browser)
+- Constant-time comparison via `timingSafeEqual` (prevents timing attacks)
+
+**Cron Handler Changes:**
+```
+Kill switch check → Auth check → DB toggle check → Create client → Compute week key → Fetch data → Fetch recipients → Claim lock → (if locked) skip → sendDigestEmails()
+```
+
+**Non-Changes (Intentional):**
+- No newsletter subscriber changes
+- No separate digest preference column (`email_event_updates` gates both digest AND transactional)
+- No personalization (deferred to GTM-3)
+- No analytics/tracking/A/B tests
+- Idempotency guard unchanged
+- Auto opt-in model unchanged (`?? true` default)
+
+**Rollback Plan:**
+- Set env var kill switch (`ENABLE_WEEKLY_HAPPENINGS_DIGEST=false`) for immediate emergency disable
+- Set DB toggle to disabled for normal disable
+- Migration is additive-only (no ALTER/DROP) — table can remain if unused
+- Remove HMAC footer from templates to revert to old unsubscribe copy
+
+**Manual Test Checklist (Post-Deploy):**
+- [ ] Admin panel loads at `/dashboard/admin/email`
+- [ ] Toggle enables/disables each digest type
+- [ ] "Send test to me" sends email with `[TEST]` prefix
+- [ ] "Send to all" respects idempotency (second click = skipped)
+- [ ] Preview renders HTML without sending
+- [ ] Send history table populates after send
+- [ ] Unsubscribe link in email works (one-click, no login)
+- [ ] Confirmation page shows warm copy + re-subscribe CTA
+- [ ] Cron respects DB toggle OFF (does not send)
+- [ ] Cron respects env var kill switch OFF (does not send)
+
+---
+
+### Digest Email Idempotency Guard (February 2026) — RESOLVED
+
+**Goal:** Prevent duplicate weekly digest emails caused by Vercel cron retries or concurrent invocations.
+
+**Status:** Complete. All quality gates pass.
+
+**Problem:** Users received up to 4 copies of the weekly digest email on Sunday mornings. Root cause: both `ENABLE_WEEKLY_DIGEST` and `ENABLE_WEEKLY_HAPPENINGS_DIGEST` kill switches were enabled simultaneously (2 different digests × same recipients = 2x), combined with potential Vercel cron retries on 5xx errors (up to 2x multiplier), and no idempotency mechanism to prevent re-sends.
+
+**Solution:** Database-backed idempotency guard using a unique constraint as an atomic lock.
+
+**How It Works:**
+1. Cron handler computes a deterministic `week_key` (e.g., `2026-W05`) using ISO week in America/Denver timezone
+2. Before sending, attempts INSERT into `digest_send_log` with `(digest_type, week_key)`
+3. If INSERT succeeds → first run, proceed with sending
+4. If INSERT fails (unique constraint violation, code `23505`) → already sent this week, return `{ skipped: true }`
+5. Fails closed: unexpected DB errors block sending and return 500 (prevents duplicates under transient failures)
+
+**Week Key Definition:**
+- Format: `YYYY-Www` (e.g., `2026-W05`)
+- Timezone: America/Denver (handles MST/MDT automatically)
+- Deterministic: same cron invocation always produces same key regardless of retries
+- Sunday 3:00 UTC = Saturday 8-9 PM Denver → both map to same ISO week
+
+**Database Migration:**
+
+| Migration | Purpose |
+|-----------|---------|
+| `20260203000000_digest_send_log.sql` | Create `digest_send_log` table with unique constraint on `(digest_type, week_key)` |
+
+**Schema:**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | UUID | Primary key |
+| `digest_type` | TEXT | `'weekly_open_mics'` or `'weekly_happenings'` |
+| `week_key` | TEXT | ISO week in Denver timezone (e.g., `2026-W05`) |
+| `sent_at` | TIMESTAMPTZ | When the digest was sent |
+| `recipient_count` | INTEGER | Number of recipients at time of send |
+
+**Files Added:**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260203000000_digest_send_log.sql` | Migration with table, unique constraint, RLS enabled |
+| `lib/digest/digestSendLog.ts` | `computeWeekKey()`, `claimDigestSendLock()`, `hasAlreadySentDigest()` |
+| `__tests__/digest-send-log.test.ts` | Tests for idempotency behavior |
+
+**Files Modified:**
+
+| File | Change |
+|------|--------|
+| `app/api/cron/weekly-open-mics/route.ts` | Added idempotency guard after auth check, before email loop |
+| `app/api/cron/weekly-happenings/route.ts` | Added idempotency guard after auth check, before email loop |
+
+**Guard Placement (both routes):**
+```
+Kill switch check → Auth check → Create supabase client → Compute week key → Fetch data → Fetch recipients → Claim lock → (if locked) skip → Send emails
+```
+
+**Non-Changes (Intentional):**
+- No UX changes
+- No opt-in/opt-out behavior changes
+- No cron consolidation
+- No vercel.json changes
+- Additive-only migration (no ALTER/DROP)
+
+**Rollback Plan:**
+- Remove idempotency guard imports and logic from both cron routes
+- Table can remain (no harm, just unused)
 
 ---
 
@@ -8528,8 +8751,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=
 NEXT_PUBLIC_SITE_URL=
+UNSUBSCRIBE_SECRET=          # GTM-2: HMAC key for signed unsubscribe URLs
 ```
 
 ---
 
-**Last updated:** January 2026
+**Last updated:** February 2026

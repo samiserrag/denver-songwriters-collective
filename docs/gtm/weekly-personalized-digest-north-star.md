@@ -137,6 +137,35 @@ Phase 1.5 only sends to registered users with `email_event_updates` enabled.
 
 Implementation: "Save as my digest" button on `/happenings` filters.
 
+### 3.5 Email Philosophy
+
+The weekly digest is **community infrastructure**, not marketing. It exists to connect songwriters with stages, sessions, and each other. Every design decision flows from this:
+
+1. **Auto opt-in is intentional and permanent.** New members receive the digest by default. This is not a temporary policy or a shortcut — it is the correct default because the digest is free, useful, and community-supporting. This default holds unless reversed by an explicit policy decision from Sami.
+
+2. **One-click reversible opt-out is a hard requirement.** Every digest email must include an unsubscribe link that works without login, takes effect immediately, and uses warm language with zero guilt. This is non-negotiable for trust and deliverability.
+
+3. **Opt-back-in must be obvious and trivial.** The unsubscribe confirmation page and the dashboard settings must make it effortless to re-enable. No waiting period, no friction, no "are you sure?" gates.
+
+4. **Emails invite correction and participation.** The digest footer should invite recipients to reply with corrections ("Something wrong? Reply to this email."). This turns passive readers into active contributors and improves data quality.
+
+5. **Dark patterns are prohibited.** No deceptive unsubscribe flows, forced retention, guilt-based copy ("We'll miss you!"), or buried opt-out links. See CLAUDE.md governance for the binding rule.
+
+### 3.6 Control Hierarchy
+
+The digest system has three control layers, in precedence order:
+
+| Priority | Layer | Purpose | Who Controls |
+|----------|-------|---------|--------------|
+| 1 (highest) | Env var kill switch | Emergency stop (e.g., broken template, spam incident) | Deploy config (Vercel) |
+| 2 | DB-backed `digest_settings` table | Primary operational control — enable/disable via admin panel | Admin via UI |
+| 3 | Idempotency guard (`digest_send_log`) | Prevents duplicates regardless of how send is triggered | Automatic |
+
+**Normal operation:** Env var absent → DB toggle controls → idempotency prevents repeats.
+**Emergency:** Set env var to `"false"` → all sends blocked regardless of DB state.
+
+The env var is an escape hatch, not the primary control. Once the DB toggle is operational, the env var should be removed from Vercel and only re-added in emergencies.
+
 ---
 
 ## 4. Data Model Implications

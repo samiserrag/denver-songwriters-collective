@@ -258,6 +258,16 @@ export default async function AdminDashboardPage() {
               </div>
               <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
             </Link>
+            <Link
+              href="/dashboard/admin/email"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
+            >
+              <div>
+                <span className="text-[var(--color-text-primary)] font-medium">Email & Digests</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Manage weekly digest automation, preview, and send</p>
+              </div>
+              <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
+            </Link>
           </div>
         </section>
 
