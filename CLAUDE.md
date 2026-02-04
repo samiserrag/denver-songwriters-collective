@@ -681,6 +681,55 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Migration CI Replay Fixes (February 2026) — RESOLVED
+
+**Goal:** Fix all migration failures when CI runs `supabase start` (fresh database replay).
+
+**Status:** Complete. PR #117 merged to main. All CI workflows passing.
+
+**Problem:** The Supabase RLS Tripwire CI workflow runs `supabase start` which applies all migrations from scratch on a fresh database. Multiple migrations were failing due to missing columns, NOT NULL constraint violations, syntax errors, enum transaction issues, and schema mismatches between production (where migrations were manually applied) and fresh databases.
+
+**Errors Fixed:**
+
+| Error | Root Cause | Fix |
+|-------|------------|-----|
+| Syntax error at "$" (SQLSTATE 42601) | Dollar quoting used backtick instead of `$` | Fixed to proper `$` characters |
+| Unsafe use of new enum value (SQLSTATE 55P04) | PostgreSQL cannot use a newly added enum value in same transaction | Split into two migrations |
+| Relation does not exist (SQLSTATE 42P01) | `DROP POLICY IF EXISTS` fails if table doesn't exist | Moved policy cleanup after CREATE TABLE |
+| FK constraint violation (SQLSTATE 23503) | Backfill INSERT referenced hardcoded UUID that only exists in production | Added EXISTS subquery to only insert if profile exists |
+| Function does not exist (SQLSTATE 42883) | REVOKE/GRANT referenced functions that don't exist in fresh databases | Wrapped in conditional DO blocks that check pg_proc first |
+| SECURITY DEFINER functions still executable | `notify_new_user()` and `rpc_book_studio_service()` not in revoke list | Added both functions to REVOKE section |
+
+**New Migrations Created (6):**
+
+| File | Purpose |
+|------|---------|
+| `20251211999999_make_events_event_date_nullable.sql` | Makes events.event_date nullable |
+| `20251212999997_make_events_end_time_nullable.sql` | Makes events.end_time nullable |
+| `20251212999998_add_events_frequency_column.sql` | Adds missing events.frequency column |
+| `20251212999999_add_venues_name_unique.sql` | Adds unique constraint on venues.name |
+| `20251215999999_add_change_reports_reporter_id.sql` | Adds change_reports.reporter_id column |
+| `20251221162418_add_member_enum_value.sql` | Adds 'member' enum value in separate transaction |
+
+**Existing Migrations Modified (6):**
+
+| File | Fix Applied |
+|------|-------------|
+| `20251220020000_default_is_fan_for_new_users.sql` | Fixed dollar quoting syntax |
+| `20251221162419_normalize_role_to_member.sql` | Removed enum addition (moved to separate migration) |
+| `20260101300000_event_claims.sql` | Moved DROP POLICY after CREATE TABLE |
+| `20260107000004_event_watchers.sql` | Made backfill conditional on profile existence |
+| `20260202000004_reduce_security_definer_execute_surface.sql` | Wrapped REVOKE/GRANT in conditionals, added notify_new_user() and rpc_book_studio_service() |
+
+**Key Lessons:**
+
+1. **PostgreSQL enum limitation:** Cannot use a newly added enum value in the same transaction (SQLSTATE 55P04). Split ADD VALUE into a separate migration.
+2. **DROP POLICY IF EXISTS:** Fails if the table doesn't exist, even with IF EXISTS. Always create the table first.
+3. **Hardcoded UUIDs:** Backfill migrations referencing production-only data should use conditional EXISTS checks.
+4. **REVOKE/GRANT idempotency:** Wrap in DO blocks that check `pg_proc` before executing to handle functions that may not exist.
+
+---
+
 ### Supabase RLS Security Hardening + CI Regression Tripwire (February 2026) — RESOLVED
 
 **Goal:** Harden Supabase permissions and add CI regression tripwire to prevent security drift.

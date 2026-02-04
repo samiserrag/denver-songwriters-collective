@@ -85,6 +85,42 @@ See: `web/scripts/security/README.md#when-ci-fails`
 
 ---
 
+## Migration Best Practices (CI Replay Safety)
+
+The Supabase RLS Tripwire CI runs `supabase start` which applies all migrations from scratch.
+Migrations must be idempotent and work on fresh databases, not just production.
+
+### Common Pitfalls
+
+| Issue | Solution |
+|-------|----------|
+| `DROP POLICY IF EXISTS` on non-existent table | Move DROP POLICY **after** CREATE TABLE |
+| Using newly added enum value in same migration | Split into two migrations (ADD VALUE, then use it) |
+| Backfill INSERT with hardcoded UUIDs | Add `WHERE EXISTS (SELECT 1 FROM ... WHERE id = 'uuid')` |
+| REVOKE/GRANT on functions that may not exist | Wrap in `DO $$ ... IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = '...') THEN ... END IF; ... $$` |
+
+### SECURITY DEFINER Function Pattern
+
+When revoking EXECUTE from SECURITY DEFINER functions, use conditional DO blocks:
+
+```sql
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_proc
+    WHERE proname = 'my_function'
+    AND pronamespace = 'public'::regnamespace
+  ) THEN
+    REVOKE EXECUTE ON FUNCTION public.my_function() FROM anon, public;
+  END IF;
+END $$;
+```
+
+This ensures the migration works on both fresh databases (where the function may not exist)
+and production databases (where it does exist and needs privileges revoked).
+
+---
+
 ## Summary
 
 This project treats database security as **code**, not configuration.
