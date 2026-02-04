@@ -69,10 +69,15 @@ CREATE TRIGGER cleanup_watchers_on_host_assign
 -- =====================================================
 -- Backfill: Add Sami as watcher for all unowned events
 -- UUID: a407c8e5-4f3c-4795-b199-05d824578659
+-- Only runs if the profile exists (production) - skips in fresh db/CI
 -- =====================================================
 
 INSERT INTO public.event_watchers (event_id, user_id)
-SELECT id, 'a407c8e5-4f3c-4795-b199-05d824578659'::uuid
-FROM public.events
-WHERE host_id IS NULL
+SELECT e.id, 'a407c8e5-4f3c-4795-b199-05d824578659'::uuid
+FROM public.events e
+WHERE e.host_id IS NULL
+  AND EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = 'a407c8e5-4f3c-4795-b199-05d824578659'::uuid
+  )
 ON CONFLICT DO NOTHING;
