@@ -484,7 +484,7 @@ export default function AdminEmailPage() {
                   </h2>
                   <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                     {setting.digest_type === "weekly_happenings"
-                      ? "All event types — sent weekly on Saturday evening (Denver time)"
+                      ? "All event types — sent weekly on Sunday afternoon (Denver time)"
                       : "Open mics only — sent weekly on Saturday evening (Denver time)"}
                   </p>
                 </div>
@@ -788,7 +788,7 @@ export default function AdminEmailPage() {
           {/* Member spotlight */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Member Spotlight (UUID)
+              Member Spotlight (slug or URL)
             </label>
             <input
               type="text"
@@ -796,7 +796,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, member_spotlight_id: e.target.value }))
               }
-              placeholder="Profile UUID"
+              placeholder="sami-serrag or /songwriters/sami-serrag"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -804,7 +804,7 @@ export default function AdminEmailPage() {
           {/* Venue spotlight */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Venue Spotlight (UUID)
+              Venue Spotlight (slug or URL)
             </label>
             <input
               type="text"
@@ -812,7 +812,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, venue_spotlight_id: e.target.value }))
               }
-              placeholder="Venue UUID"
+              placeholder="brewery-rickoli or /venues/brewery-rickoli"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -940,10 +940,10 @@ export default function AdminEmailPage() {
       {/* Info footer */}
       <div className="mt-6 text-sm text-[var(--color-text-tertiary)]">
         <p>
-          Digests are sent automatically when enabled. The cron runs Sunday 3:00
-          UTC (Saturday 8-9 PM Denver time). The idempotency guard prevents
-          duplicate sends for the same week. Use &quot;Send test to me&quot; to preview
-          without affecting the weekly lock.
+          Digests are sent automatically when enabled. The happenings cron runs
+          Sunday 23:00 UTC (Sunday 4 PM MST / 5 PM MDT Denver time). The
+          idempotency guard prevents duplicate sends for the same week. Use
+          &quot;Send test to me&quot; to preview without affecting the weekly lock.
         </p>
       </div>
     </div>

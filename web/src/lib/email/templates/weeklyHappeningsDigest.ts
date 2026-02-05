@@ -1,7 +1,7 @@
 /**
  * Weekly Happenings Digest Email Template
  *
- * Sent every Sunday night (8:00 PM Denver time) listing ALL upcoming happenings
+ * Sent every Sunday afternoon (4-5 PM Denver time) listing ALL upcoming happenings
  * for the next 7 days (Sunday through Saturday).
  *
  * GTM-1 MVP:
@@ -26,6 +26,7 @@ import {
   getGreeting,
   EMAIL_COLORS,
   SITE_URL,
+  renderEmailBaseballCard,
 } from "../render";
 import type { HappeningOccurrence } from "@/lib/digest/weeklyHappenings";
 import { formatTimeDisplay } from "@/lib/digest/weeklyHappenings";
@@ -150,29 +151,19 @@ function formatIntroNoteHtml(introNote: string): string {
 function formatFeaturedHappeningsHtml(
   featured: NonNullable<ResolvedEditorial["featuredHappenings"]>
 ): string {
-  const items = featured
+  const cards = featured
     .map((f) => {
       const metaParts = [f.date, f.time, f.venue].filter(Boolean);
-      const metaLine = metaParts.join(" · ");
-      return `
-      <tr>
-        <td style="padding: 8px 0;">
-          <table cellpadding="0" cellspacing="0" style="width: 100%;">
-            <tr>
-              <td style="vertical-align: top; padding-right: 12px;">
-                <span style="font-size: 20px;">${f.emoji || "⭐"}</span>
-              </td>
-              <td style="vertical-align: top; width: 100%;">
-                <a href="${f.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
-                  ${escapeHtml(f.title)}
-                </a>
-                ${metaLine ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(metaLine)}</p>` : ""}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    `;
+      const subtitle = metaParts.join(" · ");
+      return renderEmailBaseballCard({
+        coverUrl: f.coverUrl,
+        coverAlt: f.title,
+        title: f.title,
+        titleUrl: f.url,
+        subtitle: subtitle || undefined,
+        ctaText: "View Happening",
+        ctaUrl: f.url,
+      });
     })
     .join("");
 
@@ -182,9 +173,7 @@ function formatFeaturedHappeningsHtml(
         <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
           ⭐ FEATURED THIS WEEK
         </p>
-        <table cellpadding="0" cellspacing="0" style="width: 100%; background-color: ${EMAIL_COLORS.bgCard}; border-radius: 8px; padding: 12px;">
-          ${items}
-        </table>
+        ${cards}
       </td>
     </tr>
   `;
@@ -193,29 +182,21 @@ function formatFeaturedHappeningsHtml(
 function formatMemberSpotlightHtml(
   spotlight: NonNullable<ResolvedEditorial["memberSpotlight"]>
 ): string {
-  const avatarHtml = spotlight.avatarUrl
-    ? `<img src="${spotlight.avatarUrl}" alt="" width="48" height="48" style="border-radius: 50%; display: block;" />`
-    : `<div style="width: 48px; height: 48px; border-radius: 50%; background-color: ${EMAIL_COLORS.border}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${EMAIL_COLORS.textSecondary};">🎵</div>`;
-
   return `
     <tr>
       <td style="padding: 16px 0;">
         <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
           🎤 MEMBER SPOTLIGHT
         </p>
-        <table cellpadding="0" cellspacing="0" style="width: 100%;">
-          <tr>
-            <td style="vertical-align: top; padding-right: 12px; width: 48px;">
-              ${avatarHtml}
-            </td>
-            <td style="vertical-align: top;">
-              <a href="${spotlight.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
-                ${escapeHtml(spotlight.name)}
-              </a>
-              ${spotlight.bio ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(spotlight.bio)}</p>` : ""}
-            </td>
-          </tr>
-        </table>
+        ${renderEmailBaseballCard({
+          coverUrl: spotlight.avatarUrl,
+          coverAlt: spotlight.name,
+          title: spotlight.name,
+          titleUrl: spotlight.url,
+          subtitle: spotlight.bio,
+          ctaText: "View Profile",
+          ctaUrl: spotlight.url,
+        })}
       </td>
     </tr>
   `;
@@ -224,22 +205,24 @@ function formatMemberSpotlightHtml(
 function formatVenueSpotlightHtml(
   spotlight: NonNullable<ResolvedEditorial["venueSpotlight"]>
 ): string {
+  // Venue name links to external website when available, falls back to DSC venue page
+  const titleUrl = spotlight.websiteUrl || spotlight.url;
+
   return `
     <tr>
       <td style="padding: 16px 0;">
         <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
           📍 VENUE SPOTLIGHT
         </p>
-        <table cellpadding="0" cellspacing="0" style="width: 100%;">
-          <tr>
-            <td style="vertical-align: top;">
-              <a href="${spotlight.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
-                ${escapeHtml(spotlight.name)}
-              </a>
-              ${spotlight.city ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(spotlight.city)}</p>` : ""}
-            </td>
-          </tr>
-        </table>
+        ${renderEmailBaseballCard({
+          coverUrl: spotlight.coverUrl,
+          coverAlt: spotlight.name,
+          title: spotlight.name,
+          titleUrl,
+          subtitle: spotlight.city,
+          ctaText: "View Venue",
+          ctaUrl: spotlight.url,
+        })}
       </td>
     </tr>
   `;
@@ -254,10 +237,13 @@ function formatBlogFeatureHtml(
         <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
           📝 FROM THE BLOG
         </p>
-        <a href="${feature.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
-          ${escapeHtml(feature.title)}
-        </a>
-        ${feature.excerpt ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(feature.excerpt)}</p>` : ""}
+        ${renderEmailBaseballCard({
+          title: feature.title,
+          titleUrl: feature.url,
+          subtitle: feature.excerpt,
+          ctaText: "Read Post",
+          ctaUrl: feature.url,
+        })}
       </td>
     </tr>
   `;
@@ -272,9 +258,14 @@ function formatGalleryFeatureHtml(
         <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
           📸 FROM THE GALLERY
         </p>
-        <a href="${feature.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
-          ${escapeHtml(feature.title)}
-        </a>
+        ${renderEmailBaseballCard({
+          coverUrl: feature.coverUrl,
+          coverAlt: feature.title,
+          title: feature.title,
+          titleUrl: feature.url,
+          ctaText: "View Album",
+          ctaUrl: feature.url,
+        })}
       </td>
     </tr>
   `;

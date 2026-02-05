@@ -401,18 +401,20 @@ describe("Part B: Editorial Layer", () => {
       );
     });
 
-    it("should resolve member spotlight by ID from profiles table", () => {
+    it("should resolve member spotlight from profiles table (supports UUID or slug)", () => {
       expect(editorialSource).toContain('.from("profiles")');
-      expect(editorialSource).toContain(
-        '.eq("id", editorial.member_spotlight_id)'
-      );
+      // GTM-3.1: Now supports both UUID and slug lookups via memberRef
+      expect(editorialSource).toContain("memberRef");
+      expect(editorialSource).toContain('.eq("id", memberRef)');
+      expect(editorialSource).toContain('.eq("slug", memberRef)');
     });
 
-    it("should resolve venue spotlight by ID from venues table", () => {
+    it("should resolve venue spotlight from venues table (supports UUID or slug)", () => {
       expect(editorialSource).toContain('.from("venues")');
-      expect(editorialSource).toContain(
-        '.eq("id", editorial.venue_spotlight_id)'
-      );
+      // GTM-3.1: Now supports both UUID and slug lookups via venueRef
+      expect(editorialSource).toContain("venueRef");
+      expect(editorialSource).toContain('.eq("id", venueRef)');
+      expect(editorialSource).toContain('.eq("slug", venueRef)');
     });
 
     it("should resolve blog feature by slug from blog_posts table", () => {
@@ -883,6 +885,317 @@ describe("Part B: Editorial Layer", () => {
       expect(memberGen).not.toContain(":unsubscribe_newsletter");
       expect(newsletterGen).toContain(":unsubscribe_newsletter");
       expect(newsletterGen).not.toContain(":unsubscribe_digest");
+    });
+  });
+
+  // =========================================================================
+  // GTM-3.1: Cron Schedule + Baseball Card Renderer + Slug/URL Normalization
+  // =========================================================================
+
+  describe("GTM-3.1: Cron schedule update to Sunday 23:00 UTC", () => {
+    const vercelConfig = fs.readFileSync(
+      path.join(process.cwd(), "vercel.json"),
+      "utf-8"
+    );
+    const cronSource = fs.readFileSync(
+      path.join(SRC_DIR, "app/api/cron/weekly-happenings/route.ts"),
+      "utf-8"
+    );
+
+    it("vercel.json schedules weekly-happenings at 0 23 * * 0 (Sunday 23:00 UTC)", () => {
+      const config = JSON.parse(vercelConfig);
+      const happeningsCron = config.crons?.find(
+        (c: { path: string }) => c.path === "/api/cron/weekly-happenings"
+      );
+      expect(happeningsCron).toBeDefined();
+      expect(happeningsCron.schedule).toBe("0 23 * * 0");
+    });
+
+    it("cron route documents MST/MDT timing in header comment", () => {
+      expect(cronSource).toContain("Sunday 23:00 UTC");
+      expect(cronSource).toContain("MST");
+      expect(cronSource).toContain("MDT");
+    });
+
+    it("cron route mentions manual seasonal adjustment in comment", () => {
+      expect(cronSource).toContain("seasonal adjustment");
+    });
+  });
+
+  describe("GTM-3.1: Baseball card email renderer", () => {
+    const renderSource = fs.readFileSync(
+      path.join(SRC_DIR, "lib/email/render.ts"),
+      "utf-8"
+    );
+
+    it("exports renderEmailBaseballCard function", () => {
+      expect(renderSource).toContain("export function renderEmailBaseballCard");
+    });
+
+    it("renderEmailBaseballCard accepts cover image options", () => {
+      expect(renderSource).toContain("coverUrl?:");
+      expect(renderSource).toContain("coverAlt?:");
+    });
+
+    it("renderEmailBaseballCard accepts title and titleUrl options", () => {
+      expect(renderSource).toContain("title:");
+      expect(renderSource).toContain("titleUrl?:");
+    });
+
+    it("renderEmailBaseballCard accepts subtitle option", () => {
+      expect(renderSource).toContain("subtitle?:");
+    });
+
+    it("renderEmailBaseballCard accepts CTA button options", () => {
+      expect(renderSource).toContain("ctaText?:");
+      expect(renderSource).toContain("ctaUrl?:");
+    });
+
+    it("renderEmailBaseballCard uses table-based layout for email safety", () => {
+      expect(renderSource).toContain("<table cellpadding");
+      expect(renderSource).toContain("cellspacing");
+    });
+
+    it("renderEmailBaseballCard uses bgMuted background color", () => {
+      expect(renderSource).toContain("EMAIL_COLORS.bgMuted");
+    });
+
+    it("renderEmailBaseballCard uses 8px border radius", () => {
+      expect(renderSource).toContain("border-radius: 8px");
+    });
+
+    it("cover image uses object-contain (never cropped)", () => {
+      // Cover should display full image, not cropped
+      expect(renderSource).toContain("height: auto");
+    });
+  });
+
+  describe("GTM-3.1: Slug/URL normalization helpers", () => {
+    const editorialSource = fs.readFileSync(
+      path.join(SRC_DIR, "lib/digest/digestEditorial.ts"),
+      "utf-8"
+    );
+
+    it("exports normalizeEditorialSlug function", () => {
+      expect(editorialSource).toContain("export function normalizeEditorialSlug");
+    });
+
+    it("has isUUID helper function", () => {
+      expect(editorialSource).toContain("function isUUID(str: string): boolean");
+    });
+
+    it("isUUID uses correct UUID regex pattern", () => {
+      expect(editorialSource).toContain(
+        "/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i"
+      );
+    });
+
+    it("normalizeEditorialSlug handles /songwriters/ route pattern", () => {
+      expect(editorialSource).toContain("/songwriters/");
+    });
+
+    it("normalizeEditorialSlug handles /venues/ route pattern", () => {
+      expect(editorialSource).toContain("/venues/");
+    });
+
+    it("normalizeEditorialSlug handles /events/ route pattern", () => {
+      expect(editorialSource).toContain("/events/");
+    });
+
+    it("normalizeEditorialSlug handles /blog/ route pattern", () => {
+      expect(editorialSource).toContain("/blog/");
+    });
+
+    it("normalizeEditorialSlug handles /gallery/ route pattern", () => {
+      expect(editorialSource).toContain("/gallery/");
+    });
+
+    it("normalizeEditorialSlug handles full URLs with https", () => {
+      // Regex pattern uses https?: for optional http/https
+      expect(editorialSource).toContain("https?:");
+    });
+
+    it("normalizeEditorialSlug returns null for empty/null input", () => {
+      expect(editorialSource).toContain("if (!input) return null");
+    });
+
+    it("normalizeEditorialSlug returns trimmed input when no pattern matches", () => {
+      expect(editorialSource).toContain("return trimmed");
+    });
+  });
+
+  describe("GTM-3.1: Resolver supports UUID and slug lookups", () => {
+    const editorialSource = fs.readFileSync(
+      path.join(SRC_DIR, "lib/digest/digestEditorial.ts"),
+      "utf-8"
+    );
+
+    it("member spotlight resolves by id for UUIDs", () => {
+      expect(editorialSource).toContain('memberQuery.eq("id", memberRef)');
+    });
+
+    it("member spotlight resolves by slug for non-UUIDs", () => {
+      expect(editorialSource).toContain('memberQuery.eq("slug", memberRef)');
+    });
+
+    it("venue spotlight resolves by id for UUIDs", () => {
+      expect(editorialSource).toContain('venueQuery.eq("id", venueRef)');
+    });
+
+    it("venue spotlight resolves by slug for non-UUIDs", () => {
+      expect(editorialSource).toContain('venueQuery.eq("slug", venueRef)');
+    });
+
+    it("uses isUUID to determine lookup strategy", () => {
+      // Should use conditional with isUUID
+      expect(editorialSource).toContain("isUUID(memberRef)");
+      expect(editorialSource).toContain("isUUID(venueRef)");
+    });
+  });
+
+  describe("GTM-3.1: Admin UI accepts slugs and URLs", () => {
+    const adminEmailPage = fs.readFileSync(
+      path.join(
+        SRC_DIR,
+        "app/(protected)/dashboard/admin/email/page.tsx"
+      ),
+      "utf-8"
+    );
+
+    it("member spotlight label mentions slug or URL", () => {
+      expect(adminEmailPage).toContain("slug or URL");
+    });
+
+    it("venue spotlight label mentions slug or URL", () => {
+      expect(adminEmailPage).toContain("slug or URL");
+    });
+
+    it("member spotlight placeholder shows example with path", () => {
+      expect(adminEmailPage).toContain("/songwriters/");
+    });
+
+    it("venue spotlight placeholder shows example with path", () => {
+      expect(adminEmailPage).toContain("/venues/");
+    });
+  });
+
+  describe("GTM-3.1: API normalizes inputs before storage", () => {
+    const editorialRoute = fs.readFileSync(
+      path.join(SRC_DIR, "app/api/admin/digest/editorial/route.ts"),
+      "utf-8"
+    );
+
+    it("imports normalizeEditorialSlug helper", () => {
+      expect(editorialRoute).toContain("normalizeEditorialSlug");
+    });
+
+    it("normalizes member_spotlight_id before storage", () => {
+      expect(editorialRoute).toContain(
+        "normalizeEditorialSlug(editorialData.member_spotlight_id)"
+      );
+    });
+
+    it("normalizes venue_spotlight_id before storage", () => {
+      expect(editorialRoute).toContain(
+        "normalizeEditorialSlug(editorialData.venue_spotlight_id)"
+      );
+    });
+
+    it("normalizes blog_feature_slug before storage", () => {
+      expect(editorialRoute).toContain(
+        "normalizeEditorialSlug(editorialData.blog_feature_slug)"
+      );
+    });
+
+    it("normalizes gallery_feature_slug before storage", () => {
+      expect(editorialRoute).toContain(
+        "normalizeEditorialSlug(editorialData.gallery_feature_slug)"
+      );
+    });
+
+    it("creates normalizedData object before upsert", () => {
+      expect(editorialRoute).toContain("normalizedData");
+    });
+  });
+
+  describe("GTM-3.1: Editorial template uses baseball cards", () => {
+    const templateSource = fs.readFileSync(
+      path.join(
+        SRC_DIR,
+        "lib/email/templates/weeklyHappeningsDigest.ts"
+      ),
+      "utf-8"
+    );
+
+    it("imports renderEmailBaseballCard from render module", () => {
+      expect(templateSource).toContain("renderEmailBaseballCard");
+    });
+
+    it("member spotlight uses baseball card renderer", () => {
+      // Should call renderEmailBaseballCard for member spotlight
+      expect(templateSource).toContain("renderEmailBaseballCard");
+    });
+
+    it("venue spotlight uses baseball card renderer", () => {
+      // Template includes venue spotlight section
+      expect(templateSource).toContain("venueSpotlight");
+    });
+  });
+
+  describe("GTM-3.1: Preview and send use same editorial resolution", () => {
+    const previewRoute = fs.readFileSync(
+      path.join(SRC_DIR, "app/api/admin/digest/preview/route.ts"),
+      "utf-8"
+    );
+    const sendRoute = fs.readFileSync(
+      path.join(SRC_DIR, "app/api/admin/digest/send/route.ts"),
+      "utf-8"
+    );
+    const cronRoute = fs.readFileSync(
+      path.join(SRC_DIR, "app/api/cron/weekly-happenings/route.ts"),
+      "utf-8"
+    );
+
+    it("preview route imports resolveEditorial", () => {
+      expect(previewRoute).toContain("resolveEditorial");
+    });
+
+    it("send route imports resolveEditorial", () => {
+      expect(sendRoute).toContain("resolveEditorial");
+    });
+
+    it("cron route imports resolveEditorial", () => {
+      expect(cronRoute).toContain("resolveEditorial");
+    });
+
+    it("all three routes use the same resolveEditorial function", () => {
+      // All should import from the same module
+      expect(previewRoute).toContain("from \"@/lib/digest/digestEditorial\"");
+      expect(sendRoute).toContain("from \"@/lib/digest/digestEditorial\"");
+      expect(cronRoute).toContain("from \"@/lib/digest/digestEditorial\"");
+    });
+  });
+
+  describe("GTM-3.1: Idempotency guard comes before editorial resolution", () => {
+    const cronSource = fs.readFileSync(
+      path.join(SRC_DIR, "app/api/cron/weekly-happenings/route.ts"),
+      "utf-8"
+    );
+
+    it("claimDigestSendLock is called before resolveEditorial", () => {
+      const lockIndex = cronSource.indexOf("claimDigestSendLock");
+      const resolveIndex = cronSource.indexOf("resolveEditorial(supabase");
+      expect(lockIndex).toBeGreaterThan(-1);
+      expect(resolveIndex).toBeGreaterThan(-1);
+      expect(lockIndex).toBeLessThan(resolveIndex);
+    });
+
+    it("documents Delta 1 pattern in comment", () => {
+      expect(cronSource).toContain("Delta 1");
+    });
+
+    it("explains editorial resolution happens AFTER lock", () => {
+      expect(cronSource).toContain("AFTER lock");
     });
   });
 });

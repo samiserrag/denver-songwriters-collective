@@ -262,6 +262,63 @@ export function rsvpsDashboardLink(): string {
 }
 
 /**
+ * Render a "baseball card" for editorial email sections.
+ *
+ * Table-based, inline-styled, email-safe.
+ * Card: bgMuted background, 1px border, 8px radius.
+ * Optional cover image (full width, height auto, NEVER cropped).
+ * Title (15px, 600 weight, accent color, optional link).
+ * Subtitle (14px, textSecondary).
+ * Optional CTA button.
+ */
+export function renderEmailBaseballCard(opts: {
+  coverUrl?: string;
+  coverAlt?: string;
+  title: string;
+  titleUrl?: string;
+  subtitle?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+}): string {
+  const coverHtml = opts.coverUrl
+    ? `<tr><td style="padding: 0;">
+        <img src="${opts.coverUrl}" alt="${escapeHtml(opts.coverAlt || "")}" style="display: block; width: 100%; height: auto; border-radius: 8px 8px 0 0;" />
+      </td></tr>`
+    : "";
+
+  const titleHtml = opts.titleUrl
+    ? `<a href="${opts.titleUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">${escapeHtml(opts.title)}</a>`
+    : `<span style="color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${escapeHtml(opts.title)}</span>`;
+
+  const subtitleHtml = opts.subtitle
+    ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">${escapeHtml(opts.subtitle)}</p>`
+    : "";
+
+  const ctaHtml = opts.ctaText && opts.ctaUrl
+    ? `<table cellpadding="0" cellspacing="0" style="margin: 12px 0 0 0;">
+        <tr>
+          <td style="background-color: ${EMAIL_COLORS.accent}; border-radius: 6px;">
+            <a href="${opts.ctaUrl}" style="display: inline-block; padding: 10px 20px; color: ${EMAIL_COLORS.textOnAccent}; text-decoration: none; font-weight: 600; font-size: 14px;">
+              ${escapeHtml(opts.ctaText)}
+            </a>
+          </td>
+        </tr>
+      </table>`
+    : "";
+
+  return `<table cellpadding="0" cellspacing="0" style="width: 100%; background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; overflow: hidden; margin: 8px 0;">
+  ${coverHtml}
+  <tr>
+    <td style="padding: 14px 16px;">
+      ${titleHtml}
+      ${subtitleHtml}
+      ${ctaHtml}
+    </td>
+  </tr>
+</table>`;
+}
+
+/**
  * Wrap plain text email with consistent footer
  */
 export function wrapEmailText(content: string): string {

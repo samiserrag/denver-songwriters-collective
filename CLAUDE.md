@@ -707,9 +707,9 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 **Goal:** Add an editorial layer to the weekly happenings digest (admin-curated content: featured events, member spotlights, venue spotlights, blog features, gallery features, intro notes, subject overrides) and implement a one-click newsletter unsubscribe flow for non-member subscribers.
 
-**Status:** Complete. All quality gates pass (lint 0 errors, tests 3650, build success). Migration pending apply.
+**Status:** Deployed to main. All quality gates pass (lint 0 errors, tests 3698, build success). Migration applied (MODE B). Email automation toggles remain disabled; kill switches OFF.
 
-**Phase:** GTM-3
+**Phase:** GTM-3 (includes GTM-3.1 polish)
 
 **Two Parts:**
 
@@ -724,7 +724,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 | Migration | Purpose | Status |
 |-----------|---------|--------|
-| `20260205000000_digest_editorial.sql` | Create `digest_editorial` table with RLS, unique constraint on `(week_key, digest_type)`, auto-updated_at trigger | Pending apply |
+| `20260205000000_digest_editorial.sql` | Create `digest_editorial` table with RLS, unique constraint on `(week_key, digest_type)`, auto-updated_at trigger | Applied (MODE B) |
 
 **Schema (`digest_editorial`):**
 
@@ -849,7 +849,7 @@ Resolve editorial (Delta 1) -> Send emails with editorial
 - Migration is additive-only (no ALTER/DROP)
 - Newsletter unsubscribe can be disabled by removing the route
 
-**Test Coverage:** 130 new tests (3650 total) covering:
+**Test Coverage:** 178 tests (3698 total) covering:
 - Newsletter HMAC token generation/validation
 - Cross-family token prevention
 - Email normalization
@@ -859,6 +859,38 @@ Resolve editorial (Delta 1) -> Send emails with editorial
 - API contracts (search, editorial, unsubscribe)
 - Newsletter unsubscribe confirmation page
 - Cron/preview/send editorial integration ordering (Delta 1)
+- GTM-3.1: Cron schedule, baseball card renderer, slug normalization, resolver UUID/slug support
+
+**GTM-3.1 Additions (February 2026):**
+
+| Enhancement | Implementation |
+|-------------|----------------|
+| Cron schedule update | Changed from `0 3 * * 0` (Sunday 3:00 UTC) to `0 23 * * 0` (Sunday 23:00 UTC = 4 PM MST / 5 PM MDT) |
+| Baseball card renderer | `renderEmailBaseballCard()` in `lib/email/render.ts` - table-based, inline-styled, email-safe card component |
+| Slug/URL normalization | `normalizeEditorialSlug()` extracts slugs from full URLs (e.g., `https://example.org/songwriters/sami-serrag` → `sami-serrag`) |
+| UUID/slug resolution | `resolveEditorial()` now supports both UUID and slug lookups for member/venue spotlights |
+| Admin UI accepts URLs | Editorial form inputs normalize URLs to slugs automatically via API |
+
+**GTM-3.1 URL Pattern Support:**
+- `/songwriters/{slug}` → extracts slug
+- `/venues/{slug}` → extracts slug
+- `/events/{slug}` → extracts slug
+- `/blog/{slug}` → extracts slug
+- `/gallery/{slug}` → extracts slug
+- Full URLs with domain → extracts slug
+- Bare slugs/UUIDs → passed through unchanged
+
+**GTM-3.1 Files Modified:**
+
+| File | Change |
+|------|--------|
+| `vercel.json` | Updated cron schedule to `0 23 * * 0` |
+| `app/api/cron/weekly-happenings/route.ts` | Updated DST documentation in header comment |
+| `lib/email/render.ts` | Added `renderEmailBaseballCard()` helper |
+| `lib/digest/digestEditorial.ts` | Added `isUUID()`, `normalizeEditorialSlug()`, UUID/slug resolution |
+| `lib/email/templates/weeklyHappeningsDigest.ts` | Uses baseball card renderer for all editorial sections |
+| `app/api/admin/digest/editorial/route.ts` | Normalizes slug inputs before upsert |
+| `__tests__/gtm-3-editorial-and-newsletter-unsubscribe.test.ts` | 48 new tests for GTM-3.1 |
 
 ---
 

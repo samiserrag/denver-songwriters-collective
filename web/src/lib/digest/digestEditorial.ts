@@ -8,9 +8,59 @@
  * - Preview API (render editorial in preview)
  *
  * Phase: GTM-3
+ * GTM-3.1: Added slug/URL normalization for member and venue spotlights
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * Check if a string is a valid UUID format.
+ */
+function isUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+/**
+ * Extract slug from a full URL or return the input if it's already a slug/UUID.
+ *
+ * Supported URL patterns:
+ * - /songwriters/{slug}
+ * - /venues/{slug}
+ * - /events/{slug}
+ * - /blog/{slug}
+ * - /gallery/{slug}
+ *
+ * Examples:
+ * - "https://denversongwriterscollective.org/songwriters/sami-serrag" → "sami-serrag"
+ * - "/venues/brewery-rickoli" → "brewery-rickoli"
+ * - "sami-serrag" → "sami-serrag" (already a slug)
+ * - "a1b2c3d4-..." → "a1b2c3d4-..." (UUID passthrough)
+ */
+export function normalizeEditorialSlug(input: string | null | undefined): string | null {
+  if (!input) return null;
+
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // Known route prefixes to strip
+  const routePatterns = [
+    /^(?:https?:\/\/[^/]+)?\/songwriters\/([^/?#]+)/i,
+    /^(?:https?:\/\/[^/]+)?\/venues\/([^/?#]+)/i,
+    /^(?:https?:\/\/[^/]+)?\/events\/([^/?#]+)/i,
+    /^(?:https?:\/\/[^/]+)?\/blog\/([^/?#]+)/i,
+    /^(?:https?:\/\/[^/]+)?\/gallery\/([^/?#]+)/i,
+  ];
+
+  for (const pattern of routePatterns) {
+    const match = trimmed.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  // No pattern matched — return as-is (already a slug or UUID)
+  return trimmed;
+}
 
 export interface DigestEditorial {
   id: string;
@@ -42,6 +92,7 @@ export interface ResolvedEditorial {
     date?: string;
     time?: string;
     emoji?: string;
+    coverUrl?: string;
   }>;
   memberSpotlight?: {
     name: string;
@@ -54,6 +105,7 @@ export interface ResolvedEditorial {
     url: string;
     coverUrl?: string;
     city?: string;
+    websiteUrl?: string;
   };
   blogFeature?: {
     title: string;
@@ -194,7 +246,7 @@ export async function resolveEditorial(
   ) {
     const { data: events } = await supabase
       .from("events")
-      .select("id, title, slug, event_date, start_time, event_type, venues!left(name)")
+      .select("id, title, slug, event_date, start_time, event_type, cover_image_url, venues!left(name)")
       .in("id", editorial.featured_happening_ids);
 
     if (events && events.length > 0) {
@@ -219,18 +271,23 @@ export async function resolveEditorial(
           date: e.event_date || undefined,
           time: e.start_time || undefined,
           emoji: EVENT_TYPE_EMOJI[e.event_type] || "📅",
+          coverUrl: e.cover_image_url || undefined,
         };
       });
     }
   }
 
-  // Member spotlight
+  // Member spotlight — supports both UUID and slug lookups
   if (editorial.member_spotlight_id) {
-    const { data: profile } = await supabase
+    const memberRef = editorial.member_spotlight_id;
+    const memberQuery = supabase
       .from("profiles")
-      .select("id, full_name, slug, avatar_url, bio")
-      .eq("id", editorial.member_spotlight_id)
-      .maybeSingle();
+      .select("id, full_name, slug, avatar_url, bio");
+
+    // Query by id if UUID, otherwise by slug
+    const { data: profile } = isUUID(memberRef)
+      ? await memberQuery.eq("id", memberRef).maybeSingle()
+      : await memberQuery.eq("slug", memberRef).maybeSingle();
 
     if (profile) {
       resolved.memberSpotlight = {
@@ -246,13 +303,17 @@ export async function resolveEditorial(
     }
   }
 
-  // Venue spotlight
+  // Venue spotlight — supports both UUID and slug lookups
   if (editorial.venue_spotlight_id) {
-    const { data: venue } = await supabase
+    const venueRef = editorial.venue_spotlight_id;
+    const venueQuery = supabase
       .from("venues")
-      .select("id, name, slug, cover_image_url, city, state")
-      .eq("id", editorial.venue_spotlight_id)
-      .maybeSingle();
+      .select("id, name, slug, cover_image_url, city, state, website_url");
+
+    // Query by id if UUID, otherwise by slug
+    const { data: venue } = isUUID(venueRef)
+      ? await venueQuery.eq("id", venueRef).maybeSingle()
+      : await venueQuery.eq("slug", venueRef).maybeSingle();
 
     if (venue) {
       resolved.venueSpotlight = {
@@ -260,6 +321,7 @@ export async function resolveEditorial(
         url: `${SITE_URL}/venues/${venue.slug || venue.id}`,
         coverUrl: venue.cover_image_url || undefined,
         city: [venue.city, venue.state].filter(Boolean).join(", ") || undefined,
+        websiteUrl: venue.website_url || undefined,
       };
     }
   }
