@@ -292,6 +292,27 @@ describe("Part B: Editorial Layer", () => {
     });
   });
 
+  describe("B1b: digest_editorial ref columns migration", () => {
+    const migrationSource = fs.readFileSync(
+      path.join(
+        SUPABASE_DIR,
+        "migrations/20260205181500_digest_editorial_ref_columns.sql"
+      ),
+      "utf-8"
+    );
+
+    it("adds member/venue/blog/gallery ref columns", () => {
+      expect(migrationSource).toContain("member_spotlight_ref TEXT");
+      expect(migrationSource).toContain("venue_spotlight_ref TEXT");
+      expect(migrationSource).toContain("blog_feature_ref TEXT");
+      expect(migrationSource).toContain("gallery_feature_ref TEXT");
+    });
+
+    it("adds featured_happenings_refs text[]", () => {
+      expect(migrationSource).toContain("featured_happenings_refs TEXT[]");
+    });
+  });
+
   describe("B2: Editorial CRUD helpers", () => {
     const editorialSource = fs.readFileSync(
       path.join(SRC_DIR, "lib/digest/digestEditorial.ts"),
@@ -357,16 +378,31 @@ describe("Part B: Editorial Layer", () => {
         "featured_happening_ids: string[] | null"
       );
       expect(editorialSource).toContain(
+        "featured_happenings_refs: string[] | null"
+      );
+      expect(editorialSource).toContain(
         "member_spotlight_id: string | null"
       );
       expect(editorialSource).toContain(
         "venue_spotlight_id: string | null"
       );
       expect(editorialSource).toContain(
+        "member_spotlight_ref: string | null"
+      );
+      expect(editorialSource).toContain(
+        "venue_spotlight_ref: string | null"
+      );
+      expect(editorialSource).toContain(
         "blog_feature_slug: string | null"
       );
       expect(editorialSource).toContain(
         "gallery_feature_slug: string | null"
+      );
+      expect(editorialSource).toContain(
+        "blog_feature_ref: string | null"
+      );
+      expect(editorialSource).toContain(
+        "gallery_feature_ref: string | null"
       );
     });
 
@@ -394,10 +430,13 @@ describe("Part B: Editorial Layer", () => {
       );
     });
 
-    it("should resolve featured happenings by IDs from events table", () => {
+    it("should resolve featured happenings by IDs or slugs from events table", () => {
       expect(editorialSource).toContain('.from("events")');
       expect(editorialSource).toContain(
-        ".in(\"id\", editorial.featured_happening_ids)"
+        ".in(\"id\", uuidRefs)"
+      );
+      expect(editorialSource).toContain(
+        ".in(\"slug\", slugRefs)"
       );
     });
 
@@ -420,14 +459,20 @@ describe("Part B: Editorial Layer", () => {
     it("should resolve blog feature by slug from blog_posts table", () => {
       expect(editorialSource).toContain('.from("blog_posts")');
       expect(editorialSource).toContain(
-        '.eq("slug", editorial.blog_feature_slug)'
+        "const blogRef = editorial.blog_feature_ref || editorial.blog_feature_slug"
+      );
+      expect(editorialSource).toContain(
+        '.eq("slug", blogRef)'
       );
     });
 
     it("should resolve gallery feature by slug from gallery_albums table", () => {
       expect(editorialSource).toContain('.from("gallery_albums")');
       expect(editorialSource).toContain(
-        '.eq("slug", editorial.gallery_feature_slug)'
+        "const galleryRef = editorial.gallery_feature_ref || editorial.gallery_feature_slug"
+      );
+      expect(editorialSource).toContain(
+        '.eq("slug", galleryRef)'
       );
     });
 
@@ -442,7 +487,7 @@ describe("Part B: Editorial Layer", () => {
     });
 
     it("should include venue join for featured happenings", () => {
-      expect(editorialSource).toContain("venues!left(name)");
+      expect(editorialSource).toContain("venues!left(id, name, slug, website_url)");
     });
 
     it("should truncate long bios in member spotlight (150 char limit)", () => {
@@ -976,8 +1021,8 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("exports normalizeEditorialSlug function", () => {
-      expect(editorialSource).toContain("export function normalizeEditorialSlug");
+    it("exports normalizeEditorialRef function", () => {
+      expect(editorialSource).toContain("export function normalizeEditorialRef");
     });
 
     it("has isUUID helper function", () => {
@@ -990,37 +1035,41 @@ describe("Part B: Editorial Layer", () => {
       );
     });
 
-    it("normalizeEditorialSlug handles /songwriters/ route pattern", () => {
+    it("normalizeEditorialRef handles /songwriters/ route pattern", () => {
       expect(editorialSource).toContain("/songwriters/");
     });
 
-    it("normalizeEditorialSlug handles /venues/ route pattern", () => {
+    it("normalizeEditorialRef handles /venues/ route pattern", () => {
       expect(editorialSource).toContain("/venues/");
     });
 
-    it("normalizeEditorialSlug handles /events/ route pattern", () => {
+    it("normalizeEditorialRef handles /events/ route pattern", () => {
       expect(editorialSource).toContain("/events/");
     });
 
-    it("normalizeEditorialSlug handles /blog/ route pattern", () => {
+    it("normalizeEditorialRef handles /blog/ route pattern", () => {
       expect(editorialSource).toContain("/blog/");
     });
 
-    it("normalizeEditorialSlug handles /gallery/ route pattern", () => {
+    it("normalizeEditorialRef handles /gallery/ route pattern", () => {
       expect(editorialSource).toContain("/gallery/");
     });
 
-    it("normalizeEditorialSlug handles full URLs with https", () => {
-      // Regex pattern uses https?: for optional http/https
-      expect(editorialSource).toContain("https?:");
+    it("normalizeEditorialRef handles full URLs with http/https", () => {
+      expect(editorialSource).toContain('stripped.startsWith("http://")');
+      expect(editorialSource).toContain('stripped.startsWith("https://")');
     });
 
-    it("normalizeEditorialSlug returns null for empty/null input", () => {
-      expect(editorialSource).toContain("if (!input) return null");
+    it("normalizeEditorialRef returns null for empty/null input", () => {
+      expect(editorialSource).toContain("if (!input) return { value: null }");
     });
 
-    it("normalizeEditorialSlug returns trimmed input when no pattern matches", () => {
-      expect(editorialSource).toContain("return trimmed");
+    it("normalizeEditorialRef allows bare slugs/UUIDs", () => {
+      expect(editorialSource).toContain("!stripped.includes(\"/\")");
+    });
+
+    it("normalization only strips DSC domains", () => {
+      expect(editorialSource).toContain("denversongwriterscollective.org");
     });
   });
 
@@ -1070,12 +1119,17 @@ describe("Part B: Editorial Layer", () => {
       expect(adminEmailPage).toContain("slug or URL");
     });
 
-    it("member spotlight placeholder shows example with path", () => {
-      expect(adminEmailPage).toContain("/songwriters/");
+    it("member spotlight placeholder shows example with full URL", () => {
+      expect(adminEmailPage).toContain("https://denversongwriterscollective.org/songwriters/");
     });
 
-    it("venue spotlight placeholder shows example with path", () => {
-      expect(adminEmailPage).toContain("/venues/");
+    it("venue spotlight placeholder shows example with full URL", () => {
+      expect(adminEmailPage).toContain("https://denversongwriterscollective.org/venues/");
+    });
+
+    it("blog and gallery labels mention slug or URL", () => {
+      expect(adminEmailPage).toContain("Blog Feature (slug or URL)");
+      expect(adminEmailPage).toContain("Gallery Feature (slug or URL)");
     });
   });
 
@@ -1085,36 +1139,18 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("imports normalizeEditorialSlug helper", () => {
-      expect(editorialRoute).toContain("normalizeEditorialSlug");
+    it("imports buildEditorialUpsertData helper", () => {
+      expect(editorialRoute).toContain("buildEditorialUpsertData");
     });
 
-    it("normalizes member_spotlight_id before storage", () => {
-      expect(editorialRoute).toContain(
-        "normalizeEditorialSlug(editorialData.member_spotlight_id)"
-      );
+    it("builds normalized data before upsert", () => {
+      expect(editorialRoute).toContain("buildEditorialUpsertData");
+      expect(editorialRoute).toContain("normalizedResult");
     });
 
-    it("normalizes venue_spotlight_id before storage", () => {
-      expect(editorialRoute).toContain(
-        "normalizeEditorialSlug(editorialData.venue_spotlight_id)"
-      );
-    });
-
-    it("normalizes blog_feature_slug before storage", () => {
-      expect(editorialRoute).toContain(
-        "normalizeEditorialSlug(editorialData.blog_feature_slug)"
-      );
-    });
-
-    it("normalizes gallery_feature_slug before storage", () => {
-      expect(editorialRoute).toContain(
-        "normalizeEditorialSlug(editorialData.gallery_feature_slug)"
-      );
-    });
-
-    it("creates normalizedData object before upsert", () => {
-      expect(editorialRoute).toContain("normalizedData");
+    it("returns 400 for invalid payloads instead of 500", () => {
+      expect(editorialRoute).toContain("normalizedResult.error");
+      expect(editorialRoute).toContain("status: 400");
     });
   });
 

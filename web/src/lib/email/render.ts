@@ -269,6 +269,7 @@ export function rsvpsDashboardLink(): string {
  * Optional cover image (full width, height auto, NEVER cropped).
  * Title (15px, 600 weight, accent color, optional link).
  * Subtitle (14px, textSecondary).
+ * subtitleHtml should be pre-escaped if used.
  * Optional CTA button.
  */
 export function renderEmailBaseballCard(opts: {
@@ -277,6 +278,7 @@ export function renderEmailBaseballCard(opts: {
   title: string;
   titleUrl?: string;
   subtitle?: string;
+  subtitleHtml?: string;
   ctaText?: string;
   ctaUrl?: string;
 }): string {
@@ -290,9 +292,11 @@ export function renderEmailBaseballCard(opts: {
     ? `<a href="${opts.titleUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">${escapeHtml(opts.title)}</a>`
     : `<span style="color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 600;">${escapeHtml(opts.title)}</span>`;
 
-  const subtitleHtml = opts.subtitle
-    ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">${escapeHtml(opts.subtitle)}</p>`
-    : "";
+  const subtitleContent = opts.subtitleHtml
+    ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">${opts.subtitleHtml}</p>`
+    : opts.subtitle
+      ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">${escapeHtml(opts.subtitle)}</p>`
+      : "";
 
   const ctaHtml = opts.ctaText && opts.ctaUrl
     ? `<table cellpadding="0" cellspacing="0" style="margin: 12px 0 0 0;">
@@ -311,7 +315,7 @@ export function renderEmailBaseballCard(opts: {
   <tr>
     <td style="padding: 14px 16px;">
       ${titleHtml}
-      ${subtitleHtml}
+      ${subtitleContent}
       ${ctaHtml}
     </td>
   </tr>

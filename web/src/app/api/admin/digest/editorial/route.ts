@@ -18,8 +18,8 @@ import {
   getEditorial,
   upsertEditorial,
   deleteEditorial,
-  normalizeEditorialSlug,
 } from "@/lib/digest/digestEditorial";
+import { buildEditorialUpsertData } from "@/lib/digest/editorialPayload";
 
 export const dynamic = "force-dynamic";
 
@@ -80,22 +80,17 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  // GTM-3.1: Normalize slug/URL inputs for member and venue spotlights
-  // Extracts slug from full URLs and passes through bare slugs/UUIDs
-  const normalizedData = {
-    ...editorialData,
-    member_spotlight_id: normalizeEditorialSlug(editorialData.member_spotlight_id),
-    venue_spotlight_id: normalizeEditorialSlug(editorialData.venue_spotlight_id),
-    blog_feature_slug: normalizeEditorialSlug(editorialData.blog_feature_slug),
-    gallery_feature_slug: normalizeEditorialSlug(editorialData.gallery_feature_slug),
-  };
+  const normalizedResult = buildEditorialUpsertData(editorialData);
+  if (normalizedResult.error) {
+    return NextResponse.json(normalizedResult.error, { status: 400 });
+  }
 
   const serviceClient = createServiceRoleClient();
   const success = await upsertEditorial(
     serviceClient,
     weekKey,
     digestType,
-    normalizedData,
+    normalizedResult.data,
     user.id
   );
 

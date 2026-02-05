@@ -16,50 +16,114 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /**
  * Check if a string is a valid UUID format.
  */
-function isUUID(str: string): boolean {
+export function isUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-/**
- * Extract slug from a full URL or return the input if it's already a slug/UUID.
- *
- * Supported URL patterns:
- * - /songwriters/{slug}
- * - /venues/{slug}
- * - /events/{slug}
- * - /blog/{slug}
- * - /gallery/{slug}
- *
- * Examples:
- * - "https://denversongwriterscollective.org/songwriters/sami-serrag" → "sami-serrag"
- * - "/venues/brewery-rickoli" → "brewery-rickoli"
- * - "sami-serrag" → "sami-serrag" (already a slug)
- * - "a1b2c3d4-..." → "a1b2c3d4-..." (UUID passthrough)
- */
-export function normalizeEditorialSlug(input: string | null | undefined): string | null {
-  if (!input) return null;
+const INTERNAL_HOSTS = new Set([
+  "denversongwriterscollective.org",
+  "www.denversongwriterscollective.org",
+]);
 
-  const trimmed = input.trim();
-  if (!trimmed) return null;
+const EDITORIAL_ROUTE_PATTERNS: Array<{ label: string; regex: RegExp }> = [
+  { label: "songwriters", regex: /^\/songwriters\/([^/?#]+)/i },
+  { label: "venues", regex: /^\/venues\/([^/?#]+)/i },
+  { label: "events", regex: /^\/events\/([^/?#]+)/i },
+  { label: "open-mics", regex: /^\/open-mics\/([^/?#]+)/i },
+  { label: "blog", regex: /^\/blog\/([^/?#]+)/i },
+  { label: "gallery", regex: /^\/gallery\/([^/?#]+)/i },
+];
 
-  // Known route prefixes to strip
-  const routePatterns = [
-    /^(?:https?:\/\/[^/]+)?\/songwriters\/([^/?#]+)/i,
-    /^(?:https?:\/\/[^/]+)?\/venues\/([^/?#]+)/i,
-    /^(?:https?:\/\/[^/]+)?\/events\/([^/?#]+)/i,
-    /^(?:https?:\/\/[^/]+)?\/blog\/([^/?#]+)/i,
-    /^(?:https?:\/\/[^/]+)?\/gallery\/([^/?#]+)/i,
-  ];
+function stripQueryAndHash(value: string): string {
+  return value.split("?")[0].split("#")[0];
+}
 
-  for (const pattern of routePatterns) {
-    const match = trimmed.match(pattern);
-    if (match && match[1]) {
+function extractSlugFromPath(pathname: string): string | null {
+  for (const pattern of EDITORIAL_ROUTE_PATTERNS) {
+    const match = pathname.match(pattern.regex);
+    if (match?.[1]) {
       return match[1];
     }
   }
+  return null;
+}
 
-  // No pattern matched — return as-is (already a slug or UUID)
-  return trimmed;
+export interface EditorialRefResult {
+  value: string | null;
+  error?: "invalid_url" | "unsupported_domain" | "unsupported_path" | "invalid_path";
+}
+
+/**
+ * Normalize a slug or DSC URL into a stable ref string.
+ *
+ * Rules:
+ * - Bare slugs/UUIDs are accepted as-is.
+ * - Full URLs are accepted only for DSC domains (strict).
+ * - Query strings and hashes are stripped.
+ * - Path must match a known DSC route pattern.
+ */
+export function normalizeEditorialRef(input: string | null | undefined): EditorialRefResult {
+  if (!input) return { value: null };
+
+  const trimmed = input.trim();
+  if (!trimmed) return { value: null };
+
+  const stripped = stripQueryAndHash(trimmed);
+
+  if (!stripped.includes("/")) {
+    return { value: stripped };
+  }
+
+  if (stripped.startsWith("http://") || stripped.startsWith("https://")) {
+    try {
+      const url = new URL(stripped);
+      if (!INTERNAL_HOSTS.has(url.hostname)) {
+        return { value: null, error: "unsupported_domain" };
+      }
+      const slug = extractSlugFromPath(url.pathname);
+      if (!slug) {
+        return { value: null, error: "unsupported_path" };
+      }
+      return { value: slug };
+    } catch {
+      return { value: null, error: "invalid_url" };
+    }
+  }
+
+  if (stripped.startsWith("/")) {
+    const slug = extractSlugFromPath(stripped);
+    if (!slug) {
+      return { value: null, error: "unsupported_path" };
+    }
+    return { value: slug };
+  }
+
+  return { value: null, error: "invalid_path" };
+}
+
+export interface EditorialRefsResult {
+  value: string[] | null;
+  error?: EditorialRefResult["error"];
+  index?: number;
+}
+
+export function normalizeEditorialRefs(
+  input: string[] | null | undefined
+): EditorialRefsResult {
+  if (!input || input.length === 0) return { value: null };
+
+  const results: string[] = [];
+  for (let i = 0; i < input.length; i += 1) {
+    const result = normalizeEditorialRef(input[i]);
+    if (result.error) {
+      return { value: null, error: result.error, index: i };
+    }
+    if (result.value) {
+      results.push(result.value);
+    }
+  }
+
+  return { value: results.length > 0 ? results : null };
 }
 
 export interface DigestEditorial {
@@ -73,6 +137,11 @@ export interface DigestEditorial {
   venue_spotlight_id: string | null;
   blog_feature_slug: string | null;
   gallery_feature_slug: string | null;
+  featured_happenings_refs: string[] | null;
+  member_spotlight_ref: string | null;
+  venue_spotlight_ref: string | null;
+  blog_feature_ref: string | null;
+  gallery_feature_ref: string | null;
   created_at: string;
   updated_at: string;
   updated_by: string | null;
@@ -89,6 +158,7 @@ export interface ResolvedEditorial {
     title: string;
     url: string;
     venue?: string;
+    venueUrl?: string;
     date?: string;
     time?: string;
     emoji?: string;
@@ -239,47 +309,115 @@ export async function resolveEditorial(
     resolved.introNote = editorial.intro_note;
   }
 
-  // Featured happenings
-  if (
-    editorial.featured_happening_ids &&
-    editorial.featured_happening_ids.length > 0
-  ) {
-    const { data: events } = await supabase
-      .from("events")
-      .select("id, title, slug, event_date, start_time, event_type, cover_image_url, venues!left(name)")
-      .in("id", editorial.featured_happening_ids);
+  // Featured happenings (ref-first, UUID fallback)
+  const featuredRefs = editorial.featured_happenings_refs?.filter(Boolean) ?? [];
+  const featuredIds = editorial.featured_happening_ids?.filter(Boolean) ?? [];
 
-    if (events && events.length > 0) {
-      const EVENT_TYPE_EMOJI: Record<string, string> = {
-        open_mic: "🎤",
-        song_circle: "🎵",
-        workshop: "🎓",
-        showcase: "🌟",
-        meetup: "🤝",
-        gig: "🎶",
-        kindred_group: "💛",
-        jam_session: "🎸",
-        other: "📅",
-      };
+  const fetchFeaturedEvents = async (refs: string[]) => {
+    type EventRow = {
+      id: string;
+      title: string;
+      slug: string | null;
+      event_date: string | null;
+      start_time: string | null;
+      event_type: string;
+      cover_image_url: string | null;
+      venues: { id: string; name: string; slug: string | null; website_url: string | null } | {
+        id: string;
+        name: string;
+        slug: string | null;
+        website_url: string | null;
+      }[] | null;
+    };
 
-      resolved.featuredHappenings = events.map((e) => {
-        const venue = Array.isArray(e.venues) ? e.venues[0] : e.venues;
-        return {
-          title: e.title,
-          url: `${SITE_URL}/events/${e.slug || e.id}`,
-          venue: venue?.name || undefined,
-          date: e.event_date || undefined,
-          time: e.start_time || undefined,
-          emoji: EVENT_TYPE_EMOJI[e.event_type] || "📅",
-          coverUrl: e.cover_image_url || undefined,
-        };
-      });
+    const eventSelect =
+      "id, title, slug, event_date, start_time, event_type, cover_image_url, venues!left(id, name, slug, website_url)";
+
+    const uuidRefs = refs.filter((ref) => isUUID(ref));
+    const slugRefs = refs.filter((ref) => !isUUID(ref));
+    const eventsById = new Map<string, EventRow>();
+    const eventsBySlug = new Map<string, EventRow>();
+
+    let events: EventRow[] = [];
+
+    if (uuidRefs.length > 0) {
+      const { data } = await supabase
+        .from("events")
+        .select(eventSelect)
+        .in("id", uuidRefs);
+      events = events.concat((data || []) as EventRow[]);
     }
+
+    if (slugRefs.length > 0) {
+      const { data } = await supabase
+        .from("events")
+        .select(eventSelect)
+        .in("slug", slugRefs);
+      events = events.concat((data || []) as EventRow[]);
+    }
+
+    for (const event of events) {
+      eventsById.set(event.id, event);
+      if (event.slug) {
+        eventsBySlug.set(event.slug, event);
+      }
+    }
+
+    const ordered = refs
+      .map((ref) => {
+        if (isUUID(ref)) {
+          return eventsById.get(ref) || null;
+        }
+        return eventsBySlug.get(ref) || eventsById.get(ref) || null;
+      })
+      .filter(Boolean) as EventRow[];
+
+    return ordered;
+  };
+
+  const EVENT_TYPE_EMOJI: Record<string, string> = {
+    open_mic: "🎤",
+    song_circle: "🎵",
+    workshop: "🎓",
+    showcase: "🌟",
+    meetup: "🤝",
+    gig: "🎶",
+    kindred_group: "💛",
+    jam_session: "🎸",
+    other: "📅",
+  };
+
+  const featuredEvents =
+    featuredRefs.length > 0
+      ? await fetchFeaturedEvents(featuredRefs)
+      : featuredIds.length > 0
+        ? await fetchFeaturedEvents(featuredIds)
+        : [];
+
+  if (featuredEvents.length > 0) {
+    resolved.featuredHappenings = featuredEvents.map((e) => {
+      const venue = Array.isArray(e.venues) ? e.venues[0] : e.venues;
+      const venueSlugOrId = venue?.slug || venue?.id || null;
+      const venueInternalUrl = venueSlugOrId
+        ? `${SITE_URL}/venues/${venueSlugOrId}`
+        : undefined;
+      const venueUrl = venue?.website_url || venueInternalUrl;
+      return {
+        title: e.title,
+        url: `${SITE_URL}/events/${e.slug || e.id}`,
+        venue: venue?.name || undefined,
+        venueUrl: venueUrl || undefined,
+        date: e.event_date || undefined,
+        time: e.start_time || undefined,
+        emoji: EVENT_TYPE_EMOJI[e.event_type] || "📅",
+        coverUrl: e.cover_image_url || undefined,
+      };
+    });
   }
 
   // Member spotlight — supports both UUID and slug lookups
-  if (editorial.member_spotlight_id) {
-    const memberRef = editorial.member_spotlight_id;
+  const memberRef = editorial.member_spotlight_ref || editorial.member_spotlight_id;
+  if (memberRef) {
     const memberQuery = supabase
       .from("profiles")
       .select("id, full_name, slug, avatar_url, bio");
@@ -304,8 +442,8 @@ export async function resolveEditorial(
   }
 
   // Venue spotlight — supports both UUID and slug lookups
-  if (editorial.venue_spotlight_id) {
-    const venueRef = editorial.venue_spotlight_id;
+  const venueRef = editorial.venue_spotlight_ref || editorial.venue_spotlight_id;
+  if (venueRef) {
     const venueQuery = supabase
       .from("venues")
       .select("id, name, slug, cover_image_url, city, state, website_url");
@@ -327,11 +465,12 @@ export async function resolveEditorial(
   }
 
   // Blog feature
-  if (editorial.blog_feature_slug) {
+  const blogRef = editorial.blog_feature_ref || editorial.blog_feature_slug;
+  if (blogRef) {
     const { data: post } = await supabase
       .from("blog_posts")
       .select("slug, title, excerpt")
-      .eq("slug", editorial.blog_feature_slug)
+      .eq("slug", blogRef)
       .eq("is_published", true)
       .maybeSingle();
 
@@ -345,11 +484,12 @@ export async function resolveEditorial(
   }
 
   // Gallery feature
-  if (editorial.gallery_feature_slug) {
+  const galleryRef = editorial.gallery_feature_ref || editorial.gallery_feature_slug;
+  if (galleryRef) {
     const { data: album } = await supabase
       .from("gallery_albums")
       .select("slug, title, cover_image_url")
-      .eq("slug", editorial.gallery_feature_slug)
+      .eq("slug", galleryRef)
       .eq("is_published", true)
       .maybeSingle();
 

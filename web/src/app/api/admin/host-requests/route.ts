@@ -33,6 +33,7 @@ export async function GET() {
     .order("created_at", { ascending: true });
 
   if (error) {
+    console.error("Host requests query failed", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

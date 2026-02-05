@@ -703,6 +703,26 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Host Requests Admin Visibility Fix (February 2026)
+
+**Summary:** Admin host requests no longer silently show 0 when data exists.
+
+**Changes:**
+- Added FK `host_requests.user_id → profiles.id` to support PostgREST embed for admin host requests.
+- Admin host-requests page and API route now surface query errors instead of returning empty data.
+- Documented that RLS admin checks use `auth.jwt().app_metadata.role` (not `profiles.role`).
+
+### GTM-3.1 Editorial Ref Inputs Fix (February 2026)
+
+**Summary:** Prevent 500s when admins paste slugs/URLs into editorial fields by adding ref columns, validation, and resolver updates.
+
+**Changes:**
+- Added migration `20260205181500_digest_editorial_ref_columns.sql` with text ref columns for slugs/URLs.
+- Added `buildEditorialUpsertData` validator to return 400 with field+guidance for invalid UUID/ref inputs.
+- Resolver now prefers ref columns (slug/URL) with UUID fallback; featured happenings accept slug refs and include venue URLs.
+- Featured happenings + spotlights render via baseball cards; venue spotlight title links DSC, CTA links external when available; featured venue name links external (fallback DSC).
+- Added payload validation tests and updated editorial contract tests.
+
 ### GTM-3: Editorial Layer + Newsletter Unsubscribe (February 2026) — RESOLVED
 
 **Goal:** Add an editorial layer to the weekly happenings digest (admin-curated content: featured events, member spotlights, venue spotlights, blog features, gallery features, intro notes, subject overrides) and implement a one-click newsletter unsubscribe flow for non-member subscribers.

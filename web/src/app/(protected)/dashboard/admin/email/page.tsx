@@ -44,10 +44,10 @@ interface EditorialData {
   subject_override: string;
   intro_note: string;
   featured_happening_ids: string[];
-  member_spotlight_id: string;
-  venue_spotlight_id: string;
-  blog_feature_slug: string;
-  gallery_feature_slug: string;
+  member_spotlight_ref: string;
+  venue_spotlight_ref: string;
+  blog_feature_ref: string;
+  gallery_feature_ref: string;
 }
 
 interface HappeningSearchResult {
@@ -81,10 +81,10 @@ const EMPTY_EDITORIAL: EditorialData = {
   subject_override: "",
   intro_note: "",
   featured_happening_ids: [],
-  member_spotlight_id: "",
-  venue_spotlight_id: "",
-  blog_feature_slug: "",
-  gallery_feature_slug: "",
+  member_spotlight_ref: "",
+  venue_spotlight_ref: "",
+  blog_feature_ref: "",
+  gallery_feature_ref: "",
 };
 
 const DIGEST_LABELS: Record<string, string> = {
@@ -118,10 +118,10 @@ export default function AdminEmailPage() {
     subject_override: "",
     intro_note: "",
     featured_happening_ids: [],
-    member_spotlight_id: "",
-    venue_spotlight_id: "",
-    blog_feature_slug: "",
-    gallery_feature_slug: "",
+    member_spotlight_ref: "",
+    venue_spotlight_ref: "",
+    blog_feature_ref: "",
+    gallery_feature_ref: "",
   });
   const [editorialLoading, setEditorialLoading] = useState(false);
   const [editorialSaving, setEditorialSaving] = useState(false);
@@ -149,10 +149,22 @@ export default function AdminEmailPage() {
             subject_override: data.editorial.subject_override || "",
             intro_note: data.editorial.intro_note || "",
             featured_happening_ids: data.editorial.featured_happening_ids || [],
-            member_spotlight_id: data.editorial.member_spotlight_id || "",
-            venue_spotlight_id: data.editorial.venue_spotlight_id || "",
-            blog_feature_slug: data.editorial.blog_feature_slug || "",
-            gallery_feature_slug: data.editorial.gallery_feature_slug || "",
+            member_spotlight_ref:
+              data.editorial.member_spotlight_ref ||
+              data.editorial.member_spotlight_id ||
+              "",
+            venue_spotlight_ref:
+              data.editorial.venue_spotlight_ref ||
+              data.editorial.venue_spotlight_id ||
+              "",
+            blog_feature_ref:
+              data.editorial.blog_feature_ref ||
+              data.editorial.blog_feature_slug ||
+              "",
+            gallery_feature_ref:
+              data.editorial.gallery_feature_ref ||
+              data.editorial.gallery_feature_slug ||
+              "",
           });
         } else {
           setEditorial({ ...EMPTY_EDITORIAL });
@@ -179,10 +191,10 @@ export default function AdminEmailPage() {
       if (editorial.intro_note) payload.intro_note = editorial.intro_note;
       if (editorial.featured_happening_ids.length > 0)
         payload.featured_happening_ids = editorial.featured_happening_ids;
-      if (editorial.member_spotlight_id) payload.member_spotlight_id = editorial.member_spotlight_id;
-      if (editorial.venue_spotlight_id) payload.venue_spotlight_id = editorial.venue_spotlight_id;
-      if (editorial.blog_feature_slug) payload.blog_feature_slug = editorial.blog_feature_slug;
-      if (editorial.gallery_feature_slug) payload.gallery_feature_slug = editorial.gallery_feature_slug;
+      if (editorial.member_spotlight_ref) payload.member_spotlight_ref = editorial.member_spotlight_ref;
+      if (editorial.venue_spotlight_ref) payload.venue_spotlight_ref = editorial.venue_spotlight_ref;
+      if (editorial.blog_feature_ref) payload.blog_feature_ref = editorial.blog_feature_ref;
+      if (editorial.gallery_feature_ref) payload.gallery_feature_ref = editorial.gallery_feature_ref;
 
       const res = await fetch("/api/admin/digest/editorial", {
         method: "PUT",
@@ -194,7 +206,13 @@ export default function AdminEmailPage() {
         setEditorialResult({ message: `Editorial saved for ${editorialWeekKey}.`, variant: "success" });
       } else {
         const data = await res.json();
-        setEditorialResult({ message: data.error || "Failed to save editorial.", variant: "error" });
+        const fieldLabel = data.field
+          ? `${data.field}${typeof data.index === "number" ? ` (item ${data.index + 1})` : ""}`
+          : "";
+        const message = data.error
+          ? `${data.error}${fieldLabel ? ` — ${fieldLabel}` : ""}${data.guidance ? `: ${data.guidance}` : ""}`
+          : "Failed to save editorial.";
+        setEditorialResult({ message, variant: "error" });
       }
     } catch {
       setEditorialResult({ message: "Network error saving editorial.", variant: "error" });
@@ -792,11 +810,11 @@ export default function AdminEmailPage() {
             </label>
             <input
               type="text"
-              value={editorial.member_spotlight_id}
+              value={editorial.member_spotlight_ref}
               onChange={(e) =>
-                setEditorial((prev) => ({ ...prev, member_spotlight_id: e.target.value }))
+                setEditorial((prev) => ({ ...prev, member_spotlight_ref: e.target.value }))
               }
-              placeholder="sami-serrag or /songwriters/sami-serrag"
+              placeholder="sami-serrag or https://denversongwriterscollective.org/songwriters/sami-serrag"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -808,11 +826,11 @@ export default function AdminEmailPage() {
             </label>
             <input
               type="text"
-              value={editorial.venue_spotlight_id}
+              value={editorial.venue_spotlight_ref}
               onChange={(e) =>
-                setEditorial((prev) => ({ ...prev, venue_spotlight_id: e.target.value }))
+                setEditorial((prev) => ({ ...prev, venue_spotlight_ref: e.target.value }))
               }
-              placeholder="brewery-rickoli or /venues/brewery-rickoli"
+              placeholder="brewery-rickoli or https://denversongwriterscollective.org/venues/brewery-rickoli"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -820,15 +838,15 @@ export default function AdminEmailPage() {
           {/* Blog feature */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Blog Feature (slug)
+              Blog Feature (slug or URL)
             </label>
             <input
               type="text"
-              value={editorial.blog_feature_slug}
+              value={editorial.blog_feature_ref}
               onChange={(e) =>
-                setEditorial((prev) => ({ ...prev, blog_feature_slug: e.target.value }))
+                setEditorial((prev) => ({ ...prev, blog_feature_ref: e.target.value }))
               }
-              placeholder="blog-post-slug"
+              placeholder="blog-post-slug or /blog/blog-post-slug"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -836,15 +854,15 @@ export default function AdminEmailPage() {
           {/* Gallery feature */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Gallery Feature (slug)
+              Gallery Feature (slug or URL)
             </label>
             <input
               type="text"
-              value={editorial.gallery_feature_slug}
+              value={editorial.gallery_feature_ref}
               onChange={(e) =>
-                setEditorial((prev) => ({ ...prev, gallery_feature_slug: e.target.value }))
+                setEditorial((prev) => ({ ...prev, gallery_feature_ref: e.target.value }))
               }
-              placeholder="gallery-album-slug"
+              placeholder="gallery-album-slug or /gallery/gallery-album-slug"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>

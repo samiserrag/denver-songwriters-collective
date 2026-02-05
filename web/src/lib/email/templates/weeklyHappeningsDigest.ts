@@ -153,14 +153,23 @@ function formatFeaturedHappeningsHtml(
 ): string {
   const cards = featured
     .map((f) => {
-      const metaParts = [f.date, f.time, f.venue].filter(Boolean);
-      const subtitle = metaParts.join(" · ");
+      const metaParts: string[] = [];
+      if (f.date) metaParts.push(escapeHtml(f.date));
+      if (f.time) metaParts.push(escapeHtml(f.time));
+      if (f.venue) {
+        const venueText = escapeHtml(f.venue);
+        const venueLink = f.venueUrl
+          ? `<a href="${escapeHtml(f.venueUrl)}" style="color: ${EMAIL_COLORS.textSecondary}; text-decoration: underline;">${venueText}</a>`
+          : venueText;
+        metaParts.push(venueLink);
+      }
+      const subtitleHtml = metaParts.length > 0 ? metaParts.join(" · ") : undefined;
       return renderEmailBaseballCard({
         coverUrl: f.coverUrl,
         coverAlt: f.title,
         title: f.title,
         titleUrl: f.url,
-        subtitle: subtitle || undefined,
+        subtitleHtml,
         ctaText: "View Happening",
         ctaUrl: f.url,
       });
@@ -205,8 +214,8 @@ function formatMemberSpotlightHtml(
 function formatVenueSpotlightHtml(
   spotlight: NonNullable<ResolvedEditorial["venueSpotlight"]>
 ): string {
-  // Venue name links to external website when available, falls back to DSC venue page
-  const titleUrl = spotlight.websiteUrl || spotlight.url;
+  const ctaUrl = spotlight.websiteUrl || spotlight.url;
+  const ctaText = spotlight.websiteUrl ? "Visit Website" : "View Venue";
 
   return `
     <tr>
@@ -218,10 +227,10 @@ function formatVenueSpotlightHtml(
           coverUrl: spotlight.coverUrl,
           coverAlt: spotlight.name,
           title: spotlight.name,
-          titleUrl,
+          titleUrl: spotlight.url,
           subtitle: spotlight.city,
-          ctaText: "View Venue",
-          ctaUrl: spotlight.url,
+          ctaText,
+          ctaUrl,
         })}
       </td>
     </tr>

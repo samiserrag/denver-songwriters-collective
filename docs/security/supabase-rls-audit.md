@@ -133,7 +133,7 @@ All 18 functions are EXECUTE-able by both `anon` and `authenticated` roles.
 
 | Function | Risk | Analysis |
 |----------|------|----------|
-| `is_admin()` | LOW | Read-only check against profiles.role |
+| `is_admin()` | LOW | Read-only check against `auth.jwt().app_metadata.role` |
 | `create_user_notification()` | **HIGH** | Can insert notifications for ANY user_id |
 | `create_admin_notification()` | **HIGH** | Can insert admin notifications |
 | `cleanup_old_logs()` | MEDIUM | Can delete logs (no auth check) |
@@ -151,6 +151,29 @@ All 18 functions are EXECUTE-able by both `anon` and `authenticated` roles.
 | `prevent_admin_delete()` | LOW | Trigger only |
 | `upsert_notification_preferences()` | LOW | Operates on own user |
 | `generate_recurring_event_instances()` | LOW | Internal helper |
+
+**Admin role source of truth (RLS):** `public.is_admin()` reads `auth.jwt().app_metadata.role`.
+`profiles.role` is **not** authoritative for RLS. Keep `app_metadata.role` in sync.
+
+**Set `app_metadata.role = "admin"` (Supabase-supported methods):**
+
+Dashboard:
+1. Supabase Dashboard → Authentication → Users
+2. Select the user
+3. Edit **App Metadata** JSON and add `"role": "admin"`
+4. Save
+
+CLI/SQL (service-role or psql with admin access):
+```sql
+UPDATE auth.users
+SET raw_app_meta_data = jsonb_set(
+  COALESCE(raw_app_meta_data, '{}'::jsonb),
+  '{role}',
+  '"admin"',
+  true
+)
+WHERE id = '<user-id>';
+```
 
 **Finding #4 (HIGH):** `create_user_notification()` can be called by anon/authenticated to create notifications for ANY user:
 
