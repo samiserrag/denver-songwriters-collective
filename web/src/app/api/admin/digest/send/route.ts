@@ -8,9 +8,13 @@
  * - "full": Send to all recipients. Respects idempotency lock (same as cron).
  * - "test": Send to the admin only. Bypasses idempotency lock. Prepends [TEST] to subject.
  *
+ * GTM-3: Includes editorial content for weekly_happenings.
+ *        Test mode resolves editorial immediately.
+ *        Full mode resolves editorial AFTER lock acquisition (Delta 1).
+ *
  * Admin-only.
  *
- * Phase: GTM-2
+ * Phase: GTM-2, GTM-3
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -24,6 +28,7 @@ import { getWeeklyOpenMicsDigestEmail } from "@/lib/email/templates/weeklyOpenMi
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
 import { claimDigestSendLock, computeWeekKey } from "@/lib/digest/digestSendLog";
 import type { DigestType } from "@/lib/digest/digestSendLog";
+import { getEditorial, resolveEditorial, type ResolvedEditorial } from "@/lib/digest/digestEditorial";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -91,6 +96,18 @@ export async function POST(request: NextRequest) {
       if (digestType === "weekly_happenings") {
         const digestData = await getUpcomingHappenings(serviceClient);
 
+        // GTM-3: Resolve editorial for test send
+        const weekKey = computeWeekKey();
+        let resolvedEditorial: ResolvedEditorial | undefined;
+        try {
+          const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
+          if (editorial) {
+            resolvedEditorial = await resolveEditorial(serviceClient, editorial);
+          }
+        } catch (editorialError) {
+          console.warn("[AdminTestSend] Editorial resolution failed:", editorialError);
+        }
+
         const result = await sendDigestEmails({
           mode: "test",
           recipients: [adminRecipient],
@@ -101,6 +118,7 @@ export async function POST(request: NextRequest) {
               byDate: digestData.byDate,
               totalCount: digestData.totalCount,
               venueCount: digestData.venueCount,
+              editorial: resolvedEditorial,
             }),
           templateName: "weeklyHappeningsDigest",
           logPrefix: "[AdminTestSend]",
@@ -112,6 +130,7 @@ export async function POST(request: NextRequest) {
           sent: result.sent,
           failed: result.failed,
           sentTo: adminProfile.email,
+          hasEditorial: !!resolvedEditorial,
         });
       } else {
         const digestData = await getUpcomingOpenMics(serviceClient);
@@ -177,6 +196,19 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // GTM-3: Resolve editorial AFTER lock (Delta 1)
+      let resolvedEditorial: ResolvedEditorial | undefined;
+      try {
+        const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
+        if (editorial) {
+          console.log(`[AdminFullSend] Found editorial for ${weekKey}, resolving references...`);
+          resolvedEditorial = await resolveEditorial(serviceClient, editorial);
+          console.log("[AdminFullSend] Editorial resolved successfully");
+        }
+      } catch (editorialError) {
+        console.warn("[AdminFullSend] Editorial resolution failed, sending without editorial:", editorialError);
+      }
+
       const result = await sendDigestEmails({
         mode: "full",
         recipients,
@@ -187,6 +219,7 @@ export async function POST(request: NextRequest) {
             byDate: digestData.byDate,
             totalCount: digestData.totalCount,
             venueCount: digestData.venueCount,
+            editorial: resolvedEditorial,
           }),
         templateName: "weeklyHappeningsDigest",
         logPrefix: "[AdminFullSend]",
@@ -199,6 +232,7 @@ export async function POST(request: NextRequest) {
         failed: result.failed,
         total: result.total,
         weekKey,
+        hasEditorial: !!resolvedEditorial,
       });
     } else {
       const digestData = await getUpcomingOpenMics(serviceClient);

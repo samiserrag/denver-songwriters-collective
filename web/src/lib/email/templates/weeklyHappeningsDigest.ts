@@ -12,6 +12,11 @@
  * GTM-2:
  * - HMAC-signed one-click unsubscribe link (no login required)
  * - Warm community-forward footer copy
+ *
+ * GTM-3:
+ * - Optional editorial sections (intro note, featured happenings, spotlights)
+ * - Subject line override
+ * - All editorial sections are optional — email renders normally without them
  */
 
 import { escapeHtml } from "@/lib/highlight";
@@ -26,6 +31,7 @@ import type { HappeningOccurrence } from "@/lib/digest/weeklyHappenings";
 import { formatTimeDisplay } from "@/lib/digest/weeklyHappenings";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import { buildUnsubscribeUrl } from "@/lib/digest/unsubscribeToken";
+import type { ResolvedEditorial } from "@/lib/digest/digestEditorial";
 
 // ============================================================
 // Types
@@ -42,6 +48,8 @@ export interface WeeklyHappeningsDigestParams {
   totalCount: number;
   /** Total count of unique venues */
   venueCount: number;
+  /** Optional editorial content (GTM-3) */
+  editorial?: ResolvedEditorial;
 }
 
 // ============================================================
@@ -124,6 +132,217 @@ function formatEmptyStateHtml(): string {
 }
 
 // ============================================================
+// Editorial HTML Helpers (GTM-3)
+// ============================================================
+
+function formatIntroNoteHtml(introNote: string): string {
+  return `
+    <tr>
+      <td style="padding: 0 0 20px 0;">
+        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.6; font-style: italic;">
+          ${escapeHtml(introNote)}
+        </p>
+      </td>
+    </tr>
+  `;
+}
+
+function formatFeaturedHappeningsHtml(
+  featured: NonNullable<ResolvedEditorial["featuredHappenings"]>
+): string {
+  const items = featured
+    .map((f) => {
+      const metaParts = [f.date, f.time, f.venue].filter(Boolean);
+      const metaLine = metaParts.join(" · ");
+      return `
+      <tr>
+        <td style="padding: 8px 0;">
+          <table cellpadding="0" cellspacing="0" style="width: 100%;">
+            <tr>
+              <td style="vertical-align: top; padding-right: 12px;">
+                <span style="font-size: 20px;">${f.emoji || "⭐"}</span>
+              </td>
+              <td style="vertical-align: top; width: 100%;">
+                <a href="${f.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
+                  ${escapeHtml(f.title)}
+                </a>
+                ${metaLine ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(metaLine)}</p>` : ""}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    `;
+    })
+    .join("");
+
+  return `
+    <tr>
+      <td style="padding: 16px 0 20px 0;">
+        <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+          ⭐ FEATURED THIS WEEK
+        </p>
+        <table cellpadding="0" cellspacing="0" style="width: 100%; background-color: ${EMAIL_COLORS.bgCard}; border-radius: 8px; padding: 12px;">
+          ${items}
+        </table>
+      </td>
+    </tr>
+  `;
+}
+
+function formatMemberSpotlightHtml(
+  spotlight: NonNullable<ResolvedEditorial["memberSpotlight"]>
+): string {
+  const avatarHtml = spotlight.avatarUrl
+    ? `<img src="${spotlight.avatarUrl}" alt="" width="48" height="48" style="border-radius: 50%; display: block;" />`
+    : `<div style="width: 48px; height: 48px; border-radius: 50%; background-color: ${EMAIL_COLORS.border}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${EMAIL_COLORS.textSecondary};">🎵</div>`;
+
+  return `
+    <tr>
+      <td style="padding: 16px 0;">
+        <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+          🎤 MEMBER SPOTLIGHT
+        </p>
+        <table cellpadding="0" cellspacing="0" style="width: 100%;">
+          <tr>
+            <td style="vertical-align: top; padding-right: 12px; width: 48px;">
+              ${avatarHtml}
+            </td>
+            <td style="vertical-align: top;">
+              <a href="${spotlight.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
+                ${escapeHtml(spotlight.name)}
+              </a>
+              ${spotlight.bio ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(spotlight.bio)}</p>` : ""}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `;
+}
+
+function formatVenueSpotlightHtml(
+  spotlight: NonNullable<ResolvedEditorial["venueSpotlight"]>
+): string {
+  return `
+    <tr>
+      <td style="padding: 16px 0;">
+        <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+          📍 VENUE SPOTLIGHT
+        </p>
+        <table cellpadding="0" cellspacing="0" style="width: 100%;">
+          <tr>
+            <td style="vertical-align: top;">
+              <a href="${spotlight.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
+                ${escapeHtml(spotlight.name)}
+              </a>
+              ${spotlight.city ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(spotlight.city)}</p>` : ""}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `;
+}
+
+function formatBlogFeatureHtml(
+  feature: NonNullable<ResolvedEditorial["blogFeature"]>
+): string {
+  return `
+    <tr>
+      <td style="padding: 16px 0;">
+        <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+          📝 FROM THE BLOG
+        </p>
+        <a href="${feature.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
+          ${escapeHtml(feature.title)}
+        </a>
+        ${feature.excerpt ? `<p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">${escapeHtml(feature.excerpt)}</p>` : ""}
+      </td>
+    </tr>
+  `;
+}
+
+function formatGalleryFeatureHtml(
+  feature: NonNullable<ResolvedEditorial["galleryFeature"]>
+): string {
+  return `
+    <tr>
+      <td style="padding: 16px 0;">
+        <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+          📸 FROM THE GALLERY
+        </p>
+        <a href="${feature.url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none; font-size: 15px; font-weight: 600;">
+          ${escapeHtml(feature.title)}
+        </a>
+      </td>
+    </tr>
+  `;
+}
+
+// ============================================================
+// Editorial Text Helpers (GTM-3)
+// ============================================================
+
+function formatIntroNoteText(introNote: string): string {
+  return `"${introNote}"`;
+}
+
+function formatFeaturedHappeningsText(
+  featured: NonNullable<ResolvedEditorial["featuredHappenings"]>
+): string {
+  const lines = ["⭐ FEATURED THIS WEEK", ""];
+  for (const f of featured) {
+    const metaParts = [f.date, f.time, f.venue].filter(Boolean);
+    const metaLine = metaParts.join(" · ");
+    lines.push(`${f.emoji || "⭐"} ${f.title}`);
+    if (metaLine) lines.push(`   ${metaLine}`);
+    lines.push(`   ${f.url}`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+function formatMemberSpotlightText(
+  spotlight: NonNullable<ResolvedEditorial["memberSpotlight"]>
+): string {
+  const lines = ["🎤 MEMBER SPOTLIGHT", ""];
+  lines.push(spotlight.name);
+  if (spotlight.bio) lines.push(spotlight.bio);
+  lines.push(spotlight.url);
+  return lines.join("\n");
+}
+
+function formatVenueSpotlightText(
+  spotlight: NonNullable<ResolvedEditorial["venueSpotlight"]>
+): string {
+  const lines = ["📍 VENUE SPOTLIGHT", ""];
+  lines.push(spotlight.name);
+  if (spotlight.city) lines.push(spotlight.city);
+  lines.push(spotlight.url);
+  return lines.join("\n");
+}
+
+function formatBlogFeatureText(
+  feature: NonNullable<ResolvedEditorial["blogFeature"]>
+): string {
+  const lines = ["📝 FROM THE BLOG", ""];
+  lines.push(feature.title);
+  if (feature.excerpt) lines.push(feature.excerpt);
+  lines.push(feature.url);
+  return lines.join("\n");
+}
+
+function formatGalleryFeatureText(
+  feature: NonNullable<ResolvedEditorial["galleryFeature"]>
+): string {
+  const lines = ["📸 FROM THE GALLERY", ""];
+  lines.push(feature.title);
+  lines.push(feature.url);
+  return lines.join("\n");
+}
+
+// ============================================================
 // Text Helpers
 // ============================================================
 
@@ -163,12 +382,13 @@ function formatHappeningText(occurrence: HappeningOccurrence): string {
 export function getWeeklyHappeningsDigestEmail(
   params: WeeklyHappeningsDigestParams
 ): { subject: string; html: string; text: string } {
-  const { firstName, userId, byDate, totalCount, venueCount } = params;
+  const { firstName, userId, byDate, totalCount, venueCount, editorial } = params;
 
   // Build one-click unsubscribe URL (HMAC-signed, no login required)
   const unsubscribeUrl = buildUnsubscribeUrl(userId) || `${SITE_URL}/dashboard/settings`;
 
-  const subject = "Happenings This Week in Denver";
+  // GTM-3: Editorial subject override takes precedence
+  const subject = editorial?.subjectOverride || "Happenings This Week in Denver";
 
   // ============================================================
   // HTML Version
@@ -193,9 +413,33 @@ export function getWeeklyHappeningsDigestEmail(
   }
 
   // Summary line
-  const summaryText = totalCount === 0
+  const summaryLine = totalCount === 0
     ? ""
     : `That's ${totalCount} happening${totalCount === 1 ? "" : "s"} across ${venueCount} venue${venueCount === 1 ? "" : "s"} this week.`;
+
+  // GTM-3: Build editorial HTML sections
+  const introNoteHtml = editorial?.introNote
+    ? formatIntroNoteHtml(editorial.introNote)
+    : "";
+
+  const featuredHtml = editorial?.featuredHappenings?.length
+    ? formatFeaturedHappeningsHtml(editorial.featuredHappenings)
+    : "";
+
+  // Spotlights and features go after the CTA
+  let spotlightsHtml = "";
+  if (editorial?.memberSpotlight) {
+    spotlightsHtml += formatMemberSpotlightHtml(editorial.memberSpotlight);
+  }
+  if (editorial?.venueSpotlight) {
+    spotlightsHtml += formatVenueSpotlightHtml(editorial.venueSpotlight);
+  }
+  if (editorial?.blogFeature) {
+    spotlightsHtml += formatBlogFeatureHtml(editorial.blogFeature);
+  }
+  if (editorial?.galleryFeature) {
+    spotlightsHtml += formatGalleryFeatureHtml(editorial.galleryFeature);
+  }
 
   const htmlContent = `
     ${getGreeting(firstName)}
@@ -204,15 +448,21 @@ export function getWeeklyHappeningsDigestEmail(
       Here's what's happening in the Denver songwriter community this week.
     </p>
 
+    ${introNoteHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${introNoteHtml}</table>` : ""}
+
+    ${featuredHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${featuredHtml}</table>` : ""}
+
     <table cellpadding="0" cellspacing="0" style="width: 100%;">
       ${eventsHtml}
     </table>
 
-    ${summaryText ? `
+    ${summaryLine ? `
     <p style="margin: 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
-      ${escapeHtml(summaryText)}
+      ${escapeHtml(summaryLine)}
     </p>
     ` : ""}
+
+    ${spotlightsHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${spotlightsHtml}</table>` : ""}
 
     <table cellpadding="0" cellspacing="0" style="margin: 24px 0;">
       <tr>
@@ -267,14 +517,48 @@ export function getWeeklyHappeningsDigestEmail(
 
   const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
 
+  // GTM-3: Build editorial text sections
+  const editorialTextParts: string[] = [];
+
+  if (editorial?.introNote) {
+    editorialTextParts.push(formatIntroNoteText(editorial.introNote));
+    editorialTextParts.push("");
+  }
+
+  if (editorial?.featuredHappenings?.length) {
+    editorialTextParts.push(formatFeaturedHappeningsText(editorial.featuredHappenings));
+  }
+
+  const spotlightsTextParts: string[] = [];
+
+  if (editorial?.memberSpotlight) {
+    spotlightsTextParts.push(formatMemberSpotlightText(editorial.memberSpotlight));
+    spotlightsTextParts.push("");
+  }
+  if (editorial?.venueSpotlight) {
+    spotlightsTextParts.push(formatVenueSpotlightText(editorial.venueSpotlight));
+    spotlightsTextParts.push("");
+  }
+  if (editorial?.blogFeature) {
+    spotlightsTextParts.push(formatBlogFeatureText(editorial.blogFeature));
+    spotlightsTextParts.push("");
+  }
+  if (editorial?.galleryFeature) {
+    spotlightsTextParts.push(formatGalleryFeatureText(editorial.galleryFeature));
+    spotlightsTextParts.push("");
+  }
+
   const textParts = [
     greeting,
     "",
     "Here's what's happening in the Denver songwriter community this week.",
+    "",
+    ...editorialTextParts,
     eventsText,
     "",
-    summaryText,
+    summaryLine,
     "",
+    ...spotlightsTextParts,
     `Browse All Happenings: ${SITE_URL}/happenings`,
     "",
     "Want to see more or tailor this to you? Browse all happenings with your filters applied!",

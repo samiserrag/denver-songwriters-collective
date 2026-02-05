@@ -2,15 +2,16 @@
  * Admin Email Control Panel
  *
  * Manage digest email automation, preview emails, send tests, and view history.
+ * GTM-3: Editorial editor for weekly happenings digest.
  *
  * Admin-only.
  *
- * Phase: GTM-2
+ * Phase: GTM-2, GTM-3
  */
 
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 
 interface DigestSetting {
   id: string;
@@ -35,7 +36,56 @@ interface PreviewData {
   totalHappenings?: number;
   totalOpenMics?: number;
   totalVenues?: number;
+  hasEditorial?: boolean;
+  weekKey?: string;
 }
+
+interface EditorialData {
+  subject_override: string;
+  intro_note: string;
+  featured_happening_ids: string[];
+  member_spotlight_id: string;
+  venue_spotlight_id: string;
+  blog_feature_slug: string;
+  gallery_feature_slug: string;
+}
+
+interface HappeningSearchResult {
+  id: string;
+  title: string;
+  event_date: string | null;
+  venue_name: string | null;
+}
+
+/**
+ * Client-side ISO week key computation matching server-side computeWeekKey().
+ * Format: "YYYY-Www" (e.g., "2026-W06")
+ */
+function computeWeekKeyClient(date: Date = new Date()): string {
+  const denverDate = new Date(
+    date.toLocaleString("en-US", { timeZone: "America/Denver" })
+  );
+  const target = new Date(denverDate.valueOf());
+  const dayNum = target.getDay() || 7;
+  target.setDate(target.getDate() + 4 - dayNum);
+  const yearStart = new Date(target.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(
+    ((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
+  );
+  const year = target.getFullYear();
+  const paddedWeek = String(weekNum).padStart(2, "0");
+  return `${year}-W${paddedWeek}`;
+}
+
+const EMPTY_EDITORIAL: EditorialData = {
+  subject_override: "",
+  intro_note: "",
+  featured_happening_ids: [],
+  member_spotlight_id: "",
+  venue_spotlight_id: "",
+  blog_feature_slug: "",
+  gallery_feature_slug: "",
+};
 
 const DIGEST_LABELS: Record<string, string> = {
   weekly_happenings: "Weekly Happenings Digest",
@@ -56,6 +106,157 @@ export default function AdminEmailPage() {
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [previewType, setPreviewType] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // GTM-3: Editorial state
+  const [editorialWeekKey, setEditorialWeekKey] = useState(() => {
+    // Default to next week's key
+    const next = new Date();
+    next.setDate(next.getDate() + 7);
+    return computeWeekKeyClient(next);
+  });
+  const [editorial, setEditorial] = useState<EditorialData>({
+    subject_override: "",
+    intro_note: "",
+    featured_happening_ids: [],
+    member_spotlight_id: "",
+    venue_spotlight_id: "",
+    blog_feature_slug: "",
+    gallery_feature_slug: "",
+  });
+  const [editorialLoading, setEditorialLoading] = useState(false);
+  const [editorialSaving, setEditorialSaving] = useState(false);
+  const [editorialResult, setEditorialResult] = useState<{
+    message: string;
+    variant: "success" | "error";
+  } | null>(null);
+  const [happeningSearch, setHappeningSearch] = useState("");
+  const [happeningResults, setHappeningResults] = useState<HappeningSearchResult[]>([]);
+  const [happeningSearching, setHappeningSearching] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // GTM-3: Fetch editorial for selected week
+  const fetchEditorial = useCallback(async (weekKey: string) => {
+    setEditorialLoading(true);
+    setEditorialResult(null);
+    try {
+      const res = await fetch(
+        `/api/admin/digest/editorial?week_key=${weekKey}&digest_type=weekly_happenings`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.editorial) {
+          setEditorial({
+            subject_override: data.editorial.subject_override || "",
+            intro_note: data.editorial.intro_note || "",
+            featured_happening_ids: data.editorial.featured_happening_ids || [],
+            member_spotlight_id: data.editorial.member_spotlight_id || "",
+            venue_spotlight_id: data.editorial.venue_spotlight_id || "",
+            blog_feature_slug: data.editorial.blog_feature_slug || "",
+            gallery_feature_slug: data.editorial.gallery_feature_slug || "",
+          });
+        } else {
+          setEditorial({ ...EMPTY_EDITORIAL });
+        }
+      }
+    } catch {
+      setEditorialResult({ message: "Failed to load editorial.", variant: "error" });
+    } finally {
+      setEditorialLoading(false);
+    }
+  }, []);
+
+  // GTM-3: Save editorial
+  const handleEditorialSave = async () => {
+    setEditorialSaving(true);
+    setEditorialResult(null);
+    try {
+      // Build payload — only include non-empty fields
+      const payload: Record<string, unknown> = {
+        weekKey: editorialWeekKey,
+        digestType: "weekly_happenings",
+      };
+      if (editorial.subject_override) payload.subject_override = editorial.subject_override;
+      if (editorial.intro_note) payload.intro_note = editorial.intro_note;
+      if (editorial.featured_happening_ids.length > 0)
+        payload.featured_happening_ids = editorial.featured_happening_ids;
+      if (editorial.member_spotlight_id) payload.member_spotlight_id = editorial.member_spotlight_id;
+      if (editorial.venue_spotlight_id) payload.venue_spotlight_id = editorial.venue_spotlight_id;
+      if (editorial.blog_feature_slug) payload.blog_feature_slug = editorial.blog_feature_slug;
+      if (editorial.gallery_feature_slug) payload.gallery_feature_slug = editorial.gallery_feature_slug;
+
+      const res = await fetch("/api/admin/digest/editorial", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setEditorialResult({ message: `Editorial saved for ${editorialWeekKey}.`, variant: "success" });
+      } else {
+        const data = await res.json();
+        setEditorialResult({ message: data.error || "Failed to save editorial.", variant: "error" });
+      }
+    } catch {
+      setEditorialResult({ message: "Network error saving editorial.", variant: "error" });
+    } finally {
+      setEditorialSaving(false);
+    }
+  };
+
+  // GTM-3: Delete editorial
+  const handleEditorialDelete = async () => {
+    if (!window.confirm(`Delete editorial for ${editorialWeekKey}? This cannot be undone.`)) return;
+    setEditorialSaving(true);
+    setEditorialResult(null);
+    try {
+      const res = await fetch(
+        `/api/admin/digest/editorial?week_key=${editorialWeekKey}&digest_type=weekly_happenings`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        setEditorial({ ...EMPTY_EDITORIAL });
+        setEditorialResult({ message: `Editorial deleted for ${editorialWeekKey}.`, variant: "success" });
+      } else {
+        const data = await res.json();
+        setEditorialResult({ message: data.error || "Failed to delete editorial.", variant: "error" });
+      }
+    } catch {
+      setEditorialResult({ message: "Network error deleting editorial.", variant: "error" });
+    } finally {
+      setEditorialSaving(false);
+    }
+  };
+
+  // GTM-3: Search happenings for featured picker
+  const handleHappeningSearch = useCallback((query: string) => {
+    setHappeningSearch(query);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (!query.trim()) {
+      setHappeningResults([]);
+      return;
+    }
+    searchTimeoutRef.current = setTimeout(async () => {
+      setHappeningSearching(true);
+      try {
+        const res = await fetch(
+          `/api/admin/digest/editorial/search-happenings?q=${encodeURIComponent(query.trim())}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setHappeningResults(data.results || []);
+        }
+      } catch {
+        // Silently handle search error
+      } finally {
+        setHappeningSearching(false);
+      }
+    }, 300);
+  }, []);
+
+  // GTM-3: Load editorial when week key changes
+  useEffect(() => {
+    fetchEditorial(editorialWeekKey);
+  }, [editorialWeekKey, fetchEditorial]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -193,8 +394,13 @@ export default function AdminEmailPage() {
     setPreviewType(digestType);
     setPreview(null);
     try {
+      // GTM-3: Pass week_key for editorial-aware previews
+      const previewParams = new URLSearchParams({ type: digestType });
+      if (digestType === "weekly_happenings") {
+        previewParams.set("week_key", editorialWeekKey);
+      }
       const res = await fetch(
-        `/api/admin/digest/preview?type=${digestType}`
+        `/api/admin/digest/preview?${previewParams.toString()}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -361,6 +567,13 @@ export default function AdminEmailPage() {
                         {preview.totalVenues} venues
                       </>
                     )}
+                    {preview.hasEditorial != null && (
+                      <>
+                        {" · "}
+                        Editorial: {preview.hasEditorial ? "✓ included" : "none"}
+                        {preview.weekKey && ` (${preview.weekKey})`}
+                      </>
+                    )}
                     {preview.totalOpenMics != null && (
                       <>
                         {" · "}
@@ -384,6 +597,284 @@ export default function AdminEmailPage() {
           );
         })}
       </div>
+
+      {/* GTM-3: Editorial Editor */}
+      <section className="mb-10 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+        <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">
+          Editorial Content
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+          Add personal editorial to the Weekly Happenings Digest. All fields are optional.
+        </p>
+
+        {/* Editorial result banner */}
+        {editorialResult && (
+          <div
+            className={`mb-4 p-3 rounded-lg border text-sm ${
+              editorialResult.variant === "success"
+                ? "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300"
+                : "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300"
+            }`}
+          >
+            {editorialResult.message}
+          </div>
+        )}
+
+        {/* Week key selector */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+            Week
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={editorialWeekKey}
+              onChange={(e) => setEditorialWeekKey(e.target.value)}
+              placeholder="2026-W06"
+              className="w-32 px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+            />
+            <button
+              type="button"
+              onClick={() => setEditorialWeekKey(computeWeekKeyClient())}
+              className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
+            >
+              This week
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const next = new Date();
+                next.setDate(next.getDate() + 7);
+                setEditorialWeekKey(computeWeekKeyClient(next));
+              }}
+              className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
+            >
+              Next week
+            </button>
+            {editorialLoading && (
+              <span className="text-sm text-[var(--color-text-tertiary)]">Loading...</span>
+            )}
+          </div>
+        </div>
+
+        {/* Subject override */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+            Subject Line Override
+          </label>
+          <input
+            type="text"
+            value={editorial.subject_override}
+            onChange={(e) =>
+              setEditorial((prev) => ({ ...prev, subject_override: e.target.value }))
+            }
+            placeholder="Leave blank for default subject"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+          />
+        </div>
+
+        {/* Intro note */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+            Intro Note
+          </label>
+          <textarea
+            value={editorial.intro_note}
+            onChange={(e) =>
+              setEditorial((prev) => ({ ...prev, intro_note: e.target.value }))
+            }
+            placeholder="A personal message that appears at the top of the digest..."
+            rows={3}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-vertical"
+          />
+        </div>
+
+        {/* Featured happenings */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+            Featured Happenings
+          </label>
+          <p className="text-xs text-[var(--color-text-tertiary)] mb-2">
+            Search and select happenings to feature at the top of the digest. These appear as pinned items above the regular listings.
+          </p>
+          {/* Selected happenings pills */}
+          {editorial.featured_happening_ids.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {editorial.featured_happening_ids.map((id) => (
+                <span
+                  key={id}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/20"
+                >
+                  {id.substring(0, 8)}...
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditorial((prev) => ({
+                        ...prev,
+                        featured_happening_ids: prev.featured_happening_ids.filter(
+                          (fid) => fid !== id
+                        ),
+                      }))
+                    }
+                    className="hover:text-red-500 ml-1"
+                    aria-label={`Remove ${id}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Search input */}
+          <div className="relative">
+            <input
+              type="text"
+              value={happeningSearch}
+              onChange={(e) => handleHappeningSearch(e.target.value)}
+              placeholder="Search by title..."
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+            />
+            {happeningSearching && (
+              <span className="absolute right-3 top-2.5 text-xs text-[var(--color-text-tertiary)]">
+                Searching...
+              </span>
+            )}
+          </div>
+          {/* Search results dropdown */}
+          {happeningResults.length > 0 && (
+            <div className="mt-1 border border-[var(--color-border-default)] rounded-lg bg-[var(--color-bg-primary)] max-h-48 overflow-y-auto">
+              {happeningResults.map((result) => {
+                const isSelected = editorial.featured_happening_ids.includes(result.id);
+                return (
+                  <button
+                    key={result.id}
+                    type="button"
+                    disabled={isSelected}
+                    onClick={() => {
+                      setEditorial((prev) => ({
+                        ...prev,
+                        featured_happening_ids: [
+                          ...prev.featured_happening_ids,
+                          result.id,
+                        ],
+                      }));
+                      setHappeningSearch("");
+                      setHappeningResults([]);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)] last:border-0 ${
+                      isSelected ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <span className="font-medium text-[var(--color-text-primary)]">
+                      {result.title}
+                    </span>
+                    {(result.event_date || result.venue_name) && (
+                      <span className="text-xs text-[var(--color-text-tertiary)] ml-2">
+                        {[result.event_date, result.venue_name].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="text-xs text-[var(--color-text-tertiary)] ml-2">(selected)</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Spotlight + Feature fields in 2-column grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Member spotlight */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+              Member Spotlight (UUID)
+            </label>
+            <input
+              type="text"
+              value={editorial.member_spotlight_id}
+              onChange={(e) =>
+                setEditorial((prev) => ({ ...prev, member_spotlight_id: e.target.value }))
+              }
+              placeholder="Profile UUID"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+            />
+          </div>
+
+          {/* Venue spotlight */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+              Venue Spotlight (UUID)
+            </label>
+            <input
+              type="text"
+              value={editorial.venue_spotlight_id}
+              onChange={(e) =>
+                setEditorial((prev) => ({ ...prev, venue_spotlight_id: e.target.value }))
+              }
+              placeholder="Venue UUID"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+            />
+          </div>
+
+          {/* Blog feature */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+              Blog Feature (slug)
+            </label>
+            <input
+              type="text"
+              value={editorial.blog_feature_slug}
+              onChange={(e) =>
+                setEditorial((prev) => ({ ...prev, blog_feature_slug: e.target.value }))
+              }
+              placeholder="blog-post-slug"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+            />
+          </div>
+
+          {/* Gallery feature */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
+              Gallery Feature (slug)
+            </label>
+            <input
+              type="text"
+              value={editorial.gallery_feature_slug}
+              onChange={(e) =>
+                setEditorial((prev) => ({ ...prev, gallery_feature_slug: e.target.value }))
+              }
+              placeholder="gallery-album-slug"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
+            />
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleEditorialSave}
+            disabled={editorialSaving || editorialLoading}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {editorialSaving ? "Saving..." : "Save Editorial"}
+          </button>
+          <button
+            onClick={() => setEditorial({ ...EMPTY_EDITORIAL })}
+            disabled={editorialSaving}
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] transition-colors disabled:opacity-50"
+          >
+            Clear Form
+          </button>
+          <button
+            onClick={handleEditorialDelete}
+            disabled={editorialSaving || editorialLoading}
+            className="px-4 py-2 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+          >
+            Delete Editorial
+          </button>
+        </div>
+      </section>
 
       {/* Send History */}
       <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">

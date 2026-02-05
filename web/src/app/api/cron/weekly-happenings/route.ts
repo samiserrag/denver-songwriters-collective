@@ -8,6 +8,13 @@
  * 1. Env var kill switch OFF → skip (emergency override, highest priority)
  * 2. DB digest_settings toggle → primary control (admin panel)
  * 3. Idempotency guard → automatic duplicate prevention
+ *
+ * GTM-3: Editorial resolution happens AFTER lock acquisition (Delta 1).
+ * This prevents wasted DB queries for editorial references on retries
+ * where the lock was already claimed by a previous invocation.
+ *
+ * Flow: kill switch → auth → DB toggle → fetch happenings/recipients →
+ *       claim lock → (if locked: skip) → resolve editorial → send emails
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,6 +28,11 @@ import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHapp
 import { claimDigestSendLock, computeWeekKey } from "@/lib/digest/digestSendLog";
 import { isDigestEnabled } from "@/lib/digest/digestSettings";
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
+import {
+  getEditorial,
+  resolveEditorial,
+  type ResolvedEditorial,
+} from "@/lib/digest/digestEditorial";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for sending all emails
@@ -129,6 +141,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // ============================================================
+    // GTM-3: Resolve editorial AFTER lock (Delta 1)
+    // Editorial resolution involves extra DB queries (events, profiles,
+    // venues, blog posts, gallery albums). Only do this work if we
+    // actually acquired the lock — prevents wasted queries on retries.
+    // ============================================================
+    let resolvedEditorial: ResolvedEditorial | undefined;
+    try {
+      const editorial = await getEditorial(supabase, weekKey, "weekly_happenings");
+      if (editorial) {
+        console.log(`[WeeklyHappenings] Found editorial for ${weekKey}, resolving references...`);
+        resolvedEditorial = await resolveEditorial(supabase, editorial);
+        console.log("[WeeklyHappenings] Editorial resolved successfully");
+      } else {
+        console.log(`[WeeklyHappenings] No editorial for ${weekKey} — sending without editorial`);
+      }
+    } catch (editorialError) {
+      // Editorial failure is non-fatal — send digest without editorial
+      console.warn("[WeeklyHappenings] Editorial resolution failed, sending without editorial:", editorialError);
+    }
+
     // Send emails to all recipients using shared send function
     const result = await sendDigestEmails({
       mode: "full",
@@ -140,6 +173,7 @@ export async function GET(request: NextRequest) {
           byDate: digestData.byDate,
           totalCount: digestData.totalCount,
           venueCount: digestData.venueCount,
+          editorial: resolvedEditorial,
         }),
       templateName: "weeklyHappeningsDigest",
       logPrefix: "[WeeklyHappenings]",

@@ -59,7 +59,7 @@ export default async function AboutPage() {
               The Denver Songwriters Collective grew out of years of informal open mics, songwriting circles, and community-run events around the Denver metro area. What started as a way to keep track of shows and stay connected gradually became something larger: a shared resource for songwriters, hosts, venues, and listeners.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Today, this site is a community platform for discovering open mics, finding places to play, connecting with local musicians, and staying informed about Denver&apos;s songwriter scene. Whether you&apos;re a performer looking for stages, a venue hosting events, or someone who simply loves local music, the goal is simple — make it easier to find your people and keep the scene visible.
+              Today, this site is a community platform for discovering open mics, finding places to play, connecting with local musicians, and staying informed about Denver&apos;s songwriter scene. Whether you&apos;re a performer looking for stages, a venue hosting events, or someone who simply loves local music, the goal is simple: make it easier to find your people and keep the scene visible.
             </p>
           </section>
 
@@ -114,7 +114,7 @@ export default async function AboutPage() {
             </Link>
 
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Built by Sami Serrag with help from modern AI-assisted development tools, this project is a practical response to real gaps in how local music events are shared and supported. It&apos;s not a startup and not a corporate platform — it&apos;s an ongoing, community-driven project shaped by feedback from the people who actually use it.
+              Built by Sami Serrag with help from modern AI-assisted development tools, this project is a practical response to real gaps in how local music events are shared and supported. It&apos;s not a startup and not a corporate platform. It&apos;s an ongoing, community-driven project shaped by feedback from the people who actually use it.
             </p>
             <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Sami has hosted around 80 events and could not have done it without the many volunteers from the collective and the hundreds of songwriters who have shown up to contribute their time, talents, and mutual encouragement to each other. Special shoutout to{" "}

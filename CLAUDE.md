@@ -315,7 +315,7 @@ All must pass before merge:
 | Tests | All passing |
 | Build | Success |
 
-**Current Status (GTM-2):** Lint warnings = 0. All tests passing (3520). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
+**Current Status (GTM-3):** Lint warnings = 0. All tests passing (3650). Intentional `<img>` uses (ReactCrop, blob URLs, markdown/user uploads) have documented eslint suppressions.
 
 ### Lighthouse Targets
 
@@ -417,6 +417,12 @@ All must pass before merge:
 | `app/api/admin/digest/history/route.ts` | Admin send history API |
 | `app/(protected)/dashboard/admin/email/page.tsx` | Admin Email Control Panel UI |
 | `app/digest/unsubscribed/page.tsx` | Public unsubscribe confirmation page |
+| `lib/digest/digestEditorial.ts` | Editorial CRUD helpers: `getEditorial()`, `upsertEditorial()`, `deleteEditorial()`, `resolveEditorial()` |
+| `app/api/admin/digest/editorial/route.ts` | Admin editorial API (GET/PUT/DELETE) |
+| `app/api/admin/digest/editorial/search-happenings/route.ts` | Search happenings for editorial featured events |
+| `app/api/newsletter/route.ts` | Newsletter subscriber signup endpoint |
+| `app/api/newsletter/unsubscribe/route.ts` | One-click newsletter unsubscribe (HMAC, no login) |
+| `app/newsletter/unsubscribed/page.tsx` | Newsletter unsubscribe confirmation page |
 | `lib/featureFlags.ts` | Env var kill switches (emergency only): `isWeeklyDigestEnabled()`, `isWeeklyHappeningsDigestEnabled()` |
 
 **Cron Authentication:**
@@ -694,6 +700,165 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 ---
 
 ## Recent Changes
+
+---
+
+### GTM-3: Editorial Layer + Newsletter Unsubscribe (February 2026) — RESOLVED
+
+**Goal:** Add an editorial layer to the weekly happenings digest (admin-curated content: featured events, member spotlights, venue spotlights, blog features, gallery features, intro notes, subject overrides) and implement a one-click newsletter unsubscribe flow for non-member subscribers.
+
+**Status:** Complete. All quality gates pass (lint 0 errors, tests 3650, build success). Migration pending apply.
+
+**Phase:** GTM-3
+
+**Two Parts:**
+
+| Part | Description |
+|------|-------------|
+| A: Newsletter Unsubscribe | HMAC-signed one-click unsubscribe for newsletter subscribers (non-members) |
+| B: Editorial Layer | Admin-curated content sections in weekly happenings digest |
+
+**Delta 1 (Critical Design Decision):** Editorial resolution happens AFTER lock acquisition in both cron and admin full-send paths. This prevents wasted DB queries for editorial references on retries where the lock was already claimed.
+
+**Database Migration:**
+
+| Migration | Purpose | Status |
+|-----------|---------|--------|
+| `20260205000000_digest_editorial.sql` | Create `digest_editorial` table with RLS, unique constraint on `(week_key, digest_type)`, auto-updated_at trigger | Pending apply |
+
+**Schema (`digest_editorial`):**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | UUID | Primary key |
+| `week_key` | TEXT | ISO week (e.g., `2026-W06`) |
+| `digest_type` | TEXT | `'weekly_happenings'` |
+| `subject_override` | TEXT | Custom email subject line |
+| `intro_note` | TEXT | Custom opening paragraph |
+| `featured_happening_ids` | UUID[] | Featured event IDs |
+| `member_spotlight_id` | UUID | Featured member profile |
+| `venue_spotlight_id` | UUID | Featured venue |
+| `blog_feature_slug` | TEXT | Featured blog post slug |
+| `gallery_feature_slug` | TEXT | Featured gallery album slug |
+| `created_at` | TIMESTAMPTZ | Row creation |
+| `updated_at` | TIMESTAMPTZ | Last edit |
+
+RLS enabled with no policies = service role only access.
+
+**Part A: Newsletter Unsubscribe**
+
+| Step | Implementation |
+|------|----------------|
+| A1 | Extended `unsubscribeToken.ts` with `generateNewsletterUnsubscribeToken()` and `validateNewsletterUnsubscribeToken()` |
+| A2 | Created `app/api/newsletter/unsubscribe/route.ts` with HMAC validation, sets `is_active=false` |
+| A3 | Created `app/newsletter/unsubscribed/page.tsx` with warm community copy + re-subscribe CTA |
+
+**Newsletter Token Security:**
+- Uses separate HMAC message family (`${email}:unsubscribe_newsletter`) to prevent cross-family token attacks
+- Digest tokens use `${userId}:unsubscribe_digest` (different family)
+- Constant-time comparison via `timingSafeEqual`
+- No expiry (permanent unsubscribe links)
+- No login required
+
+**Part B: Editorial Layer**
+
+| Step | Implementation |
+|------|----------------|
+| B1 | Migration: `digest_editorial` table with unique `(week_key, digest_type)` |
+| B2 | CRUD helpers in `digestEditorial.ts`: get, upsert, delete, resolveEditorial |
+| B3 | Admin API routes: GET/PUT/DELETE editorial, search happenings endpoint |
+| B4 | Email template extended with 7 editorial sections (all nullable/graceful) |
+| B5 | Cron handler resolves editorial AFTER lock (Delta 1) |
+| B6 | Preview API includes editorial for specified week_key |
+| B7 | Send API includes editorial (test: immediate resolve, full: after lock) |
+| B8 | Admin UI editorial editor with week navigation, save/clear, live search |
+
+**Editorial Sections in Email Template:**
+
+| Section | Renders When |
+|---------|-------------|
+| Subject override | `subject_override` is set |
+| Intro note | `intro_note` is set |
+| Featured happenings | `featured_happening_ids` resolves to valid events |
+| Member spotlight | `member_spotlight_id` resolves to valid profile |
+| Venue spotlight | `venue_spotlight_id` resolves to valid venue |
+| Blog feature | `blog_feature_slug` resolves to valid published post |
+| Gallery feature | `gallery_feature_slug` resolves to valid published album |
+
+**`resolveEditorial()` Function:**
+- Takes raw editorial row + Supabase client
+- Resolves all reference IDs/slugs to full data objects
+- Returns `ResolvedEditorial` with resolved data ready for template
+- Invalid references silently excluded (no error, just omitted)
+
+**Files Added (8):**
+
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/20260205000000_digest_editorial.sql` | Migration: digest_editorial table with RLS |
+| `lib/digest/digestEditorial.ts` | CRUD helpers + `resolveEditorial()` reference resolver |
+| `app/api/admin/digest/editorial/route.ts` | Admin editorial API (GET/PUT/DELETE) |
+| `app/api/admin/digest/editorial/search-happenings/route.ts` | Search published events by title for editorial picker |
+| `app/api/newsletter/unsubscribe/route.ts` | One-click newsletter unsubscribe endpoint |
+| `app/newsletter/unsubscribed/page.tsx` | Newsletter unsubscribe confirmation page |
+| `app/api/newsletter/route.ts` | Newsletter subscriber signup endpoint |
+| `__tests__/gtm-3-editorial-and-newsletter-unsubscribe.test.ts` | 130 tests for GTM-3 |
+
+**Files Modified (6):**
+
+| File | Change |
+|------|--------|
+| `lib/digest/unsubscribeToken.ts` | Added newsletter token functions (separate HMAC family) |
+| `lib/email/templates/weeklyHappeningsDigest.ts` | Added 7 editorial sections with graceful rendering |
+| `app/api/cron/weekly-happenings/route.ts` | Editorial resolution AFTER lock (Delta 1) |
+| `app/api/admin/digest/preview/route.ts` | Resolves editorial for preview week_key |
+| `app/api/admin/digest/send/route.ts` | Resolves editorial for test (immediate) and full (after lock) sends |
+| `app/(protected)/dashboard/admin/email/page.tsx` | Editorial editor UI with week nav, save/clear, search happenings |
+
+**Admin Editorial Editor UI (`/dashboard/admin/email`):**
+
+| Feature | Behavior |
+|---------|----------|
+| Week navigation | Previous/next week buttons with current week key display |
+| Subject override | Text input for custom email subject |
+| Intro note | Textarea for custom opening paragraph |
+| Featured happenings | Search-and-select with live autocomplete |
+| Member spotlight | Profile ID input |
+| Venue spotlight | Venue ID input |
+| Blog feature | Blog post slug input |
+| Gallery feature | Gallery album slug input |
+| Save | Upserts editorial for current week |
+| Clear | Deletes editorial for current week |
+
+**Cron Handler Flow (Updated for GTM-3):**
+```
+Kill switch check -> Auth check -> DB toggle check -> Create client -> Compute week key ->
+Fetch happenings/recipients -> Claim lock -> (if locked: skip) ->
+Resolve editorial (Delta 1) -> Send emails with editorial
+```
+
+**Non-Changes (Intentional):**
+- No changes to weekly_open_mics digest (editorial is happenings-only)
+- No changes to idempotency guard
+- Editorial failure is non-fatal (digest sends without editorial on error)
+- No UI changes to existing admin send/preview/toggle controls
+
+**Rollback Plan:**
+- Editorial is entirely optional; digest renders normally without it
+- Delete editorial row to clear for a given week
+- Migration is additive-only (no ALTER/DROP)
+- Newsletter unsubscribe can be disabled by removing the route
+
+**Test Coverage:** 130 new tests (3650 total) covering:
+- Newsletter HMAC token generation/validation
+- Cross-family token prevention
+- Email normalization
+- Editorial CRUD contracts
+- `resolveEditorial` reference resolution
+- Email template editorial rendering (all 7 sections)
+- API contracts (search, editorial, unsubscribe)
+- Newsletter unsubscribe confirmation page
+- Cron/preview/send editorial integration ordering (Delta 1)
 
 ---
 
@@ -8732,6 +8897,7 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/event-management-tabs.test.ts` | Event management tabs, per-occurrence filtering, guest display (30 tests) |
 | `__tests__/phase5-14b-dashboard-and-rsvp-fixes.test.ts` | 3-tab dashboard, RSVP reactivation, tab UX (47 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
+| `__tests__/gtm-3-editorial-and-newsletter-unsubscribe.test.ts` | GTM-3: editorial layer, newsletter unsubscribe, token security, template rendering (130 tests) |
 
 ### Archived Tests
 

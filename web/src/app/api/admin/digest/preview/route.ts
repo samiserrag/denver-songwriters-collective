@@ -1,14 +1,17 @@
 /**
  * Admin Digest Preview API
  *
- * GET /api/admin/digest/preview?type=weekly_happenings
+ * GET /api/admin/digest/preview?type=weekly_happenings&week_key=2026-W06
  *
  * Returns the HTML preview of a digest email (dry run, no emails sent).
  * Uses the shared sendDigestEmails in dryRun mode.
  *
+ * GTM-3: Includes editorial content for the specified week_key (optional).
+ *        If no week_key provided, defaults to current week.
+ *
  * Admin-only.
  *
- * Phase: GTM-2
+ * Phase: GTM-2, GTM-3
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,7 +23,8 @@ import { getUpcomingOpenMics, getDigestRecipients as getOpenMicRecipients } from
 import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHappeningsDigest";
 import { getWeeklyOpenMicsDigestEmail } from "@/lib/email/templates/weeklyOpenMicsDigest";
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
-import type { DigestType } from "@/lib/digest/digestSendLog";
+import { computeWeekKey, type DigestType } from "@/lib/digest/digestSendLog";
+import { getEditorial, resolveEditorial, type ResolvedEditorial } from "@/lib/digest/digestEditorial";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +65,18 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // GTM-3: Resolve editorial for preview
+      const weekKey = request.nextUrl.searchParams.get("week_key") || computeWeekKey();
+      let resolvedEditorial: ResolvedEditorial | undefined;
+      try {
+        const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
+        if (editorial) {
+          resolvedEditorial = await resolveEditorial(serviceClient, editorial);
+        }
+      } catch (editorialError) {
+        console.warn("[AdminPreview] Editorial resolution failed:", editorialError);
+      }
+
       const result = await sendDigestEmails({
         mode: "dryRun",
         recipients,
@@ -71,6 +87,7 @@ export async function GET(request: NextRequest) {
             byDate: digestData.byDate,
             totalCount: digestData.totalCount,
             venueCount: digestData.venueCount,
+            editorial: resolvedEditorial,
           }),
         templateName: "weeklyHappeningsDigest",
         logPrefix: "[AdminPreview]",
@@ -82,6 +99,8 @@ export async function GET(request: NextRequest) {
         recipientCount: result.total,
         totalHappenings: digestData.totalCount,
         totalVenues: digestData.venueCount,
+        hasEditorial: !!resolvedEditorial,
+        weekKey,
       });
     } else {
       const digestData = await getUpcomingOpenMics(serviceClient);
