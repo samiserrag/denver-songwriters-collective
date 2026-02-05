@@ -90,30 +90,23 @@ export function buildEditorialUpsertData(
     field: string,
     value: string | null | undefined,
     guidance: string
-  ): EditorialPayloadResult | { value: string | null } => {
+  ): { ok: true; value: string | null } | { ok: false; error: EditorialPayloadError } => {
     const result = normalizeEditorialRef(value);
     if (result.error) {
-      return {
-        data: {},
-        error: {
-          error: "Invalid reference",
-          field,
-          guidance,
-        },
-      };
+      return { ok: false, error: { error: "Invalid reference", field, guidance } };
     }
-    return { value: result.value };
+    return { ok: true, value: result.value };
   };
 
   const normalizeRefs = (
     field: string,
     value: string[] | null | undefined,
     guidance: string
-  ): EditorialPayloadResult | { value: string[] | null } => {
+  ): { ok: true; value: string[] | null } | { ok: false; error: EditorialPayloadError } => {
     const result = normalizeEditorialRefs(value);
     if (result.error) {
       return {
-        data: {},
+        ok: false,
         error: {
           error: "Invalid reference",
           field,
@@ -122,7 +115,7 @@ export function buildEditorialUpsertData(
         },
       };
     }
-    return { value: result.value };
+    return { ok: true, value: result.value };
   };
 
   const memberRefInput =
@@ -135,7 +128,7 @@ export function buildEditorialUpsertData(
       memberRefInput,
       "Paste a DSC member slug or URL (e.g., /songwriters/sami-serrag)."
     );
-    if ("error" in normalized) return normalized;
+    if (!normalized.ok) return { data: {}, error: normalized.error };
     normalizedData.member_spotlight_ref = normalized.value;
   }
 
@@ -149,7 +142,7 @@ export function buildEditorialUpsertData(
       venueRefInput,
       "Paste a DSC venue slug or URL (e.g., /venues/brewery-rickoli)."
     );
-    if ("error" in normalized) return normalized;
+    if (!normalized.ok) return { data: {}, error: normalized.error };
     normalizedData.venue_spotlight_ref = normalized.value;
   }
 
@@ -163,7 +156,7 @@ export function buildEditorialUpsertData(
       blogRefInput,
       "Paste a DSC blog slug or URL (e.g., /blog/my-post)."
     );
-    if ("error" in normalized) return normalized;
+    if (!normalized.ok) return { data: {}, error: normalized.error };
     normalizedData.blog_feature_ref = normalized.value;
   }
 
@@ -177,7 +170,7 @@ export function buildEditorialUpsertData(
       galleryRefInput,
       "Paste a DSC gallery slug or URL (e.g., /gallery/album-slug)."
     );
-    if ("error" in normalized) return normalized;
+    if (!normalized.ok) return { data: {}, error: normalized.error };
     normalizedData.gallery_feature_ref = normalized.value;
   }
 
@@ -198,7 +191,7 @@ export function buildEditorialUpsertData(
       featured_happenings_refs as string[],
       "Paste DSC happening slugs or URLs (e.g., /events/slug)."
     );
-    if ("error" in normalized) return normalized;
+    if (!normalized.ok) return { data: {}, error: normalized.error };
     normalizedData.featured_happenings_refs = normalized.value;
   }
 
