@@ -217,6 +217,7 @@ export interface ResolvedEditorial {
     title: string;
     url: string;
     excerpt?: string;
+    coverUrl?: string;
   };
   galleryFeature?: {
     title: string;
@@ -643,7 +644,7 @@ async function resolveEditorialInternal(
     } else {
       const { data: post } = await supabase
         .from("blog_posts")
-        .select("slug, title, excerpt")
+        .select("slug, title, excerpt, cover_image_url")
         .eq("slug", parsed.slug)
         .eq("is_published", true)
         .maybeSingle();
@@ -652,6 +653,7 @@ async function resolveEditorialInternal(
           title: post.title,
           url: `${SITE_URL}/blog/${post.slug}`,
           excerpt: post.excerpt || undefined,
+          coverUrl: post.cover_image_url || undefined,
         };
       } else {
         unresolved.push({
@@ -664,7 +666,7 @@ async function resolveEditorialInternal(
   } else if (editorial.blog_feature_slug) {
     const { data: post } = await supabase
       .from("blog_posts")
-      .select("slug, title, excerpt")
+      .select("slug, title, excerpt, cover_image_url")
       .eq("slug", editorial.blog_feature_slug)
       .eq("is_published", true)
       .maybeSingle();
@@ -673,6 +675,7 @@ async function resolveEditorialInternal(
         title: post.title,
         url: `${SITE_URL}/blog/${post.slug}`,
         excerpt: post.excerpt || undefined,
+        coverUrl: post.cover_image_url || undefined,
       };
     }
   }

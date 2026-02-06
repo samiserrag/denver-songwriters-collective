@@ -703,6 +703,22 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### GTM-3.1 Blog Card Rendering (February 2026)
+
+**Summary:** Featured blog now renders as a baseball card even without a cover image, using blog cover data when present.
+
+**Changes:**
+- Blog resolver now selects `cover_image_url` and exposes it as `coverUrl`.
+- Blog featured card passes `coverUrl`/`coverAlt` into `renderEmailBaseballCard`.
+- Added regression test to ensure blog renders with baseball-card wrapper even when cover is missing.
+- Appended stop-gate addendum documenting blog card investigation.
+
+**Push:** `main` pushed to origin (`<pending>`).
+**Quality gates:**
+- `npm --prefix web run lint` passed.
+- `npm --prefix web test -- --run` passed (`3724/3724`).
+- `npm --prefix web run build` timed out in this environment (stuck at `Creating an optimized production build ...`).
+
 ### GTM-3.1 Gallery Resolver Column Fix (February 2026)
 
 **Summary:** Fixed false gallery unresolved diagnostics caused by querying a non-existent gallery column.

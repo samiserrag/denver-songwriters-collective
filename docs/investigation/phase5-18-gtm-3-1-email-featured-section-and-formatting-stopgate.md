@@ -171,3 +171,33 @@ d) **Intro note collapses formatting** — Intro HTML just escapes and inserts t
 
 ## Awaiting Approval
 Execution will not begin until Sami explicitly approves in chat.
+
+---
+
+## Addendum — Blog Baseball Card Investigation (February 2026)
+
+**Goal:** Ensure the Featured Blog renders as a baseball card in the top featured block.
+
+### Findings
+1) **Template already uses baseball card renderer for blog**  
+**File:** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/web/src/lib/email/templates/weeklyHappeningsDigest.ts`  
+`formatBlogFeatureHtml()` calls `renderEmailBaseballCard({ title, titleUrl, subtitle, ctaText, ctaUrl })`.  
+No legacy blog renderer appears elsewhere in this template.
+
+2) **Resolver does not provide a cover image for blog posts**  
+**File:** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/web/src/lib/digest/digestEditorial.ts`  
+Blog resolution selects only `slug, title, excerpt`.  
+Blog posts have `cover_image_url` per DB schema.  
+The card renders without cover image and may appear visually similar to the old panel.
+
+3) **No alternate blog block in template**  
+`grep "FROM THE BLOG"` shows only the baseball-card block in `weeklyHappeningsDigest.ts`.
+
+### Likely Cause
+- The Featured Blog card is rendered without a cover image because the resolver does not fetch `cover_image_url`.  
+- This makes the block look like the old non-card panel in Preview even though it is a card.
+
+### Proposed Fix (to execute after approval)
+- Extend blog resolver to select `cover_image_url` and include it in `resolved.blogFeature`.
+- Pass `coverUrl`/`coverAlt` into `renderEmailBaseballCard` for blog.
+- Keep card rendering when cover is missing (text-only card remains valid).

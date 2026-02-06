@@ -798,6 +798,33 @@ describe("Editorial featured ordering", () => {
 
     expect(email.html).toContain("Solo Featured Event");
   });
+
+  it("renders blog as a baseball card even when cover image is missing", () => {
+    const byDate = new Map([["2026-01-27", [occurrence]]]);
+    const editorial = {
+      blogFeature: {
+        title: "No Cover Blog",
+        url: "https://denversongwriterscollective.org/blog/no-cover",
+        excerpt: "Short excerpt",
+      },
+    };
+
+    const email = getWeeklyHappeningsDigestEmail({
+      firstName: null,
+      byDate,
+      totalCount: 1,
+      venueCount: 1,
+      editorial,
+    });
+
+    const html = email.html;
+    const blogIndex = html.indexOf("No Cover Blog");
+    expect(blogIndex).toBeGreaterThan(-1);
+
+    const cardMarker = "border-radius: 8px; overflow: hidden; margin: 8px 0;";
+    expect(html.lastIndexOf(cardMarker, blogIndex)).toBeGreaterThan(-1);
+    expect(html.match(/📝 FROM THE BLOG/g)?.length).toBe(1);
+  });
 });
 
 // ============================================================

@@ -291,6 +291,8 @@ function formatBlogFeatureHtml(
           📝 FROM THE BLOG
         </p>
         ${renderEmailBaseballCard({
+          coverUrl: feature.coverUrl,
+          coverAlt: feature.title,
           title: feature.title,
           titleUrl: feature.url,
           subtitle: feature.excerpt,
