@@ -303,23 +303,24 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   let venueCity: string | null = null;
   let venueState: string | null = null;
 
-  // Fetch venue details if we have a venue_id but missing name OR address
+  // Always fetch venue details when venue_id exists
+  // Prefer fresh venue.name over stale event.venue_name (denormalized columns can be outdated)
   // Phase 4.52: Also fetch google_maps_url and website_url for venue links
   // Phase ABC4: Also fetch slug for internal venue links
-  if (event.venue_id && (!locationName || !locationAddress)) {
+  // Phase 5.06: Also fetch city/state for directions URL
+  if (event.venue_id) {
     const { data: venue } = await supabase
       .from("venues")
       .select("name, address, city, state, google_maps_url, website_url, slug")
       .eq("id", event.venue_id)
       .single();
     if (venue) {
-      // Only override if the event field is missing
-      if (!locationName) {
-        locationName = venue.name;
-      }
-      if (!locationAddress) {
-        const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
-        locationAddress = addressParts.length > 0 ? addressParts.join(", ") : null;
+      // Always use venue.name (authoritative) over event.venue_name (can be stale)
+      locationName = venue.name;
+      // Build address from venue parts if available
+      const addressParts = [venue.address, venue.city, venue.state].filter(Boolean);
+      if (addressParts.length > 0) {
+        locationAddress = addressParts.join(", ");
       }
       // Phase 4.52: Store venue URLs
       venueGoogleMapsUrl = venue.google_maps_url;
@@ -327,21 +328,6 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       // Phase ABC4: Store venue slug
       venueSlug = venue.slug;
       // Phase 5.06: Store city/state for directions URL
-      venueCity = venue.city;
-      venueState = venue.state;
-    }
-  } else if (event.venue_id) {
-    // We have name and address but still need URLs for venue links
-    // Phase 5.06: Also fetch city/state for directions URL
-    const { data: venue } = await supabase
-      .from("venues")
-      .select("google_maps_url, website_url, slug, city, state")
-      .eq("id", event.venue_id)
-      .single();
-    if (venue) {
-      venueGoogleMapsUrl = venue.google_maps_url;
-      venueWebsiteUrl = venue.website_url;
-      venueSlug = venue.slug;
       venueCity = venue.city;
       venueState = venue.state;
     }

@@ -82,10 +82,11 @@ export interface SeriesCardProps {
 // ============================================================
 
 function getVenueName(event: SeriesEvent): string | null {
-  if (event.venue_name) return event.venue_name;
+  // Prefer joined venue data (always current) over denormalized venue_name (can be stale)
   if (event.venue && typeof event.venue === "object" && event.venue.name) {
     return event.venue.name;
   }
+  if (event.venue_name) return event.venue_name;
   if (event.custom_location_name) return event.custom_location_name;
   return null;
 }
