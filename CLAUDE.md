@@ -703,6 +703,19 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Admin Test Send Editorial WeekKey Fix (February 2026)
+
+**Summary:** Test sends now use the UI-selected weekKey for weekly_happenings, and editorial saves overwrite cleared fields.
+
+**Changes:**
+- Admin send payload now includes `weekKey` for weekly_happenings; send route prefers provided weekKey and logs it.
+- Send route returns `previewHtml`/`previewSubject` in test mode for regression checks.
+- Editorial save now posts all fields every time; server normalizes blank strings/empty arrays to `NULL` to clear old values.
+- Added regression test for `/api/admin/digest/send` to assert intro note + spotlight link render for provided weekKey.
+
+**Push:** `main` pushed to origin (`68d7e2f`).
+**Build:** `npm --prefix web run build` started; no completion output yet in this environment.
+
 ### GTM-3.1 Editorial URL-Only Execution (February 2026)
 
 **Summary:** Editorial inputs now accept URLs only (no slugs/UUIDs), with strict normalization/validation, URL-first resolver, and preview diagnostics for unresolved refs.
