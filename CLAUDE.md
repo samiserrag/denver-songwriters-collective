@@ -703,6 +703,22 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### GTM-3.1 Documentation Closeout (February 2026)
+
+**Summary:** Closed out all GTM-3.1 documentation tract. Updated status headers in 5 STOP-GATE docs to CLOSED/COMPLETED. Verified Known UX Follow-ups (A, B, C) were already resolved in code. Updated Deferred Backlog to reflect accurate P0/P1/P2 items.
+
+**Documentation updated:**
+- `docs/investigation/phase5-18-gtm-3-1-email-featured-section-and-formatting-stopgate.md` → CLOSED
+- `docs/investigation/phase5-17-gtm-3-1-editorial-url-only-stopgate.md` → CLOSED
+- `docs/investigation/phase5-16-gtm-3-1-editorial-refs-stopgate.md` → CLOSED (Superseded)
+- `docs/gtm/gtm-3-implementation-plan.md` → COMPLETED
+- `docs/gtm/gtm-3-editorial-and-newsletter-unsubscribe-investigation.md` → COMPLETED with full Closeout section
+
+**Backlog updates:**
+- P0: None currently identified
+- P1: Removed resolved "`as any` casts" item; kept API rate limiting and empty alt text (9 occurrences)
+- Known UX Follow-ups A/B/C: All resolved and marked with strikethrough
+
 ### Weekly Digest Listing Details (February 2026)
 
 **Summary:** Event listings now show city + zip, signup time when present, and venue links to DSC venue pages.
@@ -8985,20 +9001,23 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 
 See full backlog in previous CLAUDE.md version or `docs/known-issues.md`.
 
+### P0 (Critical)
+- None currently identified
+
 ### P1 (Fix Soon)
 - API rate limiting missing
-- 53 unnecessary `as any` casts in profile page
-- Empty alt text on user avatars
+- Empty `alt=""` on user avatars (9 occurrences across 7 components) — accessibility concern
 
 ### P2 (Nice to Fix)
 - Typography token docs drift
 - Loading.tsx coverage gaps
 - Duplicate VenueSelector components
+- ~~53 unnecessary `as any` casts in profile page~~ — RESOLVED
 
-### Known UX Follow-ups
-- **A) City always visible on timeline cards + series rows** — City/venue location should be consistently shown
-- **B) "Signup time" field restored on create/edit forms everywhere** — Field may be missing from some form surfaces
-- **C) Venue Google Maps + Get Directions links shown on event occurrences** — Per `date_key`, supporting mixed-venue series
+### Known UX Follow-ups (All Resolved)
+- ~~**A) City always visible on timeline cards + series rows**~~ — Fixed in Phase 5.04/5.06 (`getVenueCityState()` helper)
+- ~~**B) "Signup time" field restored on create/edit forms everywhere**~~ — Fixed in Phase 5.04 (EventForm includes `signup_time`)
+- ~~**C) Venue Google Maps + Get Directions links shown on event occurrences**~~ — Fixed in Phase 5.06/5.07 (override venue support)
 
 ### Future: Phase 4.38 — Hard Delete Admin Tools
 **Investigation completed in:** `docs/investigation/phase4-37-seeded-verification-status-system.md` (Section 6)

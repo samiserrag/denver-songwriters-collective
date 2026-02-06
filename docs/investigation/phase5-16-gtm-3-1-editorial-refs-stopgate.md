@@ -1,6 +1,6 @@
 # STOP-GATE Investigation — GTM-3.1 Editorial URL/Slug 500s
 
-**Status:** Executed — Awaiting Verification
+**Status:** CLOSED (Superseded by phase5-17 and phase5-18)
 **Date:** 2026-02-05
 **Owner:** Repo Agent
 

@@ -1,6 +1,6 @@
 # STOP-GATE Investigation — GTM-3 Editorial URL-Only Inputs
 
-**Status:** Investigation (Step A) + Critique (Step B) + Execution (Step C)
+**Status:** CLOSED (February 2026)
 **Date:** 2026-02-05
 **Owner:** Repo Agent
 

@@ -1,10 +1,12 @@
 # GTM-3 Investigation: Editorial Layer + Newsletter Subscriber Unsubscribe
 
-**Status:** STOP-GATE INVESTIGATION ONLY — Awaiting Sami approval
-**Version:** 0.1
+**Status:** COMPLETED (February 2026)
+**Version:** 1.0
 **Created:** February 2026
 **Author:** Repo Agent
 **Phase:** GTM-3
+
+> **Note:** This investigation was approved and implemented. See `docs/gtm/gtm-3-implementation-plan.md` for the implementation plan and `CLAUDE.md` "GTM-3" section for delivery details.
 
 ---
 
@@ -462,6 +464,36 @@ The idempotency guard (`digest_send_log` unique constraint) is unaffected by thi
 
 ---
 
-**STOP — AWAITING SAMI APPROVAL**
+## Closeout (February 2026)
 
-This document contains investigation and design proposals only. No code changes, migrations, or architecture changes have been made. Approval required before proceeding to implementation.
+**Status:** COMPLETED
+
+All items in this investigation have been implemented:
+
+**Part A (Newsletter Unsubscribe):**
+- ✅ Newsletter token functions added to `unsubscribeToken.ts`
+- ✅ `/api/newsletter/unsubscribe` endpoint created
+- ✅ `/newsletter/unsubscribed` confirmation page created
+- ✅ Separate HMAC message family prevents cross-use attacks
+
+**Part B (Editorial Layer):**
+- ✅ `digest_editorial` table created with RLS
+- ✅ Editorial CRUD helpers in `digestEditorial.ts`
+- ✅ Admin editorial API routes (GET/PUT/DELETE)
+- ✅ Email template extended with all 7 editorial sections
+- ✅ Cron handler resolves editorial AFTER lock (Delta 1)
+- ✅ Admin UI editorial editor with week navigation
+
+**GTM-3.1 Polish:**
+- ✅ URL-only inputs (no slugs/UUIDs)
+- ✅ Baseball card renderer for all featured items
+- ✅ Featured ordering: member → event → blog → gallery
+- ✅ Intro note formatting preserves paragraphs and line breaks
+- ✅ Blog cover image support
+
+**Blocking Questions Resolved:**
+1. Newsletter subscribers deferred to GTM-4 (only infrastructure built in GTM-3)
+2. Editorial layer supports `weekly_happenings` only (happenings-only as decided)
+3. Featured happenings pinned at TOP of email (before date-grouped list)
+
+See CLAUDE.md "GTM-3: Editorial Layer + Newsletter Unsubscribe" section for full delivery details.

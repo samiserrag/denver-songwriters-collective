@@ -1,5 +1,11 @@
 # GTM-3 Implementation Plan
 
+**Status:** COMPLETED (February 2026)
+
+> All items in this plan have been implemented. See CLAUDE.md "GTM-3: Editorial Layer + Newsletter Unsubscribe" section for delivery details.
+
+---
+
 ## Approved Scope
 
 **Part A**: Newsletter subscriber unsubscribe flow (infrastructure only — no digest sends to newsletter subscribers until GTM-4)
