@@ -715,7 +715,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Preview and test send now inject a safe gallery placeholder (`Gallery unavailable (unpublished)`) when an admin-authored gallery ref is unresolved due to publish constraints.
 - Updated regression tests for featured ordering, no-duplication behavior, intro formatting, and template contract checks.
 
-**Push:** `main` pushed to origin (`<pending>`).
+**Push:** `main` pushed to origin (`975bc10`).
 **Quality gates:**
 - `npm --prefix web run lint` passed.
 - `npm --prefix web test -- --run` passed (`3722/3722`).
