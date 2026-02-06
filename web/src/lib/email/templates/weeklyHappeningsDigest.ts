@@ -86,13 +86,27 @@ function formatHappeningHtml(occurrence: HappeningOccurrence): string {
   const { event } = occurrence;
   const eventUrl = `${SITE_URL}/events/${event.slug || event.id}?date=${occurrence.dateKey}`;
   const time = formatTimeDisplay(event.start_time);
-  const venue = event.venue?.name || "Location TBD";
+  const venueName = event.venue?.name || "Location TBD";
+  const venueSlugOrId = event.venue?.slug || event.venue?.id || null;
+  const venueUrl = venueSlugOrId ? `${SITE_URL}/venues/${venueSlugOrId}` : null;
+  const venueLabel = escapeHtml(venueName);
+  const venueHtml = venueUrl
+    ? `<a href="${venueUrl}" style="color: ${EMAIL_COLORS.textSecondary}; text-decoration: underline;">${venueLabel}</a>`
+    : venueLabel;
+  const cityZip = [event.venue?.city, event.venue?.zip].filter(Boolean).join(" ");
   const cost = event.is_free ? "Free" : event.cost_label || "";
+  const signupTime = event.signup_time
+    ? `Signup ${formatTimeDisplay(event.signup_time)}`
+    : "";
   const emoji = getEventTypeEmoji(event.event_type);
 
-  // Build venue + cost line
-  const metaParts = [time, venue, cost].filter(Boolean);
-  const metaLine = metaParts.join(" · ");
+  const metaParts: string[] = [];
+  if (time) metaParts.push(escapeHtml(time));
+  if (venueHtml) metaParts.push(venueHtml);
+  if (cityZip) metaParts.push(escapeHtml(cityZip));
+  if (cost) metaParts.push(escapeHtml(cost));
+  if (signupTime) metaParts.push(escapeHtml(signupTime));
+  const metaLineHtml = metaParts.join(" · ");
 
   return `
     <tr>
@@ -107,7 +121,7 @@ function formatHappeningHtml(occurrence: HappeningOccurrence): string {
                 ${escapeHtml(event.title)}
               </a>
               <p style="margin: 4px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
-                ${escapeHtml(metaLine)}
+                ${metaLineHtml}
               </p>
             </td>
           </tr>
@@ -409,13 +423,23 @@ function formatHappeningText(occurrence: HappeningOccurrence): string {
   const { event } = occurrence;
   const eventUrl = `${SITE_URL}/events/${event.slug || event.id}?date=${occurrence.dateKey}`;
   const time = formatTimeDisplay(event.start_time);
-  const venue = event.venue?.name || "Location TBD";
+  const venueName = event.venue?.name || "Location TBD";
+  const venueSlugOrId = event.venue?.slug || event.venue?.id || null;
+  const venueUrl = venueSlugOrId ? `${SITE_URL}/venues/${venueSlugOrId}` : null;
+  const venueText = venueUrl ? `${venueName} (${venueUrl})` : venueName;
+  const cityZip = [event.venue?.city, event.venue?.zip].filter(Boolean).join(" ");
   const cost = event.is_free ? "Free" : event.cost_label || "";
+  const signupTime = event.signup_time
+    ? `Signup ${formatTimeDisplay(event.signup_time)}`
+    : "";
   const emoji = getEventTypeEmoji(event.event_type);
+
+  const metaParts = [time, venueText, cityZip, cost, signupTime].filter(Boolean);
+  const metaLine = metaParts.join(" · ");
 
   const lines = [
     `${emoji} ${event.title}`,
-    `   ${time} · ${venue}${cost ? ` · ${cost}` : ""}`,
+    `   ${metaLine}`,
     `   ${eventUrl}`,
   ];
 

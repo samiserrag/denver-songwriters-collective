@@ -37,11 +37,14 @@ export interface HappeningEvent {
   max_occurrences: number | null;
   is_free: boolean | null;
   cost_label: string | null;
+  signup_time?: string | null;
   venue: {
     id: string;
     name: string;
+    slug?: string | null;
     city: string | null;
     state: string | null;
+    zip?: string | null;
   } | null;
 }
 
@@ -138,6 +141,7 @@ async function fetchHappeningEvents(
       slug,
       event_type,
       start_time,
+      signup_time,
       event_date,
       day_of_week,
       recurrence_rule,
@@ -145,7 +149,7 @@ async function fetchHappeningEvents(
       max_occurrences,
       is_free,
       cost_label,
-      venue:venues!left(id, name, city, state)
+      venue:venues!left(id, name, slug, city, state, zip)
     `)
     .eq("is_published", true)
     .eq("status", "active");

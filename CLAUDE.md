@@ -703,6 +703,22 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Weekly Digest Listing Details (February 2026)
+
+**Summary:** Event listings now show city + zip, signup time when present, and venue links to DSC venue pages.
+
+**Changes:**
+- Added `signup_time` and venue `slug`/`zip` to weekly digest data fetch.
+- Listing meta line now includes city/zip and signup time, and links venue names to `/venues/...`.
+- Text version includes venue URL and signup time.
+- Updated digest tests to cover venue link, city/zip, and signup time.
+
+**Push:** `main` pushed to origin (`<pending>`).
+**Quality gates:**
+- `npm --prefix web run lint` passed.
+- `npm --prefix web test -- --run` passed (`3725/3725`).
+- `npm --prefix web run build` timed out in this environment (stuck at `Creating an optimized production build ...`).
+
 ### Phase5-18 Closeout Doc Update (February 2026)
 
 **Summary:** Documented closeout for the GTM-3.1 weekly digest featured-section tract.

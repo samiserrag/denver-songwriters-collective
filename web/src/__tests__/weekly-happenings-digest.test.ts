@@ -165,6 +165,7 @@ describe("getWeeklyHappeningsDigestEmail", () => {
     slug: "community-song-circle",
     event_type: "song_circle",
     start_time: "19:00:00",
+    signup_time: null,
     event_date: "2026-01-27",
     day_of_week: "Monday",
     recurrence_rule: "weekly",
@@ -175,8 +176,10 @@ describe("getWeeklyHappeningsDigestEmail", () => {
     venue: {
       id: "venue-1",
       name: "Mercury Cafe",
+      slug: "mercury-cafe",
       city: "Denver",
       state: "CO",
+      zip: "80202",
     },
   };
 
@@ -315,8 +318,11 @@ describe("getWeeklyHappeningsDigestEmail", () => {
 
     expect(email.html).toContain("Community Song Circle");
     expect(email.html).toContain("Mercury Cafe");
+    expect(email.html).toContain("/venues/mercury-cafe");
+    expect(email.html).toContain("Denver 80202");
     expect(email.text).toContain("Community Song Circle");
     expect(email.text).toContain("Mercury Cafe");
+    expect(email.text).toContain("Denver 80202");
   });
 
   it("includes formatted time", () => {
@@ -330,6 +336,28 @@ describe("getWeeklyHappeningsDigestEmail", () => {
 
     expect(email.html).toContain("7:00 PM");
     expect(email.text).toContain("7:00 PM");
+  });
+
+  it("includes signup time when present", () => {
+    const eventWithSignup: HappeningEvent = {
+      ...mockEvent,
+      signup_time: "17:00:00",
+    };
+    const occurrenceWithSignup: HappeningOccurrence = {
+      event: eventWithSignup,
+      dateKey: "2026-01-27",
+      displayDate: "MONDAY, JANUARY 27",
+    };
+    const byDate = new Map([["2026-01-27", [occurrenceWithSignup]]]);
+    const email = getWeeklyHappeningsDigestEmail({
+      firstName: null,
+      byDate,
+      totalCount: 1,
+      venueCount: 1,
+    });
+
+    expect(email.html).toContain("Signup 5:00 PM");
+    expect(email.text).toContain("Signup 5:00 PM");
   });
 
   it("generates event link with slug and date", () => {
