@@ -703,6 +703,19 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### GTM-3.1 Editorial URL-Only Execution (February 2026)
+
+**Summary:** Editorial inputs now accept URLs only (no slugs/UUIDs), with strict normalization/validation, URL-first resolver, and preview diagnostics for unresolved refs.
+
+**Changes:**
+- Admin email UI now uses URL-only inputs and sends only `*_ref`/`featured_happenings_refs` payload keys.
+- API validation rejects any legacy `*_id`/slug keys with 400 + field guidance.
+- Resolver parses canonical URLs, resolves by slug, and returns unresolved diagnostics without crashing preview/send.
+- Added URL normalization + resolver tests and updated GTM editorial contract tests.
+
+**Push:** `main` pushed to origin (`b9a3367`, plus doc update `cf4fbc3`).
+**Build:** Local `npm --prefix web run build` started; no completion output yet in this environment.
+
 ### Host Requests Admin Visibility Fix (February 2026)
 
 **Summary:** Admin host requests no longer silently show 0 when data exists.
