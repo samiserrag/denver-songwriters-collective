@@ -326,7 +326,8 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
 
             {/* Venue - Phase 4.58/ABC4: Internal link to /venues/[slug|id] when venue exists */}
             {/* Phase 5.04: City/state always shown after venue name */}
-            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 truncate">
+            {/* Phase 6: Mobile multiline — wraps instead of truncating so city/state is never hidden */}
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 break-words">
               {isOnlineOnly ? (
                 "Online"
               ) : venueName ? (
@@ -347,7 +348,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
                   <span>{venueName}{venueCityState && <>, {venueCityState}</>}</span>
                 )
               ) : (
-                "Location TBD"
+                "NA"
               )}
             </p>
 

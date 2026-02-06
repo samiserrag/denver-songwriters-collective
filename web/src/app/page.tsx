@@ -12,9 +12,14 @@ import { NewsletterSection } from "@/components/navigation/NewsletterSection";
 import { ThemePicker } from "@/components/ui/ThemePicker";
 import {
   getTodayDenver,
+  addDaysDenver,
   expandAndGroupEvents,
+  applyReschedulesToTimeline,
+  buildOverrideMap,
   EXPANSION_CAPS,
+  type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
+import { DISCOVERY_STATUS_FILTER, DISCOVERY_VENUE_SELECT } from "@/lib/happenings";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 
@@ -93,22 +98,23 @@ export default async function HomePage() {
       .order("event_date", { ascending: true })
       .limit(6),
     // Tonight's happenings - all event types, published only
+    // Uses shared DISCOVERY_STATUS_FILTER and DISCOVERY_VENUE_SELECT for cross-surface consistency
     // Limit to MAX_EVENTS to prevent performance issues
     supabase
       .from("events")
       .select(`
         *,
-        venues!left(name, address, city, state)
+        ${DISCOVERY_VENUE_SELECT}
       `)
       .eq("is_published", true)
-      .in("status", ["active", "needs_verification"])
+      .in("status", [...DISCOVERY_STATUS_FILTER])
       .limit(EXPANSION_CAPS.MAX_EVENTS),
     // Spotlight happenings - admin-selected featured events
     supabase
       .from("events")
       .select(`
         *,
-        venues!left(name, address, city, state)
+        ${DISCOVERY_VENUE_SELECT}
       `)
       .eq("is_spotlight", true)
       .eq("is_published", true)
@@ -193,11 +199,12 @@ export default async function HomePage() {
       .order("display_order", { ascending: true })
       .limit(4),
     // Spotlight Open Mic Events - admin-selected open mics using is_spotlight flag
+    // Uses shared DISCOVERY_VENUE_SELECT for cross-surface consistency (Phase 6)
     supabase
       .from("events")
       .select(`
         *,
-        venues!left(name, address, city, state)
+        ${DISCOVERY_VENUE_SELECT}
       `)
       .eq("event_type", "open_mic")
       .eq("is_spotlight", true)
@@ -252,13 +259,76 @@ export default async function HomePage() {
     is_featured: om.is_featured,
   }));
 
-  // Get tonight's happenings using occurrence expansion
+  // Phase 6: Fetch occurrence overrides with a forward window (cross-surface consistency)
+  // Range-based query matches /happenings parity: catches overrides for occurrences
+  // that may be rescheduled TO today from a future original date.
+  const tonightWindowEnd = addDaysDenver(today, 90);
+  const { data: tonightOverridesData } = await supabase
+    .from("occurrence_overrides")
+    .select("event_id, date_key, status, override_start_time, override_cover_image_url, override_notes, override_patch")
+    .gte("date_key", today)
+    .lte("date_key", tonightWindowEnd);
+
+  const tonightOverrideMap = buildOverrideMap(
+    (tonightOverridesData || []).map(o => ({
+      event_id: o.event_id,
+      date_key: o.date_key,
+      status: o.status as "normal" | "cancelled",
+      override_start_time: o.override_start_time,
+      override_cover_image_url: o.override_cover_image_url,
+      override_notes: o.override_notes,
+      override_patch: o.override_patch as Record<string, unknown> | null,
+    }))
+  );
+
+  // Phase 6: Pre-resolve override venue data (for occurrences with venue_id overrides)
+  const tonightOverrideVenueIds = new Set<string>();
+  for (const o of tonightOverridesData || []) {
+    const patch = o.override_patch as Record<string, unknown> | null;
+    const vid = patch?.venue_id as string | undefined;
+    if (vid) tonightOverrideVenueIds.add(vid);
+  }
+  const tonightOverrideVenueMap = new Map<string, { name: string; slug?: string | null; city?: string | null; state?: string | null; google_maps_url?: string | null; website_url?: string | null }>();
+  if (tonightOverrideVenueIds.size > 0) {
+    const { data: overrideVenues } = await supabase
+      .from("venues")
+      .select("id, name, slug, city, state, google_maps_url, website_url")
+      .in("id", [...tonightOverrideVenueIds]);
+    if (overrideVenues) {
+      for (const v of overrideVenues) {
+        tonightOverrideVenueMap.set(v.id, { name: v.name, slug: v.slug, city: v.city, state: v.state, google_maps_url: v.google_maps_url, website_url: v.website_url });
+      }
+    }
+  }
+
+  // Phase 6: Helper to resolve override venue data for a given entry
+  const getOverrideVenueForEntry = (entry: EventOccurrenceEntry<any>) => {
+    const patch = entry.override?.override_patch as Record<string, unknown> | null | undefined;
+    const vid = patch?.venue_id as string | undefined;
+    if (vid && vid !== entry.event.venue_id) {
+      return tonightOverrideVenueMap.get(vid) || null;
+    }
+    return null;
+  };
+
+  // Get tonight's happenings using occurrence expansion with forward window
+  // Phase 6: Expand full window so applyReschedulesToTimeline can relocate
+  // occurrences from future dates that are rescheduled to today.
   const allEventsForTonight = (tonightsHappeningsRes.data ?? []) as any[];
   const { groupedEvents, metrics } = expandAndGroupEvents(allEventsForTonight, {
     startKey: today,
-    endKey: today,
+    endKey: tonightWindowEnd,
+    overrideMap: tonightOverrideMap,
   });
-  const tonightsHappenings = groupedEvents.get(today) ?? [];
+
+  // Phase 6 P1 fix: Apply reschedule relocation (parity with /happenings).
+  // This moves occurrences rescheduled TO today into today's group and
+  // removes occurrences rescheduled AWAY from today.
+  const relocatedGroups = applyReschedulesToTimeline(groupedEvents);
+
+  const tonightsHappenings = (relocatedGroups.get(today) ?? []).filter(
+    (entry: EventOccurrenceEntry<any>) => !entry.isCancelled
+  );
 
   // Log performance metrics when caps are hit (server-side only, grepable)
   if (metrics.wasCapped) {
@@ -526,6 +596,9 @@ export default async function HomePage() {
                     isConfident: entry.isConfident,
                   }}
                   todayKey={today}
+                  override={entry.override}
+                  isCancelled={entry.isCancelled}
+                  overrideVenueData={getOverrideVenueForEntry(entry)}
                 />
               ))}
             </div>

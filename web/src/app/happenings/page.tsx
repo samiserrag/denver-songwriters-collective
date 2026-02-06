@@ -20,7 +20,7 @@ import {
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 import { occurrencesToMapPins, type MapPinConfig } from "@/lib/map";
 import { MapView } from "@/components/happenings/MapView";
-import { getLocationFilteredVenues, type LocationFilterResult } from "@/lib/happenings";
+import { getLocationFilteredVenues, type LocationFilterResult, DISCOVERY_STATUS_FILTER, DISCOVERY_VENUE_SELECT_WITH_COORDS } from "@/lib/happenings";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -116,7 +116,7 @@ export default async function HappeningsPage({
       .from("events")
       .select("event_date")
       .eq("is_published", true)
-      .in("status", ["active", "needs_verification", "unverified"])
+      .in("status", [...DISCOVERY_STATUS_FILTER])
       .not("event_date", "is", null)
       .order("event_date", { ascending: true })
       .limit(1)
@@ -148,18 +148,16 @@ export default async function HappeningsPage({
   }
 
   // Build base query with venue join for search
-  // Phase 4.52: Include google_maps_url and website_url for venue links
-  // Phase ABC4: Include slug for venue internal links
-  // Phase 5.06: Alias 'venues' to 'venue' so components can read event.venue.city/state
-  // Phase 1.0: Include latitude/longitude for map view
+  // Phase 6: Uses shared DISCOVERY_VENUE_SELECT_WITH_COORDS and DISCOVERY_STATUS_FILTER
+  // for cross-surface consistency (includes coords for map view)
   let query = supabase
     .from("events")
     .select(`
       *,
-      venue:venues!left(id, slug, name, address, city, state, google_maps_url, website_url, latitude, longitude)
+      ${DISCOVERY_VENUE_SELECT_WITH_COORDS}
     `)
     .eq("is_published", true)
-    .in("status", ["active", "needs_verification", "unverified"]);
+    .in("status", [...DISCOVERY_STATUS_FILTER]);
 
   // Fetch occurrence overrides for the window
   // This runs in parallel with the events query

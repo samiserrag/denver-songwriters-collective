@@ -1,7 +1,7 @@
 # Governance: Stop-Gate Workflow
 
 **Status:** CANONICAL
-**Version:** 1.2
+**Version:** 1.3
 **Last Updated:** February 2026
 
 > This document defines how changes ship in this repository. All contributors and agents must follow this workflow.
@@ -170,6 +170,51 @@ Even within approved scope, the junior architect must:
 - **No unrelated refactors** — scope is the scope
 - **No architecture changes** without explicit approval
 - Return diff + critique + test evidence, then **STOP**
+
+---
+
+## Single-Writer Collaboration Protocol (Required)
+
+**Status:** CANONICAL
+**Added:** February 2026
+
+When Codex and Opus collaborate, execution authority must remain single-threaded to prevent branch drift and conflicting sources of truth.
+
+### Authority Model
+
+| Role | Write Permission | Decision Authority |
+|------|------------------|--------------------|
+| **Senior Architect (Codex)** | Read-only by default | Scope, architecture, approval/hold gates |
+| **Junior Architect + Executor (Opus 4.6)** | Sole code writer during an execution cycle | Implements approved scope and returns evidence |
+
+### Hard Rules
+
+1. **Single writer per cycle:** Only Opus edits files, stages, commits, or pushes while an execution cycle is active.
+2. **Architect read-only:** Codex performs investigation, critique, and approval decisions only. No direct code or git mutations during active execution.
+3. **Single branch/source of truth:** Use one execution branch for the tract. Do not create parallel implementation branches.
+4. **SHA lock at cycle start:** Every cycle must begin with a reported branch name and exact HEAD SHA.
+5. **No hidden divergence:** If branch or SHA changes unexpectedly mid-cycle, **STOP** and re-sync before continuing.
+
+### Cycle Handshake (Required)
+
+At the start of each execution cycle, Opus must report:
+- Branch name
+- HEAD SHA
+- `git status --short` summary (clean/dirty)
+- `git remote -v` summary (to confirm push target)
+
+At the end of each cycle, Opus must report:
+- New HEAD SHA
+- Diff summary (files + purpose)
+- Quality gates (lint/test/build)
+- Critique outputs (pre/in-flight/post, per Subordinate Architect mode)
+
+### Exception Handling
+
+If Codex must write directly (emergency unblock), this requires:
+1. Explicit approval from Sami in chat
+2. A one-line reason recorded in the handoff prompt
+3. Immediate SHA re-baseline before Opus resumes execution
 
 ---
 
