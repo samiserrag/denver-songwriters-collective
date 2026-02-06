@@ -46,6 +46,15 @@ All non-trivial changes must follow the stop-gate protocol. See [docs/GOVERNANCE
 2. **Step B: Critique** — Repo agent documents risks, coupling, rollback plan
 3. **Step C: Wait** — Repo agent STOPS. Only after Sami approves does execution begin.
 
+### Subordinate Architect Review Mode
+
+When Codex (senior architect) and Opus (junior architect + executor) collaborate:
+- Opus must actively critique plans, not just execute
+- Required outputs: pre-execution critique (assumptions, ≥3 risks, ≥2 deltas), in-flight alerts, post-execution regression review
+- Dissent is required — default agreement without evidence is a governance violation
+- No commits/push, no unrelated refactors, no architecture changes without approval
+- See [GOVERNANCE.md §Subordinate Architect Review Mode](./docs/GOVERNANCE.md) for full protocol
+
 ### Definition of Done (PR Checklist)
 
 Before any PR merges:

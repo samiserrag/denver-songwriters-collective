@@ -1,8 +1,8 @@
 # Governance: Stop-Gate Workflow
 
 **Status:** CANONICAL
-**Version:** 1.1
-**Last Updated:** January 2026
+**Version:** 1.2
+**Last Updated:** February 2026
 
 > This document defines how changes ship in this repository. All contributors and agents must follow this workflow.
 
@@ -79,6 +79,97 @@ The repo agent **STOPS** and waits.
 Only after Sami explicitly approves does the orchestrator issue an execution prompt.
 
 **No implicit approvals. Silence is not consent.**
+
+---
+
+## Subordinate Architect Review Mode (Required)
+
+**Status:** CANONICAL
+**Added:** February 2026
+
+When multiple agents collaborate on a task, the following hierarchy and critique protocol applies.
+
+### Role Hierarchy
+
+| Role | Agent | Authority |
+|------|-------|-----------|
+| **Senior Architect** | Codex | Design authority — defines plan, scope, and architectural decisions |
+| **Junior Architect + Executor** | Opus 4.6 | Implementation authority within approved scope — must also actively critique the plan |
+
+### Operating Rule
+
+**Opus must not only execute; it must actively critique the plan and propose deltas.**
+
+"Two brains are better than one" is standard workflow, not optional. Default agreement without evidence-backed reasoning is a governance violation.
+
+### Context Evaluation
+
+Before execution, the junior architect must evaluate the plan against:
+- Active investigation documents (e.g., `docs/investigation/phase{X}-*.md`)
+- Active backlog items (e.g., `docs/backlog/*.md`)
+- `docs/CONTRACTS.md` — Enforceable UI/data contracts
+- `docs/DSC_UX_PRINCIPLES.md` — UX principles
+- `docs/PRODUCT_NORTH_STAR.md` — Product philosophy
+- `CLAUDE.md` — Governance + recent changes (regression boundary)
+- Any closed tracts (e.g., GTM-3.1) — no regressions allowed
+
+### Required Critique Outputs
+
+#### 1) Pre-Execution Critique (before edits)
+
+| Output | Requirement |
+|--------|-------------|
+| Assumptions list | Explicit — every assumption stated, none implicit |
+| Risks | At least 3 concrete risks with severity classification |
+| Suggested deltas | At least 2 improvements to the approved plan (small, in-scope) |
+| No-delta justification | If no deltas, explain why and provide residual risk assessment |
+
+**Risk severity format:**
+- Severity: `blocking` or `non-blocking`
+- Category: `correctness` or `cosmetic`
+
+**Delta format:**
+- Finding
+- Evidence (path:line)
+- Impact
+- Suggested delta
+- Confidence (0–1)
+
+#### 2) In-Flight Delta Alerts (during edits)
+
+- Report any newly discovered coupling or side effects **immediately**
+- **STOP and request guidance** if a delta would change architecture or scope
+- No silent drift — if reality diverges from plan, surface it
+
+#### 3) Post-Execution Critique (after tests)
+
+| Output | Requirement |
+|--------|-------------|
+| Plan vs actual | What changed vs the approved plan |
+| Follow-up deltas | What should be improved next (in-scope only) |
+| Regression risk review | Specifically for homepage, `/happenings`, and digest/admin preview boundaries |
+
+### Dissent Requirement
+
+**Do not default to agreement.** Challenge weak assumptions directly with file/line evidence.
+
+Preferred format for each critique item:
+
+```
+Finding: [what was found]
+Evidence: [path:line]
+Impact: [what breaks or degrades]
+Suggested delta: [proposed improvement]
+Confidence: [0–1]
+```
+
+### Execution Constraints
+
+Even within approved scope, the junior architect must:
+- **No commits/push** without explicit approval
+- **No unrelated refactors** — scope is the scope
+- **No architecture changes** without explicit approval
+- Return diff + critique + test evidence, then **STOP**
 
 ---
 
