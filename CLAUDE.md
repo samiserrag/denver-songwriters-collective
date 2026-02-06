@@ -713,7 +713,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Text version includes venue URL and signup time.
 - Updated digest tests to cover venue link, city/zip, and signup time.
 
-**Push:** `main` pushed to origin (`<pending>`).
+**Push:** `main` pushed to origin (`0ff4bea`).
 **Quality gates:**
 - `npm --prefix web run lint` passed.
 - `npm --prefix web test -- --run` passed (`3725/3725`).
