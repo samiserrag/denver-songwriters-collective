@@ -692,13 +692,13 @@ async function resolveEditorialInternal(
     } else {
       const { data: album } = await supabase
         .from("gallery_albums")
-        .select("slug, title, cover_image_url")
+        .select("slug, name, cover_image_url")
         .eq("slug", parsed.slug)
         .eq("is_published", true)
         .maybeSingle();
       if (album) {
         resolved.galleryFeature = {
-          title: album.title,
+          title: album.name,
           url: `${SITE_URL}/gallery/${album.slug}`,
           coverUrl: album.cover_image_url || undefined,
         };
@@ -713,13 +713,13 @@ async function resolveEditorialInternal(
   } else if (editorial.gallery_feature_slug) {
     const { data: album } = await supabase
       .from("gallery_albums")
-      .select("slug, title, cover_image_url")
+      .select("slug, name, cover_image_url")
       .eq("slug", editorial.gallery_feature_slug)
       .eq("is_published", true)
       .maybeSingle();
     if (album) {
       resolved.galleryFeature = {
-        title: album.title,
+        title: album.name,
         url: `${SITE_URL}/gallery/${album.slug}`,
         coverUrl: album.cover_image_url || undefined,
       };

@@ -88,4 +88,58 @@ describe("Editorial URL resolver", () => {
     expect(result.unresolved[0].field).toBe("member_spotlight_ref");
     expect(result.unresolved[0].reason).toBe("unsupported_domain");
   });
+
+  it("resolves a gallery URL using gallery_albums.name (published only)", async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table !== "gallery_albums") {
+          throw new Error(`Unexpected table: ${table}`);
+        }
+        return {
+          select: (fields: string) => {
+            expect(fields).toContain("name");
+            return {
+              eq: (column: string, value: string | boolean) => {
+                expect(column).toBe("slug");
+                expect(value).toBe("collective-open-mic-at-sloan-lake-2-1-26");
+                return {
+                  eq: (column2: string, value2: string | boolean) => {
+                    expect(column2).toBe("is_published");
+                    expect(value2).toBe(true);
+                    return {
+                  maybeSingle: async () => ({
+                    data: {
+                      slug: "collective-open-mic-at-sloan-lake-2-1-26",
+                      name: "Collective Open Mic at Sloan Lake 2-1-26",
+                      cover_image_url: null,
+                    },
+                    error: null,
+                  }),
+                };
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    } as unknown;
+
+    const editorial = baseEditorial();
+    editorial.gallery_feature_ref =
+      "https://denversongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26";
+
+    const result = await resolveEditorialWithDiagnostics(
+      supabase as never,
+      editorial
+    );
+
+    expect(result.unresolved).toEqual([]);
+    expect(result.resolved.galleryFeature?.title).toBe(
+      "Collective Open Mic at Sloan Lake 2-1-26"
+    );
+    expect(result.resolved.galleryFeature?.url).toBe(
+      "https://denversongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26"
+    );
+  });
 });

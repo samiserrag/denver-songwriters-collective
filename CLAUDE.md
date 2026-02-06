@@ -703,6 +703,19 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### GTM-3.1 Gallery Resolver Column Fix (February 2026)
+
+**Summary:** Fixed false gallery unresolved diagnostics caused by querying a non-existent gallery column.
+
+**Changes:**
+- `resolveEditorial*` gallery lookups now select `gallery_albums.name` (not `title`) and map card title from `name`.
+- Added regression coverage to ensure gallery URL refs resolve against published albums using the `name` field.
+
+**Push:** `main` pushed to origin (`<pending>`).
+**Quality gates:**
+- `npm --prefix web run lint` passed.
+- `npm --prefix web test -- --run src/__tests__/editorial-url-resolver.test.ts` passed.
+
 ### GTM-3.1 Weekly Digest Featured Ordering + Intro Formatting (February 2026)
 
 **Summary:** Weekly happenings email now renders a top featured block in deterministic order, preserves intro note formatting, and keeps preview/test-send output aligned.
