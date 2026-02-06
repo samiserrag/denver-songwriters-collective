@@ -1125,6 +1125,19 @@ describe("Part B: Editorial Layer", () => {
       expect(adminEmailPage).not.toContain("venue_spotlight_id");
       expect(adminEmailPage).not.toContain("featured_happening_ids");
     });
+
+    it("builds editorial payload with *_ref keys only", () => {
+      expect(adminEmailPage).toContain("payload.member_spotlight_ref");
+      expect(adminEmailPage).toContain("payload.venue_spotlight_ref");
+      expect(adminEmailPage).toContain("payload.blog_feature_ref");
+      expect(adminEmailPage).toContain("payload.gallery_feature_ref");
+      expect(adminEmailPage).toContain("payload.featured_happenings_refs");
+      expect(adminEmailPage).not.toContain("payload.member_spotlight_id");
+      expect(adminEmailPage).not.toContain("payload.venue_spotlight_id");
+      expect(adminEmailPage).not.toContain("payload.blog_feature_slug");
+      expect(adminEmailPage).not.toContain("payload.gallery_feature_slug");
+      expect(adminEmailPage).not.toContain("payload.featured_happening_ids");
+    });
   });
 
   describe("GTM-3.1: API normalizes inputs before storage", () => {
