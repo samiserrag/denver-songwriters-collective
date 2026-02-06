@@ -24,7 +24,12 @@ import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHapp
 import { getWeeklyOpenMicsDigestEmail } from "@/lib/email/templates/weeklyOpenMicsDigest";
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
 import { computeWeekKey, type DigestType } from "@/lib/digest/digestSendLog";
-import { getEditorial, resolveEditorial, type ResolvedEditorial } from "@/lib/digest/digestEditorial";
+import {
+  getEditorial,
+  resolveEditorialWithDiagnostics,
+  type ResolvedEditorial,
+  type EditorialUnresolved,
+} from "@/lib/digest/digestEditorial";
 
 export const dynamic = "force-dynamic";
 
@@ -68,10 +73,13 @@ export async function GET(request: NextRequest) {
       // GTM-3: Resolve editorial for preview
       const weekKey = request.nextUrl.searchParams.get("week_key") || computeWeekKey();
       let resolvedEditorial: ResolvedEditorial | undefined;
+      let unresolved: EditorialUnresolved[] = [];
       try {
         const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
         if (editorial) {
-          resolvedEditorial = await resolveEditorial(serviceClient, editorial);
+          const result = await resolveEditorialWithDiagnostics(serviceClient, editorial);
+          resolvedEditorial = result.resolved;
+          unresolved = result.unresolved;
         }
       } catch (editorialError) {
         console.warn("[AdminPreview] Editorial resolution failed:", editorialError);
@@ -101,6 +109,7 @@ export async function GET(request: NextRequest) {
         totalVenues: digestData.venueCount,
         hasEditorial: !!resolvedEditorial,
         weekKey,
+        unresolved,
       });
     } else {
       const digestData = await getUpcomingOpenMics(serviceClient);

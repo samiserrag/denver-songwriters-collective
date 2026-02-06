@@ -65,11 +65,16 @@ CREATE TABLE IF NOT EXISTS public.digest_editorial (
   digest_type TEXT NOT NULL,        -- 'weekly_happenings' only for now
   subject_override TEXT,            -- Override default subject line
   intro_note TEXT,                  -- Personal editorial intro (rendered as HTML)
-  featured_happening_ids UUID[],    -- Event IDs to pin at top
-  member_spotlight_id UUID,         -- Profile ID for member spotlight
-  venue_spotlight_id UUID,          -- Venue ID for venue spotlight
-  blog_feature_slug TEXT,           -- Blog post slug to feature
-  gallery_feature_slug TEXT,        -- Gallery album slug to feature
+  featured_happening_ids UUID[],    -- Legacy event IDs (fallback only)
+  member_spotlight_id UUID,         -- Legacy profile ID (fallback only)
+  venue_spotlight_id UUID,          -- Legacy venue ID (fallback only)
+  blog_feature_slug TEXT,           -- Legacy blog slug (fallback only)
+  gallery_feature_slug TEXT,        -- Legacy gallery slug (fallback only)
+  featured_happenings_refs TEXT[],  -- Canonical URL refs (preferred)
+  member_spotlight_ref TEXT,        -- Canonical URL ref (preferred)
+  venue_spotlight_ref TEXT,         -- Canonical URL ref (preferred)
+  blog_feature_ref TEXT,            -- Canonical URL ref (preferred)
+  gallery_feature_ref TEXT,         -- Canonical URL ref (preferred)
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_by UUID,                  -- Admin who edited
@@ -97,7 +102,7 @@ All use `createServiceRoleClient()`.
 **File**: `web/src/app/api/admin/digest/editorial/route.ts` (NEW)
 
 - `GET ?week_key=&digest_type=` — Fetch editorial for week (admin-only via `checkAdminRole()`)
-- `PUT` body `{ weekKey, digestType, ...fields }` — Upsert editorial (admin-only)
+- `PUT` body `{ weekKey, digestType, ...fields }` — Upsert editorial (admin-only, URL-only validation)
 - `DELETE ?week_key=&digest_type=` — Delete editorial (admin-only)
 
 ### B4. Extend email template with editorial sections
@@ -138,12 +143,9 @@ All editorial sections are optional — email renders normally without them.
 
 After fetching happenings data and recipients (line ~99), before lock claim:
 1. Fetch editorial: `const editorial = await getEditorial(weekKey, "weekly_happenings");`
-2. If editorial has `featured_happening_ids`, fetch those events from DB and build featured array
-3. If editorial has `member_spotlight_id`, fetch profile data
-4. If editorial has `venue_spotlight_id`, fetch venue data
-5. If editorial has `blog_feature_slug`, fetch blog post data
-6. If editorial has `gallery_feature_slug`, fetch gallery album data
-7. Pass all resolved editorial data to `buildEmail` callback
+2. Prefer URL refs (`*_ref`, `featured_happenings_refs`) — parse URL, extract slug, resolve by slug
+3. Fallback to legacy UUID/slug columns only if URL refs are missing
+4. Pass all resolved editorial data to `buildEmail` callback
 
 ### B6. Extend preview API to include editorial
 
@@ -174,11 +176,11 @@ Add new section between digest settings cards and send history:
 - Digest type: locked to "weekly_happenings" (only supported type)
 - Subject override: text input (placeholder shows default subject)
 - Intro note: textarea for personal editorial
-- Featured happenings: multi-select or comma-separated event ID input with title lookup
-- Member spotlight: profile search/select
-- Venue spotlight: venue search/select
-- Blog feature: blog post search/select
-- Gallery feature: gallery album search/select
+- Featured happenings: URL list (one URL per line), `featured_happenings_refs`
+- Member spotlight: URL input (`member_spotlight_ref`)
+- Venue spotlight: URL input (`venue_spotlight_ref`)
+- Blog feature: URL input (`blog_feature_ref`)
+- Gallery feature: URL input (`gallery_feature_ref`)
 - Save button: upserts editorial via PUT API
 - Clear button: deletes editorial via DELETE API
 - Status indicator: shows whether editorial exists for selected week

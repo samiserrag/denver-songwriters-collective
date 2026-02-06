@@ -8,112 +8,99 @@ describe("Editorial payload validation", () => {
     expect(result.data).toEqual({ intro_note: "Hello" });
   });
 
-  const refCases = [
-    {
-      label: "member spotlight URL",
-      field: "member_spotlight_ref",
-      value: "https://denversongwriterscollective.org/songwriters/sami-serrag",
-      expected: "sami-serrag",
-    },
-    {
-      label: "member spotlight slug",
-      field: "member_spotlight_ref",
-      value: "sami-serrag",
-      expected: "sami-serrag",
-    },
-    {
-      label: "venue spotlight URL",
-      field: "venue_spotlight_ref",
-      value: "https://denversongwriterscollective.org/venues/brewery-rickoli?utm=1",
-      expected: "brewery-rickoli",
-    },
-    {
-      label: "venue spotlight slug",
-      field: "venue_spotlight_ref",
-      value: "brewery-rickoli",
-      expected: "brewery-rickoli",
-    },
-    {
-      label: "blog feature URL",
-      field: "blog_feature_ref",
-      value: "https://denversongwriterscollective.org/blog/my-post?utm=1#top",
-      expected: "my-post",
-    },
-    {
-      label: "blog feature slug",
-      field: "blog_feature_ref",
-      value: "my-post",
-      expected: "my-post",
-    },
-    {
-      label: "gallery feature URL",
-      field: "gallery_feature_ref",
-      value: "https://denversongwriterscollective.org/gallery/album-slug#section",
-      expected: "album-slug",
-    },
-    {
-      label: "gallery feature slug",
-      field: "gallery_feature_ref",
-      value: "album-slug",
-      expected: "album-slug",
-    },
-  ];
-
-  for (const testCase of refCases) {
-    it(`normalizes ${testCase.label}`, () => {
-      const result = buildEditorialUpsertData({ [testCase.field]: testCase.value });
-      expect(result.error).toBeUndefined();
-      expect(result.data[testCase.field]).toBe(testCase.expected);
+  it("normalizes member spotlight URL from relative path", () => {
+    const result = buildEditorialUpsertData({
+      member_spotlight_ref: "/songwriters/pony-lee",
     });
-  }
+    expect(result.error).toBeUndefined();
+    expect(result.data.member_spotlight_ref).toBe(
+      "https://denversongwriterscollective.org/songwriters/pony-lee"
+    );
+  });
 
-  it("normalizes featured happenings refs from URLs and slugs", () => {
+  it("normalizes venue spotlight URL from www host without scheme", () => {
+    const result = buildEditorialUpsertData({
+      venue_spotlight_ref: "www.denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.data.venue_spotlight_ref).toBe(
+      "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
+    );
+  });
+
+  it("normalizes URL without scheme or www", () => {
+    const result = buildEditorialUpsertData({
+      venue_spotlight_ref:
+        "denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.data.venue_spotlight_ref).toBe(
+      "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
+    );
+  });
+
+  it("normalizes blog feature URL and strips query/hash", () => {
+    const result = buildEditorialUpsertData({
+      blog_feature_ref: "https://denversongwriterscollective.org/blog/my-post?utm=1#top",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.data.blog_feature_ref).toBe(
+      "https://denversongwriterscollective.org/blog/my-post"
+    );
+  });
+
+  it("normalizes featured happenings URLs array", () => {
     const result = buildEditorialUpsertData({
       featured_happenings_refs: [
         "https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden?utm=1",
-        "open-mic-night",
+        "/events/open-mic-night",
       ],
     });
     expect(result.error).toBeUndefined();
     expect(result.data.featured_happenings_refs).toEqual([
-      "a-lodge-lyons-the-rock-garden",
-      "open-mic-night",
+      "https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden",
+      "https://denversongwriterscollective.org/events/open-mic-night",
     ]);
   });
 
-  it("returns invalid reference error for unsupported domains", () => {
+  it("rejects non-DSC domains", () => {
     const result = buildEditorialUpsertData({
-      member_spotlight_ref: "https://example.com/songwriters/sami-serrag",
+      member_spotlight_ref: "https://example.com/songwriters/pony-lee",
     });
-    expect(result.error?.error).toBe("Invalid reference");
+    expect(result.error?.error).toBe("Invalid URL");
     expect(result.error?.field).toBe("member_spotlight_ref");
   });
 
-  it("returns invalid reference error with index for mixed refs", () => {
+  it("rejects slug-only inputs", () => {
     const result = buildEditorialUpsertData({
-      featured_happenings_refs: [
-        "https://denversongwriterscollective.org/events/valid-slug",
-        "https://example.com/events/not-allowed",
-      ],
+      venue_spotlight_ref: "a-lodge-lyons-the-rock-garden",
     });
-    expect(result.error?.error).toBe("Invalid reference");
+    expect(result.error?.error).toBe("Invalid URL");
+    expect(result.error?.field).toBe("venue_spotlight_ref");
+  });
+
+  it("rejects URLs with the wrong path prefix", () => {
+    const result = buildEditorialUpsertData({
+      member_spotlight_ref:
+        "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+    });
+    expect(result.error?.error).toBe("Invalid URL");
+    expect(result.error?.field).toBe("member_spotlight_ref");
+  });
+
+  it("rejects legacy *_id fields", () => {
+    const result = buildEditorialUpsertData({
+      member_spotlight_id: "123",
+    });
+    expect(result.error?.error).toBe("Invalid URL");
+    expect(result.error?.field).toBe("member_spotlight_ref");
+  });
+
+  it("rejects featured_happening_ids", () => {
+    const result = buildEditorialUpsertData({
+      featured_happening_ids: ["123"],
+    });
+    expect(result.error?.error).toBe("Invalid URL");
     expect(result.error?.field).toBe("featured_happenings_refs");
-    expect(result.error?.index).toBe(1);
-  });
-
-  it("returns invalid UUID error for legacy UUID fields", () => {
-    const result = buildEditorialUpsertData({
-      member_spotlight_id: "not-a-uuid",
-    });
-    expect(result.error?.error).toBe("Invalid UUID");
-    expect(result.error?.field).toBe("member_spotlight_id");
-  });
-
-  it("returns invalid UUID error for featured_happening_ids array", () => {
-    const result = buildEditorialUpsertData({
-      featured_happening_ids: ["not-a-uuid"],
-    });
-    expect(result.error?.error).toBe("Invalid UUID");
-    expect(result.error?.field).toBe("featured_happening_ids");
   });
 });

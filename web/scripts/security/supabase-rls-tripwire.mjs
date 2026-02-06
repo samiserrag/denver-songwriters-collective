@@ -37,6 +37,7 @@ const failOnDangerousTablePrivs = process.env.TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_P
 
 // Dangerous privileges that anon/authenticated should never have
 const DANGEROUS_PRIVS = ["TRUNCATE", "TRIGGER", "REFERENCES"];
+const DANGEROUS_PRIVS_SQL = DANGEROUS_PRIVS.map(priv => `'${priv}'`).join(", ");
 
 function fmtFn(row) {
   return `${row.schema}.${row.name}(${row.args})`;
@@ -172,7 +173,7 @@ async function main() {
     from information_schema.table_privileges
     where table_schema = 'public'
       and grantee in ('anon', 'authenticated')
-      and privilege_type in ('TRUNCATE', 'TRIGGER', 'REFERENCES')
+      and privilege_type in (${DANGEROUS_PRIVS_SQL})
     order by 1,2,3,4;
   `);
 
@@ -183,12 +184,12 @@ async function main() {
 
     if (failOnDangerousTablePrivs) {
       failures.push({
-        title: "Dangerous table privileges detected (TRUNCATE/TRIGGER/REFERENCES)",
+        title: `Dangerous table privileges detected (${DANGEROUS_PRIVS.join("/")})`,
         items: privItems
       });
     } else {
       warnings.push({
-        title: "WARNING: Dangerous table privileges detected (TRUNCATE/TRIGGER/REFERENCES) - set TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS=1 to fail",
+        title: `WARNING: Dangerous table privileges detected (${DANGEROUS_PRIVS.join("/")}) - set TRIPWIRE_FAIL_ON_DANGEROUS_TABLE_PRIVS=1 to fail`,
         items: privItems
       });
     }

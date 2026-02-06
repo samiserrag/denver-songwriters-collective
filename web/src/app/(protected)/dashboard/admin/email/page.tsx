@@ -11,7 +11,7 @@
 
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 interface DigestSetting {
   id: string;
@@ -38,23 +38,22 @@ interface PreviewData {
   totalVenues?: number;
   hasEditorial?: boolean;
   weekKey?: string;
+  unresolved?: Array<{
+    field: string;
+    url?: string;
+    reason?: string;
+    index?: number;
+  }>;
 }
 
 interface EditorialData {
   subject_override: string;
   intro_note: string;
-  featured_happening_ids: string[];
+  featured_happenings_refs: string;
   member_spotlight_ref: string;
   venue_spotlight_ref: string;
   blog_feature_ref: string;
   gallery_feature_ref: string;
-}
-
-interface HappeningSearchResult {
-  id: string;
-  title: string;
-  event_date: string | null;
-  venue_name: string | null;
 }
 
 /**
@@ -80,7 +79,7 @@ function computeWeekKeyClient(date: Date = new Date()): string {
 const EMPTY_EDITORIAL: EditorialData = {
   subject_override: "",
   intro_note: "",
-  featured_happening_ids: [],
+  featured_happenings_refs: "",
   member_spotlight_ref: "",
   venue_spotlight_ref: "",
   blog_feature_ref: "",
@@ -117,7 +116,7 @@ export default function AdminEmailPage() {
   const [editorial, setEditorial] = useState<EditorialData>({
     subject_override: "",
     intro_note: "",
-    featured_happening_ids: [],
+    featured_happenings_refs: "",
     member_spotlight_ref: "",
     venue_spotlight_ref: "",
     blog_feature_ref: "",
@@ -129,10 +128,6 @@ export default function AdminEmailPage() {
     message: string;
     variant: "success" | "error";
   } | null>(null);
-  const [happeningSearch, setHappeningSearch] = useState("");
-  const [happeningResults, setHappeningResults] = useState<HappeningSearchResult[]>([]);
-  const [happeningSearching, setHappeningSearching] = useState(false);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // GTM-3: Fetch editorial for selected week
   const fetchEditorial = useCallback(async (weekKey: string) => {
@@ -148,23 +143,11 @@ export default function AdminEmailPage() {
           setEditorial({
             subject_override: data.editorial.subject_override || "",
             intro_note: data.editorial.intro_note || "",
-            featured_happening_ids: data.editorial.featured_happening_ids || [],
-            member_spotlight_ref:
-              data.editorial.member_spotlight_ref ||
-              data.editorial.member_spotlight_id ||
-              "",
-            venue_spotlight_ref:
-              data.editorial.venue_spotlight_ref ||
-              data.editorial.venue_spotlight_id ||
-              "",
-            blog_feature_ref:
-              data.editorial.blog_feature_ref ||
-              data.editorial.blog_feature_slug ||
-              "",
-            gallery_feature_ref:
-              data.editorial.gallery_feature_ref ||
-              data.editorial.gallery_feature_slug ||
-              "",
+            featured_happenings_refs: (data.editorial.featured_happenings_refs || []).join("\n"),
+            member_spotlight_ref: data.editorial.member_spotlight_ref || "",
+            venue_spotlight_ref: data.editorial.venue_spotlight_ref || "",
+            blog_feature_ref: data.editorial.blog_feature_ref || "",
+            gallery_feature_ref: data.editorial.gallery_feature_ref || "",
           });
         } else {
           setEditorial({ ...EMPTY_EDITORIAL });
@@ -189,8 +172,11 @@ export default function AdminEmailPage() {
       };
       if (editorial.subject_override) payload.subject_override = editorial.subject_override;
       if (editorial.intro_note) payload.intro_note = editorial.intro_note;
-      if (editorial.featured_happening_ids.length > 0)
-        payload.featured_happening_ids = editorial.featured_happening_ids;
+      const featuredRefs = editorial.featured_happenings_refs
+        .split("\n")
+        .map((ref) => ref.trim())
+        .filter(Boolean);
+      if (featuredRefs.length > 0) payload.featured_happenings_refs = featuredRefs;
       if (editorial.member_spotlight_ref) payload.member_spotlight_ref = editorial.member_spotlight_ref;
       if (editorial.venue_spotlight_ref) payload.venue_spotlight_ref = editorial.venue_spotlight_ref;
       if (editorial.blog_feature_ref) payload.blog_feature_ref = editorial.blog_feature_ref;
@@ -210,7 +196,7 @@ export default function AdminEmailPage() {
           ? `${data.field}${typeof data.index === "number" ? ` (item ${data.index + 1})` : ""}`
           : "";
         const message = data.error
-          ? `${data.error}${fieldLabel ? ` — ${fieldLabel}` : ""}${data.guidance ? `: ${data.guidance}` : ""}`
+          ? `${data.error}${fieldLabel ? ` — ${fieldLabel}` : ""}${data.guidance ? `: ${data.guidance}` : ""}${data.example ? ` Example: ${data.example}` : ""}`
           : "Failed to save editorial.";
         setEditorialResult({ message, variant: "error" });
       }
@@ -244,32 +230,6 @@ export default function AdminEmailPage() {
       setEditorialSaving(false);
     }
   };
-
-  // GTM-3: Search happenings for featured picker
-  const handleHappeningSearch = useCallback((query: string) => {
-    setHappeningSearch(query);
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    if (!query.trim()) {
-      setHappeningResults([]);
-      return;
-    }
-    searchTimeoutRef.current = setTimeout(async () => {
-      setHappeningSearching(true);
-      try {
-        const res = await fetch(
-          `/api/admin/digest/editorial/search-happenings?q=${encodeURIComponent(query.trim())}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setHappeningResults(data.results || []);
-        }
-      } catch {
-        // Silently handle search error
-      } finally {
-        setHappeningSearching(false);
-      }
-    }, 300);
-  }, []);
 
   // GTM-3: Load editorial when week key changes
   useEffect(() => {
@@ -600,6 +560,23 @@ export default function AdminEmailPage() {
                       </>
                     )}
                   </div>
+                  {preview.unresolved && preview.unresolved.length > 0 && (
+                    <div className="mb-3 rounded-lg border border-amber-300 bg-amber-100/70 px-3 py-2 text-xs text-amber-900">
+                      <div className="font-semibold mb-1">Unresolved editorial links</div>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {preview.unresolved.map((item, index) => (
+                          <li key={`${item.field}-${item.index ?? index}`}>
+                            {item.field}
+                            {typeof item.index === "number" ? ` (item ${item.index + 1})` : ""}
+                            {item.url ? ` — ${item.url}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-1">
+                        Fix these URLs before sending. Preview and send will skip unresolved items.
+                      </div>
+                    </div>
+                  )}
                   <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">
                     <iframe
                       srcDoc={preview.html}
@@ -713,92 +690,24 @@ export default function AdminEmailPage() {
             Featured Happenings
           </label>
           <p className="text-xs text-[var(--color-text-tertiary)] mb-2">
-            Search and select happenings to feature at the top of the digest. These appear as pinned items above the regular listings.
+            Paste a URL from this site, one per line. Example:
+            {" "}
+            <span className="font-mono text-[11px]">
+              https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden
+            </span>
           </p>
-          {/* Selected happenings pills */}
-          {editorial.featured_happening_ids.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {editorial.featured_happening_ids.map((id) => (
-                <span
-                  key={id}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/20"
-                >
-                  {id.substring(0, 8)}...
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditorial((prev) => ({
-                        ...prev,
-                        featured_happening_ids: prev.featured_happening_ids.filter(
-                          (fid) => fid !== id
-                        ),
-                      }))
-                    }
-                    className="hover:text-red-500 ml-1"
-                    aria-label={`Remove ${id}`}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          {/* Search input */}
-          <div className="relative">
-            <input
-              type="text"
-              value={happeningSearch}
-              onChange={(e) => handleHappeningSearch(e.target.value)}
-              placeholder="Search by title..."
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
-            />
-            {happeningSearching && (
-              <span className="absolute right-3 top-2.5 text-xs text-[var(--color-text-tertiary)]">
-                Searching...
-              </span>
-            )}
-          </div>
-          {/* Search results dropdown */}
-          {happeningResults.length > 0 && (
-            <div className="mt-1 border border-[var(--color-border-default)] rounded-lg bg-[var(--color-bg-primary)] max-h-48 overflow-y-auto">
-              {happeningResults.map((result) => {
-                const isSelected = editorial.featured_happening_ids.includes(result.id);
-                return (
-                  <button
-                    key={result.id}
-                    type="button"
-                    disabled={isSelected}
-                    onClick={() => {
-                      setEditorial((prev) => ({
-                        ...prev,
-                        featured_happening_ids: [
-                          ...prev.featured_happening_ids,
-                          result.id,
-                        ],
-                      }));
-                      setHappeningSearch("");
-                      setHappeningResults([]);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)] last:border-0 ${
-                      isSelected ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    <span className="font-medium text-[var(--color-text-primary)]">
-                      {result.title}
-                    </span>
-                    {(result.event_date || result.venue_name) && (
-                      <span className="text-xs text-[var(--color-text-tertiary)] ml-2">
-                        {[result.event_date, result.venue_name].filter(Boolean).join(" · ")}
-                      </span>
-                    )}
-                    {isSelected && (
-                      <span className="text-xs text-[var(--color-text-tertiary)] ml-2">(selected)</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <textarea
+            value={editorial.featured_happenings_refs}
+            onChange={(e) =>
+              setEditorial((prev) => ({
+                ...prev,
+                featured_happenings_refs: e.target.value,
+              }))
+            }
+            placeholder={`Paste one URL per line:\nhttps://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden`}
+            rows={4}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-vertical"
+          />
         </div>
 
         {/* Spotlight + Feature fields in 2-column grid */}
@@ -806,7 +715,7 @@ export default function AdminEmailPage() {
           {/* Member spotlight */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Member Spotlight (slug or URL)
+              Member Spotlight URL
             </label>
             <input
               type="text"
@@ -814,7 +723,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, member_spotlight_ref: e.target.value }))
               }
-              placeholder="sami-serrag or https://denversongwriterscollective.org/songwriters/sami-serrag"
+              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/songwriters/pony-lee"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -822,7 +731,7 @@ export default function AdminEmailPage() {
           {/* Venue spotlight */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Venue Spotlight (slug or URL)
+              Venue Spotlight URL
             </label>
             <input
               type="text"
@@ -830,7 +739,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, venue_spotlight_ref: e.target.value }))
               }
-              placeholder="brewery-rickoli or https://denversongwriterscollective.org/venues/brewery-rickoli"
+              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -838,7 +747,7 @@ export default function AdminEmailPage() {
           {/* Blog feature */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Blog Feature (slug or URL)
+              Blog Feature URL
             </label>
             <input
               type="text"
@@ -846,7 +755,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, blog_feature_ref: e.target.value }))
               }
-              placeholder="blog-post-slug or /blog/blog-post-slug"
+              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/blog/my-post"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -854,7 +763,7 @@ export default function AdminEmailPage() {
           {/* Gallery feature */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Gallery Feature (slug or URL)
+              Gallery Feature URL
             </label>
             <input
               type="text"
@@ -862,7 +771,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, gallery_feature_ref: e.target.value }))
               }
-              placeholder="gallery-album-slug or /gallery/gallery-album-slug"
+              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/gallery/album-slug"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>

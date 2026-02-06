@@ -20,101 +20,114 @@ export function isUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-const INTERNAL_HOSTS = new Set([
-  "denversongwriterscollective.org",
-  "www.denversongwriterscollective.org",
+const CANONICAL_HOST = "denversongwriterscollective.org";
+const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
+const ALLOWED_HOSTS = new Set([
+  CANONICAL_HOST,
+  `www.${CANONICAL_HOST}`,
 ]);
 
-const EDITORIAL_ROUTE_PATTERNS: Array<{ label: string; regex: RegExp }> = [
-  { label: "songwriters", regex: /^\/songwriters\/([^/?#]+)/i },
-  { label: "venues", regex: /^\/venues\/([^/?#]+)/i },
-  { label: "events", regex: /^\/events\/([^/?#]+)/i },
-  { label: "open-mics", regex: /^\/open-mics\/([^/?#]+)/i },
-  { label: "blog", regex: /^\/blog\/([^/?#]+)/i },
-  { label: "gallery", regex: /^\/gallery\/([^/?#]+)/i },
-];
+const EDITORIAL_URL_PREFIXES = {
+  member_spotlight_ref: "/songwriters/",
+  venue_spotlight_ref: "/venues/",
+  blog_feature_ref: "/blog/",
+  gallery_feature_ref: "/gallery/",
+  featured_happenings_refs: "/events/",
+} as const;
+
+type EditorialUrlField = keyof typeof EDITORIAL_URL_PREFIXES;
 
 function stripQueryAndHash(value: string): string {
   return value.split("?")[0].split("#")[0];
 }
 
-function extractSlugFromPath(pathname: string): string | null {
-  for (const pattern of EDITORIAL_ROUTE_PATTERNS) {
-    const match = pathname.match(pattern.regex);
-    if (match?.[1]) {
-      return match[1];
-    }
+function stripTrailingSlash(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.replace(/\/+$/, "");
+  }
+  return pathname;
+}
+
+function coerceToAbsoluteUrl(input: string): string | null {
+  if (input.startsWith("/")) {
+    return `${CANONICAL_ORIGIN}${input}`;
+  }
+  if (input.startsWith("www.")) {
+    return `https://${input}`;
+  }
+  if (input.startsWith(CANONICAL_HOST)) {
+    return `https://${input}`;
+  }
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    return input;
   }
   return null;
 }
 
-export interface EditorialRefResult {
-  value: string | null;
-  error?: "invalid_url" | "unsupported_domain" | "unsupported_path" | "invalid_path";
+function extractSlugFromPath(pathname: string, expectedPrefix: string): string | null {
+  const normalizedPath = stripTrailingSlash(pathname);
+  const lowerPath = normalizedPath.toLowerCase();
+  const lowerPrefix = expectedPrefix.toLowerCase();
+  if (!lowerPath.startsWith(lowerPrefix)) return null;
+  const slug = normalizedPath.slice(expectedPrefix.length);
+  if (!slug || slug.includes("/")) return null;
+  return slug;
 }
 
-/**
- * Normalize a slug or DSC URL into a stable ref string.
- *
- * Rules:
- * - Bare slugs/UUIDs are accepted as-is.
- * - Full URLs are accepted only for DSC domains (strict).
- * - Query strings and hashes are stripped.
- * - Path must match a known DSC route pattern.
- */
-export function normalizeEditorialRef(input: string | null | undefined): EditorialRefResult {
+export interface EditorialUrlResult {
+  value: string | null;
+  slug?: string;
+  error?: "invalid_url" | "unsupported_domain" | "unsupported_path";
+}
+
+export function normalizeEditorialUrl(
+  input: string | null | undefined,
+  expectedPrefix: string
+): EditorialUrlResult {
   if (!input) return { value: null };
 
   const trimmed = input.trim();
   if (!trimmed) return { value: null };
 
   const stripped = stripQueryAndHash(trimmed);
-
-  if (!stripped.includes("/")) {
-    return { value: stripped };
+  const absolute = coerceToAbsoluteUrl(stripped);
+  if (!absolute) {
+    return { value: null, error: "invalid_url" };
   }
 
-  if (stripped.startsWith("http://") || stripped.startsWith("https://")) {
-    try {
-      const url = new URL(stripped);
-      if (!INTERNAL_HOSTS.has(url.hostname)) {
-        return { value: null, error: "unsupported_domain" };
-      }
-      const slug = extractSlugFromPath(url.pathname);
-      if (!slug) {
-        return { value: null, error: "unsupported_path" };
-      }
-      return { value: slug };
-    } catch {
-      return { value: null, error: "invalid_url" };
+  try {
+    const url = new URL(absolute);
+    if (!ALLOWED_HOSTS.has(url.hostname)) {
+      return { value: null, error: "unsupported_domain" };
     }
-  }
 
-  if (stripped.startsWith("/")) {
-    const slug = extractSlugFromPath(stripped);
+    const slug = extractSlugFromPath(url.pathname, expectedPrefix);
     if (!slug) {
       return { value: null, error: "unsupported_path" };
     }
-    return { value: slug };
-  }
 
-  return { value: null, error: "invalid_path" };
+    const canonicalUrl = `${CANONICAL_ORIGIN}${expectedPrefix}${slug}`;
+    return { value: canonicalUrl, slug };
+  } catch {
+    return { value: null, error: "invalid_url" };
+  }
 }
 
-export interface EditorialRefsResult {
+export interface EditorialUrlsResult {
   value: string[] | null;
-  error?: EditorialRefResult["error"];
+  error?: EditorialUrlResult["error"];
   index?: number;
 }
 
-export function normalizeEditorialRefs(
-  input: string[] | null | undefined
-): EditorialRefsResult {
+export function normalizeEditorialUrls(
+  input: string[] | null | undefined,
+  expectedPrefix: string
+): EditorialUrlsResult {
   if (!input || input.length === 0) return { value: null };
 
   const results: string[] = [];
   for (let i = 0; i < input.length; i += 1) {
-    const result = normalizeEditorialRef(input[i]);
+    const result = normalizeEditorialUrl(input[i], expectedPrefix);
     if (result.error) {
       return { value: null, error: result.error, index: i };
     }
@@ -124,6 +137,29 @@ export function normalizeEditorialRefs(
   }
 
   return { value: results.length > 0 ? results : null };
+}
+
+function parseEditorialUrlToSlug(
+  input: string,
+  expectedPrefix: string
+): { slug: string | null; error?: EditorialUrlResult["error"]; canonicalUrl?: string; legacy?: boolean } {
+  const trimmed = input.trim();
+  if (!trimmed) return { slug: null };
+
+  const likelyLegacy = !trimmed.includes("/") && !trimmed.includes(".");
+  if (likelyLegacy) {
+    return { slug: trimmed, legacy: true };
+  }
+
+  const normalized = normalizeEditorialUrl(trimmed, expectedPrefix);
+  if (normalized.error || !normalized.value || !normalized.slug) {
+    return { slug: null, error: normalized.error || "invalid_url" };
+  }
+  return { slug: normalized.slug, canonicalUrl: normalized.value };
+}
+
+export function getEditorialUrlPrefix(field: EditorialUrlField): string {
+  return EDITORIAL_URL_PREFIXES[field];
 }
 
 export interface DigestEditorial {
@@ -187,6 +223,23 @@ export interface ResolvedEditorial {
     url: string;
     coverUrl?: string;
   };
+}
+
+export interface EditorialUnresolved {
+  field:
+    | "featured_happenings_refs"
+    | "member_spotlight_ref"
+    | "venue_spotlight_ref"
+    | "blog_feature_ref"
+    | "gallery_feature_ref";
+  url: string;
+  reason: "invalid_url" | "unsupported_domain" | "unsupported_path" | "not_found";
+  index?: number;
+}
+
+export interface ResolvedEditorialDiagnostics {
+  resolved: ResolvedEditorial;
+  unresolved: EditorialUnresolved[];
 }
 
 /**
@@ -288,16 +341,17 @@ export async function deleteEditorial(
  *
  * Silently skips any references that can't be resolved (missing/deleted entities).
  */
-export async function resolveEditorial(
+async function resolveEditorialInternal(
   supabase: SupabaseClient,
   editorial: DigestEditorial
-): Promise<ResolvedEditorial> {
+): Promise<ResolvedEditorialDiagnostics> {
   const resolved: ResolvedEditorial = {};
+  const unresolved: EditorialUnresolved[] = [];
 
   const SITE_URL =
     process.env.PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://denversongwriterscollective.org";
+    CANONICAL_ORIGIN;
 
   // Subject override
   if (editorial.subject_override) {
@@ -309,9 +363,35 @@ export async function resolveEditorial(
     resolved.introNote = editorial.intro_note;
   }
 
-  // Featured happenings (ref-first, UUID fallback)
-  const featuredRefs = editorial.featured_happenings_refs?.filter(Boolean) ?? [];
-  const featuredIds = editorial.featured_happening_ids?.filter(Boolean) ?? [];
+  // Featured happenings (URL refs first, UUID fallback)
+  const featuredRefUrls = editorial.featured_happenings_refs?.filter(Boolean) ?? [];
+  const featuredEntries = featuredRefUrls
+    .map((ref, index) => {
+      const parsed = parseEditorialUrlToSlug(
+        ref,
+        getEditorialUrlPrefix("featured_happenings_refs")
+      );
+      if (!parsed.slug) {
+        unresolved.push({
+          field: "featured_happenings_refs",
+          url: parsed.canonicalUrl || (parsed.legacy ? "" : ref),
+          reason: parsed.error || "invalid_url",
+          index,
+        });
+        return null;
+      }
+      return {
+        slug: parsed.slug,
+        url: parsed.canonicalUrl || ref,
+        index,
+      };
+    })
+    .filter(Boolean) as Array<{ slug: string; url: string; index: number }>;
+
+  const featuredFallbackIds = editorial.featured_happening_ids?.filter(Boolean) ?? [];
+  const featuredRefs = featuredEntries.length > 0
+    ? featuredEntries.map((entry) => entry.slug)
+    : featuredFallbackIds;
 
   const fetchFeaturedEvents = async (refs: string[]) => {
     type EventRow = {
@@ -363,16 +443,7 @@ export async function resolveEditorial(
       }
     }
 
-    const ordered = refs
-      .map((ref) => {
-        if (isUUID(ref)) {
-          return eventsById.get(ref) || null;
-        }
-        return eventsBySlug.get(ref) || eventsById.get(ref) || null;
-      })
-      .filter(Boolean) as EventRow[];
-
-    return ordered;
+    return { eventsById, eventsBySlug };
   };
 
   const EVENT_TYPE_EMOJI: Record<string, string> = {
@@ -387,46 +458,108 @@ export async function resolveEditorial(
     other: "📅",
   };
 
-  const featuredEvents =
-    featuredRefs.length > 0
-      ? await fetchFeaturedEvents(featuredRefs)
-      : featuredIds.length > 0
-        ? await fetchFeaturedEvents(featuredIds)
-        : [];
+  if (featuredRefs.length > 0) {
+    const { eventsById, eventsBySlug } = await fetchFeaturedEvents(featuredRefs);
+    const orderedEvents: Array<{
+      entry: { slug: string; url: string };
+      event: { id: string; title: string; slug: string | null; event_date: string | null; start_time: string | null; event_type: string; cover_image_url: string | null; venues: { id: string; name: string; slug: string | null; website_url: string | null } | { id: string; name: string; slug: string | null; website_url: string | null }[] | null };
+    }> = [];
 
-  if (featuredEvents.length > 0) {
-    resolved.featuredHappenings = featuredEvents.map((e) => {
-      const venue = Array.isArray(e.venues) ? e.venues[0] : e.venues;
-      const venueSlugOrId = venue?.slug || venue?.id || null;
-      const venueInternalUrl = venueSlugOrId
-        ? `${SITE_URL}/venues/${venueSlugOrId}`
-        : undefined;
-      const venueUrl = venue?.website_url || venueInternalUrl;
-      return {
-        title: e.title,
-        url: `${SITE_URL}/events/${e.slug || e.id}`,
-        venue: venue?.name || undefined,
-        venueUrl: venueUrl || undefined,
-        date: e.event_date || undefined,
-        time: e.start_time || undefined,
-        emoji: EVENT_TYPE_EMOJI[e.event_type] || "📅",
-        coverUrl: e.cover_image_url || undefined,
-      };
-    });
+    if (featuredEntries.length > 0) {
+      for (const entry of featuredEntries) {
+        const event = isUUID(entry.slug)
+          ? eventsById.get(entry.slug) || null
+          : eventsBySlug.get(entry.slug) || eventsById.get(entry.slug) || null;
+        if (!event) {
+          unresolved.push({
+            field: "featured_happenings_refs",
+            url: entry.url,
+            reason: "not_found",
+          });
+          continue;
+        }
+        orderedEvents.push({ entry, event });
+      }
+    } else {
+      for (const id of featuredFallbackIds) {
+        const event = eventsById.get(id);
+        if (event) {
+          orderedEvents.push({
+            entry: { slug: id, url: "" },
+            event,
+          });
+        }
+      }
+    }
+
+    if (orderedEvents.length > 0) {
+      resolved.featuredHappenings = orderedEvents.map(({ event }) => {
+        const venue = Array.isArray(event.venues) ? event.venues[0] : event.venues;
+        const venueSlugOrId = venue?.slug || venue?.id || null;
+        const venueInternalUrl = venueSlugOrId
+          ? `${SITE_URL}/venues/${venueSlugOrId}`
+          : undefined;
+        const venueUrl = venue?.website_url || venueInternalUrl;
+        return {
+          title: event.title,
+          url: `${SITE_URL}/events/${event.slug || event.id}`,
+          venue: venue?.name || undefined,
+          venueUrl: venueUrl || undefined,
+          date: event.event_date || undefined,
+          time: event.start_time || undefined,
+          emoji: EVENT_TYPE_EMOJI[event.event_type] || "📅",
+          coverUrl: event.cover_image_url || undefined,
+        };
+      });
+    }
   }
 
-  // Member spotlight — supports both UUID and slug lookups
-  const memberRef = editorial.member_spotlight_ref || editorial.member_spotlight_id;
-  if (memberRef) {
+  // Member spotlight — URL ref first, UUID fallback
+  if (editorial.member_spotlight_ref) {
+    const parsed = parseEditorialUrlToSlug(
+      editorial.member_spotlight_ref,
+      getEditorialUrlPrefix("member_spotlight_ref")
+    );
+    if (!parsed.slug) {
+      unresolved.push({
+        field: "member_spotlight_ref",
+        url: parsed.canonicalUrl || (parsed.legacy ? "" : editorial.member_spotlight_ref),
+        reason: parsed.error || "invalid_url",
+      });
+    } else {
+      const memberQuery = supabase
+        .from("profiles")
+        .select("id, full_name, slug, avatar_url, bio");
+      const { data: profile } = isUUID(parsed.slug)
+        ? await memberQuery.eq("id", parsed.slug).maybeSingle()
+        : await memberQuery.eq("slug", parsed.slug).maybeSingle();
+
+      if (profile) {
+        resolved.memberSpotlight = {
+          name: profile.full_name || "Community Member",
+          url: `${SITE_URL}/songwriters/${profile.slug || profile.id}`,
+          avatarUrl: profile.avatar_url || undefined,
+          bio: profile.bio
+            ? profile.bio.length > 150
+              ? profile.bio.substring(0, 147) + "..."
+              : profile.bio
+            : undefined,
+        };
+      } else {
+        unresolved.push({
+          field: "member_spotlight_ref",
+          url: parsed.canonicalUrl || "",
+          reason: "not_found",
+        });
+      }
+    }
+  } else if (editorial.member_spotlight_id) {
     const memberQuery = supabase
       .from("profiles")
       .select("id, full_name, slug, avatar_url, bio");
-
-    // Query by id if UUID, otherwise by slug
-    const { data: profile } = isUUID(memberRef)
-      ? await memberQuery.eq("id", memberRef).maybeSingle()
-      : await memberQuery.eq("slug", memberRef).maybeSingle();
-
+    const { data: profile } = await memberQuery
+      .eq("id", editorial.member_spotlight_id)
+      .maybeSingle();
     if (profile) {
       resolved.memberSpotlight = {
         name: profile.full_name || "Community Member",
@@ -441,18 +574,49 @@ export async function resolveEditorial(
     }
   }
 
-  // Venue spotlight — supports both UUID and slug lookups
-  const venueRef = editorial.venue_spotlight_ref || editorial.venue_spotlight_id;
-  if (venueRef) {
+  // Venue spotlight — URL ref first, UUID fallback
+  if (editorial.venue_spotlight_ref) {
+    const parsed = parseEditorialUrlToSlug(
+      editorial.venue_spotlight_ref,
+      getEditorialUrlPrefix("venue_spotlight_ref")
+    );
+    if (!parsed.slug) {
+      unresolved.push({
+        field: "venue_spotlight_ref",
+        url: parsed.canonicalUrl || (parsed.legacy ? "" : editorial.venue_spotlight_ref),
+        reason: parsed.error || "invalid_url",
+      });
+    } else {
+      const venueQuery = supabase
+        .from("venues")
+        .select("id, name, slug, cover_image_url, city, state, website_url");
+      const { data: venue } = isUUID(parsed.slug)
+        ? await venueQuery.eq("id", parsed.slug).maybeSingle()
+        : await venueQuery.eq("slug", parsed.slug).maybeSingle();
+
+      if (venue) {
+        resolved.venueSpotlight = {
+          name: venue.name,
+          url: `${SITE_URL}/venues/${venue.slug || venue.id}`,
+          coverUrl: venue.cover_image_url || undefined,
+          city: [venue.city, venue.state].filter(Boolean).join(", ") || undefined,
+          websiteUrl: venue.website_url || undefined,
+        };
+      } else {
+        unresolved.push({
+          field: "venue_spotlight_ref",
+          url: parsed.canonicalUrl || "",
+          reason: "not_found",
+        });
+      }
+    }
+  } else if (editorial.venue_spotlight_id) {
     const venueQuery = supabase
       .from("venues")
       .select("id, name, slug, cover_image_url, city, state, website_url");
-
-    // Query by id if UUID, otherwise by slug
-    const { data: venue } = isUUID(venueRef)
-      ? await venueQuery.eq("id", venueRef).maybeSingle()
-      : await venueQuery.eq("slug", venueRef).maybeSingle();
-
+    const { data: venue } = await venueQuery
+      .eq("id", editorial.venue_spotlight_id)
+      .maybeSingle();
     if (venue) {
       resolved.venueSpotlight = {
         name: venue.name,
@@ -464,16 +628,46 @@ export async function resolveEditorial(
     }
   }
 
-  // Blog feature
-  const blogRef = editorial.blog_feature_ref || editorial.blog_feature_slug;
-  if (blogRef) {
+  // Blog feature — URL ref first, slug fallback
+  if (editorial.blog_feature_ref) {
+    const parsed = parseEditorialUrlToSlug(
+      editorial.blog_feature_ref,
+      getEditorialUrlPrefix("blog_feature_ref")
+    );
+    if (!parsed.slug) {
+      unresolved.push({
+        field: "blog_feature_ref",
+        url: parsed.canonicalUrl || (parsed.legacy ? "" : editorial.blog_feature_ref),
+        reason: parsed.error || "invalid_url",
+      });
+    } else {
+      const { data: post } = await supabase
+        .from("blog_posts")
+        .select("slug, title, excerpt")
+        .eq("slug", parsed.slug)
+        .eq("is_published", true)
+        .maybeSingle();
+      if (post) {
+        resolved.blogFeature = {
+          title: post.title,
+          url: `${SITE_URL}/blog/${post.slug}`,
+          excerpt: post.excerpt || undefined,
+        };
+      } else {
+        unresolved.push({
+          field: "blog_feature_ref",
+          url: parsed.canonicalUrl || "",
+          reason: "not_found",
+        });
+      }
+    }
+  } else if (editorial.blog_feature_slug) {
     const { data: post } = await supabase
       .from("blog_posts")
       .select("slug, title, excerpt")
-      .eq("slug", blogRef)
+      .eq("slug", editorial.blog_feature_slug)
       .eq("is_published", true)
       .maybeSingle();
-
     if (post) {
       resolved.blogFeature = {
         title: post.title,
@@ -483,16 +677,46 @@ export async function resolveEditorial(
     }
   }
 
-  // Gallery feature
-  const galleryRef = editorial.gallery_feature_ref || editorial.gallery_feature_slug;
-  if (galleryRef) {
+  // Gallery feature — URL ref first, slug fallback
+  if (editorial.gallery_feature_ref) {
+    const parsed = parseEditorialUrlToSlug(
+      editorial.gallery_feature_ref,
+      getEditorialUrlPrefix("gallery_feature_ref")
+    );
+    if (!parsed.slug) {
+      unresolved.push({
+        field: "gallery_feature_ref",
+        url: parsed.canonicalUrl || (parsed.legacy ? "" : editorial.gallery_feature_ref),
+        reason: parsed.error || "invalid_url",
+      });
+    } else {
+      const { data: album } = await supabase
+        .from("gallery_albums")
+        .select("slug, title, cover_image_url")
+        .eq("slug", parsed.slug)
+        .eq("is_published", true)
+        .maybeSingle();
+      if (album) {
+        resolved.galleryFeature = {
+          title: album.title,
+          url: `${SITE_URL}/gallery/${album.slug}`,
+          coverUrl: album.cover_image_url || undefined,
+        };
+      } else {
+        unresolved.push({
+          field: "gallery_feature_ref",
+          url: parsed.canonicalUrl || "",
+          reason: "not_found",
+        });
+      }
+    }
+  } else if (editorial.gallery_feature_slug) {
     const { data: album } = await supabase
       .from("gallery_albums")
       .select("slug, title, cover_image_url")
-      .eq("slug", galleryRef)
+      .eq("slug", editorial.gallery_feature_slug)
       .eq("is_published", true)
       .maybeSingle();
-
     if (album) {
       resolved.galleryFeature = {
         title: album.title,
@@ -502,5 +726,20 @@ export async function resolveEditorial(
     }
   }
 
+  return { resolved, unresolved };
+}
+
+export async function resolveEditorial(
+  supabase: SupabaseClient,
+  editorial: DigestEditorial
+): Promise<ResolvedEditorial> {
+  const { resolved } = await resolveEditorialInternal(supabase, editorial);
   return resolved;
+}
+
+export async function resolveEditorialWithDiagnostics(
+  supabase: SupabaseClient,
+  editorial: DigestEditorial
+): Promise<ResolvedEditorialDiagnostics> {
+  return resolveEditorialInternal(supabase, editorial);
 }

@@ -33,7 +33,6 @@ export async function GET() {
 
   const serviceClient = createServiceRoleClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (serviceClient as any)
     .from("digest_send_log")
     .select("*")

@@ -440,40 +440,28 @@ describe("Part B: Editorial Layer", () => {
       );
     });
 
-    it("should resolve member spotlight from profiles table (supports UUID or slug)", () => {
+    it("should resolve member spotlight from profiles table using URL parsing", () => {
       expect(editorialSource).toContain('.from("profiles")');
-      // GTM-3.1: Now supports both UUID and slug lookups via memberRef
-      expect(editorialSource).toContain("memberRef");
-      expect(editorialSource).toContain('.eq("id", memberRef)');
-      expect(editorialSource).toContain('.eq("slug", memberRef)');
+      expect(editorialSource).toContain("member_spotlight_ref");
+      expect(editorialSource).toContain("parseEditorialUrlToSlug");
     });
 
-    it("should resolve venue spotlight from venues table (supports UUID or slug)", () => {
+    it("should resolve venue spotlight from venues table using URL parsing", () => {
       expect(editorialSource).toContain('.from("venues")');
-      // GTM-3.1: Now supports both UUID and slug lookups via venueRef
-      expect(editorialSource).toContain("venueRef");
-      expect(editorialSource).toContain('.eq("id", venueRef)');
-      expect(editorialSource).toContain('.eq("slug", venueRef)');
+      expect(editorialSource).toContain("venue_spotlight_ref");
+      expect(editorialSource).toContain("parseEditorialUrlToSlug");
     });
 
     it("should resolve blog feature by slug from blog_posts table", () => {
       expect(editorialSource).toContain('.from("blog_posts")');
-      expect(editorialSource).toContain(
-        "const blogRef = editorial.blog_feature_ref || editorial.blog_feature_slug"
-      );
-      expect(editorialSource).toContain(
-        '.eq("slug", blogRef)'
-      );
+      expect(editorialSource).toContain("blog_feature_ref");
+      expect(editorialSource).toContain('.eq("slug", parsed.slug)');
     });
 
     it("should resolve gallery feature by slug from gallery_albums table", () => {
       expect(editorialSource).toContain('.from("gallery_albums")');
-      expect(editorialSource).toContain(
-        "const galleryRef = editorial.gallery_feature_ref || editorial.gallery_feature_slug"
-      );
-      expect(editorialSource).toContain(
-        '.eq("slug", galleryRef)'
-      );
+      expect(editorialSource).toContain("gallery_feature_ref");
+      expect(editorialSource).toContain('.eq("slug", parsed.slug)');
     });
 
     it("blog feature should only resolve published posts", () => {
@@ -504,7 +492,7 @@ describe("Part B: Editorial Layer", () => {
     });
 
     it("should prefer slug over ID for URLs", () => {
-      expect(editorialSource).toContain("e.slug || e.id");
+      expect(editorialSource).toContain("event.slug || event.id");
       expect(editorialSource).toContain("profile.slug || profile.id");
       expect(editorialSource).toContain("venue.slug || venue.id");
     });
@@ -728,9 +716,9 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("should import getEditorial and resolveEditorial", () => {
+    it("should import getEditorial and resolveEditorialWithDiagnostics", () => {
       expect(previewSource).toContain("getEditorial");
-      expect(previewSource).toContain("resolveEditorial");
+      expect(previewSource).toContain("resolveEditorialWithDiagnostics");
     });
 
     it("should accept week_key search param", () => {
@@ -741,14 +729,18 @@ describe("Part B: Editorial Layer", () => {
       expect(previewSource).toContain("computeWeekKey()");
     });
 
-    it("resolveEditorial should be called with (serviceClient, editorial) — two args", () => {
+    it("resolveEditorialWithDiagnostics should be called with (serviceClient, editorial)", () => {
       expect(previewSource).toContain(
-        "resolveEditorial(serviceClient, editorial)"
+        "resolveEditorialWithDiagnostics(serviceClient, editorial)"
       );
     });
 
     it("should return hasEditorial boolean in response", () => {
       expect(previewSource).toContain("hasEditorial: !!resolvedEditorial");
+    });
+
+    it("should return unresolved diagnostics in response", () => {
+      expect(previewSource).toContain("unresolved");
     });
 
     it("should return weekKey in response", () => {
@@ -1015,94 +1007,90 @@ describe("Part B: Editorial Layer", () => {
     });
   });
 
-  describe("GTM-3.1: Slug/URL normalization helpers", () => {
+  describe("GTM-3.1: URL-only normalization helpers", () => {
     const editorialSource = fs.readFileSync(
       path.join(SRC_DIR, "lib/digest/digestEditorial.ts"),
       "utf-8"
     );
 
-    it("exports normalizeEditorialRef function", () => {
-      expect(editorialSource).toContain("export function normalizeEditorialRef");
+    it("exports normalizeEditorialUrl function", () => {
+      expect(editorialSource).toContain("export function normalizeEditorialUrl");
     });
 
-    it("has isUUID helper function", () => {
-      expect(editorialSource).toContain("function isUUID(str: string): boolean");
+    it("exports normalizeEditorialUrls function", () => {
+      expect(editorialSource).toContain("export function normalizeEditorialUrls");
     });
 
-    it("isUUID uses correct UUID regex pattern", () => {
+    it("exports getEditorialUrlPrefix function", () => {
+      expect(editorialSource).toContain("export function getEditorialUrlPrefix");
+    });
+
+    it("uses canonical DSC host", () => {
+      expect(editorialSource).toContain("CANONICAL_HOST");
+    });
+
+    it("normalizes /songwriters/ route prefix", () => {
+      expect(editorialSource).toContain('member_spotlight_ref: "/songwriters/"');
+    });
+
+    it("normalizes /venues/ route prefix", () => {
+      expect(editorialSource).toContain('venue_spotlight_ref: "/venues/"');
+    });
+
+    it("normalizes /events/ route prefix", () => {
+      expect(editorialSource).toContain('featured_happenings_refs: "/events/"');
+    });
+
+    it("normalizes /blog/ route prefix", () => {
+      expect(editorialSource).toContain('blog_feature_ref: "/blog/"');
+    });
+
+    it("normalizes /gallery/ route prefix", () => {
+      expect(editorialSource).toContain('gallery_feature_ref: "/gallery/"');
+    });
+
+    it("normalizeEditorialUrl handles http/https and www URLs", () => {
+      expect(editorialSource).toContain('input.startsWith("www.")');
+      expect(editorialSource).toContain('input.startsWith("http://")');
+      expect(editorialSource).toContain('input.startsWith("https://")');
+    });
+  });
+
+  describe("GTM-3.1: Resolver supports URL parsing with legacy fallback", () => {
+    const editorialSource = fs.readFileSync(
+      path.join(SRC_DIR, "lib/digest/digestEditorial.ts"),
+      "utf-8"
+    );
+
+    it("exports resolveEditorialWithDiagnostics", () => {
+      expect(editorialSource).toContain("export async function resolveEditorialWithDiagnostics");
+    });
+
+    it("parses URLs for member spotlight", () => {
+      expect(editorialSource).toContain('getEditorialUrlPrefix("member_spotlight_ref")');
+    });
+
+    it("parses URLs for venue spotlight", () => {
+      expect(editorialSource).toContain('getEditorialUrlPrefix("venue_spotlight_ref")');
+    });
+
+    it("parses URLs for blog and gallery features", () => {
+      expect(editorialSource).toContain('getEditorialUrlPrefix("blog_feature_ref")');
+      expect(editorialSource).toContain('getEditorialUrlPrefix("gallery_feature_ref")');
+    });
+
+    it("parses URLs for featured happenings", () => {
       expect(editorialSource).toContain(
-        "/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i"
+        'getEditorialUrlPrefix("featured_happenings_refs")'
       );
     });
 
-    it("normalizeEditorialRef handles /songwriters/ route pattern", () => {
-      expect(editorialSource).toContain("/songwriters/");
-    });
-
-    it("normalizeEditorialRef handles /venues/ route pattern", () => {
-      expect(editorialSource).toContain("/venues/");
-    });
-
-    it("normalizeEditorialRef handles /events/ route pattern", () => {
-      expect(editorialSource).toContain("/events/");
-    });
-
-    it("normalizeEditorialRef handles /blog/ route pattern", () => {
-      expect(editorialSource).toContain("/blog/");
-    });
-
-    it("normalizeEditorialRef handles /gallery/ route pattern", () => {
-      expect(editorialSource).toContain("/gallery/");
-    });
-
-    it("normalizeEditorialRef handles full URLs with http/https", () => {
-      expect(editorialSource).toContain('stripped.startsWith("http://")');
-      expect(editorialSource).toContain('stripped.startsWith("https://")');
-    });
-
-    it("normalizeEditorialRef returns null for empty/null input", () => {
-      expect(editorialSource).toContain("if (!input) return { value: null }");
-    });
-
-    it("normalizeEditorialRef allows bare slugs/UUIDs", () => {
-      expect(editorialSource).toContain("!stripped.includes(\"/\")");
-    });
-
-    it("normalization only strips DSC domains", () => {
-      expect(editorialSource).toContain("denversongwriterscollective.org");
+    it("uses isUUID for legacy fallbacks", () => {
+      expect(editorialSource).toContain("isUUID(parsed.slug)");
     });
   });
 
-  describe("GTM-3.1: Resolver supports UUID and slug lookups", () => {
-    const editorialSource = fs.readFileSync(
-      path.join(SRC_DIR, "lib/digest/digestEditorial.ts"),
-      "utf-8"
-    );
-
-    it("member spotlight resolves by id for UUIDs", () => {
-      expect(editorialSource).toContain('memberQuery.eq("id", memberRef)');
-    });
-
-    it("member spotlight resolves by slug for non-UUIDs", () => {
-      expect(editorialSource).toContain('memberQuery.eq("slug", memberRef)');
-    });
-
-    it("venue spotlight resolves by id for UUIDs", () => {
-      expect(editorialSource).toContain('venueQuery.eq("id", venueRef)');
-    });
-
-    it("venue spotlight resolves by slug for non-UUIDs", () => {
-      expect(editorialSource).toContain('venueQuery.eq("slug", venueRef)');
-    });
-
-    it("uses isUUID to determine lookup strategy", () => {
-      // Should use conditional with isUUID
-      expect(editorialSource).toContain("isUUID(memberRef)");
-      expect(editorialSource).toContain("isUUID(venueRef)");
-    });
-  });
-
-  describe("GTM-3.1: Admin UI accepts slugs and URLs", () => {
+  describe("GTM-3.1: Admin UI accepts URLs only", () => {
     const adminEmailPage = fs.readFileSync(
       path.join(
         SRC_DIR,
@@ -1111,25 +1099,31 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("member spotlight label mentions slug or URL", () => {
-      expect(adminEmailPage).toContain("slug or URL");
+    it("member spotlight label mentions URL", () => {
+      expect(adminEmailPage).toContain("Member Spotlight URL");
     });
 
-    it("venue spotlight label mentions slug or URL", () => {
-      expect(adminEmailPage).toContain("slug or URL");
+    it("venue spotlight label mentions URL", () => {
+      expect(adminEmailPage).toContain("Venue Spotlight URL");
     });
 
     it("member spotlight placeholder shows example with full URL", () => {
-      expect(adminEmailPage).toContain("https://denversongwriterscollective.org/songwriters/");
+      expect(adminEmailPage).toContain("Paste a URL from this site. Example:");
     });
 
     it("venue spotlight placeholder shows example with full URL", () => {
-      expect(adminEmailPage).toContain("https://denversongwriterscollective.org/venues/");
+      expect(adminEmailPage).toContain("Paste a URL from this site. Example:");
     });
 
-    it("blog and gallery labels mention slug or URL", () => {
-      expect(adminEmailPage).toContain("Blog Feature (slug or URL)");
-      expect(adminEmailPage).toContain("Gallery Feature (slug or URL)");
+    it("blog and gallery labels mention URL", () => {
+      expect(adminEmailPage).toContain("Blog Feature URL");
+      expect(adminEmailPage).toContain("Gallery Feature URL");
+    });
+
+    it("does not reference legacy *_id payload keys", () => {
+      expect(adminEmailPage).not.toContain("member_spotlight_id");
+      expect(adminEmailPage).not.toContain("venue_spotlight_id");
+      expect(adminEmailPage).not.toContain("featured_happening_ids");
     });
   });
 
@@ -1176,9 +1170,14 @@ describe("Part B: Editorial Layer", () => {
       // Template includes venue spotlight section
       expect(templateSource).toContain("venueSpotlight");
     });
+
+    it("featured happenings include venue links via subtitleHtml", () => {
+      expect(templateSource).toContain("subtitleHtml");
+      expect(templateSource).toContain("f.venueUrl");
+    });
   });
 
-  describe("GTM-3.1: Preview and send use same editorial resolution", () => {
+  describe("GTM-3.1: Preview includes diagnostics; send/cron use resolveEditorial", () => {
     const previewRoute = fs.readFileSync(
       path.join(SRC_DIR, "app/api/admin/digest/preview/route.ts"),
       "utf-8"
@@ -1192,8 +1191,8 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("preview route imports resolveEditorial", () => {
-      expect(previewRoute).toContain("resolveEditorial");
+    it("preview route imports resolveEditorialWithDiagnostics", () => {
+      expect(previewRoute).toContain("resolveEditorialWithDiagnostics");
     });
 
     it("send route imports resolveEditorial", () => {
@@ -1204,8 +1203,7 @@ describe("Part B: Editorial Layer", () => {
       expect(cronRoute).toContain("resolveEditorial");
     });
 
-    it("all three routes use the same resolveEditorial function", () => {
-      // All should import from the same module
+    it("all routes import from digestEditorial module", () => {
       expect(previewRoute).toContain("from \"@/lib/digest/digestEditorial\"");
       expect(sendRoute).toContain("from \"@/lib/digest/digestEditorial\"");
       expect(cronRoute).toContain("from \"@/lib/digest/digestEditorial\"");
