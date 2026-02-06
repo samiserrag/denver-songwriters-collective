@@ -165,22 +165,22 @@ export default function AdminEmailPage() {
     setEditorialSaving(true);
     setEditorialResult(null);
     try {
-      // Build payload — only include non-empty fields
+      // Build payload — send all fields so clears persist
       const payload: Record<string, unknown> = {
         weekKey: editorialWeekKey,
         digestType: "weekly_happenings",
+        subject_override: editorial.subject_override,
+        intro_note: editorial.intro_note,
+        member_spotlight_ref: editorial.member_spotlight_ref,
+        venue_spotlight_ref: editorial.venue_spotlight_ref,
+        blog_feature_ref: editorial.blog_feature_ref,
+        gallery_feature_ref: editorial.gallery_feature_ref,
       };
-      if (editorial.subject_override) payload.subject_override = editorial.subject_override;
-      if (editorial.intro_note) payload.intro_note = editorial.intro_note;
       const featuredRefs = editorial.featured_happenings_refs
         .split("\n")
         .map((ref) => ref.trim())
         .filter(Boolean);
-      if (featuredRefs.length > 0) payload.featured_happenings_refs = featuredRefs;
-      if (editorial.member_spotlight_ref) payload.member_spotlight_ref = editorial.member_spotlight_ref;
-      if (editorial.venue_spotlight_ref) payload.venue_spotlight_ref = editorial.venue_spotlight_ref;
-      if (editorial.blog_feature_ref) payload.blog_feature_ref = editorial.blog_feature_ref;
-      if (editorial.gallery_feature_ref) payload.gallery_feature_ref = editorial.gallery_feature_ref;
+      payload.featured_happenings_refs = featuredRefs;
 
       const res = await fetch("/api/admin/digest/editorial", {
         method: "PUT",
@@ -316,10 +316,14 @@ export default function AdminEmailPage() {
     setSendingType(`${digestType}-${mode}`);
     setSendResult(null);
     try {
+      const sendPayload: Record<string, unknown> = { digestType, mode };
+      if (digestType === "weekly_happenings") {
+        sendPayload.weekKey = editorialWeekKey;
+      }
       const res = await fetch("/api/admin/digest/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ digestType, mode }),
+        body: JSON.stringify(sendPayload),
       });
 
       const data = await res.json();

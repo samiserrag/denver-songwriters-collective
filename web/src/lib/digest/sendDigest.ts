@@ -41,9 +41,9 @@ export interface SendDigestResult {
   sent: number;
   failed: number;
   total: number;
-  /** In dryRun mode, the preview HTML for the first recipient */
+  /** In dryRun/test mode, the preview HTML for the first recipient */
   previewHtml?: string;
-  /** In dryRun mode, the preview subject */
+  /** In dryRun/test mode, the preview subject */
   previewSubject?: string;
 }
 
@@ -104,6 +104,8 @@ export async function sendDigestEmails(
       sent: sent ? 1 : 0,
       failed: sent ? 0 : 1,
       total: 1,
+      previewHtml: email.html,
+      previewSubject: email.subject,
     };
   }
 

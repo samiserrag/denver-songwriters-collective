@@ -77,66 +77,137 @@ export function buildEditorialUpsertData(
   }
 
   const normalizedData: Record<string, unknown> = {};
+  const hasField = (field: string) =>
+    Object.prototype.hasOwnProperty.call(editorialData, field);
 
-  if (typeof subject_override === "string") normalizedData.subject_override = subject_override;
-  if (typeof intro_note === "string") normalizedData.intro_note = intro_note;
-  if (typeof member_spotlight_ref === "string" && member_spotlight_ref.trim()) {
-    const normalized = normalizeEditorialUrl(
-      member_spotlight_ref,
-      getEditorialUrlPrefix("member_spotlight_ref")
-    );
-    if (normalized.error) {
+  const normalizeClearableText = (value: unknown): string | null | undefined => {
+    if (typeof value !== "string") return value == null ? null : undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return value;
+  };
+
+  if (hasField("subject_override")) {
+    const normalized = normalizeClearableText(subject_override);
+    if (normalized !== undefined) normalizedData.subject_override = normalized;
+  }
+
+  if (hasField("intro_note")) {
+    const normalized = normalizeClearableText(intro_note);
+    if (normalized !== undefined) normalizedData.intro_note = normalized;
+  }
+
+  if (hasField("member_spotlight_ref")) {
+    if (member_spotlight_ref == null) {
+      normalizedData.member_spotlight_ref = null;
+    } else if (typeof member_spotlight_ref !== "string") {
       return invalidUrl("member_spotlight_ref");
+    } else {
+      const trimmed = member_spotlight_ref.trim();
+      if (!trimmed) {
+        normalizedData.member_spotlight_ref = null;
+      } else {
+        const normalized = normalizeEditorialUrl(
+          trimmed,
+          getEditorialUrlPrefix("member_spotlight_ref")
+        );
+        if (normalized.error) {
+          return invalidUrl("member_spotlight_ref");
+        }
+        normalizedData.member_spotlight_ref = normalized.value;
+      }
     }
-    normalizedData.member_spotlight_ref = normalized.value;
   }
 
-  if (typeof venue_spotlight_ref === "string" && venue_spotlight_ref.trim()) {
-    const normalized = normalizeEditorialUrl(
-      venue_spotlight_ref,
-      getEditorialUrlPrefix("venue_spotlight_ref")
-    );
-    if (normalized.error) {
+  if (hasField("venue_spotlight_ref")) {
+    if (venue_spotlight_ref == null) {
+      normalizedData.venue_spotlight_ref = null;
+    } else if (typeof venue_spotlight_ref !== "string") {
       return invalidUrl("venue_spotlight_ref");
+    } else {
+      const trimmed = venue_spotlight_ref.trim();
+      if (!trimmed) {
+        normalizedData.venue_spotlight_ref = null;
+      } else {
+        const normalized = normalizeEditorialUrl(
+          trimmed,
+          getEditorialUrlPrefix("venue_spotlight_ref")
+        );
+        if (normalized.error) {
+          return invalidUrl("venue_spotlight_ref");
+        }
+        normalizedData.venue_spotlight_ref = normalized.value;
+      }
     }
-    normalizedData.venue_spotlight_ref = normalized.value;
   }
 
-  if (typeof blog_feature_ref === "string" && blog_feature_ref.trim()) {
-    const normalized = normalizeEditorialUrl(
-      blog_feature_ref,
-      getEditorialUrlPrefix("blog_feature_ref")
-    );
-    if (normalized.error) {
+  if (hasField("blog_feature_ref")) {
+    if (blog_feature_ref == null) {
+      normalizedData.blog_feature_ref = null;
+    } else if (typeof blog_feature_ref !== "string") {
       return invalidUrl("blog_feature_ref");
+    } else {
+      const trimmed = blog_feature_ref.trim();
+      if (!trimmed) {
+        normalizedData.blog_feature_ref = null;
+      } else {
+        const normalized = normalizeEditorialUrl(
+          trimmed,
+          getEditorialUrlPrefix("blog_feature_ref")
+        );
+        if (normalized.error) {
+          return invalidUrl("blog_feature_ref");
+        }
+        normalizedData.blog_feature_ref = normalized.value;
+      }
     }
-    normalizedData.blog_feature_ref = normalized.value;
   }
 
-  if (typeof gallery_feature_ref === "string" && gallery_feature_ref.trim()) {
-    const normalized = normalizeEditorialUrl(
-      gallery_feature_ref,
-      getEditorialUrlPrefix("gallery_feature_ref")
-    );
-    if (normalized.error) {
+  if (hasField("gallery_feature_ref")) {
+    if (gallery_feature_ref == null) {
+      normalizedData.gallery_feature_ref = null;
+    } else if (typeof gallery_feature_ref !== "string") {
       return invalidUrl("gallery_feature_ref");
+    } else {
+      const trimmed = gallery_feature_ref.trim();
+      if (!trimmed) {
+        normalizedData.gallery_feature_ref = null;
+      } else {
+        const normalized = normalizeEditorialUrl(
+          trimmed,
+          getEditorialUrlPrefix("gallery_feature_ref")
+        );
+        if (normalized.error) {
+          return invalidUrl("gallery_feature_ref");
+        }
+        normalizedData.gallery_feature_ref = normalized.value;
+      }
     }
-    normalizedData.gallery_feature_ref = normalized.value;
   }
 
-  if (typeof featured_happenings_refs !== "undefined") {
-    if (!Array.isArray(featured_happenings_refs)) {
+  if (hasField("featured_happenings_refs")) {
+    if (featured_happenings_refs == null) {
+      normalizedData.featured_happenings_refs = null;
+    } else if (!Array.isArray(featured_happenings_refs)) {
       return invalidUrl("featured_happenings_refs");
+    } else {
+      const trimmedRefs = (featured_happenings_refs as unknown[])
+        .filter((ref): ref is string => typeof ref === "string")
+        .map((ref) => ref.trim())
+        .filter(Boolean);
+      if (trimmedRefs.length === 0) {
+        normalizedData.featured_happenings_refs = null;
+      } else {
+        const normalized = normalizeEditorialUrls(
+          trimmedRefs,
+          getEditorialUrlPrefix("featured_happenings_refs")
+        );
+        if (normalized.error) {
+          return invalidUrl("featured_happenings_refs", normalized.index);
+        }
+        normalizedData.featured_happenings_refs = normalized.value;
+      }
     }
-
-    const normalized = normalizeEditorialUrls(
-      featured_happenings_refs as string[],
-      getEditorialUrlPrefix("featured_happenings_refs")
-    );
-    if (normalized.error) {
-      return invalidUrl("featured_happenings_refs", normalized.index);
-    }
-    normalizedData.featured_happenings_refs = normalized.value;
   }
 
   return { data: normalizedData };

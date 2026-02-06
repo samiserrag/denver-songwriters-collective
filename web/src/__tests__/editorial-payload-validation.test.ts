@@ -103,4 +103,22 @@ describe("Editorial payload validation", () => {
     expect(result.error?.error).toBe("Invalid URL");
     expect(result.error?.field).toBe("featured_happenings_refs");
   });
+
+  it("clears whitespace-only text fields to null", () => {
+    const result = buildEditorialUpsertData({
+      subject_override: "   ",
+      intro_note: "\n\t",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.data.subject_override).toBeNull();
+    expect(result.data.intro_note).toBeNull();
+  });
+
+  it("clears empty featured refs to null", () => {
+    const result = buildEditorialUpsertData({
+      featured_happenings_refs: [],
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.data.featured_happenings_refs).toBeNull();
+  });
 });

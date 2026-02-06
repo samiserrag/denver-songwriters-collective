@@ -49,9 +49,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { digestType, mode } = body as {
+  const { digestType, mode, weekKey: requestedWeekKey } = body as {
     digestType: DigestType;
     mode: "full" | "test";
+    weekKey?: string;
   };
 
   if (!digestType || !["weekly_happenings", "weekly_open_mics"].includes(digestType)) {
@@ -69,6 +70,10 @@ export async function POST(request: NextRequest) {
   }
 
   const serviceClient = createServiceRoleClient();
+  const weekKey =
+    typeof requestedWeekKey === "string" && requestedWeekKey.trim()
+      ? requestedWeekKey.trim()
+      : computeWeekKey();
 
   try {
     // Get admin's email for test mode
@@ -97,7 +102,7 @@ export async function POST(request: NextRequest) {
         const digestData = await getUpcomingHappenings(serviceClient);
 
         // GTM-3: Resolve editorial for test send
-        const weekKey = computeWeekKey();
+        console.log(`[AdminTestSend] Using weekKey ${weekKey}`);
         let resolvedEditorial: ResolvedEditorial | undefined;
         try {
           const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
@@ -130,7 +135,10 @@ export async function POST(request: NextRequest) {
           sent: result.sent,
           failed: result.failed,
           sentTo: adminProfile.email,
+          weekKey,
           hasEditorial: !!resolvedEditorial,
+          previewHtml: result.previewHtml,
+          previewSubject: result.previewSubject,
         });
       } else {
         const digestData = await getUpcomingOpenMics(serviceClient);
@@ -156,12 +164,15 @@ export async function POST(request: NextRequest) {
           sent: result.sent,
           failed: result.failed,
           sentTo: adminProfile.email,
+          weekKey,
+          previewHtml: result.previewHtml,
+          previewSubject: result.previewSubject,
         });
       }
     }
 
     // Full mode — respects idempotency lock
-    const weekKey = computeWeekKey();
+    console.log(`[AdminFullSend] Using weekKey ${weekKey}`);
 
     if (digestType === "weekly_happenings") {
       const digestData = await getUpcomingHappenings(serviceClient);

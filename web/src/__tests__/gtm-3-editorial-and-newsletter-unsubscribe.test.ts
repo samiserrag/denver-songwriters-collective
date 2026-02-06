@@ -1127,11 +1127,19 @@ describe("Part B: Editorial Layer", () => {
     });
 
     it("builds editorial payload with *_ref keys only", () => {
-      expect(adminEmailPage).toContain("payload.member_spotlight_ref");
-      expect(adminEmailPage).toContain("payload.venue_spotlight_ref");
-      expect(adminEmailPage).toContain("payload.blog_feature_ref");
-      expect(adminEmailPage).toContain("payload.gallery_feature_ref");
-      expect(adminEmailPage).toContain("payload.featured_happenings_refs");
+      expect(adminEmailPage).toContain(
+        "member_spotlight_ref: editorial.member_spotlight_ref"
+      );
+      expect(adminEmailPage).toContain(
+        "venue_spotlight_ref: editorial.venue_spotlight_ref"
+      );
+      expect(adminEmailPage).toContain(
+        "blog_feature_ref: editorial.blog_feature_ref"
+      );
+      expect(adminEmailPage).toContain(
+        "gallery_feature_ref: editorial.gallery_feature_ref"
+      );
+      expect(adminEmailPage).toContain("featured_happenings_refs = featuredRefs");
       expect(adminEmailPage).not.toContain("payload.member_spotlight_id");
       expect(adminEmailPage).not.toContain("payload.venue_spotlight_id");
       expect(adminEmailPage).not.toContain("payload.blog_feature_slug");
