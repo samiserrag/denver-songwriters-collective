@@ -55,6 +55,16 @@ When Codex (senior architect) and Opus (junior architect + executor) collaborate
 - No commits/push, no unrelated refactors, no architecture changes without approval
 - See [GOVERNANCE.md §Subordinate Architect Review Mode](./docs/GOVERNANCE.md) for full protocol
 
+### Single-Writer Collaboration Protocol
+
+When Codex and Opus are paired on one tract:
+- Opus is the sole writer (edits/stage/commit/push) during active execution cycles
+- Codex is read-only (investigation, critique, approve/hold decisions)
+- Each cycle is SHA-locked (report branch + HEAD SHA at start, new SHA at end)
+- Do not run parallel implementation branches for the same tract
+- Any unexpected branch/SHA drift requires immediate STOP + re-sync
+- See [GOVERNANCE.md §Single-Writer Collaboration Protocol](./docs/GOVERNANCE.md) for canonical rules
+
 ### Definition of Done (PR Checklist)
 
 Before any PR merges:

@@ -805,32 +805,37 @@ export function HappeningCard({
           {/* Meta line: Time · Venue, City · Cost - promoted visibility */}
           {/* Phase 4.52: Venue name is linkable when venue has google_maps_url or website_url */}
           {/* Phase 5.04: City/state always shown after venue name */}
-          <p className="text-sm md:text-base text-[var(--color-text-secondary)] truncate">
-            {startTime || "NA"} ·{" "}
-            {isOnlineOnly ? (
-              "Online"
-            ) : isHybrid && venueName ? (
-              <>
-                <VenueLink
-                  name={venueName}
-                  venue={isCustomLocation ? null : venueForLink}
-                />
-                {venueCityState && <>, {venueCityState}</>}
-                {" + Online"}
-              </>
-            ) : venueName ? (
-              <>
-                <VenueLink
-                  name={venueName}
-                  venue={isCustomLocation ? null : venueForLink}
-                />
-                {venueCityState && <>, {venueCityState}</>}
-              </>
-            ) : (
-              "—"
-            )}{" "}
-            · {getCostDisplay()}
-          </p>
+          {/* Phase 6: Mobile multiline — wraps on small screens so city/cost are never hidden */}
+          <div className="text-sm md:text-base text-[var(--color-text-secondary)] flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
+            <span className="shrink-0">{startTime || "NA"}</span>
+            <span className="hidden md:inline" aria-hidden="true">·</span>
+            <span className="min-w-0">
+              {isOnlineOnly ? (
+                "Online"
+              ) : isHybrid && venueName ? (
+                <>
+                  <VenueLink
+                    name={venueName}
+                    venue={isCustomLocation ? null : venueForLink}
+                  />
+                  {venueCityState && <>, {venueCityState}</>}
+                  {" + Online"}
+                </>
+              ) : venueName ? (
+                <>
+                  <VenueLink
+                    name={venueName}
+                    venue={isCustomLocation ? null : venueForLink}
+                  />
+                  {venueCityState && <>, {venueCityState}</>}
+                </>
+              ) : (
+                "NA"
+              )}
+            </span>
+            <span className="hidden md:inline" aria-hidden="true">·</span>
+            <span className="shrink-0">{getCostDisplay()}</span>
+          </div>
 
           {/* Chips row - Tier 3 type/context pills */}
           <div className="flex items-center gap-1 flex-wrap">

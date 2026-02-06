@@ -360,6 +360,84 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 
 ---
 
+## Contract: Cross-Surface Event Consistency (Phase 6)
+
+> **Track Status:** February 2026
+
+### Canonical Discovery Surfaces
+
+| Surface | Path | Purpose |
+|---------|------|---------|
+| Homepage "Tonight" | `app/page.tsx` | Today's events preview |
+| `/happenings` | `app/happenings/page.tsx` | Full discovery timeline/series/map |
+| Weekly digest | `lib/digest/weeklyHappenings.ts` | Email digest (allowed divergence) |
+
+### Shared Contract Module
+
+**File:** `web/src/lib/happenings/tonightContract.ts`
+
+All primary discovery surfaces (Homepage, `/happenings`) MUST use:
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `DISCOVERY_STATUS_FILTER` | `["active", "needs_verification", "unverified"]` | Canonical status set for public display |
+| `DISCOVERY_VENUE_SELECT` | `venue:venues!left(id, slug, name, address, city, state, google_maps_url, website_url)` | Standard venue join (no coords) |
+| `DISCOVERY_VENUE_SELECT_WITH_COORDS` | Same + `latitude, longitude` | Extended venue join (map view) |
+
+### Venue Join Alias Rule
+
+PostgREST venue joins MUST use the singular alias `venue:venues!left(...)` so the result is `event.venue` (object), NOT `event.venues` (array). Components read `event.venue.city` / `event.venue.state`.
+
+**Forbidden:** `venues!left(...)` (produces `event.venues` array — breaks HappeningCard city/state display).
+
+### Status Filter Rule
+
+Discovery surfaces MUST use `DISCOVERY_STATUS_FILTER` for their default query. Inline status arrays are forbidden on discovery surfaces.
+
+**Allowed divergence:** The weekly digest intentionally uses `"active"` only. This is documented and permitted.
+
+### Override Pipeline Rule
+
+Any surface that displays "Tonight" or "Today" events from recurring series MUST:
+
+1. Fetch `occurrence_overrides` for the relevant date range
+2. Build an override map via `buildOverrideMap()`
+3. Pass the map to `expandAndGroupEvents()` via the `overrideMap` option
+4. Filter out `isCancelled` entries from public display
+5. Pass `override`, `isCancelled`, and `overrideVenueData` props to card components
+
+### Missing Value Standard (Cross-Surface)
+
+All discovery surfaces MUST render missing decision-critical values as `NA`:
+
+| Surface | Missing Venue | Missing Cost |
+|---------|---------------|-------------|
+| HappeningCard | `NA` | `NA` |
+| SeriesCard | `NA` | N/A (no cost display) |
+| Digest email | Omitted (allowed divergence) |
+
+**Forbidden tokens for missing values:** `—` (em dash), `TBD`, `Location TBD`, blank/empty.
+
+### Allowed vs Forbidden Cross-Surface Differences
+
+| Difference | Allowed? | Rationale |
+|------------|----------|-----------|
+| Digest uses `"active"` only | Yes | Digest is curated; unverified events excluded by design |
+| Digest omits unknown cost | Yes | Email space constraints; cosmetic-to-correctness boundary |
+| Homepage caps at MAX_EVENTS before expansion | Yes | Performance guard for high-traffic page |
+| `/happenings` includes lat/lng in venue select | Yes | Map view requires coordinates; homepage has no map |
+| Homepage vs `/happenings` using different status sets | **No** | Must use shared `DISCOVERY_STATUS_FILTER` |
+| Different venue join aliases across surfaces | **No** | Must use shared `DISCOVERY_VENUE_SELECT*` constants |
+| Missing venue rendered differently per surface | **No** | Must use `NA` everywhere |
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/phase6-cross-surface-consistency.test.ts` | Shared constants, status parity, venue alias, missing value normalization, override pipeline |
+
+---
+
 ## Testing Enforcement
 
 Tests that enforce these contracts:
@@ -371,6 +449,8 @@ Tests that enforce these contracts:
 | Poster thumbnail 3-tier rendering | `src/components/__tests__/card-variants.test.tsx` |
 | MemberCard pill-style chips | `src/components/__tests__/card-variants.test.tsx` |
 | Past event opacity treatment | `src/components/__tests__/card-variants.test.tsx` |
+| Cross-surface status/venue consistency | `src/__tests__/phase6-cross-surface-consistency.test.ts` |
+| Missing value normalization (NA) | `src/__tests__/phase6-cross-surface-consistency.test.ts` |
 
 **Rule:** If a contract affects rendering logic (NA, pill tiers, filters), it should have a test. Tests must enforce the contract language (not old v1 expectations). Stale or contradictory test descriptions must be updated.
 
