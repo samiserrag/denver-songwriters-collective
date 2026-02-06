@@ -120,3 +120,7 @@ Approved and executed URL-only handling:
 3) Resolver: parse stored URLs into slugs and resolve by slug; return unresolved details for preview.
 4) Tests: URL normalization, API validation, resolver behavior, template link contracts.
 5) Build/log verification and manual smoke checklist (see PR checklist).
+
+## Execution Results
+- **Push:** `main` pushed to origin (commit `b9a3367`).
+- **Local build:** `npm --prefix web run build` started and is still running in this environment with no completion output yet. If it times out, check the Vercel build log for definitive pass/fail.
