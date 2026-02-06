@@ -713,7 +713,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Added regression test to ensure blog renders with baseball-card wrapper even when cover is missing.
 - Appended stop-gate addendum documenting blog card investigation.
 
-**Push:** `main` pushed to origin (`<pending>`).
+**Push:** `main` pushed to origin (`578bc71`).
 **Quality gates:**
 - `npm --prefix web run lint` passed.
 - `npm --prefix web test -- --run` passed (`3724/3724`).
