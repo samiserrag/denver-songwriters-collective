@@ -716,6 +716,13 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 **Push:** `main` pushed to origin (`b9a3367`, plus doc update `cf4fbc3`).
 **Build:** Local `npm --prefix web run build` started; no completion output yet in this environment.
 
+### Admin Email Editorial Payload Keys Test (February 2026)
+
+**Summary:** Added a regression test to ensure admin editorial saves only send `*_ref` keys (no legacy `*_id`/`*_slug` payload fields).
+
+**Push:** `main` pushed to origin (`a067fb9`).
+**Build:** `npm --prefix web run build` still running without completion output in this environment.
+
 ### Host Requests Admin Visibility Fix (February 2026)
 
 **Summary:** Admin host requests no longer silently show 0 when data exists.
