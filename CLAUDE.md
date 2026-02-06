@@ -703,6 +703,19 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Post-GTM-3.1 Active Backlog Documentation (February 2026)
+
+**Summary:** Created new backlog document to capture high-priority product and UX items discussed but not yet documented. Covers non-email, non-GTM-3.1 items only.
+
+**New file:** `docs/backlog/post-gtm-3-1-active-backlog.md`
+
+**Backlog items documented:**
+1. Homepage vs Happenings "Tonight" list consistency
+2. Mobile event card truncation and metadata loss
+3. Cross-surface consistency rules (missing explicit contracts)
+
+**Purpose:** Establish durable, non-conflicting record of next priorities without reopening closed GTM-3.1 tracts.
+
 ### GTM-3.1 Documentation Closeout (February 2026)
 
 **Summary:** Closed out all GTM-3.1 documentation tract. Updated status headers in 5 STOP-GATE docs to CLOSED/COMPLETED. Verified Known UX Follow-ups (A, B, C) were already resolved in code. Updated Deferred Backlog to reflect accurate P0/P1/P2 items.
