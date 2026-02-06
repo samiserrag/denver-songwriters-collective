@@ -28,7 +28,12 @@ import { getWeeklyOpenMicsDigestEmail } from "@/lib/email/templates/weeklyOpenMi
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
 import { claimDigestSendLock, computeWeekKey } from "@/lib/digest/digestSendLog";
 import type { DigestType } from "@/lib/digest/digestSendLog";
-import { getEditorial, resolveEditorial, type ResolvedEditorial } from "@/lib/digest/digestEditorial";
+import {
+  getEditorial,
+  resolveEditorial,
+  resolveEditorialWithDiagnostics,
+  type ResolvedEditorial,
+} from "@/lib/digest/digestEditorial";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -107,7 +112,17 @@ export async function POST(request: NextRequest) {
         try {
           const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
           if (editorial) {
-            resolvedEditorial = await resolveEditorial(serviceClient, editorial);
+            const result = await resolveEditorialWithDiagnostics(serviceClient, editorial);
+            resolvedEditorial = result.resolved;
+            const galleryUnresolved = editorial.gallery_feature_ref
+              && !resolvedEditorial.galleryFeature
+              && result.unresolved.some((item) => item.field === "gallery_feature_ref");
+            if (galleryUnresolved && editorial.updated_by) {
+              resolvedEditorial.galleryFeature = {
+                title: "Gallery unavailable (unpublished)",
+                url: "",
+              };
+            }
           }
         } catch (editorialError) {
           console.warn("[AdminTestSend] Editorial resolution failed:", editorialError);

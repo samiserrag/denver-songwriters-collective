@@ -600,21 +600,23 @@ describe("Part B: Editorial Layer", () => {
       );
     });
 
-    it("featured happenings should render BEFORE day-grouped happenings (top pinned)", () => {
-      // featuredHtml should appear in the HTML layout before eventsHtml
-      // Look for the layout order in the template string
+    it("featured block should render BEFORE day-grouped happenings (top pinned)", () => {
+      // featuredTopHtml + remainingFeaturedHtml should appear in the HTML layout before eventsHtml
       expect(templateSource).toContain("${introNoteHtml");
-      expect(templateSource).toContain("${featuredHtml");
+      expect(templateSource).toContain("${featuredTopHtml");
+      expect(templateSource).toContain("${remainingFeaturedHtml");
       const htmlContentSection = templateSource.slice(
         templateSource.indexOf("const htmlContent"),
         templateSource.indexOf("const html = wrapEmailHtml")
       );
       const introPos = htmlContentSection.indexOf("introNoteHtml");
-      const featuredPos = htmlContentSection.indexOf("featuredHtml");
+      const featuredTopPos = htmlContentSection.indexOf("featuredTopHtml");
+      const remainingFeaturedPos = htmlContentSection.indexOf("remainingFeaturedHtml");
       const eventsPos = htmlContentSection.indexOf("eventsHtml");
       const spotlightsPos = htmlContentSection.indexOf("spotlightsHtml");
-      expect(introPos).toBeLessThan(featuredPos);
-      expect(featuredPos).toBeLessThan(eventsPos);
+      expect(introPos).toBeLessThan(featuredTopPos);
+      expect(featuredTopPos).toBeLessThan(eventsPos);
+      expect(remainingFeaturedPos).toBeLessThan(eventsPos);
       expect(eventsPos).toBeLessThan(spotlightsPos);
     });
 

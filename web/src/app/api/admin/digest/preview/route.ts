@@ -80,6 +80,15 @@ export async function GET(request: NextRequest) {
           const result = await resolveEditorialWithDiagnostics(serviceClient, editorial);
           resolvedEditorial = result.resolved;
           unresolved = result.unresolved;
+          const galleryUnresolved = editorial.gallery_feature_ref
+            && !resolvedEditorial.galleryFeature
+            && unresolved.some((item) => item.field === "gallery_feature_ref");
+          if (galleryUnresolved && editorial.updated_by) {
+            resolvedEditorial.galleryFeature = {
+              title: "Gallery unavailable (unpublished)",
+              url: "",
+            };
+          }
         }
       } catch (editorialError) {
         console.warn("[AdminPreview] Editorial resolution failed:", editorialError);

@@ -252,7 +252,7 @@ describe("getWeeklyHappeningsDigestEmail", () => {
     expect(email.text).toContain("/happenings");
   });
 
-  it("includes aspirational personalization copy", () => {
+  it("includes personalization copy around happenings list", () => {
     const byDate = new Map([["2026-01-27", [mockOccurrence]]]);
     const email = getWeeklyHappeningsDigestEmail({
       firstName: null,
@@ -261,8 +261,9 @@ describe("getWeeklyHappeningsDigestEmail", () => {
       venueCount: 1,
     });
 
-    expect(email.html).toContain("Want to see more or tailor this to you? Browse all happenings with your filters applied!");
-    expect(email.text).toContain("Want to see more or tailor this to you? Browse all happenings with your filters applied!");
+    expect(email.html).toContain("Want to tailor this to you? Browse all");
+    expect(email.html).toContain("with your filters applied!");
+    expect(email.text).toContain("Want to tailor this to you? Browse all happenings with your filters applied!");
   });
 
   it("shows empty state with 'happenings' terminology", () => {
@@ -653,6 +654,149 @@ describe("Edge Cases (weeklyHappeningsDigest)", () => {
     }
 
     expect(email.html).toContain("9 happenings across 1 venue");
+  });
+});
+
+// ============================================================
+// Editorial Featured Ordering Tests
+// ============================================================
+
+describe("Editorial featured ordering", () => {
+  const baseEvent: HappeningEvent = {
+    id: "event-1",
+    title: "Test Event",
+    slug: "test-event",
+    event_type: "open_mic",
+    start_time: "19:00:00",
+    event_date: "2026-01-27",
+    day_of_week: "Monday",
+    recurrence_rule: null,
+    custom_dates: null,
+    max_occurrences: null,
+    is_free: true,
+    cost_label: null,
+    venue: {
+      id: "venue-1",
+      name: "Test Venue",
+      city: "Denver",
+      state: "CO",
+    },
+  };
+
+  const occurrence: HappeningOccurrence = {
+    event: baseEvent,
+    dateKey: "2026-01-27",
+    displayDate: "MONDAY, JANUARY 27",
+  };
+
+  it("renders featured cards in the required order and preserves intro formatting", () => {
+    const byDate = new Map([["2026-01-27", [occurrence]]]);
+    const editorial = {
+      introNote: "Line one\nLine two\n\nLine three",
+      memberSpotlight: {
+        name: "Featured Member Name",
+        url: "https://denversongwriterscollective.org/songwriters/featured-member",
+        avatarUrl: "https://example.com/member.jpg",
+        bio: "Member bio",
+      },
+      featuredHappenings: [
+        {
+          title: "Featured Event One",
+          url: "https://denversongwriterscollective.org/events/featured-event-one",
+          venue: "Test Venue",
+          venueUrl: "https://denversongwriterscollective.org/venues/test-venue",
+          date: "Feb 1",
+          time: "7:00 PM",
+          emoji: "🎤",
+          coverUrl: "https://example.com/event.jpg",
+        },
+        {
+          title: "Featured Event Two",
+          url: "https://denversongwriterscollective.org/events/featured-event-two",
+          venue: "Test Venue",
+          venueUrl: "https://denversongwriterscollective.org/venues/test-venue",
+          date: "Feb 2",
+          time: "8:00 PM",
+          emoji: "🎤",
+          coverUrl: "https://example.com/event2.jpg",
+        },
+      ],
+      blogFeature: {
+        title: "Featured Blog Title",
+        url: "https://denversongwriterscollective.org/blog/featured-post",
+        excerpt: "Blog excerpt",
+      },
+      galleryFeature: {
+        title: "Featured Gallery Title",
+        url: "https://denversongwriterscollective.org/gallery/featured-album",
+        coverUrl: "https://example.com/gallery.jpg",
+      },
+    };
+
+    const email = getWeeklyHappeningsDigestEmail({
+      firstName: null,
+      byDate,
+      totalCount: 1,
+      venueCount: 1,
+      editorial,
+    });
+
+    const html = email.html;
+    const memberIndex = html.indexOf("Featured Member Name");
+    const eventIndex = html.indexOf("Featured Event One");
+    const blogIndex = html.indexOf("Featured Blog Title");
+    const galleryIndex = html.indexOf("Featured Gallery Title");
+
+    expect(memberIndex).toBeGreaterThan(-1);
+    expect(eventIndex).toBeGreaterThan(-1);
+    expect(blogIndex).toBeGreaterThan(-1);
+    expect(galleryIndex).toBeGreaterThan(-1);
+
+    expect(memberIndex).toBeLessThan(eventIndex);
+    expect(eventIndex).toBeLessThan(blogIndex);
+    expect(blogIndex).toBeLessThan(galleryIndex);
+
+    const cardMarker = "border-radius: 8px; overflow: hidden; margin: 8px 0;";
+    expect(html.lastIndexOf(cardMarker, blogIndex)).toBeGreaterThan(-1);
+    expect(html.lastIndexOf(cardMarker, galleryIndex)).toBeGreaterThan(-1);
+
+    expect(html.match(/🎤 MEMBER SPOTLIGHT/g)?.length).toBe(1);
+    expect(html.match(/📝 FROM THE BLOG/g)?.length).toBe(1);
+    expect(html.match(/📸 FROM THE GALLERY/g)?.length).toBe(1);
+
+    expect(html).toContain("Line one<br>Line two");
+    expect(html).toContain("Line three");
+
+    const happeningsLinks = html.match(/>happenings<\/a>/g) || [];
+    expect(happeningsLinks.length).toBe(2);
+  });
+
+  it("renders only the featured event when no other featured items exist", () => {
+    const byDate = new Map([["2026-01-27", [occurrence]]]);
+    const editorial = {
+      featuredHappenings: [
+        {
+          title: "Solo Featured Event",
+          url: "https://denversongwriterscollective.org/events/solo-featured",
+          venue: "Test Venue",
+          venueUrl: "https://denversongwriterscollective.org/venues/test-venue",
+          date: "Feb 3",
+          time: "6:00 PM",
+          emoji: "🎤",
+          coverUrl: "https://example.com/event3.jpg",
+        },
+      ],
+    };
+
+    const email = getWeeklyHappeningsDigestEmail({
+      firstName: null,
+      byDate,
+      totalCount: 1,
+      venueCount: 1,
+      editorial,
+    });
+
+    expect(email.html).toContain("Solo Featured Event");
   });
 });
 

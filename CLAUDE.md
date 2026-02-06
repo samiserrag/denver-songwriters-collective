@@ -703,6 +703,24 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### GTM-3.1 Weekly Digest Featured Ordering + Intro Formatting (February 2026)
+
+**Summary:** Weekly happenings email now renders a top featured block in deterministic order, preserves intro note formatting, and keeps preview/test-send output aligned.
+
+**Changes:**
+- Weekly digest template now renders featured cards at the top in order: member, first featured event, blog, gallery.
+- Remaining featured events render in a separate featured-happenings block; member/blog/gallery are no longer duplicated later.
+- Intro note HTML now preserves paragraphs and line breaks safely (escape first, then paragraph + `<br>` formatting).
+- Added bold linked happenings prompt above and below the event list; text version mirrors the same guidance.
+- Preview and test send now inject a safe gallery placeholder (`Gallery unavailable (unpublished)`) when an admin-authored gallery ref is unresolved due to publish constraints.
+- Updated regression tests for featured ordering, no-duplication behavior, intro formatting, and template contract checks.
+
+**Push:** `main` pushed to origin (`<pending>`).
+**Quality gates:**
+- `npm --prefix web run lint` passed.
+- `npm --prefix web test -- --run` passed (`3722/3722`).
+- `npm --prefix web run build` does not complete in this environment (hangs at `Creating an optimized production build ...` with no further output).
+
 ### Admin Test Send Editorial WeekKey Fix (February 2026)
 
 **Summary:** Test sends now use the UI-selected weekKey for weekly_happenings, and editorial saves overwrite cleared fields.

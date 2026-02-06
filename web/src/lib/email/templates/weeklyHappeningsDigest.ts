@@ -137,12 +137,56 @@ function formatEmptyStateHtml(): string {
 // ============================================================
 
 function formatIntroNoteHtml(introNote: string): string {
+  const trimmed = introNote.trim();
+  if (!trimmed) return "";
+
+  const escaped = escapeHtml(trimmed);
+  const paragraphs = escaped.split(/\n\s*\n/);
+  const paragraphHtml = paragraphs
+    .map((paragraph) => {
+      const withBreaks = paragraph.replace(/\n/g, "<br>");
+      return `<p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.6; font-style: italic;">${withBreaks}</p>`;
+    })
+    .join("");
+
   return `
     <tr>
       <td style="padding: 0 0 20px 0;">
-        <p style="margin: 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.6; font-style: italic;">
-          ${escapeHtml(introNote)}
+        ${paragraphHtml}
+      </td>
+    </tr>
+  `;
+}
+
+function formatFeaturedEventHtml(
+  featured: NonNullable<ResolvedEditorial["featuredHappenings"]>[number]
+): string {
+  const metaParts: string[] = [];
+  if (featured.date) metaParts.push(escapeHtml(featured.date));
+  if (featured.time) metaParts.push(escapeHtml(featured.time));
+  if (featured.venue) {
+    const venueText = escapeHtml(featured.venue);
+    const venueLink = featured.venueUrl
+      ? `<a href="${escapeHtml(featured.venueUrl)}" style="color: ${EMAIL_COLORS.textSecondary}; text-decoration: underline;">${venueText}</a>`
+      : venueText;
+    metaParts.push(venueLink);
+  }
+  const subtitleHtml = metaParts.length > 0 ? metaParts.join(" · ") : undefined;
+  return `
+    <tr>
+      <td style="padding: 16px 0;">
+        <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+          ⭐ FEATURED EVENT
         </p>
+        ${renderEmailBaseballCard({
+          coverUrl: featured.coverUrl,
+          coverAlt: featured.title,
+          title: featured.title,
+          titleUrl: featured.url,
+          subtitleHtml,
+          ctaText: "View Happening",
+          ctaUrl: featured.url,
+        })}
       </td>
     </tr>
   `;
@@ -261,6 +305,7 @@ function formatBlogFeatureHtml(
 function formatGalleryFeatureHtml(
   feature: NonNullable<ResolvedEditorial["galleryFeature"]>
 ): string {
+  const hasUrl = !!feature.url;
   return `
     <tr>
       <td style="padding: 16px 0;">
@@ -271,9 +316,9 @@ function formatGalleryFeatureHtml(
           coverUrl: feature.coverUrl,
           coverAlt: feature.title,
           title: feature.title,
-          titleUrl: feature.url,
-          ctaText: "View Album",
-          ctaUrl: feature.url,
+          titleUrl: hasUrl ? feature.url : undefined,
+          ctaText: hasUrl ? "View Album" : undefined,
+          ctaUrl: hasUrl ? feature.url : undefined,
         })}
       </td>
     </tr>
@@ -285,7 +330,7 @@ function formatGalleryFeatureHtml(
 // ============================================================
 
 function formatIntroNoteText(introNote: string): string {
-  return `"${introNote}"`;
+  return introNote;
 }
 
 function formatFeaturedHappeningsText(
@@ -338,7 +383,7 @@ function formatGalleryFeatureText(
 ): string {
   const lines = ["📸 FROM THE GALLERY", ""];
   lines.push(feature.title);
-  lines.push(feature.url);
+  if (feature.url) lines.push(feature.url);
   return lines.join("\n");
 }
 
@@ -422,24 +467,40 @@ export function getWeeklyHappeningsDigestEmail(
     ? formatIntroNoteHtml(editorial.introNote)
     : "";
 
-  const featuredHtml = editorial?.featuredHappenings?.length
-    ? formatFeaturedHappeningsHtml(editorial.featuredHappenings)
+  const featuredHappenings = editorial?.featuredHappenings ?? [];
+  const [featuredEvent, ...remainingFeatured] = featuredHappenings;
+
+  const featuredTopRows: string[] = [];
+  if (editorial?.memberSpotlight) {
+    featuredTopRows.push(formatMemberSpotlightHtml(editorial.memberSpotlight));
+  }
+  if (featuredEvent) {
+    featuredTopRows.push(formatFeaturedEventHtml(featuredEvent));
+  }
+  if (editorial?.blogFeature) {
+    featuredTopRows.push(formatBlogFeatureHtml(editorial.blogFeature));
+  }
+  if (editorial?.galleryFeature) {
+    featuredTopRows.push(formatGalleryFeatureHtml(editorial.galleryFeature));
+  }
+  const featuredTopHtml = featuredTopRows.join("");
+
+  const remainingFeaturedHtml = remainingFeatured.length
+    ? formatFeaturedHappeningsHtml(remainingFeatured)
     : "";
 
-  // Spotlights and features go after the CTA
+  // Spotlights after the CTA (venue only; other featured items are at top)
   let spotlightsHtml = "";
-  if (editorial?.memberSpotlight) {
-    spotlightsHtml += formatMemberSpotlightHtml(editorial.memberSpotlight);
-  }
   if (editorial?.venueSpotlight) {
     spotlightsHtml += formatVenueSpotlightHtml(editorial.venueSpotlight);
   }
-  if (editorial?.blogFeature) {
-    spotlightsHtml += formatBlogFeatureHtml(editorial.blogFeature);
-  }
-  if (editorial?.galleryFeature) {
-    spotlightsHtml += formatGalleryFeatureHtml(editorial.galleryFeature);
-  }
+
+  const happeningsLinkHtml = `Want to tailor this to you? Browse all <a href="${SITE_URL}/happenings" style="color: ${EMAIL_COLORS.accent}; text-decoration: underline;">happenings</a> with your filters applied!`;
+  const happeningsNudgeHtml = `
+    <p style="margin: 16px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; font-weight: 700;">
+      ${happeningsLinkHtml}
+    </p>
+  `;
 
   const htmlContent = `
     ${getGreeting(firstName)}
@@ -450,11 +511,17 @@ export function getWeeklyHappeningsDigestEmail(
 
     ${introNoteHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${introNoteHtml}</table>` : ""}
 
-    ${featuredHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${featuredHtml}</table>` : ""}
+    ${featuredTopHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${featuredTopHtml}</table>` : ""}
+
+    ${remainingFeaturedHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${remainingFeaturedHtml}</table>` : ""}
+
+    ${happeningsNudgeHtml}
 
     <table cellpadding="0" cellspacing="0" style="width: 100%;">
       ${eventsHtml}
     </table>
+
+    ${happeningsNudgeHtml}
 
     ${summaryLine ? `
     <p style="margin: 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
@@ -473,10 +540,6 @@ export function getWeeklyHappeningsDigestEmail(
         </td>
       </tr>
     </table>
-
-    <p style="margin: 16px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; font-style: italic;">
-      Want to see more or tailor this to you? Browse all happenings with your filters applied!
-    </p>
 
     <hr style="border: none; border-top: 1px solid ${EMAIL_COLORS.border}; margin: 24px 0;" />
 
@@ -525,28 +588,34 @@ export function getWeeklyHappeningsDigestEmail(
     editorialTextParts.push("");
   }
 
-  if (editorial?.featuredHappenings?.length) {
-    editorialTextParts.push(formatFeaturedHappeningsText(editorial.featuredHappenings));
+  const featuredTextParts: string[] = [];
+  if (editorial?.memberSpotlight) {
+    featuredTextParts.push(formatMemberSpotlightText(editorial.memberSpotlight));
+    featuredTextParts.push("");
+  }
+  if (featuredEvent) {
+    featuredTextParts.push(formatFeaturedHappeningsText([featuredEvent]));
+    featuredTextParts.push("");
+  }
+  if (editorial?.blogFeature) {
+    featuredTextParts.push(formatBlogFeatureText(editorial.blogFeature));
+    featuredTextParts.push("");
+  }
+  if (editorial?.galleryFeature) {
+    featuredTextParts.push(formatGalleryFeatureText(editorial.galleryFeature));
+    featuredTextParts.push("");
+  }
+  if (remainingFeatured.length > 0) {
+    featuredTextParts.push(formatFeaturedHappeningsText(remainingFeatured));
   }
 
   const spotlightsTextParts: string[] = [];
-
-  if (editorial?.memberSpotlight) {
-    spotlightsTextParts.push(formatMemberSpotlightText(editorial.memberSpotlight));
-    spotlightsTextParts.push("");
-  }
   if (editorial?.venueSpotlight) {
     spotlightsTextParts.push(formatVenueSpotlightText(editorial.venueSpotlight));
     spotlightsTextParts.push("");
   }
-  if (editorial?.blogFeature) {
-    spotlightsTextParts.push(formatBlogFeatureText(editorial.blogFeature));
-    spotlightsTextParts.push("");
-  }
-  if (editorial?.galleryFeature) {
-    spotlightsTextParts.push(formatGalleryFeatureText(editorial.galleryFeature));
-    spotlightsTextParts.push("");
-  }
+
+  const happeningsNudgeText = `Want to tailor this to you? Browse all happenings with your filters applied! ${SITE_URL}/happenings`;
 
   const textParts = [
     greeting,
@@ -554,14 +623,16 @@ export function getWeeklyHappeningsDigestEmail(
     "Here's what's happening in the Denver songwriter community this week.",
     "",
     ...editorialTextParts,
+    ...featuredTextParts,
+    happeningsNudgeText,
     eventsText,
+    "",
+    happeningsNudgeText,
     "",
     summaryLine,
     "",
     ...spotlightsTextParts,
     `Browse All Happenings: ${SITE_URL}/happenings`,
-    "",
-    "Want to see more or tailor this to you? Browse all happenings with your filters applied!",
     "",
     "---",
     "You're receiving this weekly digest because you're part of the Denver Songwriters Collective community.",

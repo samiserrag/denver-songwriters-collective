@@ -220,7 +220,7 @@ export interface ResolvedEditorial {
   };
   galleryFeature?: {
     title: string;
-    url: string;
+    url?: string;
     coverUrl?: string;
   };
 }

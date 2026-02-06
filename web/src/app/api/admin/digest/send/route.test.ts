@@ -75,12 +75,22 @@ vi.mock("@/lib/digest/digestEditorial", () => ({
     }
     return null;
   },
-  resolveEditorial: async (_client: unknown, editorial: { intro_note: string | null }) => ({
-    introNote: editorial.intro_note || undefined,
+  resolveEditorial: async () => ({
+    introNote,
     memberSpotlight: {
       name: "Pony Lee",
       url: spotlightUrl,
     },
+  }),
+  resolveEditorialWithDiagnostics: async (_client: unknown, editorial: { intro_note: string | null }) => ({
+    resolved: {
+      introNote: editorial.intro_note || undefined,
+      memberSpotlight: {
+        name: "Pony Lee",
+        url: spotlightUrl,
+      },
+    },
+    unresolved: [],
   }),
 }));
 
