@@ -711,7 +711,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - `resolveEditorial*` gallery lookups now select `gallery_albums.name` (not `title`) and map card title from `name`.
 - Added regression coverage to ensure gallery URL refs resolve against published albums using the `name` field.
 
-**Push:** `main` pushed to origin (`<pending>`).
+**Push:** `main` pushed to origin (`15658c1`).
 **Quality gates:**
 - `npm --prefix web run lint` passed.
 - `npm --prefix web test -- --run src/__tests__/editorial-url-resolver.test.ts` passed.
