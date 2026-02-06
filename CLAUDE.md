@@ -703,6 +703,15 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase5-18 Closeout Doc Update (February 2026)
+
+**Summary:** Documented closeout for the GTM-3.1 weekly digest featured-section tract.
+
+**Changes:**
+- Added closeout section to the Phase5-18 stop-gate doc with delivered fixes, commits, and gate results.
+
+**Push:** `main` pushed to origin (`<pending>`).
+
 ### GTM-3.1 Blog Card Rendering (February 2026)
 
 **Summary:** Featured blog now renders as a baseball card even without a cover image, using blog cover data when present.

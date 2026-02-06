@@ -201,3 +201,26 @@ The card renders without cover image and may appear visually similar to the old 
 - Extend blog resolver to select `cover_image_url` and include it in `resolved.blogFeature`.
 - Pass `coverUrl`/`coverAlt` into `renderEmailBaseballCard` for blog.
 - Keep card rendering when cover is missing (text-only card remains valid).
+
+---
+
+## Closeout (February 2026)
+
+**Status:** Closed
+
+**Delivered Fixes:**
+- Featured block renders four items in order (member, featured event, blog, gallery) using baseball cards.
+- Intro note preserves paragraph and line breaks safely.
+- Gallery resolution fixed to use `gallery_albums.name`.
+- Blog resolution now includes `cover_image_url` and renders as a baseball card even without a cover image.
+
+**Commits (main):**
+- `975bc10` featured ordering + intro formatting
+- `15658c1` gallery resolver `name` fix
+- `578bc71` blog card cover support
+- `3fa1cd8` / `e523e07` documentation push logs
+
+**Tests:**
+- `npm --prefix web run lint` passed.
+- `npm --prefix web test -- --run` passed.
+- `npm --prefix web run build` timed out in this environment (no failure output).
