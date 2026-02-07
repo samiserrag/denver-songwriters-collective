@@ -193,11 +193,13 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
       "src/app/(protected)/dashboard/invite/InvitePanel.tsx",
       "utf-8",
     );
-    expect(inviteSource).toContain("const inviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);");
+    expect(inviteSource).toContain("const defaultInviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);");
+    expect(inviteSource).toContain("const [inviteMessage, setInviteMessage] = useState(defaultInviteMessage);");
     expect(inviteSource).toContain("const body = encodeURIComponent(inviteMessage);");
     expect(inviteSource).toContain("text: inviteMessage,");
     expect(inviteSource).toContain('await logInviteAction("share_fallback_copy");');
     expect(inviteSource).not.toContain("disabled={!canNativeShare}");
+    expect(inviteSource).toContain("id=\"invite-message\"");
   });
 
   it("root layout includes share CTA bars at top and bottom", async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { appLogger } from "@/lib/appLogger";
@@ -25,7 +25,13 @@ function buildInviteUrl(): string {
 
 export default function InvitePanel({ source }: InvitePanelProps) {
   const inviteUrl = useMemo(() => buildInviteUrl(), []);
-  const inviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);
+  const defaultInviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);
+  const [inviteMessage, setInviteMessage] = useState(defaultInviteMessage);
+
+  useEffect(() => {
+    setInviteMessage(defaultInviteMessage);
+  }, [defaultInviteMessage]);
+
   const mailtoHref = useMemo(() => {
     const subject = encodeURIComponent(INVITE_EMAIL_SUBJECT);
     const body = encodeURIComponent(inviteMessage);
@@ -111,6 +117,34 @@ export default function InvitePanel({ source }: InvitePanelProps) {
             readOnly
             className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
           />
+
+          <div className="pt-2 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <label
+                htmlFor="invite-message"
+                className="block text-sm font-medium text-[var(--color-text-secondary)]"
+              >
+                Message preview (you can edit)
+              </label>
+              <button
+                type="button"
+                onClick={() => setInviteMessage(defaultInviteMessage)}
+                className="text-xs text-[var(--color-text-accent)] hover:underline"
+              >
+                Reset message
+              </button>
+            </div>
+            <textarea
+              id="invite-message"
+              value={inviteMessage}
+              onChange={(e) => setInviteMessage(e.target.value)}
+              rows={10}
+              className="w-full rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] resize-y"
+            />
+            <p className="text-xs text-[var(--color-text-tertiary)]">
+              Email Invite and Share both use this message.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <button
