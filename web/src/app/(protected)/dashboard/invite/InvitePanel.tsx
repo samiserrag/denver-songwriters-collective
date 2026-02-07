@@ -26,12 +26,12 @@ function buildInviteUrl(): string {
 export default function InvitePanel({ source }: InvitePanelProps) {
   const inviteUrl = useMemo(() => buildInviteUrl(), []);
   const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
-  const shareMessage = `${INVITE_CTA_HEADLINE} ${INVITE_CTA_BODY} ${INVITE_CTA_FOOTER}`;
+  const inviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);
   const mailtoHref = useMemo(() => {
     const subject = encodeURIComponent(INVITE_EMAIL_SUBJECT);
-    const body = encodeURIComponent(buildInviteEmailBody(inviteUrl));
+    const body = encodeURIComponent(inviteMessage);
     return `mailto:?subject=${subject}&body=${body}`;
-  }, [inviteUrl]);
+  }, [inviteMessage]);
 
   const logInviteAction = async (action: string) => {
     await appLogger.info(
@@ -69,8 +69,7 @@ export default function InvitePanel({ source }: InvitePanelProps) {
     try {
       await navigator.share({
         title: "Denver Songwriters Collective",
-        text: shareMessage,
-        url: inviteUrl,
+        text: inviteMessage,
       });
       await logInviteAction("native_share");
     } catch {
@@ -138,12 +137,12 @@ export default function InvitePanel({ source }: InvitePanelProps) {
 
         <section className="card-base p-6 rounded-xl border border-[var(--color-border-default)]">
           <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
-            Why send people to the homepage?
+            Why start with the homepage?
           </h2>
           <ul className="text-sm text-[var(--color-text-secondary)] space-y-2">
-            <li>It shows the full picture fast: happenings, open mics, members, and venues.</li>
-            <li>It explains what the community is before asking anyone to sign up.</li>
-            <li>It feels like a recommendation from you, not a cold signup funnel.</li>
+            <li>People can quickly see this week&apos;s happenings, open mics, members, and venues.</li>
+            <li>They get a clear feel for the community before deciding whether to join.</li>
+            <li>A short note from a friend and one clear link is usually all it takes.</li>
           </ul>
         </section>
 

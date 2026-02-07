@@ -187,6 +187,17 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
     expect(SHARE_SITE_CTA_LABEL).toBe("Share This Site");
   });
 
+  it("invite panel reuses the same message body for email and native share", async () => {
+    const fs = await import("fs");
+    const inviteSource = fs.readFileSync(
+      "src/app/(protected)/dashboard/invite/InvitePanel.tsx",
+      "utf-8",
+    );
+    expect(inviteSource).toContain("const inviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);");
+    expect(inviteSource).toContain("const body = encodeURIComponent(inviteMessage);");
+    expect(inviteSource).toContain("text: inviteMessage,");
+  });
+
   it("root layout includes share CTA bars at top and bottom", async () => {
     const fs = await import("fs");
     const layoutSource = fs.readFileSync("src/app/layout.tsx", "utf-8");
