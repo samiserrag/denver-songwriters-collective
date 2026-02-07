@@ -29,8 +29,45 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply security headers to all routes
-        source: "/:path*",
+        // EMBED-01: External embeds must be frameable (route-scoped only)
+        source: "/embed/:path*",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https://*.supabase.co https://*.supabase.in",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.supabase.co https://*.supabase.in",
+              "frame-src 'none'",
+              "frame-ancestors *",
+              "base-uri 'none'",
+              "form-action 'none'",
+            ].join("; "),
+          },
+        ],
+      },
+      {
+        // Apply default security headers to all non-embed routes
+        source: "/((?!embed/).*)",
         headers: [
           {
             key: "X-Content-Type-Options",

@@ -37,3 +37,14 @@ export function isWeeklyDigestEnabled(): boolean {
 export function isWeeklyHappeningsDigestEnabled(): boolean {
   return process.env.ENABLE_WEEKLY_HAPPENINGS_DIGEST === "true";
 }
+
+/**
+ * Check if external embeds are enabled (server-side).
+ *
+ * Kill switch behavior:
+ * - ENABLE_EXTERNAL_EMBEDS="false" => disabled
+ * - any other value / unset => enabled
+ */
+export function isExternalEmbedsEnabled(): boolean {
+  return process.env.ENABLE_EXTERNAL_EMBEDS !== "false";
+}
