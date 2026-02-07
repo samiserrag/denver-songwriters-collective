@@ -46,7 +46,7 @@ export default function InvitePanel({ source }: InvitePanelProps) {
         source,
         referral_via: "member_invite",
       },
-      { source: "dashboard-invite" },
+      { source: "invite-page" },
     );
   };
 

@@ -60,7 +60,7 @@ export function Footer({ className }: FooterProps) {
               <li><Link href="/submit-open-mic" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Submit Open Mic</Link></li>
               <li><Link href="/get-involved" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Get Involved</Link></li>
               <li><Link href="/partners" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Partners</Link></li>
-              <li><Link href="/dashboard/invite" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Invite a Friend</Link></li>
+              <li><Link href="/invite" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Invite a Friend</Link></li>
             </ul>
           </div>
 

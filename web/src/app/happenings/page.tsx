@@ -662,7 +662,7 @@ export default async function HappeningsPage({
               Correction
             </Link>
             <Link
-              href="/dashboard/invite"
+              href="/invite"
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
             >
               {INVITE_CTA_LABEL}

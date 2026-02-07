@@ -436,7 +436,7 @@ export default async function HomePage() {
           <div className="mt-6 text-sm md:text-base text-[var(--color-text-secondary)]">
             {INVITE_CTA_HEADLINE} {INVITE_CTA_BODY}{" "}
             <Link
-              href="/dashboard/invite"
+              href="/invite"
               className="text-[var(--color-text-accent)] hover:underline"
             >
               {INVITE_CTA_LABEL}
@@ -983,7 +983,7 @@ export default async function HomePage() {
               Share the homepage first so people can see what the community is about before deciding to join.
             </p>
             <Link
-              href="/dashboard/invite"
+              href="/invite"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               {INVITE_CTA_LABEL}
