@@ -314,7 +314,7 @@ export async function PATCH(
       has_timeslots, total_slots, slot_duration_minutes,
       event_date, start_time, end_time, venue_id, location_mode, day_of_week,
       title, venue_name, venue_address, slug,
-      recurrence_rule
+      recurrence_rule, max_occurrences, custom_dates
     `)
     .eq("id", eventId)
     .single();
@@ -348,12 +348,33 @@ export async function PATCH(
   const currentEvent = prevEvent;
 
   // Determine if this update requires timeslot regeneration
-  const timeslotsNowEnabled = body.has_timeslots === true;
+  const timeslotsNowEnabled = body.has_timeslots !== undefined
+    ? body.has_timeslots === true
+    : currentEvent?.has_timeslots === true;
   const timeslotsWereDisabled = currentEvent?.has_timeslots === false;
   const totalSlotsChanged = body.total_slots !== undefined && body.total_slots !== currentEvent?.total_slots;
   const slotDurationChanged = body.slot_duration_minutes !== undefined && body.slot_duration_minutes !== currentEvent?.slot_duration_minutes;
+  const eventDateChanged = updates.event_date !== undefined && updates.event_date !== currentEvent?.event_date;
+  const dayOfWeekChanged = updates.day_of_week !== undefined && updates.day_of_week !== currentEvent?.day_of_week;
+  const recurrenceRuleChanged = updates.recurrence_rule !== undefined && updates.recurrence_rule !== currentEvent?.recurrence_rule;
+  const maxOccurrencesChanged = updates.max_occurrences !== undefined && updates.max_occurrences !== currentEvent?.max_occurrences;
+  const customDatesChanged = updates.custom_dates !== undefined && (() => {
+    const nextCustomDates = Array.isArray(updates.custom_dates) ? updates.custom_dates as string[] : null;
+    const prevCustomDates = Array.isArray(currentEvent?.custom_dates) ? currentEvent.custom_dates : null;
+    if (!nextCustomDates && !prevCustomDates) return false;
+    if (!nextCustomDates || !prevCustomDates) return true;
+    if (nextCustomDates.length !== prevCustomDates.length) return true;
+    return nextCustomDates.some((dateKey, index) => dateKey !== prevCustomDates[index]);
+  })();
 
-  const regenNeeded = timeslotsNowEnabled && (timeslotsWereDisabled || totalSlotsChanged || slotDurationChanged);
+  const scheduleChanged = eventDateChanged
+    || dayOfWeekChanged
+    || recurrenceRuleChanged
+    || maxOccurrencesChanged
+    || customDatesChanged;
+
+  const regenNeeded = timeslotsNowEnabled
+    && (timeslotsWereDisabled || totalSlotsChanged || slotDurationChanged || scheduleChanged);
 
   // Phase 5.02: If regen needed, check for FUTURE claims only (past claims don't block)
   // The blocking logic uses date_key >= todayKey to allow hosts to modify slot config

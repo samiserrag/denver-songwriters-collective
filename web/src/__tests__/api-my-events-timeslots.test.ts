@@ -20,6 +20,11 @@ let mockCurrentEvent: {
   total_slots: number | null;
   slot_duration_minutes: number | null;
   published_at: string | null;
+  event_date?: string | null;
+  day_of_week?: string | null;
+  recurrence_rule?: string | null;
+  max_occurrences?: number | null;
+  custom_dates?: string[] | null;
 } | null = null;
 let mockExistingSlots: { id: string }[] = [];
 let mockClaimCount = 0;
@@ -170,7 +175,12 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       has_timeslots: true,
       total_slots: 10,
       slot_duration_minutes: 15,
-      published_at: null
+      published_at: null,
+      event_date: "2026-02-12",
+      day_of_week: "thursday",
+      recurrence_rule: "custom",
+      max_occurrences: null,
+      custom_dates: ["2026-02-12", "2026-02-19"]
     };
     mockExistingSlots = [{ id: "slot-1" }, { id: "slot-2" }];
     mockClaimCount = 0;
@@ -295,6 +305,24 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       // Phase 5.02: Regeneration now uses TypeScript-based insert, not RPC
       expect(mockTimeslotInsertCalled).toBe(true);
     });
+
+    it("returns 200 and regenerates when custom_dates change on timeslot-enabled series", async () => {
+      mockClaimCount = 0;
+
+      const request = new Request("http://localhost/api/my-events/event-1", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recurrence_rule: "custom",
+          custom_dates: ["2026-02-12", "2026-02-19", "2026-02-26"]
+        })
+      });
+
+      const response = await PATCH(request, { params: Promise.resolve({ id: "event-1" }) });
+
+      expect(response.status).toBe(200);
+      expect(mockTimeslotInsertCalled).toBe(true);
+    });
   });
 
   describe("200 OK - Non-regen changes allowed even with claims", () => {
@@ -352,6 +380,28 @@ describe("PATCH /api/my-events/[id] - Timeslot behavior", () => {
       // No regen needed since values didn't change
       expect(response.status).toBe(200);
       expect(mockRpcCalled).toBe(false);
+    });
+
+    it("returns 200 without regeneration when custom_dates payload matches existing series", async () => {
+      mockClaimCount = 3;
+      mockCurrentEvent = {
+        ...mockCurrentEvent!,
+        day_of_week: null,
+      };
+
+      const request = new Request("http://localhost/api/my-events/event-1", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recurrence_rule: "custom",
+          custom_dates: ["2026-02-12", "2026-02-19"]
+        })
+      });
+
+      const response = await PATCH(request, { params: Promise.resolve({ id: "event-1" }) });
+
+      expect(response.status).toBe(200);
+      expect(mockTimeslotInsertCalled).toBe(false);
     });
   });
 
