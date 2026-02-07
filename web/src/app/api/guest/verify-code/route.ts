@@ -10,6 +10,7 @@ import {
   createActionToken,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail, getClaimConfirmedEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 const { MAX_CODE_ATTEMPTS, LOCKOUT_MINUTES } = GUEST_VERIFICATION_CONFIG;
 
@@ -276,14 +277,10 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", verification.id);
 
-    // Build response URLs
-    const baseUrl =
-      process.env.PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.VERCEL_URL ||
-      "http://localhost:3000";
+    // Build response URLs (always absolute with protocol)
+    const baseUrl = getSiteUrl();
 
-    const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}`;
+    const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}&action=cancel`;
 
     // Get slot index for email
     const { data: timeslot } = await supabase
@@ -319,8 +316,8 @@ export async function POST(request: NextRequest) {
         claimed_at: claim.claimed_at,
       },
       action_urls: {
-        confirm: `${baseUrl}/guest/action?token=${confirmToken}`,
-        cancel: `${baseUrl}/guest/action?token=${cancelToken}`,
+        confirm: `${baseUrl}/guest/action?token=${confirmToken}&action=confirm`,
+        cancel: `${baseUrl}/guest/action?token=${cancelToken}&action=cancel`,
       },
     });
   } catch (error) {

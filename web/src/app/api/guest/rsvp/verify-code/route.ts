@@ -324,14 +324,8 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", verification.id);
 
-    // Build cancel URL
-    const baseUrl =
-      process.env.PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.VERCEL_URL ||
-      "http://localhost:3000";
-
-    const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}`;
+    // Build cancel URL (always absolute with protocol)
+    const cancelUrl = `${SITE_URL}/guest/action?token=${cancelToken}&action=cancel_rsvp`;
 
     // Send RSVP confirmation email
     // Phase ABC6: Include dateKey for per-occurrence links in email

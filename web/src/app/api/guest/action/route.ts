@@ -6,6 +6,7 @@ import {
 } from "@/lib/guest-verification/config";
 import { verifyActionToken, createActionToken } from "@/lib/guest-verification/crypto";
 import { sendEmail, getWaitlistOfferEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 interface ActionBody {
   token: string;
@@ -275,10 +276,7 @@ async function handleCancel(
 
     if (promotedClaim?.guest_email && promotedClaim?.offer_expires_at && promotedClaim?.guest_verification_id) {
       // Build action URLs for the promoted guest
-      const baseUrl =
-        process.env.PUBLIC_SITE_URL ||
-        process.env.NEXT_PUBLIC_SITE_URL ||
-        "http://localhost:3000";
+      const baseUrl = getSiteUrl();
 
       // Create new action tokens for the promoted guest
       const confirmToken = await createActionToken({
@@ -295,8 +293,8 @@ async function handleCancel(
         verification_id: promotedClaim.guest_verification_id,
       });
 
-      const confirmUrl = `${baseUrl}/guest/action?token=${confirmToken}`;
-      const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}`;
+      const confirmUrl = `${baseUrl}/guest/action?token=${confirmToken}&action=confirm`;
+      const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}&action=cancel`;
 
       // Send waitlist offer email
       const emailContent = getWaitlistOfferEmail({

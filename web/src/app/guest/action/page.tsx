@@ -21,7 +21,7 @@ type ValidationError = {
 type ValidationSuccess = {
   type: "valid";
   token: string;
-  action: "confirm" | "cancel";
+  action: "confirm" | "cancel" | "cancel_rsvp";
 };
 
 type ValidationResult = ValidationError | ValidationSuccess;
@@ -29,7 +29,7 @@ type ValidationResult = ValidationError | ValidationSuccess;
 function GuestActionContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const action = searchParams.get("action") as "confirm" | "cancel" | null;
+  const action = searchParams.get("action") as "confirm" | "cancel" | "cancel_rsvp" | null;
 
   // Validate params synchronously using useMemo (not useEffect)
   const validation = useMemo((): ValidationResult => {
@@ -39,7 +39,7 @@ function GuestActionContent() {
     if (!token || !action) {
       return { type: "error", message: "Invalid link. Missing token or action." };
     }
-    if (!["confirm", "cancel"].includes(action)) {
+    if (!["confirm", "cancel", "cancel_rsvp"].includes(action)) {
       return { type: "error", message: "Invalid action type." };
     }
     return { type: "valid", token, action };
@@ -142,7 +142,13 @@ function GuestActionContent() {
                 Processing...
               </h1>
               <p className="text-[var(--color-text-secondary)]">
-                Please wait while we {action === "confirm" ? "confirm your slot" : "cancel your claim"}.
+                Please wait while we {
+                  action === "confirm"
+                    ? "confirm your slot"
+                    : action === "cancel_rsvp"
+                      ? "cancel your RSVP"
+                      : "cancel your claim"
+                }.
               </p>
             </div>
           )}
@@ -165,7 +171,7 @@ function GuestActionContent() {
                 </svg>
               </div>
               <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-                {action === "confirm" ? "Slot Confirmed!" : "Claim Cancelled"}
+                {action === "confirm" ? "Slot Confirmed!" : action === "cancel_rsvp" ? "RSVP Cancelled" : "Claim Cancelled"}
               </h1>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 {result?.message}

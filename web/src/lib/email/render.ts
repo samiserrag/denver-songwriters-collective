@@ -18,8 +18,9 @@
  */
 
 import { escapeHtml } from "@/lib/highlight";
+import { getSiteUrl } from "@/lib/siteUrl";
 
-const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
+const SITE_URL = getSiteUrl();
 
 export { SITE_URL };
 
