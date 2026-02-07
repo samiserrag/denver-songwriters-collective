@@ -33,15 +33,15 @@ export const dynamic = "force-dynamic";
 type DBEvent = Database["public"]["Tables"]["events"]["Row"];
 type DBProfile = Database["public"]["Tables"]["profiles"]["Row"];
 
-function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number; claimed_slots?: number }): Event {
+export function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number; claimed_slots?: number }): Event {
   // For timeslot events, use total_slots as capacity and claimed_slots as rsvp_count
   const effectiveCapacity = dbEvent.has_timeslots ? dbEvent.total_slots : dbEvent.capacity;
   const effectiveRsvpCount = dbEvent.has_timeslots ? (dbEvent.claimed_slots ?? 0) : (dbEvent.rsvp_count ?? 0);
 
   return {
-    id: dbEvent.id,
-    slug: dbEvent.slug,
-    title: dbEvent.title,
+    // Preserve full DB event row so card-critical fields (verification/location/age)
+    // remain available in homepage DSC rail cards.
+    ...dbEvent,
     description: dbEvent.description ?? undefined,
     date: dbEvent.event_date,
     event_date: dbEvent.event_date,
@@ -56,7 +56,6 @@ function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number; claimed_slo
     location: dbEvent.venue_address ?? undefined,
     capacity: effectiveCapacity,
     rsvp_count: effectiveRsvpCount,
-    is_dsc_event: dbEvent.is_dsc_event,
     imageUrl: dbEvent.cover_image_url ?? undefined,
   };
 }

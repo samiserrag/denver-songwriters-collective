@@ -340,7 +340,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | UX-03 | Reorder nav: Members immediately after Happenings | P1 | DONE |
 | UX-04 | Homepage CTA pills text: "See all happenings" / "See open mics" | P1 | DONE |
 | UX-05 | Make "Join us" heading a link to sign-up page (with hover effect) | P0 | DONE |
-| UX-06 | Side tract: Homepage "Unconfirmed + Missing details" mismatch vs event detail "Confirmed" after one-time → custom series edit | P0 | STOP-GATE COMPLETE — awaiting approval (`docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`) |
+| UX-06 | Side tract: Homepage "Unconfirmed + Missing details" mismatch vs event detail "Confirmed" after one-time → custom series edit | P0 | DONE — homepage mapper now preserves verification/location fields for DSC rail cards; regression tests added (`docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`, `web/src/__tests__/phase7b-homepage-dsc-rail-confirmed.test.tsx`) |
 | UX-07 | Homepage vs `/happenings` "Tonight" list consistency | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
 | UX-08 | Mobile event card metadata truncation (city/state/time/cost visibility) | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
 | UX-09 | Cross-surface consistency rules contract for discovery surfaces | P1 | DONE — Contracted in `docs/CONTRACTS.md` § Cross-Surface Event Consistency |

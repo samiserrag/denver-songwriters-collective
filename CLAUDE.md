@@ -722,6 +722,26 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 7B Side Tract: Homepage DSC Rail Confirmed/Missing-Details Parity (February 2026)
+
+**Summary:** Fixed homepage DSC rail card data-shape mismatch so verification and missing-details badges match event detail behavior for the same underlying event.
+
+**Delivered:**
+- Updated homepage mapper in `web/src/app/page.tsx` (`mapDBEventToEvent`) to preserve full DB event row fields (`...dbEvent`) before UI normalization.
+- Added regression test file `web/src/__tests__/phase7b-homepage-dsc-rail-confirmed.test.tsx` to assert:
+  - mapped DSC rail cards render `Confirmed` when `last_verified_at` is set,
+  - no false `Unconfirmed` / `Missing details` for complete confirmed rows,
+  - homepage source contract retains full-row preservation in mapper.
+- Updated tract investigation doc with implementation completion details:
+  - `docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`
+- Updated canonical backlog status:
+  - `docs/BACKLOG.md` (`UX-06` -> DONE)
+
+**Quality Gates:**
+- Lint: PASS
+- Tests: PASS (`3764/3764`)
+- Build: environment-limited in local CLI session (hang after optimized build start; no compile error emitted)
+
 ### Docs Alignment: Canonical Backlog Reconciliation (February 2026)
 
 **Summary:** Reconciled backlog/plan docs so `docs/BACKLOG.md` remains the single source of truth and the post-GTM active backlog is now a curated index only.
