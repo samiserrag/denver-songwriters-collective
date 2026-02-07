@@ -105,6 +105,9 @@ export function buildInviteEmailBody(inviteUrl: string): string {
     "",
     "If it feels like your vibe, join us on the site.",
     "",
+    "“We are the music makers, and we are the dreamers of dreams.”",
+    "— Willy Wonka",
+    "",
     "Enjoy!",
   ].join("\n");
 }

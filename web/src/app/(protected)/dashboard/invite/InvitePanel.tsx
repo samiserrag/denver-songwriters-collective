@@ -135,15 +135,21 @@ export default function InvitePanel({ source }: InvitePanelProps) {
           </div>
         </section>
 
-        <section className="card-base p-6 rounded-xl border border-[var(--color-border-default)]">
-          <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
-            Why start with the homepage?
+        <section className="card-base p-6 rounded-xl border border-[var(--color-border-default)] space-y-3">
+          <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)]">
+            Thank you for sharing the Collective!!
           </h2>
-          <ul className="text-sm text-[var(--color-text-secondary)] space-y-2">
-            <li>People can quickly see this week&apos;s happenings, open mics, members, and venues.</li>
-            <li>They get a clear feel for the community before deciding whether to join.</li>
-            <li>A short note from a friend and one clear link is usually all it takes.</li>
-          </ul>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            This community grows through people inviting people.
+          </p>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            Each share helps local musicians, hosts, venues, and music lovers connect.
+          </p>
+          <blockquote className="border-l-2 border-[var(--color-border-subtle)] pl-3 text-sm text-[var(--color-text-tertiary)] italic">
+            “We are the music makers, and we are the dreamers of dreams.”
+            <br />
+            — Willy Wonka
+          </blockquote>
         </section>
 
         <section className="text-sm text-[var(--color-text-tertiary)]">
