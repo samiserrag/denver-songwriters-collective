@@ -134,11 +134,12 @@ export function wrapEmailHtml(content: string): string {
 export function createButton(text: string, url: string, color: "gold" | "green" = "gold"): string {
   const bgColor = color === "green" ? EMAIL_COLORS.success : EMAIL_COLORS.accent;
   const textColor = EMAIL_COLORS.textOnAccent;
+  const safeUrl = escapeHtml(url);
 
   return `<table cellpadding="0" cellspacing="0" style="margin: 24px 0;">
   <tr>
     <td style="background-color: ${bgColor}; border-radius: 8px;">
-      <a href="${url}" style="display: inline-block; padding: 14px 28px; color: ${textColor}; text-decoration: none; font-weight: 600; font-size: 15px;">
+      <a href="${safeUrl}" style="display: inline-block; padding: 14px 28px; color: ${textColor}; text-decoration: none; font-weight: 600; font-size: 15px;">
         ${escapeHtml(text)}
       </a>
     </td>
@@ -150,8 +151,9 @@ export function createButton(text: string, url: string, color: "gold" | "green" 
  * Create a secondary text link
  */
 export function createSecondaryLink(text: string, url: string): string {
+  const safeUrl = escapeHtml(url);
   return `<p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 14px;">
-  <a href="${url}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">${escapeHtml(text)}</a>
+  <a href="${safeUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">${escapeHtml(text)}</a>
 </p>`;
 }
 
@@ -239,10 +241,11 @@ ${escapeHtml(content)}
  * Create a card-style event link for emails
  */
 export function eventCard(eventTitle: string, eventUrl: string): string {
+  const safeUrl = escapeHtml(eventUrl);
   return `<table cellpadding="0" cellspacing="0" style="margin: 16px 0; width: 100%;">
   <tr>
     <td style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 16px;">
-      <a href="${eventUrl}" style="text-decoration: none; display: block;">
+      <a href="${safeUrl}" style="text-decoration: none; display: block;">
         <p style="margin: 0; color: ${EMAIL_COLORS.accent}; font-size: 15px; font-weight: 600;">
           ${escapeHtml(eventTitle)} →
         </p>

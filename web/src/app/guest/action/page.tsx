@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { isGuestVerificationEnabled } from "@/lib/featureFlags";
 import { removeGuestClaim, getAllGuestClaims } from "@/lib/guest-verification/storage";
 
 type ActionResult = {
@@ -26,24 +25,75 @@ type ValidationSuccess = {
 
 type ValidationResult = ValidationError | ValidationSuccess;
 
+function isValidAction(action: string | null): action is "confirm" | "cancel" | "cancel_rsvp" {
+  return action === "confirm" || action === "cancel" || action === "cancel_rsvp";
+}
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Extract action params from malformed links where an email client concatenates
+ * two URLs into the action query value.
+ */
+function resolveActionParams(searchParams: URLSearchParams): ValidationResult {
+  let token = searchParams.get("token");
+  let action = searchParams.get("action");
+
+  if (token && isValidAction(action)) {
+    return { type: "valid", token, action };
+  }
+
+  // Recovery path: look for an embedded full URL inside the action value.
+  // Example malformed input:
+  // action=cancel_rsvphttps://site/guest/action?token=...&action=cancel_rsvp
+  const rawAction = searchParams.get("action");
+  if (rawAction) {
+    const decoded = safeDecode(rawAction);
+    const embeddedUrlMatch = decoded.match(/https?:\/\/[^\s]+/i);
+    const embeddedUrl = embeddedUrlMatch?.[0];
+
+    if (embeddedUrl) {
+      try {
+        const nested = new URL(embeddedUrl);
+        token = token || nested.searchParams.get("token");
+        action = isValidAction(action) ? action : nested.searchParams.get("action");
+      } catch {
+        // Continue to regex fallback below
+      }
+    }
+
+    // Regex fallback for copied strings that include token/action fragments.
+    if (!token) {
+      const tokenMatch = decoded.match(/token=([^&\s]+)/i);
+      if (tokenMatch?.[1]) token = tokenMatch[1];
+    }
+    if (!isValidAction(action)) {
+      const actionMatch = decoded.match(/action=(confirm|cancel|cancel_rsvp)/i);
+      if (actionMatch?.[1]) action = actionMatch[1];
+    }
+  }
+
+  if (!token || !isValidAction(action)) {
+    return { type: "error", message: "Invalid link. Missing token or action." };
+  }
+
+  return { type: "valid", token, action };
+}
+
 function GuestActionContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const action = searchParams.get("action") as "confirm" | "cancel" | "cancel_rsvp" | null;
+  const actionForUi = searchParams.get("action") as "confirm" | "cancel" | "cancel_rsvp" | null;
 
   // Validate params synchronously using useMemo (not useEffect)
   const validation = useMemo((): ValidationResult => {
-    if (!isGuestVerificationEnabled()) {
-      return { type: "error", message: "This feature is not available" };
-    }
-    if (!token || !action) {
-      return { type: "error", message: "Invalid link. Missing token or action." };
-    }
-    if (!["confirm", "cancel", "cancel_rsvp"].includes(action)) {
-      return { type: "error", message: "Invalid action type." };
-    }
-    return { type: "valid", token, action };
-  }, [token, action]);
+    return resolveActionParams(new URLSearchParams(searchParams.toString()));
+  }, [searchParams]);
 
   // If validation failed, start in error state
   const initialStatus = validation.type === "error" ? "error" : "loading";
@@ -90,7 +140,12 @@ function GuestActionContent() {
         setStatus("success");
         setResult({
           success: true,
-          message: validAction === "confirm" ? "Slot confirmed successfully!" : "Claim cancelled successfully.",
+          message:
+            validAction === "confirm"
+              ? "Slot confirmed successfully!"
+              : validAction === "cancel_rsvp"
+                ? "RSVP cancelled successfully."
+                : "Claim cancelled successfully.",
         });
 
         // Clean up localStorage on cancel
@@ -143,9 +198,9 @@ function GuestActionContent() {
               </h1>
               <p className="text-[var(--color-text-secondary)]">
                 Please wait while we {
-                  action === "confirm"
+                  actionForUi === "confirm"
                     ? "confirm your slot"
-                    : action === "cancel_rsvp"
+                    : actionForUi === "cancel_rsvp"
                       ? "cancel your RSVP"
                       : "cancel your claim"
                 }.
@@ -171,7 +226,7 @@ function GuestActionContent() {
                 </svg>
               </div>
               <h1 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-                {action === "confirm" ? "Slot Confirmed!" : action === "cancel_rsvp" ? "RSVP Cancelled" : "Claim Cancelled"}
+                {actionForUi === "confirm" ? "Slot Confirmed!" : actionForUi === "cancel_rsvp" ? "RSVP Cancelled" : "Claim Cancelled"}
               </h1>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 {result?.message}
