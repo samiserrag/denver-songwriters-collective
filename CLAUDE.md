@@ -722,6 +722,85 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 7A-R: Legacy Media Reconciliation (February 2026)
+
+**Summary:** Completed one-time guarded reconciliation for legacy seeded event cover URLs to align historical rows with canonical `event-images` + `event_images` structure.
+
+**Status:** Complete. No source-code edits required.
+
+**What was executed:**
+- Migrated only rows still using seeded signed `open-mic-images/Open Mic Image.jpg` URLs.
+- Wrote canonical storage paths: `event-images/{eventId}/legacy-open-mic-seed.jpg`.
+- Inserted active `event_images` rows and updated `events.cover_image_url` to canonical public `event-images` URLs.
+- Preserved manual replacements by requiring write-time URL match before update.
+
+**Execution metrics:**
+- Target rows: `37`
+- `db_inserted`: `37`
+- `events_updated`: `37`
+- Errors: `0`
+
+**Post-verification:**
+- `missing_active_links`: `0`
+- `missing_seed_signed_open_mic`: `0`
+- `covers_using_event_images_public`: `85`
+
+**Docs updated:**
+- `docs/investigation/phase7a-legacy-media-reconciliation-stopgate.md` (status + execution addendum)
+
+### Phase 6: Cross-Surface Event Consistency & Mobile UX Cohesion (February 2026)
+
+**Summary:** Resolved all three backlog items from post-GTM-3.1: homepage vs happenings "Tonight" list consistency, mobile event card truncation and metadata loss, and missing cross-surface consistency contracts.
+
+**Status:** Complete. PR #118 merged to main. All quality gates pass (lint 0, tests 3775, build success).
+
+**Problem:** Homepage "Tonight's Happenings" and `/happenings` used divergent pipelines — different status filters, venue joins, override handling, and expansion windows. Mobile cards truncated metadata (venue, cost, time) with `truncate` CSS. No enforceable contracts existed for cross-surface consistency.
+
+**Three Work Packages:**
+
+| WP | Description |
+|----|-------------|
+| WP1: Pipeline Alignment | Shared constants (`DISCOVERY_STATUS_FILTER`, `DISCOVERY_VENUE_SELECT`), override pipeline with `applyReschedulesToTimeline()`, range-based override fetch, 90-day expansion window |
+| WP2: Mobile Card UX | Replaced `truncate` with `flex-wrap`/`break-words` on HappeningCard meta line and SeriesCard venue line; `NA` normalization for missing time/venue/cost |
+| WP3: Governance Lock | Cross-surface consistency section in `docs/CONTRACTS.md`; Single-Writer Collaboration Protocol in `docs/GOVERNANCE.md` v1.3 |
+
+**Key Fix (Reschedule Parity):** Homepage previously used `.eq("date_key", today)` for override fetch and `startKey: today, endKey: today` for expansion. This missed occurrences rescheduled TO today from future dates. Changed to range-based `.gte/.lte` with 90-day forward window matching `/happenings` parity, enabling `applyReschedulesToTimeline()` to relocate rescheduled occurrences correctly.
+
+**Files Added (2):**
+
+| File | Purpose |
+|------|---------|
+| `lib/happenings/tonightContract.ts` | Shared constants: `DISCOVERY_STATUS_FILTER`, `DISCOVERY_VENUE_SELECT`, `DISCOVERY_VENUE_SELECT_WITH_COORDS` |
+| `__tests__/phase6-cross-surface-consistency.test.ts` | 50 tests across 11 sections (A-K) |
+
+**Files Modified (8):**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Shared constants, `applyReschedulesToTimeline()`, range-based override fetch, 90-day expansion window |
+| `app/happenings/page.tsx` | Shared constants from `tonightContract.ts` (replacing inline values) |
+| `components/happenings/HappeningCard.tsx` | `flex-wrap`/`break-words` on meta line, `NA` normalization for missing fields |
+| `components/happenings/SeriesCard.tsx` | `break-words` on venue line |
+| `lib/happenings/index.ts` | Barrel export for tonightContract |
+| `docs/CONTRACTS.md` | Cross-surface consistency section (§ Cross-Surface) |
+| `docs/GOVERNANCE.md` | v1.3 with Single-Writer Collaboration Protocol |
+| `CLAUDE.md` | Single-Writer quick reference, Phase 6 entry |
+
+**Test Coverage:** 50 new tests (3775 total) covering:
+- Shared constants parity between homepage and happenings (Section A)
+- Override pipeline with `applyReschedulesToTimeline` (Section B)
+- Status filter alignment (Section C)
+- Venue join parity (Section D)
+- Mobile meta line wrapping (Section E)
+- `NA` normalization for missing Decision Facts (Section F)
+- SeriesCard venue wrapping (Section G)
+- Behavioral `applyReschedulesToTimeline` tests (Section H)
+- Range-based override fetch and forward expansion window (Section I)
+- CONTRACTS.md governance (Section J)
+- Reschedule-from-future-to-today behavioral proof (Section K)
+
+**Push:** `main` merged via PR #118 (`5faa664`).
+
 ### Post-GTM-3.1 Active Backlog Documentation (February 2026)
 
 **Summary:** Created new backlog document to capture high-priority product and UX items discussed but not yet documented. Covers non-email, non-GTM-3.1 items only.
