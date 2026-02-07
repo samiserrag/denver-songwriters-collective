@@ -735,6 +735,7 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 - Rewrote `docs/backlog/post-gtm-3-1-active-backlog.md` as a canonical-reference view (no duplicate source-of-truth statuses).
 - Added `docs/backlog/DOCS_ALIGNMENT_RULES.md` to lock canonicalization rules.
 - Updated historical Early Contributors notes in `docs/BACKLOG.md` to reflect Phase 7B.1b retirement/redirect behavior.
+- Merged docs-alignment branch into `main` at merge commit `f1dfc7f30ffd71311b84a71e728ca89289935ead`.
 
 ### Phase 7B.1b: Invite UX Copy + Homepage Link Simplification (February 2026)
 
