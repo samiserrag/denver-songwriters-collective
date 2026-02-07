@@ -196,6 +196,8 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
     expect(inviteSource).toContain("const inviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);");
     expect(inviteSource).toContain("const body = encodeURIComponent(inviteMessage);");
     expect(inviteSource).toContain("text: inviteMessage,");
+    expect(inviteSource).toContain('await logInviteAction("share_fallback_copy");');
+    expect(inviteSource).not.toContain("disabled={!canNativeShare}");
   });
 
   it("root layout includes share CTA bars at top and bottom", async () => {

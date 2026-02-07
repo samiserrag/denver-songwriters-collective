@@ -25,7 +25,6 @@ function buildInviteUrl(): string {
 
 export default function InvitePanel({ source }: InvitePanelProps) {
   const inviteUrl = useMemo(() => buildInviteUrl(), []);
-  const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const inviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);
   const mailtoHref = useMemo(() => {
     const subject = encodeURIComponent(INVITE_EMAIL_SUBJECT);
@@ -63,7 +62,13 @@ export default function InvitePanel({ source }: InvitePanelProps) {
 
   const handleNativeShare = async () => {
     if (!navigator.share) {
-      toast.error("Native sharing is not available on this device");
+      try {
+        await navigator.clipboard.writeText(inviteMessage);
+        await logInviteAction("share_fallback_copy");
+        toast.success("Share message copied. Paste it anywhere.");
+      } catch {
+        toast.error("Unable to share right now. Try Copy Link or Email Invite.");
+      }
       return;
     }
     try {
@@ -127,8 +132,7 @@ export default function InvitePanel({ source }: InvitePanelProps) {
             <button
               type="button"
               onClick={handleNativeShare}
-              className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
-              disabled={!canNativeShare}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors"
             >
               Share
             </button>
