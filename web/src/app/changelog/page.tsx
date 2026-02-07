@@ -27,16 +27,6 @@ interface ChangelogEntry {
 const changelogEntries: ChangelogEntry[] = [
   {
     date: "2026-01-20",
-    title: "Early Contributors Program",
-    bullets: [
-      "Added role-based testing missions for songwriters, hosts, venues, and visitors",
-      "New feedback form with category prefill for streamlined submissions",
-      "Thanks page with clear next steps after submitting feedback",
-    ],
-    tags: ["feature"],
-  },
-  {
-    date: "2026-01-20",
     title: "Centralized Feedback System",
     bullets: [
       "New /feedback page for bug reports, feature requests, and general feedback",
@@ -138,10 +128,10 @@ export default function ChangelogPage() {
           {/* Back link */}
           <div className="mt-12 text-center">
             <Link
-              href="/early-contributors"
+              href="/"
               className="text-[length:var(--font-size-body-md)] text-[var(--color-text-accent)] hover:underline"
             >
-              &larr; Back to Early Contributors
+              &larr; Back to Home
             </Link>
           </div>
         </div>

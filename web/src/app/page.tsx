@@ -437,7 +437,7 @@ export default async function HomePage() {
           <div className="mt-6 text-sm md:text-base text-[var(--color-text-secondary)]">
             {INVITE_CTA_HEADLINE} {INVITE_CTA_BODY}{" "}
             <Link
-              href="/dashboard/invite?via=homepage_community"
+              href="/dashboard/invite"
               className="text-[var(--color-text-accent)] hover:underline"
             >
               {INVITE_CTA_LABEL}
@@ -969,34 +969,26 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Early Contributors CTA */}
+      {/* Invite CTA */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-2xl mx-auto">
           <article className="card-spotlight p-6 md:p-8 text-center">
             <h2 className="font-[var(--font-family-serif)] font-semibold text-2xl md:text-3xl text-[var(--color-text-primary)] tracking-tight mb-4">
-              Early Contributors
+              Invite Your Music Friends
             </h2>
             <p className="text-[var(--color-text-secondary)] text-base md:text-lg mb-2">
-              Help shape the Denver Songwriters Collective.
-              Explore the site and tell us what worked, what didn&apos;t, and what would make you share it.
+              If this site has been useful to you, pass it on.
+              A personal recommendation from you means more than any ad we could run.
             </p>
             <p className="text-sm text-[var(--color-text-tertiary)] mb-6">
-              For songwriters, hosts, venues, and curious first-timers.
+              Share the homepage first so people can see what the community is about before deciding to join.
             </p>
             <Link
-              href="/early-contributors"
+              href="/dashboard/invite"
               className="inline-flex items-center justify-center px-6 py-3 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] font-semibold rounded-full hover:bg-[var(--color-accent-hover)] transition-colors"
             >
-              Become an Early Contributor
+              {INVITE_CTA_LABEL}
             </Link>
-            <div className="mt-4">
-              <Link
-                href="/dashboard/invite?via=homepage_early_contributors"
-                className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                {INVITE_CTA_LABEL}
-              </Link>
-            </div>
           </article>
         </div>
       </section>

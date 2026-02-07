@@ -722,6 +722,17 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 7B.1b: Invite UX Copy + Homepage Link Simplification (February 2026)
+
+**Summary:** Refined invite messaging for clarity and conversion, simplified share URLs to homepage-only, and retired Early Contributors as a user-facing destination.
+
+**Delivered:**
+- Invite links now share clean homepage URL (`/`) rather than signup + tracking params.
+- Invite email template copy updated to first-person recommendation with salutation and signer.
+- Invite page copy rewritten to explain homepage-first journey and join value.
+- Removed sitewide Early Contributors mentions and replaced homepage/footer CTAs.
+- `/early-contributors` and `/early-contributors/thanks` now redirect to `/`.
+
 ### Phase 7B.1: Community Invite / Referral Growth Loop (February 2026)
 
 **Summary:** Implemented share-first member invites with end-to-end referral attribution capture (no platform-sent invite emails).

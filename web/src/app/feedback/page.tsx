@@ -34,7 +34,7 @@ export default function FeedbackPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Prefill from URL params (for deep-linking from early contributors, etc.)
+  // Prefill from URL params (for deep-linking from other pages)
   useEffect(() => {
     const categoryParam = searchParams.get("category");
     if (categoryParam && ["bug", "feature", "other"].includes(categoryParam)) {

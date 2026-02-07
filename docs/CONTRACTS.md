@@ -134,17 +134,16 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 - No platform-sent invite email in 7B.1.
 - Media embeds are out of scope for this tract.
 
-### Referral Param Contract
+### Clean Invite URL Contract
 
-- Invite links use this query contract:
-  - `ref`: inviter profile/user id (UUID)
-  - `via`: normalized acquisition channel (`member_invite`, `digest_invite`, `site_cta`)
-  - `src`: normalized surface source (`header_nav`, `mobile_nav`, `happenings_community`, etc.)
-- Invalid referral params are dropped (not persisted).
+- Member-facing share links must point to the clean homepage URL:
+  - `https://denversongwriterscollective.org/`
+- Invite links should avoid visible tracking query params.
+- The primary invite flow should feel like a personal recommendation, not a tracking funnel.
 
-### Persistence Contract
+### Attribution Contract
 
-- Referral params must survive auth callback and onboarding completion.
+- Referral params, when present from other channels, must survive auth callback and onboarding completion.
 - Attribution persists to `profiles`:
   - `referred_by_profile_id`
   - `referral_via`

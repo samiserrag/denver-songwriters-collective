@@ -140,8 +140,8 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
       "src/components/navigation/mobile-menu.tsx",
       "utf-8",
     );
-    expect(headerSource).toContain("/dashboard/invite?via=header_nav");
-    expect(mobileSource).toContain("/dashboard/invite?via=mobile_nav");
+    expect(headerSource).toContain('/dashboard/invite">{INVITE_CTA_LABEL}');
+    expect(mobileSource).toContain('/dashboard/invite">{INVITE_CTA_LABEL}');
     expect(headerSource).toContain("INVITE_CTA_LABEL");
     expect(mobileSource).toContain("INVITE_CTA_LABEL");
   });
@@ -150,12 +150,12 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
     const fs = await import("fs");
     const homeSource = fs.readFileSync("src/app/page.tsx", "utf-8");
     const happeningsSource = fs.readFileSync("src/app/happenings/page.tsx", "utf-8");
-    expect(homeSource).toContain("/dashboard/invite?via=homepage_community");
-    expect(homeSource).toContain("/dashboard/invite?via=homepage_early_contributors");
-    expect(happeningsSource).toContain("/dashboard/invite?via=happenings_community");
+    expect(homeSource).toContain('href="/dashboard/invite"');
+    expect(homeSource).not.toContain("/early-contributors");
+    expect(happeningsSource).toContain('href="/dashboard/invite"');
   });
 
-  it("weekly digest templates include invite links with referral attribution", async () => {
+  it("weekly digest templates link invites to the clean homepage URL", async () => {
     const fs = await import("fs");
     const happeningsDigest = fs.readFileSync(
       "src/lib/email/templates/weeklyHappeningsDigest.ts",
@@ -165,10 +165,10 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
       "src/lib/email/templates/weeklyOpenMicsDigest.ts",
       "utf-8",
     );
-    expect(happeningsDigest).toContain("via=digest_invite");
-    expect(happeningsDigest).toContain("src=weekly_happenings_digest");
-    expect(openMicsDigest).toContain("via=digest_invite");
-    expect(openMicsDigest).toContain("src=weekly_open_mics_digest");
+    expect(happeningsDigest).toContain("const inviteUrl = `${SITE_URL}/`");
+    expect(happeningsDigest).not.toContain("via=digest_invite");
+    expect(openMicsDigest).toContain("const inviteUrl = `${SITE_URL}/`");
+    expect(openMicsDigest).not.toContain("via=digest_invite");
   });
 
   it("invite label remains canonical across surfaces", () => {

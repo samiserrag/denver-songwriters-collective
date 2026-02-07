@@ -124,7 +124,7 @@ export function MobileMenu({
           {isLoggedIn ? (
             <div className="flex flex-col gap-3">
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard/invite?via=mobile_nav">{INVITE_CTA_LABEL}</Link>
+                <Link href="/dashboard/invite">{INVITE_CTA_LABEL}</Link>
               </Button>
               <Button variant="primary" className="w-full" asChild>
                 <Link href="/dashboard">Dashboard</Link>

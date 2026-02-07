@@ -164,7 +164,7 @@ export function getWeeklyOpenMicsDigestEmail(
 
   // Build one-click unsubscribe URL (HMAC-signed, no login required)
   const unsubscribeUrl = buildUnsubscribeUrl(userId) || `${SITE_URL}/dashboard/settings`;
-  const inviteUrl = `${SITE_URL}/signup?ref=${encodeURIComponent(userId)}&via=digest_invite&src=weekly_open_mics_digest`;
+  const inviteUrl = `${SITE_URL}/`;
 
   const subject = "🎤 Open Mics This Week in Denver";
 

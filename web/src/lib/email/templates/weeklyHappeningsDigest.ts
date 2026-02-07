@@ -527,7 +527,7 @@ export function getWeeklyHappeningsDigestEmail(
   }
 
   const happeningsLinkHtml = `Want to tailor this to you? Browse all <a href="${SITE_URL}/happenings" style="color: ${EMAIL_COLORS.accent}; text-decoration: underline;">happenings</a> with your filters applied!`;
-  const inviteUrl = `${SITE_URL}/signup?ref=${encodeURIComponent(userId)}&via=digest_invite&src=weekly_happenings_digest`;
+  const inviteUrl = `${SITE_URL}/`;
   const inviteNudgeHtml = `
     <p style="margin: 10px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
       ${escapeHtml(INVITE_CTA_HEADLINE)} ${escapeHtml(INVITE_CTA_BODY)}

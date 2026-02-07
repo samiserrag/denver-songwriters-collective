@@ -95,7 +95,7 @@ export function Header({ className }: HeaderProps) {
           ) : user ? (
             <>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/dashboard/invite?via=header_nav">{INVITE_CTA_LABEL}</Link>
+                <Link href="/dashboard/invite">{INVITE_CTA_LABEL}</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/dashboard">Dashboard</Link>

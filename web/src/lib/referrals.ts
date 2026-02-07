@@ -17,10 +17,12 @@ const TOKEN_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 export const REFERRAL_COOKIE_NAME = "dsc_referral";
 export const INVITE_CTA_HEADLINE =
-  "Know a songwriter or open mic friend who should be here?";
+  "Got a songwriter friend who should be in this mix?";
 export const INVITE_CTA_BODY =
-  "Invite them to join the Denver Songwriters Collective.";
+  "Send them the homepage and your personal recommendation.";
 export const INVITE_CTA_LABEL = "Invite a Friend";
+export const INVITE_CTA_FOOTER = "No pressure. Just good songs and good people.";
+export const INVITE_EMAIL_SUBJECT = "Come check out Denver Songwriters Collective";
 
 function hasGetter(
   input: ReferralInput,
@@ -89,4 +91,22 @@ export function deserializeReferralCookie(value: string | undefined): ReferralPa
   } catch {
     return {};
   }
+}
+
+export function buildInviteEmailBody(inviterName: string | null | undefined, inviteUrl: string): string {
+  const signer = inviterName?.trim() || "A friend from Denver Songwriters Collective";
+
+  return [
+    "Hey [Friend Name],",
+    "",
+    "I wanted to share this with you because I think you'd genuinely enjoy it.",
+    "Denver Songwriters Collective is where I go to find open mics, happenings, and local music people worth knowing.",
+    "",
+    `Start on the homepage: ${inviteUrl}`,
+    "",
+    "If it feels like your vibe, join us on the site.",
+    "",
+    "See you there,",
+    signer,
+  ].join("\n");
 }

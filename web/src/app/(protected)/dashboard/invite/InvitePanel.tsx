@@ -6,38 +6,33 @@ import { toast } from "sonner";
 import { appLogger } from "@/lib/appLogger";
 import {
   INVITE_CTA_BODY,
+  INVITE_CTA_FOOTER,
   INVITE_CTA_HEADLINE,
-  applyReferralParams,
+  INVITE_EMAIL_SUBJECT,
+  buildInviteEmailBody,
 } from "@/lib/referrals";
 
 interface InvitePanelProps {
-  referrerId: string;
+  inviterName: string | null;
   source: string;
 }
 
-function buildInviteUrl(referrerId: string, source: string): string {
+function buildInviteUrl(): string {
   const baseOrigin =
     typeof window !== "undefined" ? window.location.origin : "https://denversongwriterscollective.org";
-  const inviteUrl = new URL("/signup", baseOrigin);
-  applyReferralParams(inviteUrl.searchParams, {
-    ref: referrerId,
-    via: "member_invite",
-    src: source,
-  });
+  const inviteUrl = new URL("/", baseOrigin);
   return inviteUrl.toString();
 }
 
-export default function InvitePanel({ referrerId, source }: InvitePanelProps) {
-  const inviteUrl = useMemo(() => buildInviteUrl(referrerId, source), [referrerId, source]);
+export default function InvitePanel({ inviterName, source }: InvitePanelProps) {
+  const inviteUrl = useMemo(() => buildInviteUrl(), []);
   const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
-  const shareMessage = `${INVITE_CTA_HEADLINE} ${INVITE_CTA_BODY}`;
+  const shareMessage = `${INVITE_CTA_HEADLINE} ${INVITE_CTA_BODY} ${INVITE_CTA_FOOTER}`;
   const mailtoHref = useMemo(() => {
-    const subject = encodeURIComponent("Join me on Denver Songwriters Collective");
-    const body = encodeURIComponent(
-      `${shareMessage}\n\n${inviteUrl}\n\nSee you there.`,
-    );
+    const subject = encodeURIComponent(INVITE_EMAIL_SUBJECT);
+    const body = encodeURIComponent(buildInviteEmailBody(inviterName, inviteUrl));
     return `mailto:?subject=${subject}&body=${body}`;
-  }, [inviteUrl, shareMessage]);
+  }, [inviterName, inviteUrl]);
 
   const logInviteAction = async (action: string) => {
     await appLogger.info(
@@ -94,6 +89,9 @@ export default function InvitePanel({ referrerId, source }: InvitePanelProps) {
           <p className="text-[var(--color-text-secondary)] text-base">
             {INVITE_CTA_HEADLINE} {INVITE_CTA_BODY}
           </p>
+          <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
+            {INVITE_CTA_FOOTER}
+          </p>
         </section>
 
         <section className="card-base p-6 rounded-xl border border-[var(--color-border-default)] space-y-3">
@@ -137,6 +135,17 @@ export default function InvitePanel({ referrerId, source }: InvitePanelProps) {
               Share
             </button>
           </div>
+        </section>
+
+        <section className="card-base p-6 rounded-xl border border-[var(--color-border-default)]">
+          <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
+            Why send people to the homepage?
+          </h2>
+          <ul className="text-sm text-[var(--color-text-secondary)] space-y-2">
+            <li>It shows the full picture fast: happenings, open mics, members, and venues.</li>
+            <li>It explains what the community is before asking anyone to sign up.</li>
+            <li>It feels like a recommendation from you, not a cold signup funnel.</li>
+          </ul>
         </section>
 
         <section className="text-sm text-[var(--color-text-tertiary)]">

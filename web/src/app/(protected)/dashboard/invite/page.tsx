@@ -1,16 +1,10 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { sanitizeReferralParams } from "@/lib/referrals";
 import InvitePanel from "./InvitePanel";
 
 export const dynamic = "force-dynamic";
 
-interface PageProps {
-  searchParams: Promise<{ via?: string; src?: string }>;
-}
-
-export default async function InvitePage({ searchParams }: PageProps) {
-  const params = await searchParams;
+export default async function InvitePage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { session },
@@ -20,8 +14,11 @@ export default async function InvitePage({ searchParams }: PageProps) {
     redirect("/login");
   }
 
-  const referralParams = sanitizeReferralParams(params);
-  const source = referralParams.via || referralParams.src || "dashboard_invite";
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", session.user.id)
+    .maybeSingle();
 
-  return <InvitePanel referrerId={session.user.id} source={source} />;
+  return <InvitePanel inviterName={profile?.full_name ?? null} source="dashboard_invite" />;
 }
