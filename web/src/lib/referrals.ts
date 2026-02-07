@@ -6,6 +6,7 @@ export interface ReferralParams {
 
 type ReferralInput =
   | URLSearchParams
+  | ReferralParams
   | { get?: (key: string) => string | null; [key: string]: unknown }
   | null
   | undefined;
@@ -21,13 +22,24 @@ export const INVITE_CTA_BODY =
   "Invite them to join the Denver Songwriters Collective.";
 export const INVITE_CTA_LABEL = "Invite a Friend";
 
+function hasGetter(
+  input: ReferralInput,
+): input is URLSearchParams | { get: (key: string) => string | null } {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "get" in input &&
+    typeof (input as { get?: unknown }).get === "function"
+  );
+}
+
 function getInputValue(input: ReferralInput, key: "ref" | "via" | "src"): string | undefined {
   if (!input) return undefined;
-  if (typeof input.get === "function") {
+  if (hasGetter(input)) {
     const value = input.get(key);
     return value ?? undefined;
   }
-  const raw = input[key];
+  const raw = (input as ReferralParams | Record<string, unknown>)[key];
   return typeof raw === "string" ? raw : undefined;
 }
 
