@@ -100,14 +100,13 @@ export function TimeslotSection({
         return;
       }
 
-      // Fetch claims for these timeslots (including guest claims)
+      // Fetch claims for these timeslots (including guest claims).
+      // Avoid a direct profiles join here: anonymous users can read claims,
+      // but profile joins may fail under stricter profile RLS.
       const slotIds = slots.map((s: DBTimeslot) => s.id);
       const { data: claims, error: claimsError } = await supabase
         .from("timeslot_claims")
-        .select(`
-          *,
-          member:profiles!timeslot_claims_member_id_fkey(id, slug, full_name)
-        `)
+        .select("*")
         .in("timeslot_id", slotIds)
         .not("status", "in", "(cancelled,no_show)");
 
@@ -115,11 +114,43 @@ export function TimeslotSection({
         console.error("Error fetching claims:", claimsError);
       }
 
+      // Best-effort member profile hydration for linked member claims.
+      // If profile access is denied, keep claims visible and render as "Claimed".
+      const memberIds = [...new Set(
+        ((claims || []) as DBTimeslotClaim[])
+          .map((claim) => claim.member_id)
+          .filter((memberId): memberId is string => !!memberId)
+      )];
+
+      const memberById = new Map<string, NonNullable<TimeslotClaim["member"]>>();
+      if (memberIds.length > 0) {
+        const { data: members, error: membersError } = await supabase
+          .from("profiles")
+          .select("id, slug, full_name")
+          .in("id", memberIds);
+
+        if (membersError) {
+          console.warn("Unable to hydrate member profiles for lineup:", membersError.message);
+        } else {
+          for (const member of members || []) {
+            memberById.set(member.id, {
+              id: member.id,
+              slug: member.slug,
+              full_name: member.full_name,
+            });
+          }
+        }
+      }
+
       // Map claims to their slots
       const claimsBySlot = new Map<string, TimeslotClaim>();
-      ((claims || []) as TimeslotClaim[]).forEach(claim => {
+      ((claims || []) as DBTimeslotClaim[]).forEach((rawClaim) => {
         // Only track confirmed claims for display (not waitlist)
-        if (claim.status === "confirmed" || claim.status === "performed") {
+        if (rawClaim.status === "confirmed" || rawClaim.status === "performed") {
+          const claim: TimeslotClaim = {
+            ...rawClaim,
+            member: rawClaim.member_id ? memberById.get(rawClaim.member_id) || null : null,
+          };
           claimsBySlot.set(claim.timeslot_id, claim);
         }
       });
@@ -329,7 +360,7 @@ export function TimeslotSection({
           const displayName = slot.claim?.member?.full_name || slot.claim?.guest_name;
 
           // Claimed slots - celebrate the performer
-          if (isClaimed && displayName) {
+          if (isClaimed) {
             return (
               <div
                 key={slot.id}
@@ -377,7 +408,11 @@ export function TimeslotSection({
                       {displayName}
                     </p>
                   </Link>
-                ) : null}
+                ) : (
+                  <p className="text-base font-semibold text-[var(--color-text-accent)] font-[var(--font-family-serif)] italic">
+                    Claimed
+                  </p>
+                )}
               </div>
             );
           }
