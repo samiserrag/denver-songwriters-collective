@@ -32,8 +32,7 @@ export function getSiteUrl(): string {
   return normalizeSiteUrl(
     process.env.PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.VERCEL_URL ||
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ||
       DEFAULT_SITE_URL
   );
 }
-
