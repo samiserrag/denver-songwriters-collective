@@ -722,6 +722,34 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Host RSVP Removal on Attendees Tab (February 2026) — RESOLVED
+
+**Summary:** Added cancel/remove button for hosts on the event editor's Attendees tab, allowing primary hosts and admins to remove RSVPs per date occurrence.
+
+**Authorization:** Primary hosts (`role='host'`) and admins only. Cohosts are explicitly excluded.
+
+**Behavior:**
+- X button appears on each attendee card (confirmed + waitlist) when authorized
+- Danger-variant confirmation dialog before removal
+- Soft-delete: sets RSVP `status = "cancelled"` (preserves audit trail)
+- Waitlist auto-promotion: if a confirmed RSVP is removed and a waitlist exists, next person is auto-promoted via `promoteNextWaitlistPerson()` and notified via `sendOfferNotifications()`
+- Removed member receives a dashboard notification
+- Optimistic UI: card removed from list immediately on success
+- Loading spinner on the specific card being removed
+
+**Files Modified (3):**
+
+| File | Change |
+|------|--------|
+| `app/api/my-events/[id]/rsvps/route.ts` | Added DELETE handler with soft-cancel, waitlist promotion, member notification |
+| `dashboard/my-events/[id]/_components/AttendeesTab.tsx` | Added X button on attendee cards, ConfirmDialog, handleRemove, optimistic state removal |
+| `dashboard/my-events/[id]/_components/EventManagementClient.tsx` | Passes `canRemoveAttendees={isPrimaryHost \|\| isAdmin}` to AttendeesTab |
+
+**Quality Gates:**
+- Lint: PASS (0 errors, 0 warnings)
+- Tests: PASS (3765/3765)
+- Build: PASS
+
 ### STRAT-01: North-Star Multi-Region + White-Label Governance Alignment (February 2026)
 
 **Summary:** Added a parallel strategic tract to define long-term platform direction (multi-region + white-label) without interrupting active execution backlog.

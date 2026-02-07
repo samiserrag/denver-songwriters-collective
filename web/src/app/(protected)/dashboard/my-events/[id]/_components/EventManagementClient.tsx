@@ -112,6 +112,7 @@ export default function EventManagementClient({
             isRecurring={isRecurring}
             availableDates={availableDates}
             initialDateKey={initialDateKey}
+            canRemoveAttendees={isPrimaryHost || isAdmin}
           />
         )}
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface AttendeesTabProps {
   eventId: string;
@@ -10,6 +11,7 @@ interface AttendeesTabProps {
   isRecurring: boolean;
   availableDates: string[];
   initialDateKey?: string;
+  canRemoveAttendees?: boolean;
 }
 
 interface RSVPUser {
@@ -56,6 +58,7 @@ export default function AttendeesTab({
   isRecurring,
   availableDates,
   initialDateKey,
+  canRemoveAttendees = false,
 }: AttendeesTabProps) {
   const [selectedDate, setSelectedDate] = useState(initialDateKey || availableDates[0] || "");
   const [data, setData] = useState<{
@@ -65,6 +68,8 @@ export default function AttendeesTab({
     total_waitlist: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [confirmRemoveRsvp, setConfirmRemoveRsvp] = useState<{ id: string; name: string } | null>(null);
 
   // Sync with parent's date when it changes
   useEffect(() => {
@@ -90,6 +95,41 @@ export default function AttendeesTab({
     };
     fetchRSVPs();
   }, [eventId, selectedDate]);
+
+  const handleRemove = async () => {
+    if (!confirmRemoveRsvp) return;
+    const rsvpId = confirmRemoveRsvp.id;
+    setRemovingId(rsvpId);
+    setConfirmRemoveRsvp(null);
+    try {
+      const res = await fetch(`/api/my-events/${eventId}/rsvps`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rsvp_id: rsvpId }),
+      });
+      if (res.ok) {
+        // Optimistically remove from local state
+        setData((prev) => {
+          if (!prev) return prev;
+          const confirmed = prev.confirmed.filter((r) => r.id !== rsvpId);
+          const waitlist = prev.waitlist.filter((r) => r.id !== rsvpId);
+          return {
+            confirmed,
+            waitlist,
+            total_confirmed: confirmed.length,
+            total_waitlist: waitlist.length,
+          };
+        });
+      } else {
+        const err = await res.json().catch(() => null);
+        alert(err?.error || "Failed to remove RSVP");
+      }
+    } catch {
+      alert("Failed to remove RSVP");
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -162,7 +202,13 @@ export default function AttendeesTab({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.confirmed.map((rsvp) => (
-              <AttendeeCard key={rsvp.id} rsvp={rsvp} type="confirmed" />
+              <AttendeeCard
+                key={rsvp.id}
+                rsvp={rsvp}
+                type="confirmed"
+                onRemove={canRemoveAttendees ? (id, name) => setConfirmRemoveRsvp({ id, name }) : undefined}
+                isRemoving={removingId === rsvp.id}
+              />
             ))}
           </div>
         </div>
@@ -176,7 +222,14 @@ export default function AttendeesTab({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.waitlist.map((rsvp, index) => (
-              <AttendeeCard key={rsvp.id} rsvp={rsvp} type="waitlist" position={index + 1} />
+              <AttendeeCard
+                key={rsvp.id}
+                rsvp={rsvp}
+                type="waitlist"
+                position={index + 1}
+                onRemove={canRemoveAttendees ? (id, name) => setConfirmRemoveRsvp({ id, name }) : undefined}
+                isRemoving={removingId === rsvp.id}
+              />
             ))}
           </div>
         </div>
@@ -192,6 +245,17 @@ export default function AttendeesTab({
           </p>
         </div>
       )}
+
+      {/* Confirm remove dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmRemoveRsvp}
+        onClose={() => setConfirmRemoveRsvp(null)}
+        onConfirm={handleRemove}
+        title="Remove RSVP"
+        message={`Remove ${confirmRemoveRsvp?.name || "this person"} from the attendee list? They will be notified. If there is a waitlist, the next person will be promoted.`}
+        confirmLabel="Remove"
+        variant="danger"
+      />
     </div>
   );
 }
@@ -200,9 +264,11 @@ interface AttendeeCardProps {
   rsvp: RSVPUser;
   type: "confirmed" | "waitlist";
   position?: number;
+  onRemove?: (id: string, name: string) => void;
+  isRemoving?: boolean;
 }
 
-function AttendeeCard({ rsvp, type, position }: AttendeeCardProps) {
+function AttendeeCard({ rsvp, type, position, onRemove, isRemoving }: AttendeeCardProps) {
   const isGuest = !rsvp.user && rsvp.guest_name;
   const displayName = rsvp.user?.full_name || rsvp.guest_name || "Anonymous";
   const initial = displayName[0]?.toUpperCase() || "?";
@@ -218,12 +284,33 @@ function AttendeeCard({ rsvp, type, position }: AttendeeCardProps) {
 
   return (
     <div className={`
-      p-4 bg-[var(--color-bg-secondary)] border rounded-lg
+      p-4 bg-[var(--color-bg-secondary)] border rounded-lg relative
       ${type === "confirmed"
         ? "border-emerald-500/30"
         : "border-[var(--color-accent-primary)]/30"
       }
     `}>
+      {/* Remove button */}
+      {onRemove && (
+        <button
+          onClick={() => onRemove(rsvp.id, displayName)}
+          disabled={isRemoving}
+          className="absolute top-2 right-2 p-1 rounded-full hover:bg-red-500/20 text-[var(--color-text-tertiary)] hover:text-red-400 transition-colors disabled:opacity-50"
+          title={`Remove ${displayName}`}
+        >
+          {isRemoving ? (
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+        </button>
+      )}
+
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className={`
