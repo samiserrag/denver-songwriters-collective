@@ -12,6 +12,8 @@
 | File | Purpose | Status |
 |------|---------|--------|
 | `docs/BACKLOG.md` | **CANONICAL** — All TODOs live here | ACTIVE |
+| `docs/backlog/post-gtm-3-1-active-backlog.md` | Curated active queue view (index only) | ACTIVE (non-canonical) |
+| `docs/backlog/DOCS_ALIGNMENT_RULES.md` | Canonicalization guardrails for backlog docs | ACTIVE |
 | `docs/OPS_BACKLOG.md` | Ops Console features | DEPRECATED → merged here |
 | `docs/DEFERRED-HIGH-PRIORITY.md` | Member profile enhancements | DEPRECATED → merged here |
 | `docs/known-issues.md` | Bug tracking | ACTIVE (bugs only, no features) |
@@ -40,7 +42,7 @@
 | **Nav reorder: Members after Happenings** | DONE | Commit `dfe46d7` — Nav order: Happenings → Members → Venues | Sami |
 | **Homepage CTA pills text update** | DONE | Commit `dfe46d7` — "See All Happenings" / "See Open Mics" | Sami |
 | **Member pages basic completeness** | OPEN | See Member Pages section below | Sami |
-| **Community Invite / Referral Growth Loop (Phase 7B)** | IN PROGRESS | Share-first 7B.1 approved; 7B.2 email flow deferred behind separate STOP-GATE | Sami |
+| **[GROWTH-01] Community Invite / Referral Growth Loop (Phase 7B)** | PARTIAL DONE | 7B.1 share-first shipped; 7B.2 managed invite email deferred behind separate STOP-GATE (`docs/investigation/phase7b-community-invite-growth-stopgate.md`) | Sami |
 
 ### P2 — NICE TO HAVE
 
@@ -225,19 +227,19 @@ Polish member profiles before external test users see them. Three scope areas:
 |------|-------------|--------|
 | `/changelog` page | TypeScript-backed changelog with date, title, bullets, optional tags | DONE |
 | Entry format | Each entry has ISO date, title, 1-3 bullets, optional tags (feature/fix/improvement) | DONE |
-| Thanks page link | "See what's changed" link added to Early Contributors thanks page | DONE |
+| Historical placement | Changelog link originally lived on Early Contributors thank-you page | DONE |
 | Tests | 10 tests covering tag validation, entry format, link structure | DONE |
 
-**Note:** Changelog is NOT linked from main navigation. Link only from Early Contributors thanks page for now.
+**Note:** Changelog is NOT linked from main navigation. Early Contributors routes were retired in Phase 7B.1b and now redirect to `/`.
 
 ### Early Contributors Testing Flow (January 2026) — DONE
 
 | Item | Description | Status |
 |------|-------------|--------|
-| `/early-contributors` page | Role-based 20-minute mission chooser (Songwriter, Host, Venue, Visitor) | DONE |
-| `/early-contributors/thanks` page | Post-feedback thank you page with navigation links | DONE |
+| `/early-contributors` page | Role-based 20-minute mission chooser (Songwriter, Host, Venue, Visitor) | DONE (historical) |
+| `/early-contributors/thanks` page | Post-feedback thank you page with navigation links | DONE (historical) |
 | Feedback URL prefill | `/feedback` now accepts `category`, `subject`, `pageUrl` query params | DONE |
-| Footer link | Added "Early Contributors" to Community section | DONE |
+| Retirement | Early Contributors links removed from active UX; routes now redirect to homepage (`/`) | DONE |
 | Tests | 18 tests covering mission structure, URL prefill, footer link, thanks page | DONE |
 
 ### Get Involved Page Polish (January 2026) — DONE
@@ -338,6 +340,10 @@ Polish member profiles before external test users see them. Three scope areas:
 | UX-03 | Reorder nav: Members immediately after Happenings | P1 | DONE |
 | UX-04 | Homepage CTA pills text: "See all happenings" / "See open mics" | P1 | DONE |
 | UX-05 | Make "Join us" heading a link to sign-up page (with hover effect) | P0 | DONE |
+| UX-06 | Side tract: Homepage "Unconfirmed + Missing details" mismatch vs event detail "Confirmed" after one-time → custom series edit | P0 | STOP-GATE COMPLETE — awaiting approval (`docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`) |
+| UX-07 | Homepage vs `/happenings` "Tonight" list consistency | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
+| UX-08 | Mobile event card metadata truncation (city/state/time/cost visibility) | P1 | DONE — Phase 6 complete (`docs/investigation/phase6-cross-surface-consistency-stopgate.md`, PR #118) |
+| UX-09 | Cross-surface consistency rules contract for discovery surfaces | P1 | DONE — Contracted in `docs/CONTRACTS.md` § Cross-Surface Event Consistency |
 
 ### Search (HIGH PRIORITY)
 
@@ -409,7 +415,7 @@ Users who want to find happenings near a specific location (their neighborhood, 
 
 ---
 
-### Artist & Venue Media Embeds (YouTube, Spotify)
+### EMBED-01 — Artist & Venue Media Embeds (YouTube, Spotify)
 
 **Status:** OPEN
 **Priority:** P2
@@ -475,14 +481,14 @@ The TV Display and Lineup Control features are live but have not been stress-tes
 
 ---
 
-### Signup Time Field UX Completion
+### Signup Time Field UX Completion — RESOLVED
 
-**Status:** OPEN (completes Phase 5.04)
+**Status:** DONE (resolved after Phase 5.04)
 **Priority:** P1
 **Added:** 2026-01-28
 
-**Problem Statement:**
-The `signup_time` database field exists and displays on event detail pages, but hosts have no way to set it during event creation or editing. This creates a dead-end where the feature appears broken.
+**Historical Problem Statement:**
+The `signup_time` field originally lacked create/edit form controls. That gap has been closed and should be treated as regression-protected behavior.
 
 **User Value:**
 - Hosts can communicate when performer signups open (e.g., "6:30 PM")
@@ -504,7 +510,7 @@ The `signup_time` database field exists and displays on event detail pages, but 
 - No schema changes needed
 - Single-file change to EventForm.tsx
 
-**Dependencies:** None
+**Dependencies:** None (closed)
 
 ---
 
