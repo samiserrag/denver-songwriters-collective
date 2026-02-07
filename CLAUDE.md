@@ -722,6 +722,25 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Docs-Only Backlog Update: Domain Strategy + Marketplace/Services Hub (February 2026)
+
+**Summary:** Captured three major product decisions in backlog/north-star docs without any code implementation.
+
+**Decisions Documented:**
+1. **Domain Strategy (STRAT-01A-DOMAIN)** — Primary domains: coloradosongwriterscollective.org, songwriterscollective.org; TLD-agnostic architecture requirement
+2. **Classifieds + Service Listings (MARKETPLACE-01)** — Member/limited-guest classifieds with images, embeds (video/audio), external URLs, comments, moderation
+3. **Service-Based Profiles (MARKETPLACE-02)** — Five distinct profile types (Teachers, Studios, Stores, Festivals, Groups) requiring accounts
+4. **Navigation Structure (MARKETPLACE-03)** — Single expandable top-level nav item for all marketplace/services surfaces
+
+**Files Updated:**
+- `docs/BACKLOG.md` — Added STRAT-01A-DOMAIN, MARKETPLACE-01/02/03 tracts (P1/P2, non-blocking)
+- `docs/NORTH_STAR.md` — Added Domain Strategy section with TLD-agnostic constraint
+- `docs/CONTRACTS.md` — Added Domain Agnosticism Contract (non-negotiable)
+
+**STOP — Docs update only, no implementation executed**
+
+---
+
 ### Host RSVP Removal on Attendees Tab (February 2026) — RESOLVED
 
 **Summary:** Added cancel/remove button for hosts on the event editor's Attendees tab, allowing primary hosts and admins to remove RSVPs per date occurrence.

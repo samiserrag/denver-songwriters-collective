@@ -167,6 +167,35 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 > Strategic contract for future implementation phases. No enforcement code is introduced in this section.
 
+### Domain Agnosticism Contract (Non-Negotiable)
+
+**Invariant:** The codebase must remain **domain-agnostic** and **TLD-agnostic** at all times.
+
+**Enforceable Rules:**
+
+| Forbidden Pattern | Required Pattern |
+|------------------|------------------|
+| Hard-coded `.org` in URLs | Environment-driven domain config |
+| Hard-coded `.com` in URLs | Environment-driven domain config |
+| Hard-coded full domain strings | `process.env.NEXT_PUBLIC_SITE_URL` or equivalent |
+| TLD-specific routing logic | Domain-neutral routing |
+| Email templates with baked-in domains | Template variables for all domain references |
+
+**Rationale:**
+- Platform will launch with `.org` TLD (working assumption: `coloradosongwriterscollective.org`, `songwriterscollective.org`)
+- Future switch to `.com` variants is explicitly supported
+- Migration must be **DNS + configuration only** (no code refactor)
+
+**Test Enforcement:**
+- Any new URL generation code must use environment variables
+- Any email template changes must use domain variables
+- Any embed/iframe code must avoid hard-coded domains
+
+**Non-Goals:**
+- This contract does NOT prescribe which TLD to use (`.org` vs `.com`)
+- This contract does NOT require immediate domain acquisition
+- This contract does NOT imply a specific migration timeline
+
 ### Region as First-Class Concept
 
 - The platform root is not a single city deployment.

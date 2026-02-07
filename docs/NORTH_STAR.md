@@ -22,6 +22,24 @@ The product must stay human, community-first, and easy to operate at low cost wh
 - The current Denver/Colorado instance remains a primary regional community and is not deleted.
 - Rebrand naming decisions are handled in phased strategic backlog (`STRAT-01A`) to keep wording reversible and low-risk.
 
+### Domain Strategy (Working Assumption)
+
+**Primary Domains:**
+- `coloradosongwriterscollective.org`
+- `songwriterscollective.org`
+
+**Optional Future Domains (Explicitly Deferred):**
+- `coloradosongwriterscollective.com`
+- `songwriterscollective.com`
+
+**TLD Decision Status:** `.org` vs `.com` is intentionally undecided and non-blocking. The platform will launch with `.org` domains. Future switch to `.com` must not require codebase refactor.
+
+**Architectural Constraint (Non-Negotiable):**
+- All internal URLs, email templates, embeds, and routing contracts must remain **TLD-agnostic**
+- No hard-coded `.org` or `.com` references in application code
+- Domain configuration must be environment-driven
+- Future `.org → .com` migration must be seamless (DNS + config only, no code changes)
+
 ---
 
 ## Core Invariants (Must Hold At Any Scale)

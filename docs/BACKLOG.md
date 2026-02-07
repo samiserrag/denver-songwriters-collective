@@ -338,6 +338,7 @@ Polish member profiles before external test users see them. Three scope areas:
 |----|------|----------|--------|-------|
 | STRAT-01 | Multi-Region + White-Label Rebrand Architecture | P0 (Strategic) | OPEN — docs-only foundation in place, code deferred | Canonical strategic tract spanning rebrand + region/community abstraction |
 | STRAT-01A | Colorado rebrand naming strategy (urgent, reversible) | P0 | OPEN — highest urgency | Working naming target: The Colorado Songwriters Collective; domain `.com` vs `.org` intentionally undecided; Denver remains primary region instance |
+| STRAT-01A-DOMAIN | Domain strategy + TLD-agnostic architecture | P0 (Strategic) | OPEN — docs-only | Primary domains (working assumption): coloradosongwriterscollective.org, songwriterscollective.org; Optional .com variants deferred; Codebase must remain TLD-agnostic to support future .org → .com switch without refactor |
 | STRAT-01B | Region abstraction (routing + data boundaries) | P1 | PLANNED | Region becomes first-class without codebase forks |
 | STRAT-01C | Admin scoping + licensing model | P1 | PLANNED | Global/regional/community admin scope contract, enforcement deferred |
 | STRAT-01D | White-label theming + content taxonomy | P1 | PLANNED | Songwriters default; comedians/sports/community variants supported |
@@ -394,6 +395,134 @@ Polish member profiles before external test users see them. Three scope areas:
 | INT-03 | New "My Happenings" category in member dashboard | P2 | OPEN | Shows interested events |
 | INT-04 | Notify host when member marks interested (dashboard only, no email) | P2 | OPEN | Dashboard notification |
 | INT-05 | Show location address on always-visible happening cards | P2 | OPEN | Currently venue name only |
+
+---
+
+## Community Marketplace & Services Hub (Future)
+
+### MARKETPLACE-01 — Classifieds + Service Listings
+
+**Status:** OPEN (Docs-only, no implementation)
+**Priority:** P1 (Future major feature)
+**Added:** 2026-02-07
+
+**Problem Statement:**
+Community members need a way to discover opportunities, gear, services, and collaborations beyond events. Currently, no platform surface exists for posting gigs, selling equipment, finding teachers, or advertising services.
+
+**User Value:**
+- Songwriters can find paid gig opportunities
+- Members can buy/sell music gear within the community
+- Service providers (teachers, studios) can reach local musicians
+- Community can discover local music businesses and resources
+- Reduces reliance on Facebook Marketplace/Craigslist for music-specific transactions
+
+**Scope (Classifieds — Members + Limited Guest Posting):**
+
+| Feature | Description |
+|---------|-------------|
+| Image uploads | Multiple images per listing (gallery-style) |
+| External URL | Link to external listing, shop, or portfolio |
+| Video embeds | YouTube/Vimeo for demos, tours, performances |
+| Audio embeds | Spotify, SoundCloud playlists/tracks |
+| Rich description | Markdown or rich text for details |
+| Comments | Discussion thread per listing |
+| Moderation | Hide/delete capabilities for admins + listing owner |
+
+**Posting Permissions:**
+- **Members:** Full capabilities (images, embeds, external links, unlimited duration)
+- **Guests:** Limited posting (text + 1 image, shorter duration, admin approval required)
+
+**Key Design Constraints:**
+- Must support moderation without approval queue bottlenecks
+- Guest posts require email verification (reuse existing guest verification pattern)
+- Comments reuse existing threaded comment system
+- No built-in payment/transaction handling (external URLs only)
+
+**Dependencies:** Media embed infrastructure (EMBED-01 or similar), moderation audit patterns
+
+---
+
+### MARKETPLACE-02 — Service-Based Profile Pages
+
+**Status:** OPEN (Docs-only, no implementation)
+**Priority:** P1 (Future major feature)
+**Added:** 2026-02-07
+
+**Problem Statement:**
+Music teachers, studios, stores, festivals, and other songwriter groups lack dedicated profile pages on the platform. These entities are distinct from individual members and venues but need similar discoverability and engagement surfaces.
+
+**User Value:**
+- Teachers can showcase credentials, availability, and student testimonials
+- Studios can display services, rates, and booking links
+- Stores can list inventory categories and link to online shops
+- Festivals can promote lineups, ticket sales, and past events
+- Songwriter groups can build community visibility and recruit members
+
+**Service Types (Each with Dedicated Profile Page Type):**
+
+| Type | Description | Key Features |
+|------|-------------|--------------|
+| Music Teachers | Individual instructors or schools | Instruments taught, rates, availability calendar links, student testimonials |
+| Music Stores | Retail shops (physical + online) | Inventory categories, external shop link, location/hours, special offers |
+| Music Studio Services | Recording, mixing, mastering studios | Service list, rates, external booking link, portfolio (audio/video embeds) |
+| Festivals | Music festivals and concert series | Event dates, lineup announcements, ticket links, past event galleries |
+| Songwriting Groups | Other local songwriter communities | Mission/focus, meeting schedule, external signup link, event cross-promotion |
+
+**Profile Creation Requirements:**
+- **Account required** — Each service type requires a registered account to create/manage
+- Acts like a hybrid profile + listings page
+- Publicly viewable (no login required to view)
+- Supports external links (website, booking, shop, tickets)
+- Supports embedded media (videos, audio samples)
+- Supports comments for questions/reviews
+
+**Key Design Constraints:**
+- Service profiles are NOT venues (different schema, different permissions)
+- Service profiles are NOT member profiles (separate entity type)
+- Service profile owners may also have personal member profiles (separate accounts allowed)
+- Cross-linking between service profiles and events/venues is supported but not required
+
+**Dependencies:** Profile architecture patterns, media embed infrastructure, moderation tools
+
+---
+
+### MARKETPLACE-03 — Unified Navigation Surface
+
+**Status:** OPEN (Docs-only, no implementation)
+**Priority:** P1 (Future major feature)
+**Added:** 2026-02-07
+
+**Navigation UX Decision:**
+All marketplace and service surfaces will live under **one top-level navigation item** that expands to show sub-categories.
+
+**Proposed Navigation Structure:**
+
+```
+Main Nav Bar:
+- Happenings
+- Members
+- Venues
+- [Marketplace] ← New top-level item (expandable)
+  ↳ Classifieds
+  ↳ Teachers
+  ↳ Studios
+  ↳ Stores
+  ↳ Festivals
+  ↳ Groups
+```
+
+**Design Rationale:**
+- Keeps main navigation clean (no clutter with 6 new items)
+- Groups related discovery surfaces under a single semantic parent
+- Expandable menu pattern already used elsewhere in the app
+- Clear hierarchy: core platform (Happenings/Members/Venues) vs marketplace/services
+
+**Non-Goals:**
+- No mega-menu implementation (simple dropdown/flyout is sufficient)
+- No separate "Services" top-level item (keep consolidated)
+- No marketplace branding separate from platform branding
+
+**Dependencies:** None (navigation decision is independent of implementation)
 
 ---
 
