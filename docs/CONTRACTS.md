@@ -123,6 +123,47 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Community Invite & Referral Attribution (Phase 7B.1)
+
+### Scope Contract
+
+- Phase 7B.1 is **share-only**:
+  - Copy link
+  - `mailto:` intent
+  - Native share intent (when supported)
+- No platform-sent invite email in 7B.1.
+- Media embeds are out of scope for this tract.
+
+### Referral Param Contract
+
+- Invite links use this query contract:
+  - `ref`: inviter profile/user id (UUID)
+  - `via`: normalized acquisition channel (`member_invite`, `digest_invite`, `site_cta`)
+  - `src`: normalized surface source (`header_nav`, `mobile_nav`, `happenings_community`, etc.)
+- Invalid referral params are dropped (not persisted).
+
+### Persistence Contract
+
+- Referral params must survive auth callback and onboarding completion.
+- Attribution persists to `profiles`:
+  - `referred_by_profile_id`
+  - `referral_via`
+  - `referral_source`
+  - `referral_captured_at`
+- Existing non-null attribution values are not overwritten during later onboarding updates.
+
+### CTA Surface Contract (7B.1)
+
+- Invite CTA is required on approved surfaces:
+  - Header (logged-in)
+  - Mobile nav (logged-in)
+  - Homepage community sections
+  - `/happenings` community CTA block
+  - Weekly digest templates (happenings + open mics)
+- Invite CTA copy must remain consistent in tone across surfaces.
+
+---
+
 ## Contract: Pill Hierarchy & Scan Signals (v2.0)
 
 Pills exist to accelerate scanning. They must not become "badge soup".

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemePicker } from "@/components/ui/ThemePicker";
+import { INVITE_CTA_LABEL } from "@/lib/referrals";
 
 interface MobileMenuProps {
   open: boolean;
@@ -122,6 +123,9 @@ export function MobileMenu({
           {/* Auth buttons */}
           {isLoggedIn ? (
             <div className="flex flex-col gap-3">
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/dashboard/invite?via=mobile_nav">{INVITE_CTA_LABEL}</Link>
+              </Button>
               <Button variant="primary" className="w-full" asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>

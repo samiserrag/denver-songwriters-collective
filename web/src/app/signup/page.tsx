@@ -10,12 +10,15 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { signInWithGoogle } from "@/lib/auth/google";
 import { sendMagicLink } from "@/lib/auth/magic";
+import { sanitizeReferralParams } from "@/lib/referrals";
 
 function SignupForm() {
   const router = useRouter();
-  // searchParams available for redirectTo handling in future
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _searchParams = useSearchParams();
+  const searchParams = useSearchParams();
+  const referral = React.useMemo(
+    () => sanitizeReferralParams(searchParams),
+    [searchParams],
+  );
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
@@ -34,7 +37,7 @@ function SignupForm() {
 
     setLoading(true);
 
-    const result = await signUpWithEmail(email, password);
+    const result = await signUpWithEmail(email, password, referral);
 
     if (!result.ok) {
       setError(result.error || "Signup failed.");
@@ -121,7 +124,7 @@ function SignupForm() {
         <div className="mt-6 space-y-3 text-center">
           <button
             onClick={async () => {
-              const result = await sendMagicLink(email);
+              const result = await sendMagicLink(email, referral);
               if (!result.ok) toast.error(result.error || "Unable to send magic link.");
               else toast.success("Magic link sent! Check your email.");
             }}
@@ -132,7 +135,7 @@ function SignupForm() {
 
           <button
             onClick={async () => {
-              const result = await signInWithGoogle();
+              const result = await signInWithGoogle(referral);
               if (!result.ok) {
                 setError(result.error || "Unable to sign in with Google.");
               }

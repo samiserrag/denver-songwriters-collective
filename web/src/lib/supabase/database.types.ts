@@ -2512,6 +2512,10 @@ export type Database = {
           onboarding_complete: boolean | null
           open_to_collabs: boolean | null
           paypal_url: string | null
+          referral_captured_at: string | null
+          referral_source: string | null
+          referral_via: string | null
+          referred_by_profile_id: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           slug: string | null
           song_links: string[] | null
@@ -2558,6 +2562,10 @@ export type Database = {
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
+          referral_captured_at?: string | null
+          referral_source?: string | null
+          referral_via?: string | null
+          referred_by_profile_id?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           slug?: string | null
           song_links?: string[] | null
@@ -2604,6 +2612,10 @@ export type Database = {
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
           paypal_url?: string | null
+          referral_captured_at?: string | null
+          referral_source?: string | null
+          referral_via?: string | null
+          referred_by_profile_id?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           slug?: string | null
           song_links?: string[] | null
@@ -2619,7 +2631,15 @@ export type Database = {
           youtube_url?: string | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_profile_id_fkey"
+            columns: ["referred_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_settings: {
         Row: {

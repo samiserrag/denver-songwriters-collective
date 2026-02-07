@@ -20,6 +20,11 @@ import {
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
 import { DISCOVERY_STATUS_FILTER, DISCOVERY_VENUE_SELECT } from "@/lib/happenings";
+import {
+  INVITE_CTA_BODY,
+  INVITE_CTA_HEADLINE,
+  INVITE_CTA_LABEL,
+} from "@/lib/referrals";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 
@@ -428,6 +433,15 @@ export default async function HomePage() {
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎶 a songwriting group or collective</div>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎭 a showcase or event promoter</div>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🌀 a fan of songs and songwriters</div>
+          </div>
+          <div className="mt-6 text-sm md:text-base text-[var(--color-text-secondary)]">
+            {INVITE_CTA_HEADLINE} {INVITE_CTA_BODY}{" "}
+            <Link
+              href="/dashboard/invite?via=homepage_community"
+              className="text-[var(--color-text-accent)] hover:underline"
+            >
+              {INVITE_CTA_LABEL}
+            </Link>
           </div>
         </div>
       </section>
@@ -975,6 +989,14 @@ export default async function HomePage() {
             >
               Become an Early Contributor
             </Link>
+            <div className="mt-4">
+              <Link
+                href="/dashboard/invite?via=homepage_early_contributors"
+                className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                {INVITE_CTA_LABEL}
+              </Link>
+            </div>
           </article>
         </div>
       </section>

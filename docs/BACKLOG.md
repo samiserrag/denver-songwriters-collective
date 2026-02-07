@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-01-28
+> **Last Updated:** 2026-02-07
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -40,6 +40,7 @@
 | **Nav reorder: Members after Happenings** | DONE | Commit `dfe46d7` — Nav order: Happenings → Members → Venues | Sami |
 | **Homepage CTA pills text update** | DONE | Commit `dfe46d7` — "See All Happenings" / "See Open Mics" | Sami |
 | **Member pages basic completeness** | OPEN | See Member Pages section below | Sami |
+| **Community Invite / Referral Growth Loop (Phase 7B)** | IN PROGRESS | Share-first 7B.1 approved; 7B.2 email flow deferred behind separate STOP-GATE | Sami |
 
 ### P2 — NICE TO HAVE
 

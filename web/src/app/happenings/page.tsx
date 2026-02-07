@@ -21,6 +21,7 @@ import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 import { occurrencesToMapPins, type MapPinConfig } from "@/lib/map";
 import { MapView } from "@/components/happenings/MapView";
 import { getLocationFilteredVenues, type LocationFilterResult, DISCOVERY_STATUS_FILTER, DISCOVERY_VENUE_SELECT_WITH_COORDS } from "@/lib/happenings";
+import { INVITE_CTA_LABEL } from "@/lib/referrals";
 
 export const metadata: Metadata = {
   title: "Happenings | Denver Songwriters Collective",
@@ -659,6 +660,12 @@ export default async function HappeningsPage({
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
             >
               Correction
+            </Link>
+            <Link
+              href="/dashboard/invite?via=happenings_community"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition"
+            >
+              {INVITE_CTA_LABEL}
             </Link>
           </div>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-2">

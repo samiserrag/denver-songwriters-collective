@@ -1,16 +1,26 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import {
+  applyReferralParams,
+  sanitizeReferralParams,
+  type ReferralParams,
+} from "@/lib/referrals";
 
 interface GoogleSignInResult {
   ok: boolean;
   error?: string;
 }
 
-export async function signInWithGoogle(): Promise<GoogleSignInResult> {
+export async function signInWithGoogle(
+  referral?: ReferralParams,
+): Promise<GoogleSignInResult> {
   try {
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback?type=google`;
+    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+    redirectUrl.searchParams.set("type", "google");
+    applyReferralParams(redirectUrl.searchParams, sanitizeReferralParams(referral));
+    const redirectTo = redirectUrl.toString();
 
     console.log("[Google OAuth] Starting sign-in, redirect URL:", redirectTo);
 

@@ -25,6 +25,11 @@ import {
 import type { OpenMicOccurrence } from "@/lib/digest/weeklyOpenMics";
 import { formatTimeDisplay } from "@/lib/digest/weeklyOpenMics";
 import { buildUnsubscribeUrl } from "@/lib/digest/unsubscribeToken";
+import {
+  INVITE_CTA_BODY,
+  INVITE_CTA_HEADLINE,
+  INVITE_CTA_LABEL,
+} from "@/lib/referrals";
 
 // ============================================================
 // Types
@@ -159,6 +164,7 @@ export function getWeeklyOpenMicsDigestEmail(
 
   // Build one-click unsubscribe URL (HMAC-signed, no login required)
   const unsubscribeUrl = buildUnsubscribeUrl(userId) || `${SITE_URL}/dashboard/settings`;
+  const inviteUrl = `${SITE_URL}/signup?ref=${encodeURIComponent(userId)}&via=digest_invite&src=weekly_open_mics_digest`;
 
   const subject = "🎤 Open Mics This Week in Denver";
 
@@ -216,6 +222,20 @@ export function getWeeklyOpenMicsDigestEmail(
       </tr>
     </table>
 
+    <p style="margin: 4px 0 18px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
+      ${escapeHtml(INVITE_CTA_HEADLINE)} ${escapeHtml(INVITE_CTA_BODY)}
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0;">
+      <tr>
+        <td style="border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px;">
+          <a href="${inviteUrl}" style="display: inline-block; padding: 12px 24px; color: ${EMAIL_COLORS.accent}; text-decoration: none; font-weight: 600; font-size: 14px;">
+            ${escapeHtml(INVITE_CTA_LABEL)}
+          </a>
+        </td>
+      </tr>
+    </table>
+
     <hr style="border: none; border-top: 1px solid ${EMAIL_COLORS.border}; margin: 24px 0;" />
 
     <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
@@ -264,6 +284,7 @@ export function getWeeklyOpenMicsDigestEmail(
     summaryText,
     "",
     `Browse All Open Mics: ${SITE_URL}/happenings?type=open_mic`,
+    `${INVITE_CTA_HEADLINE} ${INVITE_CTA_BODY} ${inviteUrl}`,
     "",
     "---",
     "You're receiving this weekly digest because you're part of the Denver Songwriters Collective community.",

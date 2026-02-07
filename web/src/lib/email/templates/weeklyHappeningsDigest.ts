@@ -33,6 +33,11 @@ import { formatTimeDisplay } from "@/lib/digest/weeklyHappenings";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import { buildUnsubscribeUrl } from "@/lib/digest/unsubscribeToken";
 import type { ResolvedEditorial } from "@/lib/digest/digestEditorial";
+import {
+  INVITE_CTA_BODY,
+  INVITE_CTA_HEADLINE,
+  INVITE_CTA_LABEL,
+} from "@/lib/referrals";
 
 // ============================================================
 // Types
@@ -522,10 +527,18 @@ export function getWeeklyHappeningsDigestEmail(
   }
 
   const happeningsLinkHtml = `Want to tailor this to you? Browse all <a href="${SITE_URL}/happenings" style="color: ${EMAIL_COLORS.accent}; text-decoration: underline;">happenings</a> with your filters applied!`;
+  const inviteUrl = `${SITE_URL}/signup?ref=${encodeURIComponent(userId)}&via=digest_invite&src=weekly_happenings_digest`;
+  const inviteNudgeHtml = `
+    <p style="margin: 10px 0 0 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
+      ${escapeHtml(INVITE_CTA_HEADLINE)} ${escapeHtml(INVITE_CTA_BODY)}
+      <a href="${inviteUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: underline;">${escapeHtml(INVITE_CTA_LABEL)}</a>.
+    </p>
+  `;
   const happeningsNudgeHtml = `
     <p style="margin: 16px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; font-weight: 700;">
       ${happeningsLinkHtml}
     </p>
+    ${inviteNudgeHtml}
   `;
 
   const htmlContent = `
@@ -562,6 +575,20 @@ export function getWeeklyHappeningsDigestEmail(
         <td style="background-color: ${EMAIL_COLORS.accent}; border-radius: 8px;">
           <a href="${SITE_URL}/happenings" style="display: inline-block; padding: 14px 28px; color: ${EMAIL_COLORS.textOnAccent}; text-decoration: none; font-weight: 600; font-size: 15px;">
             Browse All Happenings
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin: 4px 0 18px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px;">
+      ${escapeHtml(INVITE_CTA_HEADLINE)} ${escapeHtml(INVITE_CTA_BODY)}
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0;">
+      <tr>
+        <td style="border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px;">
+          <a href="${inviteUrl}" style="display: inline-block; padding: 12px 24px; color: ${EMAIL_COLORS.accent}; text-decoration: none; font-weight: 600; font-size: 14px;">
+            ${escapeHtml(INVITE_CTA_LABEL)}
           </a>
         </td>
       </tr>
@@ -642,6 +669,7 @@ export function getWeeklyHappeningsDigestEmail(
   }
 
   const happeningsNudgeText = `Want to tailor this to you? Browse all happenings with your filters applied! ${SITE_URL}/happenings`;
+  const inviteNudgeText = `${INVITE_CTA_HEADLINE} ${INVITE_CTA_BODY} ${inviteUrl}`;
 
   const textParts = [
     greeting,
@@ -651,9 +679,11 @@ export function getWeeklyHappeningsDigestEmail(
     ...editorialTextParts,
     ...featuredTextParts,
     happeningsNudgeText,
+    inviteNudgeText,
     eventsText,
     "",
     happeningsNudgeText,
+    inviteNudgeText,
     "",
     summaryLine,
     "",

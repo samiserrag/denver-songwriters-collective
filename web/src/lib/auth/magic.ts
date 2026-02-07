@@ -1,20 +1,32 @@
 "use client";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  applyReferralParams,
+  sanitizeReferralParams,
+  type ReferralParams,
+} from "@/lib/referrals";
 
 interface MagicLinkResult {
   ok: boolean;
   error?: string;
 }
 
-export async function sendMagicLink(email: string): Promise<MagicLinkResult> {
+export async function sendMagicLink(
+  email: string,
+  referral?: ReferralParams,
+): Promise<MagicLinkResult> {
   try {
     const supabase = createSupabaseBrowserClient();
 
-    const redirectTo =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/auth/callback?type=magic`
-        : undefined;
+    const redirectTo = typeof window !== "undefined"
+      ? (() => {
+          const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+          redirectUrl.searchParams.set("type", "magic");
+          applyReferralParams(redirectUrl.searchParams, sanitizeReferralParams(referral));
+          return redirectUrl.toString();
+        })()
+      : undefined;
 
     const { error } = await supabase.auth.signInWithOtp({
       email,

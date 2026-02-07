@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import {
+  REFERRAL_COOKIE_NAME,
+  deserializeReferralCookie,
+  hasReferralParams,
+} from '@/lib/referrals';
 
 export async function POST(request: Request) {
   try {
@@ -35,12 +41,23 @@ export async function POST(request: Request) {
       instruments,
       genres,
     } = body;
+    const cookieStore = await cookies();
+    const referralCookie = cookieStore.get(REFERRAL_COOKIE_NAME)?.value;
+    const referral = deserializeReferralCookie(referralCookie);
 
     // 3. Use SERVICE ROLE to bypass RLS
     const serviceClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    const { data: existingProfile } = await serviceClient
+      .from('profiles')
+      .select('referred_by_profile_id, referral_via, referral_source, referral_captured_at')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const shouldApplyReferral = hasReferralParams(referral);
 
     // 4. Update profile with all fields
     const { error: updateError } = await serviceClient
@@ -65,6 +82,18 @@ export async function POST(request: Request) {
         interested_in_cowriting,
         instruments: instruments?.length > 0 ? instruments : null,
         genres: genres?.length > 0 ? genres : null,
+        referred_by_profile_id: shouldApplyReferral
+          ? (existingProfile?.referred_by_profile_id ?? referral.ref ?? null)
+          : undefined,
+        referral_via: shouldApplyReferral
+          ? (existingProfile?.referral_via ?? referral.via ?? null)
+          : undefined,
+        referral_source: shouldApplyReferral
+          ? (existingProfile?.referral_source ?? referral.src ?? null)
+          : undefined,
+        referral_captured_at: shouldApplyReferral
+          ? (existingProfile?.referral_captured_at ?? new Date().toISOString())
+          : undefined,
         onboarding_complete: true,
         updated_at: new Date().toISOString(),
       })
@@ -75,7 +104,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    if (referralCookie) {
+      response.cookies.set({
+        name: REFERRAL_COOKIE_NAME,
+        value: '',
+        path: '/',
+        maxAge: 0,
+      });
+    }
+    return response;
   } catch (err) {
     console.error('Onboarding API error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

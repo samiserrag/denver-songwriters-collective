@@ -11,6 +11,7 @@ import { MobileMenu } from "./mobile-menu";
 import { useAuth } from "@/lib/auth/useAuth";
 import GlobalSearch from "@/components/GlobalSearch";
 import { ThemePicker } from "@/components/ui/ThemePicker";
+import { INVITE_CTA_LABEL } from "@/lib/referrals";
 
 // Primary nav links (shown in main nav bar)
 // Phase 4.2: Open Mics link removed - use /happenings with type filter instead
@@ -93,6 +94,9 @@ export function Header({ className }: HeaderProps) {
             <div className="w-20 h-9" />
           ) : user ? (
             <>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/dashboard/invite?via=header_nav">{INVITE_CTA_LABEL}</Link>
+              </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/dashboard">Dashboard</Link>
               </Button>

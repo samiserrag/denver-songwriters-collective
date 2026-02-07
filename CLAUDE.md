@@ -722,6 +722,28 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Phase 7B.1: Community Invite / Referral Growth Loop (February 2026)
+
+**Summary:** Implemented share-first member invites with end-to-end referral attribution capture (no platform-sent invite emails).
+
+**Delivered:**
+- New logged-in invite hub: `/dashboard/invite` (copy link, mailto, native share).
+- Referral contract utilities (`ref`, `via`, `src`) with validation and safe persistence.
+- Signup/auth callback/onboarding pipeline now preserves referral params and stores attribution on profile.
+- Approved CTA surfaces updated:
+  - Header (logged-in)
+  - Mobile nav (logged-in)
+  - Homepage community sections
+  - `/happenings` community CTA block
+  - Weekly digest templates (happenings + open mics)
+- Contracts and backlog updated for 7B.1 scope and 7B.2 deferral.
+
+**Schema Additions:**
+- `profiles.referred_by_profile_id`
+- `profiles.referral_via`
+- `profiles.referral_source`
+- `profiles.referral_captured_at`
+
 ### Phase 7A-R: Legacy Media Reconciliation (February 2026)
 
 **Summary:** Completed one-time guarded reconciliation for legacy seeded event cover URLs to align historical rows with canonical `event-images` + `event_images` structure.

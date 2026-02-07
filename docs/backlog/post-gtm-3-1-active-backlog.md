@@ -81,6 +81,27 @@ May require creating a cross-surface consistency contract document that defines:
 
 ---
 
+### 4. Community Invite / Referral Growth Loop
+
+**Problem Statement:**
+Growth currently depends on passive discovery. Members need a direct, low-friction way to invite songwriter and open-mic friends and attribute signups back to the referral source.
+
+**Phase Split (Approved):**
+- **Phase 7B.1 (current):** Share-first (copy link, `mailto:`, native share, attribution capture)
+- **Phase 7B.2 (future):** Managed invite email (server-sent), separate STOP-GATE required
+
+**Priority:** **P1 Growth Infrastructure**
+
+**Status:** In Progress (Phase 7B.1 execution)
+
+**Guardrails:**
+- No server-sent invite emails in 7B.1
+- Referral params must be persisted and queryable
+- Digest + site CTA copy should remain consistent
+- Embeds remain a separate tract
+
+---
+
 ## Explicitly Out of Scope
 
 The following items are **not part of this backlog** and should not be reopened:
