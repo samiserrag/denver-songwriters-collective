@@ -7,10 +7,23 @@ import {
 import { verifyActionToken, createActionToken } from "@/lib/guest-verification/crypto";
 import { sendEmail, getWaitlistOfferEmail } from "@/lib/email";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
+import { getGuestCancellationConfirmationEmail } from "@/lib/email/templates/guestCancellationConfirmation";
 
 interface ActionBody {
   token: string;
   action: "confirm" | "cancel" | "cancel_rsvp";
+}
+
+function formatTimeForEmail(time: string | null | undefined): string | null {
+  if (!time) return null;
+  const [hoursRaw, minutesRaw] = time.split(":");
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
 }
 
 /**
@@ -211,8 +224,10 @@ async function handleCancel(
   claim: {
     id: string;
     status: string;
+    guest_name: string | null;
+    guest_email: string | null;
     timeslot_id: string;
-    event_timeslots: { event_id: string };
+    event_timeslots: { event_id: string; date_key?: string };
   },
   verificationId: string
 ): Promise<NextResponse> {
@@ -249,16 +264,51 @@ async function handleCancel(
     .update({ token_used: true })
     .eq("id", verificationId);
 
+  // Send cancellation confirmation to guest (best effort, non-blocking)
+  const { data: eventForEmail } = await supabase
+    .from("events")
+    .select("id, title, slug, event_date, start_time, venue_name, venue_address, slot_offer_window_minutes")
+    .eq("id", claim.event_timeslots.event_id)
+    .maybeSingle();
+
+  if (claim.guest_email) {
+    const baseUrl = getSiteUrl();
+    const eventIdentifier = eventForEmail?.slug || eventForEmail?.id || claim.event_timeslots.event_id;
+    const dateKey = claim.event_timeslots.date_key;
+    const dateParam = dateKey ? `?date=${dateKey}` : "";
+    const eventUrl = `${baseUrl}/events/${eventIdentifier}${dateParam}`;
+    const eventDate = dateKey
+      ? formatDateKeyForEmail(dateKey)
+      : eventForEmail?.event_date
+        ? formatDateKeyForEmail(eventForEmail.event_date)
+        : null;
+
+    const cancellationEmail = getGuestCancellationConfirmationEmail({
+      guestName: claim.guest_name,
+      eventTitle: eventForEmail?.title || "Open Mic",
+      eventDate,
+      eventTime: formatTimeForEmail(eventForEmail?.start_time),
+      venueName: eventForEmail?.venue_name,
+      venueAddress: eventForEmail?.venue_address,
+      eventUrl,
+      kind: "timeslot",
+    });
+
+    try {
+      await sendEmail({
+        to: claim.guest_email,
+        subject: cancellationEmail.subject,
+        html: cancellationEmail.html,
+        text: cancellationEmail.text,
+      });
+    } catch (error) {
+      console.error("Failed to send guest timeslot cancellation confirmation email:", error);
+    }
+  }
+
   // If this was a confirmed/offered claim, promote from waitlist
   if (wasConfirmedOrOffered) {
-    // Get event details for offer window and email
-    const { data: event } = await supabase
-      .from("events")
-      .select("id, title, slot_offer_window_minutes")
-      .eq("id", claim.event_timeslots.event_id)
-      .single();
-
-    const offerWindowMinutes = event?.slot_offer_window_minutes || 120;
+    const offerWindowMinutes = eventForEmail?.slot_offer_window_minutes || 120;
 
     // Call the promote function
     await supabase.rpc("promote_timeslot_waitlist", {
@@ -299,7 +349,7 @@ async function handleCancel(
       // Send waitlist offer email
       const emailContent = getWaitlistOfferEmail({
         guestName: promotedClaim.guest_name,
-        eventTitle: event?.title || "Open Mic",
+        eventTitle: eventForEmail?.title || "Open Mic",
         confirmUrl,
         cancelUrl,
         expiresAt: promotedClaim.offer_expires_at,
@@ -332,7 +382,7 @@ async function handleCancelRsvp(
   // Fetch the RSVP
   const { data: rsvp, error: rsvpError } = await supabase
     .from("event_rsvps")
-    .select("id, status, guest_email, event_id")
+    .select("id, status, guest_name, guest_email, event_id, date_key")
     .eq("id", rsvpId)
     .single();
 
@@ -384,6 +434,45 @@ async function handleCancelRsvp(
     .from("guest_verifications")
     .update({ token_used: true })
     .eq("id", verificationId);
+
+  // Send cancellation confirmation to guest (best effort, non-blocking)
+  const { data: eventForEmail } = await supabase
+    .from("events")
+    .select("id, title, slug, event_date, start_time, venue_name, venue_address")
+    .eq("id", rsvp.event_id)
+    .maybeSingle();
+
+  const baseUrl = getSiteUrl();
+  const eventIdentifier = eventForEmail?.slug || eventForEmail?.id || rsvp.event_id;
+  const dateParam = rsvp.date_key ? `?date=${rsvp.date_key}` : "";
+  const eventUrl = `${baseUrl}/events/${eventIdentifier}${dateParam}`;
+  const eventDate = rsvp.date_key
+    ? formatDateKeyForEmail(rsvp.date_key)
+    : eventForEmail?.event_date
+      ? formatDateKeyForEmail(eventForEmail.event_date)
+      : null;
+
+  const cancellationEmail = getGuestCancellationConfirmationEmail({
+    guestName: rsvp.guest_name,
+    eventTitle: eventForEmail?.title || "Event",
+    eventDate,
+    eventTime: formatTimeForEmail(eventForEmail?.start_time),
+    venueName: eventForEmail?.venue_name,
+    venueAddress: eventForEmail?.venue_address,
+    eventUrl,
+    kind: "rsvp",
+  });
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: cancellationEmail.subject,
+      html: cancellationEmail.html,
+      text: cancellationEmail.text,
+    });
+  } catch (error) {
+    console.error("Failed to send guest RSVP cancellation confirmation email:", error);
+  }
 
   // If this was a confirmed/offered RSVP, promote from waitlist
   if (wasConfirmedOrOffered) {

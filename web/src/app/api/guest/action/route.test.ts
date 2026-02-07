@@ -40,12 +40,22 @@ let mockVerification: { id: string; token_used: boolean; claim_id: string } | nu
 let mockClaim: {
   id: string;
   status: string;
+  guest_name?: string | null;
   guest_email: string;
   timeslot_id: string;
   offer_expires_at: string | null;
   event_timeslots: { event_id: string };
 } | null = null;
-let mockEvent: { id: string; title: string; slot_offer_window_minutes: number } | null = null;
+let mockEvent: {
+  id?: string;
+  slug?: string | null;
+  title?: string;
+  event_date?: string | null;
+  start_time?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
+  slot_offer_window_minutes?: number;
+} | null = null;
 const mockPromotedClaim: { id: string; guest_email: string; guest_name: string; offer_expires_at: string; guest_verification_id: string } | null = null;
 let mockRpcCalled = false;
 
@@ -99,6 +109,10 @@ vi.mock("@/lib/supabase/serviceRoleClient", () => ({
                 data: mockEvent,
                 error: null,
               }),
+              maybeSingle: () => ({
+                data: mockEvent,
+                error: null,
+              }),
             }),
           }),
         };
@@ -134,12 +148,13 @@ describe("POST /api/guest/action", () => {
     mockClaim = {
       id: "claim-1",
       status: "offered",
+      guest_name: "Test Guest",
       guest_email: "test@example.com",
       timeslot_id: "slot-1",
       offer_expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
       event_timeslots: { event_id: "event-1" },
     };
-    mockEvent = { slot_offer_window_minutes: 120 };
+    mockEvent = { id: "event-1", title: "Open Mic", slot_offer_window_minutes: 120 };
     mockRpcCalled = false;
   });
 
