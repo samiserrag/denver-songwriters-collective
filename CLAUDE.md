@@ -722,6 +722,20 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Docs Alignment: Canonical Backlog Reconciliation (February 2026)
+
+**Summary:** Reconciled backlog/plan docs so `docs/BACKLOG.md` remains the single source of truth and the post-GTM active backlog is now a curated index only.
+
+**Delivered:**
+- Canonicalized active tract tracking in `docs/BACKLOG.md` with stable IDs and explicit links:
+  - `GROWTH-01` (Invite/Referral tract status reality)
+  - `UX-06` (P0 side tract: homepage/detail confirmed mismatch)
+  - `UX-07`, `UX-08`, `UX-09` (Phase 6 consistency items, now explicitly tracked as DONE)
+  - `EMBED-01` (external media embeds as separate tract)
+- Rewrote `docs/backlog/post-gtm-3-1-active-backlog.md` as a canonical-reference view (no duplicate source-of-truth statuses).
+- Added `docs/backlog/DOCS_ALIGNMENT_RULES.md` to lock canonicalization rules.
+- Updated historical Early Contributors notes in `docs/BACKLOG.md` to reflect Phase 7B.1b retirement/redirect behavior.
+
 ### Phase 7B.1b: Invite UX Copy + Homepage Link Simplification (February 2026)
 
 **Summary:** Refined invite messaging for clarity and conversion, simplified share URLs to homepage-only, and retired Early Contributors as a user-facing destination.
