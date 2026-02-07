@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Playfair_Display, Inter, Fraunces } from "next/font/google";
-import { Header, Footer } from "@/components/navigation";
+import { Header, Footer, ShareSiteCtaBar } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ScrollReset } from "@/components/layout/ScrollReset";
@@ -211,7 +211,9 @@ export default async function RootLayout({
           defaultFont={siteSettings.fontPreset}
         />
         <Header />
+        <ShareSiteCtaBar position="top" />
         <main className="flex-1">{children}</main>
+        <ShareSiteCtaBar position="bottom" />
         <Footer />
         <Toaster />
         <SpeedInsights />

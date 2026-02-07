@@ -12,10 +12,12 @@
 import { describe, it, expect } from "vitest";
 import {
   applyReferralParams,
+  buildInviteEmailBody,
   deserializeReferralCookie,
   serializeReferralCookie,
   sanitizeReferralParams,
   INVITE_CTA_LABEL,
+  SHARE_SITE_CTA_LABEL,
 } from "@/lib/referrals";
 
 describe("Phase 7B.1: Referral utility contract", () => {
@@ -73,6 +75,15 @@ describe("Phase 7B.1: Referral utility contract", () => {
       via: "member_invite",
       src: "header_nav",
     });
+  });
+
+  it("builds invite email copy without personal-name placeholders", () => {
+    const body = buildInviteEmailBody("https://denversongwriterscollective.org/");
+    expect(body).toContain("Hey there,");
+    expect(body).toContain("Start on the homepage: https://denversongwriterscollective.org/");
+    expect(body).toContain("Enjoy!");
+    expect(body).not.toContain("[Friend Name]");
+    expect(body).not.toContain("Sami Serrag");
   });
 });
 
@@ -173,6 +184,15 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
 
   it("invite label remains canonical across surfaces", () => {
     expect(INVITE_CTA_LABEL).toBe("Invite a Friend");
+    expect(SHARE_SITE_CTA_LABEL).toBe("Share This Site");
+  });
+
+  it("root layout includes share CTA bars at top and bottom", async () => {
+    const fs = await import("fs");
+    const layoutSource = fs.readFileSync("src/app/layout.tsx", "utf-8");
+    expect(layoutSource).toContain("ShareSiteCtaBar");
+    expect(layoutSource).toContain('<ShareSiteCtaBar position="top" />');
+    expect(layoutSource).toContain('<ShareSiteCtaBar position="bottom" />');
   });
 });
 

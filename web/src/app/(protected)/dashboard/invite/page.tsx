@@ -14,11 +14,5 @@ export default async function InvitePage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", session.user.id)
-    .maybeSingle();
-
-  return <InvitePanel inviterName={profile?.full_name ?? null} source="dashboard_invite" />;
+  return <InvitePanel source="dashboard_invite" />;
 }

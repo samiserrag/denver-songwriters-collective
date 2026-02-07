@@ -13,7 +13,6 @@ import {
 } from "@/lib/referrals";
 
 interface InvitePanelProps {
-  inviterName: string | null;
   source: string;
 }
 
@@ -24,15 +23,15 @@ function buildInviteUrl(): string {
   return inviteUrl.toString();
 }
 
-export default function InvitePanel({ inviterName, source }: InvitePanelProps) {
+export default function InvitePanel({ source }: InvitePanelProps) {
   const inviteUrl = useMemo(() => buildInviteUrl(), []);
   const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const shareMessage = `${INVITE_CTA_HEADLINE} ${INVITE_CTA_BODY} ${INVITE_CTA_FOOTER}`;
   const mailtoHref = useMemo(() => {
     const subject = encodeURIComponent(INVITE_EMAIL_SUBJECT);
-    const body = encodeURIComponent(buildInviteEmailBody(inviterName, inviteUrl));
+    const body = encodeURIComponent(buildInviteEmailBody(inviteUrl));
     return `mailto:?subject=${subject}&body=${body}`;
-  }, [inviterName, inviteUrl]);
+  }, [inviteUrl]);
 
   const logInviteAction = async (action: string) => {
     await appLogger.info(

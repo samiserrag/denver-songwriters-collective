@@ -21,6 +21,7 @@ export const INVITE_CTA_HEADLINE =
 export const INVITE_CTA_BODY =
   "Send them the homepage and your personal recommendation.";
 export const INVITE_CTA_LABEL = "Invite a Friend";
+export const SHARE_SITE_CTA_LABEL = "Share This Site";
 export const INVITE_CTA_FOOTER = "No pressure. Just good songs and good people.";
 export const INVITE_EMAIL_SUBJECT = "Come check out Denver Songwriters Collective";
 
@@ -93,11 +94,9 @@ export function deserializeReferralCookie(value: string | undefined): ReferralPa
   }
 }
 
-export function buildInviteEmailBody(inviterName: string | null | undefined, inviteUrl: string): string {
-  const signer = inviterName?.trim() || "A friend from Denver Songwriters Collective";
-
+export function buildInviteEmailBody(inviteUrl: string): string {
   return [
-    "Hey [Friend Name],",
+    "Hey there,",
     "",
     "I wanted to share this with you because I think you'd genuinely enjoy it.",
     "Denver Songwriters Collective is where I go to find open mics, happenings, and local music people worth knowing.",
@@ -106,7 +105,6 @@ export function buildInviteEmailBody(inviterName: string | null | undefined, inv
     "",
     "If it feels like your vibe, join us on the site.",
     "",
-    "See you there,",
-    signer,
+    "Enjoy!",
   ].join("\n");
 }
