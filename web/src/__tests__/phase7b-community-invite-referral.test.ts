@@ -151,8 +151,8 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
       "src/components/navigation/mobile-menu.tsx",
       "utf-8",
     );
-    expect(headerSource).toContain('/dashboard/invite">{INVITE_CTA_LABEL}');
-    expect(mobileSource).toContain('/dashboard/invite">{INVITE_CTA_LABEL}');
+    expect(headerSource).toContain('/invite">{INVITE_CTA_LABEL}');
+    expect(mobileSource).toContain('/invite">{INVITE_CTA_LABEL}');
     expect(headerSource).toContain("INVITE_CTA_LABEL");
     expect(mobileSource).toContain("INVITE_CTA_LABEL");
   });
@@ -161,9 +161,9 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
     const fs = await import("fs");
     const homeSource = fs.readFileSync("src/app/page.tsx", "utf-8");
     const happeningsSource = fs.readFileSync("src/app/happenings/page.tsx", "utf-8");
-    expect(homeSource).toContain('href="/dashboard/invite"');
+    expect(homeSource).toContain('href="/invite"');
     expect(homeSource).not.toContain("/early-contributors");
-    expect(happeningsSource).toContain('href="/dashboard/invite"');
+    expect(happeningsSource).toContain('href="/invite"');
   });
 
   it("weekly digest templates link invites to the clean homepage URL", async () => {
@@ -190,7 +190,7 @@ describe("Phase 7B.1: Approved CTA surfaces", () => {
   it("invite panel reuses the same message body for email and native share", async () => {
     const fs = await import("fs");
     const inviteSource = fs.readFileSync(
-      "src/app/(protected)/dashboard/invite/InvitePanel.tsx",
+      "src/components/invite/InvitePanel.tsx",
       "utf-8",
     );
     expect(inviteSource).toContain("const defaultInviteMessage = useMemo(() => buildInviteEmailBody(inviteUrl), [inviteUrl]);");
