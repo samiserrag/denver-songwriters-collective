@@ -241,7 +241,7 @@ describe("ProfilePhotosSection Upload Flow", () => {
     expect(
       screen.getByText(/Click or drag to upload/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Max 5MB/)).toBeInTheDocument();
+    expect(screen.getByText(/Max 10 MB/)).toBeInTheDocument();
   });
 });
 

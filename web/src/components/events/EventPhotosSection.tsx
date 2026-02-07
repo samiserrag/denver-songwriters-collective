@@ -216,7 +216,7 @@ export function EventPhotosSection({
         Happening Photos
       </h2>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        Add photos for {eventTitle}. Click on an image to set it as the cover photo.
+        Add photos for {eventTitle}. Hover over a photo to set it as the cover.
       </p>
 
       {/* Upload Area */}
@@ -226,10 +226,10 @@ export function EventPhotosSection({
             currentImageUrl={null}
             onUpload={handleUpload}
             onRemove={async () => {}}
-            aspectRatio={4 / 3}
+            aspectRatio={3 / 2}
             shape="square"
             placeholderText="Add Photo"
-            maxSizeMB={5}
+            maxSizeMB={10}
           />
         </div>
       </div>
@@ -242,7 +242,7 @@ export function EventPhotosSection({
               key={image.id}
               className={`relative group aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all ${
                 isCurrentCover(image.image_url)
-                  ? "border-emerald-500 ring-2 ring-emerald-500/30"
+                  ? "border-[var(--color-border-accent)] ring-2 ring-[var(--color-accent-primary)]/30"
                   : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
               }`}
             >
@@ -256,7 +256,7 @@ export function EventPhotosSection({
 
               {/* Current Cover Badge */}
               {isCurrentCover(image.image_url) && (
-                <div className="absolute top-2 left-2 px-2 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                <div className="absolute top-2 left-2 px-2 py-1 bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] text-xs font-medium rounded-full flex items-center gap-1">
                   <Check className="w-3 h-3" />
                   Cover
                 </div>
@@ -280,13 +280,13 @@ export function EventPhotosSection({
                     type="button"
                     onClick={() => handleSetAsCover(image)}
                     disabled={settingCoverId === image.id}
-                    className="p-2 bg-emerald-500/80 hover:bg-emerald-500 rounded-full transition-colors disabled:opacity-50"
+                    className="p-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] rounded-full transition-colors disabled:opacity-50"
                     title="Set as cover photo"
                   >
                     {settingCoverId === image.id ? (
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      <Loader2 className="w-5 h-5 text-[var(--color-text-on-accent)] animate-spin" />
                     ) : (
-                      <Check className="w-5 h-5 text-white" />
+                      <Check className="w-5 h-5 text-[var(--color-text-on-accent)]" />
                     )}
                   </button>
                 )}

@@ -66,9 +66,9 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ### Card Thumbnail Aspect Ratio
 
-- Card thumbnails use a constrained aspect ratio: **4:3**.
+- Card thumbnails use a constrained aspect ratio: **3:2**.
 - Card thumbnails must handle any source poster ratio:
-  - Preferred: dedicated 4:3 card image if available (`cover_image_card_url`)
+  - Preferred: dedicated 3:2 card image if available (`cover_image_card_url`)
   - Otherwise: blurred background + contain foreground fallback (`cover_image_url`)
   - Otherwise: type-based default image fallback (if available)
   - Otherwise: neutral placeholder (gradient with music note icon)
@@ -92,6 +92,34 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 - No new schema fields required beyond existing `cover_image_url` and `cover_image_card_url`
 - Cropping/resizing is a **presentation concern**, not a data concern
 - Missing images render the designed gradient placeholder (never empty space)
+
+---
+
+## Contract: Media Upload Consistency
+
+### Upload Size Standard
+
+- Supported user-facing upload surfaces use a **10 MB max per image**.
+- Surfaces in scope: profile photos, event cover/photo uploads, venue photos, blog images, community gallery.
+- UI helper copy should use: `Max 10 MB`.
+
+### Event Cover Path Contract
+
+- Event cover uploads must use `event-images/{eventId}/{uuid}.{ext}`.
+- Event cover uploads must create an `event_images` row (`event_id`, `image_url`, `storage_path`, `uploaded_by`).
+- In create mode (no `eventId` yet), file upload is deferred until after event creation.
+
+### Deletion and Visibility Contract
+
+- `profile_images`, `event_images`, `venue_images` use soft-delete via `deleted_at`.
+- `gallery_images` user deletion is soft-archive via `is_hidden = true` (not row deletion).
+- User-facing media flows should not hard-delete DB rows directly.
+
+### Aspect Ratio Contract by Surface
+
+- Event cover and event photo uploader crop ratio: **3:2**
+- Venue photo uploader crop ratio: **16:9**
+- Profile photo uploader crop ratio: **1:1**
 
 ---
 
@@ -222,7 +250,7 @@ interface HappeningCardProps {
 
 | Section | Content |
 |---------|---------|
-| **Top** | 4:3 aspect poster with overlays (date badge, favorite star, status) |
+| **Top** | 3:2 aspect poster with overlays (date badge, favorite star, status) |
 | **Bottom** | Title, meta line (time · venue · cost), chips row |
 
 **Surface Treatment:**

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
@@ -159,6 +159,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   } | null>(null);
   const [success, setSuccess] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
+  const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
+  const [pendingCoverPreviewUrl, setPendingCoverPreviewUrl] = useState<string | null>(null);
 
 
   // Phase 4.44c: Advanced section collapse state (expanded by default)
@@ -214,6 +216,77 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     custom_longitude: event?.custom_longitude?.toString() || "",
     location_notes: event?.location_notes || "",
   });
+
+  useEffect(() => {
+    return () => {
+      if (pendingCoverPreviewUrl && pendingCoverPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingCoverPreviewUrl);
+      }
+    };
+  }, [pendingCoverPreviewUrl]);
+
+  const normalizeImageUrl = (url: string) => url.split("?")[0];
+
+  const uploadCoverForEvent = async ({
+    supabase,
+    eventId,
+    file,
+    userId,
+  }: {
+    supabase: ReturnType<typeof createSupabaseBrowserClient>;
+    eventId: string;
+    file: File;
+    userId: string;
+  }): Promise<string> => {
+    const fileExt = file.name.split(".").pop() || "jpg";
+    const storagePath = `${eventId}/${crypto.randomUUID()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("event-images")
+      .upload(storagePath, file, { upsert: false });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("event-images").getPublicUrl(storagePath);
+
+    const { error: insertError } = await supabase
+      .from("event_images")
+      .insert({
+        event_id: eventId,
+        image_url: publicUrl,
+        storage_path: storagePath,
+        uploaded_by: userId,
+      });
+
+    if (insertError) {
+      await supabase.storage.from("event-images").remove([storagePath]);
+      throw insertError;
+    }
+
+    return publicUrl;
+  };
+
+  const softDeleteCoverImageRow = async (
+    supabase: ReturnType<typeof createSupabaseBrowserClient>,
+    eventId: string,
+    imageUrl: string
+  ) => {
+    const normalizedUrl = normalizeImageUrl(imageUrl);
+    const { error } = await supabase
+      .from("event_images")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("event_id", eventId)
+      .eq("image_url", normalizedUrl)
+      .is("deleted_at", null);
+
+    if (error) {
+      console.error("Failed to soft-delete previous cover image row:", error);
+    }
+  };
 
   // Phase 4.0: Location selection mode - "venue" or "custom"
   // Determine initial mode based on existing event data
@@ -370,27 +443,44 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;
 
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+    if (mode === "create" || !event?.id) {
+      if (pendingCoverPreviewUrl && pendingCoverPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingCoverPreviewUrl);
+      }
+      const localPreviewUrl = URL.createObjectURL(file);
+      setPendingCoverFile(file);
+      setPendingCoverPreviewUrl(localPreviewUrl);
+      setCoverImageUrl(localPreviewUrl);
+      return localPreviewUrl;
+    }
 
-    const { error: uploadError } = await supabase.storage
-      .from("event-images")
-      .upload(fileName, file);
+    try {
+      const publicUrl = await uploadCoverForEvent({
+        supabase,
+        eventId: event.id,
+        file,
+        userId: session.user.id,
+      });
 
-    if (uploadError) {
+      if (pendingCoverPreviewUrl && pendingCoverPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingCoverPreviewUrl);
+      }
+      setPendingCoverPreviewUrl(null);
+      setPendingCoverFile(null);
+      setCoverImageUrl(publicUrl);
+      return publicUrl;
+    } catch (uploadError) {
       console.error("Upload error:", uploadError);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from("event-images")
-      .getPublicUrl(fileName);
-
-    setCoverImageUrl(publicUrl);
-    return publicUrl;
   };
 
   const handleImageRemove = async () => {
+    if (pendingCoverPreviewUrl && pendingCoverPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(pendingCoverPreviewUrl);
+    }
+    setPendingCoverPreviewUrl(null);
+    setPendingCoverFile(null);
     setCoverImageUrl(null);
   };
 
@@ -601,7 +691,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         is_recurring: formData.series_mode !== "single",
         // Phase 4.43: capacity is independent of timeslots (RSVP always available)
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
-        cover_image_url: coverImageUrl,
+        cover_image_url: mode === "create" && pendingCoverFile ? null : coverImageUrl,
         is_published: formData.is_published,
         // Slot configuration
         has_timeslots: slotConfig.has_timeslots,
@@ -667,10 +757,60 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         throw new Error(data.error || "Failed to save event");
       }
 
+      const supabase = createSupabaseBrowserClient();
+      const normalizedOriginalCover = event?.cover_image_url ? normalizeImageUrl(event.cover_image_url) : null;
+      const normalizedCurrentCover = coverImageUrl ? normalizeImageUrl(coverImageUrl) : null;
+      let coverUploadFailed = false;
+
+      if (mode === "create" && data.id && pendingCoverFile) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          coverUploadFailed = true;
+        } else {
+          try {
+            const uploadedCoverUrl = await uploadCoverForEvent({
+              supabase,
+              eventId: data.id,
+              file: pendingCoverFile,
+              userId: session.user.id,
+            });
+
+            const { error: updateCoverError } = await supabase
+              .from("events")
+              .update({ cover_image_url: uploadedCoverUrl })
+              .eq("id", data.id);
+
+            if (updateCoverError) {
+              throw updateCoverError;
+            }
+
+            if (pendingCoverPreviewUrl && pendingCoverPreviewUrl.startsWith("blob:")) {
+              URL.revokeObjectURL(pendingCoverPreviewUrl);
+            }
+            setPendingCoverPreviewUrl(null);
+            setPendingCoverFile(null);
+            setCoverImageUrl(uploadedCoverUrl);
+          } catch (uploadError) {
+            console.error("Post-create cover upload failed:", uploadError);
+            coverUploadFailed = true;
+          }
+        }
+      }
+
+      if (
+        mode === "edit" &&
+        event?.id &&
+        normalizedOriginalCover &&
+        normalizedOriginalCover !== normalizedCurrentCover
+      ) {
+        await softDeleteCoverImageRow(supabase, event.id, normalizedOriginalCover);
+      }
+
       if (mode === "create") {
         // Redirect with success message
         const publishStatus = formData.is_published ? "published" : "draft";
-        router.push(`/dashboard/my-events/${data.id}?created=true&status=${publishStatus}`);
+        const coverFailureParam = coverUploadFailed ? "&coverUploadFailed=true" : "";
+        router.push(`/dashboard/my-events/${data.id}?created=true&status=${publishStatus}${coverFailureParam}`);
       } else {
         setSuccess("Changes saved successfully!");
         // Clear URL params (created, status) after edit to prevent stale banner
@@ -1915,14 +2055,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             currentImageUrl={coverImageUrl}
             onUpload={handleImageUpload}
             onRemove={handleImageRemove}
-            aspectRatio={4/3}
+            aspectRatio={3/2}
             shape="square"
             placeholderText="Add Cover Photo"
-            maxSizeMB={5}
+            maxSizeMB={10}
           />
         </div>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          Recommended: 1200×900px (4:3). Most phone photos are already 4:3.
+          Recommended: 1200×800px (3:2). Max 10 MB.
         </p>
       </div>
 

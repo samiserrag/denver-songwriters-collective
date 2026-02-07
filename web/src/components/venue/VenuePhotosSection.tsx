@@ -188,7 +188,7 @@ export function VenuePhotosSection({
         Venue Photos
       </h2>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        Upload photos of {venueName}. Choose one to display as the cover image.
+        Upload photos of {venueName}. Hover over a photo to set it as the cover.
       </p>
 
       {/* Upload new photo */}
@@ -197,14 +197,14 @@ export function VenuePhotosSection({
           <ImageUpload
             onUpload={handleUpload}
             aspectRatio={16 / 9}
-            maxSizeMB={5}
+            maxSizeMB={10}
             shape="square"
             placeholderText="Add Photo"
             className="w-full h-full"
           />
         </div>
         <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
-          Click or drag to upload. JPG, PNG, WebP, or GIF. Max 5MB.
+          Click or drag to upload. JPG, PNG, WebP, or GIF. Max 10 MB.
         </p>
       </div>
 

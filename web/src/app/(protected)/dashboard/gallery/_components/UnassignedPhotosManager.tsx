@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Check, Trash2 } from "lucide-react";
+import { Check, EyeOff } from "lucide-react";
 
 interface Photo {
   id: string;
@@ -88,13 +88,13 @@ export function UnassignedPhotosManager({
     router.refresh();
   }, [assignToAlbumId, selectedPhotos, router]);
 
-  // Delete selected photos
-  const deleteSelectedPhotos = useCallback(async () => {
+  // Hide selected photos (soft-archive via is_hidden)
+  const hideSelectedPhotos = useCallback(async () => {
     if (selectedPhotos.size === 0) return;
 
     const count = selectedPhotos.size;
     const confirmed = window.confirm(
-      `Delete ${count} photo${count > 1 ? "s" : ""}? This cannot be undone.`
+      `Hide ${count} photo${count > 1 ? "s" : ""}? An admin can restore them if needed.`
     );
     if (!confirmed) return;
 
@@ -102,25 +102,25 @@ export function UnassignedPhotosManager({
     const supabase = createClient();
     const photoIds = Array.from(selectedPhotos);
 
-    let deletedCount = 0;
+    let hiddenCount = 0;
     for (const photoId of photoIds) {
       const { error } = await supabase
         .from("gallery_images")
-        .delete()
+        .update({ is_hidden: true })
         .eq("id", photoId);
 
       if (error) {
-        console.error("Failed to delete photo:", error);
+        console.error("Failed to hide photo:", error);
       } else {
-        deletedCount++;
+        hiddenCount++;
       }
     }
 
-    if (deletedCount > 0) {
-      toast.success(`${deletedCount} photo(s) deleted`);
+    if (hiddenCount > 0) {
+      toast.success(`${hiddenCount} photo(s) hidden`);
     }
-    if (deletedCount < photoIds.length) {
-      toast.error(`Failed to delete ${photoIds.length - deletedCount} photo(s)`);
+    if (hiddenCount < photoIds.length) {
+      toast.error(`Failed to hide ${photoIds.length - hiddenCount} photo(s)`);
     }
 
     setSelectedPhotos(new Set());
@@ -148,7 +148,7 @@ export function UnassignedPhotosManager({
             Unassigned Photos ({photos.length})
           </h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Select photos to move them to an album or delete them.
+            Select photos to move them to an album or hide them.
           </p>
         </div>
 
@@ -181,14 +181,14 @@ export function UnassignedPhotosManager({
               {isAssigning ? "Moving..." : "Move"}
             </button>
 
-            {/* Delete */}
+            {/* Hide */}
             <button
-              onClick={deleteSelectedPhotos}
+              onClick={hideSelectedPhotos}
               disabled={isProcessing}
               className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-1"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              {isDeleting ? "Deleting..." : "Delete"}
+              <EyeOff className="w-3.5 h-3.5" />
+              {isDeleting ? "Hiding..." : "Hide"}
             </button>
 
             {/* Clear */}

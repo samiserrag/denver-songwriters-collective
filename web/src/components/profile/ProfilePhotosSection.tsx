@@ -211,14 +211,14 @@ export function ProfilePhotosSection({
           <ImageUpload
             onUpload={handleUpload}
             aspectRatio={1}
-            maxSizeMB={5}
+            maxSizeMB={10}
             shape="square"
             placeholderText="Add Photo"
             className="w-full h-full"
           />
         </div>
         <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
-          Click or drag to upload. JPG, PNG, WebP, or GIF. Max 5MB.
+          Click or drag to upload. JPG, PNG, WebP, or GIF. Max 10 MB.
         </p>
       </div>
 

@@ -5,7 +5,7 @@
  * 1. See management controls when unassigned photos exist
  * 2. Select photos for bulk actions
  * 3. Move photos to albums
- * 4. Delete photos with confirmation
+ * 4. Hide photos with confirmation (soft-archive)
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -31,9 +31,6 @@ vi.mock("sonner", () => ({
 const mockUpdate = vi.fn().mockReturnValue({
   eq: vi.fn().mockResolvedValue({ error: null }),
 });
-const mockDelete = vi.fn().mockReturnValue({
-  eq: vi.fn().mockResolvedValue({ error: null }),
-});
 const mockSelect = vi.fn().mockReturnValue({
   eq: vi.fn().mockReturnValue({
     order: vi.fn().mockReturnValue({
@@ -50,7 +47,6 @@ vi.mock("@/lib/supabase/client", () => ({
       if (table === "gallery_images") {
         return {
           update: mockUpdate,
-          delete: mockDelete,
           select: mockSelect,
         };
       }
@@ -91,7 +87,7 @@ describe("UnassignedPhotosManager", () => {
 
       expect(screen.getByText("Unassigned Photos (3)")).toBeInTheDocument();
       expect(
-        screen.getByText("Select photos to move them to an album or delete them.")
+        screen.getByText("Select photos to move them to an album or hide them.")
       ).toBeInTheDocument();
     });
 
@@ -131,7 +127,7 @@ describe("UnassignedPhotosManager", () => {
       // Now selection controls should appear
       expect(screen.getByText("1 selected")).toBeInTheDocument();
       expect(screen.getByText("Move to album...")).toBeInTheDocument();
-      expect(screen.getByText("Delete")).toBeInTheDocument();
+      expect(screen.getByText("Hide")).toBeInTheDocument();
       expect(screen.getByText("Clear")).toBeInTheDocument();
     });
 
@@ -231,8 +227,8 @@ describe("UnassignedPhotosManager", () => {
     });
   });
 
-  describe("Delete", () => {
-    it("delete button requires confirmation", () => {
+  describe("Hide", () => {
+    it("hide button requires confirmation", () => {
       const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
 
       render(
@@ -243,17 +239,17 @@ describe("UnassignedPhotosManager", () => {
       const photoButtons = screen.getAllByRole("button");
       fireEvent.click(photoButtons[0]);
 
-      // Click delete
-      const deleteButton = screen.getByText("Delete");
-      fireEvent.click(deleteButton);
+      // Click hide
+      const hideButton = screen.getByText("Hide");
+      fireEvent.click(hideButton);
 
       expect(confirmSpy).toHaveBeenCalledWith(
-        "Delete 1 photo? This cannot be undone."
+        "Hide 1 photo? An admin can restore them if needed."
       );
       confirmSpy.mockRestore();
     });
 
-    it("does not delete when confirmation is cancelled", () => {
+    it("does not hide when confirmation is cancelled", () => {
       vi.spyOn(window, "confirm").mockReturnValue(false);
 
       render(
@@ -264,14 +260,14 @@ describe("UnassignedPhotosManager", () => {
       const photoButtons = screen.getAllByRole("button");
       fireEvent.click(photoButtons[0]);
 
-      // Click delete
-      const deleteButton = screen.getByText("Delete");
-      fireEvent.click(deleteButton);
+      // Click hide
+      const hideButton = screen.getByText("Hide");
+      fireEvent.click(hideButton);
 
-      expect(mockDelete).not.toHaveBeenCalled();
+      expect(mockUpdate).not.toHaveBeenCalledWith({ is_hidden: true });
     });
 
-    it("calls supabase delete when confirmed", async () => {
+    it("calls supabase update with is_hidden=true when confirmed", async () => {
       vi.spyOn(window, "confirm").mockReturnValue(true);
 
       render(
@@ -282,12 +278,12 @@ describe("UnassignedPhotosManager", () => {
       const photoButtons = screen.getAllByRole("button");
       fireEvent.click(photoButtons[0]);
 
-      // Click delete
-      const deleteButton = screen.getByText("Delete");
-      fireEvent.click(deleteButton);
+      // Click hide
+      const hideButton = screen.getByText("Hide");
+      fireEvent.click(hideButton);
 
       await waitFor(() => {
-        expect(mockDelete).toHaveBeenCalled();
+        expect(mockUpdate).toHaveBeenCalledWith({ is_hidden: true });
       });
     });
 
@@ -303,12 +299,12 @@ describe("UnassignedPhotosManager", () => {
       fireEvent.click(photoButtons[0]);
       fireEvent.click(photoButtons[1]);
 
-      // Click delete
-      const deleteButton = screen.getByText("Delete");
-      fireEvent.click(deleteButton);
+      // Click hide
+      const hideButton = screen.getByText("Hide");
+      fireEvent.click(hideButton);
 
       expect(confirmSpy).toHaveBeenCalledWith(
-        "Delete 2 photos? This cannot be undone."
+        "Hide 2 photos? An admin can restore them if needed."
       );
       confirmSpy.mockRestore();
     });
@@ -333,7 +329,7 @@ describe("UnassignedPhotosManager", () => {
 
       // New actionable message should be present
       expect(
-        screen.getByText("Select photos to move them to an album or delete them.")
+        screen.getByText("Select photos to move them to an album or hide them.")
       ).toBeInTheDocument();
     });
   });
