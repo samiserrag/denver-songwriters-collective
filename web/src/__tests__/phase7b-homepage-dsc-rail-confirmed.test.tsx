@@ -45,6 +45,7 @@ describe("Phase 7B side tract: homepage DSC rail confirmed parity", () => {
       end_time: "21:00:00",
       day_of_week: null,
       recurrence_rule: "custom",
+      custom_dates: ["2026-02-08", "2026-02-15"],
       venue_name: "Sloan's Lake Tap",
       venue_address: "123 Main St",
       venue_id: "venue-1",
@@ -87,6 +88,7 @@ describe("Phase 7B side tract: homepage DSC rail confirmed parity", () => {
       end_time: "21:00:00",
       day_of_week: null,
       recurrence_rule: "custom",
+      custom_dates: ["2026-02-08", "2026-02-15"],
       venue_name: "Sloan's Lake Tap",
       venue_address: "123 Main St",
       venue_id: "venue-1",
@@ -135,5 +137,51 @@ describe("Phase 7B side tract: homepage DSC rail confirmed parity", () => {
     const source = fs.readFileSync("src/app/page.tsx", "utf-8");
 
     expect(source).toMatch(/function mapDBEventToEvent[\s\S]*return\s*{[\s\S]*\.\.\.dbEvent/);
+  });
+
+  it("does not show schedule unknown for custom schedule events with custom_dates", () => {
+    const dbEvent = {
+      id: "event-custom-1",
+      slug: "sloan-lake-song-circle-jam-2026-02-01",
+      title: "Sloan Lake Song Circle Jam",
+      description: "Community jam.",
+      event_date: "2026-02-01",
+      start_time: "12:30:00",
+      end_time: "16:00:00",
+      day_of_week: null,
+      recurrence_rule: "custom",
+      custom_dates: ["2026-02-08", "2026-02-15"],
+      venue_name: "Sloan Lake",
+      venue_address: "Sloan Lake Park",
+      venue_id: "venue-1",
+      location_mode: "venue",
+      custom_location_name: null,
+      online_url: null,
+      age_policy: "18+ only",
+      status: "active",
+      last_verified_at: "2026-02-07T04:45:05.356Z",
+      verified_by: "admin-1",
+      source: "manual",
+      is_dsc_event: true,
+      is_published: true,
+      has_timeslots: false,
+      total_slots: null,
+      capacity: 40,
+      rsvp_count: 8,
+      claimed_slots: 0,
+      cover_image_url: null,
+      host_id: "host-1",
+    };
+
+    const mapped = mapDBEventToEvent(dbEvent as never);
+
+    render(
+      <HappeningCard
+        event={mapped as never}
+        todayKey="2026-02-07"
+      />
+    );
+
+    expect(screen.queryByText("SCHEDULE UNKNOWN")).not.toBeInTheDocument();
   });
 });

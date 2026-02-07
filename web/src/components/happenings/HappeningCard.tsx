@@ -54,6 +54,7 @@ export interface HappeningEvent {
   end_time?: string | null;
   signup_time?: string | null;
   recurrence_rule?: string | null;
+  custom_dates?: string[] | null;
 
   // Location (Phase 3.1 fields)
   venue_id?: string | null;
@@ -204,6 +205,7 @@ function getDateInfo(
       event_date: event.event_date,
       day_of_week: event.day_of_week,
       recurrence_rule: event.recurrence_rule,
+      custom_dates: event.custom_dates,
       start_time: event.start_time,
     };
     occurrence = computeNextOccurrence(eventForOccurrence, { todayKey });
