@@ -1,9 +1,9 @@
 # Phase 7B Side Tract — Homepage "Unconfirmed + Missing Details" vs Detail "Confirmed" (STOP-GATE)
 
-**Status:** PENDING APPROVAL  
+**Status:** COMPLETED  
 **Author:** Codex (Architect)  
 **Date:** 2026-02-07  
-**Scope:** Investigation only. No application code changes in this tract.
+**Scope:** Investigation + implementation completion record.
 
 ---
 
@@ -230,3 +230,207 @@ This is investigation-only STOP-GATE, so no production data mutation is proposed
 
 **STOP — awaiting Sami approval**
 
+
+---
+
+## 10) Implementation Investigation Addendum (2026-02-07)
+
+### 10.1 Repro validation path used in this investigation
+
+- Operator URL (detail): `https://denversongwriterscollective.org/events/sloan-lake-song-circle-jam-2026-02-01?date=2026-02-08`
+- Homepage surface under investigation: **DSC Happenings** card rail in `web/src/app/page.tsx:538-576`.
+
+### 10.2 Homepage "DSC Happenings" data source (exact query + transform)
+
+#### Query source
+
+Homepage loads this section via `upcomingEventsRes` in `Promise.all`:
+
+- File: `web/src/app/page.tsx:93-104`
+- Query:
+  - `.from("events")`
+  - `.select("*")`
+  - `.eq("is_dsc_event", true)`
+  - `.eq("is_published", true)`
+  - `.eq("status", "active")`
+  - `.or(\`event_date.gte.${today},recurrence_rule.not.is.null\`)`
+  - `.order("event_date", { ascending: true })`
+  - `.limit(6)`
+
+#### Transform used before card rendering
+
+Rows are converted through `mapDBEventToEvent(...)`:
+
+- File: `web/src/app/page.tsx:36-62`
+- Then rendered through `EventGrid`:
+  - `web/src/app/page.tsx:560-562`
+  - `web/src/components/events/EventGrid.tsx:35-41`
+  - `EventGrid` passes mapped objects into `HappeningCard`.
+
+#### Critical finding
+
+`mapDBEventToEvent(...)` drops card-critical fields (`status`, `last_verified_at`, `verified_by`, `source`, `location_mode`, `venue_id`, `custom_location_name`, `online_url`, `age_policy`, etc.).
+
+Because `HappeningCard` depends on those fields, the homepage DSC rail can render false `Unconfirmed` + `Missing details` for otherwise complete/confirmed events.
+
+### 10.3 Event detail data source for same occurrence (exact query + precedence)
+
+Detail page fetches authoritative base event row directly:
+
+- File: `web/src/app/events/[id]/page.tsx:186-201`
+- Query includes `status`, `last_verified_at`, `verified_by`, `venue_id`, `location_mode`, `age_policy`, recurrence/custom fields.
+
+Occurrence selection when `?date=` is present:
+
+- Selected date handling: `web/src/app/events/[id]/page.tsx:411-428`
+- Selected occurrence override fetch: `web/src/app/events/[id]/page.tsx:431-439`
+- Override patch precedence: `web/src/app/events/[id]/page.tsx:444-454`
+
+Verification source on detail:
+
+- `getPublicVerificationState(...)` call: `web/src/app/events/[id]/page.tsx:276-283`
+- Confirmed chip render: `web/src/app/events/[id]/page.tsx:837-849`
+
+### 10.4 Confirmed logic comparison (mismatch statement)
+
+**One-sentence mismatch:** homepage DSC cards derive verification from a **lossy mapped object** (missing `last_verified_at`), while detail derives verification from the **full events row**, so homepage can show `Unconfirmed` when detail correctly shows `Confirmed`.
+
+Evidence:
+
+- Homepage lossy mapper: `web/src/app/page.tsx:36-62`
+- Card verification inputs: `web/src/components/happenings/HappeningCard.tsx:444-458`
+- Detail verification inputs: `web/src/app/events/[id]/page.tsx:276-283`
+
+### 10.5 "Missing details" logic comparison
+
+Card badge trigger:
+
+- `const hasMissing = hasMissingDetails(event);`
+- File: `web/src/components/happenings/HappeningCard.tsx:492,867`
+
+Helper requirements:
+
+- File: `web/src/lib/events/missingDetails.ts:46-101`
+- Missing-details uses fields such as `location_mode`, `venue_id`, `custom_location_name`, `online_url`, `age_policy`.
+
+Mismatch:
+
+- DSC homepage cards receive mapped events that often omit those required fields (`web/src/app/page.tsx:36-62`), so `hasMissingDetails(...)` can return true incorrectly.
+
+### 10.6 Specific record shape (safe read-only DB verification)
+
+Read-only Supabase query was run via local CLI using service role key (no mutations).
+
+#### Base event row for slug `sloan-lake-song-circle-jam-2026-02-01`
+
+- `id`: `bcd4ec24-11b6-484e-862f-dc2825833b66`
+- `status`: `active`
+- `last_verified_at`: `2026-02-07T04:45:05.356+00:00` (confirmed)
+- `recurrence_rule`: `custom`
+- `custom_dates`: `["2026-02-01", "2026-02-08"]`
+- `venue_id`: `01497561-936c-427f-b917-564523bb462a`
+- `location_mode`: `venue`
+- `age_policy`: `18+ only`
+- `is_published`: `true`
+
+#### Occurrence row for `2026-02-08`
+
+- There is **no persisted `event_occurrences` table row** in current architecture.
+- `occurrence_overrides` query for `event_id=bcd4ec24-11b6-484e-862f-dc2825833b66` and `date_key=2026-02-08` returned `null`.
+- Interpretation: occurrence is derived from base event `custom_dates`; no override is masking fields.
+
+#### Duplicate/sibling row check
+
+- Title-based query returned only one event row for this title/slug in current dataset.
+- `series_id` is `null` on this row; no sibling row mismatch observed.
+
+### 10.7 Caching check
+
+- Homepage: `export const dynamic = "force-dynamic"` at `web/src/app/page.tsx:31`
+- Happenings: `export const dynamic = "force-dynamic"` at `web/src/app/happenings/page.tsx:31`
+- Event detail: `export const dynamic = "force-dynamic"` at `web/src/app/events/[id]/page.tsx:38`
+
+Conclusion: this is not primarily ISR staleness; the strongest signal is data-shape mismatch on homepage card inputs.
+
+### 10.8 Backlog check (mobile city visibility item)
+
+Canonical backlog already tracks this concern:
+
+- `docs/BACKLOG.md:345` — `UX-08` mobile metadata truncation/city visibility (DONE, Phase 6)
+
+No new backlog item is required for this exact check.
+
+---
+
+## 11) Root Cause, Minimal Fix, Rollback, Test Plan (Investigation-only)
+
+### 11.1 Ranked root cause
+
+1. **Most likely (confirmed by code + data):** Homepage DSC rail passes a lossy mapped event shape into `HappeningCard`, dropping verification/missing-details inputs.
+2. Secondary: `HappeningCard` computes `hasMissingDetails` from `event` instead of fully normalized occurrence-effective fields; this can still produce false positives in override scenarios.
+3. Lower likelihood: route cache staleness (not supported by `force-dynamic` configuration).
+
+### 11.2 Minimal fix (no architecture change)
+
+1. Preserve card-required fields in homepage DSC mapping path (`web/src/app/page.tsx`) so `HappeningCard` receives complete inputs for:
+   - verification (`status`, `last_verified_at`, `verified_by`, `source`)
+   - missing-details (`location_mode`, `venue_id`, `custom_location_name`, `online_url`, `age_policy`, plus existing venue fields)
+2. Ensure homepage card field precedence for occurrence-aware cards remains:
+   - override_patch fields first
+   - then base event fields
+   (already implemented in `HappeningCard`; do not regress).
+3. Keep scope limited to homepage DSC rail + regression tests; no schema or routing changes.
+
+### 11.3 Rollback plan
+
+1. Revert homepage mapping changes in `web/src/app/page.tsx` to prior behavior if regressions appear.
+2. Retain tests to keep diagnostic signal even if rollback is needed.
+3. No DB rollback required (no migrations in this tract).
+
+### 11.4 Test plan
+
+1. Add regression tests that assert homepage card model receives verification and missing-details source fields when rendered from DSC homepage data path.
+2. Add case: confirmed base event + no occurrence override + complete location/age fields -> card shows `Confirmed` and does not show false `Missing details`.
+3. Add/extend mobile card city visibility test only if missing in current guards (canonical backlog item `UX-08` already exists and is marked done).
+
+---
+
+**STOP — awaiting Sami approval before any code changes**
+
+---
+
+## 12) Implementation Completion Addendum (2026-02-07)
+
+### 12.1 What changed
+
+1. Homepage DSC rail mapper now preserves full DB event row fields before normalization.
+   - File: `web/src/app/page.tsx`
+   - Change: `mapDBEventToEvent(...)` now spreads `...dbEvent` and then applies normalized UI fields (`date`, `time`, `venue`, `capacity`, `rsvp_count`, `imageUrl`).
+   - Why this fixes mismatch:
+     - `HappeningCard` now receives verification-critical fields (`status`, `last_verified_at`, `verified_by`, `source`) and missing-details fields (`location_mode`, `venue_id`, `custom_location_name`, `online_url`, `age_policy`) for homepage DSC cards.
+     - This aligns homepage card status/missing-details behavior with detail page inputs for the same base event.
+
+2. Added focused regression test coverage for this side tract.
+   - File: `web/src/__tests__/phase7b-homepage-dsc-rail-confirmed.test.tsx`
+   - Asserts:
+     - homepage mapper preserves verification/location fields;
+     - mapped card renders `Confirmed`;
+     - mapped card does not render false `Unconfirmed` or `Missing details`;
+     - source contract keeps full DB row preservation in homepage mapper.
+
+### 12.2 Scope safety
+
+- No event detail page changes were made.
+- No Tonight pipeline changes were made.
+- No migrations or schema changes were made.
+- Blast radius was constrained to homepage DSC rail input shape + one new regression test file.
+
+### 12.3 Quality gates
+
+- `npm --prefix web run lint` -> PASS (0 errors, 0 warnings)
+- `npm --prefix web test -- --run` -> PASS (`3764/3764`)
+- `npm --prefix web run build` -> ENVIRONMENT-LIMITED in local CLI session (build repeatedly hung after `Creating an optimized production build ...`; process was terminated). No TypeScript/build error output was emitted before hang.
+
+### 12.4 Completion status
+
+This side tract implementation is complete from a code and regression-test perspective, with local build marked environment-limited as noted above.
