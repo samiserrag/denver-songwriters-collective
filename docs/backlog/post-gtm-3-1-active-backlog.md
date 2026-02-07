@@ -3,6 +3,8 @@
 > This file is an index, not a source of truth.
 >
 > Canonical backlog: [`docs/BACKLOG.md`](../BACKLOG.md)
+>
+> **STRAT-01 is a parallel long-term tract and does not block the active execution backlog.**
 
 ---
 
@@ -10,9 +12,10 @@
 
 | Order | Canonical ID | Priority | Status | Canonical Entry | STOP-GATE / Contract |
 |------|---------------|----------|--------|-----------------|----------------------|
-| 1 | `UX-06` | P0 | STOP-GATE COMPLETE — awaiting approval | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`](../investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md) |
+| 1 | `UX-06` | P0 | DONE — implemented and merged | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`](../investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md) |
 | 2 | `GROWTH-01` | P1 | PARTIAL DONE — 7B.1 shipped, 7B.2 deferred to separate STOP-GATE | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/phase7b-community-invite-growth-stopgate.md`](../investigation/phase7b-community-invite-growth-stopgate.md), [`docs/CONTRACTS.md`](../CONTRACTS.md) |
 | 3 | `EMBED-01` | P2 | OPEN | [`docs/BACKLOG.md`](../BACKLOG.md) | New STOP-GATE required before execution |
+| 4 | `STRAT-01` | P0 (Strategic) | OPEN — docs-only, execution deferred | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`](../investigation/strat-01-multi-region-whitelabel-stopgate.md), [`docs/NORTH_STAR.md`](../NORTH_STAR.md) |
 
 ---
 
@@ -30,9 +33,9 @@ These are complete and remain tracked in canonical backlog for regression protec
 
 ## Next High Priority Tract Plan (Consolidated)
 
-1. `UX-06` first (P0 correctness): resolve homepage/detail confirmed mismatch side tract after approval.
-2. Continue invite/share tract as `GROWTH-01` (Phase 7B.2 only): managed invite email requires a separate STOP-GATE.
-3. Execute `EMBED-01` after invite/share sequencing: external media embeds remains a separate tract.
+1. Continue invite/share tract as `GROWTH-01` (Phase 7B.2 only): managed invite email requires a separate STOP-GATE.
+2. Execute `EMBED-01` after invite/share sequencing: external media embeds remains a separate tract.
+3. Keep `STRAT-01` in parallel as governance architecture only until phased execution approval.
 
 ---
 

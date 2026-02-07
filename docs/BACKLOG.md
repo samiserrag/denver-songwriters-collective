@@ -12,6 +12,7 @@
 | File | Purpose | Status |
 |------|---------|--------|
 | `docs/BACKLOG.md` | **CANONICAL** — All TODOs live here | ACTIVE |
+| `docs/NORTH_STAR.md` | Long-term platform north star (multi-region + white-label) | ACTIVE |
 | `docs/backlog/post-gtm-3-1-active-backlog.md` | Curated active queue view (index only) | ACTIVE (non-canonical) |
 | `docs/backlog/DOCS_ALIGNMENT_RULES.md` | Canonicalization guardrails for backlog docs | ACTIVE |
 | `docs/OPS_BACKLOG.md` | Ops Console features | DEPRECATED → merged here |
@@ -330,6 +331,23 @@ Polish member profiles before external test users see them. Three scope areas:
 ---
 
 ## Open TODOs
+
+### Strategic Platform Architecture (Parallel, Non-Blocking)
+
+| ID | Item | Priority | Status | Notes |
+|----|------|----------|--------|-------|
+| STRAT-01 | Multi-Region + White-Label Rebrand Architecture | P0 (Strategic) | OPEN — docs-only foundation in place, code deferred | Canonical strategic tract spanning rebrand + region/community abstraction |
+| STRAT-01A | Colorado rebrand naming strategy (urgent, reversible) | P0 | OPEN — highest urgency | Working naming target: The Colorado Songwriters Collective; domain `.com` vs `.org` intentionally undecided; Denver remains primary region instance |
+| STRAT-01B | Region abstraction (routing + data boundaries) | P1 | PLANNED | Region becomes first-class without codebase forks |
+| STRAT-01C | Admin scoping + licensing model | P1 | PLANNED | Global/regional/community admin scope contract, enforcement deferred |
+| STRAT-01D | White-label theming + content taxonomy | P1 | PLANNED | Songwriters default; comedians/sports/community variants supported |
+| STRAT-01E | Mobile-first parity + API contracts | P2 | PLANNED | Native mobile compatibility via stable API/domain contracts |
+| STRAT-01F | Internationalization readiness (locale + language) | P2 | PLANNED | Locale/language + regional formatting contracts |
+
+**Strategic References:**
+- North star: `docs/NORTH_STAR.md`
+- STOP-GATE: `docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`
+- Contract alignment: `docs/CONTRACTS.md` (Region + Community Platform Architecture section)
 
 ### Homepage / Navigation / UX
 

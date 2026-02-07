@@ -722,6 +722,27 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### STRAT-01: North-Star Multi-Region + White-Label Governance Alignment (February 2026)
+
+**Summary:** Added a parallel strategic tract to define long-term platform direction (multi-region + white-label) without interrupting active execution backlog.
+
+**Delivered (docs-only):**
+- Added `docs/NORTH_STAR.md` with mission restatement, immutable platform invariants, and explicit posture that Denver is a region (not the product).
+- Added strategic STOP-GATE: `docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`.
+- Added canonical backlog tract and phased sub-items in `docs/BACKLOG.md`:
+  - `STRAT-01`, `STRAT-01A`, `STRAT-01B`, `STRAT-01C`, `STRAT-01D`, `STRAT-01E`, `STRAT-01F`
+- Added architecture contract section in `docs/CONTRACTS.md`:
+  - Region as first-class concept
+  - Community type as first-class concept
+  - Admin scope tiers
+  - Content ownership boundaries
+  - Licensing boundary assumptions (no enforcement yet)
+- Updated active backlog index `docs/backlog/post-gtm-3-1-active-backlog.md` with non-blocking banner and canonical `STRAT-01` reference.
+
+**Execution Status:**
+- Deferred by design: this is north-star alignment, not immediate feature execution.
+- No app code changes, no migrations, no production URL/domain renames in this tract.
+
 ### Phase 7B Side Tract: Homepage DSC Rail Confirmed/Missing-Details Parity (February 2026)
 
 **Summary:** Fixed homepage DSC rail card data-shape mismatch so verification and missing-details badges match event detail behavior for the same underlying event.

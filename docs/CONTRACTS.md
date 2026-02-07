@@ -163,6 +163,52 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Region + Community Platform Architecture (STRAT-01, Docs-Only)
+
+> Strategic contract for future implementation phases. No enforcement code is introduced in this section.
+
+### Region as First-Class Concept
+
+- The platform root is not a single city deployment.
+- A region (example: Denver, Boulder, Austin, Nashville) is a first-class boundary for discovery, operations, and governance.
+- Denver is treated as a region instance, not the product itself.
+
+### Community Type as First-Class Concept
+
+- Songwriters is the default community type.
+- Additional community types (comedians, community sports leagues, and similar member-venue-event ecosystems) are supported as first-class variants.
+- Community type differences should be implemented via configuration/contracts, not separate codebases.
+
+### Admin Scope Contract
+
+- Admin scopes are explicitly tiered:
+  - Global platform admin
+  - Regional admin
+  - Community-specific admin
+- Scope boundaries must be auditable and reversible.
+- Scope expansion from one level to another requires explicit governance approval.
+
+### Content Ownership Rules
+
+- Core entities (members, events, venues, galleries, blogs) must have clear ownership and moderation boundaries.
+- Ownership remains explicit even when content is region- or community-scoped.
+- Cross-region/community visibility rules must be declared explicitly before implementation.
+
+### Licensing Boundary Assumptions (No Enforcement Yet)
+
+- Regional/community admin operation may be licensed by the core organization.
+- Licensing assumptions are architecture constraints for future phases only.
+- No licensing enforcement logic is authorized by this contract update.
+
+### Non-Goals for This Contract Update
+
+- No production URL/domain changes
+- No schema/migration requirements
+- No runtime permission rewrites
+- No white-label runtime implementation
+
+---
+
 ## Contract: Pill Hierarchy & Scan Signals (v2.0)
 
 Pills exist to accelerate scanning. They must not become "badge soup".
