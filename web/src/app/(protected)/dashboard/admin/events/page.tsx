@@ -30,7 +30,11 @@ export default async function AdminEventsPage() {
 
    const { data, error } = await supabase
      .from("events")
-     .select("*, venues(id, name), last_verified_at")
+     .select(`
+       *,
+       venues(id, name),
+       host:profiles!events_host_id_fkey(id, slug, full_name)
+     `)
      .neq("status", "duplicate")
      .order("title", { ascending: true });
 

@@ -11,6 +11,10 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
   is_published?: boolean | null;
   has_timeslots?: boolean | null;
   last_verified_at?: string | null;
+  host?:
+    | { id: string; slug: string | null; full_name: string | null }
+    | { id: string; slug: string | null; full_name: string | null }[]
+    | null;
 };
 
  interface Props {
@@ -130,7 +134,9 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
             <th className="py-2 px-3">Status</th>
             <th className="py-2 px-3">Date</th>
             <th className="py-2 px-3">Venue</th>
+            <th className="py-2 px-3">Host</th>
             <th className="py-2 px-3">Type</th>
+            <th className="py-2 px-3">Cost</th>
             <th className="py-2 px-3">Verified</th>
             <th className="py-2 px-3">Spotlight</th>
             <th className="py-2 px-3">Actions</th>
@@ -171,6 +177,27 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
               <td className="py-2 px-3">{ev.venues?.name ?? ev.venue_name ?? "—"}</td>
 
               <td className="py-2 px-3">
+                {(() => {
+                  const host = Array.isArray(ev.host) ? ev.host[0] : ev.host;
+                  if (!ev.host_id) {
+                    return <span className="text-xs text-amber-300">No host</span>;
+                  }
+                  if (!host?.id) {
+                    return <span className="text-xs text-[var(--color-text-tertiary)]">Host linked</span>;
+                  }
+                  return (
+                    <Link
+                      href={`/members/${host.slug || host.id}`}
+                      target="_blank"
+                      className="text-[var(--color-text-accent)] hover:underline text-sm"
+                    >
+                      {host.full_name || "View host"}
+                    </Link>
+                  );
+                })()}
+              </td>
+
+              <td className="py-2 px-3">
                 {ev.has_timeslots ? (
                   <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
                     Timeslots
@@ -179,6 +206,20 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                   <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)]">
                     RSVP
                   </span>
+                )}
+              </td>
+
+              <td className="py-2 px-3">
+                {ev.is_free ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-900/50 text-emerald-300">
+                    Free
+                  </span>
+                ) : ev.cost_label ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-300">
+                    {ev.cost_label}
+                  </span>
+                ) : (
+                  <span className="text-xs text-[var(--color-text-tertiary)]">Unspecified</span>
                 )}
               </td>
 
