@@ -52,7 +52,6 @@ type EmbedEvent = {
   cost_label: string | null;
   age_policy: string | null;
   cover_image_url: string | null;
-  cover_image_card_url: string | null;
   venue: VenueJoin | VenueJoin[] | null;
 };
 
@@ -344,7 +343,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
           venue_id, venue_name, venue_address, location_mode, online_url,
           custom_location_name, custom_city, custom_state,
           is_free, cost_label, age_policy,
-          cover_image_url, cover_image_card_url,
+          cover_image_url,
           venue:venues!left(name, city, state)
         `)
         .eq("id", identifier)
@@ -358,7 +357,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
           venue_id, venue_name, venue_address, location_mode, online_url,
           custom_location_name, custom_city, custom_state,
           is_free, cost_label, age_policy,
-          cover_image_url, cover_image_card_url,
+          cover_image_url,
           venue:venues!left(name, city, state)
         `)
         .eq("slug", identifier)
@@ -434,7 +433,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
 
   const eventType = (embedEvent.event_type as EventType | null) ?? "other";
   const eventTypeLabel = EVENT_TYPE_CONFIG[eventType as EventType]?.label ?? "Event";
-  const imageUrl = embedEvent.cover_image_card_url || embedEvent.cover_image_url || "https://denversongwriterscollective.org/images/hero/denver-songwriters-hero.jpg";
+  const imageUrl = embedEvent.cover_image_url || "https://denversongwriterscollective.org/images/hero/denver-songwriters-hero.jpg";
   const canonicalPath = embedEvent.event_type === "open_mic" ? `/open-mics/${embedEvent.slug || embedEvent.id}` : `/events/${embedEvent.slug || embedEvent.id}`;
   const canonicalUrl = `https://denversongwriterscollective.org${canonicalPath}`;
   const detailUrl = isDateKey(selectedDate) ? `${canonicalUrl}?date=${selectedDate}` : canonicalUrl;
