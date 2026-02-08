@@ -79,7 +79,7 @@ export function getGreeting(name?: string | null): string {
  * - Content block on white card
  * - Footer with signature
  */
-const DEFAULT_EMAIL_HEADER_IMAGE = "https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/CSC%20Email%20Header1.png";
+export const DEFAULT_EMAIL_HEADER_IMAGE = "https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/sign/Site%20Branding/CSC%20Email%20Header1.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81MzE3NTU4ZS02NTZhLTRhMzItYmUxMi0yMWU3OGVhMWZlMmMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJTaXRlIEJyYW5kaW5nL0NTQyBFbWFpbCBIZWFkZXIxLnBuZyIsImlhdCI6MTc3MDUzMjI0MiwiZXhwIjoyMDg1ODkyMjQyfQ.gSxbH3H04wpHgbYRRiMI0zyfBmcQP3ZERfnuEZYMfc4";
 
 export function wrapEmailHtml(content: string, options?: { headerImageUrl?: string }): string {
   const headerImg = options?.headerImageUrl || DEFAULT_EMAIL_HEADER_IMAGE;

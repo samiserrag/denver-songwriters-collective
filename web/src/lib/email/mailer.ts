@@ -6,10 +6,37 @@
  */
 
 import nodemailer from "nodemailer";
+import { DEFAULT_EMAIL_HEADER_IMAGE } from "./render";
+import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 
 // Rate limiting cache: email+template -> last sent timestamp
 const rateLimitCache = new Map<string, number>();
 const RATE_LIMIT_MS = 60 * 1000; // 1 minute per email per template
+
+// Cached email header image URL from site settings (5-minute TTL)
+let _cachedHeaderImageUrl: string | null = null;
+let _cachedHeaderImageAt = 0;
+const HEADER_IMAGE_CACHE_MS = 5 * 60 * 1000;
+
+async function getEmailHeaderImageUrl(): Promise<string | null> {
+  if (_cachedHeaderImageUrl !== null && Date.now() - _cachedHeaderImageAt < HEADER_IMAGE_CACHE_MS) {
+    return _cachedHeaderImageUrl;
+  }
+  try {
+    const supabase = getServiceRoleClient();
+    const { data } = await (supabase as any)
+      .from("site_settings")
+      .select("email_header_image_url")
+      .eq("id", "global")
+      .single();
+    const url = data?.email_header_image_url || null;
+    _cachedHeaderImageUrl = url;
+    _cachedHeaderImageAt = Date.now();
+    return url;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get configured SMTP transporter
@@ -72,6 +99,13 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
     }
   }
 
+  // Replace default header image with admin-configured URL from site settings
+  const siteHeaderUrl = await getEmailHeaderImageUrl();
+  let finalHtml = html;
+  if (siteHeaderUrl && siteHeaderUrl !== DEFAULT_EMAIL_HEADER_IMAGE) {
+    finalHtml = html.replace(DEFAULT_EMAIL_HEADER_IMAGE, siteHeaderUrl);
+  }
+
   const transporter = getTransporter();
   if (!transporter) {
     console.log(`[Email] SMTP not configured, skipping: ${logName}`);
@@ -91,7 +125,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       from: `${fromName} <${fromEmail}>`,
       to,
       subject,
-      html,
+      html: finalHtml,
       text,
       replyTo,
     });
