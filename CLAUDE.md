@@ -722,6 +722,37 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Homepage Playlist Embeds Wired to Site Settings (February 2026) — RESOLVED
+
+**Summary:** Fixed YouTube and Spotify playlist embeds on the homepage which were hardcoded instead of using admin-configurable URLs from `site_settings`. Added URL-to-embed conversion helpers that automatically transform standard playlist URLs into embed-safe formats.
+
+**Root Cause:** The admin site assets feature (below) added `youtube_playlist_url` and `spotify_playlist_url` columns and admin UI, but the homepage still used hardcoded embed URLs. The YouTube embed showed "This video is unavailable" because it pointed to an old playlist ID.
+
+**URL Conversion Helpers:**
+
+| Helper | Input Example | Output |
+|--------|---------------|--------|
+| `toYouTubeEmbedUrl()` | `https://youtube.com/playlist?list=PLxxx&si=...` | `https://www.youtube.com/embed/videoseries?list=PLxxx` |
+| `toSpotifyEmbedUrl()` | `https://open.spotify.com/playlist/6Loh...?si=...` | `https://open.spotify.com/embed/playlist/6Loh...?utm_source=generator` |
+
+**Behavior:**
+- Both helpers handle already-embed URLs (pass through unchanged)
+- Return `null` for empty/invalid URLs
+- Featured Playlists section hidden entirely when no playlist URLs configured
+- Each embed conditionally rendered (can show one without the other)
+
+**Files Modified (1):**
+
+| File | Change |
+|------|--------|
+| `app/page.tsx` | Added `toYouTubeEmbedUrl()` and `toSpotifyEmbedUrl()` helpers; wired `siteSettings.youtubePlaylistUrl` and `siteSettings.spotifyPlaylistUrl` to LazyIframe embeds; conditional section/embed rendering |
+
+**Quality Gates:**
+- Lint: PASS (0 errors, 0 warnings)
+- Tests: PASS (3779/3779)
+
+---
+
 ### Admin-Configurable Site Assets (February 2026) — RESOLVED
 
 **Summary:** Added 4 admin-configurable site asset fields to the existing site social links settings page: homepage hero image URL, email header image URL, YouTube playlist URL, and Spotify playlist URL.
