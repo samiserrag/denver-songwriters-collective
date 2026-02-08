@@ -78,6 +78,51 @@ function mapDBProfileToMember(profile: DBProfile): Member {
   };
 }
 
+/**
+ * Convert a YouTube playlist URL to its embed format.
+ * Accepts:
+ *   - https://youtube.com/playlist?list=PLxxx
+ *   - https://www.youtube.com/playlist?list=PLxxx&si=...
+ *   - https://www.youtube.com/embed/videoseries?list=PLxxx (already embed)
+ * Returns null if URL is empty or playlist ID cannot be extracted.
+ */
+function toYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    // Already an embed URL
+    if (parsed.pathname.includes("/embed/videoseries")) return url;
+    // Extract list param from standard playlist URL
+    const listId = parsed.searchParams.get("list");
+    if (!listId) return null;
+    return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(listId)}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Convert a Spotify playlist URL to its embed format.
+ * Accepts:
+ *   - https://open.spotify.com/playlist/6Loh...?si=...
+ *   - https://open.spotify.com/embed/playlist/6Loh... (already embed)
+ * Returns null if URL is empty or playlist ID cannot be extracted.
+ */
+function toSpotifyEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    // Already an embed URL
+    if (parsed.pathname.includes("/embed/playlist/")) return url;
+    // Extract playlist ID from /playlist/{id}
+    const match = parsed.pathname.match(/\/playlist\/([A-Za-z0-9]+)/);
+    if (!match) return null;
+    return `https://open.spotify.com/embed/playlist/${match[1]}?utm_source=generator`;
+  } catch {
+    return null;
+  }
+}
+
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
 
@@ -87,8 +132,12 @@ export default async function HomePage() {
     data: { session: _session },
   } = await supabase.auth.getSession();
 
-  // Fetch site settings for hero image URL
+  // Fetch site settings for hero image URL + playlist URLs
   const siteSettings = await getSiteSettings();
+
+  // Convert admin-entered playlist URLs to embed-safe formats
+  const youtubeEmbedUrl = toYouTubeEmbedUrl(siteSettings.youtubePlaylistUrl);
+  const spotifyEmbedUrl = toSpotifyEmbedUrl(siteSettings.spotifyPlaylistUrl);
 
   // Get today's date for filtering past events
   const today = getTodayDenver();
@@ -677,8 +726,8 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Featured Playlists */}
-      <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
+      {/* Featured Playlists — only shown when at least one playlist URL is configured */}
+      {(spotifyEmbedUrl || youtubeEmbedUrl) && <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 text-center">
             <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
@@ -690,27 +739,31 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Spotify Playlist - Lazy loaded to prevent LCP blocking */}
-            <LazyIframe
-              src="https://open.spotify.com/embed/playlist/6LohBdSSOxypGZeI4hIGqK?utm_source=generator"
-              title="Denver Songwriters Collective Spotify Playlist - Community music from local songwriters"
-              height="352px"
-              className="rounded-xl overflow-hidden"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
+            {spotifyEmbedUrl && (
+              <LazyIframe
+                src={spotifyEmbedUrl}
+                title="Denver Songwriters Collective Spotify Playlist - Community music from local songwriters"
+                height="352px"
+                className="rounded-xl overflow-hidden"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            )}
             {/* YouTube Playlist - Lazy loaded to prevent LCP blocking */}
-            <LazyIframe
-              src="https://www.youtube.com/embed/videoseries?si=JA6QrSYIVBwpfOi1&list=PL0HB-8-Ot_s5KVdniord-fsKK3rPz3O7e"
-              title="Denver Songwriters Collective YouTube Playlist - Live performances and music videos"
-              height="352px"
-              className="rounded-xl overflow-hidden"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
+            {youtubeEmbedUrl && (
+              <LazyIframe
+                src={youtubeEmbedUrl}
+                title="Denver Songwriters Collective YouTube Playlist - Live performances and music videos"
+                height="352px"
+                className="rounded-xl overflow-hidden"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            )}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Featured Members - Single unified section for all spotlighted members */}
       {hasFeaturedMembers && (
