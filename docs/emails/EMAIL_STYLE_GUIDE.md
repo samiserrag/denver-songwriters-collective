@@ -170,11 +170,11 @@ Footer links (unsubscribe, contact, etc.)
 Every transactional email includes:
 
 ```html
-— Denver Songwriters Collective
+— The Colorado Songwriters Collective
 
 You can reply directly to this email if you need anything.
 
-denversongwriterscollective.org
+coloradosongwriterscollective.org
 ```
 
 ### Key Footer Principles
@@ -215,32 +215,32 @@ Never use these phrases in DSC emails:
 
 ### Sender Identity Pattern
 
-All user-facing emails end with: `— The Denver Songwriters Collective`
+All user-facing emails end with: `— The Colorado Songwriters Collective`
 
 This ensures recipients always know who's emailing them.
 
 ### Structure
 
 ```
-[Outcome/Status]: [Event Title] — The Denver Songwriters Collective
+[Outcome/Status]: [Event Title] — The Colorado Songwriters Collective
 ```
 
 **Good examples:**
-- "You're on the lineup for Open Mic at The Walnut Room — The Denver Songwriters Collective"
-- "A spot just opened up at Songwriter Showcase — The Denver Songwriters Collective"
-- "Your code for Friday Night Open Mic — The Denver Songwriters Collective"
-- "Reminder: Open Mic is tonight! — The Denver Songwriters Collective"
+- "You're on the lineup for Open Mic at The Walnut Room — The Colorado Songwriters Collective"
+- "A spot just opened up at Songwriter Showcase — The Colorado Songwriters Collective"
+- "Your code for Friday Night Open Mic — The Colorado Songwriters Collective"
+- "Reminder: Open Mic is tonight! — The Colorado Songwriters Collective"
 
 **Bad examples:**
 - "[DSC] RSVP Confirmation - ID#12345"
 - "Action Required: Confirm Your Registration"
-- "Denver Songwriters Collective Notification"
+- "The Colorado Songwriters Collective Notification"
 
 ### Rules
 
 1. **Include event title** when relevant
 2. **Lead with outcome**, not action
-3. **End with sender identity** (— The Denver Songwriters Collective)
+3. **End with sender identity** (— The Colorado Songwriters Collective)
 4. **No ALL CAPS** (except abbreviations)
 5. **No emojis** in transactional emails
 
@@ -352,7 +352,7 @@ Before shipping any email template, verify:
 ### Good: Guest Slot Confirmation
 
 ```
-Subject: You're on the lineup for Open Mic at The Walnut Room — The Denver Songwriters Collective
+Subject: You're on the lineup for Open Mic at The Walnut Room — The Colorado Songwriters Collective
 
 Hi Sarah,
 
@@ -370,14 +370,14 @@ Questions? Reach out to your host or post a comment on the event page.
 I can't make it [link]
 
 ---
-— Denver Songwriters Collective
+— The Colorado Songwriters Collective
 You can reply directly to this email if you need anything.
 ```
 
 ### Good: Waitlist Offer
 
 ```
-Subject: A spot just opened up at Songwriter Showcase — The Denver Songwriters Collective
+Subject: A spot just opened up at Songwriter Showcase — The Colorado Songwriters Collective
 
 Hi there,
 
@@ -395,7 +395,7 @@ offer the spot to someone else.
 I can't make it [link]
 
 ---
-— Denver Songwriters Collective
+— The Colorado Songwriters Collective
 You can reply directly to this email if you need anything.
 ```
 

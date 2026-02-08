@@ -10,7 +10,7 @@ describe("getGuestCancellationConfirmationEmail", () => {
       eventTime: "12:30 PM",
       venueName: "Sloan Lake",
       venueAddress: "Denver, CO",
-      eventUrl: "https://denversongwriterscollective.org/events/sloan-lake-song-circle-jam-2026-02-01?date=2026-02-08",
+      eventUrl: "https://coloradosongwriterscollective.org/events/sloan-lake-song-circle-jam-2026-02-01?date=2026-02-08",
       kind: "rsvp",
     });
 

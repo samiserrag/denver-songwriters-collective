@@ -38,7 +38,7 @@ export function getAdminSuggestionNotificationEmail(params: AdminSuggestionNotif
   const eventIdentifier = eventSlug || eventId;
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
 
-  const subject = `[DSC Suggestion] ${safeName} suggested a change to ${safeTitle}`;
+  const subject = `[CSC Suggestion] ${safeName} suggested a change to ${safeTitle}`;
 
   const htmlContent = `
 <p style="margin: 0 0 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 15px; line-height: 1.6;">

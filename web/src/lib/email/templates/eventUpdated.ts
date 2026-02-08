@@ -70,7 +70,7 @@ export function getEventUpdatedEmail(params: EventUpdatedEmailParams): {
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam}`;
   const cancelUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam ? dateParam + "&" : "?"}cancel=true`;
 
-  const subject = `Update: ${eventTitle} details have changed — The Denver Songwriters Collective`;
+  const subject = `Update: ${eventTitle} details have changed — The Colorado Songwriters Collective`;
 
   // Build change summary
   const changeLines: string[] = [];

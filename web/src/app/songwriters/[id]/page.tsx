@@ -57,7 +57,7 @@ export async function generateMetadata({
 
   if (!profile) {
     return {
-      title: "Songwriter Not Found | Denver Songwriters Collective",
+      title: "Songwriter Not Found | The Colorado Songwriters Collective",
       description: "This songwriter profile could not be found.",
     };
   }
@@ -66,7 +66,7 @@ export async function generateMetadata({
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const genreText = profile.genres?.slice(0, 3).join(", ");
 
-  const title = `${name} | Denver Songwriters Collective`;
+  const title = `${name} | The Colorado Songwriters Collective`;
   const description = profile.bio
     ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
     : `${name}${location ? ` from ${location}` : ""}${genreText ? `. Genres: ${genreText}` : ""}. Connect with songwriters in Denver.`;
@@ -82,7 +82,7 @@ export async function generateMetadata({
       title,
       description,
       url: canonicalUrl,
-      siteName: "Denver Songwriters Collective",
+      siteName: "The Colorado Songwriters Collective",
       type: "profile",
       locale: "en_US",
       images: [
@@ -90,7 +90,7 @@ export async function generateMetadata({
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${name} - Denver Songwriters Collective`,
+          alt: `${name} - The Colorado Songwriters Collective`,
         },
       ],
     },

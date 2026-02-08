@@ -35,22 +35,22 @@ export interface SuggestionResponseEmailParams {
 
 const STATUS_CONFIG = {
   approved: {
-    subjectNew: "Your open mic submission is live! — The Denver Songwriters Collective",
-    subjectEdit: "Your suggestion was approved! — The Denver Songwriters Collective",
+    subjectNew: "Your open mic submission is live! — The Colorado Songwriters Collective",
+    subjectEdit: "Your suggestion was approved! — The Colorado Songwriters Collective",
     emoji: "🎉",
-    headlineNew: "Your open mic is now live on Denver Songwriters Collective!",
+    headlineNew: "Your open mic is now live on The Colorado Songwriters Collective!",
     headlineEdit: "Your correction has been applied!",
   },
   rejected: {
-    subjectNew: "About your open mic submission — The Denver Songwriters Collective",
-    subjectEdit: "About your suggestion — The Denver Songwriters Collective",
+    subjectNew: "About your open mic submission — The Colorado Songwriters Collective",
+    subjectEdit: "About your suggestion — The Colorado Songwriters Collective",
     emoji: "💬",
     headlineNew: "We weren't able to add this open mic just yet.",
     headlineEdit: "We weren't able to make this change.",
   },
   needs_info: {
-    subjectNew: "Quick question about your open mic submission — The Denver Songwriters Collective",
-    subjectEdit: "Quick question about your suggestion — The Denver Songwriters Collective",
+    subjectNew: "Quick question about your open mic submission — The Colorado Songwriters Collective",
+    subjectEdit: "Quick question about your suggestion — The Colorado Songwriters Collective",
     emoji: "🤔",
     headlineNew: "We'd love a bit more info before adding this!",
     headlineEdit: "We need a bit more info to make this change.",
@@ -76,7 +76,7 @@ export function getSuggestionResponseEmail(params: SuggestionResponseEmailParams
 
   // Personalized opening
   const openingLines = [
-    "Thanks for being part of the Denver Songwriters Collective community!",
+    "Thanks for being part of The Colorado Songwriters Collective community!",
     "We really appreciate you taking the time to help keep our listings accurate.",
     "People like you make this community awesome.",
   ];
@@ -120,7 +120,7 @@ ${paragraph(opening)}
 
 ${statusBoxHtml}
 
-${adminMessage ? quoteBlock("From the DSC team:", adminMessage) : ""}
+${adminMessage ? quoteBlock("From the CSC team:", adminMessage) : ""}
 
 ${paragraph(closing)}
 
@@ -138,7 +138,7 @@ ${opening}
 ${headline}
 ${eventTitle ? `Re: ${eventTitle}` : ""}
 
-${adminMessage ? `From the DSC team:\n${adminMessage}` : ""}
+${adminMessage ? `From the CSC team:\n${adminMessage}` : ""}
 
 ${closing}
 

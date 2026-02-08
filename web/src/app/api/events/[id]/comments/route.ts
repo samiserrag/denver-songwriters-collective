@@ -116,7 +116,7 @@ export async function POST(
     );
   }
 
-  // Verify event exists (no DSC gate - comments work on all events)
+  // Verify event exists (no CSC gate - comments work on all events)
   const { data: event, error: eventError } = await supabase
     .from("events")
     .select("id, title, slug")

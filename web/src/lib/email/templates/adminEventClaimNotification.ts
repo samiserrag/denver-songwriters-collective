@@ -34,7 +34,7 @@ export function getAdminEventClaimNotificationEmail(params: AdminEventClaimNotif
   const eventIdentifier = eventSlug || eventId;
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
 
-  const subject = `[DSC Claim] ${requesterName} wants to host ${eventTitle}`;
+  const subject = `[CSC Claim] ${requesterName} wants to host ${eventTitle}`;
 
   const htmlContent = `
 <p style="margin: 0 0 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 15px; line-height: 1.6;">

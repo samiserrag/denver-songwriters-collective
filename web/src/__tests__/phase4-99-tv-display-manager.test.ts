@@ -215,13 +215,13 @@ describe("Phase 4.99 C5-C6: TV Display Link Behavior", () => {
 
   describe("Copyable URL field", () => {
     it("should generate full URL with origin", () => {
-      const origin = "https://denversongwriterscollective.org";
+      const origin = "https://coloradosongwriterscollective.org";
       const displayUrl = "/events/test-event/display?date=2026-01-27";
 
       const fullDisplayUrl = `${origin}${displayUrl}`;
 
       expect(fullDisplayUrl).toBe(
-        "https://denversongwriterscollective.org/events/test-event/display?date=2026-01-27"
+        "https://coloradosongwriterscollective.org/events/test-event/display?date=2026-01-27"
       );
     });
 

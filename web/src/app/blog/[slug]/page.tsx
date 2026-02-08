@@ -29,16 +29,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) {
     return {
-      title: "Post Not Found | Denver Songwriters Collective",
+      title: "Post Not Found | The Colorado Songwriters Collective",
       description: "This blog post could not be found.",
     };
   }
 
-  const authorName = (post.author as any)?.full_name ?? "Denver Songwriters Collective";
-  const title = `${post.title} | Denver Songwriters Collective`;
+  const authorName = (post.author as any)?.full_name ?? "The Colorado Songwriters Collective";
+  const title = `${post.title} | The Colorado Songwriters Collective`;
   const description = post.excerpt
     ? post.excerpt.slice(0, 155) + (post.excerpt.length > 155 ? "..." : "")
-    : `Read "${post.title}" by ${authorName} on the Denver Songwriters Collective blog.`;
+    : `Read "${post.title}" by ${authorName} on The Colorado Songwriters Collective blog.`;
 
   const canonicalUrl = `${siteUrl}/blog/${slug}`;
   const ogImageUrl = `${siteUrl}/og/blog/${slug}`;
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url: canonicalUrl,
-      siteName: "Denver Songwriters Collective",
+      siteName: "The Colorado Songwriters Collective",
       type: "article",
       locale: "en_US",
       images: [
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${post.title} - Denver Songwriters Collective`,
+          alt: `${post.title} - The Colorado Songwriters Collective`,
         },
       ],
     },

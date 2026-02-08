@@ -259,8 +259,8 @@ Alignment statement:
 ### 14.2 Live kill-switch validation evidence (production)
 
 Validated URL set:
-- `https://denversongwriterscollective.org/embed/events/sloan-lake-song-circle-jam-2026-02-01`
-- `https://denversongwriterscollective.org/embed/events/sloan-lake-song-circle-jam-2026-02-01?view=compact&show=meta`
+- `https://coloradosongwriterscollective.org/embed/events/sloan-lake-song-circle-jam-2026-02-01`
+- `https://coloradosongwriterscollective.org/embed/events/sloan-lake-song-circle-jam-2026-02-01?view=compact&show=meta`
 
 | Timestamp (UTC) | Env value | Result |
 |---|---|---|

@@ -148,7 +148,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
             mode="edit"
             venues={venues ?? []}
             event={effectiveEvent}
-            canCreateDSC={false}
+            canCreateCSC={false}
             canCreateVenue={isAdmin}
             occurrenceMode={true}
             occurrenceDateKey={dateKey}

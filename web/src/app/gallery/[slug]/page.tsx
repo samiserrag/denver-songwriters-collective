@@ -28,14 +28,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!album) {
     return {
-      title: "Album Not Found | Denver Songwriters Collective",
+      title: "Album Not Found | The Colorado Songwriters Collective",
     };
   }
 
-  const ogImageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org"}/og/gallery/${slug}`;
+  const ogImageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://coloradosongwriterscollective.org"}/og/gallery/${slug}`;
 
   return {
-    title: `${album.name} | Gallery | Denver Songwriters Collective`,
+    title: `${album.name} | Gallery | The Colorado Songwriters Collective`,
     description: album.description || `Photos from ${album.name}`,
     openGraph: {
       title: `${album.name} | Gallery`,

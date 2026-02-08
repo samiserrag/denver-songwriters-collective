@@ -137,7 +137,7 @@ describe("Phase 1.01 — Default Window Behavior", () => {
       const params = {
         q: "",
         type: "",
-        dsc: "",
+        csc: "",
         verify: "",
         location: "",
         cost: "",
@@ -147,7 +147,7 @@ describe("Phase 1.01 — Default Window Behavior", () => {
 
       const searchQuery = params.q || "";
       const typeFilter = params.type || "";
-      const dscFilter = params.dsc === "1";
+      const cscFilter = params.csc === "1";
       const verifyFilter = params.verify || "";
       const locationFilter = params.location || "";
       const costFilter = params.cost || "";
@@ -158,7 +158,7 @@ describe("Phase 1.01 — Default Window Behavior", () => {
       const hasFilters =
         searchQuery ||
         typeFilter ||
-        dscFilter ||
+        cscFilter ||
         verifyFilter ||
         locationFilter ||
         costFilter ||

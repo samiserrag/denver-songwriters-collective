@@ -34,7 +34,7 @@ export function getVenueClaimRejectedEmail(params: VenueClaimRejectedEmailParams
   const venueIdentifier = venueSlug || venueId;
   const venueUrl = `${SITE_URL}/venues/${venueIdentifier}`;
 
-  const subject = `Update on your claim for ${venueName} — The Denver Songwriters Collective`;
+  const subject = `Update on your claim for ${venueName} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

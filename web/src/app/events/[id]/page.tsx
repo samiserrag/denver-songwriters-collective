@@ -88,16 +88,16 @@ export async function generateMetadata({
 
   if (!event) {
     return {
-      title: "Happening Not Found | Denver Songwriters Collective",
+      title: "Happening Not Found | The Colorado Songwriters Collective",
       description: "This happening could not be found.",
     };
   }
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
-  const title = `${event.title} | ${config.label} | Denver Songwriters Collective`;
+  const title = `${event.title} | ${config.label} | The Colorado Songwriters Collective`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
-    : `Join us for ${event.title}${event.venue_name ? ` at ${event.venue_name}` : ""}. A ${config.label.toLowerCase()} hosted by the Denver Songwriters Collective.`;
+    : `Join us for ${event.title}${event.venue_name ? ` at ${event.venue_name}` : ""}. A ${config.label.toLowerCase()} hosted by The Colorado Songwriters Collective.`;
 
   const canonicalSlug = event.slug || id;
   const canonicalUrl = `${siteUrl}/events/${canonicalSlug}`;
@@ -110,7 +110,7 @@ export async function generateMetadata({
       title,
       description,
       url: canonicalUrl,
-      siteName: "Denver Songwriters Collective",
+      siteName: "The Colorado Songwriters Collective",
       type: "website",
       locale: "en_US",
       images: [
@@ -118,7 +118,7 @@ export async function generateMetadata({
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${event.title} - Denver Songwriters Collective`,
+          alt: `${event.title} - The Colorado Songwriters Collective`,
         },
       ],
     },
@@ -281,7 +281,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     verified_by: (event as { verified_by?: string | null }).verified_by,
   });
   const verificationState = verificationResult.state;
-  // P0 Fix: Suppress "Unconfirmed" badge for DSC TEST events
+  // P0 Fix: Suppress "Unconfirmed" badge for CSC TEST events
   const showUnconfirmedBadge = shouldShowUnconfirmedBadge({
     title: event.title,
     is_dsc_event: event.is_dsc_event,
@@ -775,7 +775,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       )}
 
       {/* Phase 4.32: No signup lane warning - only visible to hosts/admins */}
-      {/* Phase 4.XX: Warning applies to ALL events (not just DSC), per timeslots-everywhere change */}
+      {/* Phase 4.XX: Warning applies to ALL events (not just CSC), per timeslots-everywhere change */}
       {canManageEvent && !signupLaneExists && (
         <div className="mb-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
           <div className="flex items-center justify-between gap-4">
@@ -821,18 +821,18 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
         />
 
         <div className="p-6 md:p-8">
-          {/* Event type, DSC, and verification badges */}
+          {/* Event type, CSC, and verification badges */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span className="px-2 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] text-sm rounded flex items-center gap-1.5">
               <span>{config.icon}</span> {config.label}
             </span>
             {event.is_dsc_event && (
               <span className="px-2 py-1 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-sm rounded font-medium">
-                DSC Event
+                CSC Event
               </span>
             )}
             {/* Phase 4.39: Always-visible verification pill (matches HappeningCard) */}
-            {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
+            {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
             {/* Phase 4.89: Added confirmed date display */}
             {verificationState === "confirmed" && (
               <>
@@ -877,7 +877,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               </span>
             </div>
           )}
-          {/* P0 Fix: Use showUnconfirmedBadge to suppress warning banner for DSC TEST events */}
+          {/* P0 Fix: Use showUnconfirmedBadge to suppress warning banner for CSC TEST events */}
           {showUnconfirmedBadge && !isCancelled && (
             <div className="mb-6 px-4 py-3 rounded-lg bg-amber-100 text-amber-800 flex items-center gap-3">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1316,7 +1316,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
           {/* Action buttons row */}
           <div className="flex flex-wrap items-start gap-4 mb-8">
-            {/* Phase 4.43c: RSVP is always available for all published events (DSC + community) */}
+            {/* Phase 4.43c: RSVP is always available for all published events (CSC + community) */}
             {/* RSVP = audience/supporters "planning to attend", not performer signup */}
             {/* Phase ABC5: Disable RSVP if this specific occurrence is cancelled */}
             {canRSVP && !isOccurrenceCancelled && (
@@ -1376,7 +1376,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
           )}
 
           {/* Timeslot claiming section for timeslot-enabled events */}
-          {/* Phase 4.XX: Timeslots available for ALL events (not just DSC), per Phase 4.47 opt-in design */}
+          {/* Phase 4.XX: Timeslots available for ALL events (not just CSC), per Phase 4.47 opt-in design */}
           {(event as { has_timeslots?: boolean }).has_timeslots && (
             <div className="mb-8">
               {/* Phase ABC6: Timeslots are per-occurrence (date-scoped) */}

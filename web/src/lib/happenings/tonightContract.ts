@@ -6,7 +6,7 @@
  * MUST use these shared values to ensure consistency.
  *
  * See: docs/investigation/phase6-cross-surface-consistency-stopgate.md
- * Checked against DSC UX Principles §4 (Centralize Logic), §5 (Previews Must Match Reality)
+ * Checked against CSC UX Principles §4 (Centralize Logic), §5 (Previews Must Match Reality)
  */
 
 /**

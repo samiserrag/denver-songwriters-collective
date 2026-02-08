@@ -9,7 +9,7 @@ import { FolderOpen, Plus } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "My Photos | DSC"
+  title: "My Photos | CSC"
 };
 
 export default async function UserGalleryPage() {

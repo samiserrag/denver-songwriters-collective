@@ -2,7 +2,7 @@
 
 ## Context
 
-We have a Next.js 16 + Supabase application (Denver Songwriters Collective) that uses `supabase.auth.getSession()` in **60 files** across the codebase. Supabase is warning us that this is insecure:
+We have a Next.js 16 + Supabase application (The Colorado Songwriters Collective) that uses `supabase.auth.getSession()` in **60 files** across the codebase. Supabase is warning us that this is insecure:
 
 ```
 Using the user object as returned from supabase.auth.getSession() or from some

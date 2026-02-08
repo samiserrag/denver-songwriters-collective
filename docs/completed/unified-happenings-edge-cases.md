@@ -254,7 +254,7 @@ No session/auth changes needed for unification.
 - Rich description with day/time
 
 **Event Detail:**
-- Title: `{title} | {event_type label} | Denver Songwriters Collective`
+- Title: `{title} | {event_type label} | The Colorado Songwriters Collective`
 - Description includes event type
 
 ### 7.3 Required Updates

@@ -12,7 +12,7 @@ interface LineupDatePickerProps {
  * Modal/card for requiring explicit date selection before controlling lineup.
  *
  * Phase 4.99: Prevents silent defaulting to wrong occurrence date.
- * DSC UX Principles §3: Rolling Windows Must Be Explained.
+ * CSC UX Principles §3: Rolling Windows Must Be Explained.
  */
 export function LineupDatePicker({
   eventTitle,

@@ -1,8 +1,8 @@
 /**
- * P0 Fix: DSC TEST Unconfirmed Badge Suppression Tests
+ * P0 Fix: CSC TEST Unconfirmed Badge Suppression Tests
  *
  * Tests the shouldShowUnconfirmedBadge() helper that suppresses "Unconfirmed"
- * UI for DSC TEST series (internal testing events).
+ * UI for CSC TEST series (internal testing events).
  *
  * Rule: If is_dsc_event=true AND title starts with "TEST", hide badge.
  */
@@ -14,8 +14,8 @@ import {
 } from "@/lib/events/verification";
 
 describe("shouldShowUnconfirmedBadge", () => {
-  describe("DSC TEST events (badge should be hidden)", () => {
-    it("hides badge for DSC event with title starting with 'TEST'", () => {
+  describe("CSC TEST events (badge should be hidden)", () => {
+    it("hides badge for CSC event with title starting with 'TEST'", () => {
       const event = {
         title: "TEST Open Mic Thursdays Series",
         is_dsc_event: true,
@@ -25,9 +25,9 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(false);
     });
 
-    it("hides badge for DSC event with title 'TEST DSC Song Circle'", () => {
+    it("hides badge for CSC event with title 'TEST CSC Song Circle'", () => {
       const event = {
-        title: "TEST DSC Song Circle",
+        title: "TEST CSC Song Circle",
         is_dsc_event: true,
         status: "active",
         last_verified_at: null,
@@ -35,7 +35,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(false);
     });
 
-    it("hides badge for DSC event with title 'TEST' (exact match)", () => {
+    it("hides badge for CSC event with title 'TEST' (exact match)", () => {
       const event = {
         title: "TEST",
         is_dsc_event: true,
@@ -45,7 +45,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(false);
     });
 
-    it("hides badge for DSC event with 'TEST' followed by space", () => {
+    it("hides badge for CSC event with 'TEST' followed by space", () => {
       const event = {
         title: "TEST Event Name",
         is_dsc_event: true,
@@ -56,8 +56,8 @@ describe("shouldShowUnconfirmedBadge", () => {
     });
   });
 
-  describe("Non-DSC unverified events (badge should be shown)", () => {
-    it("shows badge for non-DSC unverified event", () => {
+  describe("Non-CSC unverified events (badge should be shown)", () => {
+    it("shows badge for non-CSC unverified event", () => {
       const event = {
         title: "Community Open Mic Night",
         is_dsc_event: false,
@@ -67,7 +67,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(true);
     });
 
-    it("shows badge for non-DSC event with TEST in title", () => {
+    it("shows badge for non-CSC event with TEST in title", () => {
       const event = {
         title: "TEST Community Event",
         is_dsc_event: false,
@@ -98,10 +98,10 @@ describe("shouldShowUnconfirmedBadge", () => {
     });
   });
 
-  describe("DSC non-TEST unverified events (badge should be shown)", () => {
-    it("shows badge for DSC event without TEST prefix", () => {
+  describe("CSC non-TEST unverified events (badge should be shown)", () => {
+    it("shows badge for CSC event without TEST prefix", () => {
       const event = {
-        title: "DSC Song Circle at Brewery",
+        title: "CSC Song Circle at Brewery",
         is_dsc_event: true,
         status: "active",
         last_verified_at: null,
@@ -109,7 +109,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(true);
     });
 
-    it("shows badge for DSC event with 'test' lowercase (case-sensitive)", () => {
+    it("shows badge for CSC event with 'test' lowercase (case-sensitive)", () => {
       const event = {
         title: "test Open Mic",
         is_dsc_event: true,
@@ -119,7 +119,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(true);
     });
 
-    it("shows badge for DSC event with TEST in middle of title", () => {
+    it("shows badge for CSC event with TEST in middle of title", () => {
       const event = {
         title: "Open Mic TEST Night",
         is_dsc_event: true,
@@ -129,7 +129,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(true);
     });
 
-    it("shows badge for DSC event with 'Testing' prefix (not exact TEST)", () => {
+    it("shows badge for CSC event with 'Testing' prefix (not exact TEST)", () => {
       const event = {
         title: "Testing New Format",
         is_dsc_event: true,
@@ -141,7 +141,7 @@ describe("shouldShowUnconfirmedBadge", () => {
   });
 
   describe("Verified events (badge should never show)", () => {
-    it("hides badge for verified DSC TEST event", () => {
+    it("hides badge for verified CSC TEST event", () => {
       const event = {
         title: "TEST Open Mic",
         is_dsc_event: true,
@@ -151,7 +151,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(false);
     });
 
-    it("hides badge for verified non-DSC event", () => {
+    it("hides badge for verified non-CSC event", () => {
       const event = {
         title: "Community Open Mic",
         is_dsc_event: false,
@@ -161,9 +161,9 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(false);
     });
 
-    it("hides badge for verified DSC event", () => {
+    it("hides badge for verified CSC event", () => {
       const event = {
-        title: "DSC Song Circle",
+        title: "CSC Song Circle",
         is_dsc_event: true,
         status: "active",
         last_verified_at: "2026-01-15T12:00:00Z",
@@ -173,7 +173,7 @@ describe("shouldShowUnconfirmedBadge", () => {
   });
 
   describe("Cancelled events (badge should never show)", () => {
-    it("hides badge for cancelled DSC TEST event", () => {
+    it("hides badge for cancelled CSC TEST event", () => {
       const event = {
         title: "TEST Open Mic",
         is_dsc_event: true,
@@ -183,7 +183,7 @@ describe("shouldShowUnconfirmedBadge", () => {
       expect(shouldShowUnconfirmedBadge(event)).toBe(false);
     });
 
-    it("hides badge for cancelled non-DSC event", () => {
+    it("hides badge for cancelled non-CSC event", () => {
       const event = {
         title: "Community Open Mic",
         is_dsc_event: false,

@@ -340,7 +340,7 @@ function GuestCommentForm({ eventId, dateKey, onSuccess }: { eventId: string; da
 /**
  * Event Comments Component
  *
- * Phase 4.49b: Comments for all events (DSC + community)
+ * Phase 4.49b: Comments for all events (CSC + community)
  * Supports both member comments and guest comments (via verification)
  */
 export function EventComments({ eventId, hostId, dateKey }: EventCommentsProps) {

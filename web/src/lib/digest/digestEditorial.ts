@@ -26,8 +26,8 @@ const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
 const ALLOWED_HOSTS = new Set([
   CANONICAL_HOST,
   `www.${CANONICAL_HOST}`,
-  "denversongwriterscollective.org",
-  "www.denversongwriterscollective.org",
+  "coloradosongwriterscollective.org",
+  "www.coloradosongwriterscollective.org",
   "coloradosongwriterscollective.org",
   "www.coloradosongwriterscollective.org",
 ]);

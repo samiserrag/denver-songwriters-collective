@@ -47,7 +47,7 @@ export async function GET(
   // Note: event_hosts.user_id references auth.users, not profiles
   // So we fetch hosts without profile join, then fetch profiles separately
   // Phase 4.x: Removed is_dsc_event filter - users should be able to edit ALL their happenings,
-  // not just DSC events. Community events (is_dsc_event=false) also editable in My Happenings.
+  // not just CSC events. Community events (is_dsc_event=false) also editable in My Happenings.
   const { data: event, error } = await supabase
     .from("events")
     .select(`
@@ -117,7 +117,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Check host/admin status for DSC branding permission
+  // Check host/admin status for CSC branding permission
   const isApprovedHost = await checkHostStatus(supabase, session.user.id);
   const { data: profile } = await supabase
     .from("profiles")
@@ -125,7 +125,7 @@ export async function PATCH(
     .eq("id", session.user.id)
     .single();
   const isAdmin = profile?.role === "admin";
-  const canCreateDSC = isApprovedHost || isAdmin;
+  const canCreateCSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
 
@@ -265,11 +265,11 @@ export async function PATCH(
     }
   }
 
-  // Handle is_dsc_event separately - only allow if canCreateDSC
+  // Handle is_dsc_event separately - only allow if canCreateCSC
   if (body.is_dsc_event !== undefined) {
-    if (body.is_dsc_event === true && !canCreateDSC) {
+    if (body.is_dsc_event === true && !canCreateCSC) {
       return NextResponse.json(
-        { error: "Only approved hosts and admins can create DSC events" },
+        { error: "Only approved hosts and admins can create CSC events" },
         { status: 403 }
       );
     }

@@ -33,7 +33,7 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-describe("Phase 7B side tract: homepage DSC rail confirmed parity", () => {
+describe("Phase 7B side tract: homepage CSC rail confirmed parity", () => {
   it("homepage mapper preserves verification/location fields needed by HappeningCard", () => {
     const dbEvent = {
       id: "event-1",
@@ -77,7 +77,7 @@ describe("Phase 7B side tract: homepage DSC rail confirmed parity", () => {
     expect((mapped as { age_policy?: string }).age_policy).toBe("21+");
   });
 
-  it("renders Confirmed and does not render Unconfirmed or Missing details for mapped DSC rail event", () => {
+  it("renders Confirmed and does not render Unconfirmed or Missing details for mapped CSC rail event", () => {
     const dbEvent = {
       id: "event-1",
       slug: "sloan-lake-song-circle-jam-2026-02-01",

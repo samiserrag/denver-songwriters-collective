@@ -451,7 +451,7 @@ export function HappeningCard({
     verified_by: event.verified_by,
   });
   const verificationState = verificationResult.state;
-  // P0 Fix: Suppress "Unconfirmed" badge for DSC TEST events
+  // P0 Fix: Suppress "Unconfirmed" badge for CSC TEST events
   const showUnconfirmedBadge = shouldShowUnconfirmedBadge({
     title: event.title,
     is_dsc_event: event.is_dsc_event,
@@ -748,7 +748,7 @@ export function HappeningCard({
           {/* Status badge overlay - top left */}
           {/* Phase 4.37/4.40: Show verification state badges */}
           {/* Priority: cancelled > ended (past) > unconfirmed */}
-          {/* P0 Fix: showUnconfirmedBadge suppresses badge for DSC TEST events */}
+          {/* P0 Fix: showUnconfirmedBadge suppresses badge for CSC TEST events */}
           {(isCancelled || showEnded || showUnconfirmedBadge) && (
             <div className="absolute top-2.5 left-2.5 z-10">
               <span
@@ -800,8 +800,8 @@ export function HappeningCard({
           {/* Tier 2 recurrence pill - always visible, below title */}
           <div className="flex items-center gap-1 flex-wrap">
             <Chip variant="recurrence">{recurrenceSummary}</Chip>
-            {/* DSC is Tier 1 - urgency/trust - shown prominently */}
-            {event.is_dsc_event && <Chip variant="accent">DSC</Chip>}
+            {/* CSC is Tier 1 - urgency/trust - shown prominently */}
+            {event.is_dsc_event && <Chip variant="accent">CSC</Chip>}
           </div>
 
           {/* Meta line: Time · Venue, City · Cost - promoted visibility */}
@@ -842,7 +842,7 @@ export function HappeningCard({
           {/* Chips row - Tier 3 type/context pills */}
           <div className="flex items-center gap-1 flex-wrap">
             {/* Phase 4.38: Always-visible verification status pill */}
-            {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
+            {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
             {verificationState === "confirmed" && (
               <Chip variant="success">
                 <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

@@ -18,7 +18,7 @@ import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 const SITE_URL =
   process.env.PUBLIC_SITE_URL ||
   process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://denversongwriterscollective.org";
+  "https://coloradosongwriterscollective.org";
 
 export async function GET(request: NextRequest) {
   const email = request.nextUrl.searchParams.get("email");

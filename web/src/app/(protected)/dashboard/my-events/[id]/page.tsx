@@ -15,7 +15,7 @@ import EventManagementClient from "./_components/EventManagementClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Edit Happening | DSC"
+  title: "Edit Happening | CSC"
 };
 
 interface EventHost {
@@ -47,14 +47,14 @@ export default async function EditEventPage({
   // Check if user can manage this event (admins have full access)
   const isAdmin = await checkAdminRole(supabase, session.user.id);
 
-  // Check if user can create DSC-branded events
+  // Check if user can create CSC-branded events
   const isApprovedHost = await checkHostStatus(supabase, session.user.id);
-  const canCreateDSC = isApprovedHost || isAdmin;
+  const canCreateCSC = isApprovedHost || isAdmin;
 
   // Fetch event with venue
   // Note: event_hosts.user_id references auth.users, not profiles
   // So we fetch hosts separately and join with profiles manually
-  // Phase 4.42e: Removed is_dsc_event filter to allow editing all events (DSC and community)
+  // Phase 4.42e: Removed is_dsc_event filter to allow editing all events (CSC and community)
   const { data: event, error } = await supabase
     .from("events")
     .select(`
@@ -285,7 +285,7 @@ export default async function EditEventPage({
               mode="edit"
               venues={venues ?? []}
               event={event}
-              canCreateDSC={canCreateDSC}
+              canCreateCSC={canCreateCSC}
               canCreateVenue={isAdmin}
               hasActiveClaims={hasActiveClaims}
             />

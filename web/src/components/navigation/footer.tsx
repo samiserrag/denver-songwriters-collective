@@ -75,7 +75,7 @@ export function Footer({ className, socialLinks = [] }: FooterProps) {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[var(--color-text-on-inverse-tertiary)] text-sm">
-            © {currentYear} The Denver Songwriters Collective. Made with 🎵 in Denver.
+            © {currentYear} The Colorado Songwriters Collective. Made with 🎵 in Denver.
           </p>
           <div className="flex gap-6 text-sm">
             <Link href="/privacy" className="text-[var(--color-text-on-inverse-tertiary)] hover:text-[var(--color-text-on-inverse-secondary)] transition-colors">Privacy</Link>

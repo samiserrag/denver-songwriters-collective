@@ -37,14 +37,14 @@ describe('HappeningsFilters Component', () => {
       expect(componentContent).toContain('label: "Needs verify"');
     });
 
-    it('should use compact DSC badge, not long label', () => {
-      // DSC toggle should just say "DSC" (content is on separate line from button tag)
+    it('should use compact CSC badge, not long label', () => {
+      // CSC toggle should just say "CSC" (content is on separate line from button tag)
       expect(componentContent).toContain('>');
-      expect(componentContent).toContain('DSC');
+      expect(componentContent).toContain('CSC');
       expect(componentContent).toContain('</button>');
-      // Verify it's not a long descriptive label like "DSC Events Only"
-      expect(componentContent).not.toContain('DSC Events Only');
-      expect(componentContent).not.toContain('DSC Only');
+      // Verify it's not a long descriptive label like "CSC Events Only"
+      expect(componentContent).not.toContain('CSC Events Only');
+      expect(componentContent).not.toContain('CSC Only');
     });
   });
 
@@ -61,8 +61,8 @@ describe('HappeningsFilters Component', () => {
       expect(componentContent).toContain('searchParams.get("type")');
     });
 
-    it('should read dsc param for DSC filter', () => {
-      expect(componentContent).toContain('searchParams.get("dsc")');
+    it('should read csc param for CSC filter', () => {
+      expect(componentContent).toContain('searchParams.get("csc")');
     });
 
     it('should read verify param for verification status', () => {
@@ -141,7 +141,7 @@ describe('Happenings Page Filter Logic', () => {
       expect(pageContent).toContain('.eq("event_type", "workshop")');
     });
 
-    it('should filter by DSC events', () => {
+    it('should filter by CSC events', () => {
       expect(pageContent).toContain('.eq("is_dsc_event", true)');
     });
 

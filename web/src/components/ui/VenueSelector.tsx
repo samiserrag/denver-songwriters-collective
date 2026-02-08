@@ -173,7 +173,7 @@ export default function VenueSelector({
           <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
             Can&apos;t find your venue? Use <strong>Custom Location</strong> for one-time or approximate locations.{" "}
             <a
-              href="mailto:hello@denversongwriterscollective.org?subject=Venue%20Issue%20Report"
+              href="mailto:hello@coloradosongwriterscollective.org?subject=Venue%20Issue%20Report"
               className="text-[var(--color-link)] hover:underline"
             >
               Report a venue issue

@@ -200,7 +200,7 @@ describe("Venue vs Custom Location distinction", () => {
 
 describe("Report venue issue affordance", () => {
   it("mailto link uses correct email address", () => {
-    const expectedEmail = "hello@denversongwriterscollective.org";
+    const expectedEmail = "hello@coloradosongwriterscollective.org";
     const expectedSubject = "Venue%20Issue%20Report";
 
     const mailtoHref = `mailto:${expectedEmail}?subject=${expectedSubject}`;
@@ -226,13 +226,13 @@ describe("EventForm canCreateVenue prop", () => {
     // EventFormProps now includes canCreateVenue
     interface EventFormProps {
       mode: "create" | "edit";
-      canCreateDSC?: boolean;
+      canCreateCSC?: boolean;
       canCreateVenue?: boolean;
     }
 
     const props: EventFormProps = {
       mode: "create",
-      canCreateDSC: true,
+      canCreateCSC: true,
       canCreateVenue: false,
     };
 
@@ -240,21 +240,21 @@ describe("EventForm canCreateVenue prop", () => {
     expect(props.canCreateVenue).toBe(false);
   });
 
-  it("canCreateVenue is independent from canCreateDSC", () => {
-    // canCreateDSC = approved host OR admin
+  it("canCreateVenue is independent from canCreateCSC", () => {
+    // canCreateCSC = approved host OR admin
     // canCreateVenue = admin ONLY
 
     const scenarios = [
-      { isAdmin: true, isApprovedHost: true, canCreateDSC: true, canCreateVenue: true },
-      { isAdmin: false, isApprovedHost: true, canCreateDSC: true, canCreateVenue: false },
-      { isAdmin: false, isApprovedHost: false, canCreateDSC: false, canCreateVenue: false },
+      { isAdmin: true, isApprovedHost: true, canCreateCSC: true, canCreateVenue: true },
+      { isAdmin: false, isApprovedHost: true, canCreateCSC: true, canCreateVenue: false },
+      { isAdmin: false, isApprovedHost: false, canCreateCSC: false, canCreateVenue: false },
     ];
 
-    scenarios.forEach(({ isAdmin, isApprovedHost, canCreateDSC, canCreateVenue }) => {
-      const computedCanCreateDSC = isApprovedHost || isAdmin;
+    scenarios.forEach(({ isAdmin, isApprovedHost, canCreateCSC, canCreateVenue }) => {
+      const computedCanCreateCSC = isApprovedHost || isAdmin;
       const computedCanCreateVenue = isAdmin;
 
-      expect(computedCanCreateDSC).toBe(canCreateDSC);
+      expect(computedCanCreateCSC).toBe(canCreateCSC);
       expect(computedCanCreateVenue).toBe(canCreateVenue);
     });
   });

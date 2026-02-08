@@ -1,4 +1,4 @@
-# Denver Songwriters Collective
+# The Colorado Songwriters Collective
 
 ## Copy Tone Guide (v1.0)
 

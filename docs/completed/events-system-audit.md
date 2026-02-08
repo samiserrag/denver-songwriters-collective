@@ -10,7 +10,7 @@
 The events system has evolved organically with **two distinct event paradigms** that have become somewhat conflated:
 
 1. **Open Mics (Community Directory)** - A curated directory of recurring open mic nights at various venues, created via public submission and admin approval
-2. **DSC Events (Collective-Organized)** - One-time or recurring events organized by the Denver Songwriters Collective, with RSVP/timeslot booking
+2. **DSC Events (Collective-Organized)** - One-time or recurring events organized by The Colorado Songwriters Collective, with RSVP/timeslot booking
 
 These are currently stored in the same `events` table with the `is_dsc_event` boolean distinguishing them, but they have **fundamentally different workflows, permissions, and display contexts**.
 

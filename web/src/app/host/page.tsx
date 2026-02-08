@@ -4,9 +4,9 @@ import { Button } from "@/components/ui";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Host on DSC | Denver Songwriters Collective",
+  title: "Host on CSC | The Colorado Songwriters Collective",
   description:
-    "Learn about hosting happenings on Denver Songwriters Collective. Create your own events or claim existing open mics to manage signups and lineups.",
+    "Learn about hosting happenings on The Colorado Songwriters Collective. Create your own events or claim existing open mics to manage signups and lineups.",
 };
 
 const benefits = [
@@ -25,7 +25,7 @@ const benefits = [
   {
     title: "Reach More Musicians",
     description:
-      "Your happening appears in the DSC directory. Musicians across Denver can discover and sign up.",
+      "Your happening appears in the CSC directory. Musicians across Denver can discover and sign up.",
     icon: "megaphone",
   },
 ];
@@ -40,7 +40,7 @@ const hostingModes = [
   {
     title: "Claim an Existing Open Mic",
     description:
-      "Already running an open mic that's listed on DSC? Claim it to manage the listing, get notified about signups, and handle the lineup.",
+      "Already running an open mic that's listed on CSC? Claim it to manage the listing, get notified about signups, and handle the lineup.",
     cta: { text: "Browse Happenings", href: "/happenings" },
   },
 ];
@@ -49,7 +49,7 @@ const faqs = [
   {
     question: "Do I need to pay to host?",
     answer:
-      "No. Hosting on DSC is completely free. We want to make it easy for anyone to run an open mic or showcase.",
+      "No. Hosting on CSC is completely free. We want to make it easy for anyone to run an open mic or showcase.",
   },
   {
     question: "What if someone else is already listed as host?",
@@ -135,10 +135,10 @@ export default function HostPage() {
         <PageContainer>
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="text-[length:var(--font-size-heading-2xl)] md:text-[3.5rem] font-[var(--font-family-serif)] text-[var(--color-text-accent)] leading-[var(--line-height-tight)]">
-              Host on DSC
+              Host on CSC
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              Run an open mic, showcase, or songwriter meetup? DSC helps you
+              Run an open mic, showcase, or songwriter meetup? CSC helps you
               manage signups, track attendance, and reach more musicians.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">

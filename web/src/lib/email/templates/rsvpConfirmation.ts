@@ -1,7 +1,7 @@
 /**
  * RSVP Confirmation Email Template
  *
- * Sent when a registered member RSVPs to a DSC event.
+ * Sent when a registered member RSVPs to a CSC event.
  * Two variants: confirmed (got a spot) or waitlist (capacity reached).
  */
 
@@ -122,7 +122,7 @@ function getConfirmedVariant(params: {
 }): { subject: string; html: string; text: string } {
   const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl, isGuest } = params;
 
-  const subject = `You're going to ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `You're going to ${eventTitle} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
@@ -197,7 +197,7 @@ function getWaitlistVariant(params: {
 }): { subject: string; html: string; text: string } {
   const { userName, safeTitle, eventTitle, safeDate, safeTime, safeVenue, safeAddress, eventUrl, cancelUrl, waitlistPosition, isGuest } = params;
 
-  const subject = `You're on the waitlist for ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `You're on the waitlist for ${eventTitle} — The Colorado Songwriters Collective`;
 
   const positionText = waitlistPosition !== undefined
     ? `You're <strong>#${waitlistPosition}</strong> on the waitlist.`

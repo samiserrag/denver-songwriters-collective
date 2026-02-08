@@ -137,7 +137,7 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 ### Clean Invite URL Contract
 
 - Member-facing share links must point to the clean homepage URL:
-  - `https://denversongwriterscollective.org/`
+  - `https://coloradosongwriterscollective.org/`
 - Invite links should avoid visible tracking query params.
 - The primary invite flow should feel like a personal recommendation, not a tracking funnel.
 

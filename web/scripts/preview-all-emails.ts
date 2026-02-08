@@ -139,8 +139,8 @@ const emails: { name: string; subject: string; html: string }[] = [
     ...getWaitlistOfferEmail({
       guestName: "Chris",
       eventTitle: "Songwriter Showcase",
-      confirmUrl: "https://denversongwriterscollective.org/confirm?token=abc123",
-      cancelUrl: "https://denversongwriterscollective.org/cancel?token=abc123",
+      confirmUrl: "https://coloradosongwriterscollective.org/confirm?token=abc123",
+      cancelUrl: "https://coloradosongwriterscollective.org/cancel?token=abc123",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     }),
   },
@@ -162,7 +162,7 @@ const emails: { name: string; subject: string; html: string }[] = [
       guestName: "Pat",
       eventTitle: "Open Mic at Meadowlark",
       slotNumber: 7,
-      cancelUrl: "https://denversongwriterscollective.org/cancel?token=xyz789",
+      cancelUrl: "https://coloradosongwriterscollective.org/cancel?token=xyz789",
       status: "confirmed",
     }),
   },
@@ -171,7 +171,7 @@ const emails: { name: string; subject: string; html: string }[] = [
     ...getClaimConfirmedEmail({
       guestName: "Quinn",
       eventTitle: "Songwriter Circle",
-      cancelUrl: "https://denversongwriterscollective.org/cancel?token=wait123",
+      cancelUrl: "https://coloradosongwriterscollective.org/cancel?token=wait123",
       status: "waitlist",
       waitlistPosition: 3,
     }),
@@ -350,7 +350,7 @@ const indexHtml = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <h1>Denver Songwriters Collective</h1>
+  <h1>The Colorado Songwriters Collective</h1>
   <p class="subtitle">Email Template Previews — Navy Blue Theme</p>
 
   <div class="grid">

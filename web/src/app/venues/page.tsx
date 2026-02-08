@@ -8,7 +8,7 @@ import {
 } from "@/lib/venue/computeVenueCounts";
 
 export const metadata: Metadata = {
-  title: "Venues | Denver Songwriters Collective",
+  title: "Venues | The Colorado Songwriters Collective",
   description: "Discover venues hosting open mics, showcases, and music events across the Denver area.",
 };
 

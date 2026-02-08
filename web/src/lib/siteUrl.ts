@@ -1,4 +1,4 @@
-const DEFAULT_SITE_URL = "https://denversongwriterscollective.org";
+const DEFAULT_SITE_URL = "https://coloradosongwriterscollective.org";
 
 function isLocalHost(raw: string): boolean {
   return /^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/i.test(raw);

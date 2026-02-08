@@ -38,13 +38,13 @@ export async function generateMetadata({ params }: VenueDetailParams): Promise<M
 
   if (!venue) {
     return {
-      title: "Venue Not Found | Denver Songwriters Collective",
+      title: "Venue Not Found | The Colorado Songwriters Collective",
       description: "This venue could not be found.",
     };
   }
 
   const location = [venue.city, venue.state].filter(Boolean).join(", ");
-  const title = `${venue.name} | Denver Songwriters Collective`;
+  const title = `${venue.name} | The Colorado Songwriters Collective`;
   const description = `Discover happenings at ${venue.name}${location ? ` in ${location}` : ""}${venue.neighborhood ? ` (${venue.neighborhood})` : ""}. Open mics, showcases, and music events.`;
 
   const canonicalSlug = venue.slug || id;
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: VenueDetailParams): Promise<M
       title,
       description,
       url: canonicalUrl,
-      siteName: "Denver Songwriters Collective",
+      siteName: "The Colorado Songwriters Collective",
       type: "website",
       locale: "en_US",
       images: [
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: VenueDetailParams): Promise<M
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${venue.name} - Denver Songwriters Collective`,
+          alt: `${venue.name} - The Colorado Songwriters Collective`,
         },
       ],
     },

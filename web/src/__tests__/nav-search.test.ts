@@ -88,8 +88,8 @@ const mockMemberWithoutSlug = {
 const mockBlogPost = {
   id: "923e4567-e89b-12d3-a456-426614174008",
   slug: "welcome-to-dsc",
-  title: "Welcome to DSC",
-  excerpt: "An introduction to the Denver Songwriters Collective",
+  title: "Welcome to CSC",
+  excerpt: "An introduction to The Colorado Songwriters Collective",
   cover_image_url: null,
 };
 
@@ -149,7 +149,7 @@ describe("Nav Search URL Generation", () => {
 
     it("does NOT generate filter page URL", () => {
       const url = generateSearchResultUrl("event", mockEventWithSlug);
-      expect(url).not.toBe("/happenings?type=dsc");
+      expect(url).not.toBe("/happenings?type=csc");
       expect(url).not.toContain("?type=");
     });
   });

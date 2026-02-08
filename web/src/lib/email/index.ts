@@ -1,7 +1,7 @@
 /**
  * Email Module
  *
- * Transactional email system for DSC.
+ * Transactional email system for CSC.
  * All emails are delivery + branding only — no mailing list enrollment.
  *
  * See docs/emails/EMAIL_STYLE_GUIDE.md for voice and tone guidelines.

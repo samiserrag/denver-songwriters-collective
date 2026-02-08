@@ -54,7 +54,7 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
   };
 
   const mockDscEvent: HappeningEvent = {
-    id: 'test-dsc-1',
+    id: 'test-csc-1',
     title: 'Songwriter Showcase',
     event_type: 'showcase',
     is_dsc_event: true,
@@ -135,15 +135,15 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
       expect(screen.getByText('21+')).toBeInTheDocument();
     });
 
-    it('should display DSC chip for DSC events', () => {
+    it('should display CSC chip for CSC events', () => {
       render(<HappeningCard event={mockDscEvent} />);
-      expect(screen.getByText('DSC')).toBeInTheDocument();
+      expect(screen.getByText('CSC')).toBeInTheDocument();
     });
 
-    it('should not display DSC chip for non-DSC events', () => {
+    it('should not display CSC chip for non-CSC events', () => {
       render(<HappeningCard event={mockOpenMicEvent} />);
-      const dscElements = screen.queryAllByText('DSC');
-      expect(dscElements.length).toBe(0);
+      const cscElements = screen.queryAllByText('CSC');
+      expect(cscElements.length).toBe(0);
     });
 
     it('should display availability for events with capacity', () => {

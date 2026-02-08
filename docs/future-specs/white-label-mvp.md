@@ -10,7 +10,7 @@
 
 Open Mic Manager is a focused, opinionated product for open mic hosts and venue managers. It does one thing extremely well: **live lineup management**.
 
-This is Track B of the dual-track strategy. It extracts the proven core from Denver Songwriters Collective and strips away everything that isn't essential for running an open mic night.
+This is Track B of the dual-track strategy. It extracts the proven core from The Colorado Songwriters Collective and strips away everything that isn't essential for running an open mic night.
 
 ---
 

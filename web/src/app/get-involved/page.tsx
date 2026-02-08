@@ -21,7 +21,7 @@ const waysToHelp = [
   },
   {
     title: "Spread the Word",
-    description: "Tell other musicians, songwriters, and music lovers about DSC. Share with your band, your open mic regulars, or anyone in the local music scene.",
+    description: "Tell other musicians, songwriters, and music lovers about CSC. Share with your band, your open mic regulars, or anyone in the local music scene.",
     cta: null,
   },
   {
@@ -99,7 +99,7 @@ export default function GetInvolvedPage() {
               Why Your Contribution Matters
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Denver&apos;s music scene thrives when people in the community help each other find places to play. Whether you host an open mic, connect us with a venue, or simply tell a fellow songwriter about DSC, you&apos;re helping build something real.
+              Denver&apos;s music scene thrives when people in the community help each other find places to play. Whether you host an open mic, connect us with a venue, or simply tell a fellow songwriter about CSC, you&apos;re helping build something real.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               The more people who know about us and keep our listings accurate, the easier it becomes for musicians across the Front Range to find their next stage.
@@ -113,7 +113,7 @@ export default function GetInvolvedPage() {
                 Volunteer Sign-Up
               </h2>
               <p className="text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] max-w-2xl mx-auto leading-[var(--line-height-relaxed)]">
-                Want to host events, help with venues, or support DSC in other ways? Fill out the form below and we&apos;ll be in touch.
+                Want to host events, help with venues, or support CSC in other ways? Fill out the form below and we&apos;ll be in touch.
               </p>
             </div>
             <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-5 md:p-6">
@@ -124,10 +124,10 @@ export default function GetInvolvedPage() {
           {/* Donation & Sponsorship */}
           <section className="space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-              Support DSC Financially
+              Support CSC Financially
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              The Denver Songwriters Collective has operated for years as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm. We are deeply grateful for everyone who has helped us get this far.
+              The Colorado Songwriters Collective has operated for years as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm. We are deeply grateful for everyone who has helped us get this far.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Financial contributions or sponsorships would make a meaningful difference in our ability to grow, host more events, and serve more musicians across Denver.
@@ -147,7 +147,7 @@ export default function GetInvolvedPage() {
                     Corporate Sponsorships
                   </h3>
                   <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)] leading-relaxed">
-                    Partner with DSC as a sponsor and support Denver&apos;s songwriting community while gaining visibility among a creative, engaged audience.
+                    Partner with CSC as a sponsor and support Denver&apos;s songwriting community while gaining visibility among a creative, engaged audience.
                   </p>
                 </div>
               </div>

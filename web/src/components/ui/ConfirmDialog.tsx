@@ -19,7 +19,7 @@ interface ConfirmDialogProps {
  * Generic confirmation dialog for destructive/important actions.
  *
  * Phase 4.99: Required for "Stop Event" and "Reset Lineup" actions.
- * DSC UX Principles §7: UX Friction Is a Tool.
+ * CSC UX Principles §7: UX Friction Is a Tool.
  */
 export function ConfirmDialog({
   isOpen,

@@ -203,7 +203,7 @@ describe("Timeslot PATCH persistence", () => {
   });
 
   describe("Open mics redirect contract", () => {
-    it("DSC events on /open-mics should redirect to /events", () => {
+    it("CSC events on /open-mics should redirect to /events", () => {
       const event = {
         id: "test-uuid",
         is_dsc_event: true,
@@ -218,7 +218,7 @@ describe("Timeslot PATCH persistence", () => {
       expect(redirectUrl).toBe("/events/test-uuid");
     });
 
-    it("non-DSC events on /open-mics should stay on /open-mics", () => {
+    it("non-CSC events on /open-mics should stay on /open-mics", () => {
       const event = {
         id: "test-uuid",
         is_dsc_event: false,

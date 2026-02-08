@@ -54,7 +54,7 @@ describe("Editorial URL resolver", () => {
 
     const editorial = baseEditorial();
     editorial.member_spotlight_ref =
-      "https://denversongwriterscollective.org/songwriters/pony-lee";
+      "https://coloradosongwriterscollective.org/songwriters/pony-lee";
 
     const result = await resolveEditorialWithDiagnostics(
       supabase as never,
@@ -64,7 +64,7 @@ describe("Editorial URL resolver", () => {
     expect(result.unresolved).toEqual([]);
     expect(result.resolved.memberSpotlight?.name).toBe("Pony Lee");
     expect(result.resolved.memberSpotlight?.url).toBe(
-      "https://denversongwriterscollective.org/songwriters/pony-lee"
+      "https://coloradosongwriterscollective.org/songwriters/pony-lee"
     );
   });
 
@@ -90,9 +90,9 @@ describe("Editorial URL resolver", () => {
     expect(result.unresolved[0].reason).toBe("unsupported_domain");
   });
 
-  it("normalizeEditorialUrl accepts the old domain (denversongwriterscollective.org)", () => {
+  it("normalizeEditorialUrl accepts the old domain (coloradosongwriterscollective.org)", () => {
     const result = normalizeEditorialUrl(
-      "https://denversongwriterscollective.org/songwriters/pony-lee",
+      "https://coloradosongwriterscollective.org/songwriters/pony-lee",
       "/songwriters/"
     );
     expect(result.error).toBeUndefined();
@@ -112,7 +112,7 @@ describe("Editorial URL resolver", () => {
 
   it("normalizeEditorialUrl accepts www variants of both domains", () => {
     const oldWww = normalizeEditorialUrl(
-      "https://www.denversongwriterscollective.org/venues/brewery-rickoli",
+      "https://www.coloradosongwriterscollective.org/venues/brewery-rickoli",
       "/venues/"
     );
     expect(oldWww.error).toBeUndefined();
@@ -173,7 +173,7 @@ describe("Editorial URL resolver", () => {
 
     const editorial = baseEditorial();
     editorial.gallery_feature_ref =
-      "https://denversongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26";
+      "https://coloradosongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26";
 
     const result = await resolveEditorialWithDiagnostics(
       supabase as never,
@@ -185,7 +185,7 @@ describe("Editorial URL resolver", () => {
       "Collective Open Mic at Sloan Lake 2-1-26"
     );
     expect(result.resolved.galleryFeature?.url).toBe(
-      "https://denversongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26"
+      "https://coloradosongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26"
     );
   });
 });
@@ -217,7 +217,7 @@ describe("Embed route domain-agnostic canonical URL (source-level)", () => {
     );
     for (const line of urlConstructionLines) {
       expect(line).not.toContain(
-        '"https://denversongwriterscollective.org'
+        '"https://coloradosongwriterscollective.org'
       );
     }
   });

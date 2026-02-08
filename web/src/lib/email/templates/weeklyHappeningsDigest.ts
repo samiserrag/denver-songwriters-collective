@@ -597,7 +597,7 @@ export function getWeeklyHappeningsDigestEmail(
     <hr style="border: none; border-top: 1px solid ${EMAIL_COLORS.border}; margin: 24px 0;" />
 
     <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
-      You're receiving this weekly digest because you're part of the Denver Songwriters Collective community.
+      You're receiving this weekly digest because you're part of The Colorado Songwriters Collective community.
       If you'd rather not receive these, you can
       <a href="${unsubscribeUrl}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">unsubscribe with one click</a>
       — you can always re-subscribe from your
@@ -691,7 +691,7 @@ export function getWeeklyHappeningsDigestEmail(
     `Browse All Happenings: ${SITE_URL}/happenings`,
     "",
     "---",
-    "You're receiving this weekly digest because you're part of the Denver Songwriters Collective community.",
+    "You're receiving this weekly digest because you're part of The Colorado Songwriters Collective community.",
     `If you'd rather not receive these, unsubscribe here: ${unsubscribeUrl}`,
     `You can always re-subscribe from your settings: ${SITE_URL}/dashboard/settings`,
     "",

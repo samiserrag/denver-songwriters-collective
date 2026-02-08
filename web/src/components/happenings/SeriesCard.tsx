@@ -4,14 +4,14 @@
  * SeriesCard - Phase 4.54 Series View Card
  *
  * Displays a recurring event as a single series row with:
- * - Event image, title, venue, recurrence badge, DSC badge
+ * - Event image, title, venue, recurrence badge, CSC badge
  * - "Next: [date] @ [time]" with chevron for expand
  * - Row click navigates to event detail (base URL)
  * - Chevron toggles expandable list of upcoming dates (capped at 12)
  *
  * Layout:
  * ┌─────────────────────────────────────────────────────────────┐
- * │ [Image]  Title                          [Every Monday] [DSC]│
+ * │ [Image]  Title                          [Every Monday] [CSC]│
  * │          Venue Name                                         │
  * │          Next: Mon, Jan 13 @ 7pm        ▼ 12 more dates    │
  * └─────────────────────────────────────────────────────────────┘
@@ -225,7 +225,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
     verified_by: event.verified_by,
   });
   const verificationState = verificationResult.state;
-  // P0 Fix: Suppress "Unconfirmed" badge for DSC TEST events
+  // P0 Fix: Suppress "Unconfirmed" badge for CSC TEST events
   const showUnconfirmedBadge = shouldShowUnconfirmedBadge({
     title: event.title,
     is_dsc_event: event.is_dsc_event,
@@ -320,7 +320,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
                 <Chip variant="recurrence">
                   {isOneTime ? "One-time" : recurrenceSummary}
                 </Chip>
-                {event.is_dsc_event && <Chip variant="accent">DSC</Chip>}
+                {event.is_dsc_event && <Chip variant="accent">CSC</Chip>}
               </div>
             </div>
 
@@ -377,7 +377,7 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
             )}
 
             {/* Verification status and categories row */}
-            {/* P0 Fix: Use showUnconfirmedBadge to suppress for DSC TEST events */}
+            {/* P0 Fix: Use showUnconfirmedBadge to suppress for CSC TEST events */}
             <div className="flex items-center gap-1 mt-1 flex-wrap">
               {verificationState === "confirmed" && (
                 <Chip variant="success">

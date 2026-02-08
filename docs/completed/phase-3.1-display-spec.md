@@ -8,7 +8,7 @@
 
 # Phase 3.1 — Event Card & Detail Display Spec (LOCKED)
 
-**Denver Songwriters Collective**
+**The Colorado Songwriters Collective**
 
 **Status:** FINAL DESIGN CONTRACT
 **Applies to:** All event types (open mics, DSC events, user-created events)

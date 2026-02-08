@@ -39,7 +39,7 @@ const EMAIL_COLORS = {
   infoBorder: "#bae6fd",
 };
 
-const SITE_URL = "https://denversongwriterscollective.org";
+const SITE_URL = "https://coloradosongwriterscollective.org";
 
 function wrapEmailHtml(content: string): string {
   return `<!DOCTYPE html>
@@ -47,7 +47,7 @@ function wrapEmailHtml(content: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Denver Songwriters Collective - Email Preview</title>
+  <title>The Colorado Songwriters Collective - Email Preview</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${EMAIL_COLORS.bgPage}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${EMAIL_COLORS.bgPage}; padding: 40px 20px;">
@@ -57,7 +57,7 @@ function wrapEmailHtml(content: string): string {
           <!-- Header -->
           <tr>
             <td style="background-color: ${EMAIL_COLORS.headerBg}; padding: 24px; text-align: center;">
-              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/logo-email.png" alt="Denver Songwriters Collective" style="max-width: 280px; height: auto;" />
+              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/logo-email.png" alt="The Colorado Songwriters Collective" style="max-width: 280px; height: auto;" />
             </td>
           </tr>
 
@@ -72,13 +72,13 @@ function wrapEmailHtml(content: string): string {
           <tr>
             <td style="padding: 20px 28px; border-top: 1px solid ${EMAIL_COLORS.border}; background-color: ${EMAIL_COLORS.bgMuted};">
               <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">
-                — Denver Songwriters Collective
+                — The Colorado Songwriters Collective
               </p>
               <p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; line-height: 1.5;">
                 You can reply directly to this email if you need anything.
               </p>
               <p style="margin: 16px 0 0 0; font-size: 12px;">
-                <a href="${SITE_URL}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">denversongwriterscollective.org</a>
+                <a href="${SITE_URL}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">coloradosongwriterscollective.org</a>
               </p>
             </td>
           </tr>
@@ -132,7 +132,7 @@ ${content}
 const emailContent = `
 ${paragraph("Hi there,")}
 
-${paragraph("Thanks for being part of the Denver Songwriters Collective community!")}
+${paragraph("Thanks for being part of The Colorado Songwriters Collective community!")}
 
 ${successBox("🎉", "Your correction has been applied!", "Re: Node Arts Collective")}
 

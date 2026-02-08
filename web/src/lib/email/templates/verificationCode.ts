@@ -79,7 +79,7 @@ export function getVerificationCodeEmail(params: VerificationCodeEmailParams): {
   const dateText = occurrenceDate ? ` on ${escapeHtml(occurrenceDate)}` : "";
 
   // Subject
-  const subject = `Your code for ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `Your code for ${eventTitle} — The Colorado Songwriters Collective`;
 
   // HTML content
   const htmlContent = `

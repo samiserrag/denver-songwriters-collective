@@ -5,7 +5,7 @@ import InvitationsList from "./InvitationsList";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Invitations | DSC"
+  title: "Invitations | CSC"
 };
 
 export default async function InvitationsPage() {

@@ -103,7 +103,7 @@ Kill switch check → CRON_SECRET auth → Service role client
 **Email transport:** `lib/email/mailer.ts`
 - Fastmail SMTP via nodemailer
 - Per-template rate limiting: 1 email per recipient per template per minute (line 12)
-- `ADMIN_EMAIL` = `sami@denversongwriterscollective.org` (line 45)
+- `ADMIN_EMAIL` = `sami@coloradosongwriterscollective.org` (line 45)
 - `maxDuration = 60` on cron routes — at 100ms/email, max ~600 recipients per invocation
 
 ### 1.3 Current Unsubscribe UX

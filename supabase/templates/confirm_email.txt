@@ -1,5 +1,5 @@
-Welcome to The Denver Songwriters Collective!
+Welcome to The Colorado Songwriters Collective!
 Click to confirm your email:
 {{ .ConfirmationURL }}
 Thanks,
-The Denver Songwriters Collective Team
+The Colorado Songwriters Collective Team

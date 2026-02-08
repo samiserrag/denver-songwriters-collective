@@ -14,7 +14,7 @@ Progressive Identity is part of the **shared core** — the same email-only iden
 
 | Product | Progressive Identity Role |
 |---------|--------------------------|
-| **Denver Songwriters Collective** | Email verification for claims; optional upgrade to full profile |
+| **The Colorado Songwriters Collective** | Email verification for claims; optional upgrade to full profile |
 | **Open Mic Manager (white-label)** | Email verification for claims; NO profiles in MVP |
 
 ### Key Principle: No Passwords

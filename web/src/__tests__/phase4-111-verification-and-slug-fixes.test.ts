@@ -216,7 +216,7 @@ describe("Phase 4.111: Full Event Data Flow", () => {
     // Slug should include date (single occurrence)
     expect(completeEvent.slug).toContain("-2026-02-01");
 
-    // Event type should be community (not DSC)
+    // Event type should be community (not CSC)
     expect(completeEvent.is_dsc_event).toBe(false);
   });
 });

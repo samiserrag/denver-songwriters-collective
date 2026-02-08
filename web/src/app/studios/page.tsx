@@ -6,7 +6,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { Studio } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Studios | Denver Songwriters Collective",
+  title: "Studios | The Colorado Songwriters Collective",
   description: "Find recording studios, rehearsal spaces, and creative venues for Denver songwriters.",
 };
 

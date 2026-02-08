@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Denver Songwriters Collective",
-  description: "How we handle your data at the Denver Songwriters Collective.",
+  title: "Privacy Policy | The Colorado Songwriters Collective",
+  description: "How we handle your data at The Colorado Songwriters Collective.",
 };
 
 export default function PrivacyPage() {
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-display text-2xl text-[var(--color-text-primary)] mb-4">Overview</h2>
             <p className="text-[var(--color-text-secondary)]">
-              The Denver Songwriters Collective (&ldquo;DSC&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) respects your privacy.
+              The Colorado Songwriters Collective (&ldquo;CSC&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) respects your privacy.
               This policy explains what data we collect, how we use it, and your rights.
             </p>
           </section>
@@ -79,8 +79,8 @@ export default function PrivacyPage() {
             <h2 className="font-display text-2xl text-[var(--color-text-primary)] mb-4">Contact</h2>
             <p className="text-[var(--color-text-secondary)]">
               Questions? Email us at{" "}
-              <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-link)] hover:text-[var(--color-link-hover)]">
-                admin@denversongwriterscollective.org
+              <a href="mailto:admin@coloradosongwriterscollective.org" className="text-[var(--color-link)] hover:text-[var(--color-link-hover)]">
+                admin@coloradosongwriterscollective.org
               </a>
             </p>
           </section>

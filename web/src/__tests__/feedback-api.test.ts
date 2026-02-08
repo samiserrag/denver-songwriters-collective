@@ -21,7 +21,7 @@ const validFeedback = {
   category: "bug" as const,
   subject: "Test subject",
   description: "Test description with enough content to be valid.",
-  pageUrl: "https://denversongwriterscollective.org/happenings",
+  pageUrl: "https://coloradosongwriterscollective.org/happenings",
 };
 
 // =============================================================================
@@ -121,7 +121,7 @@ describe("Feedback API Validation", () => {
   describe("Page URL validation", () => {
     it("should accept valid URLs", () => {
       const validUrls = [
-        "https://denversongwriterscollective.org/happenings",
+        "https://coloradosongwriterscollective.org/happenings",
         "https://example.com/page?query=value",
         "http://localhost:3000/test",
       ];
@@ -240,7 +240,7 @@ describe("Feedback API Happy Path", () => {
     expect(payload.category).toBe("bug");
     expect(payload.subject).toBe("Test subject");
     expect(payload.description).toBe("Test description with enough content to be valid.");
-    expect(payload.page_url).toBe("https://denversongwriterscollective.org/happenings");
+    expect(payload.page_url).toBe("https://coloradosongwriterscollective.org/happenings");
     expect(payload.status).toBe("new");
   });
 
@@ -276,15 +276,15 @@ describe("Feedback Notification Email Template", () => {
     const category = "bug";
     const subject = "Test issue subject";
     const categoryLabel = { bug: "Bug Report", feature: "Feature Request", other: "Other Feedback" }[category];
-    const emailSubject = `[DSC Feedback] ${categoryLabel}: ${subject.substring(0, 50)}`;
-    expect(emailSubject).toBe("[DSC Feedback] Bug Report: Test issue subject");
+    const emailSubject = `[CSC Feedback] ${categoryLabel}: ${subject.substring(0, 50)}`;
+    expect(emailSubject).toBe("[CSC Feedback] Bug Report: Test issue subject");
   });
 
   it("should truncate long subjects in email", () => {
     const category = "feature";
     const longSubject = "This is a very long subject that exceeds fifty characters in length";
     const categoryLabel = { bug: "Bug Report", feature: "Feature Request", other: "Other Feedback" }[category];
-    const emailSubject = `[DSC Feedback] ${categoryLabel}: ${longSubject.substring(0, 50)}${longSubject.length > 50 ? "..." : ""}`;
+    const emailSubject = `[CSC Feedback] ${categoryLabel}: ${longSubject.substring(0, 50)}${longSubject.length > 50 ? "..." : ""}`;
     expect(emailSubject.length).toBeLessThanOrEqual(100);
     expect(emailSubject.endsWith("...")).toBe(true);
   });

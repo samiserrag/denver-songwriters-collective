@@ -5,7 +5,7 @@ import NotificationsList from "./NotificationsList";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Notifications | DSC"
+  title: "Notifications | CSC"
 };
 
 export default async function NotificationsPage() {

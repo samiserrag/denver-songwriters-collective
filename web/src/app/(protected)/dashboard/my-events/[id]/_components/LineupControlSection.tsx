@@ -16,7 +16,7 @@ interface LineupControlSectionProps {
  * Lineup Control section for dashboard/my-events/[id] page.
  *
  * Phase 4.99: Provides discoverable entry point to lineup control.
- * DSC UX Principles §6: Anchored Navigation Is Mandatory.
+ * CSC UX Principles §6: Anchored Navigation Is Mandatory.
  */
 export default function LineupControlSection({
   eventId,

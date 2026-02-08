@@ -6,7 +6,7 @@
  * 2. Cover art object-contain
  * 3. Up Next renders up to 20 items with 2-column layout
  * 4. QR for all claimed performers (black/white colors)
- * 5. DSC/Event QR same size (80px) with updated labels
+ * 5. CSC/Event QR same size (80px) with updated labels
  * 6. Event time window in header
  * 7. CTA text in header
  * 8. Now Playing name size > QR prominence
@@ -138,8 +138,8 @@ describe("Phase 4.109: QR Color Consistency", () => {
     expect(HOST_QR_LIGHT).toBe("#ffffff");
   });
 
-  it("should use same colors for Event/DSC QR", () => {
-    // Contract: Event and DSC QRs use dark on white
+  it("should use same colors for Event/CSC QR", () => {
+    // Contract: Event and CSC QRs use dark on white
     const EVENT_QR_DARK = "#1a1a1a";
     const EVENT_QR_LIGHT = "#ffffff";
 
@@ -153,10 +153,10 @@ describe("Phase 4.109: QR Color Consistency", () => {
 // =============================================================================
 
 describe("Phase 4.109: QR Labels", () => {
-  it("should use 'OUR COLLECTIVE' for DSC QR label", () => {
-    // Contract: Changed from "Join DSC"
-    const DSC_QR_LABEL = "OUR COLLECTIVE";
-    expect(DSC_QR_LABEL).toBe("OUR COLLECTIVE");
+  it("should use 'OUR COLLECTIVE' for CSC QR label", () => {
+    // Contract: Changed from "Join CSC"
+    const CSC_QR_LABEL = "OUR COLLECTIVE";
+    expect(CSC_QR_LABEL).toBe("OUR COLLECTIVE");
   });
 
   it("should use 'EVENT PAGE' for event QR label", () => {
@@ -171,14 +171,14 @@ describe("Phase 4.109: QR Labels", () => {
 // =============================================================================
 
 describe("Phase 4.109: QR Sizing", () => {
-  it("should use 80px for both DSC and Event QR codes", () => {
+  it("should use 80px for both CSC and Event QR codes", () => {
     // Contract: Both QRs are now the same size (80px)
-    // Previous: DSC 70px, Event 90px
-    const DSC_QR_SIZE = 80;
+    // Previous: CSC 70px, Event 90px
+    const CSC_QR_SIZE = 80;
     const EVENT_QR_SIZE = 80;
 
-    expect(DSC_QR_SIZE).toBe(EVENT_QR_SIZE);
-    expect(DSC_QR_SIZE).toBe(80);
+    expect(CSC_QR_SIZE).toBe(EVENT_QR_SIZE);
+    expect(CSC_QR_SIZE).toBe(80);
   });
 
   it("should use adaptive sizing for performer QRs in Up Next", () => {

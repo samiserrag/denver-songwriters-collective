@@ -147,9 +147,9 @@ export default function EventInviteSection({
     const hostPageUrl =
       typeof window !== "undefined"
         ? `${window.location.origin}/host`
-        : "https://denversongwriterscollective.org/host";
+        : "https://coloradosongwriterscollective.org/host";
 
-    return `You've been invited to help host "${eventTitle}" on Denver Songwriters Collective!
+    return `You've been invited to help host "${eventTitle}" on The Colorado Songwriters Collective!
 
 Click this link to accept:
 ${url}

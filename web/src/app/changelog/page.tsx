@@ -78,7 +78,7 @@ export default function ChangelogPage() {
               What&apos;s Changed
             </h1>
             <p className="text-[length:var(--font-size-body-lg)] md:text-xl text-[var(--color-text-primary)] max-w-3xl mx-auto leading-[var(--line-height-relaxed)]">
-              Recent updates to the Denver Songwriters Collective site.
+              Recent updates to The Colorado Songwriters Collective site.
             </p>
           </div>
         </PageContainer>

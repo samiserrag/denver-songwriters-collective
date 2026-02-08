@@ -4,7 +4,7 @@
  * GettingStartedSection - Slice 3
  *
  * Shows post-onboarding action prompts for:
- * - Host: Apply to become a DSC Happenings Host (if eligible)
+ * - Host: Apply to become a CSC Happenings Host (if eligible)
  * - Venue: Browse and claim venues (if host/studio with 0 managed venues)
  *
  * Dismissable via localStorage.
@@ -84,10 +84,10 @@ export function GettingStartedSection({
               <span className="text-2xl">🎤</span>
               <div>
                 <h3 className="font-medium text-[var(--color-text-primary)]">
-                  Host DSC Happenings
+                  Host CSC Happenings
                 </h3>
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                  You marked yourself as a host. Apply to create official DSC happenings.
+                  You marked yourself as a host. Apply to create official CSC happenings.
                 </p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 # DSC UX Principles
 
-> A living reference for product decisions, UX behavior, and system design across the Denver Songwriters Collective.
+> A living reference for product decisions, UX behavior, and system design across The Colorado Songwriters Collective.
 
 **How to use this document:**
 - Before any new feature: sanity-check against Sections 2, 4, 6, and 8

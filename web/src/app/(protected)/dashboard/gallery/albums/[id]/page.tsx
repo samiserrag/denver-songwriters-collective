@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .single();
 
   return {
-    title: album ? `Manage ${album.name} | DSC` : "Album Not Found | DSC",
+    title: album ? `Manage ${album.name} | CSC` : "Album Not Found | CSC",
   };
 }
 

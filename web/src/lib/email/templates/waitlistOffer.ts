@@ -44,7 +44,7 @@ export function getWaitlistOfferEmail(params: WaitlistOfferEmailParams): {
     timeZoneName: "short",
   });
 
-  const subject = `A spot just opened up at ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `A spot just opened up at ${eventTitle} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(guestName))}

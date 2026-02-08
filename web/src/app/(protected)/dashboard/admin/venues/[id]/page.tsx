@@ -18,7 +18,7 @@ import { VenuePhotosSection } from "@/components/venue/VenuePhotosSection";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Venue Details | Admin | DSC",
+  title: "Venue Details | Admin | CSC",
 };
 
 export default async function AdminVenueDetailPage({

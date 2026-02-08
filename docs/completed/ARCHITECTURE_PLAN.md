@@ -1,6 +1,6 @@
 # White-Label Community Platform Architecture Plan
 
-**Project:** Denver Songwriters Collective → Reusable Community Platform Template
+**Project:** The Colorado Songwriters Collective → Reusable Community Platform Template
 **Status:** DRAFT - Pending Expert Review
 **Created:** December 2024
 **Author:** Claude (AI Assistant)
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Transform the Denver Songwriters Collective codebase into a **white-label community platform** that can be:
+Transform The Colorado Songwriters Collective codebase into a **white-label community platform** that can be:
 1. Quickly re-themed for different brands/projects
 2. Deployed as both web app and mobile app (iOS/Android)
 3. Configured via a single configuration file per brand
@@ -320,7 +320,7 @@ import { ThemeConfig } from '../theme.types';
 
 export const denverSongwritersTheme: ThemeConfig = {
   name: 'denver-songwriters',
-  displayName: 'Denver Songwriters Collective',
+  displayName: 'The Colorado Songwriters Collective',
 
   colors: {
     background: {
@@ -650,13 +650,13 @@ import { denverSongwritersTheme } from './theme';
 
 export const denverSongwritersBrand: BrandConfig = {
   id: 'denver-songwriters',
-  name: 'Denver Songwriters Collective',
+  name: 'The Colorado Songwriters Collective',
   tagline: 'Connect. Create. Collaborate.',
   description: 'A community platform for Denver-area songwriters...',
 
   assets: {
     logo: '/brands/denver-songwriters/logo.svg',
-    logoAlt: 'Denver Songwriters Collective',
+    logoAlt: 'The Colorado Songwriters Collective',
     favicon: '/brands/denver-songwriters/favicon.ico',
     ogImage: '/brands/denver-songwriters/og-image.jpg',
     heroImage: '/brands/denver-songwriters/hero.jpg',
@@ -695,14 +695,14 @@ export const denverSongwritersBrand: BrandConfig = {
       { label: 'Gallery', href: '/gallery', enabled: true },
     ],
     homepage: {
-      heroTitle: 'Denver Songwriters Collective',
+      heroTitle: 'The Colorado Songwriters Collective',
       heroSubtitle: 'Your home for open mics, collaboration, and community',
       ctaText: 'Find an Open Mic',
       ctaLink: '/open-mics',
       sections: ['highlights', 'events', 'spotlight', 'blog', 'cta'],
     },
     footer: {
-      copyright: '© 2024 Denver Songwriters Collective',
+      copyright: '© 2024 The Colorado Songwriters Collective',
       links: [
         { label: 'Privacy', href: '/privacy' },
         { label: 'Get Involved', href: '/get-involved' },
@@ -722,8 +722,8 @@ export const denverSongwritersBrand: BrandConfig = {
   },
 
   seo: {
-    titleTemplate: '%s | Denver Songwriters Collective',
-    defaultTitle: 'Denver Songwriters Collective',
+    titleTemplate: '%s | The Colorado Songwriters Collective',
+    defaultTitle: 'The Colorado Songwriters Collective',
     defaultDescription: 'Discover open mics, connect with songwriters...',
     keywords: ['denver', 'songwriters', 'open mic', 'music'],
   },

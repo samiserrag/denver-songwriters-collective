@@ -41,7 +41,7 @@ describe('MissingDetailsChip', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render when DSC event lacks age policy', () => {
+  it('should render when CSC event lacks age policy', () => {
     const event = {
       id: 'event-123',
       venue_id: 'venue-456',
@@ -163,7 +163,7 @@ describe('MissingDetailsChipStatic', () => {
     expect(chip).toHaveAttribute('title');
     // B1: is_free no longer triggers, so we check for other reasons
     expect(chip?.getAttribute('title')).not.toContain('Cost information unknown');
-    expect(chip?.getAttribute('title')).toContain('DSC event missing age policy');
+    expect(chip?.getAttribute('title')).toContain('CSC event missing age policy');
     expect(chip?.getAttribute('title')).toContain('Missing venue information');
   });
 });

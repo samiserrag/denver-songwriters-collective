@@ -1,4 +1,4 @@
-# Denver Songwriters Collective — Repo Agent Context
+# The Colorado Songwriters Collective — Repo Agent Context
 
 > **All contributors and agents must read this file before making changes. This file supersedes README.md for operational context.**
 
@@ -94,7 +94,7 @@ Email systems in DSC prioritize community value over marketing optimization. The
 
 A community platform for Denver-area songwriters to discover open mics, connect with musicians, and stay informed about local music events.
 
-**Live Site:** https://denversongwriterscollective.org
+**Live Site:** https://coloradosongwriterscollective.org
 **Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS v4, Supabase (PostgreSQL + Auth + RLS), Vercel
 
 ---
@@ -239,14 +239,14 @@ claude --chrome
 
 **Verify a deployment is live:**
 ```
-Go to https://denversongwriterscollective.org/events/words-open-mic/display?tv=1
+Go to https://coloradosongwriterscollective.org/events/words-open-mic/display?tv=1
 Check if the page contains "SCAN FOR HAPPENING DETAILS"
 Report PASS if found, FAIL if not
 ```
 
 **Test a specific user flow:**
 ```
-1. Go to https://denversongwriterscollective.org/happenings
+1. Go to https://coloradosongwriterscollective.org/happenings
 2. Click on the first event card
 3. Find and click the "RSVP" button
 4. Report any console errors
@@ -254,7 +254,7 @@ Report PASS if found, FAIL if not
 
 **Check link generation:**
 ```
-Go to https://denversongwriterscollective.org/events/words-open-mic/lineup
+Go to https://coloradosongwriterscollective.org/events/words-open-mic/lineup
 Find the "Open TV Display" button
 Click it and report the exact URL it navigates to
 Confirm whether the URL includes tv=1 parameter
@@ -2385,7 +2385,7 @@ export function formatDateKeyForEmail(dateKey: string): string {
 
 **Solution:** Replace all instances of `process.env.NEXT_PUBLIC_SITE_URL` with the centralized `SITE_URL` constant from `lib/email/render.ts`, which has the proper fallback chain:
 ```typescript
-const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
+const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://coloradosongwriterscollective.org";
 ```
 
 **Files Modified:**
@@ -5454,7 +5454,7 @@ if (!isPublished) {
 
 **Copy (Approved):**
 - Title: "Early Contributors"
-- Body: "Help shape the Denver Songwriters Collective. Explore the site and tell us what worked, what didn't, and what would make you share it."
+- Body: "Help shape The Colorado Songwriters Collective. Explore the site and tell us what worked, what didn't, and what would make you share it."
 - Subtitle: "For songwriters, hosts, venues, and curious first-timers."
 - Button: "Become an Early Contributor"
 
@@ -8992,7 +8992,7 @@ AFTER:  Same data
 ### Phase 4.35 — Email Signature + SEO-Friendly Slugs (January 2026)
 
 **Email Signature Update:**
-- Changed from "— Denver Songwriters Collective" to "— From Sami Serrag on Behalf of the Denver Songwriters Collective"
+- Changed from "— The Colorado Songwriters Collective" to "— From Sami Serrag on Behalf of The Colorado Songwriters Collective"
 - Sami's name links to `/songwriters/sami-serrag`
 - Updated both HTML and plain text email formats
 

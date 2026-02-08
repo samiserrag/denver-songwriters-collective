@@ -41,7 +41,7 @@ export function mapDBEventToEvent(dbEvent: DBEvent & { rsvp_count?: number; clai
 
   return {
     // Preserve full DB event row so card-critical fields (verification/location/age)
-    // remain available in homepage DSC rail cards.
+    // remain available in homepage CSC rail cards.
     ...dbEvent,
     description: dbEvent.description ?? undefined,
     date: dbEvent.event_date,
@@ -143,7 +143,7 @@ export default async function HomePage() {
   const today = getTodayDenver();
 
   const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes, spotlightOpenMicEventsRes] = await Promise.all([
-    // Single events query - upcoming DSC events (published only)
+    // Single events query - upcoming CSC events (published only)
     // Filter: one-time events must be today or future, OR recurring events (have recurrence_rule)
     supabase
       .from("events")
@@ -271,7 +271,7 @@ export default async function HomePage() {
       .limit(6),
   ]);
 
-  // Fetch RSVP counts or claimed slots for DSC events
+  // Fetch RSVP counts or claimed slots for CSC events
   const eventsData = upcomingEventsRes.data ?? [];
   const upcomingEvents: Event[] = await Promise.all(
     eventsData.map(async (dbEvent) => {
@@ -448,7 +448,7 @@ export default async function HomePage() {
       <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage={siteSettings.heroImageUrl}>
         <div className="text-center px-6 py-8">
           <h1 className="font-[var(--font-family-display)] font-bold text-5xl md:text-6xl lg:text-7xl text-white tracking-tight mb-2 drop-shadow-lg">
-            Denver Songwriters Collective
+            The Colorado Songwriters Collective
           </h1>
           <p className="text-xl md:text-2xl text-white/95 mb-2 font-medium drop-shadow">
             A shared space for Denver-area songwriters and music fans
@@ -587,23 +587,23 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* DSC Happenings - Sponsored happenings only */}
+      {/* CSC Happenings - Sponsored happenings only */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
-                DSC Happenings
+                CSC Happenings
               </h2>
               <p className="text-[var(--color-text-secondary)]">
-                Song circles, showcases, and gatherings sponsored by Denver Songwriters Collective.
+                Song circles, showcases, and gatherings sponsored by The Colorado Songwriters Collective.
               </p>
             </div>
             <Link
-              href="/happenings?dsc=1"
+              href="/happenings?csc=1"
               className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              See all DSC happenings
+              See all CSC happenings
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -614,7 +614,7 @@ export default async function HomePage() {
           ) : (
             <div className="text-center py-12 px-6 card-base rounded-xl border border-[var(--color-border-default)]">
               <p className="text-[var(--color-text-secondary)] mb-4">
-                No DSC events on the calendar yet. Check back soon!
+                No CSC events on the calendar yet. Check back soon!
               </p>
               <Link
                 href="/happenings"
@@ -742,7 +742,7 @@ export default async function HomePage() {
             {spotifyEmbedUrl && (
               <LazyIframe
                 src={spotifyEmbedUrl}
-                title="Denver Songwriters Collective Spotify Playlist - Community music from local songwriters"
+                title="The Colorado Songwriters Collective Spotify Playlist - Community music from local songwriters"
                 height="352px"
                 className="rounded-xl overflow-hidden"
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
@@ -753,7 +753,7 @@ export default async function HomePage() {
             {youtubeEmbedUrl && (
               <LazyIframe
                 src={youtubeEmbedUrl}
-                title="Denver Songwriters Collective YouTube Playlist - Live performances and music videos"
+                title="The Colorado Songwriters Collective YouTube Playlist - Live performances and music videos"
                 height="352px"
                 className="rounded-xl overflow-hidden"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

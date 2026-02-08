@@ -27,7 +27,7 @@ export function getEventUrl(event: Event): string {
   return getDscEventUrl(identifier);
 }
 
-export function getHappeningsUrl(type?: "open_mic" | "dsc" | "gig"): string {
+export function getHappeningsUrl(type?: "open_mic" | "csc" | "gig"): string {
   return type ? `/happenings?type=${type}` : "/happenings";
 }
 

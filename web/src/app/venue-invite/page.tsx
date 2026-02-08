@@ -175,7 +175,7 @@ function VenueInviteContent() {
             You&apos;ve Been Invited!
           </h1>
           <p className="text-[var(--color-text-secondary)] mb-2">
-            Someone invited you to help manage a venue on the Denver Songwriters Collective.
+            Someone invited you to help manage a venue on The Colorado Songwriters Collective.
           </p>
           <p className="text-[var(--color-text-secondary)] mb-4">
             Please log in or sign up (free) to accept this invite.{" "}
@@ -188,7 +188,7 @@ function VenueInviteContent() {
               href="/host"
               className="underline hover:text-[var(--color-text-secondary)]"
             >
-              Learn more about hosting on DSC
+              Learn more about hosting on CSC
             </Link>
           </p>
           <div className="flex flex-col gap-3">

@@ -1,5 +1,5 @@
 /**
- * Test utilities for Denver Songwriters Collective
+ * Test utilities for The Colorado Songwriters Collective
  *
  * Migrated from legacy tests/ directory (December 2025)
  * These helpers are schema-independent.

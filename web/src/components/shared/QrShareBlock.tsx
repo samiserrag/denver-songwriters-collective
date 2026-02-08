@@ -20,7 +20,7 @@ interface QrShareBlockProps {
  * Displays a scannable QR code for easy sharing.
  * Used on event, venue, and profile pages.
  *
- * DSC UX Principles: §2 (Visibility)
+ * CSC UX Principles: §2 (Visibility)
  */
 export function QrShareBlock({
   title,

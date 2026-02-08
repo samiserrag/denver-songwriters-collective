@@ -2,12 +2,12 @@
  * Email Rendering Utilities
  *
  * Shared layout and styling for all transactional emails.
- * DSC branding with warm, friendly tone.
+ * CSC branding with warm, friendly tone.
  *
  * Color Palette (Light Theme - better email client compatibility):
  * - Background: #f8f8f8 (light gray)
  * - Card: #ffffff (white)
- * - Header: #b8860b (dark goldenrod - DSC brand)
+ * - Header: #b8860b (dark goldenrod - CSC brand)
  * - Primary text: #1a1a1a (near black)
  * - Secondary text: #525252 (dark gray)
  * - Muted text: #737373 (medium gray)
@@ -75,11 +75,11 @@ export function getGreeting(name?: string | null): string {
  * Shared email layout wrapper
  *
  * Design: Clean, mobile-first, no tracking pixels
- * - Header: "Denver Songwriters Collective" with gold brand color
+ * - Header: "The Colorado Songwriters Collective" with gold brand color
  * - Content block on white card
  * - Footer with signature
  */
-const DEFAULT_EMAIL_HEADER_IMAGE = "https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png";
+const DEFAULT_EMAIL_HEADER_IMAGE = "https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/CSC%20Email%20Header1.png";
 
 export function wrapEmailHtml(content: string, options?: { headerImageUrl?: string }): string {
   const headerImg = options?.headerImageUrl || DEFAULT_EMAIL_HEADER_IMAGE;
@@ -89,7 +89,7 @@ export function wrapEmailHtml(content: string, options?: { headerImageUrl?: stri
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Denver Songwriters Collective</title>
+  <title>The Colorado Songwriters Collective</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${EMAIL_COLORS.bgPage}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${EMAIL_COLORS.bgPage}; padding: 40px 20px;">
@@ -99,7 +99,7 @@ export function wrapEmailHtml(content: string, options?: { headerImageUrl?: stri
           <!-- Header -->
           <tr>
             <td style="background-color: ${EMAIL_COLORS.headerBg}; padding: 0; text-align: center;">
-              <img src="${headerImg}" alt="Denver Songwriters Collective" style="display: block; width: 100%; max-width: 560px; height: auto;" />
+              <img src="${headerImg}" alt="The Colorado Songwriters Collective" style="display: block; width: 100%; max-width: 560px; height: auto;" />
             </td>
           </tr>
 
@@ -114,13 +114,13 @@ export function wrapEmailHtml(content: string, options?: { headerImageUrl?: stri
           <tr>
             <td style="padding: 20px 28px; border-top: 1px solid ${EMAIL_COLORS.border}; background-color: ${EMAIL_COLORS.bgMuted};">
               <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 14px; line-height: 1.5;">
-                — From <a href="${SITE_URL}/songwriters/sami-serrag" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Sami Serrag</a> on Behalf of the Denver Songwriters Collective
+                — From <a href="${SITE_URL}/songwriters/sami-serrag" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Sami Serrag</a> on Behalf of The Colorado Songwriters Collective
               </p>
               <p style="margin: 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px; line-height: 1.5;">
                 You can reply directly to this email if you need anything.
               </p>
               <p style="margin: 16px 0 0 0; font-size: 12px;">
-                <a href="${SITE_URL}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">denversongwriterscollective.org</a>
+                <a href="${SITE_URL}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">coloradosongwriterscollective.org</a>
               </p>
             </td>
           </tr>
@@ -337,7 +337,7 @@ export function wrapEmailText(content: string): string {
   return `${content}
 
 ---
-— From Sami Serrag on Behalf of the Denver Songwriters Collective
+— From Sami Serrag on Behalf of The Colorado Songwriters Collective
 You can reply directly to this email if you need anything.
 ${SITE_URL}`;
 }

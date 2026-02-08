@@ -6,7 +6,7 @@
  * Phase 4.2: Provides search + filter controls with shareable URLs.
  * Phase 4.8: Added day-of-week filter for pattern discovery.
  * Phase 4.55: Redesigned with progressive disclosure:
- *             - Quick filter cards (Open Mics, DSC Happenings, Shows)
+ *             - Quick filter cards (Open Mics, CSC Happenings, Shows)
  *             - Polished search bar
  *             - All other filters collapsed by default
  * Design: Poster-board aesthetic, engaging cards, no database GUI feel.
@@ -15,7 +15,7 @@
  * - q: search query
  * - time: upcoming|past|all
  * - type: event_type (open_mic, showcase, workshop, etc.)
- * - dsc: 1 = DSC events only
+ * - csc: 1 = CSC events only
  * - verify: all|verified|needs_verification
  * - location: all|venue|online|hybrid
  * - cost: all|free|paid|unknown
@@ -79,7 +79,7 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-// Star icon for DSC Events
+// Star icon for CSC Events
 function StarIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,7 +195,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const q = searchParams.get("q") || "";
   const time = searchParams.get("time") || "upcoming";
   const type = searchParams.get("type") || "";
-  const dsc = searchParams.get("dsc") === "1";
+  const csc = searchParams.get("csc") === "1";
   const verify = searchParams.get("verify") || "";
   const location = searchParams.get("location") || "";
   const cost = searchParams.get("cost") || "";
@@ -363,8 +363,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       icon: type === "open_mic" ? <MicIcon className="w-3 h-3" /> : undefined
     });
   }
-  if (dsc) {
-    activeFilters.push({ key: "dsc", label: "DSC" });
+  if (csc) {
+    activeFilters.push({ key: "csc", label: "CSC" });
   }
   if (location) {
     const locationLabel = LOCATION_OPTIONS.find(o => o.value === location)?.label || location;
@@ -414,7 +414,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
   // Check which quick filter is active
   const isOpenMicsActive = type === "open_mic";
-  const isDscActive = dsc;
+  const isCscActive = csc;
   const isShowsActive = type === "shows";
   const isKindredActive = type === "kindred_group";
   const isJamSessionsActive = type === "jam_session";
@@ -457,8 +457,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             if (isOpenMicsActive) {
               updateFilter("type", null);
             } else {
-              // Clear dsc if setting type
-              router.push(buildUrl({ type: "open_mic", dsc: null }));
+              // Clear csc if setting type
+              router.push(buildUrl({ type: "open_mic", csc: null }));
             }
           }}
           className={cn(
@@ -474,22 +474,22 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
         <button
           onClick={() => {
-            if (isDscActive) {
-              updateFilter("dsc", null);
+            if (isCscActive) {
+              updateFilter("csc", null);
             } else {
-              // Clear type if setting dsc
-              router.push(buildUrl({ dsc: "1", type: null }));
+              // Clear type if setting csc
+              router.push(buildUrl({ csc: "1", type: null }));
             }
           }}
           className={cn(
             "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
-            isDscActive
+            isCscActive
               ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
               : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
           )}
         >
           <StarIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">DSC</span>
+          <span className="text-sm">CSC</span>
         </button>
 
         <button
@@ -497,8 +497,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             if (isShowsActive) {
               updateFilter("type", null);
             } else {
-              // Clear dsc if setting type
-              router.push(buildUrl({ type: "shows", dsc: null }));
+              // Clear csc if setting type
+              router.push(buildUrl({ type: "shows", csc: null }));
             }
           }}
           className={cn(
@@ -517,8 +517,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             if (isKindredActive) {
               updateFilter("type", null);
             } else {
-              // Clear dsc if setting type
-              router.push(buildUrl({ type: "kindred_group", dsc: null }));
+              // Clear csc if setting type
+              router.push(buildUrl({ type: "kindred_group", csc: null }));
             }
           }}
           className={cn(
@@ -537,8 +537,8 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             if (isJamSessionsActive) {
               updateFilter("type", null);
             } else {
-              // Clear dsc if setting type
-              router.push(buildUrl({ type: "jam_session", dsc: null }));
+              // Clear csc if setting type
+              router.push(buildUrl({ type: "jam_session", csc: null }));
             }
           }}
           className={cn(

@@ -37,7 +37,7 @@ export function getEventClaimApprovedEmail(params: EventClaimApprovedEmailParams
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
   const dashboardUrl = `${SITE_URL}/dashboard/my-events`;
 
-  const subject = `You're now the host of ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `You're now the host of ${eventTitle} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

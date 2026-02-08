@@ -1,7 +1,7 @@
 /**
  * Email Template Registry
  *
- * Single source of truth for all DSC email templates.
+ * Single source of truth for all CSC email templates.
  * Provides type-safe template keys and a unified interface for generating emails.
  */
 

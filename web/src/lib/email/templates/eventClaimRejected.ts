@@ -32,7 +32,7 @@ export function getEventClaimRejectedEmail(params: EventClaimRejectedEmailParams
   const safeReason = reason ? escapeHtml(reason) : null;
   const happeningsUrl = `${SITE_URL}/happenings`;
 
-  const subject = `Update on your claim for ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `Update on your claim for ${eventTitle} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

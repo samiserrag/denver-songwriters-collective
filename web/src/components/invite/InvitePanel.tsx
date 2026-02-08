@@ -18,7 +18,7 @@ interface InvitePanelProps {
 
 function buildInviteUrl(): string {
   const baseOrigin =
-    typeof window !== "undefined" ? window.location.origin : "https://denversongwriterscollective.org";
+    typeof window !== "undefined" ? window.location.origin : "https://coloradosongwriterscollective.org";
   const inviteUrl = new URL("/", baseOrigin);
   return inviteUrl.toString();
 }
@@ -79,7 +79,7 @@ export default function InvitePanel({ source }: InvitePanelProps) {
     }
     try {
       await navigator.share({
-        title: "Denver Songwriters Collective",
+        title: "The Colorado Songwriters Collective",
         text: inviteMessage,
       });
       await logInviteAction("native_share");

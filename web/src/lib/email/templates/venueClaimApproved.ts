@@ -38,7 +38,7 @@ export function getVenueClaimApprovedEmail(params: VenueClaimApprovedEmailParams
   const dashboardUrl = `${SITE_URL}/dashboard/my-venues`;
 
   const roleLabel = role === "owner" ? "owner" : "manager";
-  const subject = `You're now a ${roleLabel} of ${venueName} — The Denver Songwriters Collective`;
+  const subject = `You're now a ${roleLabel} of ${venueName} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

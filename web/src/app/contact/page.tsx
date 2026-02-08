@@ -127,8 +127,8 @@ export default function ContactPage() {
           {status === "error" && (
             <p className="text-red-400 text-sm">
               Something went wrong. Please try again or email us directly at{" "}
-              <a href="mailto:admin@denversongwriterscollective.org" className="underline">
-                admin@denversongwriterscollective.org
+              <a href="mailto:admin@coloradosongwriterscollective.org" className="underline">
+                admin@coloradosongwriterscollective.org
               </a>
             </p>
           )}
@@ -146,8 +146,8 @@ export default function ContactPage() {
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Other Ways to Reach Us</h2>
             <p className="text-[var(--color-text-tertiary)]">
               Email:{" "}
-              <a href="mailto:admin@denversongwriterscollective.org" className="text-[var(--color-text-accent)] hover:underline">
-                admin@denversongwriterscollective.org
+              <a href="mailto:admin@coloradosongwriterscollective.org" className="text-[var(--color-text-accent)] hover:underline">
+                admin@coloradosongwriterscollective.org
               </a>
             </p>
           </div>

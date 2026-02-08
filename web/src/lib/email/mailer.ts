@@ -42,7 +42,7 @@ export interface EmailPayload {
 }
 
 // Admin email for receiving contact form submissions
-export const ADMIN_EMAIL = "sami@denversongwriterscollective.org";
+export const ADMIN_EMAIL = "sami@coloradosongwriterscollective.org";
 
 /**
  * Send an email via SMTP
@@ -79,7 +79,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   }
 
   const fromEmail = process.env.SMTP_FROM_EMAIL;
-  const fromName = process.env.SMTP_FROM_NAME || "Denver Songwriters Collective";
+  const fromName = process.env.SMTP_FROM_NAME || "The Colorado Songwriters Collective";
 
   if (!fromEmail) {
     console.log(`[Email] SMTP_FROM_EMAIL not set, skipping: ${logName}`);

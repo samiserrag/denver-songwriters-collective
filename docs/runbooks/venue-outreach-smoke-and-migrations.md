@@ -237,12 +237,12 @@ const inviteUrl = `${SITE_URL}/venue-invite?token=${token}`;
 
 1. `process.env.PUBLIC_SITE_URL`
 2. `process.env.NEXT_PUBLIC_SITE_URL`
-3. Fallback: `https://denversongwriterscollective.org`
+3. Fallback: `https://coloradosongwriterscollective.org`
 
 **Vercel Environment Setup:**
 
 Ensure one of these is set in Vercel → Project → Settings → Environment Variables:
-- `NEXT_PUBLIC_SITE_URL=https://denversongwriterscollective.org`
+- `NEXT_PUBLIC_SITE_URL=https://coloradosongwriterscollective.org`
 
 ---
 

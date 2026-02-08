@@ -3,7 +3,7 @@
 import * as React from "react";
 import { QRCodeSVG } from "qrcode.react";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://coloradosongwriterscollective.org";
 
 interface TvQrStripProps {
   /** Event slug or ID for QR code URL */
@@ -29,7 +29,7 @@ interface TvQrStripProps {
  * QR codes use gold accent color (#d4a853) with transparent background
  * for optimal visibility on dark TV display background.
  *
- * DSC UX Principles: §2 (Visibility)
+ * CSC UX Principles: §2 (Visibility)
  */
 export function TvQrStrip({
   eventSlugOrId,

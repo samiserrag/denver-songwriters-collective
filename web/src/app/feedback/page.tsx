@@ -473,7 +473,7 @@ export default function FeedbackPage() {
                 value={pageUrl}
                 onChange={(e) => setPageUrl(e.target.value)}
                 className="w-full px-4 py-3 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
-                placeholder="https://denversongwriterscollective.org/..."
+                placeholder="https://coloradosongwriterscollective.org/..."
               />
               <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
                 If this relates to a specific page, paste the URL here.

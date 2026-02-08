@@ -54,7 +54,7 @@ describe("Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Your code for Open Mic at The Walnut Room — The Denver Songwriters Collective"
+        "Your code for Open Mic at The Walnut Room — The Colorado Songwriters Collective"
       );
     });
 
@@ -141,7 +141,7 @@ describe("Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "You're on the lineup for Open Mic Night — The Denver Songwriters Collective"
+        "You're on the lineup for Open Mic Night — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("slot #3");
       expect(result.text).toContain("slot #3");
@@ -157,7 +157,7 @@ describe("Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "You're on the waitlist for Open Mic Night — The Denver Songwriters Collective"
+        "You're on the waitlist for Open Mic Night — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("#2");
       expect(result.text).toContain("#2");
@@ -209,7 +209,7 @@ describe("Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "A spot just opened up at Songwriter Showcase — The Denver Songwriters Collective"
+        "A spot just opened up at Songwriter Showcase — The Colorado Songwriters Collective"
       );
     });
 
@@ -275,9 +275,9 @@ describe("Email Rendering", () => {
   });
 
   describe("wrapEmailHtml", () => {
-    it("includes Denver Songwriters Collective header", () => {
+    it("includes The Colorado Songwriters Collective header", () => {
       const html = wrapEmailHtml("<p>Test content</p>");
-      expect(html).toContain("Denver Songwriters Collective");
+      expect(html).toContain("The Colorado Songwriters Collective");
     });
 
     it("includes content in body", () => {
@@ -307,7 +307,7 @@ describe("Email Rendering", () => {
 
     it("includes footer signature", () => {
       const text = wrapEmailText("Test");
-      expect(text).toContain("Denver Songwriters Collective");
+      expect(text).toContain("The Colorado Songwriters Collective");
       expect(text).toContain("You can reply directly to this email");
     });
   });
@@ -426,7 +426,7 @@ describe("New Email Templates", () => {
     it("generates confirmed variant", () => {
       const result = getRsvpConfirmationEmail({
         userName: "Sarah",
-        eventTitle: "DSC Showcase",
+        eventTitle: "CSC Showcase",
         eventDate: "Dec 20, 2025",
         eventTime: "7:00 PM",
         venueName: "The Walnut Room",
@@ -435,17 +435,17 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "You're going to DSC Showcase — The Denver Songwriters Collective"
+        "You're going to CSC Showcase — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Sarah,");
-      expect(result.html).toContain("DSC Showcase");
+      expect(result.html).toContain("CSC Showcase");
       expect(result.html).toContain("Dec 20, 2025");
       expect(result.text).toContain("You're confirmed");
     });
 
     it("generates waitlist variant", () => {
       const result = getRsvpConfirmationEmail({
-        eventTitle: "DSC Showcase",
+        eventTitle: "CSC Showcase",
         eventDate: "Dec 20, 2025",
         eventTime: "7:00 PM",
         venueName: "The Walnut Room",
@@ -455,7 +455,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "You're on the waitlist for DSC Showcase — The Denver Songwriters Collective"
+        "You're on the waitlist for CSC Showcase — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("#3");
       expect(result.text).toContain("#3");
@@ -475,7 +475,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "A spot just opened up at Open Mic Night — The Denver Songwriters Collective"
+        "A spot just opened up at Open Mic Night — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Confirm");
     });
@@ -488,7 +488,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "You're approved as a host! — The Denver Songwriters Collective"
+        "You're approved as a host! — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("host privileges");
@@ -504,7 +504,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Update on your host application — The Denver Songwriters Collective"
+        "Update on your host application — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("complete your profile");
@@ -517,7 +517,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Update on your host application — The Denver Songwriters Collective"
+        "Update on your host application — The Colorado Songwriters Collective"
       );
       expect(result.html).not.toContain("Feedback");
     });
@@ -531,7 +531,7 @@ describe("New Email Templates", () => {
         message: "I have a question about hosting.",
       });
 
-      expect(result.subject).toBe("[DSC Contact] Message from Jane Doe");
+      expect(result.subject).toBe("[CSC Contact] Message from Jane Doe");
       expect(result.html).toContain("Jane Doe");
       expect(result.html).toContain("jane@example.com");
       expect(result.html).toContain("question about hosting");
@@ -542,7 +542,7 @@ describe("New Email Templates", () => {
     it("generates welcome email", () => {
       const result = getNewsletterWelcomeEmail();
 
-      expect(result.subject).toBe("Welcome to The Denver Songwriters Collective!");
+      expect(result.subject).toBe("Welcome to The Colorado Songwriters Collective!");
       expect(result.html).toContain("Open mics and songwriter events");
       expect(result.html).toContain("/happenings");
       expect(result.text).toContain("Tips and resources");
@@ -561,7 +561,7 @@ describe("New Email Templates", () => {
         reminderType: "tonight",
       });
 
-      expect(result.subject).toBe("Reminder: Open Mic is tonight! — The Denver Songwriters Collective");
+      expect(result.subject).toBe("Reminder: Open Mic is tonight! — The Colorado Songwriters Collective");
       expect(result.html).toContain("tonight");
     });
 
@@ -577,7 +577,7 @@ describe("New Email Templates", () => {
         slotNumber: 5,
       });
 
-      expect(result.subject).toBe("Reminder: Open Mic is tomorrow! — The Denver Songwriters Collective");
+      expect(result.subject).toBe("Reminder: Open Mic is tomorrow! — The Colorado Songwriters Collective");
       expect(result.html).toContain("slot");
       expect(result.html).toContain("#5");
     });
@@ -598,7 +598,7 @@ describe("New Email Templates", () => {
         venueName: "New Venue",
       });
 
-      expect(result.subject).toBe("Update: Songwriter Circle details have changed — The Denver Songwriters Collective");
+      expect(result.subject).toBe("Update: Songwriter Circle details have changed — The Colorado Songwriters Collective");
       expect(result.html).toContain("7pm");
       expect(result.html).toContain("8pm");
       expect(result.html).toContain("Old Place");
@@ -617,7 +617,7 @@ describe("New Email Templates", () => {
         hostName: "Host Name",
       });
 
-      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25 — The Denver Songwriters Collective");
+      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25 — The Colorado Songwriters Collective");
       expect(result.html).toContain("cancelled");
       expect(result.html).toContain("weather conditions");
       expect(result.html).toContain("Host Name");
@@ -630,7 +630,7 @@ describe("New Email Templates", () => {
         venueName: "The Walnut Room",
       });
 
-      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25 — The Denver Songwriters Collective");
+      expect(result.subject).toBe("Cancelled: Open Mic on Dec 25 — The Colorado Songwriters Collective");
       expect(result.html).toContain("cancelled");
       expect(result.html).not.toContain("Note from");
     });
@@ -647,7 +647,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Your open mic submission is live! — The Denver Songwriters Collective"
+        "Your open mic submission is live! — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("Monday Night Mic");
@@ -663,7 +663,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Quick question about your suggestion — The Denver Songwriters Collective"
+        "Quick question about your suggestion — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("What time does it start?");
       // Always tell user to reply to email for more info
@@ -682,7 +682,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Quick question about your suggestion — The Denver Songwriters Collective"
+        "Quick question about your suggestion — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("What time does it start?");
       // Event link shown for reference (View the happening)
@@ -700,7 +700,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Quick question about your open mic submission — The Denver Songwriters Collective"
+        "Quick question about your open mic submission — The Colorado Songwriters Collective"
       );
       // Always tell user to reply to email - no link to submit-open-mic
       expect(result.text).toContain("reply to this email");
@@ -715,7 +715,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "About your open mic submission — The Denver Songwriters Collective"
+        "About your open mic submission — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("This venue closed down.");
     });
@@ -729,7 +729,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Your claim for Monday Night Mic is under review — The Denver Songwriters Collective"
+        "Your claim for Monday Night Mic is under review — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Alex,");
       expect(result.html).toContain("Monday Night Mic");
@@ -755,7 +755,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "You're now the host of Thursday Showcase — The Denver Songwriters Collective"
+        "You're now the host of Thursday Showcase — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Jordan,");
       expect(result.html).toContain("Thursday Showcase");
@@ -774,7 +774,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Update on your claim for Open Mic Night — The Denver Songwriters Collective"
+        "Update on your claim for Open Mic Night — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Pat,");
       expect(result.html).toContain("not able to approve");
@@ -789,7 +789,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Update on your claim for Open Mic Night — The Denver Songwriters Collective"
+        "Update on your claim for Open Mic Night — The Colorado Songwriters Collective"
       );
       expect(result.html).not.toContain("Feedback");
     });
@@ -803,7 +803,7 @@ describe("New Email Templates", () => {
         eventId: "456",
       });
 
-      expect(result.subject).toBe("[DSC Claim] Jane Doe wants to host Friday Night Mic");
+      expect(result.subject).toBe("[CSC Claim] Jane Doe wants to host Friday Night Mic");
       expect(result.html).toContain("Jane Doe");
       expect(result.html).toContain("Friday Night Mic");
       expect(result.html).toContain("/dashboard/admin/claims");
@@ -820,7 +820,7 @@ describe("New Email Templates", () => {
       // Should not contain email-like patterns (except site domain)
       const unexpectedEmails = result.html.match(/@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
       const filtered = unexpectedEmails.filter(
-        email => !email.includes("denversongwriterscollective")
+        email => !email.includes("coloradosongwriterscollective")
       );
       expect(filtered).toEqual([]);
     });
@@ -839,7 +839,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Cancelled: Weekly Jam on Dec 25, 2025 — The Denver Songwriters Collective"
+        "Cancelled: Weekly Jam on Dec 25, 2025 — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Sam,");
       expect(result.html).toContain("Weekly Jam");
@@ -878,7 +878,7 @@ describe("New Email Templates", () => {
       });
 
       expect(result.subject).toBe(
-        "Update: Songwriter Circle on Dec 22, 2025 — The Denver Songwriters Collective"
+        "Update: Songwriter Circle on Dec 22, 2025 — The Colorado Songwriters Collective"
       );
       expect(result.html).toContain("Hi Chris,");
       expect(result.html).toContain("Dec 22, 2025 only");
@@ -954,7 +954,7 @@ describe("All Templates - Common Requirements", () => {
       const htmlEmails = template.html.match(emailPattern) || [];
       // Filter out expected emails (site domain, sender in contact notification)
       const unexpectedHtmlEmails = htmlEmails.filter(
-        email => !email.includes("denversongwriterscollective") && !email.includes("example.com")
+        email => !email.includes("coloradosongwriterscollective") && !email.includes("example.com")
       );
       expect(unexpectedHtmlEmails).toEqual([]);
     }

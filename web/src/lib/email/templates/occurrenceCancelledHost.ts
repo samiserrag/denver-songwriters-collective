@@ -51,7 +51,7 @@ export function getOccurrenceCancelledHostEmail(params: OccurrenceCancelledHostE
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}`;
   const happeningsUrl = `${SITE_URL}/happenings`;
 
-  const subject = `Cancelled: ${eventTitle} on ${occurrenceDate} — The Denver Songwriters Collective`;
+  const subject = `Cancelled: ${eventTitle} on ${occurrenceDate} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

@@ -111,49 +111,49 @@ Users can control email delivery via `/dashboard/settings`:
 ## Template Details
 
 ### 1. verificationCode.ts
-- **Subject:** `Your code for {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `Your code for {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Guest (unregistered)
 - **Links:** None (code entry on same page)
 - **Tone:** Good (warm, transactional)
 
 ### 2. claimConfirmed.ts
-- **Subject:** `You're on the lineup for {eventTitle} — The Denver Songwriters Collective` / `You're on the waitlist for {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `You're on the lineup for {eventTitle} — The Colorado Songwriters Collective` / `You're on the waitlist for {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Guest (verified)
 - **Links:** Cancel URL (magic link)
 - **Tone:** Good (celebratory/encouraging)
 
 ### 3. waitlistOffer.ts
-- **Subject:** `A spot just opened up at {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `A spot just opened up at {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Guest (waitlisted, now offered)
 - **Links:** Confirm URL, Cancel URL
 - **Tone:** Good (urgent but friendly)
 
 ### 4. rsvpConfirmation.ts
-- **Subject:** `You're going to {eventTitle} — The Denver Songwriters Collective` / `You're on the waitlist for {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `You're going to {eventTitle} — The Colorado Songwriters Collective` / `You're on the waitlist for {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Member (authenticated)
 - **Links:** Event page, Calendar links
 - **Tone:** Good (warm, helpful)
 
 ### 5. waitlistPromotion.ts
-- **Subject:** `A spot just opened up at {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `A spot just opened up at {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Member (waitlisted, now offered)
 - **Links:** Confirm URL (event page with ?confirm=true)
 - **Tone:** Good (exciting, clear deadline)
 
 ### 6. hostApproval.ts
-- **Subject:** `You're approved as a host! — The Denver Songwriters Collective`
+- **Subject:** `You're approved as a host! — The Colorado Songwriters Collective`
 - **Audience:** Member (applicant)
 - **Links:** Dashboard link
 - **Tone:** Good (celebratory)
 
 ### 7. hostRejection.ts
-- **Subject:** `Update on your host application — The Denver Songwriters Collective`
+- **Subject:** `Update on your host application — The Colorado Songwriters Collective`
 - **Audience:** Member (applicant)
 - **Links:** Open mics page
 - **Tone:** Good (empathetic, constructive)
 
 ### 8. suggestionResponse.ts
-- **Subject:** Varies by status (approved/rejected/needs_info) — all include `— The Denver Songwriters Collective`
+- **Subject:** Varies by status (approved/rejected/needs_info) — all include `— The Colorado Songwriters Collective`
 - **Audience:** Community submitter
 - **Links:** Open mics page, Submit form
 - **Tone:** Good (appreciative, encouraging)
@@ -165,32 +165,32 @@ Users can control email delivery via `/dashboard/settings`:
 - **Tone:** Good (functional, admin-facing)
 
 ### 10. newsletterWelcome.ts
-- **Subject:** `Welcome to The Denver Songwriters Collective!`
+- **Subject:** `Welcome to The Colorado Songwriters Collective!`
 - **Audience:** Subscriber
 - **Links:** Open mics page, Privacy
 - **Tone:** Good (welcoming)
 
 ### 11-13. Event Lifecycle Templates (Template Only)
-- **eventReminder.ts:** `Reminder: {eventTitle} is {tonight/tomorrow}! — The Denver Songwriters Collective`
-- **eventUpdated.ts:** `Update: {eventTitle} details have changed — The Denver Songwriters Collective`
-- **eventCancelled.ts:** `Cancelled: {eventTitle} on {date} — The Denver Songwriters Collective`
+- **eventReminder.ts:** `Reminder: {eventTitle} is {tonight/tomorrow}! — The Colorado Songwriters Collective`
+- **eventUpdated.ts:** `Update: {eventTitle} details have changed — The Colorado Songwriters Collective`
+- **eventCancelled.ts:** `Cancelled: {eventTitle} on {date} — The Colorado Songwriters Collective`
 
 ### 14-17. Event Claim Templates (Phase 4.24 - Template Only)
 
 #### eventClaimSubmitted.ts
-- **Subject:** `Your claim for {eventTitle} is under review — The Denver Songwriters Collective`
+- **Subject:** `Your claim for {eventTitle} is under review — The Colorado Songwriters Collective`
 - **Audience:** Member (claimant)
 - **Links:** Happenings page
 - **Tone:** Good (acknowledging, sets expectations)
 
 #### eventClaimApproved.ts
-- **Subject:** `You're now the host of {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `You're now the host of {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Member (new host)
 - **Links:** Event management dashboard
 - **Tone:** Good (celebratory, "Welcome to the table")
 
 #### eventClaimRejected.ts
-- **Subject:** `Update on your claim for {eventTitle} — The Denver Songwriters Collective`
+- **Subject:** `Update on your claim for {eventTitle} — The Colorado Songwriters Collective`
 - **Audience:** Member (claimant)
 - **Links:** Happenings page
 - **Tone:** Good (empathetic, constructive — modeled after hostRejection.ts)
@@ -205,14 +205,14 @@ Users can control email delivery via `/dashboard/settings`:
 ### 18-19. Occurrence Override Templates (Phase 4.24 - Template Only)
 
 #### occurrenceCancelledHost.ts
-- **Subject:** `Cancelled: {eventTitle} on {occurrenceDate} — The Denver Songwriters Collective`
+- **Subject:** `Cancelled: {eventTitle} on {occurrenceDate} — The Colorado Songwriters Collective`
 - **Audience:** Member (RSVPed attendee)
 - **Links:** Happenings page
 - **Tone:** Good (apologetic, clear that series continues)
 - **Key message:** "This is for {date} only. The regular series continues."
 
 #### occurrenceModifiedHost.ts
-- **Subject:** `Update: {eventTitle} on {occurrenceDate} — The Denver Songwriters Collective`
+- **Subject:** `Update: {eventTitle} on {occurrenceDate} — The Colorado Songwriters Collective`
 - **Audience:** Member (RSVPed attendee)
 - **Links:** Event page, Cancel RSVP link
 - **Tone:** Good (informative, preserves RSVP)

@@ -9,8 +9,8 @@ afterEach(() => {
 
 describe("normalizeSiteUrl", () => {
   it("adds https when protocol is missing", () => {
-    expect(normalizeSiteUrl("denversongwriterscollective.org/path")).toBe(
-      "https://denversongwriterscollective.org"
+    expect(normalizeSiteUrl("coloradosongwriterscollective.org/path")).toBe(
+      "https://coloradosongwriterscollective.org"
     );
   });
 
@@ -30,8 +30,8 @@ describe("getSiteUrl", () => {
   it("uses production project URL when explicit site URL env vars are missing", () => {
     delete process.env.PUBLIC_SITE_URL;
     delete process.env.NEXT_PUBLIC_SITE_URL;
-    process.env.VERCEL_PROJECT_PRODUCTION_URL = "denversongwriterscollective.org";
-    expect(getSiteUrl()).toBe("https://denversongwriterscollective.org");
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "coloradosongwriterscollective.org";
+    expect(getSiteUrl()).toBe("https://coloradosongwriterscollective.org");
   });
 
   it("does not use preview VERCEL_URL fallback and keeps canonical default", () => {
@@ -39,6 +39,6 @@ describe("getSiteUrl", () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
     process.env.VERCEL_URL = "denver-songwriters-collective-preview.vercel.app";
-    expect(getSiteUrl()).toBe("https://denversongwriterscollective.org");
+    expect(getSiteUrl()).toBe("https://coloradosongwriterscollective.org");
   });
 });

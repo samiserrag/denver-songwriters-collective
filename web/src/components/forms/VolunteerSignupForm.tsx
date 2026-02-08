@@ -93,10 +93,10 @@ export function VolunteerSignupForm() {
   if (success) {
     return (
       <div className="rounded-2xl border border-[var(--color-border-accent)]/30 bg-[var(--color-accent-primary)]/10 p-8 text-center space-y-4">
-        <div className="text-4xl">Thank you for signing up to volunteer with DSC. We will be in touch soon.</div>
+        <div className="text-4xl">Thank you for signing up to volunteer with CSC. We will be in touch soon.</div>
         <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">Thank You!</h3>
         <p className="text-[var(--color-text-secondary)]">
-          We have received your volunteer sign-up. Someone from DSC will reach out to you soon.
+          We have received your volunteer sign-up. Someone from CSC will reach out to you soon.
         </p>
         <button
           onClick={() => setSuccess(false)}

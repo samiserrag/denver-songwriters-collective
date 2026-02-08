@@ -58,7 +58,7 @@ export function getOccurrenceModifiedHostEmail(params: OccurrenceModifiedHostEma
   const eventUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam}`;
   const cancelUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam ? dateParam + "&" : "?"}cancel=true`;
 
-  const subject = `Update: ${eventTitle} on ${occurrenceDate} — The Denver Songwriters Collective`;
+  const subject = `Update: ${eventTitle} on ${occurrenceDate} — The Colorado Songwriters Collective`;
 
   // Build changes section
   let changesHtml = "";

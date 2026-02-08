@@ -8,7 +8,7 @@ import { expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "My Happenings | DSC"
+  title: "My Happenings | CSC"
 };
 
 export default async function MyEventsPage() {
@@ -46,7 +46,7 @@ export default async function MyEventsPage() {
   if (hostEntries && hostEntries.length > 0) {
     const eventIds = hostEntries.map(h => h.event_id);
 
-    // Show ALL user's events (DSC and non-DSC community events)
+    // Show ALL user's events (CSC and non-CSC community events)
     const { data: eventsData } = await supabase
       .from("events")
       .select("*")

@@ -34,7 +34,7 @@ export async function GET() {
   // Note: event_hosts.user_id references auth.users, not profiles
   // So we fetch hosts without profile join, then fetch profiles separately
   // Phase 4.x: Removed is_dsc_event filter - users should see ALL their happenings,
-  // not just DSC events. Community events (is_dsc_event=false) also show in My Happenings.
+  // not just CSC events. Community events (is_dsc_event=false) also show in My Happenings.
   const { data: events, error: eventsError } = await supabase
     .from("events")
     .select(`
@@ -110,7 +110,7 @@ export async function GET() {
 interface EventInsertParams {
   userId: string;
   body: Record<string, unknown>;
-  isDSCEvent: boolean;
+  isCSCEvent: boolean;
   eventStatus: string;
   publishedAt: string | null;
   venueName: string | null;
@@ -134,7 +134,7 @@ function buildEventInsert(params: EventInsertParams) {
   const {
     userId,
     body,
-    isDSCEvent,
+    isCSCEvent,
     eventStatus,
     publishedAt,
     venueName,
@@ -153,7 +153,7 @@ function buildEventInsert(params: EventInsertParams) {
     title: body.title as string,
     description: (body.description as string) || null,
     event_type: body.event_type as string,
-    is_dsc_event: isDSCEvent,
+    is_dsc_event: isCSCEvent,
     // Phase 4.43: capacity is independent of timeslots (RSVP always available)
     // capacity=null means unlimited RSVP, not "RSVP disabled"
     capacity: (body.capacity as number) || null,
@@ -205,7 +205,7 @@ function buildEventInsert(params: EventInsertParams) {
     signup_url: (body.signup_url as string) || null,
     signup_deadline: (body.signup_deadline as string) || null,
     signup_time: (body.signup_time as string) || null,
-    age_policy: (body.age_policy as string) || (isDSCEvent ? "18+ only" : null),
+    age_policy: (body.age_policy as string) || (isCSCEvent ? "18+ only" : null),
     external_url: (body.external_url as string) || null,
     // Categories (multi-select array)
     categories: (body.categories as string[])?.length > 0 ? body.categories : null,
@@ -219,7 +219,7 @@ function buildEventInsert(params: EventInsertParams) {
   };
 }
 
-// POST - Create new DSC event (or series of events)
+// POST - Create new CSC event (or series of events)
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -228,7 +228,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check host/admin status for DSC branding permission (not creation blocking)
+  // Check host/admin status for CSC branding permission (not creation blocking)
   const isApprovedHost = await checkHostStatus(supabase, session.user.id);
 
   const { data: profile } = await supabase
@@ -238,7 +238,7 @@ export async function POST(request: Request) {
     .single();
 
   const isAdmin = profile?.role === "admin";
-  const canCreateDSC = isApprovedHost || isAdmin;
+  const canCreateCSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
 
@@ -378,8 +378,8 @@ export async function POST(request: Request) {
   for (let i = 0; i < eventDates.length; i++) {
     const eventDate = eventDates[i];
 
-    // Determine if this should be a DSC event
-    const isDSCEvent = canCreateDSC && body.is_dsc_event === true;
+    // Determine if this should be a CSC event
+    const isCSCEvent = canCreateCSC && body.is_dsc_event === true;
 
     // Events start as drafts by default; host must explicitly publish
     // When published, events are auto-confirmed (last_verified_at set)
@@ -392,7 +392,7 @@ export async function POST(request: Request) {
     const insertPayload = buildEventInsert({
       userId: session.user.id,
       body,
-      isDSCEvent,
+      isCSCEvent,
       eventStatus,
       publishedAt,
       venueName,

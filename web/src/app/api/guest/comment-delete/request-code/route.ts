@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
         <p style="color: #666; font-size: 14px;">This code expires in ${CODE_EXPIRES_MINUTES} minutes.</p>
         <p style="color: #666; font-size: 14px;">If you didn't request this, you can ignore this email.</p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
-        <p style="color: #999; font-size: 12px;">— Denver Songwriters Collective</p>
+        <p style="color: #999; font-size: 12px;">— The Colorado Songwriters Collective</p>
       </div>
     `;
 
@@ -199,7 +199,7 @@ This code expires in ${CODE_EXPIRES_MINUTES} minutes.
 
 If you didn't request this, you can ignore this email.
 
-— Denver Songwriters Collective
+— The Colorado Songwriters Collective
     `;
 
     await sendEmail({

@@ -1,4 +1,4 @@
-# Denver Songwriters Collective
+# The Colorado Songwriters Collective
 
 ## Product North Star & System Truths (Canonical)
 
@@ -24,7 +24,7 @@
 
 ## 1. Purpose (Why DSC Exists)
 
-Denver Songwriters Collective is a **real-world music community platform**, not a content feed and not a SaaS tool.
+The Colorado Songwriters Collective is a **real-world music community platform**, not a content feed and not a SaaS tool.
 
 The product exists to answer, **at a glance**, for real humans:
 

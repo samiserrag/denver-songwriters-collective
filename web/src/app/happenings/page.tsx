@@ -24,7 +24,7 @@ import { getLocationFilteredVenues, type LocationFilterResult, DISCOVERY_STATUS_
 import { INVITE_CTA_LABEL } from "@/lib/referrals";
 
 export const metadata: Metadata = {
-  title: "Happenings | Denver Songwriters Collective",
+  title: "Happenings | The Colorado Songwriters Collective",
   description: "Discover open mics, events, and shows in the Denver music community.",
 };
 
@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
  * - q: search query (matches title, description, venue_name, venue_address, custom_location_*)
  * - time: upcoming|past|all
  * - type: event_type (open_mic, showcase, workshop, etc.)
- * - dsc: 1 = DSC events only
+ * - csc: 1 = CSC events only
  * - verify: verified|needs_verification
  * - location: venue|online|hybrid
  * - cost: free|paid|unknown
@@ -51,7 +51,7 @@ interface HappeningsSearchParams {
   q?: string;
   time?: string;
   type?: string;
-  dsc?: string;
+  csc?: string;
   verify?: string;
   location?: string;
   cost?: string;
@@ -77,7 +77,7 @@ export default async function HappeningsPage({
   const searchQuery = params.q || "";
   const timeFilter = params.time || "upcoming";
   const typeFilter = params.type || "";
-  const dscFilter = params.dsc === "1";
+  const cscFilter = params.csc === "1";
   const verifyFilter = params.verify || "";
   const locationFilter = params.location || "";
   const costFilter = params.cost || "";
@@ -236,8 +236,8 @@ export default async function HappeningsPage({
     query = query.eq("event_type", "other");
   }
 
-  // DSC filter
-  if (dscFilter) {
+  // CSC filter
+  if (cscFilter) {
     query = query.eq("is_dsc_event", true);
   }
 
@@ -505,7 +505,7 @@ export default async function HappeningsPage({
   }
 
   // Hero only shows on unfiltered /happenings (no filters active)
-  const hasFilters = searchQuery || typeFilter || dscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter;
+  const hasFilters = searchQuery || typeFilter || cscFilter || verifyFilter || locationFilter || costFilter || daysFilter.length > 0 || (timeFilter && timeFilter !== "upcoming") || hasLocationFilter;
   const showHero = !hasFilters;
 
   // Page title based on active type filter
@@ -518,7 +518,7 @@ export default async function HappeningsPage({
     if (typeFilter === "gig") return "Gigs";
     if (typeFilter === "kindred_group") return "Kindred Songwriter Groups";
     if (typeFilter === "jam_session") return "Jam Sessions";
-    if (dscFilter) return "DSC Events";
+    if (cscFilter) return "CSC Events";
     return null;
   };
 
@@ -542,7 +542,7 @@ export default async function HappeningsPage({
       };
       parts.push(labels[typeFilter] || typeFilter);
     }
-    if (dscFilter) parts.push("DSC Events");
+    if (cscFilter) parts.push("CSC Events");
     if (locationFilter) {
       const labels: Record<string, string> = { venue: "In-person", online: "Online", hybrid: "Hybrid" };
       parts.push(labels[locationFilter] || locationFilter);

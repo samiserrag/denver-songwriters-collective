@@ -78,9 +78,9 @@ describe("Phase 7B.1: Referral utility contract", () => {
   });
 
   it("builds invite email copy without personal-name placeholders", () => {
-    const body = buildInviteEmailBody("https://denversongwriterscollective.org/");
+    const body = buildInviteEmailBody("https://coloradosongwriterscollective.org/");
     expect(body).toContain("Hey there,");
-    expect(body).toContain("Start on the homepage: https://denversongwriterscollective.org/");
+    expect(body).toContain("Start on the homepage: https://coloradosongwriterscollective.org/");
     expect(body).toContain("Enjoy!");
     expect(body).not.toContain("[Friend Name]");
     expect(body).not.toContain("Sami Serrag");

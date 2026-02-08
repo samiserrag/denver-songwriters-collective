@@ -1,4 +1,4 @@
-# The Denver Songwriters Collective
+# The Colorado Songwriters Collective
 
 > Find your people. Find your stage. Find your songs.
 

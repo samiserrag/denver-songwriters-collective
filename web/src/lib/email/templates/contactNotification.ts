@@ -25,7 +25,7 @@ export function getContactNotificationEmail(params: ContactNotificationEmailPara
   const safeEmail = escapeHtml(senderEmail);
   const safeMessage = escapeHtml(message);
 
-  const subject = `[DSC Contact] Message from ${senderName}`;
+  const subject = `[CSC Contact] Message from ${senderName}`;
 
   const htmlContent = `
 <p style="margin: 0 0 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 15px; line-height: 1.6;">

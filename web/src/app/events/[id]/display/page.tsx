@@ -83,7 +83,7 @@ interface HostInfo {
   role?: "host" | "cohost";
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://coloradosongwriterscollective.org";
 
 function formatSlotTime(startTime: string | null, offsetMinutes: number, durationMinutes: number): string {
   if (!startTime) return "";
@@ -151,7 +151,7 @@ export default function EventDisplayPage() {
   // Phase 4.105: Event QR code (generated locally, tied to dateKey changes)
   const [eventQrCode, setEventQrCode] = React.useState<string | null>(null);
   const [eventQrError, setEventQrError] = React.useState(false);
-  // Phase 4.108: DSC Join QR code for homepage
+  // Phase 4.108: CSC Join QR code for homepage
   const [dscJoinQrCode, setDscJoinQrCode] = React.useState<string | null>(null);
 
   // Phase 4.99: Connection health tracking
@@ -510,7 +510,7 @@ export default function EventDisplayPage() {
   }, [fetchData]);
 
   // Phase 4.105: Generate Event QR locally (tied to dateKey/event changes)
-  // Phase 4.108: Also generate DSC Join QR for homepage
+  // Phase 4.108: Also generate CSC Join QR for homepage
   React.useEffect(() => {
     async function generateEventQr() {
       if (!event) return;
@@ -533,7 +533,7 @@ export default function EventDisplayPage() {
         setEventQrError(true);
       }
 
-      // Phase 4.108: Generate DSC Join QR (homepage)
+      // Phase 4.108: Generate CSC Join QR (homepage)
       try {
         const joinQr = await QRCode.toDataURL(SITE_URL, {
           width: 80,
@@ -542,7 +542,7 @@ export default function EventDisplayPage() {
         });
         setDscJoinQrCode(joinQr);
       } catch (err) {
-        console.error("DSC Join QR generation error:", err);
+        console.error("CSC Join QR generation error:", err);
       }
     }
 

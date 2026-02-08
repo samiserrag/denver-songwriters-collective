@@ -10,7 +10,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Unsubscribed — Denver Songwriters Collective",
+  title: "Unsubscribed — The Colorado Songwriters Collective",
   robots: "noindex",
 };
 
@@ -85,10 +85,10 @@ export default async function UnsubscribedPage({ searchParams }: PageProps) {
         <p className="text-[var(--color-text-tertiary)] text-sm mt-8">
           Questions? Reply to any digest email or reach out at{" "}
           <a
-            href="mailto:hello@denversongwriterscollective.org"
+            href="mailto:hello@coloradosongwriterscollective.org"
             className="text-[var(--color-accent-primary)] hover:underline"
           >
-            hello@denversongwriterscollective.org
+            hello@coloradosongwriterscollective.org
           </a>
         </p>
       </div>

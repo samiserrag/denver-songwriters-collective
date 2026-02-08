@@ -33,15 +33,15 @@ export function buildEditorialUpsertData(
   const guidance = "URLs only. Paste a link from this site.";
   const examples = {
     member_spotlight_ref:
-      "https://denversongwriterscollective.org/songwriters/pony-lee",
+      "https://coloradosongwriterscollective.org/songwriters/pony-lee",
     venue_spotlight_ref:
-      "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+      "https://coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
     blog_feature_ref:
-      "https://denversongwriterscollective.org/blog/my-post",
+      "https://coloradosongwriterscollective.org/blog/my-post",
     gallery_feature_ref:
-      "https://denversongwriterscollective.org/gallery/album-slug",
+      "https://coloradosongwriterscollective.org/gallery/album-slug",
     featured_happenings_refs:
-      "https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden",
+      "https://coloradosongwriterscollective.org/events/a-lodge-lyons-the-rock-garden",
   };
 
   const invalidUrl = (

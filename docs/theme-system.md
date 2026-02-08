@@ -1,6 +1,6 @@
 # Theme System Style Guide
 
-This document describes the CSS custom property (CSS variable) based theme system used throughout the Denver Songwriters Collective web application.
+This document describes the CSS custom property (CSS variable) based theme system used throughout The Colorado Songwriters Collective web application.
 
 ## Overview
 

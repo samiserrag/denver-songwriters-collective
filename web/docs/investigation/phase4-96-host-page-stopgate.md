@@ -62,7 +62,7 @@ if (requiresLogin) {
   return (
     // ...
     <h1>You've Been Invited!</h1>
-    <p>Someone invited you to help host a happening on the Denver Songwriters Collective.</p>
+    <p>Someone invited you to help host a happening on The Colorado Songwriters Collective.</p>
     <p>Please log in or sign up (free) to accept this invite. We'll bring you right back here.</p>
     <button onClick={handleLoginRedirect}>Log In</button>
     <button onClick={handleSignupRedirect}>Sign Up (Free)</button>
@@ -82,7 +82,7 @@ Current template (lines 139-152):
 
 ```typescript
 const getEmailTemplate = (url: string, expiresAt: string) => {
-  return `You've been invited to help host "${eventTitle}" on Denver Songwriters Collective!
+  return `You've been invited to help host "${eventTitle}" on The Colorado Songwriters Collective!
 
 Click this link to accept:
 ${url}

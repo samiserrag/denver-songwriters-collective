@@ -29,7 +29,7 @@ export function getHostApprovalEmail(params: HostApprovalEmailParams): {
   const safeName = escapeHtml(userName);
   const dashboardUrl = `${SITE_URL}/dashboard/my-events`;
 
-  const subject = "You're approved as a host! — The Denver Songwriters Collective";
+  const subject = "You're approved as a host! — The Colorado Songwriters Collective";
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
@@ -41,7 +41,7 @@ ${successBox("🎉", "Your host privileges are now active!")}
 ${paragraph("As an approved host, you can:")}
 
 <ul style="margin: 0 0 24px 0; padding-left: 20px; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.8;">
-  <li>Create DSC official events</li>
+  <li>Create CSC official events</li>
   <li>Track RSVPs and manage your lineup</li>
   <li>Be featured in the community directory</li>
 </ul>
@@ -60,7 +60,7 @@ Congratulations! Your request to become a host has been approved.
 Your host privileges are now active!
 
 As an approved host, you can:
-- Create DSC official events
+- Create CSC official events
 - Track RSVPs and manage your lineup
 - Be featured in the community directory
 

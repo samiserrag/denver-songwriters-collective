@@ -85,7 +85,7 @@ function formatSlotTime(startTime: string | null, offsetMinutes: number, duratio
  * - Confirmation dialogs for destructive actions (Stop Event, Reset)
  * - Co-host authorization requires status='accepted'
  *
- * DSC UX Principles: §3 (Rolling Windows), §6 (Anchored Navigation), §7 (UX Friction)
+ * CSC UX Principles: §3 (Rolling Windows), §6 (Anchored Navigation), §7 (UX Friction)
  */
 export default function LineupControlPage() {
   const params = useParams();

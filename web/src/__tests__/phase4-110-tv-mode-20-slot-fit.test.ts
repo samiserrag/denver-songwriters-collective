@@ -431,16 +431,16 @@ describe("Phase 4.110: Preserved 4.109 Contracts", () => {
     expect(PERFORMER_QR_DARK).toBe("#000000");
   });
 
-  it("should use 80px for both DSC and Event QR codes", () => {
-    const DSC_QR_SIZE = 80;
+  it("should use 80px for both CSC and Event QR codes", () => {
+    const CSC_QR_SIZE = 80;
     const EVENT_QR_SIZE = 80;
-    expect(DSC_QR_SIZE).toBe(EVENT_QR_SIZE);
+    expect(CSC_QR_SIZE).toBe(EVENT_QR_SIZE);
   });
 
   it("should use 'OUR COLLECTIVE' and 'EVENT PAGE' labels", () => {
-    const DSC_QR_LABEL = "OUR COLLECTIVE";
+    const CSC_QR_LABEL = "OUR COLLECTIVE";
     const EVENT_QR_LABEL = "EVENT PAGE";
-    expect(DSC_QR_LABEL).toBe("OUR COLLECTIVE");
+    expect(CSC_QR_LABEL).toBe("OUR COLLECTIVE");
     expect(EVENT_QR_LABEL).toBe("EVENT PAGE");
   });
 

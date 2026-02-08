@@ -45,7 +45,7 @@ export function getFeedbackNotificationEmail(params: FeedbackNotificationEmailPa
     timeStyle: "short",
   });
 
-  const emailSubject = `[DSC Feedback] ${categoryInfo.label}: ${subject.substring(0, 50)}${subject.length > 50 ? "..." : ""}`;
+  const emailSubject = `[CSC Feedback] ${categoryInfo.label}: ${subject.substring(0, 50)}${subject.length > 50 ? "..." : ""}`;
 
   const htmlContent = `
 <p style="margin: 0 0 24px 0; color: ${EMAIL_COLORS.textSecondary}; font-size: 15px; line-height: 1.6;">

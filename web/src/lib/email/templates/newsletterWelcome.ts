@@ -1,7 +1,7 @@
 /**
  * Newsletter Welcome Email Template
  *
- * Sent when someone subscribes to the DSC newsletter.
+ * Sent when someone subscribes to the CSC newsletter.
  * Warm, welcoming, and sets expectations for what they'll receive.
  */
 
@@ -29,12 +29,12 @@ export function getNewsletterWelcomeEmail(_params?: NewsletterWelcomeEmailParams
   const privacyUrl = `${SITE_URL}/privacy`;
   const contactUrl = `${SITE_URL}/contact`;
 
-  const subject = "Welcome to The Denver Songwriters Collective!";
+  const subject = "Welcome to The Colorado Songwriters Collective!";
 
   const htmlContent = `
 ${paragraph("Hi there,")}
 
-${paragraph("Thanks for joining the Denver Songwriters Collective newsletter. You're now connected to Denver's vibrant songwriter scene.")}
+${paragraph("Thanks for joining The Colorado Songwriters Collective newsletter. You're now connected to Denver's vibrant songwriter scene.")}
 
 <div style="background-color: ${EMAIL_COLORS.bgMuted}; border: 1px solid ${EMAIL_COLORS.border}; border-radius: 8px; padding: 20px; margin: 20px 0;">
   <p style="margin: 0 0 16px 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; font-weight: 500;">Here's what you can expect:</p>
@@ -63,7 +63,7 @@ ${createButton("Browse Happenings", happeningsUrl)}
 
   const textContent = `Hi there,
 
-Thanks for joining the Denver Songwriters Collective newsletter. You're now connected to Denver's vibrant songwriter scene.
+Thanks for joining The Colorado Songwriters Collective newsletter. You're now connected to Denver's vibrant songwriter scene.
 
 Here's what you can expect:
 - Open mics and songwriter events worth knowing about

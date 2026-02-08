@@ -1,7 +1,7 @@
 {
-  "name": "Denver Songwriters Collective",
-  "short_name": "DSC",
-  "description": "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters.",
+  "name": "The Colorado Songwriters Collective",
+  "short_name": "CSC",
+  "description": "Find your people. Find your stage. Find your songs. Colorado's community hub for songwriters.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -27,15 +27,15 @@
     {
       "name": "Open Mics",
       "short_name": "Open Mics",
-      "description": "Find open mics in Denver",
+      "description": "Find open mics in Colorado",
       "url": "/happenings?type=open_mic",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
       "name": "Happenings",
       "short_name": "Happenings",
-      "description": "Browse DSC happenings",
-      "url": "/happenings?type=dsc",
+      "description": "Browse CSC happenings",
+      "url": "/happenings?type=csc",
       "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {

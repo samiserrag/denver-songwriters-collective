@@ -17,7 +17,7 @@ import { VenuePhotosSection } from "@/components/venue/VenuePhotosSection";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Edit Venue | DSC",
+  title: "Edit Venue | CSC",
 };
 
 export default async function EditVenuePage({

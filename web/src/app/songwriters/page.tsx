@@ -6,7 +6,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { Songwriter } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Songwriters | Denver Songwriters Collective",
+  title: "Songwriters | The Colorado Songwriters Collective",
   description: "Meet Denver's talented songwriters. Connect, collaborate, and grow together.",
 };
 

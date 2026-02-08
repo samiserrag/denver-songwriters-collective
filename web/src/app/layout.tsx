@@ -54,15 +54,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Denver Songwriters Collective",
-    template: "%s | Denver Songwriters Collective",
+    default: "The Colorado Songwriters Collective",
+    template: "%s | The Colorado Songwriters Collective",
   },
   description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DSC",
+    title: "CSC",
   },
   formatDetection: {
     telephone: false,
@@ -77,27 +77,27 @@ export const metadata: Metadata = {
     "Colorado musicians",
     "Denver open mic nights",
   ],
-  authors: [{ name: "Denver Songwriters Collective" }],
-  creator: "Denver Songwriters Collective",
+  authors: [{ name: "The Colorado Songwriters Collective" }],
+  creator: "The Colorado Songwriters Collective",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
-    siteName: "Denver Songwriters Collective",
-    title: "Denver Songwriters Collective",
+    siteName: "The Colorado Songwriters Collective",
+    title: "The Colorado Songwriters Collective",
     description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
     images: [
       {
         url: "/images/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Denver Songwriters Collective - Find your people. Find your stage. Find your songs.",
+        alt: "The Colorado Songwriters Collective - Find your people. Find your stage. Find your songs.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Denver Songwriters Collective",
+    title: "The Colorado Songwriters Collective",
     description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
     images: ["/images/og-image.jpg"],
   },

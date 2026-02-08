@@ -4,7 +4,7 @@ import { POST } from "./route";
 const adminUserId = "admin-user-1";
 const weekKey = "2026-W06";
 const introNote = "Hello from editorial";
-const spotlightUrl = "https://denversongwriterscollective.org/songwriters/pony-lee";
+const spotlightUrl = "https://coloradosongwriterscollective.org/songwriters/pony-lee";
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: () => ({

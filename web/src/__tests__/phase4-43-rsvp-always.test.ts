@@ -85,7 +85,7 @@ describe("Phase 4.43: RSVP + Timeslots Coexistence", () => {
       return canRSVP;
     }
 
-    it("shows RSVP for DSC event without timeslots", () => {
+    it("shows RSVP for CSC event without timeslots", () => {
       expect(shouldShowRsvpSection({
         is_dsc_event: true,
         is_published: true,
@@ -93,7 +93,7 @@ describe("Phase 4.43: RSVP + Timeslots Coexistence", () => {
       })).toBe(true);
     });
 
-    it("shows RSVP for DSC event WITH timeslots (Phase 4.43)", () => {
+    it("shows RSVP for CSC event WITH timeslots (Phase 4.43)", () => {
       expect(shouldShowRsvpSection({
         is_dsc_event: true,
         is_published: true,
@@ -109,7 +109,7 @@ describe("Phase 4.43: RSVP + Timeslots Coexistence", () => {
       })).toBe(false);
     });
 
-    it("shows RSVP for non-DSC (community) events (Phase 4.43c)", () => {
+    it("shows RSVP for non-CSC (community) events (Phase 4.43c)", () => {
       expect(shouldShowRsvpSection({
         is_dsc_event: false,
         is_published: true,
@@ -457,7 +457,7 @@ describe("Phase 4.43: Attendee List", () => {
 });
 
 // =============================================================================
-// PHASE 4.43c: RSVP FOR ALL EVENTS (NOT JUST DSC)
+// PHASE 4.43c: RSVP FOR ALL EVENTS (NOT JUST CSC)
 // =============================================================================
 
 describe("Phase 4.43c: RSVP for all public events", () => {
@@ -482,7 +482,7 @@ describe("Phase 4.43c: RSVP for all public events", () => {
       return { valid: true };
     }
 
-    it("allows RSVP for DSC events", () => {
+    it("allows RSVP for CSC events", () => {
       const result = validateRsvpRequest({
         is_dsc_event: true,
         is_published: true,
@@ -491,7 +491,7 @@ describe("Phase 4.43c: RSVP for all public events", () => {
       expect(result.valid).toBe(true);
     });
 
-    it("allows RSVP for non-DSC (community) events (Phase 4.43c)", () => {
+    it("allows RSVP for non-CSC (community) events (Phase 4.43c)", () => {
       const result = validateRsvpRequest({
         is_dsc_event: false,
         is_published: true,
@@ -521,8 +521,8 @@ describe("Phase 4.43c: RSVP for all public events", () => {
     });
   });
 
-  describe("DSC-only features remain gated", () => {
-    // Phase 4.XX: These elements now show for ALL events (not just DSC)
+  describe("CSC-only features remain gated", () => {
+    // Phase 4.XX: These elements now show for ALL events (not just CSC)
     // HostControls always renders (it handles its own auth check internally)
     function shouldShowHostControls(): boolean {
       return true; // Always shown, component handles auth internally
@@ -576,7 +576,7 @@ describe("Phase 4.43c: RSVP for all public events", () => {
       return true;
     }
 
-    it("AttendeeList renders for DSC events", () => {
+    it("AttendeeList renders for CSC events", () => {
       expect(shouldShowAttendeeList()).toBe(true);
     });
 

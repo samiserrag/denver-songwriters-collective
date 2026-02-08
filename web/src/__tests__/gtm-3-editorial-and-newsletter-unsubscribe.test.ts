@@ -206,7 +206,7 @@ describe("Part A: Newsletter Unsubscribe", () => {
 
     it("should include contact email", () => {
       expect(pageSource).toContain(
-        "hello@denversongwriterscollective.org"
+        "hello@coloradosongwriterscollective.org"
       );
     });
   });
@@ -1027,7 +1027,7 @@ describe("Part B: Editorial Layer", () => {
       expect(editorialSource).toContain("export function getEditorialUrlPrefix");
     });
 
-    it("uses canonical DSC host", () => {
+    it("uses canonical CSC host", () => {
       expect(editorialSource).toContain("CANONICAL_HOST");
     });
 

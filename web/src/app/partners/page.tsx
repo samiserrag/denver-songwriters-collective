@@ -9,7 +9,7 @@ const partnershipOpportunities = [
   },
   {
     title: "Showcase Events",
-    description: "Host showcases, listening-room events, and curated performances featuring DSC artists.",
+    description: "Host showcases, listening-room events, and curated performances featuring CSC artists.",
   },
   {
     title: "Live Production",
@@ -17,11 +17,11 @@ const partnershipOpportunities = [
   },
   {
     title: "Recording Specials",
-    description: "Offer recording or mixing specials for DSC artists and community members.",
+    description: "Offer recording or mixing specials for CSC artists and community members.",
   },
   {
     title: "Feature Performers",
-    description: "Book DSC artists for your venue's events. Our community includes excellent talent ready for the stage.",
+    description: "Book CSC artists for your venue's events. Our community includes excellent talent ready for the stage.",
   },
   {
     title: "Provide Space",
@@ -113,7 +113,7 @@ export default function PartnersPage() {
           {/* Benefits */}
           <section className="space-y-6">
             <h2 className="text-[length:var(--font-size-heading-lg)] font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
-              Why Partner With DSC?
+              Why Partner With CSC?
             </h2>
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
@@ -171,7 +171,7 @@ export default function PartnersPage() {
               Proven Community Impact
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              Our community is full of diverse and genuine talent. Several of our performers have already been invited to play at external events, including the Denver Chalk Festival, where eight DSC artists performed on a major stage for crowds of thousands. We are excited to continue helping artists find opportunities like this, and we welcome partnerships that create more pathways for local musicians to shine.
+              Our community is full of diverse and genuine talent. Several of our performers have already been invited to play at external events, including the Denver Chalk Festival, where eight CSC artists performed on a major stage for crowds of thousands. We are excited to continue helping artists find opportunities like this, and we welcome partnerships that create more pathways for local musicians to shine.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Our partnerships will grow over time with studios, venues, audio engineers, photographers, videographers, educators, nonprofits, festivals, rehearsal spaces, and cultural organizations. We want to celebrate and lift up the entire creative ecosystem of the Front Range.
@@ -184,10 +184,10 @@ export default function PartnersPage() {
               Our Vision for Partnership
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              DSC is committed to building a network where everyone benefits: venues receive engaged performers, performers discover supportive rooms, studios meet new artists, communities experience more local music, and fans build real connections with the people behind the songs.
+              CSC is committed to building a network where everyone benefits: venues receive engaged performers, performers discover supportive rooms, studios meet new artists, communities experience more local music, and fans build real connections with the people behind the songs.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              To make all of this possible, DSC relies on the dedication of volunteers, the generosity of our community, and the support of partners who believe in our mission. For many years, the collective has operated as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm.
+              To make all of this possible, CSC relies on the dedication of volunteers, the generosity of our community, and the support of partners who believe in our mission. For many years, the collective has operated as a volunteer-powered labor of love, primarily supported by founder Sami Serrag and the dozens of community members who have contributed their time, equipment, skills, and enthusiasm.
             </p>
           </section>
 

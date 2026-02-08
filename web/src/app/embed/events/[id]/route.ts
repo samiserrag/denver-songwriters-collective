@@ -474,7 +474,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       ${show.has("meta") ? `<div class="meta">${escapeHtml(`${dateLabel} • ${timeLabel} • ${venueName}${cityState ? ` (${cityState})` : ""}`)}</div>` : ""}
       ${summary ? `<p class="summary">${summary}</p>` : ""}
       ${show.has("cta") ? `<a class="cta" href="${escapeHtml(detailUrl)}" target="_blank" rel="noopener noreferrer">View full event details</a>` : ""}
-      <div class="hint">Powered by Denver Songwriters Collective</div>
+      <div class="hint">Powered by The Colorado Songwriters Collective</div>
     </div>
   </article>
 </div>`;

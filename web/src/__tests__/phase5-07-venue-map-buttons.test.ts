@@ -212,12 +212,12 @@ describe("Phase 5.07: Button placement contract", () => {
     // These labels are hardcoded in page.tsx
     expect(getDirectionsLabel).toBe("Directions");
     expect(venuePageLabel).toBe("Venue Page on Google Maps");
-    // Note: "Venue Page on Google Maps" is more honest since venue name links to DSC venue page
+    // Note: "Venue Page on Google Maps" is more honest since venue name links to CSC venue page
   });
 
   it("should place venue block in three-line layout", () => {
     // Contract: In page.tsx, the venue block uses a three-line layout:
-    // Line 1: 📍 Venue Name (link to DSC venue page)
+    // Line 1: 📍 Venue Name (link to CSC venue page)
     // Line 2: Address + Directions + "Venue Page on Google Maps" buttons
     // Line 3: Location notes (if exists)
     // Line 4: "Hosted by" with host avatar cards

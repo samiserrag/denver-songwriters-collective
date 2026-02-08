@@ -14,8 +14,8 @@ DSC already uses Fastmail SMTP for transactional emails (RSVP confirmations, hos
 | `SMTP_PORT` | `465` (SSL) |
 | `SMTP_USER` | *(configured in Vercel)* |
 | `SMTP_PASSWORD` | *(configured in Vercel)* |
-| `SMTP_FROM_EMAIL` | `admin@denversongwriterscollective.org` |
-| `SMTP_FROM_NAME` | `Denver Songwriters Collective` |
+| `SMTP_FROM_EMAIL` | `admin@coloradosongwriterscollective.org` |
+| `SMTP_FROM_NAME` | `The Colorado Songwriters Collective` |
 
 ---
 
@@ -35,8 +35,8 @@ Toggle **"Enable Custom SMTP"** to ON
 
 | Field | Value |
 |-------|-------|
-| **Sender email** | `admin@denversongwriterscollective.org` |
-| **Sender name** | `Denver Songwriters Collective` |
+| **Sender email** | `admin@coloradosongwriterscollective.org` |
+| **Sender name** | `The Colorado Songwriters Collective` |
 | **Host** | `smtp.fastmail.com` |
 | **Port** | `465` |
 | **Minimum interval** | `60` (seconds between emails to same address) |
@@ -62,7 +62,7 @@ To generate one:
 5. Copy the generated password
 
 ### Domain Already Configured
-The domain `denversongwriterscollective.org` is already configured in Fastmail with:
+The domain `coloradosongwriterscollective.org` is already configured in Fastmail with:
 - ✅ SPF record
 - ✅ DKIM record
 - ✅ Custom sending identity
@@ -78,7 +78,7 @@ After configuring:
 1. **Sign up a new test user** at `/signup`
 2. **Check inbox** - verification email should arrive within 30 seconds
 3. **Check spam folder** if not in inbox
-4. **Verify sender** shows as `Denver Songwriters Collective <admin@denversongwriterscollective.org>`
+4. **Verify sender** shows as `The Colorado Songwriters Collective <admin@coloradosongwriterscollective.org>`
 
 ### Test Magic Link
 

@@ -8,7 +8,7 @@
 
 set -e
 
-BASE_URL="${PROD_URL:-https://denversongwriterscollective.org}"
+BASE_URL="${PROD_URL:-https://coloradosongwriterscollective.org}"
 PASS_COUNT=0
 FAIL_COUNT=0
 
@@ -68,7 +68,7 @@ else
     fail "Happenings page missing expected content"
 fi
 
-# Test 4: /open-mics redirect for DSC event (check for NEXT_REDIRECT in RSC)
+# Test 4: /open-mics redirect for CSC event (check for NEXT_REDIRECT in RSC)
 # Note: This checks the RSC payload, not HTTP redirect headers
 echo ""
 echo "Test 4: /open-mics/{uuid} redirect mechanism"

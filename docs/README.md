@@ -1,8 +1,8 @@
-# Documentation — Denver Songwriters Collective
+# Documentation — The Colorado Songwriters Collective
 
 > **For repo operations and recent changes, start with [CLAUDE.md](../CLAUDE.md)**
 
-This directory contains canonical documentation for the Denver Songwriters Collective platform.
+This directory contains canonical documentation for The Colorado Songwriters Collective platform.
 
 ## Canonical Documents
 

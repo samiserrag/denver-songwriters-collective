@@ -723,16 +723,16 @@ describe("Editorial featured ordering", () => {
       introNote: "Line one\nLine two\n\nLine three",
       memberSpotlight: {
         name: "Featured Member Name",
-        url: "https://denversongwriterscollective.org/songwriters/featured-member",
+        url: "https://coloradosongwriterscollective.org/songwriters/featured-member",
         avatarUrl: "https://example.com/member.jpg",
         bio: "Member bio",
       },
       featuredHappenings: [
         {
           title: "Featured Event One",
-          url: "https://denversongwriterscollective.org/events/featured-event-one",
+          url: "https://coloradosongwriterscollective.org/events/featured-event-one",
           venue: "Test Venue",
-          venueUrl: "https://denversongwriterscollective.org/venues/test-venue",
+          venueUrl: "https://coloradosongwriterscollective.org/venues/test-venue",
           date: "Feb 1",
           time: "7:00 PM",
           emoji: "🎤",
@@ -740,9 +740,9 @@ describe("Editorial featured ordering", () => {
         },
         {
           title: "Featured Event Two",
-          url: "https://denversongwriterscollective.org/events/featured-event-two",
+          url: "https://coloradosongwriterscollective.org/events/featured-event-two",
           venue: "Test Venue",
-          venueUrl: "https://denversongwriterscollective.org/venues/test-venue",
+          venueUrl: "https://coloradosongwriterscollective.org/venues/test-venue",
           date: "Feb 2",
           time: "8:00 PM",
           emoji: "🎤",
@@ -751,12 +751,12 @@ describe("Editorial featured ordering", () => {
       ],
       blogFeature: {
         title: "Featured Blog Title",
-        url: "https://denversongwriterscollective.org/blog/featured-post",
+        url: "https://coloradosongwriterscollective.org/blog/featured-post",
         excerpt: "Blog excerpt",
       },
       galleryFeature: {
         title: "Featured Gallery Title",
-        url: "https://denversongwriterscollective.org/gallery/featured-album",
+        url: "https://coloradosongwriterscollective.org/gallery/featured-album",
         coverUrl: "https://example.com/gallery.jpg",
       },
     };
@@ -805,9 +805,9 @@ describe("Editorial featured ordering", () => {
       featuredHappenings: [
         {
           title: "Solo Featured Event",
-          url: "https://denversongwriterscollective.org/events/solo-featured",
+          url: "https://coloradosongwriterscollective.org/events/solo-featured",
           venue: "Test Venue",
-          venueUrl: "https://denversongwriterscollective.org/venues/test-venue",
+          venueUrl: "https://coloradosongwriterscollective.org/venues/test-venue",
           date: "Feb 3",
           time: "6:00 PM",
           emoji: "🎤",
@@ -832,7 +832,7 @@ describe("Editorial featured ordering", () => {
     const editorial = {
       blogFeature: {
         title: "No Cover Blog",
-        url: "https://denversongwriterscollective.org/blog/no-cover",
+        url: "https://coloradosongwriterscollective.org/blog/no-cover",
         excerpt: "Short excerpt",
       },
     };

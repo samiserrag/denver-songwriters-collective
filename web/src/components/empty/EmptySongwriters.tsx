@@ -5,7 +5,7 @@ export default function EmptySongwriters() {
     <EmptyState
       icon="🎸"
       title="No songwriters yet"
-      subtitle="Be among the first to join The Denver Songwriters Collective community. Share your music, connect with other songwriters!"
+      subtitle="Be among the first to join The Colorado Songwriters Collective community. Share your music, connect with other songwriters!"
       ctaText="Join the Community"
       ctaHref="/signup"
     />

@@ -80,7 +80,7 @@ export function NewsletterSection({ source = "homepage" }: NewsletterSectionProp
             disabled={status === "loading" || status === "success"}
             className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)]"
           >
-            {status === "loading" ? "Joining..." : status === "success" ? "You're In!" : "Join the DSC Newsletter"}
+            {status === "loading" ? "Joining..." : status === "success" ? "You're In!" : "Join the CSC Newsletter"}
           </button>
         </form>
 

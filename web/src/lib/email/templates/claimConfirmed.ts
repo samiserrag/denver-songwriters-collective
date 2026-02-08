@@ -47,7 +47,7 @@ function getConfirmedVariant(
   slotNumber: number | undefined,
   cancelUrl: string
 ): { subject: string; html: string; text: string } {
-  const subject = `You're on the lineup for ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `You're on the lineup for ${eventTitle} — The Colorado Songwriters Collective`;
 
   const slotInfo = slotNumber !== undefined
     ? `You've got <strong>slot #${slotNumber}</strong>.`
@@ -97,7 +97,7 @@ function getWaitlistVariant(
   waitlistPosition: number | undefined,
   cancelUrl: string
 ): { subject: string; html: string; text: string } {
-  const subject = `You're on the waitlist for ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `You're on the waitlist for ${eventTitle} — The Colorado Songwriters Collective`;
 
   const positionInfo = waitlistPosition !== undefined
     ? `You're <strong>#${waitlistPosition}</strong> on the waitlist.`

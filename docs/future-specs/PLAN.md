@@ -11,7 +11,7 @@ This project follows a **dual-track strategy** to maximize learning while minimi
 
 | Track | Product | Goal |
 |-------|---------|------|
-| **A** | Denver Songwriters Collective (DSC) | Full community hub for Denver musicians |
+| **A** | The Colorado Songwriters Collective (DSC) | Full community hub for Denver musicians |
 | **B** | Open Mic Manager (white-label) | Focused host-first product for any venue |
 
 **Metaphor:**
@@ -20,7 +20,7 @@ This project follows a **dual-track strategy** to maximize learning while minimi
 
 ---
 
-## Track A: Denver Songwriters Collective
+## Track A: The Colorado Songwriters Collective
 
 ### Vision
 A comprehensive community platform for Denver-area songwriters to discover open mics, connect with musicians, and stay informed about local music events.

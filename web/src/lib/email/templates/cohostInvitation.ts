@@ -37,7 +37,7 @@ export function getCohostInvitationEmail(params: CohostInvitationEmailParams): {
   const safeEventTitle = escapeHtml(eventTitle);
   const safeInviterName = escapeHtml(inviterName);
 
-  const subject = `You've been invited to co-host "${eventTitle}" — Denver Songwriters Collective`;
+  const subject = `You've been invited to co-host "${eventTitle}" — The Colorado Songwriters Collective`;
 
   // Build event link
   const eventLink = eventSlug
@@ -52,7 +52,7 @@ export function getCohostInvitationEmail(params: CohostInvitationEmailParams): {
   const htmlContent = `
 ${paragraph(getGreeting(inviteeName))}
 
-${paragraph(`${safeInviterName} has invited you to co-host a happening on Denver Songwriters Collective!`)}
+${paragraph(`${safeInviterName} has invited you to co-host a happening on The Colorado Songwriters Collective!`)}
 
 ${neutralBox("🎤", safeEventTitle, eventDetails || undefined)}
 
@@ -75,7 +75,7 @@ ${createButton("View the Happening", eventLink)}
 
   const textContent = `${getGreeting(inviteeName)}
 
-${inviterName} has invited you to co-host a happening on Denver Songwriters Collective!
+${inviterName} has invited you to co-host a happening on The Colorado Songwriters Collective!
 
 ${eventTitle}
 ${eventDetails}

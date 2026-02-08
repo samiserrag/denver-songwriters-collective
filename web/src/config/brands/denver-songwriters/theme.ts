@@ -1,5 +1,5 @@
 /**
- * Denver Songwriters Collective Theme Token Map
+ * The Colorado Songwriters Collective Theme Token Map
  *
  * Maps TypeScript token references to CSS variable names.
  * Source of truth: web/src/app/globals.css (@theme block)
@@ -10,7 +10,7 @@
 import type { ThemeTokens } from "../../theme.types";
 
 /**
- * Denver Songwriters Collective brand theme tokens
+ * The Colorado Songwriters Collective brand theme tokens
  *
  * All values are CSS variable names that reference the
  * semantic aliases defined in globals.css @theme block.

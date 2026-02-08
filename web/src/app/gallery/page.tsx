@@ -6,7 +6,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import GalleryGrid from "@/components/gallery/GalleryGrid";
 
 export const metadata: Metadata = {
-  title: "Gallery | Denver Songwriters Collective",
+  title: "Gallery | The Colorado Songwriters Collective",
   description: "Photos from open mics, showcases, and community events across Denver.",
 };
 

@@ -20,7 +20,7 @@ describe("Phase 4.101 — QR Share Block", () => {
       render(
         <QrShareBlock
           title="Share This Event"
-          url="https://denversongwriterscollective.org/events/test-event"
+          url="https://coloradosongwriterscollective.org/events/test-event"
         />
       );
 
@@ -28,7 +28,7 @@ describe("Phase 4.101 — QR Share Block", () => {
       // QR code should be rendered (QRCodeSVG creates an SVG)
       expect(document.querySelector("svg")).toBeInTheDocument();
       // URL should be displayed below QR
-      expect(screen.getByText(/denversongwriterscollective\.org/)).toBeInTheDocument();
+      expect(screen.getByText(/coloradosongwriterscollective\.org/)).toBeInTheDocument();
     });
 
     it("renders label when provided", () => {
@@ -88,7 +88,7 @@ describe("Phase 4.101 — QR Share Block", () => {
     it("event URL includes date param when date-specific", () => {
       const eventId = "test-event";
       const dateKey = "2026-01-30";
-      const baseUrl = "https://denversongwriterscollective.org";
+      const baseUrl = "https://coloradosongwriterscollective.org";
 
       const eventUrl = `${baseUrl}/events/${eventId}?date=${dateKey}`;
       expect(eventUrl).toContain("?date=");
@@ -96,18 +96,18 @@ describe("Phase 4.101 — QR Share Block", () => {
 
     it("venue URL uses slug when available", () => {
       const venueSlug = "brewery-rickoli";
-      const baseUrl = "https://denversongwriterscollective.org";
+      const baseUrl = "https://coloradosongwriterscollective.org";
 
       const venueUrl = `${baseUrl}/venues/${venueSlug}`;
-      expect(venueUrl).toBe("https://denversongwriterscollective.org/venues/brewery-rickoli");
+      expect(venueUrl).toBe("https://coloradosongwriterscollective.org/venues/brewery-rickoli");
     });
 
     it("profile URL uses slug when available", () => {
       const profileSlug = "sami-serrag";
-      const baseUrl = "https://denversongwriterscollective.org";
+      const baseUrl = "https://coloradosongwriterscollective.org";
 
       const profileUrl = `${baseUrl}/songwriters/${profileSlug}`;
-      expect(profileUrl).toBe("https://denversongwriterscollective.org/songwriters/sami-serrag");
+      expect(profileUrl).toBe("https://coloradosongwriterscollective.org/songwriters/sami-serrag");
     });
   });
 
@@ -161,7 +161,7 @@ describe("Phase 4.101 — QR Share Block", () => {
     });
 
     it("QR code aria-label includes the full URL", () => {
-      const testUrl = "https://denversongwriterscollective.org/events/my-event";
+      const testUrl = "https://coloradosongwriterscollective.org/events/my-event";
       render(
         <QrShareBlock
           title="Share"

@@ -8,7 +8,7 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full quality gates and stop-ga
 
 ## Prerequisites
 
-- Production site: https://denversongwriterscollective.org
+- Production site: https://coloradosongwriterscollective.org
 - Valid test user credentials (or create a new account)
 
 ---
@@ -286,7 +286,7 @@ If any check fails:
 
 ### 13. Guest Verification Health Check (Phase 4.51b)
 
-**URL:** `https://denversongwriterscollective.org/api/health/guest-verification`
+**URL:** `https://coloradosongwriterscollective.org/api/health/guest-verification`
 
 **Expected Response:**
 ```json
@@ -299,7 +299,7 @@ If any check fails:
 
 **Quick curl check:**
 ```bash
-curl -s https://denversongwriterscollective.org/api/health/guest-verification | jq
+curl -s https://coloradosongwriterscollective.org/api/health/guest-verification | jq
 ```
 
 **Pass Criteria:** `enabled: true` and `mode: "always-on"`
@@ -336,7 +336,7 @@ curl -s https://denversongwriterscollective.org/api/health/guest-verification | 
 **Quick curl check (request-code endpoint):**
 ```bash
 # Replace EVENT_ID with a real published event UUID
-curl -s -X POST https://denversongwriterscollective.org/api/guest/event-comment/request-code \
+curl -s -X POST https://coloradosongwriterscollective.org/api/guest/event-comment/request-code \
   -H "Content-Type: application/json" \
   -d '{"event_id":"EVENT_ID","guest_name":"Test","guest_email":"test@example.com","content":"Test comment"}' \
   | jq '.success, .error'
@@ -354,7 +354,7 @@ curl -s -X POST https://denversongwriterscollective.org/api/guest/event-comment/
 **Quick curl check:**
 ```bash
 # Replace EVENT_ID with a real published event UUID
-curl -s -X POST https://denversongwriterscollective.org/api/guest/rsvp/request-code \
+curl -s -X POST https://coloradosongwriterscollective.org/api/guest/rsvp/request-code \
   -H "Content-Type: application/json" \
   -d '{"event_id":"EVENT_ID","guest_name":"Test","guest_email":"test@example.com"}' \
   | jq '.success, .error'

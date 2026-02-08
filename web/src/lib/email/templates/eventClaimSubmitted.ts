@@ -30,7 +30,7 @@ export function getEventClaimSubmittedEmail(params: EventClaimSubmittedEmailPara
   const safeTitle = escapeHtml(eventTitle);
   const happeningsUrl = `${SITE_URL}/happenings`;
 
-  const subject = `Your claim for ${eventTitle} is under review — The Denver Songwriters Collective`;
+  const subject = `Your claim for ${eventTitle} is under review — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

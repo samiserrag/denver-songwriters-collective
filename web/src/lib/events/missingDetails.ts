@@ -8,7 +8,7 @@
  * 1. Online events (location_mode='online') need: online_url
  * 2. Hybrid events (location_mode='hybrid') need: online_url + (venue_id OR custom_location_name)
  * 3. Venue events need: venue_id OR custom_location_name (not both venue_name alone)
- * 4. DSC events need: age_policy
+ * 4. CSC events need: age_policy
  * 5. "Orphan" events: have venue_name but no venue_id and no custom location
  *
  * Phase 4.42k B1: Removed is_free check - cost is optional, not "missing" if unset.
@@ -74,9 +74,9 @@ export function computeMissingDetails(event: MissingDetailsInput): MissingDetail
     }
   }
 
-  // Rule 4: DSC events need age_policy
+  // Rule 4: CSC events need age_policy
   if (event.is_dsc_event && !event.age_policy) {
-    reasons.push("DSC event missing age policy");
+    reasons.push("CSC event missing age policy");
   }
 
   // Rule 5 (removed in Phase 4.42k B1): is_free is optional, not "missing"

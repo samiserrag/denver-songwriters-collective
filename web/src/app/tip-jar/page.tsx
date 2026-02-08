@@ -3,8 +3,8 @@ import Link from "next/link";
 import { PageContainer, HeroSection } from "@/components/layout";
 
 export const metadata: Metadata = {
-  title: "Tip Jar | Denver Songwriters Collective",
-  description: "Support the Denver Songwriters Collective and help us keep building community for songwriters across Denver.",
+  title: "Tip Jar | The Colorado Songwriters Collective",
+  description: "Support The Colorado Songwriters Collective and help us keep building community for songwriters across Denver.",
 };
 
 export default function TipJarPage() {
@@ -31,7 +31,7 @@ export default function TipJarPage() {
           {/* Why Support */}
           <section className="space-y-6 text-center">
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              The Denver Songwriters Collective is a grassroots, volunteer-run community. We don&apos;t charge membership fees or take cuts from performers. Everything we do is powered by passion and generosity.
+              The Colorado Songwriters Collective is a grassroots, volunteer-run community. We don&apos;t charge membership fees or take cuts from performers. Everything we do is powered by passion and generosity.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Your tips help cover costs like venue fees, equipment maintenance, website hosting, promotional materials, and the little things that make our events special.

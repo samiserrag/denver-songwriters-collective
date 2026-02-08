@@ -37,7 +37,7 @@ This runbook guides the first external test user cohort (Invite-20). It covers u
 
 | Role | Invite Method | URL/Entry Point | Admin Action Required |
 |------|---------------|-----------------|----------------------|
-| **Songwriter/Performer** | Direct signup link | `denversongwriterscollective.org/signup` | None (self-service) |
+| **Songwriter/Performer** | Direct signup link | `coloradosongwriterscollective.org/signup` | None (self-service) |
 | **Open Mic Host** | Direct signup link + personal outreach | `/signup` → selects "Host" → pending approval | Admin approves host request |
 | **Venue Manager** | Admin-created venue invite link | `/venue-invite?token={token}` | Admin creates invite via `/dashboard/admin/venues/[id]` |
 | **Fan** | Direct signup link | `/signup` → selects "Fan" only | None (self-service) |
@@ -48,7 +48,7 @@ This runbook guides the first external test user cohort (Invite-20). It covers u
 #### Template A: Songwriter/Performer
 
 ```
-Subject: You're invited to beta test the Denver Songwriters Collective
+Subject: You're invited to beta test The Colorado Songwriters Collective
 
 Hey [Name],
 
@@ -56,7 +56,7 @@ I'm building a platform for Denver songwriters and performers to discover open m
 connect with each other, and find what's happening in the local music scene.
 
 I'd love your feedback as a beta tester. Here's your invite link:
-https://denversongwriterscollective.org/signup
+https://coloradosongwriterscollective.org/signup
 
 When you sign up, select "Songwriter / Performer" and complete your profile.
 Then explore the happenings, RSVP to one, and let me know what you think!
@@ -69,7 +69,7 @@ Takes about 5 minutes to get started.
 #### Template B: Open Mic Host
 
 ```
-Subject: Claim your open mic on Denver Songwriters Collective
+Subject: Claim your open mic on The Colorado Songwriters Collective
 
 Hey [Name],
 
@@ -77,7 +77,7 @@ I've been working on a platform to help Denver open mic hosts manage their event
 and connect with performers. [Event Name] is already listed — I'd love for you
 to claim it and take over management.
 
-Sign up here: https://denversongwriterscollective.org/signup
+Sign up here: https://coloradosongwriterscollective.org/signup
 
 Select "Open Mic Host / Organizer" during signup. I'll approve your host request
 right away, then you can claim [Event Name] and manage signups.
@@ -90,11 +90,11 @@ Let me know if you have any questions!
 #### Template C: Venue Manager
 
 ```
-Subject: Manage [Venue Name] on Denver Songwriters Collective
+Subject: Manage [Venue Name] on The Colorado Songwriters Collective
 
 Hey [Name],
 
-I'm inviting you to manage [Venue Name]'s profile on Denver Songwriters Collective.
+I'm inviting you to manage [Venue Name]'s profile on The Colorado Songwriters Collective.
 You'll be able to update venue info, see upcoming happenings, and connect with hosts.
 
 Click here to accept: [INVITE_URL]
@@ -107,7 +107,7 @@ Click here to accept: [INVITE_URL]
 #### Template D: Fan
 
 ```
-Subject: Beta test Denver Songwriters Collective
+Subject: Beta test The Colorado Songwriters Collective
 
 Hey [Name],
 
@@ -115,7 +115,7 @@ I'm building a site to help people discover local music happenings in Denver —
 open mics, showcases, song circles, and more.
 
 I'd love your feedback as someone who enjoys live music. Sign up here:
-https://denversongwriterscollective.org/signup
+https://coloradosongwriterscollective.org/signup
 
 Select "Original Music Fan" and check out what's happening this week!
 
@@ -169,7 +169,7 @@ Track completion for each invited user:
 Send these prompts 3-5 days after signup (Day 3-5):
 
 ```
-Quick feedback on Denver Songwriters Collective (2 min):
+Quick feedback on The Colorado Songwriters Collective (2 min):
 
 1. What was your first impression when you landed on the site?
 
@@ -351,7 +351,7 @@ Run through before Day 0:
 - [ ] `npm run lint` — 0 warnings
 - [ ] `npm run test -- --run` — all passing
 - [ ] `npm run build` — success
-- [ ] Production site loads (`denversongwriterscollective.org`)
+- [ ] Production site loads (`coloradosongwriterscollective.org`)
 - [ ] SMOKE-PROD.md tests 16-21 pass
 
 ### Content

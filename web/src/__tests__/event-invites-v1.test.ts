@@ -316,11 +316,11 @@ describe("Phase 4.94: acceptance flow validation", () => {
 
 describe("Phase 4.94: URL patterns", () => {
   it("invite URL has correct format", () => {
-    const siteUrl = "https://denversongwriterscollective.org";
+    const siteUrl = "https://coloradosongwriterscollective.org";
     const token = "abc123def456";
     const inviteUrl = `${siteUrl}/event-invite?token=${token}`;
 
-    expect(inviteUrl).toBe("https://denversongwriterscollective.org/event-invite?token=abc123def456");
+    expect(inviteUrl).toBe("https://coloradosongwriterscollective.org/event-invite?token=abc123def456");
     expect(inviteUrl).toContain("/event-invite?token=");
   });
 
@@ -361,7 +361,7 @@ describe("Phase 4.94: email template generation", () => {
       day: "numeric",
     });
 
-    return `You've been invited to help host "${eventTitle}" on Denver Songwriters Collective!
+    return `You've been invited to help host "${eventTitle}" on The Colorado Songwriters Collective!
 
 Click this link to accept:
 ${url}
@@ -370,7 +370,7 @@ This invite expires on ${expiryDate}.`;
   }
 
   it("generates correct email template", () => {
-    const url = "https://denversongwriterscollective.org/event-invite?token=abc123";
+    const url = "https://coloradosongwriterscollective.org/event-invite?token=abc123";
     const eventTitle = "Open Mic Night";
     const expiresAt = "2026-02-03T00:00:00Z";
 
@@ -381,9 +381,9 @@ This invite expires on ${expiryDate}.`;
     expect(template).toContain("This invite expires on");
   });
 
-  it("includes DSC branding", () => {
+  it("includes CSC branding", () => {
     const template = getEmailTemplate("url", "title", "2026-01-01");
-    expect(template).toContain("Denver Songwriters Collective");
+    expect(template).toContain("The Colorado Songwriters Collective");
   });
 });
 

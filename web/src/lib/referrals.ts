@@ -23,7 +23,7 @@ export const INVITE_CTA_BODY =
 export const INVITE_CTA_LABEL = "Invite a Friend";
 export const SHARE_SITE_CTA_LABEL = "Share This Site";
 export const INVITE_CTA_FOOTER = "No pressure. Just good songs and good people.";
-export const INVITE_EMAIL_SUBJECT = "Come check out Denver Songwriters Collective";
+export const INVITE_EMAIL_SUBJECT = "Come check out The Colorado Songwriters Collective";
 
 function hasGetter(
   input: ReferralInput,
@@ -99,7 +99,7 @@ export function buildInviteEmailBody(inviteUrl: string): string {
     "Hey there,",
     "",
     "I wanted to share this with you because I think you'd genuinely enjoy it.",
-    "Denver Songwriters Collective is where I go to find open mics, happenings, and local music people worth knowing.",
+    "The Colorado Songwriters Collective is where I go to find open mics, happenings, and local music people worth knowing.",
     "",
     `Start on the homepage: ${inviteUrl}`,
     "",

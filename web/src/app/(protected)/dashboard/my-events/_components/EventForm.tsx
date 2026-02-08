@@ -80,7 +80,7 @@ function isPlaceholderValue(value: string | null | undefined): boolean {
 interface EventFormProps {
   mode: "create" | "edit";
   venues: Venue[];
-  canCreateDSC?: boolean; // Whether user can create DSC-branded events
+  canCreateCSC?: boolean; // Whether user can create CSC-branded events
   /** Phase 4.45b: Whether user can create new venues (admin only) */
   canCreateVenue?: boolean;
   /** Occurrence mode: form edits a single occurrence, not the series */
@@ -147,7 +147,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateDSC = false, canCreateVenue = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -718,7 +718,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         signup_deadline: formData.signup_deadline || null,
         signup_time: formData.signup_time || null,
         age_policy: formData.age_policy || null,
-        is_dsc_event: canCreateDSC ? formData.is_dsc_event : false,
+        is_dsc_event: canCreateCSC ? formData.is_dsc_event : false,
         external_url: formData.external_url.trim() || null,
         // Categories (multi-select array)
         categories: formData.categories.length > 0 ? formData.categories : null,
@@ -1904,7 +1904,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                       </a>
                     ) : (
                       <a
-                        href={`mailto:hello@denversongwriterscollective.org?subject=${encodeURIComponent(`Venue Issue: ${selectedVenue.name}`)}&body=${encodeURIComponent(`Venue: ${selectedVenue.name} (${selectedVenue.id})\n\nPlease describe the issue:\n`)}`}
+                        href={`mailto:hello@coloradosongwriterscollective.org?subject=${encodeURIComponent(`Venue Issue: ${selectedVenue.name}`)}&body=${encodeURIComponent(`Venue: ${selectedVenue.name} (${selectedVenue.id})\n\nPlease describe the issue:\n`)}`}
                         className="text-[var(--color-link)] hover:underline"
                       >
                         Report an issue
@@ -2254,29 +2254,29 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </p>
             </div>
 
-            {/* DSC Toggle */}
-            {canCreateDSC && (
+            {/* CSC Toggle */}
+            {canCreateCSC && (
               <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.is_dsc_event}
                     onChange={(e) => {
-                      const isDSC = e.target.checked;
+                      const isCSC = e.target.checked;
                       setFormData(prev => ({
                         ...prev,
-                        is_dsc_event: isDSC,
-                        age_policy: isDSC && !prev.age_policy ? "18+ only" : prev.age_policy
+                        is_dsc_event: isCSC,
+                        age_policy: isCSC && !prev.age_policy ? "18+ only" : prev.age_policy
                       }));
                     }}
                     className="w-5 h-5 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
                   />
                   <div>
                     <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                      This is an official DSC event
+                      This is an official CSC event
                     </span>
                     <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                      DSC events are curated and represent the Denver Songwriters Collective brand
+                      CSC events are curated and represent The Colorado Songwriters Collective brand
                     </p>
                   </div>
                 </label>

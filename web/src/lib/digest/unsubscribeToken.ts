@@ -76,7 +76,7 @@ export function buildUnsubscribeUrl(userId: string): string | null {
   const SITE_URL =
     process.env.PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://denversongwriterscollective.org";
+    "https://coloradosongwriterscollective.org";
 
   return `${SITE_URL}/api/digest/unsubscribe?uid=${encodeURIComponent(userId)}&sig=${encodeURIComponent(token)}`;
 }
@@ -146,7 +146,7 @@ export function buildNewsletterUnsubscribeUrl(email: string): string | null {
   const SITE_URL =
     process.env.PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://denversongwriterscollective.org";
+    "https://coloradosongwriterscollective.org";
 
   return `${SITE_URL}/api/newsletter/unsubscribe?email=${encodeURIComponent(normalizedEmail)}&sig=${encodeURIComponent(token)}`;
 }

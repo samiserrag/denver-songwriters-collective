@@ -108,7 +108,7 @@ type OrganizationQRCodeProps = {
 
 export function OrganizationQRCode({
   url,
-  label = "Denver Songwriters Collective",
+  label = "The Colorado Songwriters Collective",
   size = 128,
   className = "",
 }: OrganizationQRCodeProps) {

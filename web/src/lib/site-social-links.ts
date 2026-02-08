@@ -18,17 +18,17 @@ const KNOWN_PLATFORMS = new Set([
 export const DEFAULT_SITE_SOCIAL_LINKS: SiteSocialLink[] = [
   {
     label: "Instagram",
-    url: "https://www.instagram.com/denver_songwriters_collective",
+    url: "https://www.instagram.com/colorado_songwriters_collective",
     platform: "instagram",
   },
   {
     label: "Facebook",
-    url: "https://www.facebook.com/groups/denversongwriterscollective",
+    url: "https://www.facebook.com/groups/coloradosongwriterscollective",
     platform: "facebook",
   },
   {
     label: "YouTube",
-    url: "https://www.youtube.com/@DenverSongwritersCollective",
+    url: "https://www.youtube.com/@ColoradoSongwritersCollective",
     platform: "youtube",
   },
 ];

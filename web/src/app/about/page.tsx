@@ -6,8 +6,8 @@ import { Button } from "@/components/ui";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "About | Denver Songwriters Collective",
-  description: "The Denver Songwriters Collective is your home for finding stages, connecting with artists, and growing as a songwriter in Denver.",
+  title: "About | The Colorado Songwriters Collective",
+  description: "The Colorado Songwriters Collective is your home for finding stages, connecting with artists, and growing as a songwriter in Denver.",
 };
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,7 @@ export default async function AboutPage() {
               What This Is
             </h2>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
-              The Denver Songwriters Collective grew out of years of informal open mics, songwriting circles, and community-run events around the Denver metro area. What started as a way to keep track of shows and stay connected gradually became something larger: a shared resource for songwriters, hosts, venues, and listeners.
+              The Colorado Songwriters Collective grew out of years of informal open mics, songwriting circles, and community-run events around the Denver metro area. What started as a way to keep track of shows and stay connected gradually became something larger: a shared resource for songwriters, hosts, venues, and listeners.
             </p>
             <p className="text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]">
               Today, this site is a community platform for discovering open mics, finding places to play, connecting with local musicians, and staying informed about Denver&apos;s songwriter scene. Whether you&apos;re a performer looking for stages, a venue hosting events, or someone who simply loves local music, the goal is simple: make it easier to find your people and keep the scene visible.

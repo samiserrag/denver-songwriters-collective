@@ -697,7 +697,7 @@ export default function AdminEmailPage() {
             Paste a URL from this site, one per line. Example:
             {" "}
             <span className="font-mono text-[11px]">
-              https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden
+              https://coloradosongwriterscollective.org/events/a-lodge-lyons-the-rock-garden
             </span>
           </p>
           <textarea
@@ -708,7 +708,7 @@ export default function AdminEmailPage() {
                 featured_happenings_refs: e.target.value,
               }))
             }
-            placeholder={`Paste one URL per line:\nhttps://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden`}
+            placeholder={`Paste one URL per line:\nhttps://coloradosongwriterscollective.org/events/a-lodge-lyons-the-rock-garden`}
             rows={4}
             className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-vertical"
           />
@@ -727,7 +727,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, member_spotlight_ref: e.target.value }))
               }
-              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/songwriters/pony-lee"
+              placeholder="Paste a URL from this site. Example: https://coloradosongwriterscollective.org/songwriters/pony-lee"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -743,7 +743,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, venue_spotlight_ref: e.target.value }))
               }
-              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
+              placeholder="Paste a URL from this site. Example: https://coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -759,7 +759,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, blog_feature_ref: e.target.value }))
               }
-              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/blog/my-post"
+              placeholder="Paste a URL from this site. Example: https://coloradosongwriterscollective.org/blog/my-post"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>
@@ -775,7 +775,7 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, gallery_feature_ref: e.target.value }))
               }
-              placeholder="Paste a URL from this site. Example: https://denversongwriterscollective.org/gallery/album-slug"
+              placeholder="Paste a URL from this site. Example: https://coloradosongwriterscollective.org/gallery/album-slug"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
           </div>

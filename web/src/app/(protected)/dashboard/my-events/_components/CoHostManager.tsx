@@ -185,17 +185,17 @@ export default function CoHostManager({
   };
 
   // Pre-written email template for non-members
-  const emailSubject = `Invitation to co-host "${eventTitle}" on Denver Songwriters Collective`;
+  const emailSubject = `Invitation to co-host "${eventTitle}" on The Colorado Songwriters Collective`;
   const emailBody = `Hi there!
 
-I'd like to invite you to co-host "${eventTitle}" with me on the Denver Songwriters Collective website.
+I'd like to invite you to co-host "${eventTitle}" with me on The Colorado Songwriters Collective website.
 
 To accept this invitation:
-1. Go to https://denversongwriterscollective.org/signup
+1. Go to https://coloradosongwriterscollective.org/signup
 2. Create a free account using this email address (${inviteEmail || "[their email]"})
 3. Once you're signed up, let me know and I'll send you a co-host invitation through the site
 
-The Denver Songwriters Collective is a community platform for Denver-area songwriters to discover open mics, connect with musicians, and stay informed about local music events.
+The Colorado Songwriters Collective is a community platform for Denver-area songwriters to discover open mics, connect with musicians, and stay informed about local music events.
 
 Looking forward to hosting with you!
 

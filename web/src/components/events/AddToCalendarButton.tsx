@@ -55,7 +55,7 @@ function generateCalendarLinks(props: AddToCalendarButtonProps): CalendarLinks {
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Denver Songwriters Collective//EN",
+    "PRODID:-//The Colorado Songwriters Collective//EN",
     "BEGIN:VEVENT",
     `DTSTART:${formatDateForICS(startDate)}`,
     `DTEND:${formatDateForICS(end)}`,

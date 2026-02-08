@@ -11,7 +11,7 @@ import type { Database } from "../supabase/database.types";
 import { sendEmailWithPreferences } from "../email/sendWithPreferences";
 import { getEventUpdatedEmail } from "../email/templates/eventUpdated";
 
-const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://denversongwriterscollective.org";
+const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://coloradosongwriterscollective.org";
 
 export interface EventUpdateParams {
   eventId: string;

@@ -58,7 +58,7 @@ export function getEventRestoredEmail(params: EventRestoredEmailParams): {
   const safeDate = escapeHtml(eventDate);
   const safeTime = eventTime ? escapeHtml(eventTime) : null;
 
-  const subject = `Back On: ${eventTitle} is happening! — The Denver Songwriters Collective`;
+  const subject = `Back On: ${eventTitle} is happening! — The Colorado Songwriters Collective`;
 
   // Build the message based on signup type
   const previousSignupNote =

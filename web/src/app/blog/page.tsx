@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 
 export const metadata: Metadata = {
-  title: "Blog | Denver Songwriters Collective",
+  title: "Blog | The Colorado Songwriters Collective",
   description: "Stories, tips, and insights from the Denver songwriting community.",
 };
 

@@ -1,4 +1,4 @@
-# Product Backlog — Denver Songwriters Collective
+# Product Backlog — The Colorado Songwriters Collective
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >

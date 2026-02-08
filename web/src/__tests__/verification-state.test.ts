@@ -231,7 +231,7 @@ describe("Phase 4.40: All events unconfirmed until verified", () => {
     expect(result.state).toBe("unconfirmed");
   });
 
-  it("new DSC event is unconfirmed by default", () => {
+  it("new CSC event is unconfirmed by default", () => {
     const event: VerificationInput = {
       status: "active",
       host_id: "user-123",

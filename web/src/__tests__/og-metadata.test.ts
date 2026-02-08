@@ -14,9 +14,9 @@ describe("OG Metadata Structure", () => {
   describe("Required OG fields", () => {
     it("should require title field", () => {
       const metadata = {
-        title: "Test Title | Denver Songwriters Collective",
+        title: "Test Title | The Colorado Songwriters Collective",
         openGraph: {
-          title: "Test Title | Denver Songwriters Collective",
+          title: "Test Title | The Colorado Songwriters Collective",
         },
       };
       expect(metadata.openGraph.title).toBeTruthy();
@@ -42,7 +42,7 @@ describe("OG Metadata Structure", () => {
               url: "https://example.com/og/test",
               width: 1200,
               height: 630,
-              alt: "Test - Denver Songwriters Collective",
+              alt: "Test - The Colorado Songwriters Collective",
             },
           ],
         },
@@ -57,16 +57,16 @@ describe("OG Metadata Structure", () => {
     it("should include siteName field", () => {
       const metadata = {
         openGraph: {
-          siteName: "Denver Songwriters Collective",
+          siteName: "The Colorado Songwriters Collective",
         },
       };
-      expect(metadata.openGraph.siteName).toBe("Denver Songwriters Collective");
+      expect(metadata.openGraph.siteName).toBe("The Colorado Songwriters Collective");
     });
 
     it("should include url field for canonical URL", () => {
       const metadata = {
         openGraph: {
-          url: "https://denversongwriterscollective.org/songwriters/test-user",
+          url: "https://coloradosongwriterscollective.org/songwriters/test-user",
         },
       };
       expect(metadata.openGraph.url).toMatch(/^https:\/\//);
@@ -96,7 +96,7 @@ describe("OG Metadata Structure", () => {
       const metadata = {
         twitter: {
           card: "summary_large_image",
-          title: "Test Title | Denver Songwriters Collective",
+          title: "Test Title | The Colorado Songwriters Collective",
           description: "Test description",
         },
       };
@@ -120,7 +120,7 @@ describe("OG Metadata Structure", () => {
     it("should include alternates.canonical", () => {
       const metadata = {
         alternates: {
-          canonical: "https://denversongwriterscollective.org/songwriters/test-user",
+          canonical: "https://coloradosongwriterscollective.org/songwriters/test-user",
         },
       };
       expect(metadata.alternates.canonical).toMatch(/^https:\/\//);
@@ -129,13 +129,13 @@ describe("OG Metadata Structure", () => {
 });
 
 describe("OG Image URL patterns", () => {
-  const siteUrl = "https://denversongwriterscollective.org";
+  const siteUrl = "https://coloradosongwriterscollective.org";
 
   describe("Songwriters OG images", () => {
     it("should generate correct OG image URL for slug", () => {
       const slug = "john-doe";
       const ogImageUrl = `${siteUrl}/og/songwriter/${slug}`;
-      expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/songwriter/john-doe");
+      expect(ogImageUrl).toBe("https://coloradosongwriterscollective.org/og/songwriter/john-doe");
     });
 
     it("should handle UUID fallback", () => {
@@ -149,7 +149,7 @@ describe("OG Image URL patterns", () => {
     it("should generate correct OG image URL for slug", () => {
       const slug = "open-mic-night";
       const ogImageUrl = `${siteUrl}/og/event/${slug}`;
-      expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/event/open-mic-night");
+      expect(ogImageUrl).toBe("https://coloradosongwriterscollective.org/og/event/open-mic-night");
     });
   });
 
@@ -157,7 +157,7 @@ describe("OG Image URL patterns", () => {
     it("should generate correct OG image URL for slug", () => {
       const slug = "brewery-rickoli";
       const ogImageUrl = `${siteUrl}/og/venue/${slug}`;
-      expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/venue/brewery-rickoli");
+      expect(ogImageUrl).toBe("https://coloradosongwriterscollective.org/og/venue/brewery-rickoli");
     });
   });
 
@@ -165,7 +165,7 @@ describe("OG Image URL patterns", () => {
     it("should generate correct OG image URL for slug", () => {
       const slug = "my-first-post";
       const ogImageUrl = `${siteUrl}/og/blog/${slug}`;
-      expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/blog/my-first-post");
+      expect(ogImageUrl).toBe("https://coloradosongwriterscollective.org/og/blog/my-first-post");
     });
   });
 
@@ -173,40 +173,40 @@ describe("OG Image URL patterns", () => {
     it("should generate correct OG image URL for slug", () => {
       const slug = "showcase-webshow-9-5-25";
       const ogImageUrl = `${siteUrl}/og/gallery/${slug}`;
-      expect(ogImageUrl).toBe("https://denversongwriterscollective.org/og/gallery/showcase-webshow-9-5-25");
+      expect(ogImageUrl).toBe("https://coloradosongwriterscollective.org/og/gallery/showcase-webshow-9-5-25");
     });
   });
 });
 
 describe("Metadata fallback values", () => {
   it("should have fallback title for missing profile", () => {
-    const title = "Songwriter Not Found | Denver Songwriters Collective";
+    const title = "Songwriter Not Found | The Colorado Songwriters Collective";
     expect(title).toContain("Not Found");
-    expect(title).toContain("Denver Songwriters Collective");
+    expect(title).toContain("The Colorado Songwriters Collective");
   });
 
   it("should have fallback title for missing event", () => {
-    const title = "Happening Not Found | Denver Songwriters Collective";
+    const title = "Happening Not Found | The Colorado Songwriters Collective";
     expect(title).toContain("Not Found");
-    expect(title).toContain("Denver Songwriters Collective");
+    expect(title).toContain("The Colorado Songwriters Collective");
   });
 
   it("should have fallback title for missing venue", () => {
-    const title = "Venue Not Found | Denver Songwriters Collective";
+    const title = "Venue Not Found | The Colorado Songwriters Collective";
     expect(title).toContain("Not Found");
-    expect(title).toContain("Denver Songwriters Collective");
+    expect(title).toContain("The Colorado Songwriters Collective");
   });
 
   it("should have fallback title for missing blog post", () => {
-    const title = "Post Not Found | Denver Songwriters Collective";
+    const title = "Post Not Found | The Colorado Songwriters Collective";
     expect(title).toContain("Not Found");
-    expect(title).toContain("Denver Songwriters Collective");
+    expect(title).toContain("The Colorado Songwriters Collective");
   });
 
   it("should have fallback title for missing gallery album", () => {
-    const title = "Album Not Found | Denver Songwriters Collective";
+    const title = "Album Not Found | The Colorado Songwriters Collective";
     expect(title).toContain("Not Found");
-    expect(title).toContain("Denver Songwriters Collective");
+    expect(title).toContain("The Colorado Songwriters Collective");
   });
 });
 

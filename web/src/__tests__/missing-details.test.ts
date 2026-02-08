@@ -107,8 +107,8 @@ describe('computeMissingDetails', () => {
     });
   });
 
-  describe('DSC events age policy', () => {
-    it('should flag DSC events without age_policy', () => {
+  describe('CSC events age policy', () => {
+    it('should flag CSC events without age_policy', () => {
       const result = computeMissingDetails({
         is_dsc_event: true,
         age_policy: null,
@@ -117,10 +117,10 @@ describe('computeMissingDetails', () => {
       });
 
       expect(result.missing).toBe(true);
-      expect(result.reasons).toContain('DSC event missing age policy');
+      expect(result.reasons).toContain('CSC event missing age policy');
     });
 
-    it('should not flag DSC events with age_policy', () => {
+    it('should not flag CSC events with age_policy', () => {
       const result = computeMissingDetails({
         is_dsc_event: true,
         age_policy: '21+',
@@ -128,10 +128,10 @@ describe('computeMissingDetails', () => {
         is_free: true,
       });
 
-      expect(result.reasons).not.toContain('DSC event missing age policy');
+      expect(result.reasons).not.toContain('CSC event missing age policy');
     });
 
-    it('should not flag non-DSC events without age_policy', () => {
+    it('should not flag non-CSC events without age_policy', () => {
       const result = computeMissingDetails({
         is_dsc_event: false,
         age_policy: null,
@@ -139,7 +139,7 @@ describe('computeMissingDetails', () => {
         is_free: true,
       });
 
-      expect(result.reasons).not.toContain('DSC event missing age policy');
+      expect(result.reasons).not.toContain('CSC event missing age policy');
     });
   });
 
@@ -253,7 +253,7 @@ describe('computeMissingDetails', () => {
       expect(result.reasons).toContain('Hybrid event missing physical location');
       // B1: is_free no longer triggers missing details
       expect(result.reasons).not.toContain('Cost information unknown');
-      expect(result.reasons).toContain('DSC event missing age policy');
+      expect(result.reasons).toContain('CSC event missing age policy');
     });
   });
 });

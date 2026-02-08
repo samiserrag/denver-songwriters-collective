@@ -30,7 +30,7 @@ export async function generateMetadata({
 
   if (!event) {
     return {
-      title: "Open Mic Not Found | Denver Songwriters Collective",
+      title: "Open Mic Not Found | The Colorado Songwriters Collective",
       description: "This open mic could not be found.",
     };
   }
@@ -43,7 +43,7 @@ export async function generateMetadata({
   const title = `${event.title} | Open Mic in ${venueCity}`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
-    : `Join ${event.title} at ${venueName}${dayText ? ` every ${dayText}` : ""}${timeText ? ` at ${timeText}` : ""}. Find open mics in Denver with the Denver Songwriters Collective.`;
+    : `Join ${event.title} at ${venueName}${dayText ? ` every ${dayText}` : ""}${timeText ? ` at ${timeText}` : ""}. Find open mics in Denver with The Colorado Songwriters Collective.`;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
   // Canonical URL points to /events/ since that's where users land
@@ -56,7 +56,7 @@ export async function generateMetadata({
       title,
       description,
       url: canonicalUrl,
-      siteName: "Denver Songwriters Collective",
+      siteName: "The Colorado Songwriters Collective",
       type: "website",
       locale: "en_US",
     },
@@ -93,6 +93,6 @@ export default async function OpenMicSlugRedirect({ params }: EventPageProps) {
 
   // Phase 4.43d: /open-mics/[slug] is the slug entrypoint for legacy URLs and SEO.
   // /events/[id] is the canonical detail page with RSVP, attendee list, timeslots, etc.
-  // ALL events (DSC + community) redirect to the canonical page for full functionality.
+  // ALL events (CSC + community) redirect to the canonical page for full functionality.
   redirect(`/events/${event.slug || event.id}`);
 }

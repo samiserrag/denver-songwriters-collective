@@ -30,12 +30,12 @@ export function getHostRejectionEmail(params: HostRejectionEmailParams): {
   const safeName = escapeHtml(userName);
   const openMicsUrl = `${SITE_URL}/happenings?type=open_mic`;
 
-  const subject = "Update on your host application — The Denver Songwriters Collective";
+  const subject = "Update on your host application — The Colorado Songwriters Collective";
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}
 
-${paragraph("Thanks for your interest in becoming a host with the Denver Songwriters Collective.")}
+${paragraph("Thanks for your interest in becoming a host with The Colorado Songwriters Collective.")}
 
 ${paragraph("After reviewing your application, we're not able to approve your host request at this time.")}
 
@@ -50,7 +50,7 @@ ${createButton("Explore open mics", openMicsUrl)}
 
   const textContent = `Hi ${safeName},
 
-Thanks for your interest in becoming a host with the Denver Songwriters Collective.
+Thanks for your interest in becoming a host with The Colorado Songwriters Collective.
 
 After reviewing your application, we're not able to approve your host request at this time.
 ${reason ? `\nFeedback: ${reason}\n` : ""}

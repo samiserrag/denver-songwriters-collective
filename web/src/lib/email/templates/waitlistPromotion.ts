@@ -69,7 +69,7 @@ export function getWaitlistPromotionEmail(params: WaitlistPromotionEmailParams):
     expiryMessage = `After that, the spot will be offered to the next person on the waitlist.`;
   }
 
-  const subject = `A spot just opened up at ${eventTitle} — The Denver Songwriters Collective`;
+  const subject = `A spot just opened up at ${eventTitle} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

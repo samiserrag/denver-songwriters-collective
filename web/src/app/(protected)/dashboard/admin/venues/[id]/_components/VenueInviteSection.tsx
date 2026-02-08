@@ -127,7 +127,7 @@ export default function VenueInviteSection({
   const getEmailTemplate = (inviteUrl: string) => {
     return `Hi,
 
-You've been invited to manage "${venueName}" on Denver Songwriters Collective!
+You've been invited to manage "${venueName}" on The Colorado Songwriters Collective!
 
 Click the link below to accept the invitation and gain access to edit venue details:
 
@@ -138,7 +138,7 @@ This link expires in ${expiresInDays} days.
 If you have any questions, please reply to this email.
 
 Best,
-Denver Songwriters Collective Team`;
+The Colorado Songwriters Collective Team`;
   };
 
   const handleCloseCreateModal = () => {

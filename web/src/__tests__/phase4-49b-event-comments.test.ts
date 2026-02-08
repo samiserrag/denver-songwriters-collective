@@ -2,7 +2,7 @@
  * Phase 4.49b: Event Comments Everywhere
  *
  * Tests for event comments feature:
- * - Comments on all events (DSC + community)
+ * - Comments on all events (CSC + community)
  * - Guest comment support via verification
  * - Notifications to hosts and reply authors
  */
@@ -85,7 +85,7 @@ describe("Phase 4.49b: Event Comments Everywhere", () => {
   });
 
   describe("Event Comments API (GET)", () => {
-    it("should return comments for any event (not DSC-gated)", async () => {
+    it("should return comments for any event (not CSC-gated)", async () => {
       // Test that GET works for community event (is_dsc_event=false)
       const mockComments = [
         {

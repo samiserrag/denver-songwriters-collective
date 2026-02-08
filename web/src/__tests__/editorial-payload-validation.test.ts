@@ -14,56 +14,56 @@ describe("Editorial payload validation", () => {
     });
     expect(result.error).toBeUndefined();
     expect(result.data.member_spotlight_ref).toBe(
-      "https://denversongwriterscollective.org/songwriters/pony-lee"
+      "https://coloradosongwriterscollective.org/songwriters/pony-lee"
     );
   });
 
   it("normalizes venue spotlight URL from www host without scheme", () => {
     const result = buildEditorialUpsertData({
-      venue_spotlight_ref: "www.denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+      venue_spotlight_ref: "www.coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
     });
     expect(result.error).toBeUndefined();
     expect(result.data.venue_spotlight_ref).toBe(
-      "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
+      "https://coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
     );
   });
 
   it("normalizes URL without scheme or www", () => {
     const result = buildEditorialUpsertData({
       venue_spotlight_ref:
-        "denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+        "coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
     });
     expect(result.error).toBeUndefined();
     expect(result.data.venue_spotlight_ref).toBe(
-      "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
+      "https://coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden"
     );
   });
 
   it("normalizes blog feature URL and strips query/hash", () => {
     const result = buildEditorialUpsertData({
-      blog_feature_ref: "https://denversongwriterscollective.org/blog/my-post?utm=1#top",
+      blog_feature_ref: "https://coloradosongwriterscollective.org/blog/my-post?utm=1#top",
     });
     expect(result.error).toBeUndefined();
     expect(result.data.blog_feature_ref).toBe(
-      "https://denversongwriterscollective.org/blog/my-post"
+      "https://coloradosongwriterscollective.org/blog/my-post"
     );
   });
 
   it("normalizes featured happenings URLs array", () => {
     const result = buildEditorialUpsertData({
       featured_happenings_refs: [
-        "https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden?utm=1",
+        "https://coloradosongwriterscollective.org/events/a-lodge-lyons-the-rock-garden?utm=1",
         "/events/open-mic-night",
       ],
     });
     expect(result.error).toBeUndefined();
     expect(result.data.featured_happenings_refs).toEqual([
-      "https://denversongwriterscollective.org/events/a-lodge-lyons-the-rock-garden",
-      "https://denversongwriterscollective.org/events/open-mic-night",
+      "https://coloradosongwriterscollective.org/events/a-lodge-lyons-the-rock-garden",
+      "https://coloradosongwriterscollective.org/events/open-mic-night",
     ]);
   });
 
-  it("rejects non-DSC domains", () => {
+  it("rejects non-CSC domains", () => {
     const result = buildEditorialUpsertData({
       member_spotlight_ref: "https://example.com/songwriters/pony-lee",
     });
@@ -82,7 +82,7 @@ describe("Editorial payload validation", () => {
   it("rejects URLs with the wrong path prefix", () => {
     const result = buildEditorialUpsertData({
       member_spotlight_ref:
-        "https://denversongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
+        "https://coloradosongwriterscollective.org/venues/a-lodge-lyons-the-rock-garden",
     });
     expect(result.error?.error).toBe("Invalid URL");
     expect(result.error?.field).toBe("member_spotlight_ref");

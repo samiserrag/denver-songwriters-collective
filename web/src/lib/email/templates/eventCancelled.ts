@@ -41,7 +41,7 @@ export function getEventCancelledEmail(params: EventCancelledEmailParams): {
 
   const happeningsUrl = `${SITE_URL}/happenings`;
 
-  const subject = `Cancelled: ${eventTitle} on ${eventDate} — The Denver Songwriters Collective`;
+  const subject = `Cancelled: ${eventTitle} on ${eventDate} — The Colorado Songwriters Collective`;
 
   const htmlContent = `
 ${paragraph(getGreeting(userName))}

@@ -139,7 +139,7 @@ export function EventCard({ event, onClick, className, compact = false, variant 
 
         {/* Content Section */}
         <div
-          data-testid="dsc-event-card"
+          data-testid="csc-event-card"
           className={cn(
             variant === "list" ? "p-3 space-y-1" : (compact ? "p-3 space-y-1.5" : "p-5 space-y-3"),
             variant === "list" ? "text-left" : "text-center"
@@ -211,7 +211,7 @@ export function EventCard({ event, onClick, className, compact = false, variant 
             </div>
           )}
 
-          {/* Capacity / Spots remaining - only for DSC events with capacity */}
+          {/* Capacity / Spots remaining - only for CSC events with capacity */}
           {event.is_dsc_event && event.capacity != null && (
             <div className={cn(
               "flex items-center justify-center gap-1.5",

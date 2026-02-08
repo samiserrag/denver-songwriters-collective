@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 
 export const metadata: Metadata = {
-  title: "Spotlight | Denver Songwriters Collective",
+  title: "Spotlight | The Colorado Songwriters Collective",
   description: "Meet our featured artists, hosts, and studios from the Denver songwriting community.",
 };
 

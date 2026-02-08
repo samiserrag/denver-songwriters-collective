@@ -66,7 +66,7 @@ export function getEventReminderEmail(params: EventReminderEmailParams): {
   const cancelUrl = `${SITE_URL}/events/${eventIdentifier}${dateParam ? dateParam + "&" : "?"}cancel=true`;
 
   const timeWord = reminderType === "tonight" ? "tonight" : "tomorrow";
-  const subject = `Reminder: ${eventTitle} is ${timeWord}! — The Denver Songwriters Collective`;
+  const subject = `Reminder: ${eventTitle} is ${timeWord}! — The Colorado Songwriters Collective`;
 
   const slotInfo = slotNumber !== undefined
     ? `You're slot <strong>#${slotNumber}</strong> on the lineup.`

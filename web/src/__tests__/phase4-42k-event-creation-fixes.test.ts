@@ -90,7 +90,7 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
       expect(result.reasons).toContain("Online event missing URL");
     });
 
-    it("should still report missing age policy for DSC events", () => {
+    it("should still report missing age policy for CSC events", () => {
       const result = computeMissingDetails({
         location_mode: "venue",
         venue_id: "some-venue-id",
@@ -99,7 +99,7 @@ describe("Phase 4.42k: Event Creation Fixes", () => {
       });
 
       expect(result.missing).toBe(true);
-      expect(result.reasons).toContain("DSC event missing age policy");
+      expect(result.reasons).toContain("CSC event missing age policy");
     });
   });
 

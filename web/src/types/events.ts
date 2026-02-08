@@ -1,4 +1,4 @@
-// DSC Event System Types
+// CSC Event System Types
 
 export type EventType =
   | "song_circle"
@@ -17,7 +17,7 @@ export type HostRole = "host" | "cohost";
 
 export type InvitationStatus = "pending" | "accepted" | "declined";
 
-export interface DSCEvent {
+export interface CSCEvent {
   id: string;
   title: string;
   description: string | null;

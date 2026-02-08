@@ -2,7 +2,7 @@
  * Phase 4.43d: Open Mics Redirect Tests
  *
  * Tests that /open-mics/[slug] always redirects to /events/[id]
- * for both DSC and community events.
+ * for both CSC and community events.
  */
 
 import { describe, it, expect } from "vitest";
@@ -30,11 +30,11 @@ describe("Phase 4.43d: Open Mics Redirect to Events", () => {
     // Before Phase 4.43d: only is_dsc_event=true redirected
     // After Phase 4.43d: ALL events redirect for RSVP functionality
 
-    it("redirects DSC events", () => {
-      // DSC events always redirected (even before Phase 4.43d)
-      const isDSCEvent = true;
+    it("redirects CSC events", () => {
+      // CSC events always redirected (even before Phase 4.43d)
+      const isCSCEvent = true;
       const shouldRedirect = true; // unconditional now
-      expect(shouldRedirect || isDSCEvent).toBe(true);
+      expect(shouldRedirect || isCSCEvent).toBe(true);
     });
 
     it("redirects community events (Phase 4.43d change)", () => {
@@ -109,7 +109,7 @@ describe("Phase 4.43d: Open Mics Redirect to Events", () => {
       expect(canRSVPOnEventsPage(communityOpenMic)).toBe(true);
     });
 
-    it("RSVP available for DSC open mic after redirect", () => {
+    it("RSVP available for CSC open mic after redirect", () => {
       const dscOpenMic = {
         is_dsc_event: true,
         is_published: true,
