@@ -358,17 +358,29 @@ export default async function AdminDashboardPage() {
         {/* Site Configuration */}
         <section className="mb-8 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Site Configuration</h2>
-          <div className="p-4 bg-[var(--color-bg-tertiary)] rounded-lg">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex-1">
-                <span className="text-[var(--color-text-primary)] font-medium">Theme & Fonts</span>
-                <p className="text-sm text-[var(--color-text-secondary)]">Set the default site appearance</p>
+          <div className="space-y-2">
+            <div className="p-4 bg-[var(--color-bg-tertiary)] rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex-1">
+                  <span className="text-[var(--color-text-primary)] font-medium">Theme & Fonts</span>
+                  <p className="text-sm text-[var(--color-text-secondary)]">Set the default site appearance</p>
+                </div>
+                <SiteStyleSettings
+                  initialTheme={siteSettings.themePreset}
+                  initialFont={siteSettings.fontPreset}
+                />
               </div>
-              <SiteStyleSettings
-                initialTheme={siteSettings.themePreset}
-                initialFont={siteSettings.fontPreset}
-              />
             </div>
+            <Link
+              href="/dashboard/admin/site-social-links"
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors group"
+            >
+              <div>
+                <span className="text-[var(--color-text-primary)] font-medium">Site Social Links</span>
+                <p className="text-sm text-[var(--color-text-secondary)]">Manage global social links in header and footer</p>
+              </div>
+              <span className="text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-accent)]">→</span>
+            </Link>
           </div>
         </section>
 

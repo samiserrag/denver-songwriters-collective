@@ -210,11 +210,11 @@ export default async function RootLayout({
           defaultTheme={siteSettings.themePreset}
           defaultFont={siteSettings.fontPreset}
         />
-        <Header />
+        <Header socialLinks={siteSettings.socialLinks} />
         <ShareSiteCtaBar position="top" />
         <main className="flex-1">{children}</main>
         <ShareSiteCtaBar position="bottom" />
-        <Footer />
+        <Footer socialLinks={siteSettings.socialLinks} />
         <Toaster />
         <SpeedInsights />
       </body>
