@@ -12,6 +12,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 /**
  * Check if a string is a valid UUID format.
@@ -20,11 +21,15 @@ export function isUUID(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-const CANONICAL_HOST = "denversongwriterscollective.org";
+const CANONICAL_HOST = new URL(getSiteUrl()).hostname;
 const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
 const ALLOWED_HOSTS = new Set([
   CANONICAL_HOST,
   `www.${CANONICAL_HOST}`,
+  "denversongwriterscollective.org",
+  "www.denversongwriterscollective.org",
+  "coloradosongwriterscollective.org",
+  "www.coloradosongwriterscollective.org",
 ]);
 
 const EDITORIAL_URL_PREFIXES = {
