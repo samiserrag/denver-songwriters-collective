@@ -29,14 +29,28 @@ export async function POST(request: Request) {
     const body = await request.json();
     const socialLinks = sanitizeSiteSocialLinks(body?.socialLinks);
 
+    // Extract optional asset URL fields (empty string or valid URL accepted)
+    const heroImageUrl = typeof body?.heroImageUrl === "string" ? body.heroImageUrl.trim() : undefined;
+    const emailHeaderImageUrl = typeof body?.emailHeaderImageUrl === "string" ? body.emailHeaderImageUrl.trim() : undefined;
+    const youtubePlaylistUrl = typeof body?.youtubePlaylistUrl === "string" ? body.youtubePlaylistUrl.trim() : undefined;
+    const spotifyPlaylistUrl = typeof body?.spotifyPlaylistUrl === "string" ? body.spotifyPlaylistUrl.trim() : undefined;
+
+    // Build update payload — only include asset fields if provided
+    const updatePayload: Record<string, unknown> = {
+      social_links: socialLinks,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    };
+
+    if (heroImageUrl !== undefined) updatePayload.hero_image_url = heroImageUrl || null;
+    if (emailHeaderImageUrl !== undefined) updatePayload.email_header_image_url = emailHeaderImageUrl || null;
+    if (youtubePlaylistUrl !== undefined) updatePayload.youtube_playlist_url = youtubePlaylistUrl || null;
+    if (spotifyPlaylistUrl !== undefined) updatePayload.spotify_playlist_url = spotifyPlaylistUrl || null;
+
     const serviceClient = createServiceRoleClient();
     const { error } = await (serviceClient as any)
       .from("site_settings")
-      .update({
-        social_links: socialLinks,
-        updated_at: new Date().toISOString(),
-        updated_by: user.id,
-      })
+      .update(updatePayload)
       .eq("id", "global");
 
     if (error) {
@@ -47,6 +61,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       socialLinks,
+      heroImageUrl: heroImageUrl ?? null,
+      emailHeaderImageUrl: emailHeaderImageUrl ?? null,
+      youtubePlaylistUrl: youtubePlaylistUrl ?? null,
+      spotifyPlaylistUrl: spotifyPlaylistUrl ?? null,
     });
   } catch (error) {
     console.error("Error in admin site-social-links POST:", error);

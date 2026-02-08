@@ -49,7 +49,13 @@ export default async function AdminSiteSocialLinksPage() {
         </p>
 
         <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-          <SiteSocialLinksSettings initialLinks={siteSettings.socialLinks} />
+          <SiteSocialLinksSettings
+            initialLinks={siteSettings.socialLinks}
+            initialHeroImageUrl={siteSettings.heroImageUrl}
+            initialEmailHeaderImageUrl={siteSettings.emailHeaderImageUrl}
+            initialYoutubePlaylistUrl={siteSettings.youtubePlaylistUrl}
+            initialSpotifyPlaylistUrl={siteSettings.spotifyPlaylistUrl}
+          />
         </section>
       </div>
     </main>

@@ -722,6 +722,74 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Admin-Configurable Site Assets (February 2026) — RESOLVED
+
+**Summary:** Added 4 admin-configurable site asset fields to the existing site social links settings page: homepage hero image URL, email header image URL, YouTube playlist URL, and Spotify playlist URL.
+
+**Database Migration:**
+
+| Migration | Purpose | Status |
+|-----------|---------|--------|
+| `20260208140000_add_site_asset_urls.sql` | Add `hero_image_url`, `email_header_image_url`, `youtube_playlist_url`, `spotify_playlist_url` columns to `site_settings` | Applied (MODE B) |
+
+**Schema (`site_settings` — new columns):**
+
+| Column | Type | Default |
+|--------|------|---------|
+| `hero_image_url` | TEXT | `/images/hero-bg.jpg` |
+| `email_header_image_url` | TEXT | Supabase Storage URL |
+| `youtube_playlist_url` | TEXT | NULL |
+| `spotify_playlist_url` | TEXT | NULL |
+
+**Files Modified (6):**
+
+| File | Change |
+|------|--------|
+| `lib/site-settings.ts` | Extended `SiteSettings` interface + query with 4 new fields |
+| `app/api/admin/site-social-links/route.ts` | Accept + save 4 new asset URL fields alongside social links |
+| `components/admin/SiteSocialLinksSettings.tsx` | Added "Site Assets" section with 4 input fields above social links |
+| `app/(protected)/dashboard/admin/site-social-links/page.tsx` | Pass 4 new props from `siteSettings` to component |
+| `app/page.tsx` | Use `heroImageUrl` from `getSiteSettings()` for homepage hero background |
+| `lib/email/render.ts` | Accept optional `headerImageUrl` param in `wrapEmailHtml()` with hardcoded default |
+
+**Domain Agnosticism:** Hero image uses relative path (`/images/hero-bg.jpg`), email header uses Supabase Storage URL, playlist URLs are external — none depend on site domain.
+
+**Quality Gates:**
+- Lint: PASS (0 errors, 0 warnings)
+- Tests: PASS (3779/3779)
+- Remote migration verification: PASS
+
+---
+
+### Admin Social Links Save + Admin Host Column Parity (February 2026) — RESOLVED
+
+**Summary:** Closed two admin-side regressions:
+1) Site social links failed to save from `/dashboard/admin/site-social-links`
+2) `/dashboard/admin/events` falsely showed "No host" for events hosted via `event_hosts`
+
+**Root causes:**
+- `site_settings.social_links` column migration existed in repo but had not yet been applied on remote DB.
+- Admin events list host logic relied on `events.host_id` and did not resolve accepted `event_hosts` host assignments.
+- Follow-up build failed due a narrowed TypeScript annotation in host normalization.
+
+**Delivered:**
+- Applied migration directly to remote Supabase using Mode B (`psql`) per migration protocol:
+  - `supabase/migrations/20260208123000_add_site_social_links.sql`
+- Recorded migration in `supabase_migrations.schema_migrations` (`version=20260208123000`) and verified:
+  - `public.site_settings.social_links` exists (`jsonb`)
+  - global row seeded with 3 links
+- Updated admin events query/normalization to resolve accepted `event_hosts` host profiles for host column display.
+- Fixed TypeScript assignability regression in admin events page by restoring full row typing for normalized event data.
+
+**Commits:**
+- `c57b5db` — feat: add admin-managed global site social links
+- `5e4f5fc` — fix: show accepted event_hosts in admin events host column
+- `b1d4cf3` — fix: resolve admin events type mismatch for host normalization
+
+**Quality gates:**
+- Lint: PASS
+- Remote migration verification: PASS
+
 ### EMBED-01 Closeout: Production Toggle Validation + Mismatch Fix (February 2026)
 
 **Summary:** Closed EMBED-01 after live production validation of kill-switch OFF/ON behavior and a production schema mismatch fix on the embed route.

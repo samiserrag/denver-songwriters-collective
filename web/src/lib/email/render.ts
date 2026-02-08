@@ -79,7 +79,11 @@ export function getGreeting(name?: string | null): string {
  * - Content block on white card
  * - Footer with signature
  */
-export function wrapEmailHtml(content: string): string {
+const DEFAULT_EMAIL_HEADER_IMAGE = "https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png";
+
+export function wrapEmailHtml(content: string, options?: { headerImageUrl?: string }): string {
+  const headerImg = options?.headerImageUrl || DEFAULT_EMAIL_HEADER_IMAGE;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -95,7 +99,7 @@ export function wrapEmailHtml(content: string): string {
           <!-- Header -->
           <tr>
             <td style="background-color: ${EMAIL_COLORS.headerBg}; padding: 0; text-align: center;">
-              <img src="https://oipozdbfxyskoscsgbfq.supabase.co/storage/v1/object/public/email-images/DSC%20Email%20Header1.png" alt="Denver Songwriters Collective" style="display: block; width: 100%; max-width: 560px; height: auto;" />
+              <img src="${headerImg}" alt="Denver Songwriters Collective" style="display: block; width: 100%; max-width: 560px; height: auto;" />
             </td>
           </tr>
 

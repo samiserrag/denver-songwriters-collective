@@ -25,6 +25,7 @@ import {
   INVITE_CTA_HEADLINE,
   INVITE_CTA_LABEL,
 } from "@/lib/referrals";
+import { getSiteSettings } from "@/lib/site-settings";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 
@@ -85,6 +86,9 @@ export default async function HomePage() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     data: { session: _session },
   } = await supabase.auth.getSession();
+
+  // Fetch site settings for hero image URL
+  const siteSettings = await getSiteSettings();
 
   // Get today's date for filtering past events
   const today = getTodayDenver();
@@ -392,7 +396,7 @@ export default async function HomePage() {
     <>
       <CLSLogger />
       {/* Hero with background image and main headline */}
-      <HeroSection minHeight="lg" showVignette showBottomFade>
+      <HeroSection minHeight="lg" showVignette showBottomFade backgroundImage={siteSettings.heroImageUrl}>
         <div className="text-center px-6 py-8">
           <h1 className="font-[var(--font-family-display)] font-bold text-5xl md:text-6xl lg:text-7xl text-white tracking-tight mb-2 drop-shadow-lg">
             Denver Songwriters Collective

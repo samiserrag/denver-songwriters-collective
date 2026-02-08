@@ -163,6 +163,14 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ## Completed Work (Ground Truth)
 
+### Admin Operations: Social Links + Host Visibility (February 2026) — COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Global site social links persistence | Applied `site_settings.social_links` migration and enabled admin save path at `/dashboard/admin/site-social-links` | DONE |
+| Admin host column parity | `/dashboard/admin/events` now resolves accepted hosts from `event_hosts` + `profiles` (not only `events.host_id`) | DONE |
+| Build/type regression fix | Restored full event row typing in admin host normalization to satisfy production TypeScript build | DONE |
+
 ### Phase 5.07 — Venue Map Buttons (January 2026) — COMPLETE
 
 | Item | Description | Status |
