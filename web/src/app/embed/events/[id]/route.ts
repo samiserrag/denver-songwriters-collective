@@ -5,6 +5,7 @@ import { computeNextOccurrence, getTodayDenver } from "@/lib/events/nextOccurren
 import { interpretRecurrence, labelFromRecurrence } from "@/lib/events/recurrenceContract";
 import { EVENT_TYPE_CONFIG, type EventType } from "@/types/events";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -433,9 +434,10 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
 
   const eventType = (embedEvent.event_type as EventType | null) ?? "other";
   const eventTypeLabel = EVENT_TYPE_CONFIG[eventType as EventType]?.label ?? "Event";
-  const imageUrl = embedEvent.cover_image_url || "https://denversongwriterscollective.org/images/hero/denver-songwriters-hero.jpg";
+  const siteUrl = getSiteUrl();
+  const imageUrl = embedEvent.cover_image_url || `${siteUrl}/images/hero/denver-songwriters-hero.jpg`;
   const canonicalPath = embedEvent.event_type === "open_mic" ? `/open-mics/${embedEvent.slug || embedEvent.id}` : `/events/${embedEvent.slug || embedEvent.id}`;
-  const canonicalUrl = `https://denversongwriterscollective.org${canonicalPath}`;
+  const canonicalUrl = `${siteUrl}${canonicalPath}`;
   const detailUrl = isDateKey(selectedDate) ? `${canonicalUrl}?date=${selectedDate}` : canonicalUrl;
 
   const chips: string[] = [];

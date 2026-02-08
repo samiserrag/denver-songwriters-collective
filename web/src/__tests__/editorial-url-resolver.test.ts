@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  normalizeEditorialUrl,
   resolveEditorialWithDiagnostics,
   type DigestEditorial,
 } from "../lib/digest/digestEditorial";
@@ -89,6 +90,51 @@ describe("Editorial URL resolver", () => {
     expect(result.unresolved[0].reason).toBe("unsupported_domain");
   });
 
+  it("normalizeEditorialUrl accepts the old domain (denversongwriterscollective.org)", () => {
+    const result = normalizeEditorialUrl(
+      "https://denversongwriterscollective.org/songwriters/pony-lee",
+      "/songwriters/"
+    );
+    expect(result.error).toBeUndefined();
+    expect(result.slug).toBe("pony-lee");
+    expect(result.value).toContain("/songwriters/pony-lee");
+  });
+
+  it("normalizeEditorialUrl accepts the new domain (coloradosongwriterscollective.org)", () => {
+    const result = normalizeEditorialUrl(
+      "https://coloradosongwriterscollective.org/songwriters/pony-lee",
+      "/songwriters/"
+    );
+    expect(result.error).toBeUndefined();
+    expect(result.slug).toBe("pony-lee");
+    expect(result.value).toContain("/songwriters/pony-lee");
+  });
+
+  it("normalizeEditorialUrl accepts www variants of both domains", () => {
+    const oldWww = normalizeEditorialUrl(
+      "https://www.denversongwriterscollective.org/venues/brewery-rickoli",
+      "/venues/"
+    );
+    expect(oldWww.error).toBeUndefined();
+    expect(oldWww.slug).toBe("brewery-rickoli");
+
+    const newWww = normalizeEditorialUrl(
+      "https://www.coloradosongwriterscollective.org/venues/brewery-rickoli",
+      "/venues/"
+    );
+    expect(newWww.error).toBeUndefined();
+    expect(newWww.slug).toBe("brewery-rickoli");
+  });
+
+  it("normalizeEditorialUrl rejects URLs from unknown domains", () => {
+    const result = normalizeEditorialUrl(
+      "https://example.com/songwriters/pony-lee",
+      "/songwriters/"
+    );
+    expect(result.error).toBe("unsupported_domain");
+    expect(result.value).toBeNull();
+  });
+
   it("resolves a gallery URL using gallery_albums.name (published only)", async () => {
     const supabase = {
       from: (table: string) => {
@@ -141,5 +187,38 @@ describe("Editorial URL resolver", () => {
     expect(result.resolved.galleryFeature?.url).toBe(
       "https://denversongwriterscollective.org/gallery/collective-open-mic-at-sloan-lake-2-1-26"
     );
+  });
+});
+
+describe("Embed route domain-agnostic canonical URL (source-level)", () => {
+  it("embed route imports getSiteUrl and uses it for canonicalUrl and imageUrl", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const routePath = path.resolve(
+      __dirname,
+      "../app/embed/events/[id]/route.ts"
+    );
+    const source = fs.readFileSync(routePath, "utf-8");
+
+    // Must import getSiteUrl
+    expect(source).toContain('import { getSiteUrl } from "@/lib/siteUrl"');
+
+    // Must call getSiteUrl() and use it for URLs
+    expect(source).toContain("const siteUrl = getSiteUrl()");
+    expect(source).toContain("const canonicalUrl = `${siteUrl}${canonicalPath}`");
+
+    // Must NOT contain hardcoded production domain in URL construction
+    const lines = source.split("\n");
+    const urlConstructionLines = lines.filter(
+      (line) =>
+        (line.includes("canonicalUrl") || line.includes("imageUrl")) &&
+        !line.trimStart().startsWith("//") &&
+        !line.trimStart().startsWith("*")
+    );
+    for (const line of urlConstructionLines) {
+      expect(line).not.toContain(
+        '"https://denversongwriterscollective.org'
+      );
+    }
   });
 });
