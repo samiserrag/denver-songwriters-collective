@@ -722,6 +722,45 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### EMBED-01 Closeout: Production Toggle Validation + Mismatch Fix (February 2026)
+
+**Summary:** Closed EMBED-01 after live production validation of kill-switch OFF/ON behavior and a production schema mismatch fix on the embed route.
+
+**Delivered:**
+- Marked `EMBED-01` DONE in canonical backlog (`docs/BACKLOG.md`) with closeout evidence pointer.
+- Updated active backlog index to reflect `EMBED-01` production-validated completion:
+  - `docs/backlog/post-gtm-3-1-active-backlog.md`
+- Closed stop-gate doc with implementation and operator evidence:
+  - `docs/investigation/embed-01-external-embeds-stopgate.md`
+
+**Production validation outcomes:**
+- OFF (`ENABLE_EXTERNAL_EMBEDS=false`): embed URLs returned `503` with disabled message.
+- ON (`ENABLE_EXTERNAL_EMBEDS=true`): embed URLs returned `200` with rendered HTML.
+- Mismatch fix shipped in `c744f52`: removed non-existent `events.cover_image_card_url` selection from embed query.
+
+---
+
+### EMBED-02 STOP-GATE: Non-Event Embeds Investigation (February 2026)
+
+**Summary:** Added implementation-ready STOP-GATE for expanding external embeds beyond events without changing current EMBED-01 production scope.
+
+**Delivered (docs-only):**
+- New STOP-GATE doc:
+  - `docs/investigation/embed-02-non-event-embeds-stopgate.md`
+- Defined phased order:
+  - `EMBED-02A` venues -> `EMBED-02B` member profiles -> `EMBED-02C` blog posts -> `EMBED-02D` gallery albums
+- Locked shared contract:
+  - `theme=light|dark|auto`
+  - `view=card|compact`
+  - `show=badges,meta,cta`
+- Added backlog/index alignment:
+  - `docs/BACKLOG.md` (`EMBED-02` canonical entry)
+  - `docs/backlog/post-gtm-3-1-active-backlog.md` (curated queue reference)
+
+**Execution status:** Deferred pending explicit approval; no app code changes.
+
+---
+
 ### Docs-Only Backlog Update: Domain Strategy + Marketplace/Services Hub (February 2026)
 
 **Summary:** Captured three major product decisions in backlog/north-star docs without any code implementation.

@@ -562,36 +562,51 @@ Users who want to find happenings near a specific location (their neighborhood, 
 
 ---
 
-### EMBED-01 — Artist & Venue Media Embeds (YouTube, Spotify)
+### EMBED-01 — External Event Embeds (Phase-1)
 
-**Status:** OPEN
+**Status:** DONE
 **Priority:** P2
 **Added:** 2026-01-28
+**Completed:** 2026-02-08
 
-**Problem Statement:**
-Songwriters and venues cannot showcase their music or atmosphere directly on DSC. Users must leave the site to hear a songwriter's work or see a venue's vibe, creating friction and losing context.
+**Delivered:**
+- Events-only external embed endpoint shipped:
+  - `/embed/events/{event-id-or-slug}`
+- Shared query contract shipped:
+  - `theme=light|dark|auto`
+  - `view=card|compact`
+  - `show=badges,meta,cta`
+  - `date=YYYY-MM-DD` (optional)
+- Kill switch validated in production:
+  - `ENABLE_EXTERNAL_EMBEDS=false` -> `503` disabled response
+  - `ENABLE_EXTERNAL_EMBEDS=true` -> `200` rendered embed response
+- Production mismatch fix shipped:
+  - Removed `events.cover_image_card_url` from embed query (`c744f52`) because column does not exist in production schema.
 
-**User Value:**
-- Songwriters can showcase their music without users leaving DSC
-- Venues can embed videos showing their space and past events
-- Increases time-on-site and engagement
-- Differentiates profiles from simple directory listings
+**Evidence:**
+- Closeout + validation log:
+  - `docs/investigation/embed-01-external-embeds-stopgate.md` (Section 14)
+
+---
+
+### EMBED-02 — Non-Event External Embeds (Venues, Members, Blogs, Galleries)
+
+**Status:** OPEN (STOP-GATE complete, implementation deferred)
+**Priority:** P2
+**Added:** 2026-02-08
 
 **Scope:**
-| Item | Description |
-|------|-------------|
-| Songwriter profiles | Spotify artist/track embed, YouTube video embed |
-| Venue profiles | YouTube video embed for venue tours/past events |
-| URL-based embeds | Paste URL → auto-detect platform → render embed |
-| Embed limits | Max 2 embeds per profile to prevent clutter |
-| No OAuth | Simple URL paste, no account connection required |
+- EMBED-02A: Venue embeds
+- EMBED-02B: Member profile embeds
+- EMBED-02C: Blog post embeds
+- EMBED-02D: Gallery album embeds
 
-**Risk Level:** Low
-- Standard iframe embeds (well-documented APIs)
-- No auth complexity
-- Main risk is content moderation (inappropriate videos)
+**Contract requirement:**
+- Reuse the EMBED-01 query contract (`theme`, `view`, `show`) with read-only iframe delivery.
+- Preserve route-scoped framing policy and kill-switch behavior.
 
-**Dependencies:** Profile page layout updates, embed URL validation
+**STOP-GATE:**
+- `docs/investigation/embed-02-non-event-embeds-stopgate.md`
 
 ---
 

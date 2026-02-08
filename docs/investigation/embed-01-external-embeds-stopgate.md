@@ -1,4 +1,8 @@
-# EMBED-01 STOP-GATE — External Embeds (Investigation Only)
+# EMBED-01 STOP-GATE — External Embeds (CLOSED)
+
+**Status:** COMPLETED (Phase-1 events-only implementation shipped and production-validated)
+**Primary implementation commit:** `d218708`
+**Production mismatch fix commit:** `c744f52`
 
 ## 1) Scope Definition
 
@@ -132,7 +136,7 @@ Minimal viable embed (phase-1 required fields):
 - Schedule/occurrence: `event_date`, `start_time`, `end_time`, `recurrence_rule`, `custom_dates`
 - Location: `location_mode`, `venue_id`, `venue_name`, `custom_location_name`, `custom_city`, `custom_state`, `online_url`
 - Trust/status: `status`, `last_verified_at`, `verified_by`
-- Display: `cover_image_url`, `cover_image_card_url`, `is_dsc_event`, `age_policy`, `is_free`, `cost_label`
+- Display: `cover_image_url`, `is_dsc_event`, `age_policy`, `is_free`, `cost_label`
 
 Layout constraints (phase-1):
 - `card`: single-item card, max width 420px default, responsive down to 320px.
@@ -241,4 +245,51 @@ Alignment statement:
 7. Confirm acceptable freshness target (dynamic vs short TTL)?
 8. Confirm gallery/blog remain explicitly deferred to phase-2?
 
-> **STOP — Awaiting Sami approval to proceed to implementation**
+## 14) Closeout (Production Validation)
+
+### 14.1 Production mismatch fixed
+
+- Issue observed in production after phase-1 deploy: embed route returned `Event not found` for valid public events.
+- Root cause: embed query selected non-existent DB column `events.cover_image_card_url`.
+- Fix shipped in `c744f52`:
+  - Updated `web/src/app/embed/events/[id]/route.ts` to remove `cover_image_card_url` from `SELECT`.
+  - Fallback image now uses `cover_image_url` only.
+- Result: valid embed URL renders `200` with event HTML.
+
+### 14.2 Live kill-switch validation evidence (production)
+
+Validated URL set:
+- `https://denversongwriterscollective.org/embed/events/sloan-lake-song-circle-jam-2026-02-01`
+- `https://denversongwriterscollective.org/embed/events/sloan-lake-song-circle-jam-2026-02-01?view=compact&show=meta`
+
+| Timestamp (UTC) | Env value | Result |
+|---|---|---|
+| 2026-02-08 01:29:15 | default ON path (pre-toggle) | both URLs returned `200` with embed HTML |
+| 2026-02-08 01:42:32 | `ENABLE_EXTERNAL_EMBEDS=\"false\\n\"` (misconfigured newline) | both URLs still returned `200` (string mismatch) |
+| 2026-02-08 02:10:14 | `ENABLE_EXTERNAL_EMBEDS=false` (exact) | both URLs returned `503` with “Embeds temporarily unavailable” + “External embeds are currently disabled” |
+| 2026-02-08 02:22:46 | `ENABLE_EXTERNAL_EMBEDS=true` | both URLs returned `200` with embed HTML |
+
+Observed response headers during OFF and ON checks:
+- `X-Frame-Options`: not present on embed route.
+- CSP included `frame-ancestors *` on embed route responses.
+
+### 14.3 Operator runbook (how to toggle)
+
+1. Vercel Dashboard path: Project `denver-songwriters-collective` -> Settings -> Environment Variables.
+2. Set `ENABLE_EXTERNAL_EMBEDS` for `Production`:
+   - OFF: `false` (must be exact string, no newline)
+   - ON: `true` (or unset, because default behavior is enabled)
+3. Trigger a production redeploy after each change.
+4. Validate with the two URLs above:
+   - OFF expected: `503` + disabled message.
+   - ON expected: `200` + rendered embed HTML.
+
+### 14.4 Remaining constraints
+
+- EMBED-01 scope remains events-only.
+- Kill switch semantics remain:
+  - `ENABLE_EXTERNAL_EMBEDS=\"false\"` -> disabled
+  - any other value/unset -> enabled
+- Framing policy remains route-scoped for embed surface only.
+
+**CLOSED — EMBED-01 complete**
