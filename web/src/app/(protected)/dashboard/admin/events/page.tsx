@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EventSpotlightTable } from "@/components/admin";
+import type { Database } from "@/lib/supabase/database.types";
 
 
 export const dynamic = "force-dynamic";
+
+type HostProfile = { id: string; slug: string | null; full_name: string | null };
+type EventHostRelation = { user_id: string; invitation_status: string; role: string };
+type AdminEventRow = Database["public"]["Tables"]["events"]["Row"] & {
+  venues?: { id: string; name: string } | null;
+  is_published?: boolean | null;
+  has_timeslots?: boolean | null;
+  last_verified_at?: string | null;
+  host?: HostProfile | HostProfile[] | null;
+  event_hosts?: EventHostRelation[] | null;
+};
 
 
 export default async function AdminEventsPage() {
@@ -40,14 +52,11 @@ export default async function AdminEventsPage() {
      .order("title", { ascending: true });
 
    // CRITICAL: Always pass an array, never null
-   const events = Array.isArray(data) ? data : [];
+   const events: AdminEventRow[] = Array.isArray(data) ? (data as AdminEventRow[]) : [];
 
    // Resolve host names for records where host lives in event_hosts rather than events.host_id.
    const hostIds = new Set<string>();
-   for (const event of events as Array<{
-     host_id?: string | null;
-     event_hosts?: Array<{ user_id: string; invitation_status: string }>;
-   }>) {
+   for (const event of events) {
      if (event.host_id) hostIds.add(event.host_id);
      for (const hostRow of event.event_hosts ?? []) {
        if (hostRow.invitation_status === "accepted") {
@@ -69,11 +78,7 @@ export default async function AdminEventsPage() {
      }
    }
 
-   const normalizedEvents = (events as Array<{
-     host?: { id: string; slug: string | null; full_name: string | null } | { id: string; slug: string | null; full_name: string | null }[] | null;
-     host_id?: string | null;
-     event_hosts?: Array<{ user_id: string; invitation_status: string; role: string }>;
-   }>).map((event) => {
+   const normalizedEvents: AdminEventRow[] = events.map((event): AdminEventRow => {
      const acceptedHostIds = (event.event_hosts ?? [])
        .filter((hostRow) => hostRow.invitation_status === "accepted")
        .map((hostRow) => hostRow.user_id);
