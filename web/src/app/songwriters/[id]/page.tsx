@@ -285,8 +285,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
   const blogPosts = blogPostsData ?? [];
 
   // Check if viewer is the profile owner (for private sections)
-  const { data: { session } } = await supabase.auth.getSession();
-  const isOwner = session?.user?.id === songwriter.id;
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+  const isOwner = sessionUser?.id === songwriter.id;
 
   // Private sections: Only query if viewer is the owner
   let myRsvps: Array<{

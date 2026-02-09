@@ -44,13 +44,13 @@ export async function GET(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canManage = await canManageEvent(supabase, session.user.id, eventId);
+  const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -168,13 +168,13 @@ export async function DELETE(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canManage = await canManageEvent(supabase, session.user.id, eventId);
+  const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -18,10 +18,10 @@ export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
 
-  const user = session?.user ?? null;
+  const user = sessionUser ?? null;
 
   if (!user) {
     return (

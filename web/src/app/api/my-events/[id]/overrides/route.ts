@@ -103,13 +103,13 @@ export async function GET(
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { authorized } = await checkOverrideAuth(supabase, eventId, session.user.id);
+  const { authorized } = await checkOverrideAuth(supabase, eventId, sessionUser.id);
   if (!authorized) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -148,13 +148,13 @@ export async function POST(
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { authorized } = await checkOverrideAuth(supabase, eventId, session.user.id);
+  const { authorized } = await checkOverrideAuth(supabase, eventId, sessionUser.id);
   if (!authorized) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -264,13 +264,13 @@ export async function DELETE(
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { authorized } = await checkOverrideAuth(supabase, eventId, session.user.id);
+  const { authorized } = await checkOverrideAuth(supabase, eventId, sessionUser.id);
   if (!authorized) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

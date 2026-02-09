@@ -75,10 +75,10 @@ export async function POST(
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -105,7 +105,7 @@ export async function POST(
   const { count: recentCommentCount } = await supabase
     .from("event_comments")
     .select("*", { count: "exact", head: true })
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .gte("created_at", fiveMinutesAgo);
 
   // Limit to 10 comments per 5 minutes per user
@@ -131,7 +131,7 @@ export async function POST(
   const { data: commenterProfile } = await supabase
     .from("profiles")
     .select("full_name")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
 
   const commenterName = commenterProfile?.full_name || "A member";
@@ -141,7 +141,7 @@ export async function POST(
     .from("event_comments")
     .insert({
       event_id: eventId,
-      user_id: session.user.id,
+      user_id: sessionUser.id,
       content: content.trim(),
       parent_id: parent_id || null,
       date_key: effectiveDateKey,
@@ -179,7 +179,7 @@ export async function POST(
     notifyParentCommentAuthor(
       supabase,
       parent_id,
-      session.user.id,
+      sessionUser.id,
       commenterName,
       event.title || "Event",
       eventUrl,
@@ -191,7 +191,7 @@ export async function POST(
     notifyEventHosts(
       supabase,
       eventId,
-      session.user.id,
+      sessionUser.id,
       commenterName,
       event.title || "Event",
       eventUrl,

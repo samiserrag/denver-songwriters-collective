@@ -47,6 +47,10 @@ vi.mock("@/lib/supabase/server", () => ({
       getSession: () => Promise.resolve({
         data: { session: mockSession },
         error: null
+      }),
+      getUser: () => Promise.resolve({
+        data: { user: mockSession?.user ?? null },
+        error: null
       })
     },
     from: (table: string) => {

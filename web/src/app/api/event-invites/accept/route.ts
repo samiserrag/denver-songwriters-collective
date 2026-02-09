@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     // Check email restriction if set
     if (invite.email_restriction) {
-      const userEmail = session.user.email?.toLowerCase();
+      const userEmail = sessionUser.email?.toLowerCase();
       if (userEmail !== invite.email_restriction.toLowerCase()) {
         console.log(
           `[EventInviteAccept] Email mismatch, expected=${invite.email_restriction}, got=${userEmail}, tokenHashPrefix=${tokenHashPrefix}`
@@ -129,12 +129,12 @@ export async function POST(request: NextRequest) {
       .from("event_hosts")
       .select("id")
       .eq("event_id", invite.event_id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .maybeSingle();
 
     if (existingHost) {
       console.log(
-        `[EventInviteAccept] User already has access, userId=${session.user.id}, eventId=${invite.event_id}`
+        `[EventInviteAccept] User already has access, userId=${sessionUser.id}, eventId=${invite.event_id}`
       );
       return NextResponse.json(
         { error: "You already have access to this event" },
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       // Set primary owner
       const { error: updateEventError } = await serviceClient
         .from("events")
-        .update({ host_id: session.user.id })
+        .update({ host_id: sessionUser.id })
         .eq("id", invite.event_id);
 
       if (updateEventError) {
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
     // Insert event_hosts row (for both host and cohost)
     const { error: grantError } = await serviceClient.from("event_hosts").insert({
       event_id: invite.event_id,
-      user_id: session.user.id,
+      user_id: sessionUser.id,
       role: roleToGrant,
       invitation_status: "accepted",
       invited_by: invite.created_by,
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       .from("event_invites")
       .update({
         accepted_at: new Date().toISOString(),
-        accepted_by: session.user.id,
+        accepted_by: sessionUser.id,
       })
       .eq("id", invite.id);
 
@@ -221,13 +221,13 @@ export async function POST(request: NextRequest) {
     const { data: acceptorProfile } = await serviceClient
       .from("profiles")
       .select("full_name, email")
-      .eq("id", session.user.id)
+      .eq("id", sessionUser.id)
       .single();
 
     const acceptorName =
       acceptorProfile?.full_name ||
       acceptorProfile?.email ||
-      session.user.email ||
+      sessionUser.email ||
       "Someone";
 
     const eventTitle = event.title || "the event";
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(
-      `[EventInviteAccept] Successfully accepted invite, userId=${session.user.id}, eventId=${invite.event_id}, role=${roleToGrant}`
+      `[EventInviteAccept] Successfully accepted invite, userId=${sessionUser.id}, eventId=${invite.event_id}, role=${roleToGrant}`
     );
 
     return NextResponse.json({

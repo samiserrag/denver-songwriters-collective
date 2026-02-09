@@ -33,13 +33,13 @@ export async function GET(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canManage = await canManageEvent(supabase, session.user.id, eventId);
+  const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -106,23 +106,23 @@ export async function PATCH(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canManage = await canManageEvent(supabase, session.user.id, eventId);
+  const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Check host/admin status for CSC branding permission
-  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
   const isAdmin = profile?.role === "admin";
   const canCreateCSC = isApprovedHost || isAdmin;
@@ -258,7 +258,7 @@ export async function PATCH(
   if (body.verify_action !== undefined && isAdmin) {
     if (body.verify_action === "verify") {
       updates.last_verified_at = now;
-      updates.verified_by = session.user.id;
+      updates.verified_by = sessionUser.id;
     } else if (body.verify_action === "unverify") {
       updates.last_verified_at = null;
       updates.verified_by = null;
@@ -584,13 +584,13 @@ export async function DELETE(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const canManage = await canManageEvent(supabase, session.user.id, eventId);
+  const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

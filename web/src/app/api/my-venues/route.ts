@@ -14,10 +14,10 @@ export async function GET() {
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -25,7 +25,7 @@ export async function GET() {
     const { data: managerGrants, error: grantsError } = await supabase
       .from("venue_managers")
       .select("id, venue_id, role, grant_method, created_at")
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .is("revoked_at", null)
       .order("created_at", { ascending: false });
 
@@ -68,7 +68,7 @@ export async function GET() {
     const { data: pendingClaims } = await supabase
       .from("venue_claims")
       .select("id, venue_id, status, created_at")
-      .eq("requester_id", session.user.id)
+      .eq("requester_id", sessionUser.id)
       .eq("status", "pending");
 
     // Fetch venue details for pending claims

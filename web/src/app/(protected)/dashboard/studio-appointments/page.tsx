@@ -14,10 +14,10 @@ export default async function StudioAppointmentsPage() {
 
   // Auth
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
 
-  const user = session?.user ?? null;
+  const user = sessionUser ?? null;
   if (!user) {
     return (
       <PageContainer className="py-24 text-center text-red-800 dark:text-red-400">

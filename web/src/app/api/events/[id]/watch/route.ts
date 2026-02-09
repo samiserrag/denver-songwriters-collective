@@ -13,10 +13,10 @@ export async function GET(
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ watching: false });
   }
 
@@ -24,7 +24,7 @@ export async function GET(
     .from("event_watchers")
     .select("user_id")
     .eq("event_id", eventId)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .maybeSingle();
 
   return NextResponse.json({ watching: !!data });
@@ -41,15 +41,15 @@ export async function POST(
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Admin-only guard
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
   if (!isAdmin) {
     return NextResponse.json({ error: "Admin only" }, { status: 403 });
   }
@@ -67,7 +67,7 @@ export async function POST(
 
   const { error } = await supabase
     .from("event_watchers")
-    .insert({ event_id: eventId, user_id: session.user.id })
+    .insert({ event_id: eventId, user_id: sessionUser.id })
     .select()
     .single();
 
@@ -95,10 +95,10 @@ export async function DELETE(
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -106,7 +106,7 @@ export async function DELETE(
     .from("event_watchers")
     .delete()
     .eq("event_id", eventId)
-    .eq("user_id", session.user.id);
+    .eq("user_id", sessionUser.id);
 
   return NextResponse.json({ success: true, watching: false });
 }

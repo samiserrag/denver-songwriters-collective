@@ -29,12 +29,12 @@ export default async function AlbumManagementPage({
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
-  const userId = session.user.id;
+  const userId = sessionUser.id;
 
   // Check if user is admin
   const { data: profile } = await supabase

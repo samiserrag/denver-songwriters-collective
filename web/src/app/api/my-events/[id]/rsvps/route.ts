@@ -12,9 +12,9 @@ export async function GET(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -30,14 +30,14 @@ export async function GET(
   const { effectiveDateKey } = dateKeyResult;
 
   // Check if user is host or admin (using profiles.role, not app_metadata)
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
   if (!isAdmin) {
     const { data: hostEntry } = await supabase
       .from("event_hosts")
       .select("role")
       .eq("event_id", eventId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("invitation_status", "accepted")
       .maybeSingle();
 
@@ -103,14 +103,14 @@ export async function DELETE(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Authorization: admin or primary host only (not cohosts)
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
   if (!isAdmin) {
     // Check if user is PRIMARY host (role = 'host', not 'cohost')
@@ -118,7 +118,7 @@ export async function DELETE(
       .from("event_hosts")
       .select("role")
       .eq("event_id", eventId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("invitation_status", "accepted")
       .eq("role", "host")
       .maybeSingle();

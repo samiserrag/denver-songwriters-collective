@@ -29,10 +29,10 @@ export default async function EditVenuePage({
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     redirect(`/login?redirect=/dashboard/my-venues/${venueId}`);
   }
 
@@ -52,10 +52,10 @@ export default async function EditVenuePage({
   // Check authorization: must be venue manager OR admin OR event host at this venue
   // Phase 0.6: canEditVenue now includes event host check
   const [canEdit, isAdmin, role, isEventHost] = await Promise.all([
-    canEditVenue(supabase, venueId, session.user.id),
-    checkAdminRole(supabase, session.user.id),
-    getVenueRole(supabase, venueId, session.user.id),
-    isEventHostAtVenue(supabase, venueId, session.user.id),
+    canEditVenue(supabase, venueId, sessionUser.id),
+    checkAdminRole(supabase, sessionUser.id),
+    getVenueRole(supabase, venueId, sessionUser.id),
+    isEventHostAtVenue(supabase, venueId, sessionUser.id),
   ]);
 
   if (!canEdit && !isAdmin) {
@@ -149,7 +149,7 @@ export default async function EditVenuePage({
               created_at: string;
               deleted_at: string | null;
             }>}
-            userId={session.user.id}
+            userId={sessionUser.id}
           />
         </div>
       </div>

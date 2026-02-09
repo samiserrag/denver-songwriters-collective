@@ -9,16 +9,16 @@ export const metadata = {
 
 export default async function NewEventPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
   // Check if user can create CSC-branded events (approved host or admin)
-  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
   const isAdmin = profile?.role === "admin";
   const canCreateCSC = isApprovedHost || isAdmin;

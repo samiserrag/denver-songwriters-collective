@@ -75,16 +75,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
     }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("id, onboarding_complete")
-      .eq("id", session.user.id)
+      .eq("id", sessionUser.id)
       .single();
 
     const needsOnboarding = !profile?.onboarding_complete;

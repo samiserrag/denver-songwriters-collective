@@ -10,14 +10,14 @@ export const metadata = {
 
 export default async function NotificationsPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
   const { data: notifications, count } = await supabase
     .from("notifications")
     .select("*", { count: "exact" })
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .order("created_at", { ascending: false })
     .limit(50);
 

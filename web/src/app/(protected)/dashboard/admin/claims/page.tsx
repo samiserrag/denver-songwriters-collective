@@ -37,12 +37,12 @@ export default async function AdminClaimsPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
   if (!isAdmin) redirect("/dashboard");
 
   // Fetch all claims with event and requester info
@@ -116,7 +116,7 @@ export default async function AdminClaimsPage() {
           Pending ({pendingClaims.length})
         </h2>
         {pendingClaims.length > 0 ? (
-          <ClaimsTable claims={pendingClaims} adminId={session.user.id} />
+          <ClaimsTable claims={pendingClaims} adminId={sessionUser.id} />
         ) : (
           <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center text-[var(--color-text-tertiary)]">
             No pending claims
@@ -131,7 +131,7 @@ export default async function AdminClaimsPage() {
           Approved ({approvedClaims.length})
         </h2>
         {approvedClaims.length > 0 ? (
-          <ClaimsTable claims={approvedClaims} adminId={session.user.id} showActions={false} />
+          <ClaimsTable claims={approvedClaims} adminId={sessionUser.id} showActions={false} />
         ) : (
           <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center text-[var(--color-text-tertiary)]">
             No approved claims
@@ -146,7 +146,7 @@ export default async function AdminClaimsPage() {
           Rejected ({rejectedClaims.length})
         </h2>
         {rejectedClaims.length > 0 ? (
-          <ClaimsTable claims={rejectedClaims} adminId={session.user.id} showActions={false} />
+          <ClaimsTable claims={rejectedClaims} adminId={sessionUser.id} showActions={false} />
         ) : (
           <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center text-[var(--color-text-tertiary)]">
             No rejected claims

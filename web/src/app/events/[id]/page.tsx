@@ -234,13 +234,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
   // Draft protection: only hosts/admins can view unpublished events
   if (!event.is_published) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    if (!sessionUser) {
       redirect("/happenings");
     }
 
     // Check if user is admin
-    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
     // Check if user is an event host
     // Phase 4.39: Use event.id (UUID) not route param which could be a slug
@@ -248,7 +248,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       .from("event_hosts")
       .select("id")
       .eq("event_id", event.id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("invitation_status", "accepted")
       .maybeSingle();
 
@@ -600,19 +600,19 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     .limit(12);
 
   // Phase 4.22.3: Check for unclaimed event and user's existing claim
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
   const eventHostId = (event as { host_id?: string | null }).host_id;
   const isUnclaimed = !eventHostId;
-  const isUserTheHost = session && eventHostId === session.user.id;
+  const isUserTheHost = sessionUser && eventHostId === sessionUser.id;
   let userClaim: { status: "pending" | "approved" | "rejected"; rejection_reason?: string | null } | null = null;
 
-  if (session && isUnclaimed) {
+  if (sessionUser && isUnclaimed) {
     // Phase 4.39: Use event.id (UUID) not route param which could be a slug
     const { data: existingClaim } = await supabase
       .from("event_claims")
       .select("status, rejection_reason")
       .eq("event_id", event.id)
-      .eq("requester_id", session.user.id)
+      .eq("requester_id", sessionUser.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -622,7 +622,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       // (e.g., admin removed them). Allow them to re-claim by treating it as no claim.
       const isStaleApprovedClaim =
         existingClaim.status === "approved" &&
-        !eventHosts?.some(h => h.user_id === session.user.id);
+        !eventHosts?.some(h => h.user_id === sessionUser.id);
 
       if (!isStaleApprovedClaim) {
         userClaim = {
@@ -636,23 +636,23 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase 4.32: Check if current user can manage this event (host or admin)
   let canManageEvent = false;
   let isAdminUser = false;
-  if (session) {
+  if (sessionUser) {
     // Check if user is in event_hosts table
-    const isEventHost = eventHosts?.some(h => h.user_id === session.user.id);
+    const isEventHost = eventHosts?.some(h => h.user_id === sessionUser.id);
     // Check if user is admin
-    isAdminUser = await checkAdminRole(supabase, session.user.id);
+    isAdminUser = await checkAdminRole(supabase, sessionUser.id);
     // User can manage if they're the primary host, an event host, or an admin
     canManageEvent = isUserTheHost || isEventHost || isAdminUser;
   }
 
   // Phase 4.51d: Check if admin is watching this event
   let isWatching = false;
-  if (session && isAdminUser) {
+  if (sessionUser && isAdminUser) {
     const { data: watcherEntry } = await supabase
       .from("event_watchers")
       .select("user_id")
       .eq("event_id", event.id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .maybeSingle();
     isWatching = !!watcherEntry;
   }
@@ -1474,7 +1474,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
               </div>
             </div>
           )}
-          {session && isUnclaimed && (
+          {sessionUser && isUnclaimed && (
             <div className="mt-8">
               <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
                 Claim This Happening

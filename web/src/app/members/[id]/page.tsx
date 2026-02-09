@@ -216,8 +216,8 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
   const blogPosts = blogPostsData ?? [];
 
   // Check if viewer is the profile owner (for private sections)
-  const { data: { session } } = await supabase.auth.getSession();
-  const isOwner = session?.user?.id === member.id;
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+  const isOwner = sessionUser?.id === member.id;
 
   // Private sections: Only query if viewer is the owner
   // These types match the shape returned by our queries

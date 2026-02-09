@@ -20,16 +20,16 @@ export default async function EditOccurrencePage({ params }: PageProps) {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
+  if (sessionUserError || !sessionUser) redirect("/login");
 
   // Validate dateKey format
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
     notFound();
   }
 
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
   // Fetch event with venue
   const { data: event, error } = await supabase
@@ -48,10 +48,10 @@ export default async function EditOccurrencePage({ params }: PageProps) {
   }
 
   // Authorization check
-  const isEventOwner = event.host_id === session.user.id;
+  const isEventOwner = event.host_id === sessionUser.id;
   const hosts = event.event_hosts as Array<{ user_id: string; invitation_status: string }> | null;
   const isAcceptedHost = hosts?.some(
-    (h) => h.user_id === session.user.id && h.invitation_status === "accepted"
+    (h) => h.user_id === sessionUser.id && h.invitation_status === "accepted"
   );
 
   if (!isAdmin && !isEventOwner && !isAcceptedHost) {

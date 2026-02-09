@@ -101,8 +101,8 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   // Get current user for like status
-  const { data: { session } } = await supabase.auth.getSession();
-  const currentUserId = session?.user?.id;
+  const { data: { user: sessionUser } } = await supabase.auth.getUser();
+  const currentUserId = sessionUser?.id;
 
   // Fetch like count, user's like status, and gallery images (comments fetched client-side)
   const [likesRes, userLikeRes, galleryRes] = await Promise.all([

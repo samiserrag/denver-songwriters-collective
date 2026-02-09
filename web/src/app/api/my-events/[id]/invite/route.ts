@@ -52,10 +52,10 @@ export async function POST(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -63,7 +63,7 @@ export async function POST(
     const { authorized, event } = await checkInviteAuthorization(
       supabase,
       eventId,
-      session.user.id
+      sessionUser.id
     );
 
     if (!event) {
@@ -107,7 +107,7 @@ export async function POST(
         email_restriction: emailRestriction,
         role_to_grant: roleToGrant,
         expires_at: expiresAt.toISOString(),
-        created_by: session.user.id,
+        created_by: sessionUser.id,
       })
       .select("id")
       .single();
@@ -155,10 +155,10 @@ export async function GET(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -166,7 +166,7 @@ export async function GET(
     const { authorized, event } = await checkInviteAuthorization(
       supabase,
       eventId,
-      session.user.id
+      sessionUser.id
     );
 
     if (!event) {

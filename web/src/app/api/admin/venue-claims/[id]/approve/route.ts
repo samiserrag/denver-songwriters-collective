@@ -19,14 +19,14 @@ export async function POST(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    const isAdmin = await checkAdminRole(supabase, sessionUser.id);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -64,7 +64,7 @@ export async function POST(
         .from("venue_claims")
         .update({
           status: "rejected",
-          reviewed_by: session.user.id,
+          reviewed_by: sessionUser.id,
           reviewed_at: new Date().toISOString(),
           rejection_reason: "User already has active access to this venue.",
         })
@@ -81,7 +81,7 @@ export async function POST(
       .from("venue_claims")
       .update({
         status: "approved",
-        reviewed_by: session.user.id,
+        reviewed_by: sessionUser.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", claimId);
@@ -100,7 +100,7 @@ export async function POST(
       user_id: claim.requester_id,
       role: "owner",
       grant_method: "claim",
-      created_by: session.user.id,
+      created_by: sessionUser.id,
     });
 
     if (grantError) {

@@ -40,14 +40,14 @@ export default async function AdminVenueClaimsPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     redirect("/login?redirect=/dashboard/admin/venue-claims");
   }
 
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
   if (!isAdmin) {
     redirect("/dashboard");
   }
@@ -122,7 +122,7 @@ export default async function AdminVenueClaimsPage() {
         {pendingClaims.length > 0 ? (
           <VenueClaimsTable
             claims={pendingClaims}
-            adminId={session.user.id}
+            adminId={sessionUser.id}
             showActions={true}
           />
         ) : (
@@ -157,7 +157,7 @@ export default async function AdminVenueClaimsPage() {
 
             <VenueClaimsTable
               claims={resolvedClaims}
-              adminId={session.user.id}
+              adminId={sessionUser.id}
               showActions={false}
             />
           </details>

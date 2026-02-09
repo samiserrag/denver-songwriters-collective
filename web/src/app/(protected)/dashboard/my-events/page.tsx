@@ -13,18 +13,18 @@ export const metadata = {
 
 export default async function MyEventsPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
   // Check if approved host or admin (admins are automatically hosts)
-  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
 
   // Fetch user's events via direct query
   const { data: hostEntries } = await supabase
     .from("event_hosts")
     .select("event_id, role, invitation_status")
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .eq("invitation_status", "accepted");
 
   let events: Array<{

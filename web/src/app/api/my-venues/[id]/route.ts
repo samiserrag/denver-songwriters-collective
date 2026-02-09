@@ -16,10 +16,10 @@ export async function DELETE(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,7 +28,7 @@ export async function DELETE(
       .from("venue_managers")
       .select("id, role")
       .eq("venue_id", venueId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .is("revoked_at", null)
       .maybeSingle();
 
@@ -64,7 +64,7 @@ export async function DELETE(
       .from("venue_managers")
       .update({
         revoked_at: new Date().toISOString(),
-        revoked_by: session.user.id,
+        revoked_by: sessionUser.id,
         revoked_reason: "User relinquished access",
       })
       .eq("id", grant.id);

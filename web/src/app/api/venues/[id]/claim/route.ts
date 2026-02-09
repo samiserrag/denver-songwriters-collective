@@ -17,10 +17,10 @@ export async function POST(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -43,7 +43,7 @@ export async function POST(
       .from("venue_claims")
       .select("id, status")
       .eq("venue_id", venueId)
-      .eq("requester_id", session.user.id)
+      .eq("requester_id", sessionUser.id)
       .eq("status", "pending")
       .maybeSingle();
 
@@ -59,7 +59,7 @@ export async function POST(
       .from("venue_managers")
       .select("id")
       .eq("venue_id", venueId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .is("revoked_at", null)
       .maybeSingle();
 
@@ -75,7 +75,7 @@ export async function POST(
       .from("venue_claims")
       .insert({
         venue_id: venueId,
-        requester_id: session.user.id,
+        requester_id: sessionUser.id,
         message,
       })
       .select("id")
@@ -112,10 +112,10 @@ export async function DELETE(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -124,7 +124,7 @@ export async function DELETE(
       .from("venue_claims")
       .select("id")
       .eq("venue_id", venueId)
-      .eq("requester_id", session.user.id)
+      .eq("requester_id", sessionUser.id)
       .eq("status", "pending")
       .maybeSingle();
 

@@ -20,14 +20,14 @@ export async function POST(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    const isAdmin = await checkAdminRole(supabase, sessionUser.id);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -63,7 +63,7 @@ export async function POST(
         token_hash: tokenHash,
         email_restriction: emailRestriction,
         expires_at: expiresAt.toISOString(),
-        created_by: session.user.id,
+        created_by: sessionUser.id,
       })
       .select("id")
       .single();
@@ -105,14 +105,14 @@ export async function GET(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    const isAdmin = await checkAdminRole(supabase, sessionUser.id);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

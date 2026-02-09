@@ -27,9 +27,9 @@ export async function GET(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json(null);
   }
 
@@ -53,7 +53,7 @@ export async function GET(
     .select("*")
     .eq("event_id", eventId)
     .eq("date_key", effectiveDateKey)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .neq("status", "cancelled")
     .maybeSingle();
 
@@ -67,7 +67,7 @@ export async function GET(
       .select("*")
       .eq("event_id", eventId)
       .eq("date_key", effectiveDateKey)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .neq("status", "cancelled")
       .maybeSingle();
     return NextResponse.json({ ...refreshedData, effective_date_key: effectiveDateKey });
@@ -83,9 +83,9 @@ export async function POST(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -106,7 +106,7 @@ export async function POST(
     .select("id, status")
     .eq("event_id", eventId)
     .eq("date_key", effectiveDateKey)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .maybeSingle();
 
   if (existing) {
@@ -193,7 +193,7 @@ export async function POST(
       .from("event_rsvps")
       .insert({
         event_id: eventId,
-        user_id: session.user.id,
+        user_id: sessionUser.id,
         date_key: effectiveDateKey,
         status,
         waitlist_position: waitlistPosition,
@@ -215,7 +215,7 @@ export async function POST(
 
   // Send RSVP confirmation email (don't fail if email fails)
   try {
-    const userEmail = session.user.email;
+    const userEmail = sessionUser.email;
     if (userEmail && event.title) {
       const emailData = getRsvpConfirmationEmail({
         eventTitle: event.title,
@@ -246,14 +246,14 @@ export async function POST(
   const { data: rsvpUserProfile } = await supabase
     .from("profiles")
     .select("full_name")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
 
   notifyHostsOfRsvp(
     supabase,
     eventId,
     effectiveDateKey,
-    session.user.id,
+    sessionUser.id,
     rsvpUserProfile?.full_name || "A member",
     event.title || "Event",
     `/events/${event.slug || eventId}?date=${effectiveDateKey}`,
@@ -271,9 +271,9 @@ export async function DELETE(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -294,7 +294,7 @@ export async function DELETE(
     .select("id, status, date_key")
     .eq("event_id", eventId)
     .eq("date_key", effectiveDateKey)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .neq("status", "cancelled")
     .maybeSingle();
 
@@ -353,9 +353,9 @@ export async function PATCH(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -380,7 +380,7 @@ export async function PATCH(
   await processExpiredOffers(supabase, eventId, effectiveDateKey);
 
   // Try to confirm the offer for this specific date
-  const result = await confirmOffer(supabase, eventId, session.user.id, effectiveDateKey);
+  const result = await confirmOffer(supabase, eventId, sessionUser.id, effectiveDateKey);
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 });
@@ -392,7 +392,7 @@ export async function PATCH(
     .select("*")
     .eq("event_id", eventId)
     .eq("date_key", effectiveDateKey)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .single();
 
   return NextResponse.json({ ...rsvp, effective_date_key: effectiveDateKey });

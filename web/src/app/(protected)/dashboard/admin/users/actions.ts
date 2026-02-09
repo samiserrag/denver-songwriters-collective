@@ -407,17 +407,17 @@ export async function updateSpotlightType(
 
   // Verify the current user is an admin
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (sessionUserError || !sessionUser) {
     return { success: false, error: "Not authenticated" };
   }
 
   const { data: adminProfile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
 
   if (!adminProfile || adminProfile.role !== "admin") {
@@ -462,17 +462,17 @@ export async function toggleHostStatus(
 
   // Verify the current user is an admin
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (sessionUserError || !sessionUser) {
     return { success: false, error: "Not authenticated" };
   }
 
   const { data: adminProfile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
 
   if (!adminProfile || adminProfile.role !== "admin") {

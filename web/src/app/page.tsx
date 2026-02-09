@@ -129,8 +129,8 @@ export default async function HomePage() {
   // Session available for future auth-aware features
   const {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    data: { session: _session },
-  } = await supabase.auth.getSession();
+    data: { user: _session },
+  } = await supabase.auth.getUser();
 
   // Fetch site settings for hero image URL + playlist URLs
   const siteSettings = await getSiteSettings();

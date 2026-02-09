@@ -10,9 +10,9 @@ export const metadata = {
 
 export default async function InvitationsPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
   // First get the pending invitations
   // Note: invited_by FK points to auth.users, not profiles, so we can't use FK join
@@ -22,7 +22,7 @@ export default async function InvitationsPage() {
       *,
       event:events(id, title, event_type, venue_name, start_time)
     `)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .eq("invitation_status", "pending")
     .order("invited_at", { ascending: false });
 

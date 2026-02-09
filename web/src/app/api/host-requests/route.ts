@@ -5,10 +5,10 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const { data: existingHost } = await supabase
     .from("approved_hosts")
     .select()
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .eq("status", "active")
     .maybeSingle();
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const { data: pendingRequest } = await supabase
     .from("host_requests")
     .select()
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .eq("status", "pending")
     .maybeSingle();
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("host_requests")
     .insert({
-      user_id: session.user.id,
+      user_id: sessionUser.id,
       message,
     })
     .select()
@@ -64,10 +64,10 @@ export async function POST(request: Request) {
 export async function GET() {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -75,7 +75,7 @@ export async function GET() {
   const { data: hostStatus } = await supabase
     .from("approved_hosts")
     .select("*")
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .maybeSingle();
 
   if (hostStatus) {
@@ -86,7 +86,7 @@ export async function GET() {
   const { data: hostRequest } = await supabase
     .from("host_requests")
     .select("*")
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

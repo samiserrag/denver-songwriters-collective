@@ -7,9 +7,9 @@ import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccu
 // GET - Get events where user is host/cohost
 export async function GET() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -17,7 +17,7 @@ export async function GET() {
   const { data: hostEntries, error: hostError } = await supabase
     .from("event_hosts")
     .select("event_id, role, invitation_status")
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .eq("invitation_status", "accepted");
 
   if (hostError) {
@@ -222,19 +222,19 @@ function buildEventInsert(params: EventInsertParams) {
 // POST - Create new CSC event (or series of events)
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Check host/admin status for CSC branding permission (not creation blocking)
-  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
 
   const isAdmin = profile?.role === "admin";
@@ -390,7 +390,7 @@ export async function POST(request: Request) {
     // Phase 4.42d: Use unified insert builder to ensure host_id is always set
     // This fixes RLS violation for series creation where host_id was missing
     const insertPayload = buildEventInsert({
-      userId: session.user.id,
+      userId: sessionUser.id,
       body,
       isCSCEvent,
       eventStatus,
@@ -436,10 +436,10 @@ export async function POST(request: Request) {
       .from("event_hosts")
       .insert({
         event_id: event.id,
-        user_id: session.user.id,
+        user_id: sessionUser.id,
         role: "host",
         invitation_status: "accepted",
-        invited_by: session.user.id,
+        invited_by: sessionUser.id,
         responded_at: new Date().toISOString()
       });
 

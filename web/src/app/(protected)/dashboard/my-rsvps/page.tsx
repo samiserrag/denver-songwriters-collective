@@ -27,14 +27,14 @@ export default async function MyRSVPsPage({ searchParams }: PageProps) {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     redirect("/login?redirectTo=/dashboard/my-rsvps");
   }
 
-  const userId = session.user.id;
+  const userId = sessionUser.id;
   const today = new Date().toISOString().split("T")[0];
 
   // Determine active tab

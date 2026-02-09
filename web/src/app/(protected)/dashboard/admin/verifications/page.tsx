@@ -33,8 +33,8 @@ export default async function AdminVerificationsPage() {
   // Support test environments where auth.getSession may not be available on the mocked client.
   let user = null;
   if (typeof supabase.auth.getSession === "function") {
-    const { data: { session } } = await supabase.auth.getSession();
-    user = session?.user ?? null;
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    user = sessionUser ?? null;
   } else {
     const { data: { user: _user } } = await supabase.auth.getUser();
     user = _user ?? null;

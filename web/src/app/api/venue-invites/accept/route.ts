@@ -14,10 +14,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Check email restriction if set
     if (invite.email_restriction) {
-      const userEmail = session.user.email?.toLowerCase();
+      const userEmail = sessionUser.email?.toLowerCase();
       if (userEmail !== invite.email_restriction) {
         return NextResponse.json(
           { error: "This invite is restricted to a different email address" },
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       .from("venue_managers")
       .select("id")
       .eq("venue_id", invite.venue_id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .is("revoked_at", null)
       .maybeSingle();
 
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       .from("venue_invites")
       .update({
         accepted_at: new Date().toISOString(),
-        accepted_by: session.user.id,
+        accepted_by: sessionUser.id,
       })
       .eq("id", invite.id);
 
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     // Grant manager access (invites grant manager role, not owner)
     const { error: grantError } = await serviceClient.from("venue_managers").insert({
       venue_id: invite.venue_id,
-      user_id: session.user.id,
+      user_id: sessionUser.id,
       role: "manager",
       grant_method: "invite",
       created_by: null, // Invite-based, no direct creator
@@ -153,13 +153,13 @@ export async function POST(request: NextRequest) {
       const { data: acceptorProfile } = await supabase
         .from("profiles")
         .select("full_name, email")
-        .eq("id", session.user.id)
+        .eq("id", sessionUser.id)
         .single();
 
       const acceptorName =
         acceptorProfile?.full_name ||
         acceptorProfile?.email ||
-        session.user.email ||
+        sessionUser.email ||
         "Someone";
 
       const venueName = venue?.name || "the venue";

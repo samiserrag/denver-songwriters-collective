@@ -19,14 +19,14 @@ export async function DELETE(
     const supabase = await createSupabaseServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user: sessionUser }, error: sessionUserError,
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (sessionUserError || !sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isAdmin = await checkAdminRole(supabase, session.user.id);
+    const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
     // Fetch event to check ownership
     const { data: event, error: eventError } = await supabase
@@ -40,7 +40,7 @@ export async function DELETE(
     }
 
     // Check authorization
-    if (!isAdmin && event.host_id !== session.user.id) {
+    if (!isAdmin && event.host_id !== sessionUser.id) {
       return NextResponse.json(
         { error: "Only admins or the primary host can revoke invites" },
         { status: 403 }
@@ -89,7 +89,7 @@ export async function DELETE(
       .from("event_invites")
       .update({
         revoked_at: new Date().toISOString(),
-        revoked_by: session.user.id,
+        revoked_by: sessionUser.id,
         revoked_reason: reason,
       })
       .eq("id", inviteId);

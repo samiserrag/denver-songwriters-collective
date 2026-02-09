@@ -5,10 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("notifications")
     .select("*", { count: "exact" })
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: Request) {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -74,7 +74,7 @@ export async function PATCH(request: Request) {
     const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("is_read", false);
 
     if (error) {
@@ -85,7 +85,7 @@ export async function PATCH(request: Request) {
     const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .in("id", ids);
 
     if (error) {
@@ -101,10 +101,10 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -117,7 +117,7 @@ export async function DELETE(request: Request) {
     const { error, count } = await supabase
       .from("notifications")
       .delete({ count: "exact" })
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("is_read", true);
 
     if (error) {
@@ -130,7 +130,7 @@ export async function DELETE(request: Request) {
     const { error, count } = await supabase
       .from("notifications")
       .delete({ count: "exact" })
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .lt("created_at", olderThan);
 
     if (error) {
@@ -143,7 +143,7 @@ export async function DELETE(request: Request) {
     const { error, count } = await supabase
       .from("notifications")
       .delete({ count: "exact" })
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .in("id", ids);
 
     if (error) {

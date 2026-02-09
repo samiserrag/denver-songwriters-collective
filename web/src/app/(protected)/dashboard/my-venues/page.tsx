@@ -14,10 +14,10 @@ export default async function MyVenuesPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     redirect("/login?redirect=/dashboard/my-venues");
   }
 
@@ -25,7 +25,7 @@ export default async function MyVenuesPage() {
   const { data: managerGrants } = await supabase
     .from("venue_managers")
     .select("id, venue_id, role, grant_method, created_at")
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .is("revoked_at", null)
     .order("created_at", { ascending: false });
 
@@ -53,7 +53,7 @@ export default async function MyVenuesPage() {
   const { data: pendingClaims } = await supabase
     .from("venue_claims")
     .select("id, venue_id, status, created_at")
-    .eq("requester_id", session.user.id)
+    .eq("requester_id", sessionUser.id)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 

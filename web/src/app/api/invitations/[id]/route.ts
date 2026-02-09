@@ -8,9 +8,9 @@ export async function PATCH(
 ) {
   const { id: invitationId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,7 +25,7 @@ export async function PATCH(
     .from("event_hosts")
     .select("*")
     .eq("id", invitationId)
-    .eq("user_id", session.user.id)
+    .eq("user_id", sessionUser.id)
     .eq("invitation_status", "pending")
     .single();
 

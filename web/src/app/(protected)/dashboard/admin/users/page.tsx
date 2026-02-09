@@ -14,10 +14,10 @@ export default async function AdminUsersPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
 
-  const user = session?.user ?? null;
+  const user = sessionUser ?? null;
   if (!user) {
     return <div className="p-8 text-red-500">You must be logged in.</div>;
   }

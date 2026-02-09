@@ -11,22 +11,22 @@ export async function POST(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Check if user is any accepted host (primary or cohost) or admin
   // Cohosts are equal partners and can invite other cohosts
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
   if (!isAdmin) {
     const { data: hostEntry } = await supabase
       .from("event_hosts")
       .select("role")
       .eq("event_id", eventId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("invitation_status", "accepted")
       .maybeSingle();
 
@@ -81,7 +81,7 @@ export async function POST(
   }
 
   // Prevent inviting yourself
-  if (targetUserId === session.user.id) {
+  if (targetUserId === sessionUser.id) {
     return NextResponse.json({ error: "You cannot invite yourself" }, { status: 400 });
   }
 
@@ -113,7 +113,7 @@ export async function POST(
       user_id: targetUserId,
       role: "cohost",
       invitation_status: "pending",
-      invited_by: session.user.id
+      invited_by: sessionUser.id
     })
     .select("*")
     .single();
@@ -133,7 +133,7 @@ export async function POST(
   const { data: inviter } = await serviceClient
     .from("profiles")
     .select("full_name")
-    .eq("id", session.user.id)
+    .eq("id", sessionUser.id)
     .single();
 
   // Fetch invited user profile for email
@@ -197,15 +197,15 @@ export async function DELETE(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { user_id } = await request.json();
-  const isSelfRemoval = user_id === session.user.id;
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isSelfRemoval = user_id === sessionUser.id;
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
   // Use service role client for all operations
   const serviceClient = createServiceRoleClient();
@@ -233,7 +233,7 @@ export async function DELETE(
       .from("event_hosts")
       .select("role")
       .eq("event_id", eventId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .eq("invitation_status", "accepted")
       .eq("role", "host")
       .maybeSingle();
@@ -258,7 +258,7 @@ export async function DELETE(
       .from("event_hosts")
       .select("role")
       .eq("event_id", eventId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", sessionUser.id)
       .maybeSingle();
 
     if (!selfHostEntry) {
@@ -360,7 +360,7 @@ export async function DELETE(
     const { data: remover } = await serviceClient
       .from("profiles")
       .select("full_name")
-      .eq("id", session.user.id)
+      .eq("id", sessionUser.id)
       .single();
 
     const removerName = remover?.full_name || "An admin";

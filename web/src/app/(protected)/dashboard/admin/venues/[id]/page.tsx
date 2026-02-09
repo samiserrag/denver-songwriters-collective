@@ -30,14 +30,14 @@ export default async function AdminVenueDetailPage({
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (sessionUserError || !sessionUser) {
     redirect("/login");
   }
 
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
   if (!isAdmin) {
     redirect("/dashboard");
   }
@@ -233,7 +233,7 @@ export default async function AdminVenueDetailPage({
               created_at: string;
               deleted_at: string | null;
             }>}
-            userId={session.user.id}
+            userId={sessionUser.id}
           />
         </section>
 

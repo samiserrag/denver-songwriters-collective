@@ -16,12 +16,12 @@ export default async function UserGalleryPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user: sessionUser }, error: sessionUserError,
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
-  const userId = session.user.id;
+  const userId = sessionUser.id;
 
   // Fetch user's albums with photo counts
   const { data: userAlbums } = await supabase

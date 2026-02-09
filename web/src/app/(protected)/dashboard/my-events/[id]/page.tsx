@@ -40,15 +40,15 @@ export default async function EditEventPage({
   const { id: eventId } = await params;
   const { created } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (sessionUserError || !sessionUser) redirect("/login");
 
   // Check if user can manage this event (admins have full access)
-  const isAdmin = await checkAdminRole(supabase, session.user.id);
+  const isAdmin = await checkAdminRole(supabase, sessionUser.id);
 
   // Check if user can create CSC-branded events
-  const isApprovedHost = await checkHostStatus(supabase, session.user.id);
+  const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
   const canCreateCSC = isApprovedHost || isAdmin;
 
   // Fetch event with venue
@@ -96,9 +96,9 @@ export default async function EditEventPage({
   // Check authorization
   // Phase 4.42e: Also allow event owner (host_id) to edit, not just event_hosts entries
   const userHost = hostsWithProfiles.find(
-    (h) => h.user_id === session.user.id && h.invitation_status === "accepted"
+    (h) => h.user_id === sessionUser.id && h.invitation_status === "accepted"
   );
-  const isEventOwner = event.host_id === session.user.id;
+  const isEventOwner = event.host_id === sessionUser.id;
 
   if (!isAdmin && !userHost && !isEventOwner) {
     redirect("/dashboard");
@@ -275,7 +275,7 @@ export default async function EditEventPage({
           hasTimeslots={hasTimeslots}
           hasActiveClaims={hasActiveClaims}
           hosts={hostsWithProfiles}
-          currentUserId={session.user.id}
+          currentUserId={sessionUser.id}
           currentUserRole={currentUserRole}
           isPrimaryHost={isPrimaryHost}
           isAdmin={isAdmin}
