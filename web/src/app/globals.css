@@ -155,6 +155,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -178,6 +180,8 @@ body {
   /* Flexbox layout to prevent footer CLS */
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Headings use display font */
@@ -189,6 +193,7 @@ h1, h2, h3, h4, h5, h6 {
 body > main {
   flex: 1 0 auto;
   min-height: calc(100lvh - 64px);
+  min-width: 0;
 }
 
 /* Footer stays at bottom, uses natural content height */

@@ -12,7 +12,7 @@ export function DashboardLayoutClient({ children, isAdmin }: DashboardLayoutClie
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)]">
+    <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
       <DashboardSidebar
         isAdmin={isAdmin}
         isMobileOpen={mobileMenuOpen}
@@ -20,7 +20,7 @@ export function DashboardLayoutClient({ children, isAdmin }: DashboardLayoutClie
       />
 
       {/* Main content area - offset on desktop for sidebar */}
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64">
         {children}
       </div>
 
