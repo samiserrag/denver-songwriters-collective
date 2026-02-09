@@ -9,7 +9,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface Props {
   eventId: string;
@@ -72,23 +71,16 @@ export function ClaimEventButton({ eventId, eventTitle, existingClaim }: Props) 
     setError(null);
 
     try {
-      const supabase = createSupabaseBrowserClient();
+      const response = await fetch(`/api/events/${eventId}/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message.trim() || null }),
+      });
 
-      const { error: insertError } = await supabase
-        .from("event_claims")
-        .insert({
-          event_id: eventId,
-          requester_id: (await supabase.auth.getUser()).data.user?.id,
-          message: message.trim() || null,
-        });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
 
-      if (insertError) {
-        if (insertError.code === "23505") {
-          // Unique constraint violation
-          setError("You already have a pending claim for this happening.");
-        } else {
-          setError(insertError.message);
-        }
+      if (!response.ok) {
+        setError(data.error || "Failed to submit claim.");
         setIsSubmitting(false);
         return;
       }
