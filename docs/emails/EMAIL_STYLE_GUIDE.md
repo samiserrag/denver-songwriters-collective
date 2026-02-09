@@ -3,6 +3,11 @@
 **Last Updated:** December 2025
 **Purpose:** Single source of truth for DSC transactional email voice, tone, and formatting.
 
+## Shared Email Image Assets
+
+- Header image (public): `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/web/public/images/CSC Email Header1.png`
+- Use this path when coordinating email template updates across agents and tooling.
+
 ---
 
 ## Email Voice (Summary)

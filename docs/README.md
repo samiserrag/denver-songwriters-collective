@@ -8,6 +8,7 @@ This directory contains canonical documentation for The Colorado Songwriters Col
 
 | Document | Purpose |
 |----------|---------|
+| [../AGENTS.md](../AGENTS.md) | Agent execution handbook (roles, tooling, browser validation expectations) |
 | [BACKLOG.md](./BACKLOG.md) | **Active backlog** — All TODOs and feature tracking |
 | [CONTRACTS.md](./CONTRACTS.md) | Enforceable UI/data contracts |
 | [GOVERNANCE.md](./GOVERNANCE.md) | Stop-gate workflow and shipping process |

@@ -4,6 +4,8 @@
 **Version:** 1.3
 **Last Updated:** February 2026
 
+Companion operational guide for agents: [../AGENTS.md](../AGENTS.md)
+
 > This document defines how changes ship in this repository. All contributors and agents must follow this workflow.
 
 ---

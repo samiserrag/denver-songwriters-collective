@@ -38,6 +38,7 @@ npm run dev
 
 | Document | Purpose |
 |----------|---------|
+| [AGENTS.md](./AGENTS.md) | Agent roles, tool expectations, and execution workflow |
 | [CLAUDE.md](./CLAUDE.md) | Repo operations (start here for agents) |
 | [SECURITY.md](./SECURITY.md) | Database security invariants (CI-enforced) |
 | [docs/GOVERNANCE.md](./docs/GOVERNANCE.md) | Stop-gate workflow & shipping process |
