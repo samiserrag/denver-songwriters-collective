@@ -63,10 +63,10 @@ export function Header({ className, socialLinks = [] }: HeaderProps) {
       )}
       role="banner"
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Logo variant="full" className="hover:opacity-90 transition-opacity" />
 
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden xl:flex items-center gap-1">
           {navLinks.map((link) => (
             <NavLink key={link.href} href={link.href}>
               {link.label}
@@ -74,9 +74,11 @@ export function Header({ className, socialLinks = [] }: HeaderProps) {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden xl:flex items-center gap-2">
           {/* Global Search */}
-          <GlobalSearch />
+          <div className="hidden 2xl:block">
+            <GlobalSearch />
+          </div>
 
           {/* Theme Picker */}
           <ThemePicker compact />
@@ -84,7 +86,7 @@ export function Header({ className, socialLinks = [] }: HeaderProps) {
           {/* Social Links */}
           <SiteSocialLinks
             socialLinks={socialLinks}
-            className="flex items-center gap-2"
+            className="hidden 2xl:flex items-center gap-2"
             linkClassName="text-[var(--color-text-secondary)] hover:text-[var(--color-text-accent)] transition-colors p-1"
             iconClassName="w-4 h-4"
           />
@@ -116,7 +118,7 @@ export function Header({ className, socialLinks = [] }: HeaderProps) {
 
         <button
           ref={menuTriggerRef}
-          className="lg:hidden p-2 text-[var(--color-text-primary)]"
+          className="xl:hidden p-2 text-[var(--color-text-primary)]"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
