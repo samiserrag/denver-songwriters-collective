@@ -116,7 +116,7 @@ export default async function AdminClaimsPage() {
           Pending ({pendingClaims.length})
         </h2>
         {pendingClaims.length > 0 ? (
-          <ClaimsTable claims={pendingClaims} adminId={sessionUser.id} />
+          <ClaimsTable claims={pendingClaims} />
         ) : (
           <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center text-[var(--color-text-tertiary)]">
             No pending claims
@@ -131,7 +131,7 @@ export default async function AdminClaimsPage() {
           Approved ({approvedClaims.length})
         </h2>
         {approvedClaims.length > 0 ? (
-          <ClaimsTable claims={approvedClaims} adminId={sessionUser.id} showActions={false} />
+          <ClaimsTable claims={approvedClaims} showActions={false} />
         ) : (
           <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center text-[var(--color-text-tertiary)]">
             No approved claims
@@ -146,7 +146,7 @@ export default async function AdminClaimsPage() {
           Rejected ({rejectedClaims.length})
         </h2>
         {rejectedClaims.length > 0 ? (
-          <ClaimsTable claims={rejectedClaims} adminId={sessionUser.id} showActions={false} />
+          <ClaimsTable claims={rejectedClaims} showActions={false} />
         ) : (
           <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-center text-[var(--color-text-tertiary)]">
             No rejected claims

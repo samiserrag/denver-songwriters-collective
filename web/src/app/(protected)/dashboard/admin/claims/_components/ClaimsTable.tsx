@@ -10,7 +10,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface EventClaim {
   id: string;
@@ -38,13 +37,11 @@ interface EventClaim {
 
 interface Props {
   claims: EventClaim[];
-  adminId: string;
   showActions?: boolean;
 }
 
 export default function ClaimsTable({
   claims,
-  adminId,
   showActions = true,
 }: Props) {
   const router = useRouter();
@@ -59,87 +56,24 @@ export default function ClaimsTable({
     setLoadingId(claim.id);
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
+    try {
+      const res = await fetch(`/api/admin/event-claims/${claim.id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
 
-    // Check if event is still unclaimed
-    const { data: currentEvent } = await supabase
-      .from("events")
-      .select("host_id")
-      .eq("id", claim.event_id)
-      .single();
-
-    if (currentEvent?.host_id) {
-      // Event already claimed - auto-reject
-      const { error: rejectError } = await supabase
-        .from("event_claims")
-        .update({
-          status: "rejected",
-          reviewed_by: adminId,
-          reviewed_at: new Date().toISOString(),
-          rejection_reason: "Event was already claimed by another user.",
-        })
-        .eq("id", claim.id);
-
-      if (rejectError) {
-        setError("Failed to auto-reject claim: " + rejectError.message);
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error || "Failed to approve claim.");
+        setLoadingId(null);
+        return;
       }
-      setLoadingId(null);
-      router.refresh();
-      return;
-    }
-
-    // Transaction: Update claim status
-    const { error: claimError } = await supabase
-      .from("event_claims")
-      .update({
-        status: "approved",
-        reviewed_by: adminId,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", claim.id);
-
-    if (claimError) {
-      setError("Failed to approve claim: " + claimError.message);
+    } catch (err) {
+      console.error("Failed to approve claim:", err);
+      setError("Failed to approve claim.");
       setLoadingId(null);
       return;
     }
-
-    // Update event host_id
-    const { error: eventError } = await supabase
-      .from("events")
-      .update({ host_id: claim.requester_id })
-      .eq("id", claim.event_id)
-      .is("host_id", null);
-
-    if (eventError) {
-      setError("Failed to set event host: " + eventError.message);
-      setLoadingId(null);
-      return;
-    }
-
-    // Insert into event_hosts for consistency with multi-host system
-    const { error: hostError } = await supabase.from("event_hosts").insert({
-      event_id: claim.event_id,
-      user_id: claim.requester_id,
-      role: "host",
-      invitation_status: "accepted",
-      invited_by: adminId,
-    });
-
-    if (hostError && hostError.code !== "23505") {
-      // Ignore duplicate key error
-      console.error("Failed to insert event_host:", hostError);
-    }
-
-    // Notify the claimant that their claim was approved
-    const eventTitle = claim.event?.title || "the event";
-    await supabase.rpc("create_user_notification", {
-      p_user_id: claim.requester_id,
-      p_type: "claim_approved",
-      p_title: `Your claim for "${eventTitle}" was approved!`,
-      p_message: `You're now the host of "${eventTitle}". You can manage it from your dashboard.`,
-      p_link: `/dashboard/my-events/${claim.event_id}`
-    });
 
     setLoadingId(null);
     router.refresh();
@@ -149,36 +83,27 @@ export default function ClaimsTable({
     setLoadingId(claim.id);
     setError(null);
 
-    const supabase = createSupabaseBrowserClient();
+    const reason = rejectionReason.trim() || null;
 
-    const { error: rejectError } = await supabase
-      .from("event_claims")
-      .update({
-        status: "rejected",
-        reviewed_by: adminId,
-        reviewed_at: new Date().toISOString(),
-        rejection_reason: rejectionReason.trim() || null,
-      })
-      .eq("id", claim.id);
+    try {
+      const res = await fetch(`/api/admin/event-claims/${claim.id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
 
-    if (rejectError) {
-      setError("Failed to reject claim: " + rejectError.message);
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error || "Failed to reject claim.");
+        setLoadingId(null);
+        return;
+      }
+    } catch (err) {
+      console.error("Failed to reject claim:", err);
+      setError("Failed to reject claim.");
       setLoadingId(null);
       return;
     }
-
-    // Notify the claimant that their claim was rejected
-    const eventTitle = claim.event?.title || "the event";
-    const reason = rejectionReason.trim();
-    await supabase.rpc("create_user_notification", {
-      p_user_id: claim.requester_id,
-      p_type: "claim_rejected",
-      p_title: `Your claim for "${eventTitle}" was not approved`,
-      p_message: reason
-        ? `Reason: ${reason}. If you believe this is an error, contact an admin.`
-        : `If you believe this is an error, contact an admin.`,
-      p_link: `/happenings`
-    });
 
     setLoadingId(null);
     setRejectingId(null);
