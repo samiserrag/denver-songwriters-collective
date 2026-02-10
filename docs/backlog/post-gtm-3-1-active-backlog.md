@@ -15,7 +15,7 @@
 | 1 | `UX-06` | P0 | DONE — implemented and merged | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md`](../investigation/phase7b-side-tract-homepage-confirmed-mismatch-stopgate.md) |
 | 2 | `GROWTH-01` | P1 | PARTIAL DONE — 7B.1 shipped, 7B.2 deferred to separate STOP-GATE | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/phase7b-community-invite-growth-stopgate.md`](../investigation/phase7b-community-invite-growth-stopgate.md), [`docs/CONTRACTS.md`](../CONTRACTS.md) |
 | 3 | `EMBED-01` | P2 | DONE — production validated | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/embed-01-external-embeds-stopgate.md`](../investigation/embed-01-external-embeds-stopgate.md) (Closeout §14) |
-| 4 | `EMBED-02` | P2 | DONE — venues -> members -> blog -> gallery shipped with tests | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/embed-02-non-event-embeds-stopgate.md`](../investigation/embed-02-non-event-embeds-stopgate.md) |
+| 4 | `EMBED-02` | P2 | DONE — venues -> members -> blog -> gallery shipped with tests (`ed3ae28`) | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/embed-02-non-event-embeds-stopgate.md`](../investigation/embed-02-non-event-embeds-stopgate.md) |
 | 5 | `STRAT-01` | P0 (Strategic) | OPEN — docs-only, execution deferred | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`](../investigation/strat-01-multi-region-whitelabel-stopgate.md), [`docs/NORTH_STAR.md`](../NORTH_STAR.md) |
 
 ---

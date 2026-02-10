@@ -645,7 +645,7 @@ Users who want to find happenings near a specific location (their neighborhood, 
 - Validation summary:
   - `ENABLE_EXTERNAL_EMBEDS=false` -> `503` + `Cache-Control: no-store`
   - `ENABLE_EXTERNAL_EMBEDS=true` -> `200` iframe HTML response for public entities
-- Commit evidence: see `git log --oneline -- web/src/app/embed docs/investigation/embed-02-non-event-embeds-stopgate.md`
+- Commit evidence: `ed3ae28`
 
 ---
 

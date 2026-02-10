@@ -227,4 +227,4 @@ No routing refactor, no migration, no non-embed policy changes.
 - Kill switch ON (`ENABLE_EXTERNAL_EMBEDS=true`): public entities return `200` iframe HTML
 
 **Commit evidence:**
-- `git log --oneline -- web/src/app/embed docs/investigation/embed-02-non-event-embeds-stopgate.md`
+- `ed3ae28`

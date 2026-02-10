@@ -843,6 +843,8 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 **Summary:** Completed EMBED-02 phase-1 using iframe HTML embeds for venues, members, blog posts, and gallery albums with the EMBED-01 contract and kill-switch behavior.
 
+**Commit:** `ed3ae28`
+
 **Routes added:**
 - `web/src/app/embed/venues/[id]/route.ts`
 - `web/src/app/embed/members/[id]/route.ts`
