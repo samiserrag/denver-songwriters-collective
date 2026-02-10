@@ -346,7 +346,7 @@ Polish member profiles before external test users see them. Three scope areas:
 |----|------|----------|--------|-------|
 | STRAT-01 | Multi-Region + White-Label Rebrand Architecture | P0 (Strategic) | OPEN — docs-only foundation in place, code deferred | Canonical strategic tract spanning rebrand + region/community abstraction |
 | STRAT-01A | Colorado rebrand naming strategy (urgent, reversible) | P0 | OPEN — highest urgency | Working naming target: The Colorado Songwriters Collective; domain `.com` vs `.org` intentionally undecided; Denver remains primary region instance |
-| STRAT-01A-DOMAIN | Domain strategy + TLD-agnostic architecture | P0 (Strategic) | OPEN — docs-only | Primary domains (working assumption): coloradosongwriterscollective.org, songwriterscollective.org; Optional .com variants deferred; Codebase must remain TLD-agnostic to support future .org → .com switch without refactor |
+| STRAT-01A-DOMAIN | Domain strategy + TLD-agnostic architecture | P0 (Strategic) | OPEN — docs-only | Locked-for-now domain posture: TheColoradoSongwritersCollective.org and TheSongwritersCollective.org (operational lowercase hosts: `coloradosongwriterscollective.org`, `songwriterscollective.org`). `.com` is explicitly deferred/non-blocking. Codebase must remain TLD/domain agnostic so a future .org -> .com switch does not require refactor. |
 | STRAT-01B | Region abstraction (routing + data boundaries) | P1 | PLANNED | Region becomes first-class without codebase forks |
 | STRAT-01C | Admin scoping + licensing model | P1 | PLANNED | Global/regional/community admin scope contract, enforcement deferred |
 | STRAT-01D | White-label theming + content taxonomy | P1 | PLANNED | Songwriters default; comedians/sports/community variants supported |
@@ -428,10 +428,11 @@ Community members need a way to discover opportunities, gear, services, and coll
 
 | Feature | Description |
 |---------|-------------|
+| Filtered listings | Browse by category, role, location, price/free, and recent activity |
 | Image uploads | Multiple images per listing (gallery-style) |
 | External URL | Link to external listing, shop, or portfolio |
-| Video embeds | YouTube/Vimeo for demos, tours, performances |
-| Audio embeds | Spotify, SoundCloud playlists/tracks |
+| Video embeds | YouTube/Vimeo for demos, tours, performances, and playlists |
+| Audio embeds | Spotify/SoundCloud players for tracks and playlists |
 | Rich description | Markdown or rich text for details |
 | Comments | Discussion thread per listing |
 | Moderation | Hide/delete capabilities for admins + listing owner |
@@ -483,6 +484,17 @@ Music teachers, studios, stores, festivals, and other songwriter groups lack ded
 - Supports external links (website, booking, shop, tickets)
 - Supports embedded media (videos, audio samples)
 - Supports comments for questions/reviews
+
+**Access model (Phase definition):**
+
+| Surface | Public browse | Login required to create/edit |
+|---------|---------------|-------------------------------|
+| Classifieds (`MARKETPLACE-01`) | Yes | Yes (members + limited verified guest posting rules) |
+| Teachers directory | Yes | Yes |
+| Music stores directory | Yes | Yes |
+| Music studio services directory | Yes | Yes |
+| Festivals directory | Yes | Yes |
+| Other songwriting groups directory | Yes | Yes |
 
 **Key Design Constraints:**
 - Service profiles are NOT venues (different schema, different permissions)
@@ -599,7 +611,7 @@ Users who want to find happenings near a specific location (their neighborhood, 
 
 ### EMBED-02 — Non-Event External Embeds (Venues, Members, Blogs, Galleries)
 
-**Status:** OPEN (STOP-GATE complete, implementation deferred)
+**Status:** DONE
 **Priority:** P2
 **Added:** 2026-02-08
 
@@ -615,6 +627,25 @@ Users who want to find happenings near a specific location (their neighborhood, 
 
 **STOP-GATE:**
 - `docs/investigation/embed-02-non-event-embeds-stopgate.md`
+
+**Implementation closeout (Phase 1):**
+- Added iframe HTML routes:
+  - `web/src/app/embed/venues/[id]/route.ts`
+  - `web/src/app/embed/members/[id]/route.ts`
+  - `web/src/app/embed/blog/[slug]/route.ts`
+  - `web/src/app/embed/gallery/[slug]/route.ts`
+- Added shared embed renderer/query parser helpers:
+  - `web/src/app/embed/_lib/shared.ts`
+- Added route + framing regression tests:
+  - `web/src/app/embed/venues/[id]/route.test.ts`
+  - `web/src/app/embed/members/[id]/route.test.ts`
+  - `web/src/app/embed/blog/[slug]/route.test.ts`
+  - `web/src/app/embed/gallery/[slug]/route.test.ts`
+  - `web/src/__tests__/embed-framing-regression.test.ts`
+- Validation summary:
+  - `ENABLE_EXTERNAL_EMBEDS=false` -> `503` + `Cache-Control: no-store`
+  - `ENABLE_EXTERNAL_EMBEDS=true` -> `200` iframe HTML response for public entities
+- Commit evidence: see `git log --oneline -- web/src/app/embed docs/investigation/embed-02-non-event-embeds-stopgate.md`
 
 ---
 

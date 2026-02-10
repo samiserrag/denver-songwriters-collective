@@ -59,6 +59,11 @@ The product must stay human, community-first, and easy to operate at low cost wh
 - Venue claims and manager workflows remain approval-governed.
 - Venue data quality and update history remain traceable.
 
+### Marketplace + Directories (Expansion Alignment)
+- Marketplace/discovery surfaces (classifieds + service directories) are publicly browsable by default.
+- Listing/profile creation and editing are account-bound and permissioned.
+- Navigation should remain coherent: one top-level expandable hub for marketplace/service directories rather than fragmented top-level nav items.
+
 ### Galleries
 - Media stays attachable to the right entity (member, event, venue, blog).
 - Visibility and moderation controls remain explicit.

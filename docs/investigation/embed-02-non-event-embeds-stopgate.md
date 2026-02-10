@@ -1,6 +1,6 @@
 # EMBED-02 STOP-GATE — Non-Event External Embeds (Investigation Only)
 
-**Status:** Investigation complete, implementation deferred pending approval.
+**Status:** Approved and implemented (phase-1 complete).
 **Scope posture:** Expands external embeds beyond events while keeping the same read-only distribution model introduced in EMBED-01.
 
 ## 1) Scope Definition
@@ -51,6 +51,8 @@ Phase sequencing is required. No schema changes are proposed in this STOP-GATE.
 Recommendation: keep route-based iframe embeds only, matching EMBED-01 operational model.
 
 ## 5) Existing Code Map (file:line references)
+
+> Note: line numbers may drift as code evolves; file paths are canonical.
 
 ### Reusable embed foundation
 - Event embed route and query contract parsing:
@@ -114,14 +116,15 @@ Recommendation: keep route-based iframe embeds only, matching EMBED-01 operation
 - No auth required to render embeds.
 - No mutations, no forms, no session-bound actions.
 - CTA links open canonical DSC pages in new tab.
+- Any link opened in a new tab must include `rel="noopener noreferrer"`.
 
 ### 6.4 Table/query draft per type
 
 **Venues**
 - Source tables: `venues`, optional aggregate from `events`.
 - Draft select subset: `id, slug, name, city, state, neighborhood, cover_image_url, website_url, google_maps_url`.
-- Visibility rule (current-state): venues are publicly listed without `is_published` filter (`web/src/app/venues/page.tsx:32`).
-- Required decision: whether to keep existing open visibility semantics or add stricter inclusion rule for embeds.
+- **Phase 1 lock:** match current public venues semantics (no new `is_published` gating) (`web/src/app/venues/page.tsx:32`).
+- Future stricter venue gating, if required, is a separate backlog tract (`EMBED-02A2`), not part of EMBED-02 phase-1.
 
 **Members**
 - Source table: `profiles`.
@@ -149,10 +152,9 @@ Recommendation: keep route-based iframe embeds only, matching EMBED-01 operation
 
 ## 8) Caching + Invalidation Strategy
 
-- Initial strategy: mirror EMBED-01 dynamic behavior (`dynamic = "force-dynamic"`) for correctness-first rollout.
-- Response cache headers:
-  - Keep kill-switch OFF response uncacheable (`no-store`) to avoid stale enablement.
-  - Allow short TTL for ON responses only after rollout stability.
+- **Phase 1 lock:** use `dynamic = "force-dynamic"` for correctness-first rollout.
+- `ENABLE_EXTERNAL_EMBEDS=false` responses must always be uncacheable (`Cache-Control: no-store`).
+- TTL tuning for ON responses is deferred to a future phase after rollout stability.
 - Invalidation model:
   - No custom purge pipeline in EMBED-02 phase-1.
   - Content updates become visible on next dynamic request.
@@ -196,10 +198,33 @@ No routing refactor, no migration, no non-embed policy changes.
 ## 13) Approval Questions
 
 1. Confirm execution order: venues -> members -> blog -> gallery.
-2. Confirm venues are allowed for public framing under current visibility semantics.
+2. Confirm venues are allowed for public framing under current visibility semantics (phase-1 lock: no new `is_published` gating).
 3. Confirm embeds should remain iframe-only (no script widget in EMBED-02).
 4. Confirm blog embeds should start excerpt-only (no full post body) in phase-1.
 5. Confirm gallery embeds should show album-level cards first, with optional image strip in compact view.
 6. Confirm whether external image hotlinking is acceptable now, with proxying deferred.
 
-> **STOP — Awaiting Sami approval to proceed to implementation**
+## 14) Closeout Evidence (Phase 1)
+
+**Shipped routes:**
+- `web/src/app/embed/venues/[id]/route.ts`
+- `web/src/app/embed/members/[id]/route.ts`
+- `web/src/app/embed/blog/[slug]/route.ts`
+- `web/src/app/embed/gallery/[slug]/route.ts`
+
+**Shared renderer/parser:**
+- `web/src/app/embed/_lib/shared.ts`
+
+**Tests:**
+- `web/src/app/embed/venues/[id]/route.test.ts`
+- `web/src/app/embed/members/[id]/route.test.ts`
+- `web/src/app/embed/blog/[slug]/route.test.ts`
+- `web/src/app/embed/gallery/[slug]/route.test.ts`
+- `web/src/__tests__/embed-framing-regression.test.ts`
+
+**Validation checklist (expected):**
+- Kill switch OFF (`ENABLE_EXTERNAL_EMBEDS=false`): all `/embed/*` routes return `503` and `Cache-Control: no-store`
+- Kill switch ON (`ENABLE_EXTERNAL_EMBEDS=true`): public entities return `200` iframe HTML
+
+**Commit evidence:**
+- `git log --oneline -- web/src/app/embed docs/investigation/embed-02-non-event-embeds-stopgate.md`

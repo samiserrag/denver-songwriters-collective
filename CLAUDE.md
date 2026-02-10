@@ -839,24 +839,52 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
-### EMBED-02 STOP-GATE: Non-Event Embeds Investigation (February 2026)
+### EMBED-02 Closeout: Non-Event Embeds Shipped (February 2026)
 
-**Summary:** Added implementation-ready STOP-GATE for expanding external embeds beyond events without changing current EMBED-01 production scope.
+**Summary:** Completed EMBED-02 phase-1 using iframe HTML embeds for venues, members, blog posts, and gallery albums with the EMBED-01 contract and kill-switch behavior.
 
-**Delivered (docs-only):**
-- New STOP-GATE doc:
-  - `docs/investigation/embed-02-non-event-embeds-stopgate.md`
-- Defined phased order:
-  - `EMBED-02A` venues -> `EMBED-02B` member profiles -> `EMBED-02C` blog posts -> `EMBED-02D` gallery albums
-- Locked shared contract:
-  - `theme=light|dark|auto`
-  - `view=card|compact`
-  - `show=badges,meta,cta`
-- Added backlog/index alignment:
-  - `docs/BACKLOG.md` (`EMBED-02` canonical entry)
-  - `docs/backlog/post-gtm-3-1-active-backlog.md` (curated queue reference)
+**Routes added:**
+- `web/src/app/embed/venues/[id]/route.ts`
+- `web/src/app/embed/members/[id]/route.ts`
+- `web/src/app/embed/blog/[slug]/route.ts`
+- `web/src/app/embed/gallery/[slug]/route.ts`
 
-**Execution status:** Deferred pending explicit approval; no app code changes.
+**Shared foundation:**
+- `web/src/app/embed/_lib/shared.ts`
+  - query parsing (`theme`, `view`, `show`) with default fallbacks
+  - safe HTML escaping
+  - no-store response helpers
+  - embed card renderer with contain/letterbox image behavior (no forced crop)
+
+**Visibility gates enforced:**
+- Venues: phase-1 lock to existing public venues semantics (no new `is_published` gating)
+- Members: `profiles.is_public = true`
+- Blog: `blog_posts.is_published = true` and `blog_posts.is_approved = true` (excerpt-only rendering)
+- Gallery: `gallery_albums.is_published = true` and `gallery_albums.is_hidden = false`; compact strip limited to max 3 published/visible images
+
+**Security/caching posture:**
+- `dynamic = "force-dynamic"` on all EMBED-02 routes
+- `ENABLE_EXTERNAL_EMBEDS=false` returns `503` + `Cache-Control: no-store`
+- new-tab links include `rel="noopener noreferrer"`
+- non-embed framing protections remain deny-framed; embed framing remains route-scoped to `/embed/*`
+
+**Validation URLs (examples):**
+- `https://coloradosongwriterscollective.org/embed/venues/mercury-cafe?theme=auto&view=card&show=badges,meta,cta`
+- `https://coloradosongwriterscollective.org/embed/members/pony-lee?theme=dark&view=compact&show=meta,cta`
+- `https://coloradosongwriterscollective.org/embed/blog/welcome-to-csc?theme=light&view=card&show=badges,meta,cta`
+- `https://coloradosongwriterscollective.org/embed/gallery/open-mic-jan?theme=auto&view=compact&show=badges,meta,cta`
+
+**Tests added:**
+- `web/src/app/embed/venues/[id]/route.test.ts`
+- `web/src/app/embed/members/[id]/route.test.ts`
+- `web/src/app/embed/blog/[slug]/route.test.ts`
+- `web/src/app/embed/gallery/[slug]/route.test.ts`
+- `web/src/__tests__/embed-framing-regression.test.ts`
+
+**Quality gates:**
+- Lint: PASS
+- Full test suite: PASS (`175` files, `3797` tests)
+- Build: attempted once; hit known `next build` hang after "Creating an optimized production build ..."
 
 ---
 
