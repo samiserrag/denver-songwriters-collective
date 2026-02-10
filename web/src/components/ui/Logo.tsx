@@ -37,7 +37,7 @@ export default function Logo({ variant = "full", className = "", inverse = false
         <span className="text-[var(--color-bg-primary)] font-bold text-sm">CSC</span>
       </div>
       <div className="flex flex-col">
-        <span className={`font-display text-lg ${textPrimary} leading-tight`}>Colorado Songwriters</span>
+        <span className={`font-display text-base 2xl:text-lg ${textPrimary} leading-tight`}>The Colorado Songwriters</span>
         <span className={`text-xs ${textAccent} tracking-widest uppercase`}>Collective</span>
       </div>
     </Link>

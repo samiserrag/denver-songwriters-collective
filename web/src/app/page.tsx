@@ -451,7 +451,7 @@ export default async function HomePage() {
             The Colorado Songwriters Collective
           </h1>
           <p className="text-xl md:text-2xl text-white/95 mb-2 font-medium drop-shadow">
-            A shared space for Denver-area songwriters and music fans
+            A shared space for Colorado songwriters and music fans
           </p>
           <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto drop-shadow">
             Find open mics, connect with other musicians, and discover what&apos;s happening in the local music community.
@@ -587,23 +587,31 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* CSC Happenings - Sponsored happenings only */}
+      {/* CSC Official Happenings - Sponsored happenings only */}
       <section className="py-10 px-6 border-t border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <div>
               <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
-                CSC Happenings
+                CSC Official Happenings
               </h2>
               <p className="text-[var(--color-text-secondary)]">
                 Song circles, showcases, and gatherings sponsored by The Colorado Songwriters Collective.
+              </p>
+              <p className="mt-2 text-sm md:text-base">
+                <Link
+                  href="/host"
+                  className="text-[var(--color-text-accent)] hover:underline"
+                >
+                  Sign Up to be a CSC host!
+                </Link>
               </p>
             </div>
             <Link
               href="/happenings?csc=1"
               className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              See all CSC happenings
+              See all CSC official happenings
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
