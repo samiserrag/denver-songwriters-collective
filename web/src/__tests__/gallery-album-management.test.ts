@@ -159,16 +159,16 @@ describe('Gallery Album Management', () => {
       expect(content).toMatch(/\.eq\(["']is_hidden["'],\s*false\)/);
     });
 
-    it('should filter images by is_published and is_hidden', () => {
+    it('should filter images by is_approved and is_hidden', () => {
       const content = fs.readFileSync(publicGalleryPath, 'utf-8');
       // Should have multiple occurrences for different queries
-      const publishedMatches = content.match(/\.eq\(["']is_published["'],\s*true\)/g);
-      expect(publishedMatches?.length).toBeGreaterThanOrEqual(2);
+      const approvedMatches = content.match(/\.eq\(["']is_approved["'],\s*true\)/g);
+      expect(approvedMatches?.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('should NOT use is_approved for filtering', () => {
+    it('should not use is_published for gallery_images filtering', () => {
       const content = fs.readFileSync(publicGalleryPath, 'utf-8');
-      expect(content).not.toMatch(/\.eq\(["']is_approved["']/);
+      expect(content).not.toMatch(/from\("gallery_images"\)[\s\S]*?\.eq\(["']is_published["']/);
     });
   });
 });
