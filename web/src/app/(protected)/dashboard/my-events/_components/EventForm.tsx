@@ -538,7 +538,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       missingFields.push("Custom Dates (select at least one date)");
     }
 
-    // Start date validation for all create modes — skip in occurrence mode
+    // Start date validation for create/edit single-date flows — skip in occurrence mode
     if (!occurrenceMode && mode === "create") {
       if (formData.series_mode === "single" && !formData.start_date) {
         missingFields.push("Event Date");
@@ -547,6 +547,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         if (!effectiveStartDate) {
           missingFields.push("First Event Date");
         }
+      }
+    }
+    if (!occurrenceMode && mode === "edit" && formData.series_mode === "single") {
+      if (!(formData.start_date || formData.event_date)) {
+        missingFields.push("Event Date");
       }
     }
 
@@ -1425,7 +1430,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           )}
 
           {/* Sub-sections: Only in create mode (edit mode uses "Series Settings" section above) */}
-          {mode === "create" && formData.series_mode === "single" && (
+          {formData.series_mode === "single" && (
             <div>
               <label className="block text-sm font-medium mb-2">
                 <span className="text-red-500">Event Date</span>
@@ -1438,11 +1443,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 onChange={(e) => {
                   updateField("start_date", e.target.value);
                 }}
-                min={new Date().toISOString().split("T")[0]}
+                min={mode === "create" ? new Date().toISOString().split("T")[0] : undefined}
                 className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
               />
               <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                This happening will occur only once.
+                {mode === "create"
+                  ? "This happening will occur only once."
+                  : "Update this date to control exactly when this one-time happening appears."}
               </p>
             </div>
           )}

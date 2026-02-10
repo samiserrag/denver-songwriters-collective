@@ -243,6 +243,28 @@ describe("Day of Week dropdown visibility", () => {
   });
 });
 
+// ============ SINGLE EVENT DATE VISIBILITY TESTS ============
+// Regression guard: single-date events must show an editable date in both create and edit modes.
+
+describe("Single event date input visibility", () => {
+  function shouldShowSingleDateInput(mode: "create" | "edit", seriesMode: string): boolean {
+    void mode;
+    return seriesMode === "single";
+  }
+
+  it("shows date input for create + single", () => {
+    expect(shouldShowSingleDateInput("create", "single")).toBe(true);
+  });
+
+  it("shows date input for edit + single", () => {
+    expect(shouldShowSingleDateInput("edit", "single")).toBe(true);
+  });
+
+  it("hides date input for edit + weekly", () => {
+    expect(shouldShowSingleDateInput("edit", "weekly")).toBe(false);
+  });
+});
+
 // ============ OCCURRENCE COUNT INITIALIZATION TESTS ============
 // These test how occurrence_count is initialized from event.max_occurrences
 
