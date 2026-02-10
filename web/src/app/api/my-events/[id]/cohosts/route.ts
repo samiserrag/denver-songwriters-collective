@@ -39,8 +39,8 @@ export async function POST(
 
   const { user_id, search_name } = await request.json();
 
-  // Find user by ID or name search
-  let targetUserId = user_id;
+  // Find user by ID or run name search
+  const targetUserId = user_id;
 
   if (!targetUserId && search_name) {
     // Use service role client to bypass RLS for member search
@@ -62,16 +62,16 @@ export async function POST(
       }, { status: 500 });
     }
 
-    if (profiles && profiles.length === 1) {
-      // Single match found
-      targetUserId = profiles[0].id;
-    } else if (profiles && profiles.length > 1) {
-      // Multiple matches - return them so user can select or be more specific
+    if (!profiles || profiles.length === 0) {
       return NextResponse.json({
-        multiple_matches: profiles.map(p => ({ id: p.id, name: p.full_name })),
-        error: `Multiple members found. Please select one or be more specific.`
-      }, { status: 400 });
+        error: "No member found with that name. They may need to join the site first."
+      }, { status: 404 });
     }
+
+    // Search is selection-only. Client must send user_id to create invitation.
+    return NextResponse.json({
+      matches: profiles.map(p => ({ id: p.id, name: p.full_name }))
+    });
   }
 
   if (!targetUserId) {

@@ -76,15 +76,8 @@ export default function CoHostManager({
       const data = await res.json();
 
       if (res.ok) {
-        // Successfully invited
-        setSearchQuery("");
-        setInviteMode(null);
-        setSuccess("Invitation sent!");
-        router.refresh();
-        setTimeout(() => setSuccess(""), 3000);
-      } else if (data.multiple_matches) {
-        // Show results to pick from
-        setSearchResults(data.multiple_matches);
+        const matches = Array.isArray(data.matches) ? data.matches : [];
+        setSearchResults(matches);
       } else {
         setError(data.error || "Failed to send invitation");
       }
