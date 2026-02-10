@@ -890,6 +890,38 @@ If something conflicts, resolve explicitly—silent drift is not allowed.
 
 ---
 
+### Build Reliability Hardening: Local Font Migration + Next Page Export Fixes (February 2026)
+
+**Summary:** Removed build-time dependency on Google font fetches and fixed a blocking Next.js page export type error in onboarding.
+
+**Delivered:**
+- Migrated font loading from `next/font/google` to `next/font/local`:
+  - `web/src/app/layout.tsx`
+  - `web/src/lib/fonts.ts`
+- Vendored font assets under:
+  - `web/src/app/fonts/` (`Geist`, `Geist Mono`, `Inter`, `Playfair Display`, `Fraunces`)
+- Added font asset note:
+  - `web/src/app/fonts/README.md`
+- Fixed Next.js Page export constraint by moving helper export out of page module:
+  - Added `web/src/app/onboarding/profile/sectionVisibility.ts`
+  - Updated `web/src/app/onboarding/profile/page.tsx`
+  - Updated test import in `web/src/__tests__/onboarding-conditional-steps.test.ts`
+- Fixed Next.js Page export constraint for homepage helper export:
+  - Added `web/src/lib/homepage/mapDBEventToEvent.ts`
+  - Updated `web/src/app/page.tsx`
+  - Updated test import in `web/src/__tests__/phase7b-homepage-dsc-rail-confirmed.test.tsx`
+
+**Validation outcomes:**
+- No remaining `next/font/google` imports under `web/src`.
+- Build now compiles successfully past the previous font-fetch phase in constrained environments and completes.
+
+**Quality gates:**
+- Lint: PASS
+- Tests: PASS (`src/__tests__/onboarding-conditional-steps.test.ts`, `src/__tests__/phase7b-homepage-dsc-rail-confirmed.test.tsx`, `src/__tests__/typography-contract.test.ts`)
+- Build (`npm run build -- --webpack`): PASS
+
+---
+
 ### Docs-Only Backlog Update: Domain Strategy + Marketplace/Services Hub (February 2026)
 
 **Summary:** Captured three major product decisions in backlog/north-star docs without any code implementation.

@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { mapDBEventToEvent } from "@/app/page";
+import { mapDBEventToEvent } from "@/lib/homepage/mapDBEventToEvent";
 import { HappeningCard } from "@/components/happenings/HappeningCard";
 
 vi.mock("next/navigation", () => ({
@@ -134,7 +134,7 @@ describe("Phase 7B side tract: homepage CSC rail confirmed parity", () => {
 
   it("homepage source keeps full db fields in mapDBEventToEvent", async () => {
     const fs = await import("fs");
-    const source = fs.readFileSync("src/app/page.tsx", "utf-8");
+    const source = fs.readFileSync("src/lib/homepage/mapDBEventToEvent.ts", "utf-8");
 
     expect(source).toMatch(/function mapDBEventToEvent[\s\S]*return\s*{[\s\S]*\.\.\.dbEvent/);
   });

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Playfair_Display, Inter, Fraunces } from "next/font/google";
+import localFont from "next/font/local";
 import { Header, Footer, ShareSiteCtaBar } from "@/components/navigation";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -9,36 +8,59 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { ThemeInitializer } from "@/components/ui/ThemeInitializer";
 import "./globals.css";
 
-const geistSans = Geist({
+const geistSans = localFont({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  src: [
+    { path: "./fonts/geist-400.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/geist-500.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/geist-700.ttf", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  src: [
+    { path: "./fonts/geist-mono-400.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/geist-mono-500.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/geist-mono-700.ttf", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 
-const playfair = Playfair_Display({
+const playfair = localFont({
   variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  src: [
+    { path: "./fonts/playfair-400.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/playfair-500.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/playfair-600.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/playfair-700.ttf", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 
-const inter = Inter({
+const inter = localFont({
   variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  src: [
+    { path: "./fonts/inter-300.ttf", weight: "300", style: "normal" },
+    { path: "./fonts/inter-400.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/inter-500.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/inter-600.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/inter-700.ttf", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const fraunces = localFont({
   variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  src: [
+    { path: "./fonts/fraunces-400.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/fraunces-500.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/fraunces-600.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/fraunces-700.ttf", weight: "700", style: "normal" },
+    { path: "./fonts/fraunces-800.ttf", weight: "800", style: "normal" },
+    { path: "./fonts/fraunces-900.ttf", weight: "900", style: "normal" },
+  ],
   display: "swap",
 });
 

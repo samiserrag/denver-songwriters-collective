@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { getRelevantSections } from "../app/onboarding/profile/page";
+import { getRelevantSections } from "../app/onboarding/profile/sectionVisibility";
 
 describe("getRelevantSections - Conditional Onboarding Steps", () => {
   describe("No identity selected", () => {
