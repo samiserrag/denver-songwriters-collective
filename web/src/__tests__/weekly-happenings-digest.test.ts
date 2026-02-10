@@ -788,7 +788,7 @@ describe("Editorial featured ordering", () => {
     expect(html.lastIndexOf(cardMarker, blogIndex)).toBeGreaterThan(-1);
     expect(html.lastIndexOf(cardMarker, galleryIndex)).toBeGreaterThan(-1);
 
-    expect(html.match(/🎤 MEMBER SPOTLIGHT/g)?.length).toBe(1);
+    expect(html.match(/🎤 MEMBER \/ HOST SPOTLIGHT/g)?.length).toBe(1);
     expect(html.match(/📝 FROM THE BLOG/g)?.length).toBe(1);
     expect(html.match(/📸 FROM THE GALLERY/g)?.length).toBe(1);
 

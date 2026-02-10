@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { sendAdminProfileAlert } from '@/lib/email/adminProfileAlerts';
 import {
   REFERRAL_COOKIE_NAME,
   deserializeReferralCookie,
@@ -53,55 +54,81 @@ export async function POST(request: Request) {
 
     const { data: existingProfile } = await serviceClient
       .from('profiles')
-      .select('referred_by_profile_id, referral_via, referral_source, referral_captured_at')
+      .select('referred_by_profile_id, referral_via, referral_source, referral_captured_at, onboarding_complete')
       .eq('id', user.id)
       .maybeSingle();
 
     const shouldApplyReferral = hasReferralParams(referral);
+    const profileUpdatePayload = {
+      full_name: full_name || null,
+      is_songwriter,
+      is_host,
+      is_studio,
+      is_fan,
+      bio: bio || null,
+      instagram_url: instagram_url || null,
+      spotify_url: spotify_url || null,
+      youtube_url: youtube_url || null,
+      website_url: website_url || null,
+      tiktok_url: tiktok_url || null,
+      bandcamp_url: bandcamp_url || null,
+      venmo_handle: venmo_handle || null,
+      cashapp_handle: cashapp_handle || null,
+      paypal_url: paypal_url || null,
+      open_to_collabs,
+      interested_in_cowriting,
+      instruments: instruments?.length > 0 ? instruments : null,
+      genres: genres?.length > 0 ? genres : null,
+      referred_by_profile_id: shouldApplyReferral
+        ? (existingProfile?.referred_by_profile_id ?? referral.ref ?? null)
+        : undefined,
+      referral_via: shouldApplyReferral
+        ? (existingProfile?.referral_via ?? referral.via ?? null)
+        : undefined,
+      referral_source: shouldApplyReferral
+        ? (existingProfile?.referral_source ?? referral.src ?? null)
+        : undefined,
+      referral_captured_at: shouldApplyReferral
+        ? (existingProfile?.referral_captured_at ?? new Date().toISOString())
+        : undefined,
+      onboarding_complete: true,
+      updated_at: new Date().toISOString(),
+    };
 
     // 4. Update profile with all fields
-    const { error: updateError } = await serviceClient
+    const { data: updatedProfile, error: updateError } = await serviceClient
       .from('profiles')
-      .update({
-        full_name: full_name || null,
-        is_songwriter,
-        is_host,
-        is_studio,
-        is_fan,
-        bio: bio || null,
-        instagram_url: instagram_url || null,
-        spotify_url: spotify_url || null,
-        youtube_url: youtube_url || null,
-        website_url: website_url || null,
-        tiktok_url: tiktok_url || null,
-        bandcamp_url: bandcamp_url || null,
-        venmo_handle: venmo_handle || null,
-        cashapp_handle: cashapp_handle || null,
-        paypal_url: paypal_url || null,
-        open_to_collabs,
-        interested_in_cowriting,
-        instruments: instruments?.length > 0 ? instruments : null,
-        genres: genres?.length > 0 ? genres : null,
-        referred_by_profile_id: shouldApplyReferral
-          ? (existingProfile?.referred_by_profile_id ?? referral.ref ?? null)
-          : undefined,
-        referral_via: shouldApplyReferral
-          ? (existingProfile?.referral_via ?? referral.via ?? null)
-          : undefined,
-        referral_source: shouldApplyReferral
-          ? (existingProfile?.referral_source ?? referral.src ?? null)
-          : undefined,
-        referral_captured_at: shouldApplyReferral
-          ? (existingProfile?.referral_captured_at ?? new Date().toISOString())
-          : undefined,
-        onboarding_complete: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
+      .update(profileUpdatePayload)
+      .eq('id', user.id)
+      .select('full_name, slug')
+      .single();
 
     if (updateError) {
       console.error('Onboarding update error:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Growth tracking: alert admin when signup completes (first onboarding)
+    // and when onboarding profile is updated later.
+    try {
+      const profileIdentifier = updatedProfile?.slug || user.id;
+      const profilePath = is_studio
+        ? `/studios/${profileIdentifier}`
+        : (is_songwriter || is_host)
+          ? `/songwriters/${profileIdentifier}`
+          : `/members/${profileIdentifier}`;
+      const isInitialSignup = !existingProfile?.onboarding_complete;
+
+      await sendAdminProfileAlert({
+        type: isInitialSignup ? 'signup' : 'profile_update',
+        userId: user.id,
+        userEmail: user.email,
+        userName: updatedProfile?.full_name || full_name || null,
+        profileSlug: updatedProfile?.slug || null,
+        profilePath,
+      });
+    } catch (alertError) {
+      console.error('Admin onboarding alert failed:', alertError);
     }
 
     const response = NextResponse.json({ success: true });

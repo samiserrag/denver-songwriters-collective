@@ -603,7 +603,7 @@ export default function AdminEmailPage() {
           Editorial Content
         </h2>
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-          Add personal editorial to the Weekly Happenings Digest. All fields are optional.
+          Add personal editorial to the Weekly Happenings Digest, including member and host spotlights. All fields are optional.
         </p>
 
         {/* Editorial result banner */}
@@ -719,7 +719,7 @@ export default function AdminEmailPage() {
           {/* Member spotlight */}
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-              Member Spotlight URL
+              Member / Host Spotlight URL
             </label>
             <input
               type="text"
@@ -727,9 +727,12 @@ export default function AdminEmailPage() {
               onChange={(e) =>
                 setEditorial((prev) => ({ ...prev, member_spotlight_ref: e.target.value }))
               }
-              placeholder="Paste a URL from this site. Example: https://coloradosongwriterscollective.org/songwriters/pony-lee"
+              placeholder="Paste a songwriter/host URL. Example: https://coloradosongwriterscollective.org/songwriters/host-slug"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
             />
+            <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+              Use a host profile URL here when you want a host spotlight in the newsletter.
+            </p>
           </div>
 
           {/* Venue spotlight */}

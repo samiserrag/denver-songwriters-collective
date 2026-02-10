@@ -233,46 +233,47 @@ export default function EditProfilePage() {
         return;
       }
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          full_name: formData.full_name || null,
-          bio: formData.bio || null,
-          city: formData.city || null,
-          state: formData.state || null,
-          // Identity flags
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: formData.full_name,
+          bio: formData.bio,
+          city: formData.city,
+          state: formData.state,
           is_songwriter: formData.is_songwriter,
           is_host: formData.is_host,
           is_studio: formData.is_studio,
           is_fan: formData.is_fan,
           is_public: formData.is_public,
-          // Social links
-          instagram_url: formData.instagram_url || null,
-          facebook_url: formData.facebook_url || null,
-          twitter_url: formData.twitter_url || null,
-          tiktok_url: formData.tiktok_url || null,
-          youtube_url: formData.youtube_url || null,
-          spotify_url: formData.spotify_url || null,
-          bandcamp_url: formData.bandcamp_url || null,
-          website_url: formData.website_url || null,
-          venmo_handle: formData.venmo_handle || null,
-          cashapp_handle: formData.cashapp_handle || null,
-          paypal_url: formData.paypal_url || null,
+          instagram_url: formData.instagram_url,
+          facebook_url: formData.facebook_url,
+          twitter_url: formData.twitter_url,
+          tiktok_url: formData.tiktok_url,
+          youtube_url: formData.youtube_url,
+          spotify_url: formData.spotify_url,
+          bandcamp_url: formData.bandcamp_url,
+          website_url: formData.website_url,
+          venmo_handle: formData.venmo_handle,
+          cashapp_handle: formData.cashapp_handle,
+          paypal_url: formData.paypal_url,
           open_to_collabs: formData.open_to_collabs,
-          specialties: formData.specialties.length > 0 ? formData.specialties : null,
-          favorite_open_mic: formData.favorite_open_mic || null,
-          // New member directory fields
+          specialties: formData.specialties,
+          favorite_open_mic: formData.favorite_open_mic,
           available_for_hire: formData.available_for_hire,
           interested_in_cowriting: formData.interested_in_cowriting,
-          genres: formData.genres.length > 0 ? formData.genres : null,
-          instruments: formData.instruments.length > 0 ? formData.instruments : null,
-          song_links: formData.song_links.length > 0 ? formData.song_links : null,
-          featured_song_url: formData.featured_song_url || null,
-        })
-        .eq("id", user.id);
+          genres: formData.genres,
+          instruments: formData.instruments,
+          song_links: formData.song_links,
+          featured_song_url: formData.featured_song_url,
+        }),
+      });
 
-      if (updateError) {
-        console.error("Profile update error:", updateError);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Profile update error:", errorData);
         toast.error("Failed to save your profile. Please try again.");
         setSaving(false);
         return;

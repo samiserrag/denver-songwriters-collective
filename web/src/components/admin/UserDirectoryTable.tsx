@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 import { deleteUser, updateSpotlightType, toggleHostStatus, toggleAdminRole } from "@/app/(protected)/dashboard/admin/users/actions";
 
@@ -54,6 +55,13 @@ function getUserTypeBadgeClass(u: Profile): string {
   if (isUserSongwriter(u)) return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700";
   if (isUserFan(u)) return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700";
   return "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600";
+}
+
+function getAdminProfileHref(u: Profile): string {
+  const identifier = u.slug || u.id;
+  if (isUserStudio(u)) return `/studios/${identifier}`;
+  if (isUserSongwriter(u) || isUserHost(u)) return `/songwriters/${identifier}`;
+  return `/members/${identifier}`;
 }
 
 const SPOTLIGHT_OPTIONS = [
@@ -289,7 +297,12 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
               return (
                 <tr key={u.id} className="border-b border-[var(--color-border-default)]/30">
                   <td className="py-2 px-3 text-[var(--color-text-primary)]">
-                    {u.full_name ?? "Unnamed User"}
+                    <Link
+                      href={getAdminProfileHref(u)}
+                      className="underline decoration-transparent hover:decoration-current transition-colors text-[var(--color-text-primary)] hover:text-[var(--color-text-accent)]"
+                    >
+                      {u.full_name ?? "Unnamed User"}
+                    </Link>
                   </td>
                   <td className="py-2 px-3 text-[var(--color-text-secondary)] text-xs">
                     {emailMap[u.id] ?? "-"}

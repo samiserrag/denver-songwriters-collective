@@ -66,6 +66,10 @@ function mapDBProfileToMember(profile: DBProfile): Member {
     id: profile.id,
     name: profile.full_name ?? "Anonymous Member",
     role: (profile.role as MemberRole) ?? "fan",
+    isSongwriter: profile.is_songwriter ?? false,
+    isHost: profile.is_host ?? false,
+    isStudio: profile.is_studio ?? false,
+    isFan: profile.is_fan ?? false,
     bio: profile.bio ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
     isSpotlight: profile.is_featured ?? false,
@@ -142,7 +146,7 @@ export default async function HomePage() {
   // Get today's date for filtering past events
   const today = getTodayDenver();
 
-  const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes, spotlightOpenMicEventsRes] = await Promise.all([
+  const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, hostSpotlightMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes, spotlightOpenMicEventsRes] = await Promise.all([
     // Single events query - upcoming CSC events (published only)
     // Filter: one-time events must be today or future, OR recurring events (have recurrence_rule)
     supabase
@@ -187,6 +191,16 @@ export default async function HomePage() {
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(8),
+    // Host spotlight members (dedicated rail)
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("is_featured", true)
+      .eq("is_public", true)
+      .or("spotlight_type.eq.host,is_host.eq.true")
+      .order("featured_rank", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(4),
     // Spotlight Open Mics - featured open mics from the directory
     supabase
       .from("events")
@@ -301,6 +315,7 @@ export default async function HomePage() {
     })
   );
   const featuredMembers: Member[] = (featuredMembersRes.data ?? []).map(mapDBProfileToMember);
+  const hostSpotlightMembers: Member[] = (hostSpotlightMembersRes.data ?? []).map(mapDBProfileToMember);
 
   // Map spotlight open mics
   const spotlightOpenMics: SpotlightOpenMic[] = (spotlightOpenMicsRes.data ?? []).map((om: any) => ({
@@ -436,6 +451,7 @@ export default async function HomePage() {
   const hasTonightsHappenings = tonightsHappenings.length > 0;
   const hasSpotlightHappenings = spotlightHappenings.length > 0;
   const hasFeaturedMembers = featuredMembers.length > 0;
+  const hasHostSpotlightMembers = hostSpotlightMembers.length > 0;
   const hasSpotlightOpenMics = spotlightOpenMics.length > 0;
   const hasLatestBlog = allBlogPosts.length > 0;
   const hasHighlights = highlights.length > 0;
@@ -798,6 +814,38 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {featuredMembers.map((member) => (
+                <MemberCard key={member.id} member={member} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Host Spotlight */}
+      {hasHostSpotlightMembers && (
+        <section className="py-10 px-6 border-t border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex items-baseline justify-between gap-4">
+              <div>
+                <h2 className="font-[var(--font-family-serif)] font-semibold text-3xl md:text-4xl text-[var(--color-text-primary)] tracking-tight mb-2">
+                  Host Spotlight
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Meet the hosts keeping Colorado stages active week after week.
+                </p>
+              </div>
+              <Link
+                href="/host"
+                className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                Become a CSC host
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {hostSpotlightMembers.map((member) => (
                 <MemberCard key={member.id} member={member} />
               ))}
             </div>

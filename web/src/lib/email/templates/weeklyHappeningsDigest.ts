@@ -258,7 +258,7 @@ function formatMemberSpotlightHtml(
     <tr>
       <td style="padding: 16px 0;">
         <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.accent}; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
-          🎤 MEMBER SPOTLIGHT
+          🎤 MEMBER / HOST SPOTLIGHT
         </p>
         ${renderEmailBaseballCard({
           coverUrl: spotlight.avatarUrl,
@@ -372,7 +372,7 @@ function formatFeaturedHappeningsText(
 function formatMemberSpotlightText(
   spotlight: NonNullable<ResolvedEditorial["memberSpotlight"]>
 ): string {
-  const lines = ["🎤 MEMBER SPOTLIGHT", ""];
+  const lines = ["🎤 MEMBER / HOST SPOTLIGHT", ""];
   lines.push(spotlight.name);
   if (spotlight.bio) lines.push(spotlight.bio);
   lines.push(spotlight.url);

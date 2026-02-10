@@ -634,8 +634,8 @@ describe("Part B: Editorial Layer", () => {
       expect(templateSource).toContain("⭐ FEATURED THIS WEEK");
     });
 
-    it("member spotlight HTML should show 🎤 MEMBER SPOTLIGHT header", () => {
-      expect(templateSource).toContain("🎤 MEMBER SPOTLIGHT");
+    it("member spotlight HTML should show 🎤 MEMBER / HOST SPOTLIGHT header", () => {
+      expect(templateSource).toContain("🎤 MEMBER / HOST SPOTLIGHT");
     });
 
     it("venue spotlight HTML should show 📍 VENUE SPOTLIGHT header", () => {
@@ -1102,7 +1102,7 @@ describe("Part B: Editorial Layer", () => {
     );
 
     it("member spotlight label mentions URL", () => {
-      expect(adminEmailPage).toContain("Member Spotlight URL");
+      expect(adminEmailPage).toContain("Member / Host Spotlight URL");
     });
 
     it("venue spotlight label mentions URL", () => {
@@ -1110,7 +1110,7 @@ describe("Part B: Editorial Layer", () => {
     });
 
     it("member spotlight placeholder shows example with full URL", () => {
-      expect(adminEmailPage).toContain("Paste a URL from this site. Example:");
+      expect(adminEmailPage).toContain("Paste a songwriter/host URL. Example:");
     });
 
     it("venue spotlight placeholder shows example with full URL", () => {
