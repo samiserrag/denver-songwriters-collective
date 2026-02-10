@@ -30,7 +30,7 @@ interface BlogPost {
 export default async function BlogPage() {
   const supabase = await createSupabaseServerClient();
 
-  const { data: posts } = await supabase
+  const { data: posts, error: postsError } = await supabase
     .from("blog_posts")
     .select(`
       id,
@@ -45,6 +45,8 @@ export default async function BlogPage() {
     .eq("is_published", true)
     .eq("is_approved", true)
     .order("published_at", { ascending: false });
+
+  const hasLoadError = Boolean(postsError);
 
   return (
     <>
@@ -76,7 +78,16 @@ export default async function BlogPage() {
 
       <PageContainer>
         <div className="py-10">
-          {posts && posts.length > 0 ? (
+          {hasLoadError ? (
+            <div className="text-center py-16 space-y-4">
+              <p className="text-[var(--color-text-secondary)] text-lg">
+                We are having trouble loading blog posts right now.
+              </p>
+              <p className="text-[var(--color-text-tertiary)] text-sm">
+                Please refresh this page or try again in a few minutes.
+              </p>
+            </div>
+          ) : posts && posts.length > 0 ? (
             <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {posts.map((post) => (
                 <BlogCard key={post.id} post={post as BlogPost} />

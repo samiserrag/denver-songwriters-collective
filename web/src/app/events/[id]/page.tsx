@@ -420,11 +420,9 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       dateSelectionMessage = "That date isn't in the next 90 days. Showing next upcoming date.";
     }
   } else if (upcomingOccurrences.length > 0) {
-    // No date specified - redirect to include date param for recurring events
-    // This ensures canonical URLs always include the occurrence date
-    const nextDate = upcomingOccurrences[0].dateKey;
-    const eventIdentifier = event.slug || event.id;
-    redirect(`/events/${eventIdentifier}?date=${nextDate}`);
+    // No date specified - select the next occurrence without redirecting.
+    // This keeps canonical slug responses crawler-safe for social sharing.
+    effectiveSelectedDate = upcomingOccurrences[0].dateKey;
   }
 
   // Fetch override for the effective selected date

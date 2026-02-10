@@ -25,7 +25,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
   const offset = (page - 1) * IMAGES_PER_PAGE;
 
   // Fetch published and visible albums
-  const { data: albums } = await supabase
+  const { data: albums, error: albumsError } = await supabase
     .from("gallery_albums")
     .select(`
       id,
@@ -47,7 +47,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
         .from("gallery_images")
         .select("*", { count: "exact", head: true })
         .eq("album_id", album.id)
-        .eq("is_published", true)
+        .eq("is_approved", true)
         .eq("is_hidden", false);
 
       // Get first visible image for cover fallback if no cover_image_url set
@@ -57,7 +57,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
           .from("gallery_images")
           .select("image_url")
           .eq("album_id", album.id)
-          .eq("is_published", true)
+          .eq("is_approved", true)
           .eq("is_hidden", false)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: false })
@@ -71,7 +71,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
   )).filter((album) => album.imageCount > 0) : [];
 
   // Fetch paginated images that ARE in albums (unassigned photos are private until assigned)
-  const { data: images, count: totalCount } = await supabase
+  const { data: images, count: totalCount, error: imagesError } = await supabase
     .from("gallery_images")
     .select(`
       id,
@@ -83,7 +83,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
       event:events(title),
       venue:venues(name)
     `, { count: "exact" })
-    .eq("is_published", true)
+    .eq("is_approved", true)
     .eq("is_hidden", false)
     .not("album_id", "is", null)
     .order("is_featured", { ascending: false })
@@ -91,6 +91,7 @@ export default async function GalleryPage({ searchParams }: PageProps) {
     .order("created_at", { ascending: false })
     .range(offset, offset + IMAGES_PER_PAGE - 1);
 
+  const hasLoadError = Boolean(albumsError || imagesError);
   const totalPages = Math.ceil((totalCount ?? 0) / IMAGES_PER_PAGE);
 
   return (
@@ -206,7 +207,16 @@ export default async function GalleryPage({ searchParams }: PageProps) {
               </h2>
             )}
 
-            {images && images.length > 0 ? (
+            {hasLoadError ? (
+              <div className="text-center py-16 space-y-4">
+                <p className="text-[var(--color-text-secondary)] text-lg">
+                  We are having trouble loading gallery photos right now.
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-sm">
+                  Please refresh this page or try again in a few minutes.
+                </p>
+              </div>
+            ) : images && images.length > 0 ? (
               <>
                 <GalleryGrid images={images} />
 

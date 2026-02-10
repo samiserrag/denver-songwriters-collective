@@ -19,12 +19,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: album } = await supabase
+  const { data: album, error } = await supabase
     .from("gallery_albums")
     .select("name, description")
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .single();
+
+  if (error) {
+    return {
+      title: "Gallery Temporarily Unavailable | The Colorado Songwriters Collective",
+      description: "This gallery album is temporarily unavailable. Please try again shortly.",
+    };
+  }
 
   if (!album) {
     return {
@@ -66,7 +74,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
   const offset = (page - 1) * IMAGES_PER_PAGE;
 
   // Fetch album details
-  const { data: album } = await supabase
+  const { data: album, error: albumError } = await supabase
     .from("gallery_albums")
     .select(`
       id,
@@ -81,16 +89,35 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     `)
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .single();
+
+  if (albumError) {
+    return (
+      <PageContainer>
+        <div className="py-16 text-center space-y-4">
+          <h1 className="text-3xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
+            We are having trouble loading this album.
+          </h1>
+          <p className="text-[var(--color-text-secondary)]">
+            Please refresh this page or try again in a few minutes.
+          </p>
+          <Link href="/gallery" className="inline-flex text-[var(--color-text-accent)] hover:underline">
+            Back to Gallery
+          </Link>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!album) {
     notFound();
   }
 
   // Fetch images for this album with pagination
-  // Filter by is_published/is_hidden (matches gallery listing page)
+  // Filter by is_approved/is_hidden (matches canonical public gallery policy)
   // RLS handles owner access to their own unapproved images
-  const { data: images, count: totalCount } = await supabase
+  const { data: images, count: totalCount, error: imagesError } = await supabase
     .from("gallery_images")
     .select(`
       id,
@@ -104,7 +131,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       venue:venues(name)
     `, { count: "exact" })
     .eq("album_id", album.id)
-    .eq("is_published", true)
+    .eq("is_approved", true)
     .eq("is_hidden", false)
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
@@ -183,7 +210,16 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
           {/* Album Comments */}
           <AlbumCommentsSection albumId={album.id} albumOwnerId={album.created_by} />
 
-          {images && images.length > 0 ? (
+          {imagesError ? (
+            <div className="text-center py-16 space-y-4">
+              <p className="text-[var(--color-text-secondary)] text-lg">
+                We are having trouble loading photos for this album right now.
+              </p>
+              <p className="text-[var(--color-text-tertiary)] text-sm">
+                Please refresh this page or try again in a few minutes.
+              </p>
+            </div>
+          ) : images && images.length > 0 ? (
             <>
               <GalleryGrid images={images} albumOwnerId={album.created_by} />
 

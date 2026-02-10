@@ -20,12 +20,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: post } = await supabase
+  const { data: post, error } = await supabase
     .from("blog_posts")
     .select("title, excerpt, cover_image_url, author:profiles!blog_posts_author_id_fkey(full_name)")
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("is_approved", true)
     .single();
+
+  if (error) {
+    return {
+      title: "Blog Temporarily Unavailable | The Colorado Songwriters Collective",
+      description: "This blog post is temporarily unavailable. Please try again shortly.",
+    };
+  }
 
   if (!post) {
     return {
@@ -79,7 +87,7 @@ export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: post } = await supabase
+  const { data: post, error: postError } = await supabase
     .from("blog_posts")
     .select(`
       id,
@@ -95,6 +103,24 @@ export default async function BlogPostPage({ params }: Props) {
     .eq("is_published", true)
     .eq("is_approved", true)
     .single();
+
+  if (postError) {
+    return (
+      <PageContainer>
+        <div className="py-16 text-center space-y-4">
+          <h1 className="text-3xl font-[var(--font-family-serif)] text-[var(--color-text-primary)]">
+            We are having trouble loading this post.
+          </h1>
+          <p className="text-[var(--color-text-secondary)]">
+            Please refresh this page or try again in a few minutes.
+          </p>
+          <Link href="/blog" className="inline-flex text-[var(--color-text-accent)] hover:underline">
+            Back to Blog
+          </Link>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!post) {
     notFound();
