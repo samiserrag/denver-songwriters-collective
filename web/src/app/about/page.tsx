@@ -7,7 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "About | The Colorado Songwriters Collective",
-  description: "The Colorado Songwriters Collective is your home for finding stages, connecting with artists, and growing as a songwriter in Denver.",
+  description: "The Colorado Songwriters Collective is your home for finding stages, connecting with artists, and growing as a songwriter in Colorado.",
 };
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export default async function AboutPage() {
             About
           </h1>
           <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl mx-auto drop-shadow">
-            A community platform for Denver songwriters
+            A community platform for Colorado songwriters
           </p>
         </div>
       </HeroSection>
@@ -57,7 +57,7 @@ export default async function AboutPage() {
               What This Is
             </h2>
             <p className={mainCopyClass}>
-              The Colorado Songwriters Collective grew out of years of informal open mics, songwriting circles, and community-run events around the Denver metro area. What started as a way to keep track of shows and stay connected gradually became something larger: a shared resource for songwriters, hosts, venues, and listeners.
+              The Colorado Songwriters Collective grew out of years of informal open mics, songwriting circles, and community-run events across Colorado. What started as a way to keep track of shows and stay connected gradually became something larger: a shared resource for songwriters, hosts, venues, and listeners.
             </p>
             <p className={mainCopyClass}>
               Today, this site is a community platform for discovering open mics, finding places to play, connecting with local musicians, and staying informed about Colorado&apos;s songwriter scene. Whether you&apos;re a performer looking for stages, a venue hosting events, or someone who simply loves local music, the goal is simple: make it easier to find your people and keep the scene visible.
