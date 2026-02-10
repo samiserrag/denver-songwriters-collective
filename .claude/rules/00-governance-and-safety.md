@@ -90,7 +90,7 @@ Email systems in DSC prioritize community value over marketing optimization. The
 2. **Report and stop** when instructions complete or blocked
 3. **Reality beats reasoning** — verify in browser, not just code
 4. **One change = one contract** — no mixed refactors
-5. **Update docs/completed/CLAUDE.md** after every push to main
+5. **Update docs/completed/CLAUDE.md** after significant milestone merges
 6. **Production debugging** — when investigating production errors, query Axiom runtime logs (`axiom query`) before speculating about root causes
 
 ---
