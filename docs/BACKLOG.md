@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-02-07
+> **Last Updated:** 2026-02-10
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -34,6 +34,8 @@
 | **Sign-up link clarity ("Join us" → link)** | DONE | Commits `d4b4227`, `f6b2019` | Sami |
 | **DSC TEST events appearing in happenings list** | DONE | Commits `58d5979`, `43f64e4` | Sami |
 | **Role-Based Onboarding & Profile Personalization** | PLANNED | See detailed spec below | Sami |
+| **[UX-10] Canonical Blog/Gallery Public Visibility Parity** | DONE | Commits `da131a0`, `90c9de4`, `9851a16` + STOP-GATE: `docs/investigation/ux-blog-gallery-visibility-parity-stopgate.md` | Sami |
+| **[UX-11] Recurring Event Facebook Sharing Reliability** | DONE | Commits `90c9de4`, `9851a16` + STOP-GATE: `docs/investigation/ux-facebook-sharing-stopgate.md` | Sami |
 
 ### P1 — STRONGLY RECOMMENDED
 
@@ -646,6 +648,73 @@ Users who want to find happenings near a specific location (their neighborhood, 
   - `ENABLE_EXTERNAL_EMBEDS=false` -> `503` + `Cache-Control: no-store`
   - `ENABLE_EXTERNAL_EMBEDS=true` -> `200` iframe HTML response for public entities
 - Commit evidence: `ed3ae28`
+
+---
+
+### UX-10 — Canonical Blog/Gallery Public Visibility Parity
+
+**Status:** DONE  
+**Priority:** P0  
+**Added:** 2026-02-10
+
+**Problem statement:**
+- Canonical `/blog` and `/gallery` render false empty states for anon users even when qualifying public rows exist.
+- Root cause evidence indicates anon RLS hard-fail on `is_admin()` policy evaluation plus canonical error swallowing.
+
+**Policy lock (phase 1):**
+- Canonical pages must render temporary error states on query failure, not "no content yet" copy.
+- Embed routes remain strict and unchanged.
+
+**STOP-GATE:**
+- `docs/investigation/ux-blog-gallery-visibility-parity-stopgate.md`
+
+**Implementation closeout (phase 1):**
+- RLS fix migration (admin policies scoped away from `public`):
+  - `supabase/migrations/20260210044500_fix_blog_gallery_admin_policy_roles.sql`
+- Canonical page fixes:
+  - `web/src/app/blog/page.tsx`
+  - `web/src/app/blog/[slug]/page.tsx`
+  - `web/src/app/gallery/page.tsx`
+  - `web/src/app/gallery/[slug]/page.tsx`
+- Regression tests:
+  - `web/src/__tests__/ux-10-canonical-parity.test.tsx`
+  - `web/src/__tests__/gallery-album-management.test.ts`
+- Validation summary:
+  - `npm --prefix web run lint` passed (warnings only)
+  - `npm --prefix web test -- --run` passed (`177` files, `3803` tests)
+  - `npm --prefix web run build` entered known local hang after `Creating an optimized production build ...`; process terminated and flagged for Vercel verification
+- Commit evidence:
+  - `da131a0`, `90c9de4`, `9851a16`
+
+---
+
+### UX-11 — Recurring Event Facebook Sharing Reliability
+
+**Status:** DONE  
+**Priority:** P0  
+**Added:** 2026-02-10
+
+**Problem statement:**
+- Recurring event canonical slug URLs emit crawler-visible redirect markers (`NEXT_REDIRECT` / `__next-page-redirect`), reducing sharing reliability.
+- OG tags and OG image are present and reachable; redirect marker behavior is the dominant risk.
+
+**Policy lock (phase 1):**
+- Canonical recurring event slug responses should render stable share-ready HTML without redirect markers.
+- Keep OG coverage and embed behavior unchanged.
+
+**STOP-GATE:**
+- `docs/investigation/ux-facebook-sharing-stopgate.md`
+
+**Implementation closeout (phase 1):**
+- Removed missing-date recurring-event redirect branch:
+  - `web/src/app/events/[id]/page.tsx`
+- Added recurring-share regression coverage:
+  - `web/src/__tests__/ux-11-recurring-sharing.test.tsx`
+- Validation summary:
+  - Recurring base slug pages now render without redirect markers in test coverage
+  - Embed route strictness tests remain green and unchanged
+- Commit evidence:
+  - `90c9de4`, `9851a16`
 
 ---
 
