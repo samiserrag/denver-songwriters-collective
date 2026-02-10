@@ -31,7 +31,7 @@ export default async function AboutPage() {
 
   const avatarUrl = samiProfile?.avatar_url;
   const fullName = samiProfile?.full_name || "Sami Serrag";
-  const mainCopyClass = "text-[length:var(--font-size-body-lg)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]";
+  const mainCopyClass = "text-[length:var(--font-size-body-md)] text-[var(--color-text-secondary)] leading-[var(--line-height-relaxed)]";
 
   return (
     <>
