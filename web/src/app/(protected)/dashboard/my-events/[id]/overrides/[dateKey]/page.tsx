@@ -150,6 +150,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
             event={effectiveEvent}
             canCreateCSC={false}
             canCreateVenue={isAdmin}
+            canEditMediaEmbeds={isAdmin}
             occurrenceMode={true}
             occurrenceDateKey={dateKey}
             occurrenceEventId={eventId}

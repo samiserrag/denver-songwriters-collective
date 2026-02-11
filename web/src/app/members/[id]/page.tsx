@@ -17,6 +17,8 @@ import {
 } from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
+import { MediaEmbedsSection } from "@/components/media";
+import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -345,6 +347,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
 
   // Determine if collaboration section should show (only for songwriter or host)
   const showCollabSection = hasSongwriter || hasHost;
+  const embedsEnabled = isExternalEmbedsEnabled();
 
   return (
     <>
@@ -549,6 +552,16 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
             return (
               <section className="mb-12">
                 <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
+
+                {embedsEnabled && (
+                  <div className="mb-6">
+                    <MediaEmbedsSection
+                      youtubeUrl={member.youtube_url}
+                      spotifyUrl={member.spotify_url}
+                      heading="Embedded Players"
+                    />
+                  </div>
+                )}
 
                 {/* Music platform social links (Spotify, Bandcamp, YouTube) */}
                 {musicPlatformLinks.length > 0 && (

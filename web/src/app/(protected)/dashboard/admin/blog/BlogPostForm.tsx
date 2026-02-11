@@ -25,6 +25,8 @@ interface BlogPost {
   cover_image_url: string | null;
   is_published: boolean;
   tags: string[];
+  youtube_url?: string | null;
+  spotify_url?: string | null;
 }
 
 interface Props {
@@ -45,6 +47,8 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
     excerpt: post?.excerpt ?? "",
     content: post?.content ?? "",
     cover_image_url: post?.cover_image_url ?? "",
+    youtube_url: post?.youtube_url ?? "",
+    spotify_url: post?.spotify_url ?? "",
     tags: post?.tags?.join(", ") ?? "",
     // Default to "submit for publication" for non-admins creating new posts
     // (most users want their post published, not saved as a draft)
@@ -54,6 +58,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialGallery);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
 
   // Auto-generate slug from title
@@ -208,22 +213,63 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
     e.preventDefault();
     setSaving(true);
     setError("");
-
-    const supabase = createClient();
+    setFieldErrors({});
 
     const tagsArray = formData.tags
       .split(",")
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0);
 
-    const postData = {
+    const payload = {
       title: formData.title,
       slug: formData.slug || generateSlug(formData.title),
       excerpt: formData.excerpt || null,
       content: formData.content,
       cover_image_url: formData.cover_image_url || null,
+      youtube_url: formData.youtube_url || null,
+      spotify_url: formData.spotify_url || null,
       tags: tagsArray,
       is_published: formData.is_published,
+      gallery_images: galleryImages.map((img, index) => ({
+        image_url: img.image_url,
+        caption: img.caption || null,
+        sort_order: index,
+      })),
+    };
+
+    if (isAdmin) {
+      const endpoint = isEditing ? `/api/admin/blog-posts/${post?.id}` : "/api/admin/blog-posts";
+      const method = isEditing ? "PATCH" : "POST";
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        setError(errorData?.error || "Failed to save post.");
+        setFieldErrors(errorData?.fieldErrors || {});
+        setSaving(false);
+        return;
+      }
+
+      router.push("/dashboard/admin/blog");
+      router.refresh();
+      setSaving(false);
+      return;
+    }
+
+    const supabase = createClient();
+
+    const postData = {
+      title: payload.title,
+      slug: payload.slug,
+      excerpt: payload.excerpt,
+      content: payload.content,
+      cover_image_url: payload.cover_image_url,
+      tags: payload.tags,
+      is_published: payload.is_published,
       is_approved: true, // Trust members - auto-approve all posts (admins can hide if needed)
       published_at: formData.is_published && !post?.is_published
         ? new Date().toISOString()
@@ -289,16 +335,12 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
       if (galleryError) {
         console.error("Gallery save error:", galleryError);
-        // Don't fail the whole operation, just log it
       }
     }
 
-    if (isAdmin) {
-      router.push("/dashboard/admin/blog");
-    } else {
-      router.push("/dashboard/blog");
-    }
+    router.push("/dashboard/blog");
     router.refresh();
+    setSaving(false);
   };
 
   // Simple markdown preview renderer
@@ -441,6 +483,47 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
           placeholder="A compelling summary that makes readers want to click..."
         />
       </div>
+
+      {isAdmin && (
+        <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)] space-y-4">
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Media Embeds</h3>
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            Paste a YouTube or Spotify link. Leave blank to clear.
+          </p>
+          <div>
+            <label htmlFor="youtube_url" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              YouTube URL
+            </label>
+            <input
+              type="url"
+              id="youtube_url"
+              value={formData.youtube_url}
+              onChange={(e) => setFormData((prev) => ({ ...prev, youtube_url: e.target.value }))}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            />
+            {fieldErrors.youtube_url && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.youtube_url}</p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="spotify_url" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              Spotify URL
+            </label>
+            <input
+              type="url"
+              id="spotify_url"
+              value={formData.spotify_url}
+              onChange={(e) => setFormData((prev) => ({ ...prev, spotify_url: e.target.value }))}
+              placeholder="https://open.spotify.com/playlist/..."
+              className="w-full px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+            />
+            {fieldErrors.spotify_url && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.spotify_url}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Content Editor */}
       <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">

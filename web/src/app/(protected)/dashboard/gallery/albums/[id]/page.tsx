@@ -54,6 +54,8 @@ export default async function AlbumManagementPage({
       slug,
       description,
       cover_image_url,
+      youtube_url,
+      spotify_url,
       is_published,
       is_hidden,
       created_by,

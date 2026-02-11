@@ -7,6 +7,7 @@ import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurr
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { sendEventRestoredNotifications } from "@/lib/notifications/eventRestored";
+import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -163,8 +164,36 @@ export async function PATCH(
     // Series limit (null = infinite, N = stops after N occurrences)
     "max_occurrences",
     // Custom dates (for recurrence_rule="custom" events)
-    "custom_dates"
+    "custom_dates",
+    // Media embeds (admin-only)
+    "youtube_url",
+    "spotify_url",
   ];
+
+  if (body.youtube_url !== undefined || body.spotify_url !== undefined) {
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Only admins can update media embed fields." }, { status: 403 });
+    }
+
+    try {
+      body.youtube_url = normalizeMediaEmbedUrl(body.youtube_url, {
+        expectedProvider: "youtube",
+        field: "youtube_url",
+      })?.normalized_url ?? null;
+      body.spotify_url = normalizeMediaEmbedUrl(body.spotify_url, {
+        expectedProvider: "spotify",
+        field: "spotify_url",
+      })?.normalized_url ?? null;
+    } catch (error) {
+      if (error instanceof MediaEmbedValidationError && error.field) {
+        return NextResponse.json(
+          { error: "Validation failed", fieldErrors: { [error.field]: error.message } },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
+    }
+  }
 
   const now = new Date().toISOString();
   const updates: Record<string, unknown> = { updated_at: now };

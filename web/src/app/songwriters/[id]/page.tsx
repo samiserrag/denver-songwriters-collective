@@ -19,6 +19,8 @@ import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import Link from "next/link";
 import Image from "next/image";
 import { QrShareBlock } from "@/components/shared/QrShareBlock";
+import { MediaEmbedsSection } from "@/components/media";
+import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
@@ -391,6 +393,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     isFan: songwriter.is_fan ?? false,
     role: songwriter.role ?? undefined,
   };
+  const embedsEnabled = isExternalEmbedsEnabled();
 
   return (
     <>
@@ -593,6 +596,16 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             return (
               <section className="mb-12">
                 <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
+
+                {embedsEnabled && (
+                  <div className="mb-6">
+                    <MediaEmbedsSection
+                      youtubeUrl={songwriter.youtube_url}
+                      spotifyUrl={songwriter.spotify_url}
+                      heading="Embedded Players"
+                    />
+                  </div>
+                )}
 
                 {/* Music platform social links (Spotify, Bandcamp, YouTube) */}
                 {musicPlatformLinks.length > 0 && (

@@ -287,6 +287,7 @@ export default async function EditEventPage({
               event={event}
               canCreateCSC={canCreateCSC}
               canCreateVenue={isAdmin}
+              canEditMediaEmbeds={isAdmin}
               hasActiveClaims={hasActiveClaims}
             />
           }

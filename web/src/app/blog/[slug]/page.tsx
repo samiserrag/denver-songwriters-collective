@@ -6,6 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
 import BlogInteractions from "@/components/blog/BlogInteractions";
 import BlogComments from "@/components/blog/BlogComments";
+import { MediaEmbedsSection } from "@/components/media";
+import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +97,8 @@ export default async function BlogPostPage({ params }: Props) {
       title,
       content,
       cover_image_url,
+      youtube_url,
+      spotify_url,
       published_at,
       tags,
       author:profiles!blog_posts_author_id_fkey(full_name, avatar_url, bio, slug)
@@ -163,6 +167,7 @@ export default async function BlogPostPage({ params }: Props) {
         timeZone: "America/Denver",
       })
     : null;
+  const embedsEnabled = isExternalEmbedsEnabled();
 
   // Helper to render inline markdown (bold, italic)
   const renderInlineMarkdown = (text: string): React.ReactNode => {
@@ -424,6 +429,16 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="prose max-w-none">
             {renderContent(post.content)}
           </div>
+
+          {embedsEnabled && (
+            <div className="mt-10">
+              <MediaEmbedsSection
+                youtubeUrl={(post as { youtube_url?: string | null }).youtube_url}
+                spotifyUrl={(post as { spotify_url?: string | null }).spotify_url}
+                heading="Featured Media"
+              />
+            </div>
+          )}
 
           {/* Photo Gallery */}
           {galleryImages.length > 0 && (

@@ -304,9 +304,11 @@ export type Database = {
           is_published: boolean | null
           published_at: string | null
           slug: string
+          spotify_url: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
+          youtube_url: string | null
         }
         Insert: {
           author_id: string
@@ -320,9 +322,11 @@ export type Database = {
           is_published?: boolean | null
           published_at?: string | null
           slug: string
+          spotify_url?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
+          youtube_url?: string | null
         }
         Update: {
           author_id?: string
@@ -336,9 +340,11 @@ export type Database = {
           is_published?: boolean | null
           published_at?: string | null
           slug?: string
+          spotify_url?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -1157,6 +1163,7 @@ export type Database = {
           spotlight_reason: string | null
           start_time: string | null
           status: string
+          spotify_url: string | null
           timezone: string | null
           title: string
           total_slots: number | null
@@ -1165,6 +1172,7 @@ export type Database = {
           venue_id: string | null
           venue_name: string | null
           verified_by: string | null
+          youtube_url: string | null
         }
         Insert: {
           age_policy?: string | null
@@ -1226,6 +1234,7 @@ export type Database = {
           spotlight_reason?: string | null
           start_time?: string | null
           status?: string
+          spotify_url?: string | null
           timezone?: string | null
           title: string
           total_slots?: number | null
@@ -1234,6 +1243,7 @@ export type Database = {
           venue_id?: string | null
           venue_name?: string | null
           verified_by?: string | null
+          youtube_url?: string | null
         }
         Update: {
           age_policy?: string | null
@@ -1295,6 +1305,7 @@ export type Database = {
           spotlight_reason?: string | null
           start_time?: string | null
           status?: string
+          spotify_url?: string | null
           timezone?: string | null
           title?: string
           total_slots?: number | null
@@ -1303,6 +1314,7 @@ export type Database = {
           venue_id?: string | null
           venue_name?: string | null
           verified_by?: string | null
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -1536,8 +1548,10 @@ export type Database = {
           is_published: boolean | null
           name: string
           slug: string
+          spotify_url: string | null
           updated_at: string | null
           venue_id: string | null
+          youtube_url: string | null
         }
         Insert: {
           cover_image_url?: string | null
@@ -1551,8 +1565,10 @@ export type Database = {
           is_published?: boolean | null
           name: string
           slug: string
+          spotify_url?: string | null
           updated_at?: string | null
           venue_id?: string | null
+          youtube_url?: string | null
         }
         Update: {
           cover_image_url?: string | null
@@ -1566,8 +1582,10 @@ export type Database = {
           is_published?: boolean | null
           name?: string
           slug?: string
+          spotify_url?: string | null
           updated_at?: string | null
           venue_id?: string | null
+          youtube_url?: string | null
         }
         Relationships: [
           {

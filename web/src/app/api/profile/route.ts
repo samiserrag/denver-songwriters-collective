@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAdminProfileAlert } from "@/lib/email/adminProfileAlerts";
+import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 
 const TRACKED_PROFILE_FIELDS = [
   "full_name",
@@ -54,6 +55,35 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
+    const youtubeRaw = typeof body.youtube_url === "string" ? body.youtube_url.trim() : "";
+    const spotifyRaw = typeof body.spotify_url === "string" ? body.spotify_url.trim() : "";
+
+    let youtubeValue: string | null = youtubeRaw || null;
+    let spotifyValue: string | null = spotifyRaw || null;
+
+    try {
+      if (youtubeRaw && /^https?:\/\//i.test(youtubeRaw)) {
+        youtubeValue = normalizeMediaEmbedUrl(youtubeRaw, {
+          expectedProvider: "youtube",
+          field: "youtube_url",
+        })?.normalized_url ?? null;
+      }
+      if (spotifyRaw && /^https?:\/\//i.test(spotifyRaw)) {
+        spotifyValue = normalizeMediaEmbedUrl(spotifyRaw, {
+          expectedProvider: "spotify",
+          field: "spotify_url",
+        })?.normalized_url ?? null;
+      }
+    } catch (error) {
+      if (error instanceof MediaEmbedValidationError && error.field) {
+        return NextResponse.json(
+          { error: "Validation failed", fieldErrors: { [error.field]: error.message } },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
+    }
+
     const updatePayload = {
       full_name: body.full_name || null,
       bio: body.bio || null,
@@ -68,8 +98,8 @@ export async function PUT(request: Request) {
       facebook_url: body.facebook_url || null,
       twitter_url: body.twitter_url || null,
       tiktok_url: body.tiktok_url || null,
-      youtube_url: body.youtube_url || null,
-      spotify_url: body.spotify_url || null,
+      youtube_url: youtubeValue,
+      spotify_url: spotifyValue,
       bandcamp_url: body.bandcamp_url || null,
       website_url: body.website_url || null,
       venmo_handle: body.venmo_handle || null,

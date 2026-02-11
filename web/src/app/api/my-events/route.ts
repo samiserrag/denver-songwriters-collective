@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
+import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -207,6 +208,8 @@ function buildEventInsert(params: EventInsertParams) {
     signup_time: (body.signup_time as string) || null,
     age_policy: (body.age_policy as string) || (isCSCEvent ? "18+ only" : null),
     external_url: (body.external_url as string) || null,
+    youtube_url: (body.youtube_url as string) || null,
+    spotify_url: (body.spotify_url as string) || null,
     // Categories (multi-select array)
     categories: (body.categories as string[])?.length > 0 ? body.categories : null,
     // Custom dates (for recurrence_rule="custom" events)
@@ -241,6 +244,31 @@ export async function POST(request: Request) {
   const canCreateCSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
+
+  if (body.youtube_url !== undefined || body.spotify_url !== undefined) {
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Only admins can update media embed fields." }, { status: 403 });
+    }
+
+    try {
+      body.youtube_url = normalizeMediaEmbedUrl(body.youtube_url, {
+        expectedProvider: "youtube",
+        field: "youtube_url",
+      })?.normalized_url ?? null;
+      body.spotify_url = normalizeMediaEmbedUrl(body.spotify_url, {
+        expectedProvider: "spotify",
+        field: "spotify_url",
+      })?.normalized_url ?? null;
+    } catch (error) {
+      if (error instanceof MediaEmbedValidationError && error.field) {
+        return NextResponse.json(
+          { error: "Validation failed", fieldErrors: { [error.field]: error.message } },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
+    }
+  }
 
   // Validate required fields
   const required = ["title", "event_type", "start_time"];

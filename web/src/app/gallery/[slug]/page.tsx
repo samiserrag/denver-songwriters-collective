@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
 import GalleryGrid from "@/components/gallery/GalleryGrid";
 import { AlbumCommentsSection } from "./_components/AlbumCommentsSection";
+import { MediaEmbedsSection } from "@/components/media";
+import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +84,8 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
       slug,
       description,
       cover_image_url,
+      youtube_url,
+      spotify_url,
       created_at,
       created_by,
       event:events(id, slug, title),
@@ -153,6 +157,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     day: "numeric",
     timeZone: "America/Denver",
   });
+  const embedsEnabled = isExternalEmbedsEnabled();
 
   return (
     <>
@@ -209,6 +214,16 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
         <div className="py-12">
           {/* Album Comments */}
           <AlbumCommentsSection albumId={album.id} albumOwnerId={album.created_by} />
+
+          {embedsEnabled && (
+            <div className="mb-8">
+              <MediaEmbedsSection
+                youtubeUrl={(album as { youtube_url?: string | null }).youtube_url}
+                spotifyUrl={(album as { spotify_url?: string | null }).spotify_url}
+                heading="Featured Media"
+              />
+            </div>
+          )}
 
           {imagesError ? (
             <div className="text-center py-16 space-y-4">
