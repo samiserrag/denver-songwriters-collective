@@ -35,6 +35,11 @@ For non-trivial work:
 
 Use Axiom often for production log and query validation during investigation and post-change verification.
 
+Verified working status (Feb 11, 2026):
+- `axiom auth status axiom` confirms login and org access.
+- `axiom query "['vercel-runtime'] | limit 1" --format table` returns runtime rows.
+- Drain token ingest + query smoke test succeeded for dataset `vercel-runtime`.
+
 Common checks:
 
 ```bash

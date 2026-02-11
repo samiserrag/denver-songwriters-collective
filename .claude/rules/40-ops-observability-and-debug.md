@@ -58,9 +58,14 @@ The Vercel API token is available in the conversation context. If the agent need
 Runtime logs (function invocations, errors, console output) are available via Axiom.
 
 **Infrastructure:**
-- Vercel Log Drain → Axiom dataset `vercel` (configured in Vercel Dashboard → Project Settings → Log Drains)
+- Vercel Log Drain → Axiom dataset `vercel-runtime` (configured in Vercel Dashboard → Project Settings → Log Drains)
 - Dataset receives: function invocations, edge requests, build logs, static file requests
-- Retention: Axiom free tier (30 days)
+- Retention: dataset policy (currently 7 days on `vercel-runtime`)
+
+**Verified working (2026-02-11):**
+- `axiom auth status axiom` returns active login.
+- `axiom query "['vercel-runtime'] | limit 1" --format table` returns runtime rows.
+- Direct drain ingest returned `HTTP 200` with `{"ingested":1,"failed":0}` and query confirmed the record.
 
 **How to Query (CLI-first):**
 
@@ -72,19 +77,34 @@ axiom auth login
 axiom dataset list
 
 # Recent errors (last 1 hour)
-axiom query "['vercel'] | where level == 'error' | sort by _time desc | take 50"
+axiom query "['vercel-runtime'] | where level == 'error' | sort by _time desc | take 50"
 
 # Specific route errors
-axiom query "['vercel'] | where path == '/api/my-events' and status >= 500 | sort by _time desc | take 20"
+axiom query "['vercel-runtime'] | where path == '/api/my-events' and status >= 500 | sort by _time desc | take 20"
 
 # Search by request ID (from Vercel dashboard or error reports)
-axiom query "['vercel'] | where ['vercel.request_id'] == 'iad1::xxxxx' | sort by _time desc"
+axiom query "['vercel-runtime'] | where ['vercel.request_id'] == 'iad1::xxxxx' | sort by _time desc"
 
 # Tail logs in real-time (streaming)
-axiom query "['vercel'] | where _time > ago(5m)" --stream
+axiom query "['vercel-runtime'] | where _time > ago(5m)" --stream
 
 # Function duration analysis
-axiom query "['vercel'] | where type == 'function' | summarize avg(duration) by path | sort by avg_duration desc | take 10"
+axiom query "['vercel-runtime'] | where type == 'function' | summarize avg(duration) by path | sort by avg_duration desc | take 10"
+```
+
+**Drain token smoke test (copy/paste safe):**
+
+```bash
+setopt interactivecomments
+AXIOM_DRAIN_DATASET='vercel-runtime'
+AXIOM_ORG_ID='denver-songwriters-collective-q71x'
+export AXIOM_DRAIN_DATASET AXIOM_ORG_ID
+read -s AXIOM_DRAIN_TOKEN
+echo
+export AXIOM_DRAIN_TOKEN
+printf '{"source":"local-terminal","message":"axiom drain token smoke test","_time":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/axiom-smoke.ndjson
+curl -i -sS "https://api.axiom.co/v1/datasets/${AXIOM_DRAIN_DATASET}/ingest" -H "Authorization: Bearer ${AXIOM_DRAIN_TOKEN}" -H "X-AXIOM-ORG-ID: ${AXIOM_ORG_ID}" -H "Content-Type: application/x-ndjson" --data-binary @/tmp/axiom-smoke.ndjson
+axiom query "['${AXIOM_DRAIN_DATASET}'] | where source == 'local-terminal' and message == 'axiom drain token smoke test' | sort by _time desc | limit 5" --format table
 ```
 
 **APL (Axiom Processing Language) Quick Reference:**
@@ -237,4 +257,3 @@ git add . && git commit -m "your message" && git push
 ```
 
 ---
-
