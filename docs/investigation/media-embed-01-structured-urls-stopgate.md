@@ -13,7 +13,7 @@ Phase-1 policy is now locked:
 - Store normalized URL only (no raw input URL).
 - Mobile renders inline, full-width, lazy-loaded players.
 
-This document is investigation + stop-gate critique only. No implementation is proposed here.
+This document started as investigation + stop-gate critique. Section 15 now records approved Phase-1 implementation closeout evidence.
 
 ## 2) Scope and non-scope
 Scope for Phase 1 (design + stop-gate only):
@@ -315,13 +315,13 @@ RLS tests:
 - Preserve `/embed/*` routes and framing policy unchanged during rollback.
 
 ## 13) Backlog integration
-Canonical backlog updates applied in this investigation pass:
-- Added `MEDIA-EMBED-01` with phased sub-items in `docs/BACKLOG.md`.
-- Marked tract as docs-only STOP-GATE pending implementation approval.
-- Linked STRAT-01 and MARKETPLACE tracts as dependent but non-blocking in canonical notes.
+Canonical backlog updates applied:
+- `MEDIA-EMBED-01` is now tracked as PARTIAL DONE with `MEDIA-EMBED-01A` completed and `MEDIA-EMBED-01B` queued NEXT.
+- `MEDIA-EMBED-01B` is explicitly defined as Phase-2 expansion to creator/owner writes (not implemented in this tract).
+- STRAT-01 and MARKETPLACE dependencies remain non-blocking.
 
 Index alignment applied:
-- Added `MEDIA-EMBED-01` reference to `docs/backlog/post-gtm-3-1-active-backlog.md` to keep the curated index aligned with canonical backlog IDs.
+- `docs/backlog/post-gtm-3-1-active-backlog.md` remains index-only and now references `MEDIA-EMBED-01A` completion plus `MEDIA-EMBED-01B` next-step status.
 
 ## 14) STOP-GATE critique
 Policy locks applied for Phase-1:
@@ -332,11 +332,11 @@ Policy locks applied for Phase-1:
 - E) Mobile behavior: inline players.
 
 Remaining blocking unknowns:
-- API surface decision for blog/gallery mutation path consistency and 400 field-guidance requirements.
+- None for Phase-1 closeout.
 
-Non-blocking unknowns:
-- Final visual placement fine-tuning per surface (exact spacing/component composition).
-- Whether member profile should reuse existing social URL fields or split dedicated media fields.
+Non-blocking unknowns (deferred to Phase-2):
+- Exact ownership model details for creator/owner write expansion.
+- Abuse/spam controls for broader write authority.
 - Long-term provider expansion sequencing for marketplace entities.
 
 Risk and coupling critique:
@@ -346,6 +346,21 @@ Risk and coupling critique:
 - Regression risk: `/embed/*` contract is production-validated and must remain isolated from canonical media tract changes.
 
 ## 15) Approval request
-This investigation is complete and implementation-safe direction requires policy decisions A-E above.
+Phase-1 is implemented per locked policy and verified in local quality gates.
 
-STOP - Awaiting Sami approval to proceed to implementation.
+Implementation closeout evidence:
+- Policy lock/docs commit: `08bf5f6`
+- Phase-1 implementation commit: `514c085`
+- Migration: `supabase/migrations/20260211121500_media_embed_phase1_columns.sql`
+
+Smoke test checklist:
+- [x] Admin write surfaces can set/clear structured YouTube + Spotify URLs for events/blog/gallery/members.
+- [x] Canonical public pages render normalized YouTube (`youtube-nocookie`) + Spotify embeds when present.
+- [x] Invalid URLs are rejected server-side with field-level `400` errors.
+- [x] Empty inputs clear stored values (`NULL`) via overwrite semantics.
+- [x] Regression coverage added for normalization, rendering, page wiring, and clearing semantics.
+- [x] `npm --prefix web run lint` passed (0 errors, warnings only).
+- [x] `npm --prefix web test -- --run` passed (`182` files, `3819` tests).
+- [x] `npm --prefix web run build` attempted once and hit known local hang at `Creating an optimized production build ...`.
+
+STOP - Awaiting Sami approval to proceed with MEDIA-EMBED-01B (Phase-2 write expansion).
