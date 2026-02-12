@@ -80,4 +80,4 @@ CREATE POLICY media_embeds_admin_manage ON public.media_embeds
 
 -- Grant table access to roles
 GRANT SELECT ON public.media_embeds TO anon;
-GRANT ALL ON public.media_embeds TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.media_embeds TO authenticated;
