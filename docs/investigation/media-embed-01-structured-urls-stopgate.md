@@ -390,4 +390,15 @@ Quality gates:
 - `npm --prefix web test -- --run`: PASS (184 files, 3834 tests).
 - `npm --prefix web run build`: PASS (compiled, static pages generated).
 
+Deployment evidence:
+- PR #120: squash-merged to main as `b849513`.
+- Tripwire fix: `3f0364f` — replaced `GRANT ALL` with `GRANT SELECT, INSERT, UPDATE, DELETE` on media_embeds for authenticated.
+- Anon revoke fix: `2f8c1f8` — added explicit `REVOKE ALL FROM anon` to prevent Supabase default grant leakage.
+- CI: all 4 jobs passed on `3f0364f` (CI x2, Web Tests, Supabase RLS Tripwire).
+- Migration applied to production Supabase via MODE B (direct psql) on 2026-02-12.
+- Migration recorded in `supabase_migrations.schema_migrations` (version `20260212000000`).
+- Table verified: schema, indexes, RLS policies, check constraints all present.
+- Grants verified: anon=SELECT only, authenticated=SELECT/INSERT/UPDATE/DELETE only.
+- Vercel production deployment: `3f0364f` deployed successfully.
+
 Phase 2 next: expand multi-embed to events (host/cohost writes), occurrence overrides, venues, blog, and gallery.
