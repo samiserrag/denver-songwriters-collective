@@ -6,6 +6,46 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### MEDIA-EMBED-01A: Structured URL Embeds on Canonical Pages (February 2026) — RESOLVED
+
+**Summary:** Implemented Phase-1 structured media embeds (Option A columns) for events, blog posts, gallery albums, and member profiles with admin-only write authority and public canonical rendering.
+
+**Commit:** `514c085`
+
+**Migration:**
+- `supabase/migrations/20260211121500_media_embed_phase1_columns.sql`
+  - Added nullable `youtube_url` + `spotify_url` to `events`, `blog_posts`, `gallery_albums`.
+  - Added profile columns only-if-missing (no duplicate add).
+
+**Delivered:**
+- Added shared server-side normalization/validation utility:
+  - `web/src/lib/mediaEmbeds.ts`
+  - YouTube + Spotify allowlist only, empty -> `null`, typed validation errors.
+  - YouTube normalized to `youtube-nocookie` embed URLs by default.
+- Added canonical SSR-safe embed renderer:
+  - `web/src/components/media/MediaEmbedsSection.tsx`
+- Wired canonical public pages:
+  - `web/src/app/events/[id]/page.tsx`
+  - `web/src/app/blog/[slug]/page.tsx`
+  - `web/src/app/gallery/[slug]/page.tsx`
+  - `web/src/app/members/[id]/page.tsx`
+  - `web/src/app/songwriters/[id]/page.tsx`
+- Added/updated admin write surfaces and admin APIs for field-level validation errors and clear-on-blank semantics.
+- Updated non-embed CSP `frame-src` to include `https://www.youtube-nocookie.com` without changing `/embed/*` behavior.
+
+**Tests added:**
+- `web/src/__tests__/media-embed-normalization.test.ts`
+- `web/src/__tests__/media-embed-rendering.test.tsx`
+- `web/src/__tests__/media-embed-page-wiring.test.ts`
+- `web/src/__tests__/media-embed-clear-semantics.test.ts`
+
+**Quality gates:**
+- `npm --prefix web run lint`: PASS (0 errors, 2 existing warnings)
+- `npm --prefix web test -- --run`: PASS (`182` files, `3819` tests)
+- `npm --prefix web run build`: attempted once; known local hang after `Creating an optimized production build ...` (terminated)
+
+---
+
 ### Homepage Playlist Embeds Wired to Site Settings (February 2026) — RESOLVED
 
 **Summary:** Fixed YouTube and Spotify playlist embeds on the homepage which were hardcoded instead of using admin-configurable URLs from `site_settings`. Added URL-to-embed conversion helpers that automatically transform standard playlist URLs into embed-safe formats.
@@ -8727,4 +8767,3 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - Server + client logging support
 
 ---
-

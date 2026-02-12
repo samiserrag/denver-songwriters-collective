@@ -19,6 +19,7 @@
 | 5 | `EMBED-01` | P2 | DONE — production validated | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/embed-01-external-embeds-stopgate.md`](../investigation/embed-01-external-embeds-stopgate.md) (Closeout §14) |
 | 6 | `EMBED-02` | P2 | DONE — venues -> members -> blog -> gallery shipped with tests (`ed3ae28`) | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/embed-02-non-event-embeds-stopgate.md`](../investigation/embed-02-non-event-embeds-stopgate.md) |
 | 7 | `STRAT-01` | P0 (Strategic) | OPEN — docs-only, execution deferred | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`](../investigation/strat-01-multi-region-whitelabel-stopgate.md), [`docs/NORTH_STAR.md`](../NORTH_STAR.md) |
+| 8 | `MEDIA-EMBED-01` | P1 | PARTIAL DONE — `MEDIA-EMBED-01A` shipped (`514c085`), `MEDIA-EMBED-01B` queued NEXT | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/media-embed-01-structured-urls-stopgate.md`](../investigation/media-embed-01-structured-urls-stopgate.md) |
 
 ---
 
@@ -38,7 +39,8 @@ These are complete and remain tracked in canonical backlog for regression protec
 
 1. Continue invite/share tract as `GROWTH-01` (Phase 7B.2 only): managed invite email requires a separate STOP-GATE.
 2. Keep `STRAT-01` in parallel as governance architecture only until phased execution approval.
-3. Keep `UX-10` and `UX-11` under regression watch with their new tests.
+3. Execute `MEDIA-EMBED-01B` (Phase-2): expand media embed writes to creator/owner roles with ownership-aware RLS + abuse controls.
+4. Keep `UX-10`, `UX-11`, and `MEDIA-EMBED-01A` under regression watch with their tests.
 
 ---
 

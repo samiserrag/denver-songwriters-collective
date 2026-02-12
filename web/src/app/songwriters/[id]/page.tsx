@@ -19,6 +19,8 @@ import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import Link from "next/link";
 import Image from "next/image";
 import { QrShareBlock } from "@/components/shared/QrShareBlock";
+import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
+import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
@@ -150,6 +152,17 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     profileImagesRaw ?? [],
     songwriter.avatar_url
   );
+
+  // Fetch ordered media embeds
+  const { data: mediaEmbedsRaw } = await supabase
+    .from("media_embeds")
+    .select("id, url, provider, kind, position")
+    .eq("target_type", "profile")
+    .eq("target_id", songwriter.id)
+    .is("date_key", null)
+    .order("position", { ascending: true });
+
+  const mediaEmbeds = mediaEmbedsRaw ?? [];
 
   // Build social and tip links using shared helpers
   const socialLinks = buildSocialLinks(songwriter);
@@ -391,6 +404,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     isFan: songwriter.is_fan ?? false,
     role: songwriter.role ?? undefined,
   };
+  const embedsEnabled = isExternalEmbedsEnabled();
 
   return (
     <>
@@ -593,6 +607,23 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             return (
               <section className="mb-12">
                 <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
+
+                {embedsEnabled && mediaEmbeds.length > 0 ? (
+                  <div className="mb-6">
+                    <OrderedMediaEmbeds
+                      embeds={mediaEmbeds}
+                      heading="Embedded Players"
+                    />
+                  </div>
+                ) : embedsEnabled ? (
+                  <div className="mb-6">
+                    <MediaEmbedsSection
+                      youtubeUrl={songwriter.youtube_url}
+                      spotifyUrl={songwriter.spotify_url}
+                      heading="Embedded Players"
+                    />
+                  </div>
+                ) : null}
 
                 {/* Music platform social links (Spotify, Bandcamp, YouTube) */}
                 {musicPlatformLinks.length > 0 && (

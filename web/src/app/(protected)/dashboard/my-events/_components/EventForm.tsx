@@ -83,6 +83,8 @@ interface EventFormProps {
   canCreateCSC?: boolean; // Whether user can create CSC-branded events
   /** Phase 4.45b: Whether user can create new venues (admin only) */
   canCreateVenue?: boolean;
+  /** MEDIA-EMBED-01: Admin-only media embed write authority */
+  canEditMediaEmbeds?: boolean;
   /** Occurrence mode: form edits a single occurrence, not the series */
   occurrenceMode?: boolean;
   /** The date_key for the occurrence being edited (YYYY-MM-DD) */
@@ -121,6 +123,8 @@ interface EventFormProps {
     is_dsc_event?: boolean;
     // External website URL
     external_url?: string | null;
+    youtube_url?: string | null;
+    spotify_url?: string | null;
     // Categories (multi-select)
     categories?: string[] | null;
     // Phase 4.0: Custom location fields
@@ -147,7 +151,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, canEditMediaEmbeds = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -157,6 +161,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     actionUrl?: string;
     actionLabel?: string;
   } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
   const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
@@ -205,6 +210,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     age_policy: event?.age_policy || "",
     is_dsc_event: event?.is_dsc_event ?? false,
     external_url: event?.external_url || "",
+    youtube_url: event?.youtube_url || "",
+    spotify_url: event?.spotify_url || "",
     // Categories (multi-select)
     categories: event?.categories || [],
     // Phase 4.0: Custom location fields
@@ -489,6 +496,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     setLoading(true);
     setError("");
     setErrorDetails(null);
+    setFieldErrors({});
     setSuccess("");
 
     // Phase 4.42k: Comprehensive validation with error summary
@@ -725,6 +733,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         age_policy: formData.age_policy || null,
         is_dsc_event: canCreateCSC ? formData.is_dsc_event : false,
         external_url: formData.external_url.trim() || null,
+        youtube_url: canEditMediaEmbeds ? (formData.youtube_url.trim() || null) : undefined,
+        spotify_url: canEditMediaEmbeds ? (formData.spotify_url.trim() || null) : undefined,
         // Categories (multi-select array)
         categories: formData.categories.length > 0 ? formData.categories : null,
         // Phase 4.0: Location selection mode and custom location fields
@@ -756,6 +766,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             actionUrl: data.actionUrl,
             actionLabel: "Manage Signups",
           });
+          setLoading(false);
+          return;
+        }
+        if (data.fieldErrors && typeof data.fieldErrors === "object") {
+          setFieldErrors(data.fieldErrors as Record<string, string>);
+          setError(data.error || "Please fix the highlighted fields.");
           setLoading(false);
           return;
         }
@@ -2260,6 +2276,49 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 Link to venue&apos;s website, Facebook event, or other external page for this happening
               </p>
             </div>
+
+            {canEditMediaEmbeds && !occurrenceMode && (
+              <div className="space-y-4 p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
+                <div>
+                  <h4 className="text-sm font-medium text-[var(--color-text-primary)]">Media Embeds</h4>
+                  <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                    Paste a YouTube or Spotify link. Leave blank to clear.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                    YouTube URL <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={formData.youtube_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                  {fieldErrors.youtube_url && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.youtube_url}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                    Spotify URL <span className="font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://open.spotify.com/playlist/..."
+                    value={formData.spotify_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, spotify_url: e.target.value }))}
+                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+                  />
+                  {fieldErrors.spotify_url && (
+                    <p className="mt-1 text-sm text-red-600">{fieldErrors.spotify_url}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* CSC Toggle */}
             {canCreateCSC && (

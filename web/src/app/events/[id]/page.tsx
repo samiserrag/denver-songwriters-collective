@@ -16,7 +16,7 @@ import { EventComments } from "@/components/events/EventComments";
 import { WatchEventButton } from "@/components/events/WatchEventButton";
 import { VerifyEventButton } from "@/components/events/VerifyEventButton";
 import { SuggestUpdateSection } from "@/components/events/SuggestUpdateSection";
-import { PosterMedia } from "@/components/media";
+import { MediaEmbedsSection, PosterMedia } from "@/components/media";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, formatVerifiedDate, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
@@ -34,6 +34,7 @@ import {
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
 import { getVenueDirectionsUrl } from "@/lib/venue/getDirectionsUrl";
 import { getSignupMeta } from "@/lib/events/signupMeta";
+import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -194,7 +195,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       is_free, cost_label, age_policy, host_id,
       source, last_verified_at, verified_by,
       series_id, external_url, timezone, online_url, signup_url, signup_mode,
-      custom_dates, signup_time
+      custom_dates, signup_time, youtube_url, spotify_url
     `;
   const { data: event, error } = isUUID(id)
     ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
@@ -723,6 +724,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   }
 
   const venueLocation = [venueName, venueAddress].filter(Boolean).join(", ");
+  const embedsEnabled = isExternalEmbedsEnabled();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -1371,6 +1373,15 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                 {displayDescription}
               </p>
             </div>
+          )}
+
+          {embedsEnabled && (
+            <MediaEmbedsSection
+              youtubeUrl={(event as { youtube_url?: string | null }).youtube_url}
+              spotifyUrl={(event as { spotify_url?: string | null }).spotify_url}
+              heading="Featured Media"
+              className="mb-8"
+            />
           )}
 
           {/* Timeslot claiming section for timeslot-enabled events */}

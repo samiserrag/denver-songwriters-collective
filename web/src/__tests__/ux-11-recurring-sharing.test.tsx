@@ -215,6 +215,7 @@ describe("UX-11 recurring event sharing reliability", () => {
     }));
     vi.doMock("@/components/media", () => ({
       PosterMedia: () => <div data-testid="poster-media">Poster</div>,
+      MediaEmbedsSection: () => <div data-testid="media-embeds">Media</div>,
     }));
     vi.doMock("@/components/venue/VenueLink", () => ({
       VenueLink: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,

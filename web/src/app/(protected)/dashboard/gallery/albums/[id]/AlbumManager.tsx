@@ -30,6 +30,8 @@ interface Album {
   slug: string;
   description: string | null;
   cover_image_url: string | null;
+  youtube_url: string | null;
+  spotify_url: string | null;
   is_published: boolean;
   is_hidden: boolean;
   created_by: string;
@@ -150,9 +152,12 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
   const [isEditingName, setIsEditingName] = useState(false);
   const [albumName, setAlbumName] = useState(album.name);
   const [albumDescription, setAlbumDescription] = useState(album.description || "");
+  const [albumYoutubeUrl, setAlbumYoutubeUrl] = useState(album.youtube_url || "");
+  const [albumSpotifyUrl, setAlbumSpotifyUrl] = useState(album.spotify_url || "");
   const [isSaving, setIsSaving] = useState(false);
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isModeratingComments, setIsModeratingComments] = useState(false);
   const [images, setImages] = useState(initialImages);
   const [isReordering, setIsReordering] = useState(false);
@@ -215,6 +220,7 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
     }
 
     setIsSaving(true);
+    setFieldErrors({});
     const supabase = createClient();
 
     // Generate new slug from name
@@ -237,14 +243,37 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
       }
     }
 
-    const { error } = await supabase
-      .from("gallery_albums")
-      .update({
-        name: albumName.trim(),
-        slug: finalSlug,
-        description: albumDescription.trim() || null,
-      })
-      .eq("id", album.id);
+    let error: { message: string } | null = null;
+
+    if (isAdmin) {
+      const response = await fetch(`/api/admin/gallery-albums/${album.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: albumName.trim(),
+          slug: finalSlug,
+          description: albumDescription.trim() || null,
+          youtube_url: albumYoutubeUrl,
+          spotify_url: albumSpotifyUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        setFieldErrors(payload?.fieldErrors || {});
+        error = { message: payload?.error || "Failed to update album" };
+      }
+    } else {
+      const result = await supabase
+        .from("gallery_albums")
+        .update({
+          name: albumName.trim(),
+          slug: finalSlug,
+          description: albumDescription.trim() || null,
+        })
+        .eq("id", album.id);
+      error = result.error ? { message: result.error.message } : null;
+    }
 
     setIsSaving(false);
 
@@ -428,6 +457,40 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
                     className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)] resize-none"
                   />
                 </div>
+                {isAdmin && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                        YouTube URL
+                      </label>
+                      <input
+                        type="url"
+                        value={albumYoutubeUrl}
+                        onChange={(e) => setAlbumYoutubeUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+                      />
+                      {fieldErrors.youtube_url && (
+                        <p className="mt-1 text-xs text-red-500">{fieldErrors.youtube_url}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                        Spotify URL
+                      </label>
+                      <input
+                        type="url"
+                        value={albumSpotifyUrl}
+                        onChange={(e) => setAlbumSpotifyUrl(e.target.value)}
+                        placeholder="https://open.spotify.com/playlist/..."
+                        className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+                      />
+                      {fieldErrors.spotify_url && (
+                        <p className="mt-1 text-xs text-red-500">{fieldErrors.spotify_url}</p>
+                      )}
+                    </div>
+                  </>
+                )}
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveDetails}
@@ -441,6 +504,9 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
                     onClick={() => {
                       setAlbumName(album.name);
                       setAlbumDescription(album.description || "");
+                      setAlbumYoutubeUrl(album.youtube_url || "");
+                      setAlbumSpotifyUrl(album.spotify_url || "");
+                      setFieldErrors({});
                       setIsEditingName(false);
                     }}
                     className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"

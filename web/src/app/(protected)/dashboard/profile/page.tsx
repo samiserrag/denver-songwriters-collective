@@ -7,6 +7,7 @@ import { PageContainer, HeroSection } from "@/components/layout";
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, SPECIALTY_OPTIONS } from "@/lib/profile/options";
 import { ProfileCompleteness, ProfilePhotosSection } from "@/components/profile";
 import { toast } from "sonner";
+import { MediaEmbedsEditor } from "@/components/media";
 
 type ProfileImage = {
   id: string;
@@ -103,6 +104,7 @@ export default function EditProfilePage() {
   const [customInstrument, setCustomInstrument] = useState("");
   const [customGenre, setCustomGenre] = useState("");
   const [profileImages, setProfileImages] = useState<ProfileImage[]>([]);
+  const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>([]);
   // Track original identity flags from database to detect accidental clearing
   const [originalIdentity, setOriginalIdentity] = useState<{
     is_songwriter: boolean;
@@ -139,6 +141,19 @@ export default function EditProfilePage() {
 
       if (images) {
         setProfileImages(images);
+      }
+
+      // Load ordered media embeds
+      const { data: embeds } = await supabase
+        .from("media_embeds")
+        .select("url")
+        .eq("target_type", "profile")
+        .eq("target_id", user.id)
+        .is("date_key", null)
+        .order("position", { ascending: true });
+
+      if (embeds && embeds.length > 0) {
+        setMediaEmbedUrls(embeds.map((e: { url: string }) => e.url));
       }
 
       if (profile) {
@@ -268,6 +283,7 @@ export default function EditProfilePage() {
           instruments: formData.instruments,
           song_links: formData.song_links,
           featured_song_url: formData.featured_song_url,
+          media_embed_urls: mediaEmbedUrls,
         }),
       });
 
@@ -357,6 +373,20 @@ export default function EditProfilePage() {
                 />
               </section>
             )}
+
+            {/* Media Embeds - directly under photos */}
+            <section id="media-embeds-section">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-2">
+                Media Links
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                Share links to your music, videos, or other media. YouTube and Spotify links will show as embedded players on your profile.
+              </p>
+              <MediaEmbedsEditor
+                value={mediaEmbedUrls}
+                onChange={setMediaEmbedUrls}
+              />
+            </section>
 
             {/* Basic Info */}
             <section id="basic-info-section">

@@ -8,6 +8,7 @@ import {
   deserializeReferralCookie,
   hasReferralParams,
 } from '@/lib/referrals';
+import { upsertMediaEmbeds } from '@/lib/mediaEmbedsServer';
 
 export async function POST(request: Request) {
   try {
@@ -106,6 +107,21 @@ export async function POST(request: Request) {
     if (updateError) {
       console.error('Onboarding update error:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Upsert ordered media embeds if provided
+    if (Array.isArray(body.media_embed_urls)) {
+      try {
+        await upsertMediaEmbeds(
+          serviceClient,
+          { type: "profile", id: user.id },
+          body.media_embed_urls,
+          user.id
+        );
+      } catch (embedError) {
+        console.error("Onboarding media embeds upsert error:", embedError);
+        // Non-fatal: profile was saved, embeds failed
+      }
     }
 
     // Growth tracking: alert admin when signup completes (first onboarding)

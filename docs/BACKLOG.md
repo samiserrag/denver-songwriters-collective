@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-02-10
+> **Last Updated:** 2026-02-11
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -394,7 +394,21 @@ Polish member profiles before external test users see them. Three scope areas:
 | MEMBER-05 | Profile Updates / Announcements section | P2 | OPEN | From DEFERRED-HIGH-PRIORITY.md |
 | MEMBER-06 | Collaboration Messaging CTA | P2 | OPEN | From DEFERRED-HIGH-PRIORITY.md |
 | MEMBER-07 | Profile Gallery + Media Control | P3 | OPEN | From DEFERRED-HIGH-PRIORITY.md |
-| MEMBER-08 | Embedded Media (Spotify / YouTube) | P3 | OPEN | From DEFERRED-HIGH-PRIORITY.md |
+| MEMBER-08 | Embedded Media (Spotify / YouTube) | P3 | OPEN | Depends on `MEDIA-EMBED-01` foundation decisions |
+
+### Structured Media Embed Foundation
+
+| ID | Item | Priority | Status | Notes |
+|----|------|----------|--------|-------|
+| MEDIA-EMBED-01 | Structured media URL foundation on canonical pages (Events/Blog/Gallery/Members) | P1 | PARTIAL DONE — Phase-1 shipped (`MEDIA-EMBED-01A`) | STOP-GATE closeout: `docs/investigation/media-embed-01-structured-urls-stopgate.md` |
+| MEDIA-EMBED-01A | Phase-1 structured URL embeds (Option A per-entity columns, admin-only writes) | P1 | DONE | Commit `514c085`; migration `20260211121500_media_embed_phase1_columns.sql`; YouTube+Spotify canonical rendering with tests and CSP alignment |
+| MEDIA-EMBED-01B | Expand writes to all users (creator/owner writes under safe ownership RLS) | P1 | SUPERSEDED by MEDIA-EMBED-02 | Original scope absorbed into multi-embed Phase 2 |
+| MEDIA-EMBED-02 | Multi-embed ordered list foundation (profiles + onboarding) | P1 | DONE — Phase 1.5 | Migration `20260212000000_media_embeds_table.sql`; `media_embeds` table + RLS; MediaEmbedsEditor + OrderedMediaEmbeds; profile/onboarding/members/songwriters wired |
+| MEDIA-EMBED-02B | Multi-embed for events (host/cohost), overrides, venues, blog, gallery | P1 | NEXT | Phase 2: expand MediaEmbedsEditor to event/override/venue/blog/gallery surfaces with host/cohost and owner RLS |
+
+**Dependency posture:**
+- Non-blocking strategic dependency: `STRAT-01` (region/community abstraction readiness).
+- Non-blocking future dependency: `MARKETPLACE-01`/`MARKETPLACE-02` (classifieds/service profile media expansion).
 
 ### Interested Button Feature (NEW)
 

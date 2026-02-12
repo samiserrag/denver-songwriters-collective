@@ -15,6 +15,7 @@ describe("Embed framing regression", () => {
     expect(nextConfig).toContain('key: "X-Frame-Options"');
     expect(nextConfig).toContain("DENY");
     expect(nextConfig).toContain("frame-ancestors 'none'");
+    expect(nextConfig).toContain("https://www.youtube-nocookie.com");
   });
 
   it("includes EMBED-02 routes with dynamic server rendering", () => {

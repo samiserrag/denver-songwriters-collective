@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAdminProfileAlert } from "@/lib/email/adminProfileAlerts";
+import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 const TRACKED_PROFILE_FIELDS = [
   "full_name",
@@ -54,6 +56,35 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
+    const youtubeRaw = typeof body.youtube_url === "string" ? body.youtube_url.trim() : "";
+    const spotifyRaw = typeof body.spotify_url === "string" ? body.spotify_url.trim() : "";
+
+    let youtubeValue: string | null = youtubeRaw || null;
+    let spotifyValue: string | null = spotifyRaw || null;
+
+    try {
+      if (youtubeRaw && /^https?:\/\//i.test(youtubeRaw)) {
+        youtubeValue = normalizeMediaEmbedUrl(youtubeRaw, {
+          expectedProvider: "youtube",
+          field: "youtube_url",
+        })?.normalized_url ?? null;
+      }
+      if (spotifyRaw && /^https?:\/\//i.test(spotifyRaw)) {
+        spotifyValue = normalizeMediaEmbedUrl(spotifyRaw, {
+          expectedProvider: "spotify",
+          field: "spotify_url",
+        })?.normalized_url ?? null;
+      }
+    } catch (error) {
+      if (error instanceof MediaEmbedValidationError && error.field) {
+        return NextResponse.json(
+          { error: "Validation failed", fieldErrors: { [error.field]: error.message } },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
+    }
+
     const updatePayload = {
       full_name: body.full_name || null,
       bio: body.bio || null,
@@ -68,8 +99,8 @@ export async function PUT(request: Request) {
       facebook_url: body.facebook_url || null,
       twitter_url: body.twitter_url || null,
       tiktok_url: body.tiktok_url || null,
-      youtube_url: body.youtube_url || null,
-      spotify_url: body.spotify_url || null,
+      youtube_url: youtubeValue,
+      spotify_url: spotifyValue,
       bandcamp_url: body.bandcamp_url || null,
       website_url: body.website_url || null,
       venmo_handle: body.venmo_handle || null,
@@ -102,6 +133,21 @@ export async function PUT(request: Request) {
     if (updateError) {
       console.error("Profile update error:", updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Upsert ordered media embeds if provided
+    if (Array.isArray(body.media_embed_urls)) {
+      try {
+        await upsertMediaEmbeds(
+          supabase,
+          { type: "profile", id: user.id },
+          body.media_embed_urls,
+          user.id
+        );
+      } catch (embedError) {
+        console.error("Media embeds upsert error:", embedError);
+        // Non-fatal: profile was saved, embeds failed
+      }
     }
 
     const changedFields = TRACKED_PROFILE_FIELDS.filter((field) =>

@@ -10,6 +10,7 @@ import {
   getRelevantSections,
   type SectionKey,
 } from "./sectionVisibility";
+import { MediaEmbedsEditor } from "@/components/media";
 
 // =============================================================================
 // Conditional Step Logic
@@ -64,6 +65,9 @@ export default function OnboardingProfile() {
   const [genres, setGenres] = useState<string[]>([]);
   const [customInstrument, setCustomInstrument] = useState("");
   const [customGenre, setCustomGenre] = useState("");
+
+  // Media embeds
+  const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>([]);
 
   // Accordion state
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
@@ -166,6 +170,7 @@ export default function OnboardingProfile() {
           interested_in_cowriting: interestedInCowriting,
           instruments: instruments.length > 0 ? instruments : null,
           genres: genres.length > 0 ? genres : null,
+          media_embed_urls: mediaEmbedUrls,
         }),
       });
 
@@ -221,6 +226,7 @@ export default function OnboardingProfile() {
           interested_in_cowriting: interestedInCowriting,
           instruments: instruments.length > 0 ? instruments : null,
           genres: genres.length > 0 ? genres : null,
+          media_embed_urls: mediaEmbedUrls,
         }),
       });
 
@@ -718,6 +724,39 @@ export default function OnboardingProfile() {
               )}
             </div>
             )}
+
+            {/* Media links - visible for all */}
+            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection("media")}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--color-bg-hover)] transition-colors"
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  Share your music or videos
+                  <span className="text-[var(--color-text-tertiary)] font-normal ml-1">
+                    (YouTube, Spotify, etc.)
+                  </span>
+                </span>
+                <span className="text-[var(--color-text-tertiary)]">
+                  {openSections.has("media") ? (
+                    <ChevronDown size={20} />
+                  ) : (
+                    <ChevronRight size={20} />
+                  )}
+                </span>
+              </button>
+              {openSections.has("media") && (
+                <div className="px-4 pb-4">
+                  <p className="text-sm text-[var(--color-text-tertiary)] mb-3">
+                    YouTube and Spotify links will show as embedded players on your profile. Other links appear as buttons.
+                  </p>
+                  <MediaEmbedsEditor
+                    value={mediaEmbedUrls}
+                    onChange={setMediaEmbedUrls}
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Social links - visible for Songwriter, Host, Studio */}
             {isSectionVisible("social", relevantSections) && (

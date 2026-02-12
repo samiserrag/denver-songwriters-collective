@@ -88,6 +88,20 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
   const [updatingSpotlight, setUpdatingSpotlight] = useState<string | null>(null);
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
   const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
+  const [mediaModal, setMediaModal] = useState<{
+    open: boolean;
+    user: Profile | null;
+    youtube_url: string;
+    spotify_url: string;
+  }>({
+    open: false,
+    user: null,
+    youtube_url: "",
+    spotify_url: "",
+  });
+  const [isSavingMedia, setIsSavingMedia] = useState(false);
+  const [mediaFieldErrors, setMediaFieldErrors] = useState<Record<string, string>>({});
+  const [mediaError, setMediaError] = useState("");
 
   // Local state for optimistic UI updates - deleted users are removed immediately
   const [deletedUserIds, setDeletedUserIds] = useState<Set<string>>(new Set());
@@ -223,6 +237,51 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       setError("Failed to delete user. Please try again.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const openMediaEditor = (user: Profile) => {
+    setMediaFieldErrors({});
+    setMediaError("");
+    setMediaModal({
+      open: true,
+      user,
+      youtube_url: user.youtube_url ?? "",
+      spotify_url: user.spotify_url ?? "",
+    });
+  };
+
+  const handleSaveMedia = async () => {
+    if (!mediaModal.user) return;
+
+    setIsSavingMedia(true);
+    setMediaFieldErrors({});
+    setMediaError("");
+
+    try {
+      const response = await fetch(`/api/admin/users/${mediaModal.user.id}/media`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          youtube_url: mediaModal.youtube_url,
+          spotify_url: mediaModal.spotify_url,
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setMediaFieldErrors((payload?.fieldErrors as Record<string, string>) || {});
+        setMediaError(payload?.error || "Failed to save media links.");
+        return;
+      }
+
+      setMediaModal({ open: false, user: null, youtube_url: "", spotify_url: "" });
+      router.refresh();
+    } catch (err) {
+      console.error("Save media error:", err);
+      setMediaError("Failed to save media links.");
+    } finally {
+      setIsSavingMedia(false);
     }
   };
 
@@ -366,6 +425,13 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                   </td>
                   <td className="py-2 px-3">
                     <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => openMediaEditor(u)}
+                        className="text-xs underline text-[var(--color-text-accent)] hover:text-[var(--color-accent-hover)]"
+                      >
+                        Media
+                      </button>
+
                       {/* Admin toggle - only visible to super admin */}
                       {isSuperAdmin && u.id !== currentUserId && (
                         <button
@@ -418,6 +484,82 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
           </tbody>
         </table>
       </div>
+
+      {/* Media Editor Modal */}
+      {mediaModal.open && mediaModal.user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-white dark:bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg p-6 max-w-lg w-full mx-4">
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
+              Edit Media Links
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              {mediaModal.user.full_name ?? "Member"}: paste a YouTube or Spotify link. Leave blank to clear.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  YouTube URL
+                </label>
+                <input
+                  type="url"
+                  value={mediaModal.youtube_url}
+                  onChange={(e) =>
+                    setMediaModal((prev) => ({ ...prev, youtube_url: e.target.value }))
+                  }
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-[var(--color-bg-tertiary)] border border-gray-300 dark:border-[var(--color-border-default)] text-gray-900 dark:text-[var(--color-text-primary)]"
+                />
+                {mediaFieldErrors.youtube_url && (
+                  <p className="mt-1 text-xs text-red-600">{mediaFieldErrors.youtube_url}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  Spotify URL
+                </label>
+                <input
+                  type="url"
+                  value={mediaModal.spotify_url}
+                  onChange={(e) =>
+                    setMediaModal((prev) => ({ ...prev, spotify_url: e.target.value }))
+                  }
+                  placeholder="https://open.spotify.com/playlist/..."
+                  className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-[var(--color-bg-tertiary)] border border-gray-300 dark:border-[var(--color-border-default)] text-gray-900 dark:text-[var(--color-text-primary)]"
+                />
+                {mediaFieldErrors.spotify_url && (
+                  <p className="mt-1 text-xs text-red-600">{mediaFieldErrors.spotify_url}</p>
+                )}
+              </div>
+            </div>
+
+            {mediaError && (
+              <p className="mt-4 text-sm text-red-600">{mediaError}</p>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleSaveMedia}
+                disabled={isSavingMedia}
+                className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isSavingMedia ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => {
+                  setMediaModal({ open: false, user: null, youtube_url: "", spotify_url: "" });
+                  setMediaFieldErrors({});
+                  setMediaError("");
+                }}
+                className="px-4 py-2 bg-gray-200 dark:bg-[var(--color-bg-tertiary)] hover:bg-gray-300 dark:hover:bg-[var(--color-bg-primary)] text-gray-900 dark:text-[var(--color-text-primary)] rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteModal.open && deleteModal.user && (
