@@ -364,3 +364,30 @@ Smoke test checklist:
 - [x] `npm --prefix web run build` attempted once and hit known local hang at `Creating an optimized production build ...`.
 
 STOP - Awaiting Sami approval to proceed with MEDIA-EMBED-01B (Phase-2 write expansion).
+
+---
+
+## 16) Phase 1.5 closeout (MEDIA-EMBED-02 foundation)
+
+Phase 1.5 implements the multi-embed ordered list foundation for profile surfaces only.
+
+Implementation evidence:
+- Migration: `supabase/migrations/20260212000000_media_embeds_table.sql`
+- New table: `public.media_embeds` with RLS policies for profile owner/admin writes and public reads.
+- Shared library: `web/src/lib/mediaEmbedsServer.ts` (upsert/read helpers).
+- Extended: `web/src/lib/mediaEmbeds.ts` (classifyUrl, buildEmbedRows for multi-provider support).
+- UI component: `web/src/components/media/MediaEmbedsEditor.tsx` (dnd-kit reorder, add/remove rows).
+- Render component: `web/src/components/media/OrderedMediaEmbeds.tsx` (inline for YouTube/Spotify, safe cards for others).
+
+Surfaces wired:
+- Profile edit: `web/src/app/(protected)/dashboard/profile/page.tsx` (editor under photos section).
+- Onboarding: `web/src/app/onboarding/profile/page.tsx` (editor in collapsible section).
+- API: `web/src/app/api/profile/route.ts` and `web/src/app/api/onboarding/route.ts` (media_embed_urls array support).
+- Canonical render: `web/src/app/members/[id]/page.tsx` and `web/src/app/songwriters/[id]/page.tsx` (ordered embeds with scalar fallback).
+
+Quality gates:
+- `npm --prefix web run lint`: PASS (0 errors, 2 pre-existing warnings).
+- `npm --prefix web test -- --run`: PASS (184 files, 3834 tests).
+- `npm --prefix web run build`: PASS (compiled, static pages generated).
+
+Phase 2 next: expand multi-embed to events (host/cohost writes), occurrence overrides, venues, blog, and gallery.

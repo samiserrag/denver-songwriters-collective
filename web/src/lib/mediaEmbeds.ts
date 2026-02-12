@@ -1,4 +1,4 @@
-export type MediaEmbedProvider = "youtube" | "spotify";
+export type MediaEmbedProvider = "youtube" | "spotify" | "external";
 
 export type MediaEmbedKind =
   | "video"
@@ -226,4 +226,110 @@ export function getFieldErrorObject(error: unknown): Record<string, string> | nu
     return { [error.field]: error.message };
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Multi-embed support (Phase 1.5)
+// ---------------------------------------------------------------------------
+
+export type MediaEmbedTargetType = "event" | "event_override" | "profile";
+
+export interface ClassifiedUrl {
+  url: string;
+  provider: MediaEmbedProvider;
+  kind: "video" | "audio" | "external";
+  embed_url: string | null; // null for external providers
+}
+
+/**
+ * Classify any URL into provider/kind. YouTube and Spotify get inline embeds;
+ * everything else is classified as "external" with a safe outbound card.
+ */
+export function classifyUrl(input: string): ClassifiedUrl {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    throw new MediaEmbedValidationError("URL is required.");
+  }
+
+  let inputUrl: URL;
+  try {
+    inputUrl = new URL(trimmed);
+  } catch {
+    throw new MediaEmbedValidationError("Please provide a valid full URL.");
+  }
+
+  if (inputUrl.protocol !== "https:" && inputUrl.protocol !== "http:") {
+    throw new MediaEmbedValidationError("Only http(s) URLs are allowed.");
+  }
+
+  const host = inputUrl.hostname.toLowerCase();
+
+  // YouTube
+  if (YOUTUBE_HOSTS.has(host)) {
+    const result = normalizeYouTubeUrl(inputUrl);
+    return {
+      url: trimmed,
+      provider: "youtube",
+      kind: "video",
+      embed_url: result.normalized_url,
+    };
+  }
+
+  // Spotify
+  if (SPOTIFY_HOSTS.has(host)) {
+    const result = normalizeSpotifyUrl(inputUrl);
+    return {
+      url: trimmed,
+      provider: "spotify",
+      kind: "audio",
+      embed_url: result.normalized_url,
+    };
+  }
+
+  // Everything else is external
+  return {
+    url: trimmed,
+    provider: "external",
+    kind: "external",
+    embed_url: null,
+  };
+}
+
+export interface MediaEmbedRow {
+  id?: string;
+  target_type: MediaEmbedTargetType;
+  target_id: string;
+  date_key?: string | null;
+  position: number;
+  url: string;
+  provider: string;
+  kind: string;
+  created_by: string;
+}
+
+/**
+ * Build ordered rows from a list of user-submitted URLs.
+ * Validates and classifies each URL; strips empty entries.
+ */
+export function buildEmbedRows(
+  urls: string[],
+  target: { type: MediaEmbedTargetType; id: string; date_key?: string | null },
+  createdBy: string
+): MediaEmbedRow[] {
+  return urls
+    .map((u) => u.trim())
+    .filter(Boolean)
+    .map((url, index) => {
+      const classified = classifyUrl(url);
+      return {
+        target_type: target.type,
+        target_id: target.id,
+        date_key: target.date_key ?? null,
+        position: index,
+        url: classified.url,
+        provider: classified.provider,
+        kind: classified.kind,
+        created_by: createdBy,
+      };
+    });
 }

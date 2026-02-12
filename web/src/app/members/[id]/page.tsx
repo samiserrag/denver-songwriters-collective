@@ -17,7 +17,7 @@ import {
 } from "@/lib/events/nextOccurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import Link from "next/link";
-import { MediaEmbedsSection } from "@/components/media";
+import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 
 export const dynamic = "force-dynamic";
@@ -96,6 +96,17 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
     profileImagesRaw ?? [],
     member.avatar_url
   );
+
+  // Fetch ordered media embeds
+  const { data: mediaEmbedsRaw } = await supabase
+    .from("media_embeds")
+    .select("id, url, provider, kind, position")
+    .eq("target_type", "profile")
+    .eq("target_id", member.id)
+    .is("date_key", null)
+    .order("position", { ascending: true });
+
+  const mediaEmbeds = mediaEmbedsRaw ?? [];
 
   // Query hosted happenings - events where this profile is host OR co-host
   const today = getTodayDenver();
@@ -553,7 +564,14 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
               <section className="mb-12">
                 <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Listen to My Music</h2>
 
-                {embedsEnabled && (
+                {embedsEnabled && mediaEmbeds.length > 0 ? (
+                  <div className="mb-6">
+                    <OrderedMediaEmbeds
+                      embeds={mediaEmbeds}
+                      heading="Embedded Players"
+                    />
+                  </div>
+                ) : embedsEnabled ? (
                   <div className="mb-6">
                     <MediaEmbedsSection
                       youtubeUrl={member.youtube_url}
@@ -561,7 +579,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                       heading="Embedded Players"
                     />
                   </div>
-                )}
+                ) : null}
 
                 {/* Music platform social links (Spotify, Bandcamp, YouTube) */}
                 {musicPlatformLinks.length > 0 && (

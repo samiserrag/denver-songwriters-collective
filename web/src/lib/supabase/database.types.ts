@@ -1728,6 +1728,56 @@ export type Database = {
           },
         ]
       }
+      media_embeds: {
+        Row: {
+          id: string
+          target_type: string
+          target_id: string
+          date_key: string | null
+          position: number
+          url: string
+          provider: string
+          kind: string
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          target_type: string
+          target_id: string
+          date_key?: string | null
+          position?: number
+          url: string
+          provider: string
+          kind: string
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          target_type?: string
+          target_id?: string
+          date_key?: string | null
+          position?: number
+          url?: string
+          provider?: string
+          kind?: string
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_embeds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gallery_photo_comments: {
         Row: {
           content: string
