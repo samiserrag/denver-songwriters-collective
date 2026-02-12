@@ -78,6 +78,7 @@ CREATE POLICY media_embeds_admin_manage ON public.media_embeds
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- Grant table access to roles
+-- Grant table access to roles (explicit revoke to override Supabase default grants)
+REVOKE ALL ON public.media_embeds FROM anon;
 GRANT SELECT ON public.media_embeds TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.media_embeds TO authenticated;
