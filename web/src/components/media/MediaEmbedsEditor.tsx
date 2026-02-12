@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, X } from "lucide-react";
+import { parseEmbedInput } from "@/lib/mediaEmbeds";
 
 interface EmbedRow {
   id: string;
@@ -76,7 +77,7 @@ function SortableRow({
           type="url"
           value={row.url}
           onChange={(e) => onUrlChange(row.id, e.target.value)}
-          placeholder="https://youtube.com/watch?v=... or https://open.spotify.com/track/..."
+          placeholder="Paste a URL or embed code (YouTube, Spotify, Bandcamp…)"
           className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50 text-sm"
         />
         {row.error && (
@@ -133,10 +134,15 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
   );
 
   const handleUrlChange = useCallback(
-    (id: string, url: string) => {
+    (id: string, rawInput: string) => {
+      // If input contains an iframe, extract the src immediately
+      const parsed = rawInput.trim() ? parseEmbedInput(rawInput) : { url: "" };
+      const resolvedUrl = "url" in parsed ? parsed.url : rawInput;
+      const error = "error" in parsed ? parsed.error : undefined;
+
       setRows((prev) => {
         const updated = prev.map((r) =>
-          r.id === id ? { ...r, url, error: undefined } : r
+          r.id === id ? { ...r, url: resolvedUrl, error } : r
         );
         syncToParent(updated);
         return updated;
@@ -193,7 +199,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
         + Add a new outside link
       </button>
       <p className="text-xs text-[var(--color-text-tertiary)]">
-        YouTube and Spotify links will show as embedded players. Other links will appear as buttons.
+        YouTube, Spotify, and Bandcamp links show as embedded players. You can also paste an embed code. Other links appear as buttons.
       </p>
     </div>
   );

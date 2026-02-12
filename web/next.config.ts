@@ -98,7 +98,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://i.ytimg.com https://*.scdn.co https://*.spotifycdn.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org",
               "font-src 'self' data:",
               "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://vercel.live",
-              "frame-src 'self' https://open.spotify.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com",
+              "frame-src 'self' https://open.spotify.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://bandcamp.com https://www.bandcamp.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self' https://*.supabase.co https://*.supabase.in https://accounts.google.com",

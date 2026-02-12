@@ -92,6 +92,13 @@ export default async function EditOccurrencePage({ params }: PageProps) {
     overrideMediaEmbedUrls = embeds.map((e: { url: string }) => e.url);
   } catch { /* non-fatal */ }
 
+  // Extract explicit reschedule date from override patch (if the user previously moved
+  // this occurrence to a different date). Passed separately so EventForm can distinguish
+  // it from the series anchor date.
+  const overrideRescheduledDate = typeof overridePatch?.event_date === "string"
+    ? (overridePatch.event_date as string)
+    : undefined;
+
   const todayKey = getTodayDenver();
   const dateLabel = formatDateGroupHeader(dateKey, todayKey);
 
@@ -163,6 +170,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
             occurrenceDateKey={dateKey}
             occurrenceEventId={eventId}
             existingOccurrenceDates={existingOccurrenceDates}
+            overrideRescheduledDate={overrideRescheduledDate}
           />
         </section>
       </div>

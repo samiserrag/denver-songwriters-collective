@@ -488,17 +488,15 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
         />
       </div>
 
-      {isAdmin && (
-        <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-            Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
-          </label>
-          <p className="mb-3 text-sm text-[var(--color-text-tertiary)]">
-            Add YouTube, Spotify, or other links. Drag to reorder.
-          </p>
-          <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
-        </div>
-      )}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+        </label>
+        <p className="mb-3 text-sm text-[var(--color-text-tertiary)]">
+          Add YouTube, Spotify, Bandcamp, or other links. Drag to reorder.
+        </p>
+        <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
+      </div>
 
       {/* Content Editor */}
       <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">

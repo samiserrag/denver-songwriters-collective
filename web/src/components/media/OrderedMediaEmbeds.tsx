@@ -46,6 +46,29 @@ export function OrderedMediaEmbeds({
       </h2>
       <div className="space-y-4">
         {embeds.map((embed) => {
+          // Bandcamp: render sandboxed iframe from stored embed URL
+          if (embed.provider === "bandcamp") {
+            const href = safeFallbackHref(embed.url);
+            if (href) {
+              return (
+                <div
+                  key={embed.id}
+                  className="rounded-xl overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)]"
+                >
+                  <iframe
+                    src={href}
+                    title="Bandcamp player"
+                    loading="lazy"
+                    sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    className="block w-full border-0"
+                    height={120}
+                  />
+                </div>
+              );
+            }
+          }
+
           // YouTube or Spotify: render inline iframe
           if (embed.provider === "youtube" || embed.provider === "spotify") {
             try {

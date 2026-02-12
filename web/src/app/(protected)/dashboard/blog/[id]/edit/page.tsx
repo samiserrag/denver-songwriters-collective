@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import BlogPostForm from "../../../admin/blog/BlogPostForm";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function EditUserBlogPostPage({ params }: Props) {
   const user = sessionUser ?? null;
   if (!user) redirect("/login");
 
-  const [postRes, galleryRes] = await Promise.all([
+  const [postRes, galleryRes, embeds] = await Promise.all([
     supabase
       .from("blog_posts")
       .select("id, slug, title, excerpt, content, cover_image_url, is_published, is_approved, tags, author_id")
@@ -30,10 +31,12 @@ export default async function EditUserBlogPostPage({ params }: Props) {
       .select("id, image_url, caption, sort_order")
       .eq("post_id", id)
       .order("sort_order", { ascending: true }),
+    readMediaEmbeds(supabase, { type: "blog_post", id }),
   ]);
 
   const post = postRes.data;
   const gallery = galleryRes.data ?? [];
+  const mediaEmbedUrls = embeds.map((e) => e.url);
 
   if (!post) {
     notFound();
@@ -59,6 +62,7 @@ export default async function EditUserBlogPostPage({ params }: Props) {
         post={post}
         initialGallery={gallery}
         isAdmin={false}
+        mediaEmbedUrls={mediaEmbedUrls}
       />
     </div>
   );

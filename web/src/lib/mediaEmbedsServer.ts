@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildEmbedRows, type MediaEmbedTargetType } from "./mediaEmbeds";
+import { buildEmbedRowsSafe, type MediaEmbedTargetType, type BuildEmbedRowsError } from "./mediaEmbeds";
 
 interface UpsertScope {
   type: MediaEmbedTargetType;
@@ -7,16 +7,22 @@ interface UpsertScope {
   date_key?: string | null;
 }
 
+export interface UpsertMediaEmbedsResult {
+  data: unknown[];
+  errors: BuildEmbedRowsError[];
+}
+
 /**
  * Replace all media embeds for a given scope with a new ordered list.
  * Empty urls array clears all rows for that scope.
+ * Invalid rows are skipped (not inserted) and returned in `errors`.
  */
 export async function upsertMediaEmbeds(
   supabase: SupabaseClient,
   scope: UpsertScope,
   urls: string[],
   createdBy: string
-) {
+): Promise<UpsertMediaEmbedsResult> {
   // Delete existing rows for this scope
   let deleteQuery = supabase
     .from("media_embeds")
@@ -35,9 +41,9 @@ export async function upsertMediaEmbeds(
     throw new Error(`Failed to clear existing embeds: ${deleteError.message}`);
   }
 
-  // Insert new rows if any
-  const rows = buildEmbedRows(urls, scope, createdBy);
-  if (rows.length === 0) return [];
+  // Build rows, collecting per-row errors instead of failing the batch
+  const { rows, errors } = buildEmbedRowsSafe(urls, scope, createdBy);
+  if (rows.length === 0) return { data: [], errors };
 
   const { data, error: insertError } = await supabase
     .from("media_embeds")
@@ -48,7 +54,7 @@ export async function upsertMediaEmbeds(
     throw new Error(`Failed to insert embeds: ${insertError.message}`);
   }
 
-  return data;
+  return { data: data ?? [], errors };
 }
 
 /**

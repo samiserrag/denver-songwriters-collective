@@ -1,4 +1,4 @@
-export type MediaEmbedProvider = "youtube" | "spotify" | "external";
+export type MediaEmbedProvider = "youtube" | "spotify" | "bandcamp" | "external";
 
 export type MediaEmbedKind =
   | "video"
@@ -28,8 +28,72 @@ const YOUTUBE_HOSTS = new Set([
 
 const SPOTIFY_HOSTS = new Set(["open.spotify.com", "www.open.spotify.com"]);
 
+const BANDCAMP_HOSTS = new Set(["bandcamp.com", "www.bandcamp.com"]);
+
 const YOUTUBE_ID_RE = /^[A-Za-z0-9_-]{6,}$/;
 const SPOTIFY_ID_RE = /^[A-Za-z0-9]{8,}$/;
+
+/**
+ * Hosts from which we accept iframe embed `src` values.
+ * If a user pastes an `<iframe>` snippet, we extract `src` and only accept
+ * it when the hostname is in this set.
+ */
+const IFRAME_EMBED_ALLOWLIST = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "www.youtube-nocookie.com",
+  "youtube-nocookie.com",
+  "open.spotify.com",
+  "bandcamp.com",
+  "www.bandcamp.com",
+]);
+
+/**
+ * Accept either a URL string or an `<iframe>` embed snippet.
+ * If the input contains `<iframe`, extracts the `src` attribute and validates
+ * its hostname against the allowlist. Returns the extracted URL or an error.
+ */
+export function parseEmbedInput(input: string): { url: string } | { error: string } {
+  const trimmed = input.trim();
+  if (!trimmed) return { error: "Input is required." };
+
+  // Not an iframe snippet — treat as plain URL
+  if (!trimmed.includes("<iframe")) {
+    // Reject raw HTML that isn't an iframe
+    if (trimmed.includes("<") && trimmed.includes(">")) {
+      return { error: "Only URLs or <iframe> embed snippets are accepted." };
+    }
+    return { url: trimmed };
+  }
+
+  // Extract src="..." from the iframe
+  const srcMatch = trimmed.match(/src\s*=\s*["']([^"']+)["']/i);
+  if (!srcMatch || !srcMatch[1]) {
+    return { error: "Could not find src attribute in the iframe snippet." };
+  }
+
+  const src = srcMatch[1].trim();
+
+  // Validate protocol
+  let parsed: URL;
+  try {
+    parsed = new URL(src);
+  } catch {
+    return { error: "The iframe src is not a valid URL." };
+  }
+
+  if (parsed.protocol !== "https:") {
+    return { error: "Only https iframe embeds are accepted." };
+  }
+
+  // Validate hostname against allowlist
+  const host = parsed.hostname.toLowerCase();
+  if (!IFRAME_EMBED_ALLOWLIST.has(host)) {
+    return { error: `Iframe embeds from ${host} are not allowed. Supported: YouTube, Spotify, Bandcamp.` };
+  }
+
+  return { url: src };
+}
 
 export class MediaEmbedValidationError extends Error {
   field?: MediaFieldName;
@@ -286,6 +350,16 @@ export function classifyUrl(input: string): ClassifiedUrl {
     };
   }
 
+  // Bandcamp EmbeddedPlayer
+  if (BANDCAMP_HOSTS.has(host) && inputUrl.pathname.startsWith("/EmbeddedPlayer")) {
+    return {
+      url: trimmed,
+      provider: "bandcamp",
+      kind: "audio",
+      embed_url: trimmed, // already an embed URL; store as-is
+    };
+  }
+
   // Everything else is external
   return {
     url: trimmed,
@@ -307,29 +381,72 @@ export interface MediaEmbedRow {
   created_by: string;
 }
 
+export interface BuildEmbedRowsError {
+  index: number;
+  url: string;
+  message: string;
+}
+
+export interface BuildEmbedRowsResult {
+  rows: MediaEmbedRow[];
+  errors: BuildEmbedRowsError[];
+}
+
 /**
- * Build ordered rows from a list of user-submitted URLs.
- * Validates and classifies each URL; strips empty entries.
+ * Build ordered rows from a list of user-submitted URLs or iframe snippets.
+ * Validates and classifies each input; strips empty entries.
+ * Invalid inputs are collected in `errors` instead of failing the whole batch.
  */
 export function buildEmbedRows(
   urls: string[],
   target: { type: MediaEmbedTargetType; id: string; date_key?: string | null },
   createdBy: string
 ): MediaEmbedRow[] {
-  return urls
-    .map((u) => u.trim())
-    .filter(Boolean)
-    .map((url, index) => {
-      const classified = classifyUrl(url);
-      return {
+  const result = buildEmbedRowsSafe(urls, target, createdBy);
+  return result.rows;
+}
+
+/**
+ * Same as buildEmbedRows but also returns per-row errors.
+ */
+export function buildEmbedRowsSafe(
+  urls: string[],
+  target: { type: MediaEmbedTargetType; id: string; date_key?: string | null },
+  createdBy: string
+): BuildEmbedRowsResult {
+  const rows: MediaEmbedRow[] = [];
+  const errors: BuildEmbedRowsError[] = [];
+  let position = 0;
+
+  for (let i = 0; i < urls.length; i++) {
+    const raw = urls[i].trim();
+    if (!raw) continue;
+
+    // Step 1: Parse iframe snippets into URLs
+    const parsed = parseEmbedInput(raw);
+    if ("error" in parsed) {
+      errors.push({ index: i, url: raw, message: parsed.error });
+      continue;
+    }
+
+    // Step 2: Classify the URL
+    try {
+      const classified = classifyUrl(parsed.url);
+      rows.push({
         target_type: target.type,
         target_id: target.id,
         date_key: target.date_key ?? null,
-        position: index,
+        position: position++,
         url: classified.url,
         provider: classified.provider,
         kind: classified.kind,
         created_by: createdBy,
-      };
-    });
+      });
+    } catch (err) {
+      const message = err instanceof MediaEmbedValidationError ? err.message : "Invalid URL.";
+      errors.push({ index: i, url: raw, message });
+    }
+  }
+
+  return { rows, errors };
 }

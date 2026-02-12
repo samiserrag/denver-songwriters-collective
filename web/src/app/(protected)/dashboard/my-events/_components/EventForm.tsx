@@ -94,6 +94,10 @@ interface EventFormProps {
   occurrenceEventId?: string;
   /** Existing occurrence dates for this series (for conflict detection when rescheduling) */
   existingOccurrenceDates?: string[];
+  /** Previously-saved reschedule date from the override patch (only set when the override
+   *  already moved this occurrence to a different date). Used to distinguish a real reschedule
+   *  from the series anchor date which is always present on the base event. */
+  overrideRescheduledDate?: string;
   /** Phase 5.12: Whether event has active timeslot claims (blocks slot config changes) */
   hasActiveClaims?: boolean;
   event?: {
@@ -152,7 +156,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, mediaEmbedUrls: initialMediaEmbedUrls = [], occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, mediaEmbedUrls: initialMediaEmbedUrls = [], occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], overrideRescheduledDate, hasActiveClaims = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -318,11 +322,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     mode === "edit" && event?.custom_dates ? event.custom_dates : []
   );
 
-  // Occurrence date state - allows rescheduling a single occurrence to a different date
-  // Initialize from effectiveEvent.event_date if it differs from dateKey (already rescheduled)
+  // Occurrence date state - allows rescheduling a single occurrence to a different date.
+  // Use the explicit override reschedule date when present (meaning this occurrence was
+  // previously moved to a different date). Otherwise default to the occurrence dateKey.
+  // NOTE: We intentionally ignore event.event_date here because for recurring events it
+  // is the series anchor date, not the occurrence date.
   const [occurrenceDate, setOccurrenceDate] = useState<string>(
-    occurrenceMode && event?.event_date && event.event_date !== occurrenceDateKey
-      ? event.event_date
+    occurrenceMode
+      ? (overrideRescheduledDate || occurrenceDateKey || "")
       : occurrenceDateKey || ""
   );
 
