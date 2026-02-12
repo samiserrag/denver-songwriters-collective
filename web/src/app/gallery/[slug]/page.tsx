@@ -5,8 +5,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
 import GalleryGrid from "@/components/gallery/GalleryGrid";
 import { AlbumCommentsSection } from "./_components/AlbumCommentsSection";
-import { MediaEmbedsSection } from "@/components/media";
+import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 export const dynamic = "force-dynamic";
 
@@ -158,6 +159,9 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     timeZone: "America/Denver",
   });
   const embedsEnabled = isExternalEmbedsEnabled();
+  const orderedEmbeds = embedsEnabled
+    ? await readMediaEmbeds(supabase, { type: "gallery_album", id: album.id })
+    : [];
 
   return (
     <>
@@ -215,7 +219,11 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
           {/* Album Comments */}
           <AlbumCommentsSection albumId={album.id} albumOwnerId={album.created_by} />
 
-          {embedsEnabled && (
+          {embedsEnabled && orderedEmbeds.length > 0 ? (
+            <div className="mb-8">
+              <OrderedMediaEmbeds embeds={orderedEmbeds} heading="Featured Media" />
+            </div>
+          ) : embedsEnabled ? (
             <div className="mb-8">
               <MediaEmbedsSection
                 youtubeUrl={(album as { youtube_url?: string | null }).youtube_url}
@@ -223,7 +231,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
                 heading="Featured Media"
               />
             </div>
-          )}
+          ) : null}
 
           {imagesError ? (
             <div className="text-center py-16 space-y-4">

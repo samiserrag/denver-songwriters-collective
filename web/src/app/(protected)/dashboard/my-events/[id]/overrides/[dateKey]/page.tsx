@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { readEventEmbedsWithFallback } from "@/lib/mediaEmbedsServer";
 import { formatDateGroupHeader, getTodayDenver, addDaysDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import EventForm from "../../../_components/EventForm";
 
@@ -84,6 +85,13 @@ export default async function EditOccurrencePage({ params }: PageProps) {
     ...(overridePatch || {}),
   };
 
+  // Load override-scoped media embeds (falls back to base event embeds)
+  let overrideMediaEmbedUrls: string[] = [];
+  try {
+    const embeds = await readEventEmbedsWithFallback(supabase, eventId, dateKey);
+    overrideMediaEmbedUrls = embeds.map((e: { url: string }) => e.url);
+  } catch { /* non-fatal */ }
+
   const todayKey = getTodayDenver();
   const dateLabel = formatDateGroupHeader(dateKey, todayKey);
 
@@ -150,7 +158,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
             event={effectiveEvent}
             canCreateCSC={false}
             canCreateVenue={isAdmin}
-            canEditMediaEmbeds={isAdmin}
+            mediaEmbedUrls={overrideMediaEmbedUrls}
             occurrenceMode={true}
             occurrenceDateKey={dateKey}
             occurrenceEventId={eventId}

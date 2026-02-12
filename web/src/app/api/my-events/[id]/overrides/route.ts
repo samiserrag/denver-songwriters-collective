@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { getTodayDenver } from "@/lib/events/nextOccurrence";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 /**
  * Occurrence Override API — Per-occurrence field overrides for recurring events.
@@ -250,6 +251,20 @@ export async function POST(
   if (error) {
     console.error("[Overrides POST] Upsert error:", error);
     return NextResponse.json({ error: "Failed to save override" }, { status: 500 });
+  }
+
+  // Upsert override-scoped media embeds (non-fatal on error)
+  if (Array.isArray(body.media_embed_urls)) {
+    try {
+      await upsertMediaEmbeds(
+        supabase,
+        { type: "event_override", id: eventId, date_key },
+        body.media_embed_urls as string[],
+        sessionUser.id
+      );
+    } catch (err) {
+      console.error(`[Overrides POST] Media embed upsert error for ${date_key}:`, err);
+    }
   }
 
   return NextResponse.json({ success: true, action: "upserted" });

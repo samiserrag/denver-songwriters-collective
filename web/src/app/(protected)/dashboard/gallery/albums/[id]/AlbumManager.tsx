@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Star, Check, Pencil, X, MessageSquare, GripVertical } from "lucide-react";
+import { MediaEmbedsEditor } from "@/components/media";
 import {
   DndContext,
   closestCenter,
@@ -52,6 +53,7 @@ interface AlbumManagerProps {
   album: Album;
   images: GalleryImage[];
   isAdmin: boolean;
+  mediaEmbedUrls?: string[];
 }
 
 // Sortable photo card for drag-and-drop reordering
@@ -147,13 +149,14 @@ function SortablePhotoCard({
   );
 }
 
-export default function AlbumManager({ album, images: initialImages, isAdmin }: AlbumManagerProps) {
+export default function AlbumManager({ album, images: initialImages, isAdmin, mediaEmbedUrls: initialMediaEmbedUrls = [] }: AlbumManagerProps) {
   const router = useRouter();
   const [isEditingName, setIsEditingName] = useState(false);
   const [albumName, setAlbumName] = useState(album.name);
   const [albumDescription, setAlbumDescription] = useState(album.description || "");
   const [albumYoutubeUrl, setAlbumYoutubeUrl] = useState(album.youtube_url || "");
   const [albumSpotifyUrl, setAlbumSpotifyUrl] = useState(album.spotify_url || "");
+  const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>(initialMediaEmbedUrls);
   const [isSaving, setIsSaving] = useState(false);
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -255,6 +258,7 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
           description: albumDescription.trim() || null,
           youtube_url: albumYoutubeUrl,
           spotify_url: albumSpotifyUrl,
+          media_embed_urls: mediaEmbedUrls,
         }),
       });
 
@@ -458,38 +462,15 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
                   />
                 </div>
                 {isAdmin && (
-                  <>
-                    <div>
-                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                        YouTube URL
-                      </label>
-                      <input
-                        type="url"
-                        value={albumYoutubeUrl}
-                        onChange={(e) => setAlbumYoutubeUrl(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-                      />
-                      {fieldErrors.youtube_url && (
-                        <p className="mt-1 text-xs text-red-500">{fieldErrors.youtube_url}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                        Spotify URL
-                      </label>
-                      <input
-                        type="url"
-                        value={albumSpotifyUrl}
-                        onChange={(e) => setAlbumSpotifyUrl(e.target.value)}
-                        placeholder="https://open.spotify.com/playlist/..."
-                        className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-                      />
-                      {fieldErrors.spotify_url && (
-                        <p className="mt-1 text-xs text-red-500">{fieldErrors.spotify_url}</p>
-                      )}
-                    </div>
-                  </>
+                  <div>
+                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                      Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+                    </label>
+                    <p className="mb-2 text-xs text-[var(--color-text-tertiary)]">
+                      Add YouTube, Spotify, or other links. Drag to reorder.
+                    </p>
+                    <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
+                  </div>
                 )}
                 <div className="flex gap-2">
                   <button
@@ -506,6 +487,7 @@ export default function AlbumManager({ album, images: initialImages, isAdmin }: 
                       setAlbumDescription(album.description || "");
                       setAlbumYoutubeUrl(album.youtube_url || "");
                       setAlbumSpotifyUrl(album.spotify_url || "");
+                      setMediaEmbedUrls(initialMediaEmbedUrls);
                       setFieldErrors({});
                       setIsEditingName(false);
                     }}

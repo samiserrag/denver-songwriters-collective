@@ -4,6 +4,7 @@ import Link from "next/link";
 import EventForm from "../_components/EventForm";
 import { EVENT_TYPE_CONFIG } from "@/types/events";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
 import { SeriesEditingNotice } from "@/components/events/SeriesEditingNotice";
 import { computeNextOccurrence, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
@@ -109,6 +110,13 @@ export default async function EditEventPage({
     .from("venues")
     .select("id, name, address, city, state, google_maps_url, map_link, website_url")
     .order("name", { ascending: true });
+
+  // Load multi-embed URLs for this event
+  let mediaEmbedUrls: string[] = [];
+  try {
+    const embeds = await readMediaEmbeds(supabase, { type: "event", id: eventId });
+    mediaEmbedUrls = embeds.map((e: { url: string }) => e.url);
+  } catch { /* non-fatal */ }
 
   const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
     || EVENT_TYPE_CONFIG.other;
@@ -287,7 +295,7 @@ export default async function EditEventPage({
               event={event}
               canCreateCSC={canCreateCSC}
               canCreateVenue={isAdmin}
-              canEditMediaEmbeds={isAdmin}
+              mediaEmbedUrls={mediaEmbedUrls}
               hasActiveClaims={hasActiveClaims}
             />
           }

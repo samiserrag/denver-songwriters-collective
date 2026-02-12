@@ -78,3 +78,27 @@ export async function readMediaEmbeds(
 
   return data ?? [];
 }
+
+/**
+ * Read embeds for an event occurrence with override-first fallback:
+ * 1. Try event_override scope for this date_key
+ * 2. If empty, fall back to base event scope
+ */
+export async function readEventEmbedsWithFallback(
+  supabase: SupabaseClient,
+  eventId: string,
+  dateKey?: string | null
+) {
+  // Try override first when a date_key is present
+  if (dateKey) {
+    const overrideEmbeds = await readMediaEmbeds(supabase, {
+      type: "event_override",
+      id: eventId,
+      date_key: dateKey,
+    });
+    if (overrideEmbeds.length > 0) return overrideEmbeds;
+  }
+
+  // Fall back to base event embeds
+  return readMediaEmbeds(supabase, { type: "event", id: eventId });
+}

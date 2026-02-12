@@ -8,6 +8,7 @@ import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccu
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { sendEventRestoredNotifications } from "@/lib/notifications/eventRestored";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -452,6 +453,20 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Upsert multi-embed media URLs (non-fatal on error)
+  if (Array.isArray(body.media_embed_urls)) {
+    try {
+      await upsertMediaEmbeds(
+        supabase,
+        { type: "event", id: eventId },
+        body.media_embed_urls as string[],
+        sessionUser.id
+      );
+    } catch (err) {
+      console.error(`[PATCH /api/my-events/${eventId}] Media embed upsert error:`, err);
+    }
   }
 
   // Phase 5.02: Regenerate FUTURE timeslots only (preserve past slots with historical data)

@@ -6,8 +6,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout";
 import BlogInteractions from "@/components/blog/BlogInteractions";
 import BlogComments from "@/components/blog/BlogComments";
-import { MediaEmbedsSection } from "@/components/media";
+import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 export const dynamic = "force-dynamic";
 
@@ -134,8 +135,8 @@ export default async function BlogPostPage({ params }: Props) {
   const { data: { user: sessionUser } } = await supabase.auth.getUser();
   const currentUserId = sessionUser?.id;
 
-  // Fetch like count, user's like status, and gallery images (comments fetched client-side)
-  const [likesRes, userLikeRes, galleryRes] = await Promise.all([
+  // Fetch like count, user's like status, gallery images, and ordered embeds (comments fetched client-side)
+  const [likesRes, userLikeRes, galleryRes, orderedEmbeds] = await Promise.all([
     supabase
       .from("blog_likes")
       .select("*", { count: "exact", head: true })
@@ -153,6 +154,7 @@ export default async function BlogPostPage({ params }: Props) {
       .select("id, image_url, caption, sort_order")
       .eq("post_id", post.id)
       .order("sort_order", { ascending: true }),
+    readMediaEmbeds(supabase, { type: "blog_post", id: post.id }),
   ]);
 
   const likeCount = (likesRes as any).count ?? 0;
@@ -430,7 +432,11 @@ export default async function BlogPostPage({ params }: Props) {
             {renderContent(post.content)}
           </div>
 
-          {embedsEnabled && (
+          {embedsEnabled && orderedEmbeds.length > 0 ? (
+            <div className="mt-10">
+              <OrderedMediaEmbeds embeds={orderedEmbeds} heading="Featured Media" />
+            </div>
+          ) : embedsEnabled ? (
             <div className="mt-10">
               <MediaEmbedsSection
                 youtubeUrl={(post as { youtube_url?: string | null }).youtube_url}
@@ -438,7 +444,7 @@ export default async function BlogPostPage({ params }: Props) {
                 heading="Featured Media"
               />
             </div>
-          )}
+          ) : null}
 
           {/* Photo Gallery */}
           {galleryImages.length > 0 && (

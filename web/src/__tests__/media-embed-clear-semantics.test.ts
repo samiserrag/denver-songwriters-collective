@@ -61,9 +61,30 @@ vi.mock("@/lib/supabase/server", () => ({
         };
       }
 
+      if (table === "media_embeds") {
+        return {
+          delete: () => ({
+            eq: () => ({
+              eq: () => ({
+                is: async () => ({ error: null }),
+              }),
+              is: async () => ({ error: null }),
+            }),
+          }),
+          insert: () => ({
+            select: async () => ({ data: [], error: null }),
+          }),
+        };
+      }
+
       throw new Error(`Unexpected table: ${table}`);
     },
   }),
+}));
+
+// Mock upsertMediaEmbeds to prevent real DB calls
+vi.mock("@/lib/mediaEmbedsServer", () => ({
+  upsertMediaEmbeds: vi.fn().mockResolvedValue([]),
 }));
 
 import { PATCH as patchBlogPost } from "@/app/api/admin/blog-posts/[id]/route";

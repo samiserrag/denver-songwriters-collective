@@ -4,6 +4,7 @@ import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -473,6 +474,20 @@ export async function POST(request: Request) {
 
     if (hostError) {
       console.error("[POST /api/my-events] Host assignment error:", hostError.message, "| Code:", hostError.code);
+    }
+
+    // Upsert multi-embed media URLs (non-fatal on error)
+    if (Array.isArray(body.media_embed_urls)) {
+      try {
+        await upsertMediaEmbeds(
+          supabase,
+          { type: "event", id: event.id },
+          body.media_embed_urls as string[],
+          sessionUser.id
+        );
+      } catch (err) {
+        console.error("[POST /api/my-events] Media embed upsert error:", err);
+      }
     }
 
     // Phase 5.11 Fix: Generate timeslots for ALL occurrences (not just the first)

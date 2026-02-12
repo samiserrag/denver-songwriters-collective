@@ -30,6 +30,7 @@ import {
   buildRecurrenceRuleFromOrdinals,
   parseOrdinalsFromRecurrenceRule,
 } from "@/lib/events/recurrenceContract";
+import { MediaEmbedsEditor } from "@/components/media";
 
 /**
  * DateDayIndicator: Shows the day of week derived from a date value.
@@ -83,8 +84,8 @@ interface EventFormProps {
   canCreateCSC?: boolean; // Whether user can create CSC-branded events
   /** Phase 4.45b: Whether user can create new venues (admin only) */
   canCreateVenue?: boolean;
-  /** MEDIA-EMBED-01: Admin-only media embed write authority */
-  canEditMediaEmbeds?: boolean;
+  /** Initial media embed URLs loaded from media_embeds table */
+  mediaEmbedUrls?: string[];
   /** Occurrence mode: form edits a single occurrence, not the series */
   occurrenceMode?: boolean;
   /** The date_key for the occurrence being edited (YYYY-MM-DD) */
@@ -151,7 +152,7 @@ interface EventFormProps {
   };
 }
 
-export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, canEditMediaEmbeds = false, occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
+export default function EventForm({ mode, venues: initialVenues, event, canCreateCSC = false, canCreateVenue = false, mediaEmbedUrls: initialMediaEmbedUrls = [], occurrenceMode = false, occurrenceDateKey, occurrenceEventId, existingOccurrenceDates = [], hasActiveClaims = false }: EventFormProps) {
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
   const [loading, setLoading] = useState(false);
@@ -166,6 +167,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
   const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
   const [pendingCoverPreviewUrl, setPendingCoverPreviewUrl] = useState<string | null>(null);
+  const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>(initialMediaEmbedUrls);
 
 
   // Phase 4.44c: Advanced section collapse state (expanded by default)
@@ -635,6 +637,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             override_notes: overridePatch.host_notes !== undefined ? overridePatch.host_notes : undefined,
             // Full patch (minus fields already in legacy columns)
             override_patch: Object.keys(overridePatch).length > 0 ? overridePatch : null,
+            // Multi-embed URLs for this occurrence override
+            media_embed_urls: mediaEmbedUrls,
           }),
         });
 
@@ -733,8 +737,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         age_policy: formData.age_policy || null,
         is_dsc_event: canCreateCSC ? formData.is_dsc_event : false,
         external_url: formData.external_url.trim() || null,
-        youtube_url: canEditMediaEmbeds ? (formData.youtube_url.trim() || null) : undefined,
-        spotify_url: canEditMediaEmbeds ? (formData.spotify_url.trim() || null) : undefined,
+        // Multi-embed URLs (replaces legacy youtube_url/spotify_url fields)
+        media_embed_urls: mediaEmbedUrls,
         // Categories (multi-select array)
         categories: formData.categories.length > 0 ? formData.categories : null,
         // Phase 4.0: Location selection mode and custom location fields
@@ -2089,6 +2093,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </p>
       </div>
 
+      {/* ============ MEDIA EMBEDS ============ */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Media Links{occurrenceMode ? " (this date only)" : ""}
+          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
+        </label>
+        <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+          Add YouTube, Spotify, or other links. Drag to reorder.
+        </p>
+        <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
+      </div>
+
       {/* ============ SECTION 6: ATTENDANCE & SIGNUP ============ */}
       {/* Phase 4.44c: Who can attend and how do performers sign up? */}
       <SlotConfigSection
@@ -2277,48 +2293,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </p>
             </div>
 
-            {canEditMediaEmbeds && !occurrenceMode && (
-              <div className="space-y-4 p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg">
-                <div>
-                  <h4 className="text-sm font-medium text-[var(--color-text-primary)]">Media Embeds</h4>
-                  <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                    Paste a YouTube or Spotify link. Leave blank to clear.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                    YouTube URL <span className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={formData.youtube_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                  {fieldErrors.youtube_url && (
-                    <p className="mt-1 text-sm text-red-600">{fieldErrors.youtube_url}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                    Spotify URL <span className="font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://open.spotify.com/playlist/..."
-                    value={formData.spotify_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, spotify_url: e.target.value }))}
-                    className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-                  />
-                  {fieldErrors.spotify_url && (
-                    <p className="mt-1 text-sm text-red-600">{fieldErrors.spotify_url}</p>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Legacy Media Embeds section removed — replaced by MediaEmbedsEditor below cover image */}
 
             {/* CSC Toggle */}
             {canCreateCSC && (

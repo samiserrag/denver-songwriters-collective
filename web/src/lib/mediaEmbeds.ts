@@ -232,7 +232,7 @@ export function getFieldErrorObject(error: unknown): Record<string, string> | nu
 // Multi-embed support (Phase 1.5)
 // ---------------------------------------------------------------------------
 
-export type MediaEmbedTargetType = "event" | "event_override" | "profile";
+export type MediaEmbedTargetType = "event" | "event_override" | "profile" | "blog_post" | "gallery_album";
 
 export interface ClassifiedUrl {
   url: string;

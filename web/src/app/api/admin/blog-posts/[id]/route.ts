@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 interface GalleryImageInput {
   image_url: string;
@@ -122,6 +123,20 @@ export async function PATCH(
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Upsert ordered media embeds
+    if (Array.isArray(body.media_embed_urls)) {
+      try {
+        await upsertMediaEmbeds(
+          auth.supabase,
+          { type: "blog_post", id },
+          body.media_embed_urls as string[],
+          auth.user.id
+        );
+      } catch (err) {
+        console.error("[PATCH /api/admin/blog-posts/[id]] Media embed upsert error:", err);
+      }
     }
 
     const galleryImages = Array.isArray(body.gallery_images) ? (body.gallery_images as GalleryImageInput[]) : null;

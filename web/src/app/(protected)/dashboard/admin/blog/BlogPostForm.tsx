@@ -8,6 +8,7 @@ import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 import { escapeHtml } from "@/lib/highlight";
+import { MediaEmbedsEditor } from "@/components/media";
 
 interface GalleryImage {
   id?: string;
@@ -34,9 +35,10 @@ interface Props {
   post?: BlogPost;
   initialGallery?: GalleryImage[];
   isAdmin?: boolean;
+  mediaEmbedUrls?: string[];
 }
 
-export default function BlogPostForm({ authorId, post, initialGallery = [], isAdmin = false }: Props) {
+export default function BlogPostForm({ authorId, post, initialGallery = [], isAdmin = false, mediaEmbedUrls: initialMediaEmbedUrls = [] }: Props) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isEditing = !!post;
@@ -55,6 +57,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
     is_published: post?.is_published ?? !isAdmin,
   });
 
+  const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>(initialMediaEmbedUrls);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialGallery);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -228,6 +231,7 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       cover_image_url: formData.cover_image_url || null,
       youtube_url: formData.youtube_url || null,
       spotify_url: formData.spotify_url || null,
+      media_embed_urls: mediaEmbedUrls,
       tags: tagsArray,
       is_published: formData.is_published,
       gallery_images: galleryImages.map((img, index) => ({
@@ -485,43 +489,14 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       </div>
 
       {isAdmin && (
-        <div className="p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)] space-y-4">
-          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Media Embeds</h3>
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            Paste a YouTube or Spotify link. Leave blank to clear.
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+            Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+          </label>
+          <p className="mb-3 text-sm text-[var(--color-text-tertiary)]">
+            Add YouTube, Spotify, or other links. Drag to reorder.
           </p>
-          <div>
-            <label htmlFor="youtube_url" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              YouTube URL
-            </label>
-            <input
-              type="url"
-              id="youtube_url"
-              value={formData.youtube_url}
-              onChange={(e) => setFormData((prev) => ({ ...prev, youtube_url: e.target.value }))}
-              placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            />
-            {fieldErrors.youtube_url && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.youtube_url}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="spotify_url" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Spotify URL
-            </label>
-            <input
-              type="url"
-              id="spotify_url"
-              value={formData.spotify_url}
-              onChange={(e) => setFormData((prev) => ({ ...prev, spotify_url: e.target.value }))}
-              placeholder="https://open.spotify.com/playlist/..."
-              className="w-full px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            />
-            {fieldErrors.spotify_url && (
-              <p className="mt-1 text-xs text-red-500">{fieldErrors.spotify_url}</p>
-            )}
-          </div>
+          <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
         </div>
       )}
 

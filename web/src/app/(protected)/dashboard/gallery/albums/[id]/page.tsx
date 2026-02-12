@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import AlbumManager from "./AlbumManager";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 export const dynamic = "force-dynamic";
 
@@ -89,21 +90,25 @@ export default async function AlbumManagementPage({
     );
   }
 
-  // Fetch images in this album
-  const { data: images } = await supabase
-    .from("gallery_images")
-    .select(`
-      id,
-      image_url,
-      caption,
-      is_published,
-      is_hidden,
-      sort_order,
-      created_at
-    `)
-    .eq("album_id", id)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+  // Fetch images and ordered media embeds for this album
+  const [{ data: images }, embeds] = await Promise.all([
+    supabase
+      .from("gallery_images")
+      .select(`
+        id,
+        image_url,
+        caption,
+        is_published,
+        is_hidden,
+        sort_order,
+        created_at
+      `)
+      .eq("album_id", id)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false }),
+    readMediaEmbeds(supabase, { type: "gallery_album", id }),
+  ]);
+  const mediaEmbedUrls = embeds.map((e) => e.url);
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -125,6 +130,7 @@ export default async function AlbumManagementPage({
           album={album}
           images={images ?? []}
           isAdmin={isAdmin}
+          mediaEmbedUrls={mediaEmbedUrls}
         />
       </div>
     </main>

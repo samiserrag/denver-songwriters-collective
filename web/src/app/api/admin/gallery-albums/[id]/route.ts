@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -23,7 +24,7 @@ async function requireAdmin() {
     return { error: NextResponse.json({ error: "Admin access required." }, { status: 403 }) };
   }
 
-  return { supabase };
+  return { supabase, user };
 }
 
 export async function PATCH(
@@ -80,6 +81,20 @@ export async function PATCH(
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Upsert ordered media embeds
+    if (Array.isArray(body.media_embed_urls)) {
+      try {
+        await upsertMediaEmbeds(
+          auth.supabase,
+          { type: "gallery_album", id },
+          body.media_embed_urls as string[],
+          auth.user.id
+        );
+      } catch (err) {
+        console.error("[PATCH /api/admin/gallery-albums/[id]] Media embed upsert error:", err);
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -16,7 +16,8 @@ import { EventComments } from "@/components/events/EventComments";
 import { WatchEventButton } from "@/components/events/WatchEventButton";
 import { VerifyEventButton } from "@/components/events/VerifyEventButton";
 import { SuggestUpdateSection } from "@/components/events/SuggestUpdateSection";
-import { MediaEmbedsSection, PosterMedia } from "@/components/media";
+import { MediaEmbedsSection, PosterMedia, OrderedMediaEmbeds } from "@/components/media";
+import { readEventEmbedsWithFallback } from "@/lib/mediaEmbedsServer";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, formatVerifiedDate, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
@@ -726,6 +727,12 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   const venueLocation = [venueName, venueAddress].filter(Boolean).join(", ");
   const embedsEnabled = isExternalEmbedsEnabled();
 
+  // Load ordered multi-embed media with override-first fallback
+  let orderedEmbeds: Array<{ id: string; url: string; provider: string; kind: string; position: number }> = [];
+  try {
+    orderedEmbeds = await readEventEmbedsWithFallback(supabase, event.id, effectiveSelectedDate);
+  } catch { /* non-fatal */ }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Status Banners */}
@@ -1375,14 +1382,20 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
             </div>
           )}
 
-          {embedsEnabled && (
+          {embedsEnabled && orderedEmbeds.length > 0 ? (
+            <OrderedMediaEmbeds
+              embeds={orderedEmbeds}
+              heading="Featured Media"
+              className="mb-8"
+            />
+          ) : embedsEnabled ? (
             <MediaEmbedsSection
               youtubeUrl={(event as { youtube_url?: string | null }).youtube_url}
               spotifyUrl={(event as { spotify_url?: string | null }).spotify_url}
               heading="Featured Media"
               className="mb-8"
             />
-          )}
+          ) : null}
 
           {/* Timeslot claiming section for timeslot-enabled events */}
           {/* Phase 4.XX: Timeslots available for ALL events (not just CSC), per Phase 4.47 opt-in design */}
