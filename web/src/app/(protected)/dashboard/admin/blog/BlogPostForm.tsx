@@ -342,6 +342,23 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
       }
     }
 
+    // Save media embeds via API route (atomic upsert; empty array clears)
+    if (postId) {
+      try {
+        const embedRes = await fetch(`/api/blog-posts/${postId}/media-embeds`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ media_embed_urls: payload.media_embed_urls }),
+        });
+        if (!embedRes.ok) {
+          const embedErr = await embedRes.json().catch(() => null);
+          console.error("Media embed save error:", embedErr);
+        }
+      } catch (err) {
+        console.error("Media embed save error:", err);
+      }
+    }
+
     router.push("/dashboard/blog");
     router.refresh();
     setSaving(false);

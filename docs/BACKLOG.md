@@ -403,8 +403,12 @@ Polish member profiles before external test users see them. Three scope areas:
 | MEDIA-EMBED-01 | Structured media URL foundation on canonical pages (Events/Blog/Gallery/Members) | P1 | PARTIAL DONE — Phase-1 shipped (`MEDIA-EMBED-01A`) | STOP-GATE closeout: `docs/investigation/media-embed-01-structured-urls-stopgate.md` |
 | MEDIA-EMBED-01A | Phase-1 structured URL embeds (Option A per-entity columns, admin-only writes) | P1 | DONE | Commit `514c085`; migration `20260211121500_media_embed_phase1_columns.sql`; YouTube+Spotify canonical rendering with tests and CSP alignment |
 | MEDIA-EMBED-01B | Expand writes to all users (creator/owner writes under safe ownership RLS) | P1 | SUPERSEDED by MEDIA-EMBED-02 | Original scope absorbed into multi-embed Phase 2 |
-| MEDIA-EMBED-02 | Multi-embed ordered list foundation (profiles + onboarding) | P1 | DONE — Phase 1.5 SHIPPED | Migration `20260212000000_media_embeds_table.sql` applied to production 2026-02-12; CI green (`3f0364f`); Vercel deployed; grants verified (anon=SELECT, authenticated=SELECT/INSERT/UPDATE/DELETE) |
-| MEDIA-EMBED-02B | Multi-embed for events (host/cohost), overrides, venues, blog, gallery | P1 | NEXT | Phase 2: expand MediaEmbedsEditor to event/override/venue/blog/gallery surfaces with host/cohost and owner RLS |
+| MEDIA-EMBED-02 | Multi-embed ordered list foundation (profiles + onboarding) | P1 | DONE | Migration `20260212000000_media_embeds_table.sql`; commits `b849513`, `3f0364f`, `2f8c1f8`; `media_embeds` table, atomic upsert RPC, `MediaEmbedsEditor`, `OrderedMediaEmbeds` |
+| MEDIA-EMBED-02B | Multi-embed for events (host/cohost), blog, gallery + Bandcamp support | P1 | DONE | Commits `cec7d64`, `11c7a03`; events/blog/gallery wiring, Bandcamp iframe classification + rendering |
+| MEDIA-EMBED-02C | Bandcamp atomic upsert + iframe fixes | P1 | DONE | Commits `658d5ad`, `b743662`, `0783588`; paste resilience, atomic upsert fix, `allow-same-origin` sandbox |
+| MEDIA-EMBED-02D | Venue media embeds + editor UX upgrades | P1 | DONE | Commit `36c3720`; migration `20260214000000_media_embeds_venue.sql`; venue RLS, API, editor, public render; editor UX: header, empty state, provider badges, preview toggle |
+| MEDIA-EMBED-03 | Event override media embeds (per-occurrence overrides) | P2 | OPEN | `event_override` target type exists in CHECK constraint but no surfaces wired yet |
+| MEDIA-EMBED-04 | Non-admin blog author media embed writes | P2 | OPEN | Deferred from 02D; requires blog author RLS policy (blog posts currently admin-only write) |
 
 **Dependency posture:**
 - Non-blocking strategic dependency: `STRAT-01` (region/community abstraction readiness).

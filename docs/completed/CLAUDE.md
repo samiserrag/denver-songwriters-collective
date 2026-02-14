@@ -6,6 +6,104 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### MEDIA-EMBED-02D: Venue Media Embeds + Editor UX Upgrades (February 2026) — RESOLVED
+
+**Summary:** Extended the multi-embed system to venues (full-stack: migration, RLS, API, editor, public render) and upgraded the shared `MediaEmbedsEditor` component with four UX improvements: section header with link count, empty state, per-row provider badges, and collapsible preview toggle.
+
+**Commit:** `36c3720`
+
+**Migration:**
+- `supabase/migrations/20260214000000_media_embeds_venue.sql`
+  - Expanded `target_type` CHECK constraint to include `'venue'`.
+  - Added `media_embeds_public_read_venue` (SELECT for anon + authenticated).
+  - Added `media_embeds_manager_manage_venue` (ALL for authenticated venue managers via `venue_managers` join with `revoked_at IS NULL`).
+
+**Delivered:**
+- **Venue edit surfaces:** Wired `MediaEmbedsEditor` into both manager (`my-venues/[id]`) and admin (`admin/venues/[id]`) venue detail pages. Server components fetch existing embeds via `readMediaEmbeds()` in parallel with venue images.
+- **Venue API route:** Updated `PATCH /api/venues/[id]` to extract `media_embed_urls` before `sanitizeVenuePatch` (which strips unknown keys). Venue field update and media embed upsert run independently — media embed failure is non-blocking (returns success with `mediaEmbedsError` warning).
+- **Public venue page:** Renders `OrderedMediaEmbeds` between Photos and Happenings sections on `/venues/[id]`.
+- **TypeScript:** Added `"venue"` to `MediaEmbedTargetType` union.
+- **MediaEmbedsEditor UX upgrades** (shared component, affects all surfaces):
+  - Section header with dynamic link count badge.
+  - Empty state with dashed border, Music icon, and "Add a media link" CTA.
+  - Per-row `ProviderBadge` (YouTube=red, Spotify=green, Bandcamp=cyan, Link=gray) using `classifyUrl()`.
+  - Collapsible "Show preview" toggle (client-only, default OFF, never affects saving).
+
+**Files modified (10):**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260214000000_media_embeds_venue.sql` | NEW — migration for venue target type + RLS |
+| `web/src/lib/mediaEmbeds.ts` | Added `"venue"` to `MediaEmbedTargetType` |
+| `web/src/components/media/MediaEmbedsEditor.tsx` | Full rewrite with 4 UX features (411 lines) |
+| `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` | Removed duplicate external label (editor has its own) |
+| `web/src/app/(protected)/dashboard/my-venues/[id]/_components/VenueEditForm.tsx` | Wired MediaEmbedsEditor with state, submit, and prop |
+| `web/src/app/(protected)/dashboard/my-venues/[id]/page.tsx` | Parallel fetch of media embeds, pass to form |
+| `web/src/app/(protected)/dashboard/admin/venues/[id]/page.tsx` | Parallel fetch of media embeds, pass to form |
+| `web/src/app/api/venues/[id]/route.ts` | Extract media_embed_urls, conditional upsert, non-blocking error |
+| `web/src/app/venues/[id]/page.tsx` | Render OrderedMediaEmbeds on public venue page |
+| `web/src/__tests__/media-embed-02d-venue.test.ts` | NEW — 10 tests covering venue target type |
+
+**Tests:** 3922 passed (189 files), 0 failures.
+
+**Quality gates:**
+- `npm --prefix web run lint`: PASS (0 errors)
+- `npm --prefix web test -- --run`: PASS (3922 tests, 189 files)
+- `npm --prefix web run build`: PASS
+- Migration applied via MODE B (direct psql), 5-point verification checklist passed.
+
+---
+
+### MEDIA-EMBED-02C: Bandcamp Atomic Upsert + Iframe Fixes (February 2026) — RESOLVED
+
+**Summary:** Three-commit fix series for Bandcamp embed bugs discovered after `MEDIA-EMBED-02B` shipped: paste resilience for shortcode-style URLs, atomic upsert preventing row wipes on mixed-provider saves, and `allow-same-origin` sandbox fix for iframe content loading.
+
+**Commits:** `658d5ad`, `b743662`, `0783588`
+
+**Fixes delivered:**
+- `658d5ad` — **Bandcamp paste resilience:** `onPaste` interception in `MediaEmbedsEditor` strips Bandcamp `<iframe>` shortcodes down to the `src` URL. Fallback error handling for malformed paste content.
+- `b743662` — **Atomic upsert prevents row wipes:** Fixed `upsert_media_embeds` RPC to correctly handle Bandcamp embeds alongside YouTube/Spotify. Previously, saving a mix of providers could delete all rows due to a constraint mismatch in the atomic delete-then-insert cycle.
+- `0783588` — **`allow-same-origin` sandbox fix:** Added `allow-same-origin` to the Bandcamp `<iframe>` sandbox attribute in `OrderedMediaEmbeds.tsx` so the embedded player content loads correctly.
+
+---
+
+### MEDIA-EMBED-02B: Multi-Embed for Events, Blog, and Gallery (February 2026) — RESOLVED
+
+**Summary:** Extended the multi-embed ordered list system from profiles to events (host/cohost writes), blog posts (admin writes), and gallery albums (admin writes). Includes Bandcamp iframe embed support with safe parsing and per-row render resilience.
+
+**Commits:** `cec7d64` (events/blog/gallery), `11c7a03` (Bandcamp support)
+
+**Delivered:**
+- Wired `MediaEmbedsEditor` into `EventForm.tsx` (creates + edits), blog admin edit, and gallery admin edit.
+- Updated event API routes to upsert media embeds alongside event saves.
+- Added Bandcamp URL classification (`classifyUrl()` returns `provider: "bandcamp"`, `kind: "audio"`).
+- `OrderedMediaEmbeds.tsx` renders Bandcamp as sandboxed `<iframe>` with `allow-scripts allow-popups` sandbox.
+- Per-row try/catch resilience — one malformed embed never blocks rendering of others.
+
+---
+
+### MEDIA-EMBED-02: Multi-Embed Ordered List Foundation (February 2026) — RESOLVED
+
+**Summary:** Implemented the `media_embeds` table, atomic upsert RPC, and `MediaEmbedsEditor` drag-to-reorder component for profiles and onboarding. Foundation for all subsequent multi-embed work.
+
+**Commits:** `b849513` (initial), `3f0364f` (security fix: specific grants), `2f8c1f8` (security fix: revoke default anon grants)
+
+**Migration:**
+- `supabase/migrations/20260212000000_media_embeds_table.sql`
+  - Created `media_embeds` table with target polymorphism (`target_type` + `target_id`), provider classification, ordered positions, and `upsert_media_embeds` PL/pgSQL RPC (`SECURITY INVOKER`).
+  - RLS policies for profile owner read/write and public read.
+  - Grants: anon = SELECT only, authenticated = SELECT/INSERT/UPDATE/DELETE.
+
+**Delivered:**
+- `MediaEmbedsEditor` component with dnd-kit drag-to-reorder, add/remove rows, URL input validation.
+- `mediaEmbeds.ts` — `classifyUrl()`, `buildEmbedRows()`, `buildEmbedRowsSafe()`, `normalizeMediaEmbedUrl()`, `getMediaEmbedIframeMeta()`.
+- `mediaEmbedsServer.ts` — `upsertMediaEmbeds()`, `readMediaEmbeds()` server-side helpers.
+- `OrderedMediaEmbeds.tsx` — Public SSR renderer for YouTube, Spotify, and external link cards.
+- Wired into profile onboarding (`/onboarding/profile`) and profile edit (`/dashboard/profile`).
+- Wired into public member pages (`/members/[id]`, `/songwriters/[id]`).
+
+---
+
 ### EXPANSION-CAP-FIX: Remove Silent Global Occurrence Cap (February 2026) — RESOLVED
 
 **Summary:** Removed `MAX_TOTAL_OCCURRENCES: 500` global cap from `expandAndGroupEvents()` that was silently dropping 22 of 86 events (26%) from the happenings page. Denver Art Society and 21 other events were invisible because the cap was hit before reaching them in the processing loop.
