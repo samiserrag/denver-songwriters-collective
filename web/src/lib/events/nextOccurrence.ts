@@ -519,10 +519,8 @@ export function computeNextOccurrence(
 
 /** Performance caps for occurrence expansion */
 export const EXPANSION_CAPS = {
-  /** Maximum events to process in a single expansion call */
-  MAX_EVENTS: 200,
-  /** Maximum total occurrences across all events */
-  MAX_TOTAL_OCCURRENCES: 500,
+  /** Maximum events to process in a single expansion call (headroom for national scale) */
+  MAX_EVENTS: 10_000,
   /** Maximum occurrences per individual event */
   MAX_PER_EVENT: 40,
   /** Default window size in days */
@@ -536,10 +534,8 @@ export interface ExpansionOptions {
   endKey?: string;
   /** Maximum occurrences per event (prevents runaway), default 40 */
   maxOccurrences?: number;
-  /** Maximum events to process (default 200) */
+  /** Maximum events to process (default 10,000) */
   maxEvents?: number;
-  /** Maximum total occurrences across all events (default 500) */
-  maxTotalOccurrences?: number;
   /** Pre-built override map for applying per-occurrence overrides */
   overrideMap?: OverrideMap;
 }
@@ -1068,8 +1064,7 @@ export interface ExpansionResult<T extends EventForOccurrence = EventForOccurren
  * Cancelled occurrences are tracked separately for toggle control.
  *
  * Performance caps are enforced to prevent runaway processing:
- * - maxEvents: Maximum events to process (default 200)
- * - maxTotalOccurrences: Maximum total occurrences (default 500)
+ * - maxEvents: Maximum events to process (default 10,000)
  * - maxOccurrences: Maximum occurrences per event (default 40)
  *
  * @param events - Array of events with timing fields and an `id` field
@@ -1080,10 +1075,10 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
   events: T[],
   options?: ExpansionOptions
 ): ExpansionResult<T> {
+  const expansionStart = performance.now();
   const startKey = options?.startKey ?? getTodayDenver();
   const endKey = options?.endKey ?? addDaysDenver(startKey, EXPANSION_CAPS.DEFAULT_WINDOW_DAYS);
   const maxEvents = options?.maxEvents ?? EXPANSION_CAPS.MAX_EVENTS;
-  const maxTotalOccurrences = options?.maxTotalOccurrences ?? EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES;
   const overrideMap = options?.overrideMap ?? new Map<string, OccurrenceOverride>();
 
   const groupedEvents = new Map<string, EventOccurrenceEntry<T>[]>();
@@ -1104,12 +1099,6 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
   }
 
   for (const event of eventsToProcess) {
-    // Stop if we've hit the total occurrence cap
-    if (totalOccurrences >= maxTotalOccurrences) {
-      wasCapped = true;
-      break;
-    }
-
     eventsProcessed++;
 
     const occurrences = expandOccurrencesForEvent(event, {
@@ -1125,12 +1114,6 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
     }
 
     for (const occ of occurrences) {
-      // Enforce total occurrence cap
-      if (totalOccurrences >= maxTotalOccurrences) {
-        wasCapped = true;
-        break;
-      }
-
       totalOccurrences++;
 
       // Check for override
@@ -1177,6 +1160,16 @@ export function expandAndGroupEvents<T extends EventForOccurrence & { id: string
 
   // Sort cancelled occurrences by date
   cancelledOccurrences.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+
+  // Server-side perf observability: log when expansion takes > 200ms
+  const expansionElapsed = performance.now() - expansionStart;
+  if (expansionElapsed > 200 && typeof process !== "undefined" && process.env?.NODE_ENV !== "test") {
+    console.log(
+      `[PERF:expansion] expandAndGroupEvents: ${eventsProcessed} events, ` +
+      `${totalOccurrences} occurrences, ${expansionElapsed.toFixed(1)}ms ` +
+      `(threshold=200ms)`
+    );
+  }
 
   return {
     groupedEvents: sortedGroups,

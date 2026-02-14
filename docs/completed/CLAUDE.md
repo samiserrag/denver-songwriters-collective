@@ -6,6 +6,21 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### EXPANSION-CAP-FIX: Remove Silent Global Occurrence Cap (February 2026) — RESOLVED
+
+**Summary:** Removed `MAX_TOTAL_OCCURRENCES: 500` global cap from `expandAndGroupEvents()` that was silently dropping 22 of 86 events (26%) from the happenings page. Denver Art Society and 21 other events were invisible because the cap was hit before reaching them in the processing loop.
+
+**Root cause:** With 86 active events (42 weekly, each producing ~13 occurrences in the 90-day window), total occurrences reached ~1,100. The 500-occurrence cap triggered a `break` at ~event #45, silently skipping the remaining events. Supabase returns events in default UUID order, so which events got dropped was effectively random.
+
+**Changes:**
+- `web/src/lib/events/nextOccurrence.ts` — Removed `MAX_TOTAL_OCCURRENCES` constant and both cap-break checks in `expandAndGroupEvents()`. Raised `MAX_EVENTS` from 200 → 10,000 for national scale. Added `[PERF:expansion]` server-side log when expansion exceeds 200ms.
+- `web/src/app/page.tsx` — Decoupled homepage DB limit from `EXPANSION_CAPS.MAX_EVENTS` (hardcoded to 200; homepage only renders today's group).
+- `web/src/lib/events/__tests__/expansionCaps.test.ts` — Replaced total-cap tests with no-cap verification tests. Stress test: 1,000 events in 90-day window, all processed in <500ms.
+
+**Kept unchanged:** `MAX_PER_EVENT: 40` (per-event safety), `DEFAULT_WINDOW_DAYS: 90` (natural bound). Happenings page, series view, event detail, digests — all unaffected.
+
+---
+
 ### MEDIA-EMBED-01A: Structured URL Embeds on Canonical Pages (February 2026) — RESOLVED
 
 **Summary:** Implemented Phase-1 structured media embeds (Option A columns) for events, blog posts, gallery albums, and member profiles with admin-only write authority and public canonical rendering.

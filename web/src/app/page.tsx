@@ -16,7 +16,6 @@ import {
   expandAndGroupEvents,
   applyReschedulesToTimeline,
   buildOverrideMap,
-  EXPANSION_CAPS,
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
 import { DISCOVERY_STATUS_FILTER, DISCOVERY_VENUE_SELECT } from "@/lib/happenings";
@@ -133,7 +132,7 @@ export default async function HomePage() {
       .limit(6),
     // Tonight's happenings - all event types, published only
     // Uses shared DISCOVERY_STATUS_FILTER and DISCOVERY_VENUE_SELECT for cross-surface consistency
-    // Limit to MAX_EVENTS to prevent performance issues
+    // Homepage only uses today's group from expansion; 200 is ample for that purpose
     supabase
       .from("events")
       .select(`
@@ -142,7 +141,7 @@ export default async function HomePage() {
       `)
       .eq("is_published", true)
       .in("status", [...DISCOVERY_STATUS_FILTER])
-      .limit(EXPANSION_CAPS.MAX_EVENTS),
+      .limit(200),
     // Spotlight happenings - admin-selected featured events
     supabase
       .from("events")

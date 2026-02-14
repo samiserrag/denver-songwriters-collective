@@ -1,8 +1,12 @@
 /**
  * Performance Caps Regression Tests
  *
- * Ensures the occurrence expansion function enforces hard caps
- * to prevent runaway processing on large datasets.
+ * Ensures the occurrence expansion function enforces per-event caps
+ * and processes ALL events without silent drops.
+ *
+ * The global MAX_TOTAL_OCCURRENCES cap was removed because it silently
+ * dropped events from the happenings page when the total exceeded 500.
+ * Per-event cap (MAX_PER_EVENT=40) + 90-day window naturally bound expansion.
  */
 
 import { describe, it, expect } from "vitest";
@@ -30,10 +34,7 @@ function createMockEvent(
 describe("EXPANSION_CAPS constants", () => {
   it("should have reasonable default values", () => {
     expect(EXPANSION_CAPS.MAX_EVENTS).toBeGreaterThanOrEqual(100);
-    expect(EXPANSION_CAPS.MAX_EVENTS).toBeLessThanOrEqual(500);
-
-    expect(EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES).toBeGreaterThanOrEqual(100);
-    expect(EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES).toBeLessThanOrEqual(1000);
+    expect(EXPANSION_CAPS.MAX_EVENTS).toBeLessThanOrEqual(50_000);
 
     expect(EXPANSION_CAPS.MAX_PER_EVENT).toBeGreaterThanOrEqual(10);
     expect(EXPANSION_CAPS.MAX_PER_EVENT).toBeLessThanOrEqual(100);
@@ -43,10 +44,14 @@ describe("EXPANSION_CAPS constants", () => {
   });
 
   it("should be exported for use in queries", () => {
-    // Ensure constants are accessible for query limits
     expect(typeof EXPANSION_CAPS.MAX_EVENTS).toBe("number");
-    expect(typeof EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES).toBe("number");
     expect(typeof EXPANSION_CAPS.MAX_PER_EVENT).toBe("number");
+  });
+
+  it("should NOT have a global total occurrence cap", () => {
+    // MAX_TOTAL_OCCURRENCES was removed to prevent silent event drops.
+    // Per-event cap (MAX_PER_EVENT) + 90-day window naturally bound expansion.
+    expect("MAX_TOTAL_OCCURRENCES" in EXPANSION_CAPS).toBe(false);
   });
 });
 
@@ -84,7 +89,7 @@ describe("expandOccurrencesForEvent - per-event cap", () => {
 
 describe("expandAndGroupEvents - event cap", () => {
   it("should limit events processed to maxEvents", () => {
-    // Create 300 events (more than MAX_EVENTS=200)
+    // Create 300 events (more than custom cap of 200)
     const events = Array.from({ length: 300 }, (_, i) =>
       createMockEvent(`event-${i}`, {
         event_date: "2025-01-15", // One-time events for simplicity
@@ -94,11 +99,12 @@ describe("expandAndGroupEvents - event cap", () => {
     const result = expandAndGroupEvents(events, {
       startKey: "2025-01-01",
       endKey: "2025-01-31",
+      maxEvents: 200,
     });
 
-    // Should process at most MAX_EVENTS
-    expect(result.metrics.eventsProcessed).toBeLessThanOrEqual(EXPANSION_CAPS.MAX_EVENTS);
-    expect(result.metrics.eventsSkipped).toBe(300 - EXPANSION_CAPS.MAX_EVENTS);
+    // Should process at most 200
+    expect(result.metrics.eventsProcessed).toBeLessThanOrEqual(200);
+    expect(result.metrics.eventsSkipped).toBe(100);
     expect(result.metrics.wasCapped).toBe(true);
   });
 
@@ -138,10 +144,10 @@ describe("expandAndGroupEvents - event cap", () => {
   });
 });
 
-describe("expandAndGroupEvents - total occurrences cap", () => {
-  it("should limit total occurrences to maxTotalOccurrences", () => {
+describe("expandAndGroupEvents - no global occurrence cap", () => {
+  it("should expand ALL events without a global occurrence cap", () => {
     // Create 100 weekly events, each generating ~13 occurrences in 90 days
-    // Total potential: 100 * 13 = 1300 occurrences (exceeds 500)
+    // Total: ~1,300 occurrences — previously capped at 500, silently dropping events
     const events = Array.from({ length: 100 }, (_, i) =>
       createMockEvent(`weekly-${i}`, {
         day_of_week: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][i % 7],
@@ -154,14 +160,17 @@ describe("expandAndGroupEvents - total occurrences cap", () => {
       endKey: "2025-03-31", // 90 days
     });
 
-    // Should cap total occurrences at MAX_TOTAL_OCCURRENCES
-    expect(result.metrics.totalOccurrences).toBeLessThanOrEqual(EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES);
-    expect(result.metrics.wasCapped).toBe(true);
+    // All 100 events should be processed — no silent drops
+    expect(result.metrics.eventsProcessed).toBe(100);
+    expect(result.metrics.eventsSkipped).toBe(0);
+    expect(result.metrics.wasCapped).toBe(false);
+    // Should have >500 total occurrences (the old cap that was removed)
+    expect(result.metrics.totalOccurrences).toBeGreaterThan(500);
   });
 
-  it("should respect custom maxTotalOccurrences option", () => {
-    // Create 10 weekly events
-    const events = Array.from({ length: 10 }, (_, i) =>
+  it("should expand all events even with high occurrence counts", () => {
+    // 50 weekly events in a year-long window = many occurrences
+    const events = Array.from({ length: 50 }, (_, i) =>
       createMockEvent(`weekly-${i}`, {
         day_of_week: "Wednesday",
         recurrence_rule: "weekly",
@@ -170,12 +179,14 @@ describe("expandAndGroupEvents - total occurrences cap", () => {
 
     const result = expandAndGroupEvents(events, {
       startKey: "2025-01-01",
-      endKey: "2025-03-31",
-      maxTotalOccurrences: 20,
+      endKey: "2025-12-31",
     });
 
-    expect(result.metrics.totalOccurrences).toBeLessThanOrEqual(20);
-    expect(result.metrics.wasCapped).toBe(true);
+    // All 50 events should be processed
+    expect(result.metrics.eventsProcessed).toBe(50);
+    expect(result.metrics.wasCapped).toBe(false);
+    // Each event generates up to 40 occurrences (MAX_PER_EVENT), so up to 2,000
+    expect(result.metrics.totalOccurrences).toBeGreaterThan(500);
   });
 });
 
@@ -201,30 +212,16 @@ describe("expandAndGroupEvents - metrics reporting", () => {
     expect(result.unknownEvents[0].id).toBe("unknown");
   });
 
-  it("should indicate wasCapped when hitting any cap", () => {
-    // Test event cap
+  it("should indicate wasCapped when hitting event cap", () => {
     const manyEvents = Array.from({ length: 250 }, (_, i) =>
       createMockEvent(`event-${i}`, { event_date: "2025-01-15" })
     );
-    const result1 = expandAndGroupEvents(manyEvents, {
+    const result = expandAndGroupEvents(manyEvents, {
       startKey: "2025-01-01",
       endKey: "2025-01-31",
+      maxEvents: 200,
     });
-    expect(result1.metrics.wasCapped).toBe(true);
-
-    // Test occurrence cap with fewer events but many occurrences
-    const fewWeeklyEvents = Array.from({ length: 50 }, (_, i) =>
-      createMockEvent(`weekly-${i}`, {
-        day_of_week: "Monday",
-        recurrence_rule: "weekly",
-      })
-    );
-    const result2 = expandAndGroupEvents(fewWeeklyEvents, {
-      startKey: "2025-01-01",
-      endKey: "2025-12-31", // Year-long window
-      maxTotalOccurrences: 100, // Force cap
-    });
-    expect(result2.metrics.wasCapped).toBe(true);
+    expect(result.metrics.wasCapped).toBe(true);
   });
 });
 
@@ -269,13 +266,13 @@ describe("expandAndGroupEvents - deterministic behavior", () => {
     const result1 = expandAndGroupEvents(events, {
       startKey: "2025-01-01",
       endKey: "2025-02-28",
-      maxTotalOccurrences: 100,
+      maxEvents: 20,
     });
 
     const result2 = expandAndGroupEvents(events, {
       startKey: "2025-01-01",
       endKey: "2025-02-28",
-      maxTotalOccurrences: 100,
+      maxEvents: 20,
     });
 
     expect(result1.metrics).toEqual(result2.metrics);
@@ -309,9 +306,10 @@ describe("Homepage-specific scenarios", () => {
     expect(todaysEvents.length).toBe(result.metrics.totalOccurrences);
   });
 
-  it("should complete expansion in reasonable time", () => {
-    // Stress test: maximum allowed events with weekly recurrence
-    const events = Array.from({ length: EXPANSION_CAPS.MAX_EVENTS }, (_, i) =>
+  it("should complete expansion in reasonable time at national scale", () => {
+    // Stress test: 1,000 weekly events in a 90-day window
+    // Expected: ~13,000 occurrences, pure arithmetic, should be fast
+    const events = Array.from({ length: 1000 }, (_, i) =>
       createMockEvent(`event-${i}`, {
         day_of_week: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][i % 7],
         recurrence_rule: "weekly",
@@ -325,10 +323,14 @@ describe("Homepage-specific scenarios", () => {
     });
     const elapsed = performance.now() - start;
 
-    // Should complete within 100ms even with max events
-    expect(elapsed).toBeLessThan(100);
+    // Should complete within 500ms even with 1,000 events
+    expect(elapsed).toBeLessThan(500);
 
-    // Verify caps were applied
-    expect(result.metrics.totalOccurrences).toBeLessThanOrEqual(EXPANSION_CAPS.MAX_TOTAL_OCCURRENCES);
+    // All events should be processed — no silent drops
+    expect(result.metrics.eventsProcessed).toBe(1000);
+    expect(result.metrics.eventsSkipped).toBe(0);
+    expect(result.metrics.wasCapped).toBe(false);
+    // ~13,000 occurrences expected (1000 events × ~13 each)
+    expect(result.metrics.totalOccurrences).toBeGreaterThan(10_000);
   });
 });
