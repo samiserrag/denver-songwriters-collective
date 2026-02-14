@@ -253,29 +253,9 @@ export default function NotificationsList({
   const unreadCount = items.filter(n => !n.is_read).length;
   const readCount = items.filter(n => n.is_read).length;
 
-  if (items.length === 0 && !loading) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-6xl mb-4">🔔</div>
-        <h2 className="text-xl text-[var(--color-text-primary)] mb-2">No notifications</h2>
-        <p className="text-[var(--color-text-secondary)]">
-          {typeFilter ? "No notifications of this type." : "You&apos;re all caught up!"}
-        </p>
-        {typeFilter && (
-          <button
-            onClick={() => handleTypeFilterChange("")}
-            className="mt-4 text-[var(--color-text-accent)] hover:underline"
-          >
-            Clear filter
-          </button>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div>
-      {/* Controls */}
+      {/* Controls — always visible */}
         <div className="space-y-4 mb-6">
           {/* Filter row */}
           <div className="flex flex-wrap items-center gap-4">
@@ -350,17 +330,33 @@ export default function NotificationsList({
           </div>
         </div>
 
-      {/* Empty state when all filtered out */}
-      {visibleItems.length === 0 && hideRead && !loading && (
+      {/* Empty states */}
+      {visibleItems.length === 0 && !loading && (
         <div className="text-center py-8">
           <p className="text-[var(--color-text-secondary)]">
-            No unread notifications.{" "}
-            <button
-              onClick={() => handleHideReadChange(false)}
-              className="text-[var(--color-text-accent)] hover:underline"
-            >
-              Show all
-            </button>
+            {hideRead ? (
+              <>
+                No unread notifications.{" "}
+                <button
+                  onClick={() => handleHideReadChange(false)}
+                  className="text-[var(--color-text-accent)] hover:underline"
+                >
+                  Show all
+                </button>
+              </>
+            ) : typeFilter ? (
+              <>
+                No notifications of this type.{" "}
+                <button
+                  onClick={() => handleTypeFilterChange("")}
+                  className="text-[var(--color-text-accent)] hover:underline"
+                >
+                  Clear filter
+                </button>
+              </>
+            ) : (
+              "You\u2019re all caught up!"
+            )}
           </p>
         </div>
       )}
