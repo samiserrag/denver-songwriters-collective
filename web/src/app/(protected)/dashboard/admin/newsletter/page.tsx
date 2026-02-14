@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import SelectableTextarea from "./SelectableTextarea";
 
 export const dynamic = "force-dynamic";
 
@@ -89,12 +90,7 @@ export default async function NewsletterAdminPage() {
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           Copy the list below to use with your email service (Mailchimp, ConvertKit, etc.)
         </p>
-        <textarea
-          readOnly
-          value={activeSubscribers.map((s) => s.email).join("\n")}
-          className="w-full h-32 p-3 rounded-lg bg-[var(--color-bg-input)] border border-[var(--color-border-input)] text-[var(--color-text-primary)] text-sm font-mono resize-none"
-          onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-        />
+        <SelectableTextarea value={activeSubscribers.map((s) => s.email).join("\n")} />
         <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
           Click the text area to select all emails
         </p>

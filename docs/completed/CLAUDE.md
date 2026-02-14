@@ -6,6 +6,62 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FIX: Newsletter Admin Dashboard Crash (February 2026) — RESOLVED
+
+**Summary:** The `/dashboard/admin/newsletter` page crashed with "Something went wrong loading this page" because it passed an `onClick` event handler to a `<textarea>` inside a Server Component. React 19 / Next.js 16 forbids passing event handlers from Server Components to client elements.
+
+**Root cause:** Axiom runtime logs showed: `Error: Event handlers cannot be passed to Client Component props. {readOnly: true, value: ..., onClick: function onClick}` at path `/dashboard/admin/newsletter`.
+
+**Fix:** Extracted the interactive textarea into a `"use client"` component (`SelectableTextarea.tsx`) and imported it into the server page.
+
+**Files changed (2):**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/admin/newsletter/SelectableTextarea.tsx` | NEW — Client Component wrapping textarea with onClick select-all |
+| `web/src/app/(protected)/dashboard/admin/newsletter/page.tsx` | Replaced inline textarea with `<SelectableTextarea>` import |
+
+**Quality gates:** lint clean, 3932 tests pass (190 files), build succeeds.
+
+---
+
+### MEDIA-EMBED-02E: Blog Author Embeds — Non-Admin (February 2026) — RESOLVED
+
+**Summary:** Non-admin blog authors can now add, remove, and reorder media embeds on their own draft and published posts. Adds an RLS policy for author-scoped writes and a new API route for non-admin embed management.
+
+**Commit:** `a6b9cde`
+
+**Migration:**
+- `supabase/migrations/20260215000000_media_embeds_blog_author_manage.sql`
+  - Added `media_embeds_author_manage_blog` policy (FOR ALL TO authenticated) scoped to `target_type='blog_post'` where `blog_posts.author_id = auth.uid()`.
+  - No grant changes. No changes to `media_embeds_public_read_blog` or `media_embeds_admin_manage`.
+
+**Delivered:**
+- **RLS policy:** `media_embeds_author_manage_blog` allows authenticated users to INSERT/UPDATE/DELETE media_embeds rows for blog posts they own. Follows the same JOIN pattern as `media_embeds_host_manage_event` and `blog_gallery_images` author policies.
+- **API route:** `POST /api/blog-posts/[id]/media-embeds` — authenticates user, verifies `author_id === user.id OR is_admin()`, calls `upsertMediaEmbeds` with `{type:'blog_post', id}`. Empty array = atomic clear.
+- **Form wiring:** Non-admin create/edit path in `BlogPostForm.tsx` now calls the new API route after saving the post and gallery images.
+- **Public read unchanged:** `media_embeds_public_read_blog` still gates on `blog_posts.is_published = true`.
+
+**Files changed (4):**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260215000000_media_embeds_blog_author_manage.sql` | NEW — RLS policy for blog author embed management |
+| `web/src/app/api/blog-posts/[id]/media-embeds/route.ts` | NEW — POST handler with ownership + admin check |
+| `web/src/app/(protected)/dashboard/admin/blog/BlogPostForm.tsx` | Added embed API call in non-admin save path (13 lines) |
+| `web/src/__tests__/media-embed-02e-blog-author.test.ts` | NEW — 10 tests (wiring, migration, behavioral) |
+
+**Tests:** 3932 passed (190 files), 0 failures.
+
+**Quality gates:**
+- `npm --prefix web run lint`: PASS (0 errors)
+- `npm --prefix web test -- --run`: PASS (3932 tests, 190 files)
+- `npm --prefix web run build`: PASS
+- Migration applied via MODE B (direct psql), verified with `pg_policies` query.
+- Production smoke tests: 4/4 passed (create+persist, edit+remove, clear-all, public read gate).
+
+---
+
 ### MEDIA-EMBED-02D: Venue Media Embeds + Editor UX Upgrades (February 2026) — RESOLVED
 
 **Summary:** Extended the multi-embed system to venues (full-stack: migration, RLS, API, editor, public render) and upgraded the shared `MediaEmbedsEditor` component with four UX improvements: section header with link count, empty state, per-row provider badges, and collapsible preview toggle.
