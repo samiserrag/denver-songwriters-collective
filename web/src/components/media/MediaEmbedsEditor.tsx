@@ -40,10 +40,12 @@ function makeRowId() {
 function SortableRow({
   row,
   onUrlChange,
+  onPaste,
   onRemove,
 }: {
   row: EmbedRow;
   onUrlChange: (id: string, url: string) => void;
+  onPaste: (id: string, e: React.ClipboardEvent<HTMLInputElement>) => void;
   onRemove: (id: string) => void;
 }) {
   const {
@@ -74,9 +76,11 @@ function SortableRow({
       </button>
       <div className="flex-1">
         <input
-          type="url"
+          type="text"
+          inputMode="url"
           value={row.url}
           onChange={(e) => onUrlChange(row.id, e.target.value)}
+          onPaste={(e) => onPaste(row.id, e)}
           placeholder="Paste a URL or embed code (YouTube, Spotify, Bandcamp…)"
           className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50 text-sm"
         />
@@ -137,7 +141,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
     (id: string, rawInput: string) => {
       // If input contains an iframe, extract the src immediately
       const parsed = rawInput.trim() ? parseEmbedInput(rawInput) : { url: "" };
-      const resolvedUrl = "url" in parsed ? parsed.url : rawInput;
+      const resolvedUrl = "url" in parsed ? parsed.url : "";
       const error = "error" in parsed ? parsed.error : undefined;
 
       setRows((prev) => {
@@ -149,6 +153,23 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
       });
     },
     [syncToParent]
+  );
+
+  /**
+   * Intercept paste to read raw clipboard text BEFORE the browser sanitises it.
+   * `<input type="text">` prevents most stripping, but onPaste gives us the
+   * untouched clipboard content (HTML iframes, shortcodes, etc.).
+   */
+  const handlePaste = useCallback(
+    (id: string, e: React.ClipboardEvent<HTMLInputElement>) => {
+      const text = e.clipboardData.getData("text/plain");
+      if (text && (text.includes("<iframe") || text.includes("[bandcamp"))) {
+        e.preventDefault();
+        handleUrlChange(id, text);
+      }
+      // For plain URLs, let default paste + onChange handle it
+    },
+    [handleUrlChange]
   );
 
   const handleRemove = useCallback(
@@ -184,6 +205,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
                   key={row.id}
                   row={row}
                   onUrlChange={handleUrlChange}
+                  onPaste={handlePaste}
                   onRemove={handleRemove}
                 />
               ))}

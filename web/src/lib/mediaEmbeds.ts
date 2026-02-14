@@ -57,6 +57,17 @@ export function parseEmbedInput(input: string): { url: string } | { error: strin
   const trimmed = input.trim();
   if (!trimmed) return { error: "Input is required." };
 
+  // Bandcamp WordPress shortcode: [bandcamp width=N height=N album=N]
+  const bcShortcode = trimmed.match(
+    /^\[bandcamp\s[^\]]*\balbum=(\d+)[^\]]*\]/i
+  );
+  if (bcShortcode) {
+    const albumId = bcShortcode[1];
+    return {
+      url: `https://bandcamp.com/EmbeddedPlayer/album=${albumId}/size=large/tracklist=false/artwork=small/transparent=true/`,
+    };
+  }
+
   // Not an iframe snippet — treat as plain URL
   if (!trimmed.includes("<iframe")) {
     // Reject raw HTML that isn't an iframe
