@@ -60,7 +60,7 @@ export function OrderedMediaEmbeds({
                       src={href}
                       title="Bandcamp player"
                       loading="lazy"
-                      sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                      sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
                       referrerPolicy="strict-origin-when-cross-origin"
                       className="block w-full border-0"
                       height={120}

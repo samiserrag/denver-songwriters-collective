@@ -75,6 +75,7 @@ describe("OrderedMediaEmbeds Bandcamp iframe rendering", () => {
     expect(iframe).not.toBeNull();
     expect(iframe?.getAttribute("src")).toContain("bandcamp.com/EmbeddedPlayer");
     expect(iframe?.getAttribute("sandbox")).toContain("allow-scripts");
+    expect(iframe?.getAttribute("sandbox")).toContain("allow-same-origin");
     expect(iframe?.getAttribute("title")).toBe("Bandcamp player");
   });
 });
