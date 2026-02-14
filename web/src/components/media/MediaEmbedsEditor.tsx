@@ -337,6 +337,11 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
         )}
       </div>
 
+      {/* Prominent instruction */}
+      <p className="text-sm text-[var(--color-text-secondary)]">
+        Paste the embed code from YouTube, Spotify, Bandcamp, or other sites. A direct URL often works too.
+      </p>
+
       {/* Empty state */}
       {rows.length === 0 && (
         <div className="py-6 px-4 rounded-lg border border-dashed border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]/50 text-center">
@@ -345,7 +350,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
             No media links yet
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-            Add YouTube, Spotify, or Bandcamp links to embed players on your page.
+            Click &ldquo;+ Add a media link&rdquo; below to get started.
           </p>
         </div>
       )}
@@ -403,7 +408,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
       )}
 
       <p className="text-xs text-[var(--color-text-tertiary)]">
-        YouTube, Spotify, and Bandcamp links show as embedded players. You can also paste an embed code. Other links appear as buttons.
+        YouTube, Spotify, and Bandcamp links show as embedded players. Other links appear as buttons. Drag rows to reorder.
       </p>
     </div>
   );

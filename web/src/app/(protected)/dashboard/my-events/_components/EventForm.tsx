@@ -2102,6 +2102,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* ============ MEDIA EMBEDS ============ */}
       <div>
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+          Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+        </label>
         {occurrenceMode && (
           <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
             Editing media links for this date only.

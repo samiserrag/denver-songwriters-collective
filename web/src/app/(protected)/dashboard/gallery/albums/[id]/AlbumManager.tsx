@@ -466,9 +466,6 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
                     <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
                       Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
                     </label>
-                    <p className="mb-2 text-xs text-[var(--color-text-tertiary)]">
-                      Add YouTube, Spotify, or other links. Drag to reorder.
-                    </p>
                     <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
                   </div>
                 )}

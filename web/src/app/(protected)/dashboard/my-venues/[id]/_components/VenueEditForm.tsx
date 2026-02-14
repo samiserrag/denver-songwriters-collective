@@ -251,6 +251,9 @@ export default function VenueEditForm({ venue, initialMediaEmbedUrls = [] }: Ven
 
       {/* Media Embeds Section */}
       <fieldset className="space-y-4">
+        <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+          Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+        </label>
         <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
       </fieldset>
 

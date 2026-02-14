@@ -6,6 +6,33 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### UX: Media Embed Editor — Clearer Embed Code Instructions (February 2026) — RESOLVED
+
+**Summary:** Made it clearer across all media embed surfaces that users should paste the **embed code** from YouTube, Spotify, Bandcamp, etc. (not just a URL). Added a prominent instruction line inside the shared `MediaEmbedsEditor` component and removed redundant per-consumer helper text that was getting lost in small print.
+
+**Changes:**
+- `MediaEmbedsEditor` now renders a prominent `text-sm` instruction: "Paste the embed code from YouTube, Spotify, Bandcamp, or other sites. A direct URL often works too."
+- Empty state updated to point users to the add button instead of repeating provider names.
+- Bottom helper trimmed to supplemental info (player types, drag-to-reorder).
+- Removed duplicate `<p>` descriptions from BlogPostForm, AlbumManager, Onboarding profile, and Dashboard profile.
+- Added missing "Media Links (optional)" label to VenueEditForm and EventForm for consistency.
+
+**Files changed (7):**
+
+| File | Change |
+|------|--------|
+| `web/src/components/media/MediaEmbedsEditor.tsx` | Added prominent instruction, updated empty state + bottom helper |
+| `web/src/app/(protected)/dashboard/admin/blog/BlogPostForm.tsx` | Removed redundant description `<p>` |
+| `web/src/app/(protected)/dashboard/my-venues/[id]/_components/VenueEditForm.tsx` | Added "Media Links (optional)" label |
+| `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` | Added "Media Links (optional)" label |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Removed redundant description `<p>` |
+| `web/src/app/onboarding/profile/page.tsx` | Removed redundant description `<p>` |
+| `web/src/app/(protected)/dashboard/profile/page.tsx` | Removed redundant description `<p>` |
+
+**Quality gates:** lint clean (0 errors), 3932 tests pass (190 files), build succeeds.
+
+---
+
 ### FIX: Newsletter Admin Dashboard Crash (February 2026) — RESOLVED
 
 **Summary:** The `/dashboard/admin/newsletter` page crashed with "Something went wrong loading this page" because it passed an `onClick` event handler to a `<textarea>` inside a Server Component. React 19 / Next.js 16 forbids passing event handlers from Server Components to client elements.

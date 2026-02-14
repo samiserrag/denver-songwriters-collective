@@ -379,9 +379,6 @@ export default function EditProfilePage() {
               <h2 className="text-xl text-[var(--color-text-primary)] mb-2">
                 Media Links
               </h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                Share links to your music, videos, or other media. YouTube and Spotify links will show as embedded players on your profile.
-              </p>
               <MediaEmbedsEditor
                 value={mediaEmbedUrls}
                 onChange={setMediaEmbedUrls}

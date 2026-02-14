@@ -747,9 +747,6 @@ export default function OnboardingProfile() {
               </button>
               {openSections.has("media") && (
                 <div className="px-4 pb-4">
-                  <p className="text-sm text-[var(--color-text-tertiary)] mb-3">
-                    YouTube and Spotify links will show as embedded players on your profile. Other links appear as buttons.
-                  </p>
                   <MediaEmbedsEditor
                     value={mediaEmbedUrls}
                     onChange={setMediaEmbedUrls}
