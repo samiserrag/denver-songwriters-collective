@@ -121,6 +121,19 @@ export default function OnboardingProfile() {
           setInstruments(profile.instruments || []);
           setGenres(profile.genres || []);
         }
+
+        // Preload existing media embeds (prevents overwrite on revisit)
+        const { data: embeds } = await supabase
+          .from("media_embeds")
+          .select("url")
+          .eq("target_type", "profile")
+          .eq("target_id", user.id)
+          .is("date_key", null)
+          .order("position", { ascending: true });
+
+        if (embeds && embeds.length > 0) {
+          setMediaEmbedUrls(embeds.map((e: { url: string }) => e.url));
+        }
       } catch (err) {
         console.error("Error loading profile:", err);
       } finally {
@@ -447,6 +460,36 @@ export default function OnboardingProfile() {
               )}
             </div>
 
+            {/* Media links - visible for all */}
+            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection("media")}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--color-bg-hover)] transition-colors"
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  Share your music or videos
+                  <span className="text-[var(--color-text-tertiary)] font-normal ml-1">
+                    (YouTube, Spotify, etc.)
+                  </span>
+                </span>
+                <span className="text-[var(--color-text-tertiary)]">
+                  {openSections.has("media") ? (
+                    <ChevronDown size={20} />
+                  ) : (
+                    <ChevronRight size={20} />
+                  )}
+                </span>
+              </button>
+              {openSections.has("media") && (
+                <div className="px-4 pb-4">
+                  <MediaEmbedsEditor
+                    value={mediaEmbedUrls}
+                    onChange={setMediaEmbedUrls}
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Instruments & Genres - visible for Songwriter or Fan */}
             {isSectionVisible("instruments", relevantSections) && (
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
@@ -724,36 +767,6 @@ export default function OnboardingProfile() {
               )}
             </div>
             )}
-
-            {/* Media links - visible for all */}
-            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
-              <button
-                onClick={() => toggleSection("media")}
-                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--color-bg-hover)] transition-colors"
-              >
-                <span className="font-medium text-[var(--color-text-primary)]">
-                  Share your music or videos
-                  <span className="text-[var(--color-text-tertiary)] font-normal ml-1">
-                    (YouTube, Spotify, etc.)
-                  </span>
-                </span>
-                <span className="text-[var(--color-text-tertiary)]">
-                  {openSections.has("media") ? (
-                    <ChevronDown size={20} />
-                  ) : (
-                    <ChevronRight size={20} />
-                  )}
-                </span>
-              </button>
-              {openSections.has("media") && (
-                <div className="px-4 pb-4">
-                  <MediaEmbedsEditor
-                    value={mediaEmbedUrls}
-                    onChange={setMediaEmbedUrls}
-                  />
-                </div>
-              )}
-            </div>
 
             {/* Social links - visible for Songwriter, Host, Studio */}
             {isSectionVisible("social", relevantSections) && (

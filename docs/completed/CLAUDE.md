@@ -6,6 +6,29 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FIX: Onboarding Media Embeds — Preload + Section Placement (February 2026) — RESOLVED
+
+**Summary:** Fixed two onboarding issues for profile media embeds: (1) revisiting onboarding now preloads existing embeds from the database so submitting does not silently overwrite them with an empty array, and (2) the Media Links section was moved from 5th to 2nd position (directly after Identity) so it is unmissable.
+
+**Changes:**
+- **Preload on revisit:** `loadProfile()` in `onboarding/profile/page.tsx` now queries `media_embeds` for `target_type='profile'` + `target_id=user.id`, ordered by position. Only sets state when rows exist (does not reset to `[]`).
+- **Section order:** Identity → **Media** → Instruments → About → Social → Tipping → Collab (was: Identity → Instruments → About → Media → Social → Tipping → Collab).
+- **Social Links unchanged:** No modifications to social link fields, state, or visibility logic.
+- **API unchanged:** `/api/onboarding/route.ts` already handles `media_embed_urls` via `upsertMediaEmbeds`.
+
+**Files changed (2 modified, 1 new):**
+
+| File | Change |
+|------|--------|
+| `web/src/app/onboarding/profile/page.tsx` | Added media_embeds preload query in loadProfile(); moved media section after identity |
+| `web/src/__tests__/onboarding-media-embeds.test.ts` | NEW — 10 source-level wiring + order tests |
+
+**Tests:** 3942 passed (191 files), 0 failures. 10 new tests added.
+
+**Quality gates:** lint clean, all tests pass, build succeeds.
+
+---
+
 ### UX: Media Embed Editor — Clearer Embed Code Instructions (February 2026) — RESOLVED
 
 **Summary:** Made it clearer across all media embed surfaces that users should paste the **embed code** from YouTube, Spotify, Bandcamp, etc. (not just a URL). Added a prominent instruction line inside the shared `MediaEmbedsEditor` component and removed redundant per-consumer helper text that was getting lost in small print.
