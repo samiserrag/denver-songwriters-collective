@@ -369,20 +369,20 @@ export default function NotificationsList({
             onClick={() => handleNotificationClick(notification)}
             className={`p-4 rounded-lg border transition-colors cursor-pointer ${
               notification.is_read
-                ? "bg-[var(--color-bg-tertiary)]/50 border-transparent hover:bg-[var(--color-bg-tertiary)]/70"
+                ? "opacity-60 bg-transparent border-transparent hover:opacity-80 hover:bg-[var(--color-bg-tertiary)]/30"
                 : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="text-2xl">{getIcon(notification.type)}</div>
+              <div className={`text-2xl ${notification.is_read ? "grayscale" : ""}`}>{getIcon(notification.type)}</div>
               <div className="flex-1 min-w-0">
-                <h3 className={`text-[var(--color-text-primary)] font-medium ${!notification.is_read ? "font-semibold" : ""}`}>
+                <h3 className={`font-medium ${notification.is_read ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-primary)] font-semibold"}`}>
                   {notification.title}
                 </h3>
                 {notification.message && (
-                  <p className="text-[var(--color-text-secondary)] text-sm mt-1">{notification.message}</p>
+                  <p className={`text-sm mt-1 ${notification.is_read ? "text-[var(--color-text-tertiary)]" : "text-[var(--color-text-secondary)]"}`}>{notification.message}</p>
                 )}
-                <p className="text-[var(--color-text-secondary)] text-xs mt-1">{formatDate(notification.created_at)}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{formatDate(notification.created_at)}</p>
               </div>
               {notification.link && (
                 <Link

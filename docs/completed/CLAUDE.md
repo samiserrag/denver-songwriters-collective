@@ -6,6 +6,74 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### REFACTOR: Inline notification manager on dashboard (February 2026)
+
+**Summary:** Removed the separate `/dashboard/notifications` page and embedded the full notification manager directly on the dashboard overview. All controls (type filter, unread-only toggle, mark all read, delete read, delete older than 30 days, load more pagination, email preferences link) now render inline. Controls persist in all filter/empty states. Read notifications are visually dimmed (opacity, grayscale icon, muted text) for clear distinction from unread.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/page.tsx` | Upgraded notification query to `limit(50)` with `count: "exact"`, passes `initialCursor`/`initialTotal` for pagination, removed compact prop and "Manage all" link |
+| `web/src/app/(protected)/dashboard/notifications/NotificationsList.tsx` | Removed `compact` prop and all compact branching; controls always render; empty states inline below controls; read notifications visually dimmed |
+| `web/src/app/(protected)/dashboard/notifications/page.tsx` | **Deleted** — separate page no longer needed |
+| `web/src/components/navigation/DashboardSidebar.tsx` | Removed Notifications nav item from sidebar |
+| `web/src/__tests__/inline-notifications-dashboard.test.ts` | **New** — 10 tests verifying inline behavior |
+
+**Quality gates:** 192 test files, 3996 tests pass, build succeeds.
+
+---
+
+### FIX: Gallery collaborator in-app notifications (February 2026)
+
+**Summary:** Collaborator notifications were silently failing because the client-side browser Supabase client (`anon` key) cannot reliably call `create_user_notification` RPC for cross-user inserts. Every other notification in the codebase uses a server-side client. Moved to a server-side API route.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/gallery-albums/[id]/notify-collaborators/route.ts` | **New** — POST handler with auth (401), body validation (400), UUID format + max 10 length limit, album ownership check (403/404), calls `create_user_notification` RPC via `createSupabaseServerClient()` |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Replaced client-side `.rpc()` with `await fetch()` to server route; includes `credentials: "include"` for auth cookies; non-blocking (try/catch, toast warning only) |
+| `web/src/__tests__/gallery-collaborator-cover-ux.test.ts` | Updated tests for server route pattern, UUID validation, length limit, credentials |
+
+**Quality gates:** 192 test files, 3986 tests pass, build succeeds. No migrations.
+
+---
+
+### FEATURE: Profile cover fallback, collaborator notifications, Save clarity (February 2026)
+
+**Summary:** Three fixes shipped together: (1) Studio, performer, and songwriter profile pages now fall back to the first visible gallery image when `cover_image_url` is null (matching the public gallery page pattern). (2) AlbumManager sends in-app notifications to newly added collaborators after save. (3) Save/Cancel added to top action row, Publish at bottom, helper text under collaborators.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/studios/[id]/page.tsx` | Added `galleriesWithCovers` pattern with `displayCoverUrl` fallback |
+| `web/src/app/performers/[id]/page.tsx` | Same cover fallback pattern |
+| `web/src/app/songwriters/[id]/page.tsx` | Same cover fallback pattern |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Top action row (Save/Cancel), bottom action row (Publish), collaborator helper text, notification call after save |
+| `web/src/lib/email/templates/collaboratorAdded.ts` | **New** — email template for future wiring (not connected yet) |
+| `web/src/__tests__/gallery-collaborator-cover-ux.test.ts` | **New** — 31 tests covering cover fallback, notifications, Save clarity |
+
+**Quality gates:** 191 test files, 3976 tests pass, build succeeds. No migrations.
+
+---
+
+### FEATURE: Surface gallery albums on studio and performer profiles (February 2026)
+
+**Summary:** Studios and performers now display linked gallery albums on their public profile pages, matching the existing songwriters pattern. Queries `gallery_album_links` for both `collaborator` and `creator` roles.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/studios/[id]/page.tsx` | Added `gallery_album_links` query and gallery albums render section |
+| `web/src/app/performers/[id]/page.tsx` | Same gallery albums section |
+
+**Quality gates:** 191 test files, 3949 tests pass, build succeeds. No migrations.
+
+---
+
 ### ENHANCEMENT: Link /host page across the site (February 2026)
 
 **Summary:** The `/host` ("Host on CSC") page existed but was only linked from a few internal pages. Added discoverable links and CTAs across 6 touchpoints so hosts and venue operators can find it naturally.
