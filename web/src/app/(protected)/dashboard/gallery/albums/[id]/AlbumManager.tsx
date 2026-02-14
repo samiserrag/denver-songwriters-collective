@@ -269,6 +269,9 @@ export default function AlbumManager({
       return;
     }
 
+    // Capture previous collaborator IDs before save (for notification delta)
+    const prevCollaboratorIds = initialCollaborators.map((c) => c.id);
+
     setIsSaving(true);
     setFieldErrors({});
     const supabase = createClient();
@@ -355,6 +358,24 @@ export default function AlbumManager({
       toast.error("Album saved but cross-page links failed. Try saving again.");
       setIsSaving(false);
       return;
+    }
+
+    // Notify newly added collaborators via RPC (fire-and-forget, don't block save)
+    const newCollaboratorIds = collaborators.map((c) => c.id);
+    const addedIds = newCollaboratorIds.filter((id) => !prevCollaboratorIds.includes(id));
+    if (addedIds.length > 0) {
+      const albumLink = `/gallery/${finalSlug}`;
+      for (const userId of addedIds) {
+        supabase.rpc("create_user_notification", {
+          p_user_id: userId,
+          p_type: "gallery_collaborator_added",
+          p_title: "Added as a collaborator",
+          p_message: `You were added as a collaborator on the album "${albumName.trim()}".`,
+          p_link: albumLink,
+        }).then(({ error: notifErr }: { error: { message: string } | null }) => {
+          if (notifErr) console.error("Collaborator notification failed:", notifErr.message);
+        });
+      }
     }
 
     setIsSaving(false);
@@ -576,6 +597,27 @@ export default function AlbumManager({
           {album.is_published ? "Unpublish" : "Publish"}
         </button>
 
+        {/* Save button (top) */}
+        <button
+          onClick={handleSaveDetails}
+          disabled={isSaving || !hasUnsavedChanges}
+          className="px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] disabled:opacity-50 flex items-center gap-1.5"
+        >
+          <Check className="w-3.5 h-3.5" />
+          {isSaving ? "Saving..." : "Save"}
+        </button>
+
+        {/* Cancel button (top, only when changes exist) */}
+        {hasUnsavedChanges && (
+          <button
+            onClick={handleCancelEdits}
+            className="px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex items-center gap-1.5"
+          >
+            <X className="w-3.5 h-3.5" />
+            Cancel
+          </button>
+        )}
+
         {/* Delete album button */}
         <button
           onClick={handleDeleteAlbum}
@@ -688,6 +730,9 @@ export default function AlbumManager({
               ownerId={album.created_by}
               disabled={isSaving}
             />
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+              Collaborator changes take effect after you click Save.
+            </p>
           </div>
           {isAdmin && (
             <div>
@@ -697,8 +742,8 @@ export default function AlbumManager({
               <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
             </div>
           )}
-          {/* Save / Cancel */}
-          <div className="flex gap-2 pt-2">
+          {/* Save / Cancel / Publish (bottom action row) */}
+          <div className="flex flex-wrap gap-2 pt-2">
             <button
               onClick={handleSaveDetails}
               disabled={isSaving || !hasUnsavedChanges}
@@ -716,6 +761,16 @@ export default function AlbumManager({
                 Cancel
               </button>
             )}
+            <button
+              onClick={handleTogglePublish}
+              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
+                album.is_published
+                  ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
+                  : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
+              }`}
+            >
+              {album.is_published ? "Unpublish" : "Publish"}
+            </button>
           </div>
         </div>
       </div>

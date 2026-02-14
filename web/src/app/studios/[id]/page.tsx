@@ -104,6 +104,27 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
     galleries = legacyData ?? [];
   }
 
+  // Resolve display cover URLs (fallback to first visible image if no explicit cover)
+  const galleriesWithCovers = await Promise.all(
+    galleries.map(async (album) => {
+      let displayCoverUrl = album.cover_image_url;
+      if (!displayCoverUrl) {
+        const { data: firstImage } = await supabase
+          .from("gallery_images")
+          .select("image_url")
+          .eq("album_id", album.id)
+          .eq("is_approved", true)
+          .eq("is_hidden", false)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        displayCoverUrl = firstImage?.image_url ?? null;
+      }
+      return { ...album, displayCoverUrl };
+    })
+  );
+
   // Build social and tip links
   const socialLinks = buildSocialLinks(studio);
   const tipLinks = buildTipLinks(studio);
@@ -234,20 +255,20 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
           )}
 
           {/* Gallery Albums Section */}
-          {galleries.length > 0 && (
+          {galleriesWithCovers.length > 0 && (
             <section className="mb-12" data-testid="galleries-created-section">
               <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Gallery Albums</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {galleries.map((album) => (
+                {galleriesWithCovers.map((album) => (
                   <Link
                     key={album.id}
                     href={`/gallery/${album.slug}`}
                     className="group block rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
                   >
                     <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
-                      {album.cover_image_url ? (
+                      {album.displayCoverUrl ? (
                         <Image
-                          src={album.cover_image_url}
+                          src={album.displayCoverUrl}
                           alt={album.name}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
