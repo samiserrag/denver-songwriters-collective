@@ -6,6 +6,24 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FIX: Profile Save 400 — YouTube Channel URLs Rejected (February 2026) — RESOLVED
+
+**Summary:** Saving a profile with a YouTube channel URL (e.g. `youtube.com/@Sami_Serrag_Music`) returned a 400 error because the `youtube_url` social link field was being validated through the media embed normalizer, which only accepts embeddable video/playlist URLs. The fix validates that `youtube_url` is on a YouTube domain without requiring it to be an embeddable URL.
+
+**Root cause:** `PUT /api/profile` line 67 called `normalizeMediaEmbedUrl()` on the `youtube_url` social link field. That normalizer is designed for media embeds (video/playlist) and correctly rejects channel URLs (`/@handle`, `/channel/`, `/c/`, `/user/`). But social link fields should accept any valid YouTube URL.
+
+**Fix:** Replaced the embed normalizer call for `youtube_url` with a simple domain check (`youtube.com` or `youtu.be`). Spotify validation kept as-is since Spotify embed URLs and profile URLs both pass through the normalizer.
+
+**Files changed (1):**
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/profile/route.ts` | Replaced embed normalizer with domain-only validation for youtube_url |
+
+**Quality gates:** lint clean, 3942 tests pass (191 files), build succeeds.
+
+---
+
 ### FIX: Onboarding Media Embeds — Preload + Section Placement (February 2026) — RESOLVED
 
 **Summary:** Fixed two onboarding issues for profile media embeds: (1) revisiting onboarding now preloads existing embeds from the database so submitting does not silently overwrite them with an empty array, and (2) the Media Links section was moved from 5th to 2nd position (directly after Identity) so it is unmissable.

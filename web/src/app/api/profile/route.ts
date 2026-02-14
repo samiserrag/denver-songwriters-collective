@@ -59,16 +59,32 @@ export async function PUT(request: Request) {
     const youtubeRaw = typeof body.youtube_url === "string" ? body.youtube_url.trim() : "";
     const spotifyRaw = typeof body.spotify_url === "string" ? body.spotify_url.trim() : "";
 
+    // youtube_url is a social/channel link — accept any valid YouTube domain URL
+    // (channel, @handle, /c/, /user/, etc.). Do NOT run through the embed normalizer
+    // which only accepts embeddable video/playlist URLs.
     let youtubeValue: string | null = youtubeRaw || null;
-    let spotifyValue: string | null = spotifyRaw || null;
-
-    try {
-      if (youtubeRaw && /^https?:\/\//i.test(youtubeRaw)) {
-        youtubeValue = normalizeMediaEmbedUrl(youtubeRaw, {
-          expectedProvider: "youtube",
-          field: "youtube_url",
-        })?.normalized_url ?? null;
+    if (youtubeRaw && /^https?:\/\//i.test(youtubeRaw)) {
+      try {
+        const ytUrl = new URL(youtubeRaw);
+        const ytHost = ytUrl.hostname.replace(/^www\./, "").toLowerCase();
+        if (!["youtube.com", "youtu.be"].includes(ytHost)) {
+          return NextResponse.json(
+            { error: "Validation failed", fieldErrors: { youtube_url: "YouTube URL must use youtube.com or youtu.be." } },
+            { status: 400 }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { error: "Validation failed", fieldErrors: { youtube_url: "Invalid YouTube URL." } },
+          { status: 400 }
+        );
       }
+    }
+
+    // spotify_url is a social/profile link — normalize embeddable URLs but also
+    // accept profile URLs (open.spotify.com/user/..., open.spotify.com/artist/...).
+    let spotifyValue: string | null = spotifyRaw || null;
+    try {
       if (spotifyRaw && /^https?:\/\//i.test(spotifyRaw)) {
         spotifyValue = normalizeMediaEmbedUrl(spotifyRaw, {
           expectedProvider: "spotify",
