@@ -123,6 +123,7 @@ export async function sendEmailWithPreferences(
   const category = getEmailCategory(templateKey);
   if (!category) {
     // Unknown category - send email anyway (backwards compatibility)
+    console.log(`[Email] No category for "${templateKey}", sending anyway (backwards compat)`);
     const sent = await sendEmail(payload);
     result.emailSent = sent;
     if (!sent) {
@@ -133,14 +134,15 @@ export async function sendEmailWithPreferences(
 
   // Step 3: Check user preference
   const shouldSend = await shouldSendEmail(supabase, userId, category);
+  console.log(`[Email] Preference check: template="${templateKey}" category="${category}" shouldSend=${shouldSend}`);
   if (!shouldSend) {
     result.skipReason = "preference_disabled";
-    console.log(`[Email] Skipped (preference off): ${templateKey} for user`);
     return result;
   }
 
   // Step 4: Send email
   const sent = await sendEmail(payload);
+  console.log(`[Email] sendEmail result: template="${templateKey}" sent=${sent}`);
   result.emailSent = sent;
   if (!sent) {
     result.skipReason = "send_failed";

@@ -121,6 +121,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   }
 
   try {
+    console.log(`[Email] SMTP attempting: ${logName} to @${recipientDomain}`);
     await transporter.sendMail({
       from: `${fromName} <${fromEmail}>`,
       to,
