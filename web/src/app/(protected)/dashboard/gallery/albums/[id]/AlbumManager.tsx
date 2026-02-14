@@ -6,7 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { reconcileAlbumLinks } from "@/lib/gallery/albumLinks";
 import { toast } from "sonner";
-import { Star, Check, Pencil, X, MessageSquare, GripVertical } from "lucide-react";
+import { Star, Check, X, MessageSquare, GripVertical, Trash2 } from "lucide-react";
 import { MediaEmbedsEditor } from "@/components/media";
 import CollaboratorSelect, { type Collaborator } from "@/components/gallery/CollaboratorSelect";
 import {
@@ -179,13 +179,13 @@ export default function AlbumManager({
   initialCollaborators = [],
 }: AlbumManagerProps) {
   const router = useRouter();
-  const [isEditingName, setIsEditingName] = useState(false);
   const [albumName, setAlbumName] = useState(album.name);
   const [albumDescription, setAlbumDescription] = useState(album.description || "");
   const [albumYoutubeUrl, setAlbumYoutubeUrl] = useState(album.youtube_url || "");
   const [albumSpotifyUrl, setAlbumSpotifyUrl] = useState(album.spotify_url || "");
   const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>(initialMediaEmbedUrls);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -197,6 +197,20 @@ export default function AlbumManager({
   const [selectedVenueId, setSelectedVenueId] = useState(initialVenueId || "");
   const [selectedEventId, setSelectedEventId] = useState(initialEventId || "");
   const [collaborators, setCollaborators] = useState<Collaborator[]>(initialCollaborators);
+
+  // Track unsaved changes
+  const hasUnsavedChanges =
+    albumName !== album.name ||
+    albumDescription !== (album.description || "") ||
+    selectedVenueId !== (initialVenueId || "") ||
+    selectedEventId !== (initialEventId || "") ||
+    JSON.stringify(collaborators.map((c) => c.id).sort()) !==
+      JSON.stringify(initialCollaborators.map((c) => c.id).sort()) ||
+    (isAdmin && (
+      albumYoutubeUrl !== (album.youtube_url || "") ||
+      albumSpotifyUrl !== (album.spotify_url || "") ||
+      JSON.stringify(mediaEmbedUrls) !== JSON.stringify(initialMediaEmbedUrls)
+    ));
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -248,7 +262,7 @@ export default function AlbumManager({
       .replace(/(^-|-$)/g, "");
   };
 
-  // Save album name/description
+  // Save album details
   const handleSaveDetails = async () => {
     if (!albumName.trim()) {
       toast.error("Album name is required");
@@ -345,8 +359,20 @@ export default function AlbumManager({
 
     setIsSaving(false);
     toast.success("Album updated");
-    setIsEditingName(false);
     router.refresh();
+  };
+
+  // Cancel edits — reset all form state to initial values
+  const handleCancelEdits = () => {
+    setAlbumName(album.name);
+    setAlbumDescription(album.description || "");
+    setAlbumYoutubeUrl(album.youtube_url || "");
+    setAlbumSpotifyUrl(album.spotify_url || "");
+    setMediaEmbedUrls(initialMediaEmbedUrls);
+    setSelectedVenueId(initialVenueId || "");
+    setSelectedEventId(initialEventId || "");
+    setCollaborators(initialCollaborators);
+    setFieldErrors({});
   };
 
   // Toggle publish state with inline feedback (no toasts)
@@ -367,6 +393,43 @@ export default function AlbumManager({
       setTimeout(() => setStatusMessage(null), 3000);
       router.refresh();
     }
+  };
+
+  // Delete album (UI guard + confirm + DB delete)
+  const handleDeleteAlbum = async () => {
+    if (images.length > 0) {
+      toast.error(
+        `Cannot delete album: it still has ${images.length} photo${images.length > 1 ? "s" : ""}. Remove or move all photos first.`
+      );
+      return;
+    }
+
+    if (!window.confirm("Permanently delete this album? This cannot be undone.")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("gallery_albums")
+      .delete()
+      .eq("id", album.id);
+
+    if (error) {
+      setIsDeleting(false);
+      // Handle FK restrict or other DB errors
+      if (error.message?.includes("violates foreign key") || error.code === "23503") {
+        toast.error("Album has photos — remove or move them first.");
+      } else {
+        toast.error("Failed to delete album.");
+      }
+      console.error(error);
+      return;
+    }
+
+    toast.success("Album deleted.");
+    router.push("/dashboard/gallery");
   };
 
   // Set cover image
@@ -461,227 +524,232 @@ export default function AlbumManager({
   const displayCoverUrl = currentCoverUrl || firstVisibleImage?.image_url;
 
   return (
-    <div className="space-y-8">
-      {/* Album Details Card */}
-      <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Cover Preview */}
-          <div className="w-full md:w-48 flex-shrink-0">
-            <label className="block text-sm text-[var(--color-text-secondary)] mb-2">
-              Album Cover
+    <div className="space-y-6 overflow-x-hidden">
+      {/* Album Title (read-only heading) */}
+      <div>
+        <h2 className="text-2xl font-semibold text-[var(--color-text-primary)]">
+          {album.name}
+        </h2>
+        <p className="text-sm text-[var(--color-text-tertiary)]">/{album.slug}</p>
+        {album.description && (
+          <p className="text-[var(--color-text-secondary)] mt-1">{album.description}</p>
+        )}
+      </div>
+
+      {/* Action Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-[var(--color-text-secondary)]">
+          {images.length} {images.length === 1 ? "photo" : "photos"}
+        </span>
+
+        {album.is_hidden && !isAdmin && (
+          <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full" title="Contact us if you think this is a mistake">
+            Hidden by admin
+          </span>
+        )}
+        {album.is_hidden && isAdmin && (
+          <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full">
+            Hidden
+          </span>
+        )}
+
+        {/* Status badge */}
+        <span
+          className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+            album.is_published
+              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+              : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
+          }`}
+        >
+          {album.is_published ? "Published" : "Draft"}
+        </span>
+
+        {/* Explicit publish/unpublish button */}
+        <button
+          onClick={handleTogglePublish}
+          className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+            album.is_published
+              ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
+              : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
+          }`}
+        >
+          {album.is_published ? "Unpublish" : "Publish"}
+        </button>
+
+        {/* Delete album button */}
+        <button
+          onClick={handleDeleteAlbum}
+          disabled={isDeleting}
+          className="px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 disabled:opacity-50"
+        >
+          <span className="flex items-center gap-1.5">
+            <Trash2 className="w-3.5 h-3.5" />
+            {isDeleting ? "Deleting..." : "Delete Album"}
+          </span>
+        </button>
+
+        {/* Unsaved changes indicator */}
+        {hasUnsavedChanges && (
+          <span className="text-sm text-amber-600 dark:text-amber-400 italic">
+            Unsaved changes
+          </span>
+        )}
+
+        {/* Inline status feedback */}
+        {statusMessage && (
+          <span className="text-sm text-[var(--color-text-secondary)] italic">
+            {statusMessage}
+          </span>
+        )}
+      </div>
+
+      {/* Album Details Form (always visible, full width) */}
+      <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg w-full">
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+          Album Details
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+              Album Name
             </label>
-            <div className="relative aspect-[3/2] rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]">
-              {displayCoverUrl ? (
-                <Image
-                  src={displayCoverUrl}
-                  alt={album.name}
-                  fill
-                  sizes="200px"
-                  className="object-contain"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-[var(--color-text-tertiary)]">
-                  <span className="text-4xl">📷</span>
-                </div>
-              )}
-            </div>
-            {!currentCoverUrl && firstVisibleImage && (
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                Using first photo as cover
-              </p>
-            )}
+            <input
+              type="text"
+              value={albumName}
+              onChange={(e) => setAlbumName(e.target.value)}
+              className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+            />
           </div>
-
-          {/* Album Info */}
-          <div className="flex-1 space-y-4">
-            {isEditingName ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Album Name
-                  </label>
-                  <input
-                    type="text"
-                    value={albumName}
-                    onChange={(e) => setAlbumName(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Description (optional)
-                  </label>
-                  <textarea
-                    value={albumDescription}
-                    onChange={(e) => setAlbumDescription(e.target.value)}
-                    rows={2}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)] resize-none"
-                  />
-                </div>
-                {/* Venue Selector */}
-                <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Venue <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on venue page)</span>
-                  </label>
-                  <select
-                    value={selectedVenueId}
-                    onChange={(e) => setSelectedVenueId(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
-                  >
-                    <option value="">No venue</option>
-                    {venues.map((v) => (
-                      <option key={v.id} value={v.id}>{v.name}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* Event Selector */}
-                <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Event <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on event page)</span>
-                  </label>
-                  <select
-                    value={selectedEventId}
-                    onChange={(e) => setSelectedEventId(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
-                  >
-                    <option value="">No event</option>
-                    {events.map((ev) => {
-                      const dateLabel = ev.event_date
-                        ? ` — ${new Date(ev.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            timeZone: "America/Denver",
-                          })}`
-                        : "";
-                      return (
-                        <option key={ev.id} value={ev.id}>
-                          {ev.title}{dateLabel}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                {/* Collaborators */}
-                <div>
-                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on their profiles)</span>
-                  </label>
-                  <CollaboratorSelect
-                    value={collaborators}
-                    onChange={setCollaborators}
-                    ownerId={album.created_by}
-                    disabled={isSaving}
-                  />
-                </div>
-                {isAdmin && (
-                  <div>
-                    <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                      Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
-                    </label>
-                    <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveDetails}
-                    disabled={isSaving}
-                    className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    {isSaving ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAlbumName(album.name);
-                      setAlbumDescription(album.description || "");
-                      setAlbumYoutubeUrl(album.youtube_url || "");
-                      setAlbumSpotifyUrl(album.spotify_url || "");
-                      setMediaEmbedUrls(initialMediaEmbedUrls);
-                      setSelectedVenueId(initialVenueId || "");
-                      setSelectedEventId(initialEventId || "");
-                      setCollaborators(initialCollaborators);
-                      setFieldErrors({});
-                      setIsEditingName(false);
-                    }}
-                    className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-                    {album.name}
-                  </h2>
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-                    title="Edit album"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-sm text-[var(--color-text-tertiary)]">/{album.slug}</p>
-                {album.description && (
-                  <p className="text-[var(--color-text-secondary)] mt-2">{album.description}</p>
-                )}
-              </div>
-            )}
-
-            {/* Status Badges and Controls */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <span className="text-sm text-[var(--color-text-secondary)]">
-                {images.length} {images.length === 1 ? "photo" : "photos"}
-              </span>
-
-              {album.is_hidden && !isAdmin && (
-                <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full" title="Contact us if you think this is a mistake">
-                  Hidden by admin
-                </span>
-              )}
-              {album.is_hidden && isAdmin && (
-                <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full">
-                  Hidden
-                </span>
-              )}
-
-              {/* Status badge */}
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full font-medium ${
-                  album.is_published
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
-                }`}
+          <div>
+            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+              Description <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+            </label>
+            <textarea
+              value={albumDescription}
+              onChange={(e) => setAlbumDescription(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)] resize-none"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Venue Selector */}
+            <div>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                Venue <span className="font-normal text-[var(--color-text-tertiary)]">(optional — appears on venue page)</span>
+              </label>
+              <select
+                value={selectedVenueId}
+                onChange={(e) => setSelectedVenueId(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
               >
-                {album.is_published ? "Published" : "Draft"}
-              </span>
-
-              {/* Explicit publish/unpublish button */}
-              <button
-                onClick={handleTogglePublish}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-                  album.is_published
-                    ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
-                    : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
-                }`}
-              >
-                {album.is_published ? "Unpublish" : "Publish"}
-              </button>
-
-              {/* Inline status feedback */}
-              {statusMessage && (
-                <span className="text-sm text-[var(--color-text-secondary)] italic">
-                  {statusMessage}
-                </span>
-              )}
+                <option value="">No venue</option>
+                {venues.map((v) => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
             </div>
+            {/* Event Selector */}
+            <div>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                Event <span className="font-normal text-[var(--color-text-tertiary)]">(optional — appears on event page)</span>
+              </label>
+              <select
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+              >
+                <option value="">No event</option>
+                {events.map((ev) => {
+                  const dateLabel = ev.event_date
+                    ? ` — ${new Date(ev.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "America/Denver",
+                      })}`
+                    : "";
+                  return (
+                    <option key={ev.id} value={ev.id}>
+                      {ev.title}{dateLabel}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+          {/* Collaborators */}
+          <div>
+            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+              Collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on their profiles)</span>
+            </label>
+            <CollaboratorSelect
+              value={collaborators}
+              onChange={setCollaborators}
+              ownerId={album.created_by}
+              disabled={isSaving}
+            />
+          </div>
+          {isAdmin && (
+            <div>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                Media Links <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+              </label>
+              <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
+            </div>
+          )}
+          {/* Save / Cancel */}
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSaveDetails}
+              disabled={isSaving || !hasUnsavedChanges}
+              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              {isSaving ? "Saving..." : "Save"}
+            </button>
+            {hasUnsavedChanges && (
+              <button
+                onClick={handleCancelEdits}
+                className="px-4 py-2 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Album Cover Preview */}
+      <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg w-full">
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">
+          Album Cover
+        </h3>
+        <div className="relative w-full max-w-xs aspect-[3/2] rounded-lg overflow-hidden bg-[var(--color-bg-tertiary)]">
+          {displayCoverUrl ? (
+            <Image
+              src={displayCoverUrl}
+              alt={album.name}
+              fill
+              sizes="320px"
+              className="object-contain"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-[var(--color-text-tertiary)]">
+              <span className="text-4xl">📷</span>
+            </div>
+          )}
+        </div>
+        {!currentCoverUrl && firstVisibleImage && (
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+            Using first photo as cover. Set a specific cover from the photos below.
+          </p>
+        )}
+        {!displayCoverUrl && (
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+            No cover image. Upload photos and set one as the cover.
+          </p>
+        )}
       </div>
 
       {/* Images Grid - Drag to Reorder, Set as Cover */}

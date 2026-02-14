@@ -17,6 +17,7 @@ See full backlog in `docs/completed/CLAUDE.md` or `docs/known-issues.md`.
 - Typography token docs drift
 - Loading.tsx coverage gaps
 - Duplicate VenueSelector components
+- **/host page redesign** — Current page has unclear value proposition and lacks visual proof of product capability. Needs: screenshot walkthrough of host dashboard, "Who is this for?" section, concrete host use cases (lineup management, attendance tracking), feature breakdown with before/after, short demo video embed, social proof / quotes from existing hosts, CTA refinement, connection to /get-involved and hosting dashboard. See STOP-GATE B backlog note (February 2026).
 - ~~53 unnecessary `as any` casts in profile page~~ — RESOLVED
 
 ### Known UX Follow-ups (All Resolved)

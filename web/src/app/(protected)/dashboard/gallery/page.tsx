@@ -111,6 +111,9 @@ export default async function UserGalleryPage() {
           <p className="text-[var(--color-text-secondary)] mt-2">
             Create albums and upload photos to share with the community.
           </p>
+          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+            Albums can be linked to venues, events, and collaborators.
+          </p>
         </div>
 
         {/* Stats */}
@@ -210,17 +213,6 @@ export default async function UserGalleryPage() {
           )}
         </section>
 
-        {/* Info Box */}
-        <div className="mt-8 p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
-          <h3 className="font-medium text-[var(--color-text-primary)] mb-2">How it works</h3>
-          <ul className="text-sm text-[var(--color-text-secondary)] space-y-1">
-            <li>• Create an album, then upload photos to it</li>
-            <li>• Link albums to venues and events so they appear on those pages</li>
-            <li>• Add collaborators so albums appear on their profiles too</li>
-            <li>• Set any photo as the album cover</li>
-            <li>• Admins may hide photos that violate community guidelines</li>
-          </ul>
-        </div>
       </div>
     </main>
   );

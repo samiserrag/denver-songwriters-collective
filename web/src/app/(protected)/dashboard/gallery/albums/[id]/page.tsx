@@ -83,7 +83,7 @@ export default async function AlbumManagementPage({
             href="/dashboard/gallery"
             className="text-[var(--color-text-accent)] hover:underline mt-4 inline-block"
           >
-            ← Back to My Photos
+            ← Back to My Albums
           </Link>
         </div>
       </main>
@@ -160,7 +160,7 @@ export default async function AlbumManagementPage({
             href="/dashboard/gallery"
             className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-sm mb-2 inline-block"
           >
-            ← Back to My Photos
+            ← Back to My Albums
           </Link>
           <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">
             Manage Album
