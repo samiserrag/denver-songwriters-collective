@@ -277,15 +277,39 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
     totalPast,
   } = splitHostedHappenings(hostedSeries, 3);
 
-  // Query galleries created by this member (published + not hidden)
-  const { data: galleriesData } = await supabase
-    .from("gallery_albums")
-    .select("id, name, slug, cover_image_url, created_at")
-    .eq("created_by", songwriter.id)
-    .eq("is_published", true)
-    .eq("is_hidden", false)
-    .order("created_at", { ascending: false });
-  const galleries = galleriesData ?? [];
+  // Query galleries linked to this songwriter via gallery_album_links (creator + collaborator)
+  // with legacy fallback to created_by for albums not yet backfilled
+  const { data: linkedAlbumIds } = await supabase
+    .from("gallery_album_links")
+    .select("album_id")
+    .eq("target_type", "profile")
+    .eq("target_id", songwriter.id);
+
+  let galleries: Array<{ id: string; name: string; slug: string; cover_image_url: string | null; created_at: string }> = [];
+  const linkIds = (linkedAlbumIds ?? []).map((l) => l.album_id);
+
+  if (linkIds.length > 0) {
+    const { data } = await supabase
+      .from("gallery_albums")
+      .select("id, name, slug, cover_image_url, created_at")
+      .in("id", linkIds)
+      .eq("is_published", true)
+      .eq("is_hidden", false)
+      .order("created_at", { ascending: false });
+    galleries = data ?? [];
+  }
+
+  // Legacy fallback: if link table returned nothing, fall back to created_by query
+  if (galleries.length === 0) {
+    const { data: legacyData } = await supabase
+      .from("gallery_albums")
+      .select("id, name, slug, cover_image_url, created_at")
+      .eq("created_by", songwriter.id)
+      .eq("is_published", true)
+      .eq("is_hidden", false)
+      .order("created_at", { ascending: false });
+    galleries = legacyData ?? [];
+  }
 
   // Query blog posts written by this member (published + approved)
   const { data: blogPostsData } = await supabase

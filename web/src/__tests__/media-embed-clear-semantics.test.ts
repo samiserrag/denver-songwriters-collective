@@ -49,6 +49,11 @@ vi.mock("@/lib/supabase/server", () => ({
               eq: async () => ({ error: null }),
             };
           },
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: { created_by: "admin-user-id" }, error: null }),
+            }),
+          }),
         };
       }
 
@@ -85,6 +90,11 @@ vi.mock("@/lib/supabase/server", () => ({
 // Mock upsertMediaEmbeds to prevent real DB calls
 vi.mock("@/lib/mediaEmbedsServer", () => ({
   upsertMediaEmbeds: vi.fn().mockResolvedValue([]),
+}));
+
+// Mock reconcileAlbumLinks to prevent real DB calls
+vi.mock("@/lib/gallery/albumLinks", () => ({
+  reconcileAlbumLinks: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { PATCH as patchBlogPost } from "@/app/api/admin/blog-posts/[id]/route";

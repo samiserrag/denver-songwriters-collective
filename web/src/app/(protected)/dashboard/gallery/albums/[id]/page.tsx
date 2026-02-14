@@ -90,8 +90,8 @@ export default async function AlbumManagementPage({
     );
   }
 
-  // Fetch images and ordered media embeds for this album
-  const [{ data: images }, embeds] = await Promise.all([
+  // Fetch images, ordered media embeds, venues, events, and existing collaborator links
+  const [{ data: images }, embeds, { data: venues }, { data: events }, { data: existingLinks }] = await Promise.all([
     supabase
       .from("gallery_images")
       .select(`
@@ -107,8 +107,49 @@ export default async function AlbumManagementPage({
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false }),
     readMediaEmbeds(supabase, { type: "gallery_album", id }),
+    supabase
+      .from("venues")
+      .select("id, name")
+      .is("deleted_at", null)
+      .order("name"),
+    supabase
+      .from("events")
+      .select("id, title, event_date")
+      .eq("status", "published")
+      .order("event_date", { ascending: false }),
+    supabase
+      .from("gallery_album_links")
+      .select("target_type, target_id, link_role")
+      .eq("album_id", id),
   ]);
   const mediaEmbedUrls = embeds.map((e) => e.url);
+
+  // Extract existing collaborator links to pass to the component
+  const collaboratorLinks = (existingLinks ?? [])
+    .filter((l) => l.target_type === "profile" && l.link_role === "collaborator")
+    .map((l) => l.target_id);
+
+  // Fetch collaborator profile details for the chips
+  let initialCollaborators: Array<{ id: string; name: string; avatar_url: string | null }> = [];
+  if (collaboratorLinks.length > 0) {
+    const { data: collabProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", collaboratorLinks);
+    initialCollaborators = (collabProfiles ?? []).map((p) => ({
+      id: p.id,
+      name: p.full_name,
+      avatar_url: p.avatar_url,
+    }));
+  }
+
+  // Extract existing venue and event links
+  const existingVenueId = (existingLinks ?? []).find(
+    (l) => l.target_type === "venue" && l.link_role === "venue"
+  )?.target_id ?? null;
+  const existingEventId = (existingLinks ?? []).find(
+    (l) => l.target_type === "event" && l.link_role === "event"
+  )?.target_id ?? null;
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -131,6 +172,11 @@ export default async function AlbumManagementPage({
           images={images ?? []}
           isAdmin={isAdmin}
           mediaEmbedUrls={mediaEmbedUrls}
+          venues={venues ?? []}
+          events={(events ?? []) as Array<{ id: string; title: string; event_date: string | null }>}
+          initialVenueId={existingVenueId}
+          initialEventId={existingEventId}
+          initialCollaborators={initialCollaborators}
         />
       </div>
     </main>

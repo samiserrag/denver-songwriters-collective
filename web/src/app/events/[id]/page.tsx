@@ -599,6 +599,24 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     .order("created_at", { ascending: false })
     .limit(12);
 
+  // Fetch gallery albums linked to this event via gallery_album_links
+  const { data: eventAlbumLinks } = await supabase
+    .from("gallery_album_links")
+    .select("album_id")
+    .eq("target_type", "event")
+    .eq("target_id", event.id);
+  const eventAlbumIds = (eventAlbumLinks ?? []).map((l) => l.album_id);
+  let eventAlbums: Array<{ id: string; name: string; slug: string; cover_image_url: string | null }> = [];
+  if (eventAlbumIds.length > 0) {
+    const { data } = await supabase
+      .from("gallery_albums")
+      .select("id, name, slug, cover_image_url")
+      .in("id", eventAlbumIds)
+      .eq("is_published", true)
+      .eq("is_hidden", false);
+    eventAlbums = data ?? [];
+  }
+
   // Phase 4.22.3: Check for unclaimed event and user's existing claim
   const { data: { user: sessionUser } } = await supabase.auth.getUser();
   const eventHostId = (event as { host_id?: string | null }).host_id;
@@ -1455,6 +1473,47 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
                   Share them with the community
                 </Link>
               </p>
+            </div>
+          )}
+
+          {/* Event Albums (via gallery_album_links) */}
+          {eventAlbums.length > 0 && (
+            <div className="mb-8">
+              <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
+                Albums
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {eventAlbums.map((album) => (
+                  <Link
+                    key={album.id}
+                    href={`/gallery/${album.slug}`}
+                    className="group block rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                  >
+                    <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
+                      {album.cover_image_url ? (
+                        <Image
+                          src={album.cover_image_url}
+                          alt={album.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-10 h-10 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors truncate">
+                        {album.name}
+                      </h3>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 

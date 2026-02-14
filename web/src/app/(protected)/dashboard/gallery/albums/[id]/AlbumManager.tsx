@@ -4,9 +4,11 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { reconcileAlbumLinks } from "@/lib/gallery/albumLinks";
 import { toast } from "sonner";
 import { Star, Check, Pencil, X, MessageSquare, GripVertical } from "lucide-react";
 import { MediaEmbedsEditor } from "@/components/media";
+import CollaboratorSelect, { type Collaborator } from "@/components/gallery/CollaboratorSelect";
 import {
   DndContext,
   closestCenter,
@@ -49,11 +51,27 @@ interface GalleryImage {
   created_at: string;
 }
 
+interface Venue {
+  id: string;
+  name: string;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  event_date: string | null;
+}
+
 interface AlbumManagerProps {
   album: Album;
   images: GalleryImage[];
   isAdmin: boolean;
   mediaEmbedUrls?: string[];
+  venues?: Venue[];
+  events?: Event[];
+  initialVenueId?: string | null;
+  initialEventId?: string | null;
+  initialCollaborators?: Collaborator[];
 }
 
 // Sortable photo card for drag-and-drop reordering
@@ -149,7 +167,17 @@ function SortablePhotoCard({
   );
 }
 
-export default function AlbumManager({ album, images: initialImages, isAdmin, mediaEmbedUrls: initialMediaEmbedUrls = [] }: AlbumManagerProps) {
+export default function AlbumManager({
+  album,
+  images: initialImages,
+  isAdmin,
+  mediaEmbedUrls: initialMediaEmbedUrls = [],
+  venues = [],
+  events = [],
+  initialVenueId = null,
+  initialEventId = null,
+  initialCollaborators = [],
+}: AlbumManagerProps) {
   const router = useRouter();
   const [isEditingName, setIsEditingName] = useState(false);
   const [albumName, setAlbumName] = useState(album.name);
@@ -164,6 +192,11 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
   const [isModeratingComments, setIsModeratingComments] = useState(false);
   const [images, setImages] = useState(initialImages);
   const [isReordering, setIsReordering] = useState(false);
+
+  // Album linkage state (venue, event, collaborators)
+  const [selectedVenueId, setSelectedVenueId] = useState(initialVenueId || "");
+  const [selectedEventId, setSelectedEventId] = useState(initialEventId || "");
+  const [collaborators, setCollaborators] = useState<Collaborator[]>(initialCollaborators);
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -248,6 +281,10 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
 
     let error: { message: string } | null = null;
 
+    // Include venue_id and event_id in album updates
+    const venueIdValue = selectedVenueId || null;
+    const eventIdValue = selectedEventId || null;
+
     if (isAdmin) {
       const response = await fetch(`/api/admin/gallery-albums/${album.id}`, {
         method: "PATCH",
@@ -259,6 +296,9 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
           youtube_url: albumYoutubeUrl,
           spotify_url: albumSpotifyUrl,
           media_embed_urls: mediaEmbedUrls,
+          venue_id: venueIdValue,
+          event_id: eventIdValue,
+          collaborator_ids: collaborators.map((c) => c.id),
         }),
       });
 
@@ -274,21 +314,39 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
           name: albumName.trim(),
           slug: finalSlug,
           description: albumDescription.trim() || null,
+          venue_id: venueIdValue,
+          event_id: eventIdValue,
         })
         .eq("id", album.id);
       error = result.error ? { message: result.error.message } : null;
     }
 
-    setIsSaving(false);
-
     if (error) {
+      setIsSaving(false);
       toast.error("Failed to update album");
       console.error(error);
-    } else {
-      toast.success("Album updated");
-      setIsEditingName(false);
-      router.refresh();
+      return;
     }
+
+    // Reconcile album links (creator + collaborators + venue + event)
+    try {
+      await reconcileAlbumLinks(supabase, album.id, {
+        createdBy: album.created_by,
+        venueId: venueIdValue,
+        eventId: eventIdValue,
+        collaboratorIds: collaborators.map((c) => c.id),
+      });
+    } catch (linkError) {
+      console.error("Album link reconciliation error:", linkError);
+      toast.error("Album saved but cross-page links failed. Try saving again.");
+      setIsSaving(false);
+      return;
+    }
+
+    setIsSaving(false);
+    toast.success("Album updated");
+    setIsEditingName(false);
+    router.refresh();
   };
 
   // Toggle publish state with inline feedback (no toasts)
@@ -461,6 +519,62 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
                     className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)] resize-none"
                   />
                 </div>
+                {/* Venue Selector */}
+                <div>
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Venue <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on venue page)</span>
+                  </label>
+                  <select
+                    value={selectedVenueId}
+                    onChange={(e) => setSelectedVenueId(e.target.value)}
+                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+                  >
+                    <option value="">No venue</option>
+                    {venues.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Event Selector */}
+                <div>
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Event <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on event page)</span>
+                  </label>
+                  <select
+                    value={selectedEventId}
+                    onChange={(e) => setSelectedEventId(e.target.value)}
+                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+                  >
+                    <option value="">No event</option>
+                    {events.map((ev) => {
+                      const dateLabel = ev.event_date
+                        ? ` — ${new Date(ev.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            timeZone: "America/Denver",
+                          })}`
+                        : "";
+                      return (
+                        <option key={ev.id} value={ev.id}>
+                          {ev.title}{dateLabel}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                {/* Collaborators */}
+                <div>
+                  <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on their profiles)</span>
+                  </label>
+                  <CollaboratorSelect
+                    value={collaborators}
+                    onChange={setCollaborators}
+                    ownerId={album.created_by}
+                    disabled={isSaving}
+                  />
+                </div>
                 {isAdmin && (
                   <div>
                     <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
@@ -485,6 +599,9 @@ export default function AlbumManager({ album, images: initialImages, isAdmin, me
                       setAlbumYoutubeUrl(album.youtube_url || "");
                       setAlbumSpotifyUrl(album.spotify_url || "");
                       setMediaEmbedUrls(initialMediaEmbedUrls);
+                      setSelectedVenueId(initialVenueId || "");
+                      setSelectedEventId(initialEventId || "");
+                      setCollaborators(initialCollaborators);
                       setFieldErrors({});
                       setIsEditingName(false);
                     }}

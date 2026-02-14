@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import { reconcileAlbumLinks } from "@/lib/gallery/albumLinks";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -68,6 +69,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
     }
 
+    // Parse optional venue_id, event_id, and collaborator_ids from request
+    const venueId = typeof body.venue_id === "string" ? body.venue_id : null;
+    const eventId = typeof body.event_id === "string" ? body.event_id : null;
+    const collaboratorIds = Array.isArray(body.collaborator_ids)
+      ? (body.collaborator_ids as string[]).filter((id) => typeof id === "string")
+      : [];
+
     const { error: updateError } = await auth.supabase
       .from("gallery_albums")
       .update({
@@ -76,6 +84,8 @@ export async function PATCH(
         description: typeof body.description === "string" ? body.description.trim() || null : null,
         youtube_url,
         spotify_url,
+        venue_id: venueId,
+        event_id: eventId,
       })
       .eq("id", id);
 
@@ -94,6 +104,26 @@ export async function PATCH(
         );
       } catch (err) {
         console.error("[PATCH /api/admin/gallery-albums/[id]] Media embed upsert error:", err);
+      }
+    }
+
+    // Reconcile album links (need created_by from the album)
+    const { data: albumForLinks } = await auth.supabase
+      .from("gallery_albums")
+      .select("created_by")
+      .eq("id", id)
+      .single();
+
+    if (albumForLinks) {
+      try {
+        await reconcileAlbumLinks(auth.supabase, id, {
+          createdBy: albumForLinks.created_by,
+          venueId,
+          eventId,
+          collaboratorIds,
+        });
+      } catch (err) {
+        console.error("[PATCH /api/admin/gallery-albums/[id]] Link reconcile error:", err);
       }
     }
 

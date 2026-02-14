@@ -191,8 +191,8 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     }))
   );
 
-  // Fetch venue images and media embeds in parallel
-  const [{ data: venueImages }, venueEmbeds] = await Promise.all([
+  // Fetch venue images, media embeds, and linked gallery albums in parallel
+  const [{ data: venueImages }, venueEmbeds, { data: venueAlbumLinks }] = await Promise.all([
     supabase
       .from("venue_images")
       .select("id, image_url")
@@ -200,7 +200,23 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     readMediaEmbeds(supabase, { type: "venue", id: venue.id }).catch(() => []),
+    supabase
+      .from("gallery_album_links")
+      .select("album_id")
+      .eq("target_type", "venue")
+      .eq("target_id", venue.id),
   ]);
+  const venueAlbumIds = (venueAlbumLinks ?? []).map((l) => l.album_id);
+  let venueAlbums: Array<{ id: string; name: string; slug: string; cover_image_url: string | null }> = [];
+  if (venueAlbumIds.length > 0) {
+    const { data } = await supabase
+      .from("gallery_albums")
+      .select("id, name, slug, cover_image_url")
+      .in("id", venueAlbumIds)
+      .eq("is_published", true)
+      .eq("is_hidden", false);
+    venueAlbums = data ?? [];
+  }
 
   // Map events to SeriesEvent format with venue info
   // Phase ABC4: Include venue slug for SeriesCard internal links
@@ -452,6 +468,47 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
               Photos
             </h2>
             <PhotoGallery images={venueImages as Array<{ id: string; image_url: string }>} />
+          </section>
+        )}
+
+        {/* Gallery Albums Section (via gallery_album_links) */}
+        {venueAlbums.length > 0 && (
+          <section className="mt-8 mb-12" data-testid="venue-albums-section">
+            <h2 className="text-2xl font-[var(--font-family-serif)] font-semibold text-[var(--color-text-primary)] mb-6">
+              Albums
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {venueAlbums.map((album) => (
+                <Link
+                  key={album.id}
+                  href={`/gallery/${album.slug}`}
+                  className="group block rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                >
+                  <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
+                    {album.cover_image_url ? (
+                      <Image
+                        src={album.cover_image_url}
+                        alt={album.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg className="w-10 h-10 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors truncate">
+                      {album.name}
+                    </h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </section>
         )}
 

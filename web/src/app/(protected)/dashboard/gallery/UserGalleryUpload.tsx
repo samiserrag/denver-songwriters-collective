@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { reconcileAlbumLinks } from "@/lib/gallery/albumLinks";
 import { toast } from "sonner";
 import { Plus, GripVertical, AlertTriangle } from "lucide-react";
 import {
@@ -265,6 +266,14 @@ export default function UserGalleryUpload({
       setAlbumError("Could not create album. Please try again.");
       setIsCreatingAlbum(false);
       return;
+    }
+
+    // Reconcile album links (creator link only at create time)
+    try {
+      await reconcileAlbumLinks(supabase, data.id, { createdBy: userId });
+    } catch (linkError) {
+      console.error("Album link reconciliation error:", linkError);
+      toast.error("Album created but cross-page links failed. Edit the album to retry.");
     }
 
     // Add to local state and select it
