@@ -71,7 +71,6 @@ const mainNavItems: NavItem[] = [
   { href: "/dashboard/my-events", label: "My Happenings", icon: Icons.calendar },
   { href: "/dashboard/my-rsvps", label: "My RSVPs", icon: Icons.ticket },
   { href: "/dashboard/gallery", label: "My Gallery", icon: Icons.photo },
-  { href: "/dashboard/notifications", label: "Notifications", icon: Icons.bell },
   { href: "/dashboard/profile", label: "Profile", icon: Icons.user },
   { href: "/dashboard/settings", label: "Settings", icon: Icons.cog },
 ];

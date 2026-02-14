@@ -78,16 +78,19 @@ export default async function DashboardPage() {
     .eq("invitation_status", "pending")
     .order("invited_at", { ascending: false });
 
-  // Get recent notifications (last 10)
-  const { data: notifications } = await supabase
+  // Get notifications with pagination support
+  const { data: notifications, count: notificationCount } = await supabase
     .from("notifications")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(50);
 
   // Get unread notification count
   const unreadCount = notifications?.filter(n => !n.is_read).length ?? 0;
+  const notificationCursor = notifications && notifications.length === 50
+    ? notifications[notifications.length - 1].created_at
+    : null;
 
   // Get upcoming RSVP count
   const { count: upcomingRsvps } = await supabase
@@ -266,28 +269,20 @@ export default async function DashboardPage() {
 
           {/* Notifications Section */}
           <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-                <span>🔔</span>
-                <span>Notifications</span>
-                {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded-full">
-                    {unreadCount} new
-                  </span>
-                )}
-              </h2>
-              <Link
-                href="/dashboard/notifications"
-                className="text-sm text-[var(--color-text-accent)] hover:underline"
-              >
-                Manage all →
-              </Link>
-            </div>
-            {notifications && notifications.length > 0 ? (
-              <NotificationsList notifications={notifications.slice(0, 5)} compact />
-            ) : (
-              <p className="text-[var(--color-text-secondary)] text-sm">No notifications yet.</p>
-            )}
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
+              <span>🔔</span>
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <span className="px-2 py-0.5 bg-[var(--color-accent-primary)]/20 text-[var(--color-text-accent)] text-xs rounded-full">
+                  {unreadCount} new
+                </span>
+              )}
+            </h2>
+            <NotificationsList
+              notifications={notifications || []}
+              initialCursor={notificationCursor}
+              initialTotal={notificationCount || 0}
+            />
           </section>
 
           {/* Secondary Links */}

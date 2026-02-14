@@ -18,7 +18,6 @@ interface NotificationsListProps {
   notifications: Notification[];
   initialCursor?: string | null;
   initialTotal?: number;
-  compact?: boolean; // For embedding in dashboard
 }
 
 // Notification type options for filtering
@@ -37,7 +36,6 @@ export default function NotificationsList({
   notifications,
   initialCursor = null,
   initialTotal = 0,
-  compact = false
 }: NotificationsListProps) {
   const [items, setItems] = useState(notifications);
   const [hideRead, setHideRead] = useState(false);
@@ -256,9 +254,6 @@ export default function NotificationsList({
   const readCount = items.filter(n => n.is_read).length;
 
   if (items.length === 0 && !loading) {
-    if (compact) {
-      return null;
-    }
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">🔔</div>
@@ -280,8 +275,7 @@ export default function NotificationsList({
 
   return (
     <div>
-      {/* Controls - only show in full mode */}
-      {!compact && (
+      {/* Controls */}
         <div className="space-y-4 mb-6">
           {/* Filter row */}
           <div className="flex flex-wrap items-center gap-4">
@@ -355,7 +349,6 @@ export default function NotificationsList({
             </Link>
           </div>
         </div>
-      )}
 
       {/* Empty state when all filtered out */}
       {visibleItems.length === 0 && hideRead && !loading && (
@@ -373,24 +366,24 @@ export default function NotificationsList({
       )}
 
       {/* Notification list */}
-      <div className={compact ? "space-y-1" : "space-y-2"}>
+      <div className="space-y-2">
         {visibleItems.map((notification) => (
           <div
             key={notification.id}
             onClick={() => handleNotificationClick(notification)}
-            className={`${compact ? "p-3" : "p-4"} rounded-lg border transition-colors cursor-pointer ${
+            className={`p-4 rounded-lg border transition-colors cursor-pointer ${
               notification.is_read
                 ? "bg-[var(--color-bg-tertiary)]/50 border-transparent hover:bg-[var(--color-bg-tertiary)]/70"
                 : "bg-[var(--color-bg-tertiary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className={compact ? "text-lg" : "text-2xl"}>{getIcon(notification.type)}</div>
+              <div className="text-2xl">{getIcon(notification.type)}</div>
               <div className="flex-1 min-w-0">
-                <h3 className={`text-[var(--color-text-primary)] font-medium ${compact ? "text-sm truncate" : ""} ${!notification.is_read ? "font-semibold" : ""}`}>
+                <h3 className={`text-[var(--color-text-primary)] font-medium ${!notification.is_read ? "font-semibold" : ""}`}>
                   {notification.title}
                 </h3>
-                {notification.message && !compact && (
+                {notification.message && (
                   <p className="text-[var(--color-text-secondary)] text-sm mt-1">{notification.message}</p>
                 )}
                 <p className="text-[var(--color-text-secondary)] text-xs mt-1">{formatDate(notification.created_at)}</p>
@@ -413,7 +406,7 @@ export default function NotificationsList({
       </div>
 
       {/* Load more button */}
-      {hasMore && !compact && (
+      {hasMore && (
         <div className="mt-6 text-center">
           <button
             onClick={loadMore}
