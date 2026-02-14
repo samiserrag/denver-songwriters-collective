@@ -6,6 +6,44 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FEATURE: Gallery collaborator opt-in invites with email notifications (February 2026)
+
+**Summary:** Replaced the implicit collaborator-on-save model with an explicit opt-in invitation flow. Collaborators now receive an invite (in-app notification + email) and must accept before the album appears on their profile. Added safe email resolution, defensive email guards, diagnostic logging across the full email pipeline, and applied the backing database migration.
+
+**Commits:** `07ad8e9e`, `6f684071`, `ba684bc4`, `4ba9f558`
+
+**Migration:** `20260216000000_gallery_collaboration_invites.sql` — applied via MODE B (direct psql), recorded in `supabase_migrations.schema_migrations`.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260216000000_gallery_collaboration_invites.sql` | **New** — creates `gallery_collaboration_invites` table, RLS policies (invitee read/respond, owner read/manage/delete, admin all), indexes, grants, updates `reconcile_gallery_album_links` RPC to exclude collaborator rows, backfills accepted invites for existing collaborators |
+| `web/src/app/api/gallery-albums/[id]/notify-collaborators/route.ts` | Added `resolveInviteeEmail()` helper (Auth → profiles.email → null fallback), restructured to skip email when no email resolved (notification-only path), added diagnostic logging with masked email and source |
+| `web/src/lib/email/sendWithPreferences.ts` | Added `"missing_recipient"` to skipReason union, Step 0 defensive guard (validates non-empty `to` before any send), diagnostic logging for category resolution, preference check, and send result |
+| `web/src/lib/email/mailer.ts` | Added `[Email] SMTP attempting` log line before `transporter.sendMail` |
+| `web/src/lib/gallery/albumLinks.ts` | Removed `collaboratorIds` from `AlbumLinkInput` and `buildDesiredAlbumLinks()` |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Removed `collaboratorIds` from reconcile call and admin PATCH body, updated label to "Invite collaborators" |
+| `web/src/app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx` | Removed `collaboratorIds` from reconcile, added notify-collaborators POST fetch, updated label |
+| `web/src/app/api/admin/gallery-albums/[id]/route.ts` | Removed `collaborator_ids` parsing and reconcile passing |
+| `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` | Removed `collaboratorIds` from reconcile call |
+| `web/src/lib/email/templates/collaboratorInvited.ts` | Fixed `createButton` color args (only "gold" and "green" valid) |
+| `web/src/lib/email/registry.ts` | Added `collaboratorInvited` to all 5 registration points |
+| `web/src/lib/notifications/preferences.ts` | Added `collaboratorInvited: "event_updates"` to `EMAIL_CATEGORY_MAP` |
+| `web/src/__tests__/gallery-collaborator-cover-ux.test.ts` | Major rewrite for opt-in invite flow, resolveInviteeEmail, defensive guards |
+| `web/src/__tests__/gallery-album-links.test.ts` | Updated for no-collaborator reconcile |
+| `web/src/__tests__/gallery-upload-enforcement.test.ts` | Updated for no-collaborator reconcile |
+| `web/src/lib/email/email.test.ts` | Template key count 25→26 |
+
+**Key architecture decisions:**
+- Option 2: Separate `gallery_collaboration_invites` table for invite lifecycle; `gallery_album_links` only for accepted display links
+- Reconcile RPC guards: `AND link_role != 'collaborator'` on both DELETE and INSERT prevents venue/event saves from wiping collaborator links
+- Email resolution chain: Auth (`getUserById`) → `profiles.email` → null, with two-layer defense (route skip + sendWithPreferences guard)
+
+**Quality gates:** 192 test files, 4056 tests pass, build succeeds.
+
+---
+
 ### REFACTOR: Inline notification manager on dashboard (February 2026)
 
 **Summary:** Removed the separate `/dashboard/notifications` page and embedded the full notification manager directly on the dashboard overview. All controls (type filter, unread-only toggle, mark all read, delete read, delete older than 30 days, load more pagination, email preferences link) now render inline. Controls persist in all filter/empty states. Read notifications are visually dimmed (opacity, grayscale icon, muted text) for clear distinction from unread.
