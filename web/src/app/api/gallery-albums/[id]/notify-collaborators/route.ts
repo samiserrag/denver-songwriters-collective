@@ -122,54 +122,89 @@ export async function POST(
       .eq("id", userId)
       .single();
 
-    const { data: collabAuth } = await serviceClient.auth.admin.getUserById(userId);
+    const { data: collabAuth, error: collabAuthError } = await serviceClient.auth.admin.getUserById(userId);
     const collabEmail = collabAuth?.user?.email;
     const collabName = collabProfile?.full_name || "there";
 
+    // Diagnostic logging for email delivery debugging
+    const maskedEmail = collabEmail
+      ? `${collabEmail[0]}***@${collabEmail.split("@")[1] || "?"}`
+      : "NONE";
+    console.log(`[notify-collaborators] user=${userId} email=${maskedEmail} authErr=${collabAuthError?.message ?? "none"}`);
+
     const notifMessage = `${actorName} invited you to collaborate on the album "${album_name}".`;
 
-    // 5c. Build email content with Accept/Decline/Preview links
-    const emailData = getCollaboratorInvitedEmail({
-      inviteeName: collabName,
-      actorName,
-      albumName: album_name,
-      albumSlug: album_slug,
-      albumId,
-    });
+    // 5c. Build email content with Accept/Decline/Preview links (only if we have an email)
+    let emailPayload: {
+      to: string;
+      subject: string;
+      html: string;
+      text: string;
+      templateName: string;
+    } | undefined;
 
-    // 5d. Send notification + preference-gated email
-    const { notificationCreated, skipReason } = await sendEmailWithPreferences({
-      supabase,
-      userId,
-      templateKey: "collaboratorInvited",
-      payload: collabEmail ? {
+    if (collabEmail) {
+      const emailData = getCollaboratorInvitedEmail({
+        inviteeName: collabName,
+        actorName,
+        albumName: album_name,
+        albumSlug: album_slug,
+        albumId,
+      });
+
+      emailPayload = {
         to: collabEmail,
         subject: emailData.subject,
         html: emailData.html,
         text: emailData.text,
         templateName: "collaboratorInvited",
-      } : {
-        to: "",
-        subject: "",
-        html: "",
-        text: "",
-      },
-      notification: {
-        type: "gallery_collaborator_invite",
-        title: "Collaboration invite",
-        message: notifMessage,
-        link: albumLink,
-      },
-    });
-
-    if (!notificationCreated) {
-      console.error(`[notify-collaborators] Notification failed for user ${userId}`);
-      results.push({ userId, success: false, error: "notification_failed" });
+      };
     } else {
-      if (skipReason) {
-        console.log(`[notify-collaborators] Email skipped for ${userId}: ${skipReason}`);
+      console.log(`[notify-collaborators] No email for user ${userId}, skipping email (notification only)`);
+    }
+
+    // 5d. Send notification (always) + preference-gated email (only if we have a payload)
+    if (emailPayload) {
+      const { notificationCreated, skipReason } = await sendEmailWithPreferences({
+        supabase,
+        userId,
+        templateKey: "collaboratorInvited",
+        payload: emailPayload,
+        notification: {
+          type: "gallery_collaborator_invite",
+          title: "Collaboration invite",
+          message: notifMessage,
+          link: albumLink,
+        },
+      });
+
+      if (!notificationCreated) {
+        console.error(`[notify-collaborators] Notification failed for user ${userId}`);
+        results.push({ userId, success: false, error: "notification_failed" });
+      } else {
+        if (skipReason) {
+          console.log(`[notify-collaborators] Email skipped for ${userId}: ${skipReason}`);
+        } else {
+          console.log(`[notify-collaborators] Email sent for ${userId}`);
+        }
+        results.push({ userId, success: true });
       }
-      results.push({ userId, success: true });
+    } else {
+      // No email address — just create the in-app notification
+      const { error: notifError } = await supabase.rpc("create_user_notification", {
+        p_user_id: userId,
+        p_type: "gallery_collaborator_invite",
+        p_title: "Collaboration invite",
+        p_message: notifMessage,
+        p_link: albumLink,
+      });
+
+      if (notifError) {
+        console.error(`[notify-collaborators] Notification-only failed for user ${userId}:`, notifError.message);
+        results.push({ userId, success: false, error: "notification_failed" });
+      } else {
+        results.push({ userId, success: true });
+      }
     }
   }
 
