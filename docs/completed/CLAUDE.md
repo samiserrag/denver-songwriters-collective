@@ -28,10 +28,11 @@ This file holds the historical implementation log that was previously under the 
 
 6. **Deleted components:** `UserGalleryUpload.tsx` and `UnassignedPhotosManager.tsx` — no longer needed.
 
-**Files changed (6 modified, 2 new, 2 deleted):**
+**Files changed (6 modified, 3 new, 2 deleted):**
 
 | File | Change |
 |------|--------|
+| `supabase/migrations/20260214200000_gallery_missing_columns_backfill.sql` | NEW: adds is_hidden/is_published columns missing from migration chain (CI drift fix) |
 | `supabase/migrations/20260215200000_gallery_require_album.sql` | NEW: NOT NULL + ON DELETE RESTRICT migration |
 | `web/src/app/(protected)/dashboard/gallery/page.tsx` | REWRITTEN: album dashboard replacing upload hub |
 | `web/src/app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx` | NEW: album create form with venue/event/collaborator |
@@ -54,7 +55,16 @@ This file holds the historical implementation log that was previously under the 
 
 **Quality gates:** lint clean (0 errors, 5 pre-existing warnings), 3949 tests pass (190 files), build succeeds.
 
-**Migration status:** NOT YET APPLIED TO PRODUCTION. Requires `psql` execution (MODE B per project rules). Safe to apply: verified 0 NULL album_id rows in production.
+**Migration status:** Applied to production (MODE B, direct psql). Post-apply verification confirmed: `album_id` is NOT NULL, FK is RESTRICT, 0 orphaned rows, schema_migrations recorded.
+
+**CI drift fix (`20260214200000_gallery_missing_columns_backfill.sql`):**
+After the main migration was applied and pushed, the Supabase RLS Tripwire CI job failed. Root cause: `gallery_albums.is_hidden`, `gallery_images.is_hidden`, and `gallery_images.is_published` had been added directly to production (never captured in a migration file). The `gallery_album_links` migration's RLS policy references `is_hidden`, so CI — which runs migrations from scratch — failed on a missing column. Fix: added `20260214200000_gallery_missing_columns_backfill.sql` timestamped before the gallery_album_links migration, using `ADD COLUMN IF NOT EXISTS` for idempotent application. Applied to production (all no-ops), recorded in schema_migrations. All 4 CI jobs green after push.
+
+**Gallery invariants now enforced:**
+- `gallery_images.album_id` is NOT NULL — every photo must belong to an album
+- FK uses ON DELETE RESTRICT — albums with photos cannot be deleted
+- UI has no "No album" option; upload is blocked until an album is selected
+- Admin delete checks photo count and blocks with toast if > 0
 
 ---
 
