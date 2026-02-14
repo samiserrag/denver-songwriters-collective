@@ -124,18 +124,30 @@ export default async function AlbumManagementPage({
   ]);
   const mediaEmbedUrls = embeds.map((e) => e.url);
 
-  // Extract existing collaborator links to pass to the component
-  const collaboratorLinks = (existingLinks ?? [])
+  // Extract collaborators from TWO sources:
+  // 1. Accepted collaborator links in gallery_album_links (legacy + accepted invites)
+  // 2. Pending/accepted invites in gallery_collaboration_invites (opt-in flow)
+  const collaboratorLinkIds = (existingLinks ?? [])
     .filter((l) => l.target_type === "profile" && l.link_role === "collaborator")
     .map((l) => l.target_id);
 
+  const { data: inviteRows } = await (supabase as any)
+    .from("gallery_collaboration_invites")
+    .select("invitee_id")
+    .eq("album_id", id)
+    .in("status", ["pending", "accepted"]);
+  const inviteIds = (inviteRows ?? []).map((r: { invitee_id: string }) => r.invitee_id);
+
+  // Merge and deduplicate
+  const allCollaboratorIds = [...new Set([...collaboratorLinkIds, ...inviteIds])];
+
   // Fetch collaborator profile details for the chips
   let initialCollaborators: Array<{ id: string; name: string; avatar_url: string | null }> = [];
-  if (collaboratorLinks.length > 0) {
+  if (allCollaboratorIds.length > 0) {
     const { data: collabProfiles } = await supabase
       .from("profiles")
       .select("id, full_name, avatar_url")
-      .in("id", collaboratorLinks);
+      .in("id", allCollaboratorIds);
     initialCollaborators = (collabProfiles ?? []).map((p) => ({
       id: p.id,
       name: p.full_name,

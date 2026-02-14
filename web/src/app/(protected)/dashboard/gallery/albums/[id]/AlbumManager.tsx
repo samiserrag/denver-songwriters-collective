@@ -358,9 +358,26 @@ export default function AlbumManager({
       return;
     }
 
-    // Notify newly added collaborators via server route
+    // Sync collaborator invites: remove dropped, notify added
     const newCollaboratorIds = collaborators.map((c) => c.id);
     const addedIds = newCollaboratorIds.filter((id) => !prevCollaboratorIds.includes(id));
+    const removedIds = prevCollaboratorIds.filter((id) => !newCollaboratorIds.includes(id));
+
+    // Remove dropped collaborators (marks invite as declined, deletes link row)
+    for (const removedId of removedIds) {
+      try {
+        await fetch(`/api/gallery-albums/${album.id}/remove-collaborator`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ invitee_id: removedId }),
+        });
+      } catch (err) {
+        console.error("Remove collaborator request failed:", err);
+      }
+    }
+
+    // Notify newly added collaborators (creates invite + notification + email)
     if (addedIds.length > 0) {
       try {
         const notifyRes = await fetch(`/api/gallery-albums/${album.id}/notify-collaborators`, {
