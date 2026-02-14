@@ -6,6 +6,33 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FIX: Profile Save 500 — Broken TikTok URL DB Constraint (February 2026) — RESOLVED
+
+**Summary:** Saving a profile with any TikTok URL returned a 500 error due to a PostgreSQL CHECK constraint (`profiles_tiktok_url_format`) with a broken regex. The constraint was added manually to production (never in a migration file) and used escaped forward slashes (`'^(https?:\/\/).+'`) which PostgreSQL's regex engine interpreted as literal backslash-slash sequences, rejecting all valid URLs.
+
+**Root cause:** The regex `'^(https?:\/\/).+'` in the DB constraint used `\/` (escaped forward slashes). In PostgreSQL's regex engine inside a CHECK constraint, these are interpreted as literal `\` + `/` sequences rather than just `/`. So a URL like `https://www.tiktok.com/@user` never matched because it contains `://` not `:\\/\\/`.
+
+**Fix (two parts):**
+
+1. **DB constraint fix:** Dropped the broken constraint and recreated it with a simpler regex `'^https?://'` (no forward-slash escaping needed) — applied directly to production via SQL Editor.
+
+2. **App-level sanitization (defense in depth):** Added a unified `sanitizeSocialUrl()` helper to all three API routes that write profile social links. The helper trims, converts blanks to null, auto-prepends `https://` for protocol-less URLs with dots, and validates domain against an allowlist. Applied to profile save, onboarding, and admin media routes.
+
+**Files changed (4):**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260215000001_fix_tiktok_url_constraint.sql` | New migration: drop broken constraint, recreate with working regex |
+| `web/src/app/api/profile/route.ts` | Unified `sanitizeSocialUrl()` for all social URL fields with domain validation |
+| `web/src/app/api/onboarding/route.ts` | Same `sanitizeSocialUrl()` applied to all social URL fields |
+| `web/src/app/api/admin/users/[id]/media/route.ts` | Replaced per-platform validators with unified `sanitizeSocialUrl()` |
+
+**Investigation confirmed:** No other regex-based URL CHECK constraints exist anywhere in the DB. All other CHECK constraints are simple enum/list validations. No other members had TikTok data affected.
+
+**Quality gates:** lint clean, 3942 tests pass (191 files), build succeeds.
+
+---
+
 ### FIX: Profile Save 400 — Social Link URLs Rejected by Embed Normalizer (February 2026) — RESOLVED
 
 **Summary:** Saving a profile with a YouTube channel URL (`youtube.com/@handle`) or Spotify profile URL (`open.spotify.com/user/...`) returned a 400 because the `youtube_url` and `spotify_url` social link fields were being validated through the media embed normalizer, which only accepts embeddable content URLs. Social link fields should accept any valid URL on the correct domain.
