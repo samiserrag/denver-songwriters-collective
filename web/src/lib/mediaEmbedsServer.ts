@@ -16,6 +16,11 @@ export interface UpsertMediaEmbedsResult {
  * Replace all media embeds for a given scope with a new ordered list.
  * Empty urls array clears all rows for that scope.
  * Invalid rows are skipped (not inserted) and returned in `errors`.
+ *
+ * Uses the `upsert_media_embeds` RPC to run delete + insert atomically
+ * in a single database transaction. If the insert fails (e.g. constraint
+ * violation), the delete is rolled back automatically — preventing the
+ * destructive "delete then fail" wipe that occurred with separate calls.
  */
 export async function upsertMediaEmbeds(
   supabase: SupabaseClient,
@@ -23,35 +28,27 @@ export async function upsertMediaEmbeds(
   urls: string[],
   createdBy: string
 ): Promise<UpsertMediaEmbedsResult> {
-  // Delete existing rows for this scope
-  let deleteQuery = supabase
-    .from("media_embeds")
-    .delete()
-    .eq("target_type", scope.type)
-    .eq("target_id", scope.id);
-
-  if (scope.type === "event_override" && scope.date_key) {
-    deleteQuery = deleteQuery.eq("date_key", scope.date_key);
-  } else {
-    deleteQuery = deleteQuery.is("date_key", null);
-  }
-
-  const { error: deleteError } = await deleteQuery;
-  if (deleteError) {
-    throw new Error(`Failed to clear existing embeds: ${deleteError.message}`);
-  }
-
-  // Build rows, collecting per-row errors instead of failing the batch
+  // Build rows client-side, collecting per-row errors instead of failing the batch
   const { rows, errors } = buildEmbedRowsSafe(urls, scope, createdBy);
-  if (rows.length === 0) return { data: [], errors };
 
-  const { data, error: insertError } = await supabase
-    .from("media_embeds")
-    .insert(rows)
-    .select();
+  // Prepare rows as JSON for the RPC (only fields the function expects)
+  const rpcRows = rows.map((r) => ({
+    position: r.position,
+    url: r.url,
+    provider: r.provider,
+    kind: r.kind,
+    created_by: r.created_by,
+  }));
 
-  if (insertError) {
-    throw new Error(`Failed to insert embeds: ${insertError.message}`);
+  const { data, error } = await supabase.rpc("upsert_media_embeds", {
+    p_target_type: scope.type,
+    p_target_id: scope.id,
+    p_date_key: scope.date_key ?? null,
+    p_rows: rpcRows,
+  });
+
+  if (error) {
+    throw new Error(`Failed to upsert embeds: ${error.message}`);
   }
 
   return { data: data ?? [], errors };
