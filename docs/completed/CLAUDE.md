@@ -6,19 +6,20 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
-### FIX: Profile Save 400 — YouTube Channel URLs Rejected (February 2026) — RESOLVED
+### FIX: Profile Save 400 — Social Link URLs Rejected by Embed Normalizer (February 2026) — RESOLVED
 
-**Summary:** Saving a profile with a YouTube channel URL (e.g. `youtube.com/@Sami_Serrag_Music`) returned a 400 error because the `youtube_url` social link field was being validated through the media embed normalizer, which only accepts embeddable video/playlist URLs. The fix validates that `youtube_url` is on a YouTube domain without requiring it to be an embeddable URL.
+**Summary:** Saving a profile with a YouTube channel URL (`youtube.com/@handle`) or Spotify profile URL (`open.spotify.com/user/...`) returned a 400 because the `youtube_url` and `spotify_url` social link fields were being validated through the media embed normalizer, which only accepts embeddable content URLs. Social link fields should accept any valid URL on the correct domain.
 
-**Root cause:** `PUT /api/profile` line 67 called `normalizeMediaEmbedUrl()` on the `youtube_url` social link field. That normalizer is designed for media embeds (video/playlist) and correctly rejects channel URLs (`/@handle`, `/channel/`, `/c/`, `/user/`). But social link fields should accept any valid YouTube URL.
+**Root cause:** `PUT /api/profile` and `PATCH /api/admin/users/[id]/media` both called `normalizeMediaEmbedUrl()` on social link fields. The normalizer is designed for media embeds (video/playlist/track) and correctly rejects channel/profile URLs — but social link fields store profile pages, not embeddable content.
 
-**Fix:** Replaced the embed normalizer call for `youtube_url` with a simple domain check (`youtube.com` or `youtu.be`). Spotify validation kept as-is since Spotify embed URLs and profile URLs both pass through the normalizer.
+**Fix:** Replaced embed normalizer calls with simple domain-only validation for both YouTube (`youtube.com`, `youtu.be`) and Spotify (`open.spotify.com`, `spotify.com`). Removed unused `normalizeMediaEmbedUrl`/`MediaEmbedValidationError` imports.
 
-**Files changed (1):**
+**Files changed (2):**
 
 | File | Change |
 |------|--------|
-| `web/src/app/api/profile/route.ts` | Replaced embed normalizer with domain-only validation for youtube_url |
+| `web/src/app/api/profile/route.ts` | Domain-only validation for youtube_url and spotify_url; removed embed normalizer import |
+| `web/src/app/api/admin/users/[id]/media/route.ts` | Domain-only validation for both social link fields; removed embed normalizer import |
 
 **Quality gates:** lint clean, 3942 tests pass (191 files), build succeeds.
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -26,6 +25,36 @@ async function requireAdmin() {
   return { supabase };
 }
 
+// Domain-only validation for social link fields (not embed fields).
+// These are channel/profile URLs, not embeddable content.
+function validateYoutubeSocialUrl(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const trimmed = raw.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    if (!["youtube.com", "youtu.be"].includes(host)) return null;
+    return trimmed;
+  } catch {
+    return null;
+  }
+}
+
+function validateSpotifySocialUrl(raw: unknown): string | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  const trimmed = raw.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    if (!["open.spotify.com", "spotify.com"].includes(host)) return null;
+    return trimmed;
+  } catch {
+    return null;
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -36,27 +65,8 @@ export async function PATCH(
 
   try {
     const body = (await request.json()) as Record<string, unknown>;
-    let youtube_url: string | null;
-    let spotify_url: string | null;
-
-    try {
-      youtube_url = normalizeMediaEmbedUrl(typeof body.youtube_url === "string" ? body.youtube_url : null, {
-        expectedProvider: "youtube",
-        field: "youtube_url",
-      })?.normalized_url ?? null;
-      spotify_url = normalizeMediaEmbedUrl(typeof body.spotify_url === "string" ? body.spotify_url : null, {
-        expectedProvider: "spotify",
-        field: "spotify_url",
-      })?.normalized_url ?? null;
-    } catch (error) {
-      if (error instanceof MediaEmbedValidationError && error.field) {
-        return NextResponse.json(
-          { error: "Validation failed", fieldErrors: { [error.field]: error.message } },
-          { status: 400 }
-        );
-      }
-      return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
-    }
+    const youtube_url = validateYoutubeSocialUrl(body.youtube_url);
+    const spotify_url = validateSpotifySocialUrl(body.spotify_url);
 
     const { error: updateError } = await auth.supabase
       .from("profiles")

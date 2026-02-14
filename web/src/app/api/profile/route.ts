@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAdminProfileAlert } from "@/lib/email/adminProfileAlerts";
-import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 const TRACKED_PROFILE_FIELDS = [
@@ -81,24 +80,26 @@ export async function PUT(request: Request) {
       }
     }
 
-    // spotify_url is a social/profile link — normalize embeddable URLs but also
-    // accept profile URLs (open.spotify.com/user/..., open.spotify.com/artist/...).
+    // spotify_url is a social/profile link — accept any valid Spotify domain URL
+    // (artist, user, etc.). Do NOT run through the embed normalizer which only
+    // accepts embeddable content types (track, album, playlist, show, episode).
     let spotifyValue: string | null = spotifyRaw || null;
-    try {
-      if (spotifyRaw && /^https?:\/\//i.test(spotifyRaw)) {
-        spotifyValue = normalizeMediaEmbedUrl(spotifyRaw, {
-          expectedProvider: "spotify",
-          field: "spotify_url",
-        })?.normalized_url ?? null;
-      }
-    } catch (error) {
-      if (error instanceof MediaEmbedValidationError && error.field) {
+    if (spotifyRaw && /^https?:\/\//i.test(spotifyRaw)) {
+      try {
+        const spUrl = new URL(spotifyRaw);
+        const spHost = spUrl.hostname.replace(/^www\./, "").toLowerCase();
+        if (!["open.spotify.com", "spotify.com"].includes(spHost)) {
+          return NextResponse.json(
+            { error: "Validation failed", fieldErrors: { spotify_url: "Spotify URL must use open.spotify.com." } },
+            { status: 400 }
+          );
+        }
+      } catch {
         return NextResponse.json(
-          { error: "Validation failed", fieldErrors: { [error.field]: error.message } },
+          { error: "Validation failed", fieldErrors: { spotify_url: "Invalid Spotify URL." } },
           { status: 400 }
         );
       }
-      return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
     }
 
     const updatePayload = {
