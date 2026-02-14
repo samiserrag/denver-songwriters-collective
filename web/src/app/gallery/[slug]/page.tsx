@@ -8,6 +8,8 @@ import { AlbumCommentsSection } from "./_components/AlbumCommentsSection";
 import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import CollaborationInviteBanner from "./_components/CollaborationInviteBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -163,8 +165,47 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
     ? await readMediaEmbeds(supabase, { type: "gallery_album", id: album.id })
     : [];
 
+  // Check if the logged-in user has a pending collaboration invite for this album
+  let pendingInvite: { invited_by: string; inviterName: string } | null = null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const serviceClient = getServiceRoleClient();
+    const { data: invite } = await (serviceClient as any)
+      .from("gallery_collaboration_invites")
+      .select("invited_by")
+      .eq("album_id", album.id)
+      .eq("invitee_id", user.id)
+      .eq("status", "pending")
+      .single();
+
+    if (invite) {
+      // Fetch the inviter's display name
+      const { data: inviterProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", invite.invited_by)
+        .single();
+
+      pendingInvite = {
+        invited_by: invite.invited_by,
+        inviterName: inviterProfile?.full_name || "Someone",
+      };
+    }
+  }
+
   return (
     <>
+      {/* Collaboration invite banner (shown to pending invitees) */}
+      {pendingInvite && (
+        <div className="max-w-6xl mx-auto px-6 pt-6">
+          <CollaborationInviteBanner
+            albumId={album.id}
+            albumName={album.name}
+            inviterName={pendingInvite.inviterName}
+          />
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)]">
         <div className="max-w-6xl mx-auto px-6 py-12">

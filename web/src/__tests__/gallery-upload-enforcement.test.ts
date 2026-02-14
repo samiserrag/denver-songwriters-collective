@@ -167,12 +167,15 @@ describe("CreateAlbumForm completeness", () => {
     expect(source).toContain("@/components/gallery/CollaboratorSelect");
   });
 
-  it("calls reconcileAlbumLinks with all fields", () => {
+  it("calls reconcileAlbumLinks with creator, venue, event (no collaboratorIds)", () => {
     expect(source).toContain("reconcileAlbumLinks(supabase, data.id,");
     expect(source).toContain("createdBy: userId");
     expect(source).toContain("venueId: venueIdValue");
     expect(source).toContain("eventId: eventIdValue");
-    expect(source).toContain("collaboratorIds:");
+    // collaboratorIds should NOT be in reconcile (managed via invite flow)
+    const reconcileMatch = source.match(/reconcileAlbumLinks\([\s\S]*?\}\)/);
+    expect(reconcileMatch).not.toBeNull();
+    expect(reconcileMatch![0]).not.toContain("collaboratorIds");
   });
 
   it("redirects to album detail page after creation", () => {
@@ -210,10 +213,13 @@ describe("GalleryAdminTabs album create completeness", () => {
     expect(source).toContain("event_id: eventIdValue");
   });
 
-  it("calls reconcileAlbumLinks after album creation", () => {
+  it("calls reconcileAlbumLinks after album creation (no collaboratorIds)", () => {
     expect(source).toContain("reconcileAlbumLinks(supabase, data.id,");
     expect(source).toContain("createdBy: userId");
-    expect(source).toContain("collaboratorIds: albumCollaborators.map");
+    // collaboratorIds should NOT be in reconcile (managed via invite flow)
+    const reconcileMatch = source.match(/reconcileAlbumLinks\([\s\S]*?\}\)/);
+    expect(reconcileMatch).not.toBeNull();
+    expect(reconcileMatch![0]).not.toContain("collaboratorIds");
   });
 
   it("does not reference unassigned photos", () => {

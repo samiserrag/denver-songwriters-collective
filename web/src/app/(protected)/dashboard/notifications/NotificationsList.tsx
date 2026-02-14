@@ -44,6 +44,7 @@ export default function NotificationsList({
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [leavingAlbum, setLeavingAlbum] = useState<string | null>(null);
+  const [respondingInvite, setRespondingInvite] = useState<string | null>(null);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [hasMore, setHasMore] = useState(!!initialCursor);
   const [total, setTotal] = useState(initialTotal);
@@ -73,6 +74,7 @@ export default function NotificationsList({
       case "host_rejected": return "❌";
       case "event_cancelled": return "🚫";
       case "gallery_collaborator_added": return "📸";
+      case "gallery_collaborator_invite": return "📸";
       default: return "🔔";
     }
   };
@@ -290,6 +292,35 @@ export default function NotificationsList({
     }
   };
 
+  // Handle accept/decline collaboration invite
+  const handleRespondCollaboration = async (notification: Notification, response: "accepted" | "declined", e: React.MouseEvent) => {
+    e.stopPropagation();
+    const albumId = getAlbumIdFromLink(notification.link);
+    if (!albumId) return;
+
+    setRespondingInvite(`${notification.id}-${response}`);
+    try {
+      const res = await fetch(`/api/gallery-albums/${albumId}/respond-collaboration`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Remove the notification from local state after responding
+        setItems(prev => prev.filter(n => n.id !== notification.id));
+        setTotal(prev => prev - 1);
+      } else {
+        alert(data.error || `Failed to ${response === "accepted" ? "accept" : "decline"} invite.`);
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setRespondingInvite(null);
+    }
+  };
+
   // Filter items based on hideRead toggle (for local filtering when not using API)
   const visibleItems = hideRead ? items.filter(n => !n.is_read) : items;
   const unreadCount = items.filter(n => !n.is_read).length;
@@ -433,6 +464,33 @@ export default function NotificationsList({
                   >
                     {leavingAlbum === notification.id ? "Removing..." : "Remove myself"}
                   </button>
+                )}
+                {notification.type === "gallery_collaborator_invite" && getAlbumIdFromLink(notification.link) && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {notification.link && (
+                      <Link
+                        href={notification.link.split("?")[0] + "?invite=1"}
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-3 py-1 text-xs font-medium rounded border border-[var(--color-border-default)] text-[var(--color-text-accent)] hover:border-[var(--color-border-accent)] transition-colors"
+                      >
+                        Preview
+                      </Link>
+                    )}
+                    <button
+                      onClick={(e) => handleRespondCollaboration(notification, "accepted", e)}
+                      disabled={respondingInvite?.startsWith(notification.id)}
+                      className="px-3 py-1 text-xs font-medium rounded border border-green-300 text-green-600 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {respondingInvite === `${notification.id}-accepted` ? "Accepting..." : "Accept"}
+                    </button>
+                    <button
+                      onClick={(e) => handleRespondCollaboration(notification, "declined", e)}
+                      disabled={respondingInvite?.startsWith(notification.id)}
+                      className="px-3 py-1 text-xs font-medium rounded border border-red-300 text-red-500 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {respondingInvite === `${notification.id}-declined` ? "Declining..." : "Decline"}
+                    </button>
+                  </div>
                 )}
               </div>
               {notification.link && (

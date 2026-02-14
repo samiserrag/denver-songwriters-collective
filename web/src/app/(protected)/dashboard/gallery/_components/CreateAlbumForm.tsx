@@ -96,17 +96,39 @@ export function CreateAlbumForm({ venues, events, userId }: CreateAlbumFormProps
       return;
     }
 
-    // Reconcile album links (creator + venue + event + collaborators)
+    // Reconcile album links (creator + venue + event; collaborators managed via invite flow)
     try {
       await reconcileAlbumLinks(supabase, data.id, {
         createdBy: userId,
         venueId: venueIdValue,
         eventId: eventIdValue,
-        collaboratorIds: collaborators.map((c) => c.id),
       });
     } catch (linkError) {
       console.error("Album link reconciliation error:", linkError);
       toast.error("Album created but cross-page links failed. Edit the album to retry.");
+    }
+
+    // Send collaboration invites for any selected collaborators
+    if (collaborators.length > 0) {
+      try {
+        const notifyRes = await fetch(`/api/gallery-albums/${data.id}/notify-collaborators`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            added_user_ids: collaborators.map((c) => c.id),
+            album_name: trimmedName,
+            album_slug: finalSlug,
+          }),
+        });
+        if (!notifyRes.ok) {
+          const detail = await notifyRes.json().catch(() => null);
+          console.error("Collaborator notification failed:", detail?.error || notifyRes.status);
+          toast.error("Album created, but collaborator invites failed.");
+        }
+      } catch (err) {
+        console.error("Collaborator notification request failed:", err);
+      }
     }
 
     toast.success(isPublished ? "Album created and published" : "Album created as draft");
@@ -234,8 +256,8 @@ export function CreateAlbumForm({ venues, events, userId }: CreateAlbumFormProps
         {/* Collaborators */}
         <div>
           <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-            Collaborators <span className="font-normal text-[var(--color-text-tertiary)]">
-              (optional — album appears on their profiles)
+            Invite collaborators <span className="font-normal text-[var(--color-text-tertiary)]">
+              (optional — they must accept before the album appears on their profile)
             </span>
           </label>
           <CollaboratorSelect

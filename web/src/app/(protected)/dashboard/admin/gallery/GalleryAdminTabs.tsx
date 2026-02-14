@@ -151,13 +151,12 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
       toast.error("Failed to create album");
       console.error(error);
     } else {
-      // Reconcile album links (creator + venue + event + collaborators)
+      // Reconcile album links (creator + venue + event; collaborators managed via invite flow)
       try {
         await reconcileAlbumLinks(supabase, data.id, {
           createdBy: userId,
           venueId: venueIdValue,
           eventId: eventIdValue,
-          collaboratorIds: albumCollaborators.map((c) => c.id),
         });
       } catch (linkError) {
         console.error("Album link reconciliation error:", linkError);

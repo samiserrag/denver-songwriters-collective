@@ -7,11 +7,16 @@
  * 2. AlbumManager calls server-side notify-collaborators route for newly added collaborators
  * 3. Collaborator helper text is present in AlbumManager
  * 4. Save and Publish actions appear in both top and bottom action rows
- * 5. Email template exists with correct structure
- * 6. Server notify-collaborators route has correct auth checks, actor name, and email sending
- * 7. Leave-collaboration route exists with correct behavior
- * 8. NotificationsList renders "Remove myself" button for collaborator notifications
- * 9. collaboratorAdded is registered in template registry and category map
+ * 5. Email templates exist with correct structure (collaboratorAdded + collaboratorInvited)
+ * 6. Server notify-collaborators route has correct auth checks, actor name, invite creation, and email sending
+ * 7. Leave-collaboration route exists with correct behavior (marks invite declined)
+ * 8. NotificationsList renders Preview/Accept/Decline for gallery_collaborator_invite
+ * 9. Templates are registered in template registry and category map
+ * 10. Respond-collaboration route exists with accept/decline logic
+ * 11. Remove-collaborator route exists for owner/admin removal
+ * 12. CollaborationInviteBanner renders on album page for pending invitees
+ * 13. AlbumManager and CreateAlbumForm do NOT pass collaboratorIds to reconcile
+ * 14. albumLinks.ts buildDesiredAlbumLinks does NOT include collaborator links
  */
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
@@ -106,6 +111,14 @@ describe("Gallery Collaborator Notifications — AlbumManager client side", () =
     expect(content).toContain("await fetch(");
     expect(content).toContain("collaborator notifications failed");
   });
+
+  it("should NOT pass collaboratorIds to reconcileAlbumLinks", () => {
+    // The reconcile call should not include collaboratorIds
+    // Find the reconcileAlbumLinks call and ensure no collaboratorIds in it
+    const reconcileMatch = content.match(/reconcileAlbumLinks\([\s\S]*?\}\)/);
+    expect(reconcileMatch).not.toBeNull();
+    expect(reconcileMatch![0]).not.toContain("collaboratorIds");
+  });
 });
 
 describe("Gallery Collaborator Notifications — Server route", () => {
@@ -141,17 +154,24 @@ describe("Gallery Collaborator Notifications — Server route", () => {
 
   it("should include actor name in notification message", () => {
     expect(content).toContain("actorName");
-    expect(content).toMatch(/actorName.*added you as a collaborator/);
+    expect(content).toMatch(/actorName.*invited you to collaborate/);
+  });
+
+  it("should create pending invite via upsert", () => {
+    expect(content).toContain("gallery_collaboration_invites");
+    expect(content).toContain(".upsert(");
+    expect(content).toContain('status: "pending"');
+    expect(content).toContain("onConflict");
   });
 
   it("should use sendEmailWithPreferences for notification + email", () => {
     expect(content).toContain("sendEmailWithPreferences");
-    expect(content).toContain("gallery_collaborator_added");
-    expect(content).toContain("Added as a collaborator");
-    expect(content).toContain('templateKey: "collaboratorAdded"');
+    expect(content).toContain("gallery_collaborator_invite");
+    expect(content).toContain("Collaboration invite");
+    expect(content).toContain('templateKey: "collaboratorInvited"');
   });
 
-  it("should include albumId in notification link for self-removal", () => {
+  it("should include albumId in notification link", () => {
     expect(content).toContain("albumId=");
     expect(content).toMatch(/albumLink.*albumId/);
   });
@@ -196,10 +216,12 @@ describe("Gallery Collaborator Save Clarity", () => {
   );
   const content = fs.readFileSync(albumManagerPath, "utf-8");
 
-  it("should have helper text about collaborator changes requiring Save", () => {
-    expect(content).toContain(
-      "Collaborator changes take effect after you click Save"
-    );
+  it("should have helper text about invites being sent on Save", () => {
+    expect(content).toContain("Invites are sent when you click Save");
+  });
+
+  it("should label the collaborator field as 'Invite collaborators'", () => {
+    expect(content).toContain("Invite collaborators");
   });
 });
 
@@ -235,31 +257,69 @@ describe("Save and Publish Actions in Top and Bottom Rows", () => {
   });
 });
 
-describe("Collaborator Email Template", () => {
-  const templatePath = path.join(
-    __dirname,
-    "../lib/email/templates/collaboratorAdded.ts"
-  );
+describe("Collaborator Email Templates", () => {
+  describe("collaboratorAdded template", () => {
+    const templatePath = path.join(
+      __dirname,
+      "../lib/email/templates/collaboratorAdded.ts"
+    );
 
-  it("should exist", () => {
-    expect(fs.existsSync(templatePath)).toBe(true);
+    it("should exist", () => {
+      expect(fs.existsSync(templatePath)).toBe(true);
+    });
+
+    it("should export getCollaboratorAddedEmail function", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("export function getCollaboratorAddedEmail");
+    });
+
+    it("should include album name in subject and body", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("albumName");
+      expect(content).toContain("collaborator");
+    });
+
+    it("should include link to album page", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("albumSlug");
+      expect(content).toContain("/gallery/");
+    });
   });
 
-  it("should export getCollaboratorAddedEmail function", () => {
-    const content = fs.readFileSync(templatePath, "utf-8");
-    expect(content).toContain("export function getCollaboratorAddedEmail");
-  });
+  describe("collaboratorInvited template", () => {
+    const templatePath = path.join(
+      __dirname,
+      "../lib/email/templates/collaboratorInvited.ts"
+    );
 
-  it("should include album name in subject and body", () => {
-    const content = fs.readFileSync(templatePath, "utf-8");
-    expect(content).toContain("albumName");
-    expect(content).toContain("collaborator");
-  });
+    it("should exist", () => {
+      expect(fs.existsSync(templatePath)).toBe(true);
+    });
 
-  it("should include link to album page", () => {
-    const content = fs.readFileSync(templatePath, "utf-8");
-    expect(content).toContain("albumSlug");
-    expect(content).toContain("/gallery/");
+    it("should export getCollaboratorInvitedEmail function", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("export function getCollaboratorInvitedEmail");
+    });
+
+    it("should include actor name, album name, and invitee name", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("actorName");
+      expect(content).toContain("albumName");
+      expect(content).toContain("inviteeName");
+    });
+
+    it("should include Preview, Accept, and Decline action links", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("Preview");
+      expect(content).toContain("Accept");
+      expect(content).toContain("Decline");
+    });
+
+    it("should include albumId for action links", () => {
+      const content = fs.readFileSync(templatePath, "utf-8");
+      expect(content).toContain("albumId");
+      expect(content).toContain("albumSlug");
+    });
   });
 });
 
@@ -302,6 +362,13 @@ describe("Leave Collaboration — Server route", () => {
     expect(content).toContain("getServiceRoleClient");
   });
 
+  it("should mark the invite as declined", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("gallery_collaboration_invites");
+    expect(content).toContain('status: "declined"');
+    expect(content).toContain("responded_at");
+  });
+
   it("should return { removed: true|false } based on delete result", () => {
     const content = fs.readFileSync(routePath, "utf-8");
     expect(content).toContain("removed");
@@ -309,16 +376,116 @@ describe("Leave Collaboration — Server route", () => {
   });
 });
 
-describe("NotificationsList — Remove myself button", () => {
+describe("Respond Collaboration — Server route", () => {
+  const routePath = path.join(
+    __dirname,
+    "../app/api/gallery-albums/[id]/respond-collaboration/route.ts"
+  );
+
+  it("should exist as a POST handler", () => {
+    expect(fs.existsSync(routePath)).toBe(true);
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("export async function POST");
+  });
+
+  it("should require authentication (401)", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("auth.getUser()");
+    expect(content).toContain('"Unauthorized"');
+    expect(content).toContain("status: 401");
+  });
+
+  it("should validate response must be accepted or declined", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain('"accepted"');
+    expect(content).toContain('"declined"');
+  });
+
+  it("should check that invite is pending before responding", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain('"pending"');
+    // Should return 409 if already responded
+    expect(content).toContain("status: 409");
+  });
+
+  it("should create gallery_album_links row on accept", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("gallery_album_links");
+    expect(content).toContain('"collaborator"');
+    expect(content).toContain('"profile"');
+  });
+
+  it("should update invite status and responded_at", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("gallery_collaboration_invites");
+    expect(content).toContain("responded_at");
+  });
+
+  it("should use service role client", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("getServiceRoleClient");
+  });
+});
+
+describe("Remove Collaborator — Server route", () => {
+  const routePath = path.join(
+    __dirname,
+    "../app/api/gallery-albums/[id]/remove-collaborator/route.ts"
+  );
+
+  it("should exist as a POST handler", () => {
+    expect(fs.existsSync(routePath)).toBe(true);
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("export async function POST");
+  });
+
+  it("should require authentication (401)", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("auth.getUser()");
+    expect(content).toContain('"Unauthorized"');
+    expect(content).toContain("status: 401");
+  });
+
+  it("should verify album ownership (created_by or admin)", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("created_by");
+    expect(content).toContain("isAdmin");
+    expect(content).toContain('"Forbidden"');
+    expect(content).toContain("status: 403");
+  });
+
+  it("should accept invitee_id in request body", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("invitee_id");
+    expect(content).toContain("inviteeId");
+  });
+
+  it("should delete collaborator link row", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("gallery_album_links");
+    expect(content).toContain(".delete()");
+    expect(content).toContain('"collaborator"');
+  });
+
+  it("should mark invite as declined", () => {
+    const content = fs.readFileSync(routePath, "utf-8");
+    expect(content).toContain("gallery_collaboration_invites");
+    expect(content).toContain('status: "declined"');
+  });
+});
+
+describe("NotificationsList — Collaboration invite actions", () => {
   const listPath = path.join(
     __dirname,
     "../app/(protected)/dashboard/notifications/NotificationsList.tsx"
   );
   const content = fs.readFileSync(listPath, "utf-8");
 
-  it("should render Remove myself button for gallery_collaborator_added type", () => {
-    expect(content).toContain('notification.type === "gallery_collaborator_added"');
-    expect(content).toContain("Remove myself");
+  it("should render Preview/Accept/Decline for gallery_collaborator_invite type", () => {
+    expect(content).toContain('notification.type === "gallery_collaborator_invite"');
+    expect(content).toContain("Preview");
+    expect(content).toContain("Accept");
+    expect(content).toContain("Decline");
   });
 
   it("should parse albumId from notification link", () => {
@@ -326,29 +493,140 @@ describe("NotificationsList — Remove myself button", () => {
     expect(content).toContain('searchParams.get("albumId")');
   });
 
-  it("should call leave-collaboration API route on click", () => {
+  it("should call respond-collaboration API route for accept/decline", () => {
     expect(content).toContain("/api/gallery-albums/");
-    expect(content).toContain("/leave-collaboration");
+    expect(content).toContain("/respond-collaboration");
     expect(content).toContain('method: "POST"');
   });
 
-  it("should show loading state during removal", () => {
-    expect(content).toContain("leavingAlbum");
-    expect(content).toContain("Removing...");
+  it("should have gallery_collaborator_invite icon", () => {
+    expect(content).toContain('"gallery_collaborator_invite"');
   });
 
-  it("should remove notification from list on success", () => {
-    expect(content).toContain("data.removed");
-    expect(content).toMatch(/setItems.*prev.*filter/);
+  it("should also support Remove myself for gallery_collaborator_added type", () => {
+    expect(content).toContain('notification.type === "gallery_collaborator_added"');
+    expect(content).toContain("Remove myself");
   });
 
-  it("should have gallery_collaborator_added icon", () => {
-    expect(content).toContain('"gallery_collaborator_added"');
+  it("should call leave-collaboration API route for self-removal", () => {
+    expect(content).toContain("/leave-collaboration");
+  });
+});
+
+describe("CollaborationInviteBanner — Album page component", () => {
+  const bannerPath = path.join(
+    __dirname,
+    "../app/gallery/[slug]/_components/CollaborationInviteBanner.tsx"
+  );
+
+  it("should exist as a client component", () => {
+    expect(fs.existsSync(bannerPath)).toBe(true);
+    const content = fs.readFileSync(bannerPath, "utf-8");
+    expect(content).toContain('"use client"');
+  });
+
+  it("should accept albumId, albumName, and inviterName props", () => {
+    const content = fs.readFileSync(bannerPath, "utf-8");
+    expect(content).toContain("albumId");
+    expect(content).toContain("albumName");
+    expect(content).toContain("inviterName");
+  });
+
+  it("should render Accept and Decline buttons", () => {
+    const content = fs.readFileSync(bannerPath, "utf-8");
+    expect(content).toContain("Accept");
+    expect(content).toContain("Decline");
+  });
+
+  it("should call respond-collaboration route on button click", () => {
+    const content = fs.readFileSync(bannerPath, "utf-8");
+    expect(content).toContain("/respond-collaboration");
+    expect(content).toContain('"accepted"');
+    expect(content).toContain('"declined"');
+  });
+});
+
+describe("Gallery album page — pending invite check", () => {
+  const pagePath = path.join(
+    __dirname,
+    "../app/gallery/[slug]/page.tsx"
+  );
+  const content = fs.readFileSync(pagePath, "utf-8");
+
+  it("should check for authenticated user", () => {
+    expect(content).toContain("auth.getUser()");
+  });
+
+  it("should query gallery_collaboration_invites for pending invite", () => {
+    expect(content).toContain("gallery_collaboration_invites");
+    expect(content).toContain('"pending"');
+  });
+
+  it("should render CollaborationInviteBanner for pending invitees", () => {
+    expect(content).toContain("CollaborationInviteBanner");
+    expect(content).toContain("pendingInvite");
+  });
+
+  it("should use service role client for invite query", () => {
+    expect(content).toContain("getServiceRoleClient");
+  });
+});
+
+describe("albumLinks.ts — Collaborator exclusion from reconcile", () => {
+  const linksPath = path.join(
+    __dirname,
+    "../lib/gallery/albumLinks.ts"
+  );
+  const content = fs.readFileSync(linksPath, "utf-8");
+
+  it("should NOT include collaboratorIds in AlbumLinkInput", () => {
+    expect(content).not.toContain("collaboratorIds");
+  });
+
+  it("should NOT build collaborator links in buildDesiredAlbumLinks", () => {
+    // The function should not reference collaborator in its logic
+    const fnMatch = content.match(/function buildDesiredAlbumLinks[\s\S]*?^}/m);
+    if (fnMatch) {
+      expect(fnMatch[0]).not.toContain("collaborator");
+    }
+  });
+
+  it("should document that collaborators are managed via invite flow", () => {
+    expect(content).toContain("opt-in invitation flow");
+  });
+});
+
+describe("CreateAlbumForm — Collaborator invite on create", () => {
+  const formPath = path.join(
+    __dirname,
+    "../app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx"
+  );
+  const content = fs.readFileSync(formPath, "utf-8");
+
+  it("should NOT pass collaboratorIds to reconcileAlbumLinks", () => {
+    const reconcileMatch = content.match(/reconcileAlbumLinks\([\s\S]*?\}\)/);
+    expect(reconcileMatch).not.toBeNull();
+    expect(reconcileMatch![0]).not.toContain("collaboratorIds");
+  });
+
+  it("should send collaboration invites via notify-collaborators route", () => {
+    expect(content).toContain("/notify-collaborators");
+    expect(content).toContain("added_user_ids");
+    expect(content).toContain("album_name");
+    expect(content).toContain("album_slug");
+  });
+
+  it("should label collaborator field as 'Invite collaborators'", () => {
+    expect(content).toContain("Invite collaborators");
+  });
+
+  it("should note that collaborators must accept", () => {
+    expect(content).toContain("they must accept");
   });
 });
 
 describe("Collaborator Email — Registry and Category Registration", () => {
-  it("should be registered in TEMPLATE_REGISTRY", () => {
+  it("collaboratorAdded should be registered in TEMPLATE_REGISTRY", () => {
     const registryPath = path.join(
       __dirname,
       "../lib/email/registry.ts"
@@ -356,21 +634,33 @@ describe("Collaborator Email — Registry and Category Registration", () => {
     const content = fs.readFileSync(registryPath, "utf-8");
     expect(content).toContain('"collaboratorAdded"');
     expect(content).toContain("collaboratorAdded:");
-    // Verify in EmailTemplateKey union
     expect(content).toContain('| "collaboratorAdded"');
-    // Verify in getTemplate switch
     expect(content).toContain('case "collaboratorAdded"');
-    // Verify in re-exports
     expect(content).toContain("getCollaboratorAddedEmail");
     expect(content).toContain("CollaboratorAddedEmailParams");
   });
 
-  it("should be mapped to event_updates category", () => {
+  it("collaboratorInvited should be registered in TEMPLATE_REGISTRY", () => {
+    const registryPath = path.join(
+      __dirname,
+      "../lib/email/registry.ts"
+    );
+    const content = fs.readFileSync(registryPath, "utf-8");
+    expect(content).toContain('"collaboratorInvited"');
+    expect(content).toContain("collaboratorInvited:");
+    expect(content).toContain('| "collaboratorInvited"');
+    expect(content).toContain('case "collaboratorInvited"');
+    expect(content).toContain("getCollaboratorInvitedEmail");
+    expect(content).toContain("CollaboratorInvitedEmailParams");
+  });
+
+  it("both templates should be mapped to event_updates category", () => {
     const prefsPath = path.join(
       __dirname,
       "../lib/notifications/preferences.ts"
     );
     const content = fs.readFileSync(prefsPath, "utf-8");
     expect(content).toContain('collaboratorAdded: "event_updates"');
+    expect(content).toContain('collaboratorInvited: "event_updates"');
   });
 });

@@ -17,8 +17,6 @@ export interface AlbumLinkInput {
   eventId?: string | null;
   /** album.venue_id — optional */
   venueId?: string | null;
-  /** collaborator profile IDs — optional, max 10 enforced by UI */
-  collaboratorIds?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -31,10 +29,11 @@ export interface AlbumLinkInput {
  *
  * Rules:
  * - Always includes a creator link (profile / created_by / creator)
- * - Adds collaborator links for each distinct collaborator ID (profile / id / collaborator)
- *   - A collaborator ID equal to created_by is allowed (separate link_role)
  * - Adds a venue link if venueId is set (venue / venue_id / venue)
  * - Adds an event link if eventId is set (event / event_id / event)
+ *
+ * Note: Collaborator links are managed via the opt-in invitation flow
+ * (gallery_collaboration_invites table) and are excluded from reconcile.
  */
 export function buildDesiredAlbumLinks(input: AlbumLinkInput): AlbumLinkRow[] {
   const links: AlbumLinkRow[] = [];
@@ -45,21 +44,6 @@ export function buildDesiredAlbumLinks(input: AlbumLinkInput): AlbumLinkRow[] {
     target_id: input.createdBy,
     link_role: "creator",
   });
-
-  // Collaborator links
-  if (input.collaboratorIds && input.collaboratorIds.length > 0) {
-    const seen = new Set<string>();
-    for (const id of input.collaboratorIds) {
-      if (id && !seen.has(id)) {
-        seen.add(id);
-        links.push({
-          target_type: "profile",
-          target_id: id,
-          link_role: "collaborator",
-        });
-      }
-    }
-  }
 
   // Venue link
   if (input.venueId) {

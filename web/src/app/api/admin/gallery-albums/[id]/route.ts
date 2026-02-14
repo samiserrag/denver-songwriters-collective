@@ -69,12 +69,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid media URL" }, { status: 400 });
     }
 
-    // Parse optional venue_id, event_id, and collaborator_ids from request
+    // Parse optional venue_id and event_id from request
+    // (collaborators are managed via the opt-in invitation flow, not reconcile)
     const venueId = typeof body.venue_id === "string" ? body.venue_id : null;
     const eventId = typeof body.event_id === "string" ? body.event_id : null;
-    const collaboratorIds = Array.isArray(body.collaborator_ids)
-      ? (body.collaborator_ids as string[]).filter((id) => typeof id === "string")
-      : [];
 
     const { error: updateError } = await auth.supabase
       .from("gallery_albums")
@@ -107,7 +105,7 @@ export async function PATCH(
       }
     }
 
-    // Reconcile album links (need created_by from the album)
+    // Reconcile album links (creator + venue + event; collaborators managed via invite flow)
     const { data: albumForLinks } = await auth.supabase
       .from("gallery_albums")
       .select("created_by")
@@ -120,7 +118,6 @@ export async function PATCH(
           createdBy: albumForLinks.created_by,
           venueId,
           eventId,
-          collaboratorIds,
         });
       } catch (err) {
         console.error("[PATCH /api/admin/gallery-albums/[id]] Link reconcile error:", err);

@@ -144,59 +144,22 @@ describe("buildDesiredAlbumLinks", () => {
     });
   });
 
-  it("includes collaborator links", () => {
+  it("does not include collaborator links (managed via invite flow)", () => {
+    // collaboratorIds is no longer part of AlbumLinkInput
     const links = buildDesiredAlbumLinks({
       createdBy: "user-1",
-      collaboratorIds: ["collab-1", "collab-2"],
     });
-    expect(links).toHaveLength(3); // creator + 2 collaborators
-    expect(links).toContainEqual({
-      target_type: "profile",
-      target_id: "collab-1",
-      link_role: "collaborator",
-    });
-    expect(links).toContainEqual({
-      target_type: "profile",
-      target_id: "collab-2",
-      link_role: "collaborator",
-    });
+    expect(links).toHaveLength(1); // creator only
+    expect(links.every((l) => l.link_role !== "collaborator")).toBe(true);
   });
 
-  it("deduplicates collaborator IDs", () => {
-    const links = buildDesiredAlbumLinks({
-      createdBy: "user-1",
-      collaboratorIds: ["collab-1", "collab-1", "collab-2"],
-    });
-    const collabLinks = links.filter((l) => l.link_role === "collaborator");
-    expect(collabLinks).toHaveLength(2);
-  });
-
-  it("allows creator to also be a collaborator (different link_role)", () => {
-    const links = buildDesiredAlbumLinks({
-      createdBy: "user-1",
-      collaboratorIds: ["user-1"],
-    });
-    expect(links).toHaveLength(2);
-    expect(links).toContainEqual({
-      target_type: "profile",
-      target_id: "user-1",
-      link_role: "creator",
-    });
-    expect(links).toContainEqual({
-      target_type: "profile",
-      target_id: "user-1",
-      link_role: "collaborator",
-    });
-  });
-
-  it("builds full link set with all fields", () => {
+  it("builds full link set with all fields (creator + venue + event)", () => {
     const links = buildDesiredAlbumLinks({
       createdBy: "user-1",
       venueId: "venue-1",
       eventId: "event-1",
-      collaboratorIds: ["collab-1"],
     });
-    expect(links).toHaveLength(4); // creator + venue + event + 1 collaborator
+    expect(links).toHaveLength(3); // creator + venue + event
   });
 
   it("skips null/undefined venueId and eventId", () => {
@@ -204,19 +167,8 @@ describe("buildDesiredAlbumLinks", () => {
       createdBy: "user-1",
       venueId: null,
       eventId: undefined,
-      collaboratorIds: [],
     });
     expect(links).toHaveLength(1); // creator only
-  });
-
-  it("skips empty string collaborator IDs", () => {
-    const links = buildDesiredAlbumLinks({
-      createdBy: "user-1",
-      collaboratorIds: ["", "collab-1", ""],
-    });
-    const collabLinks = links.filter((l) => l.link_role === "collaborator");
-    expect(collabLinks).toHaveLength(1);
-    expect(collabLinks[0].target_id).toBe("collab-1");
   });
 });
 
@@ -236,7 +188,6 @@ describe("reconcileAlbumLinks", () => {
       createdBy: "user-1",
       venueId: "venue-1",
       eventId: "event-1",
-      collaboratorIds: ["collab-1"],
     });
 
     expect(mockRpc).toHaveBeenCalledOnce();
@@ -244,7 +195,6 @@ describe("reconcileAlbumLinks", () => {
       p_album_id: "album-1",
       p_links: expect.arrayContaining([
         expect.objectContaining({ target_type: "profile", target_id: "user-1", link_role: "creator" }),
-        expect.objectContaining({ target_type: "profile", target_id: "collab-1", link_role: "collaborator" }),
         expect.objectContaining({ target_type: "venue", target_id: "venue-1", link_role: "venue" }),
         expect.objectContaining({ target_type: "event", target_id: "event-1", link_role: "event" }),
       ]),
@@ -376,7 +326,7 @@ describe("CreateAlbumForm wiring", () => {
     expect(source).toContain("@/lib/gallery/albumLinks");
   });
 
-  it("calls reconcile with createdBy, venueId, eventId, collaboratorIds", () => {
+  it("calls reconcile with createdBy, venueId, eventId (no collaboratorIds)", () => {
     const source = fs.readFileSync(
       path.join(ROOT, "app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx"),
       "utf-8"
@@ -385,7 +335,10 @@ describe("CreateAlbumForm wiring", () => {
     expect(source).toContain("createdBy: userId");
     expect(source).toContain("venueId: venueIdValue");
     expect(source).toContain("eventId: eventIdValue");
-    expect(source).toContain("collaboratorIds:");
+    // collaboratorIds should NOT be passed to reconcile (managed via invite flow)
+    const reconcileMatch = source.match(/reconcileAlbumLinks\([\s\S]*?\}\)/);
+    expect(reconcileMatch).not.toBeNull();
+    expect(reconcileMatch![0]).not.toContain("collaboratorIds");
   });
 
   it("surfaces reconcile errors to user via toast", () => {
@@ -420,13 +373,14 @@ describe("admin gallery-albums API wiring", () => {
     expect(source).toContain("@/lib/gallery/albumLinks");
   });
 
-  it("passes venue_id, event_id, and collaborator_ids from request body", () => {
+  it("passes venue_id and event_id from request body (no collaborator_ids)", () => {
     const source = fs.readFileSync(
       path.join(ROOT, "app/api/admin/gallery-albums/[id]/route.ts"),
       "utf-8"
     );
     expect(source).toContain("body.venue_id");
     expect(source).toContain("body.event_id");
-    expect(source).toContain("body.collaborator_ids");
+    // collaborator_ids should NOT be in reconcile (managed via invite flow)
+    expect(source).not.toContain("body.collaborator_ids");
   });
 });

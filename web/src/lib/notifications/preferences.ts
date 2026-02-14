@@ -125,6 +125,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
 
   // Gallery-related templates
   collaboratorAdded: "event_updates",
+  collaboratorInvited: "event_updates",
 
   // Admin-related templates
   adminEventClaimNotification: "admin_notifications",

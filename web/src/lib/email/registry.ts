@@ -105,6 +105,10 @@ import {
   getCollaboratorAddedEmail,
   type CollaboratorAddedEmailParams,
 } from "./templates/collaboratorAdded";
+import {
+  getCollaboratorInvitedEmail,
+  type CollaboratorInvitedEmailParams,
+} from "./templates/collaboratorInvited";
 
 /**
  * All available email template keys
@@ -134,7 +138,8 @@ export type EmailTemplateKey =
   | "feedbackNotification"
   | "weeklyOpenMicsDigest"
   | "weeklyHappeningsDigest"
-  | "collaboratorAdded";
+  | "collaboratorAdded"
+  | "collaboratorInvited";
 
 /**
  * Map of template keys to their parameter types
@@ -165,6 +170,7 @@ export interface EmailTemplateParams {
   weeklyOpenMicsDigest: WeeklyOpenMicsDigestParams;
   weeklyHappeningsDigest: WeeklyHappeningsDigestParams;
   collaboratorAdded: CollaboratorAddedEmailParams;
+  collaboratorInvited: CollaboratorInvitedEmailParams;
 }
 
 /**
@@ -392,6 +398,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: false,
   },
+  collaboratorInvited: {
+    key: "collaboratorInvited",
+    name: "Collaborator Invited",
+    description: "Invitation to collaborate on a gallery album with Accept/Decline",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: false,
+  },
 };
 
 /**
@@ -460,6 +474,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getWeeklyHappeningsDigestEmail(params as WeeklyHappeningsDigestParams);
     case "collaboratorAdded":
       return getCollaboratorAddedEmail(params as CollaboratorAddedEmailParams);
+    case "collaboratorInvited":
+      return getCollaboratorInvitedEmail(params as CollaboratorInvitedEmailParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -509,6 +525,7 @@ export {
   getWeeklyOpenMicsDigestEmail,
   getWeeklyHappeningsDigestEmail,
   getCollaboratorAddedEmail,
+  getCollaboratorInvitedEmail,
 };
 
 // Re-export param types
@@ -538,4 +555,5 @@ export type {
   WeeklyOpenMicsDigestParams,
   WeeklyHappeningsDigestParams,
   CollaboratorAddedEmailParams,
+  CollaboratorInvitedEmailParams,
 };

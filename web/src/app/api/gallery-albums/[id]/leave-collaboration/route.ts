@@ -1,8 +1,8 @@
 /**
  * POST /api/gallery-albums/[id]/leave-collaboration
  *
- * Allows a collaborator to remove themselves from a gallery album.
- * Deletes the gallery_album_links row where the caller is the collaborator.
+ * Allows an accepted collaborator to remove themselves from a gallery album.
+ * Deletes the gallery_album_links row and marks the invite as declined.
  * Only removes 'collaborator' role rows — does not affect creator/owner links.
  *
  * Auth: requires authenticated user.
@@ -35,10 +35,9 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 3. Use service role client to bypass RLS (collaborator can't delete their own row via RLS)
-  // gallery_album_links is not yet in generated Database types, so use untyped access
   const serviceClient = getServiceRoleClient();
 
+  // 3. Delete the collaborator link row
   const { data, error } = await (serviceClient as any)
     .from("gallery_album_links")
     .delete()
@@ -55,6 +54,16 @@ export async function POST(
       { status: 500 }
     );
   }
+
+  // 4. Mark the invite as declined (for audit and re-invite tracking)
+  await (serviceClient as any)
+    .from("gallery_collaboration_invites")
+    .update({
+      status: "declined",
+      responded_at: new Date().toISOString(),
+    })
+    .eq("album_id", albumId)
+    .eq("invitee_id", user.id);
 
   const removed = (data?.length ?? 0) > 0;
   return NextResponse.json({ removed });

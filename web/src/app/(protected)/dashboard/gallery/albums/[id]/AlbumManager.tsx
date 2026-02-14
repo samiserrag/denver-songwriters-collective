@@ -315,7 +315,6 @@ export default function AlbumManager({
           media_embed_urls: mediaEmbedUrls,
           venue_id: venueIdValue,
           event_id: eventIdValue,
-          collaborator_ids: collaborators.map((c) => c.id),
         }),
       });
 
@@ -345,13 +344,12 @@ export default function AlbumManager({
       return;
     }
 
-    // Reconcile album links (creator + collaborators + venue + event)
+    // Reconcile album links (creator + venue + event; collaborators managed via invite flow)
     try {
       await reconcileAlbumLinks(supabase, album.id, {
         createdBy: album.created_by,
         venueId: venueIdValue,
         eventId: eventIdValue,
-        collaboratorIds: collaborators.map((c) => c.id),
       });
     } catch (linkError) {
       console.error("Album link reconciliation error:", linkError);
@@ -729,7 +727,7 @@ export default function AlbumManager({
           {/* Collaborators */}
           <div>
             <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-              Collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — album appears on their profiles)</span>
+              Invite collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — they must accept before the album appears on their profile)</span>
             </label>
             <CollaboratorSelect
               value={collaborators}
@@ -738,7 +736,7 @@ export default function AlbumManager({
               disabled={isSaving}
             />
             <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Collaborator changes take effect after you click Save.
+              Invites are sent when you click Save.
             </p>
           </div>
           {isAdmin && (

@@ -1,18 +1,20 @@
 /**
  * POST /api/gallery-albums/[id]/notify-collaborators
  *
- * Creates in-app dashboard notifications and sends preference-gated emails
- * for newly added gallery album collaborators.
- * Called by AlbumManager after successful save + reconcile.
+ * Creates pending collaboration invites, in-app notifications, and
+ * preference-gated emails for newly invited gallery album collaborators.
+ * Called by AlbumManager after successful save.
  *
  * Auth: caller must be album.created_by or admin.
+ *
+ * Collaborators must accept the invite before the album appears on their profile.
  */
 
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
-import { getCollaboratorAddedEmail } from "@/lib/email/templates/collaboratorAdded";
+import { getCollaboratorInvitedEmail } from "@/lib/email/templates/collaboratorInvited";
 
 export async function POST(
   request: Request,
@@ -88,13 +90,32 @@ export async function POST(
 
   const actorName = actorProfile?.full_name || user.email || "Someone";
 
-  // 5. Send in-app notification + preference-gated email for each collaborator
+  // 5. Create pending invites + notifications + emails for each collaborator
   const albumLink = `/gallery/${album_slug}?albumId=${albumId}`;
   const serviceClient = getServiceRoleClient();
   const results: Array<{ userId: string; success: boolean; error?: string }> = [];
 
   for (const userId of added_user_ids) {
-    // Fetch collaborator profile name and email for email sending
+    // 5a. Create or update the invite row (pending status)
+    //     If a previous invite exists (e.g. declined), reset to pending for re-invite
+    const { error: inviteError } = await (serviceClient as any)
+      .from("gallery_collaboration_invites")
+      .upsert({
+        album_id: albumId,
+        invitee_id: userId,
+        invited_by: user.id,
+        status: "pending",
+        responded_at: null,
+        created_at: new Date().toISOString(),
+      }, { onConflict: "album_id,invitee_id" });
+
+    if (inviteError) {
+      console.error(`[notify-collaborators] Invite creation failed for ${userId}:`, inviteError.message);
+      results.push({ userId, success: false, error: "invite_creation_failed" });
+      continue;
+    }
+
+    // 5b. Fetch collaborator profile name and email
     const { data: collabProfile } = await supabase
       .from("profiles")
       .select("full_name")
@@ -105,25 +126,28 @@ export async function POST(
     const collabEmail = collabAuth?.user?.email;
     const collabName = collabProfile?.full_name || "there";
 
-    const notifMessage = `${actorName} added you as a collaborator on the album "${album_name}".`;
+    const notifMessage = `${actorName} invited you to collaborate on the album "${album_name}".`;
 
-    // Build email content
-    const emailData = getCollaboratorAddedEmail({
-      collaboratorName: collabName,
+    // 5c. Build email content with Accept/Decline/Preview links
+    const emailData = getCollaboratorInvitedEmail({
+      inviteeName: collabName,
+      actorName,
       albumName: album_name,
       albumSlug: album_slug,
+      albumId,
     });
 
-    const { notificationCreated, emailSent, skipReason } = await sendEmailWithPreferences({
+    // 5d. Send notification + preference-gated email
+    const { notificationCreated, skipReason } = await sendEmailWithPreferences({
       supabase,
       userId,
-      templateKey: "collaboratorAdded",
+      templateKey: "collaboratorInvited",
       payload: collabEmail ? {
         to: collabEmail,
         subject: emailData.subject,
         html: emailData.html,
         text: emailData.text,
-        templateName: "collaboratorAdded",
+        templateName: "collaboratorInvited",
       } : {
         to: "",
         subject: "",
@@ -131,8 +155,8 @@ export async function POST(
         text: "",
       },
       notification: {
-        type: "gallery_collaborator_added",
-        title: "Added as a collaborator",
+        type: "gallery_collaborator_invite",
+        title: "Collaboration invite",
         message: notifMessage,
         link: albumLink,
       },
