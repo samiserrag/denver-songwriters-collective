@@ -1,0 +1,61 @@
+/**
+ * POST /api/gallery-albums/[id]/leave-collaboration
+ *
+ * Allows a collaborator to remove themselves from a gallery album.
+ * Deletes the gallery_album_links row where the caller is the collaborator.
+ * Only removes 'collaborator' role rows — does not affect creator/owner links.
+ *
+ * Auth: requires authenticated user.
+ */
+
+import { NextResponse } from "next/server";
+import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function POST(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: albumId } = await params;
+
+  // 1. Validate album ID format
+  if (!UUID_RE.test(albumId)) {
+    return NextResponse.json({ error: "Invalid album ID" }, { status: 400 });
+  }
+
+  // 2. Authenticate
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 3. Use service role client to bypass RLS (collaborator can't delete their own row via RLS)
+  // gallery_album_links is not yet in generated Database types, so use untyped access
+  const serviceClient = getServiceRoleClient();
+
+  const { data, error } = await (serviceClient as any)
+    .from("gallery_album_links")
+    .delete()
+    .eq("album_id", albumId)
+    .eq("target_type", "profile")
+    .eq("target_id", user.id)
+    .eq("link_role", "collaborator")
+    .select("id");
+
+  if (error) {
+    console.error("[leave-collaboration] Delete error:", error.message);
+    return NextResponse.json(
+      { error: "Failed to remove collaboration" },
+      { status: 500 }
+    );
+  }
+
+  const removed = (data?.length ?? 0) > 0;
+  return NextResponse.json({ removed });
+}

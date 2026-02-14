@@ -43,6 +43,7 @@ export default function NotificationsList({
   const [markingAll, setMarkingAll] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [leavingAlbum, setLeavingAlbum] = useState<string | null>(null);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [hasMore, setHasMore] = useState(!!initialCursor);
   const [total, setTotal] = useState(initialTotal);
@@ -71,6 +72,7 @@ export default function NotificationsList({
       case "host_approved": return "🎤";
       case "host_rejected": return "❌";
       case "event_cancelled": return "🚫";
+      case "gallery_collaborator_added": return "📸";
       default: return "🔔";
     }
   };
@@ -248,6 +250,46 @@ export default function NotificationsList({
     }
   };
 
+  // Parse album ID from notification link (e.g. /gallery/slug?albumId=uuid)
+  const getAlbumIdFromLink = (link: string | null): string | null => {
+    if (!link) return null;
+    try {
+      const url = new URL(link, "https://placeholder.com");
+      return url.searchParams.get("albumId");
+    } catch {
+      return null;
+    }
+  };
+
+  // Handle "Remove myself" from album collaboration
+  const handleLeaveCollaboration = async (notification: Notification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const albumId = getAlbumIdFromLink(notification.link);
+    if (!albumId) return;
+
+    setLeavingAlbum(notification.id);
+    try {
+      const res = await fetch(`/api/gallery-albums/${albumId}/leave-collaboration`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.removed) {
+        // Remove the notification from local state
+        setItems(prev => prev.filter(n => n.id !== notification.id));
+        setTotal(prev => prev - 1);
+      } else if (res.ok && !data.removed) {
+        alert("You are not a collaborator on this album.");
+      } else {
+        alert(data.error || "Failed to remove collaboration.");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setLeavingAlbum(null);
+    }
+  };
+
   // Filter items based on hideRead toggle (for local filtering when not using API)
   const visibleItems = hideRead ? items.filter(n => !n.is_read) : items;
   const unreadCount = items.filter(n => !n.is_read).length;
@@ -383,6 +425,15 @@ export default function NotificationsList({
                   <p className={`text-sm mt-1 ${notification.is_read ? "text-[var(--color-text-tertiary)]" : "text-[var(--color-text-secondary)]"}`}>{notification.message}</p>
                 )}
                 <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{formatDate(notification.created_at)}</p>
+                {notification.type === "gallery_collaborator_added" && getAlbumIdFromLink(notification.link) && (
+                  <button
+                    onClick={(e) => handleLeaveCollaboration(notification, e)}
+                    disabled={leavingAlbum === notification.id}
+                    className="mt-2 px-3 py-1 text-xs font-medium rounded border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-red-500 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {leavingAlbum === notification.id ? "Removing..." : "Remove myself"}
+                  </button>
+                )}
               </div>
               {notification.link && (
                 <Link

@@ -374,7 +374,8 @@ describe("Email Registry", () => {
     expect(keys).toContain("weeklyOpenMicsDigest");
     expect(keys).toContain("weeklyHappeningsDigest");
     expect(keys).toContain("eventRestored");
-    expect(keys.length).toBe(24);
+    expect(keys).toContain("collaboratorAdded");
+    expect(keys.length).toBe(25);
   });
 
   it("getTemplate returns valid output for all templates", () => {

@@ -101,6 +101,10 @@ import {
   getEventRestoredEmail,
   type EventRestoredEmailParams,
 } from "./templates/eventRestored";
+import {
+  getCollaboratorAddedEmail,
+  type CollaboratorAddedEmailParams,
+} from "./templates/collaboratorAdded";
 
 /**
  * All available email template keys
@@ -129,7 +133,8 @@ export type EmailTemplateKey =
   | "occurrenceModifiedHost"
   | "feedbackNotification"
   | "weeklyOpenMicsDigest"
-  | "weeklyHappeningsDigest";
+  | "weeklyHappeningsDigest"
+  | "collaboratorAdded";
 
 /**
  * Map of template keys to their parameter types
@@ -159,6 +164,7 @@ export interface EmailTemplateParams {
   feedbackNotification: FeedbackNotificationEmailParams;
   weeklyOpenMicsDigest: WeeklyOpenMicsDigestParams;
   weeklyHappeningsDigest: WeeklyHappeningsDigestParams;
+  collaboratorAdded: CollaboratorAddedEmailParams;
 }
 
 /**
@@ -378,6 +384,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: false,
   },
+  collaboratorAdded: {
+    key: "collaboratorAdded",
+    name: "Collaborator Added",
+    description: "Notification when added as gallery album collaborator",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: false,
+  },
 };
 
 /**
@@ -444,6 +458,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getWeeklyOpenMicsDigestEmail(params as WeeklyOpenMicsDigestParams);
     case "weeklyHappeningsDigest":
       return getWeeklyHappeningsDigestEmail(params as WeeklyHappeningsDigestParams);
+    case "collaboratorAdded":
+      return getCollaboratorAddedEmail(params as CollaboratorAddedEmailParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -492,6 +508,7 @@ export {
   getFeedbackNotificationEmail,
   getWeeklyOpenMicsDigestEmail,
   getWeeklyHappeningsDigestEmail,
+  getCollaboratorAddedEmail,
 };
 
 // Re-export param types
@@ -520,4 +537,5 @@ export type {
   FeedbackNotificationEmailParams,
   WeeklyOpenMicsDigestParams,
   WeeklyHappeningsDigestParams,
+  CollaboratorAddedEmailParams,
 };

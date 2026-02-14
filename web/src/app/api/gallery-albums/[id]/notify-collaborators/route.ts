@@ -1,15 +1,18 @@
 /**
  * POST /api/gallery-albums/[id]/notify-collaborators
  *
- * Creates in-app dashboard notifications for newly added gallery album
- * collaborators. Called by AlbumManager after successful save + reconcile.
+ * Creates in-app dashboard notifications and sends preference-gated emails
+ * for newly added gallery album collaborators.
+ * Called by AlbumManager after successful save + reconcile.
  *
  * Auth: caller must be album.created_by or admin.
- * No email in this route — in-app notification only.
  */
 
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
+import { getCollaboratorAddedEmail } from "@/lib/email/templates/collaboratorAdded";
 
 export async function POST(
   request: Request,
@@ -76,23 +79,72 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // 4. Send in-app notification for each added collaborator
-  const albumLink = `/gallery/${album_slug}`;
+  // 4. Derive actor display name from session user
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
+  const actorName = actorProfile?.full_name || user.email || "Someone";
+
+  // 5. Send in-app notification + preference-gated email for each collaborator
+  const albumLink = `/gallery/${album_slug}?albumId=${albumId}`;
+  const serviceClient = getServiceRoleClient();
   const results: Array<{ userId: string; success: boolean; error?: string }> = [];
 
   for (const userId of added_user_ids) {
-    const { error: notifError } = await supabase.rpc("create_user_notification", {
-      p_user_id: userId,
-      p_type: "gallery_collaborator_added",
-      p_title: "Added as a collaborator",
-      p_message: `You were added as a collaborator on the album "${album_name}".`,
-      p_link: albumLink,
+    // Fetch collaborator profile name and email for email sending
+    const { data: collabProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .single();
+
+    const { data: collabAuth } = await serviceClient.auth.admin.getUserById(userId);
+    const collabEmail = collabAuth?.user?.email;
+    const collabName = collabProfile?.full_name || "there";
+
+    const notifMessage = `${actorName} added you as a collaborator on the album "${album_name}".`;
+
+    // Build email content
+    const emailData = getCollaboratorAddedEmail({
+      collaboratorName: collabName,
+      albumName: album_name,
+      albumSlug: album_slug,
     });
 
-    if (notifError) {
-      console.error(`[notify-collaborators] Failed for user ${userId}:`, notifError.message);
-      results.push({ userId, success: false, error: notifError.message });
+    const { notificationCreated, emailSent, skipReason } = await sendEmailWithPreferences({
+      supabase,
+      userId,
+      templateKey: "collaboratorAdded",
+      payload: collabEmail ? {
+        to: collabEmail,
+        subject: emailData.subject,
+        html: emailData.html,
+        text: emailData.text,
+        templateName: "collaboratorAdded",
+      } : {
+        to: "",
+        subject: "",
+        html: "",
+        text: "",
+      },
+      notification: {
+        type: "gallery_collaborator_added",
+        title: "Added as a collaborator",
+        message: notifMessage,
+        link: albumLink,
+      },
+    });
+
+    if (!notificationCreated) {
+      console.error(`[notify-collaborators] Notification failed for user ${userId}`);
+      results.push({ userId, success: false, error: "notification_failed" });
     } else {
+      if (skipReason) {
+        console.log(`[notify-collaborators] Email skipped for ${userId}: ${skipReason}`);
+      }
       results.push({ userId, success: true });
     }
   }
