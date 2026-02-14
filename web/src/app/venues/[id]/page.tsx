@@ -15,6 +15,8 @@ import {
   buildOverrideMap,
 } from "@/lib/events/nextOccurrence";
 import { QrShareBlock } from "@/components/shared/QrShareBlock";
+import { OrderedMediaEmbeds } from "@/components/media/OrderedMediaEmbeds";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 // Check if string is a valid UUID
 function isUUID(str: string): boolean {
@@ -189,13 +191,16 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
     }))
   );
 
-  // Fetch venue images for photo gallery
-  const { data: venueImages } = await supabase
-    .from("venue_images")
-    .select("id, image_url")
-    .eq("venue_id", venue.id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  // Fetch venue images and media embeds in parallel
+  const [{ data: venueImages }, venueEmbeds] = await Promise.all([
+    supabase
+      .from("venue_images")
+      .select("id, image_url")
+      .eq("venue_id", venue.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    readMediaEmbeds(supabase, { type: "venue", id: venue.id }).catch(() => []),
+  ]);
 
   // Map events to SeriesEvent format with venue info
   // Phase ABC4: Include venue slug for SeriesCard internal links
@@ -448,6 +453,15 @@ export default async function VenueDetailPage({ params }: VenueDetailParams) {
             </h2>
             <PhotoGallery images={venueImages as Array<{ id: string; image_url: string }>} />
           </section>
+        )}
+
+        {/* Media Embeds Section */}
+        {venueEmbeds.length > 0 && (
+          <OrderedMediaEmbeds
+            embeds={venueEmbeds as Array<{ id: string; url: string; provider: string; kind: string; position: number }>}
+            heading="Media"
+            className="mt-8 mb-12"
+          />
         )}
 
         {/* Happenings Section */}

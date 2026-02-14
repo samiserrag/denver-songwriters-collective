@@ -11,6 +11,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { canEditVenue, getVenueRole, isEventHostAtVenue } from "@/lib/venue/managerAuth";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import VenueEditForm from "./_components/VenueEditForm";
 import { VenuePhotosSection } from "@/components/venue/VenuePhotosSection";
 
@@ -62,13 +63,18 @@ export default async function EditVenuePage({
     redirect("/dashboard/my-venues");
   }
 
-  // Fetch venue images
-  const { data: venueImages } = await supabase
-    .from("venue_images")
-    .select("id, venue_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
-    .eq("venue_id", venueId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  // Fetch venue images and media embeds in parallel
+  const [{ data: venueImages }, existingEmbeds] = await Promise.all([
+    supabase
+      .from("venue_images")
+      .select("id, venue_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
+      .eq("venue_id", venueId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    readMediaEmbeds(supabase, { type: "venue", id: venueId }).catch(() => []),
+  ]);
+
+  const initialMediaEmbedUrls = existingEmbeds.map((e: { url: string }) => e.url);
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -132,7 +138,7 @@ export default async function EditVenuePage({
         </div>
 
         {/* Edit Form */}
-        <VenueEditForm venue={venue} />
+        <VenueEditForm venue={venue} initialMediaEmbedUrls={initialMediaEmbedUrls} />
 
         {/* Venue Photos Section */}
         <div className="mt-12 pt-8 border-t border-[var(--color-border-default)]">

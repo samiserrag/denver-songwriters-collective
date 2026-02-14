@@ -12,6 +12,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MANAGER_EDITABLE_VENUE_FIELDS } from "@/lib/venue/managerAuth";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { MediaEmbedsEditor } from "@/components/media/MediaEmbedsEditor";
 import { createClient } from "@/lib/supabase/client";
 
 interface VenueData {
@@ -35,15 +36,17 @@ interface VenueData {
 
 interface VenueEditFormProps {
   venue: VenueData;
+  initialMediaEmbedUrls?: string[];
 }
 
-export default function VenueEditForm({ venue }: VenueEditFormProps) {
+export default function VenueEditForm({ venue, initialMediaEmbedUrls = [] }: VenueEditFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(venue.cover_image_url);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>(initialMediaEmbedUrls);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -169,7 +172,11 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
         }
       }
 
-      if (Object.keys(changes).length === 0) {
+      // Check if media embeds changed
+      const mediaChanged =
+        JSON.stringify(mediaEmbedUrls) !== JSON.stringify(initialMediaEmbedUrls);
+
+      if (Object.keys(changes).length === 0 && !mediaChanged) {
         setError("No changes to save");
         setIsSubmitting(false);
         return;
@@ -178,7 +185,10 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
       const response = await fetch(`/api/venues/${venue.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(changes),
+        body: JSON.stringify({
+          ...changes,
+          ...(mediaChanged ? { media_embed_urls: mediaEmbedUrls } : {}),
+        }),
       });
 
       const data = await response.json();
@@ -237,6 +247,11 @@ export default function VenueEditForm({ venue }: VenueEditFormProps) {
             {imageError}
           </div>
         )}
+      </fieldset>
+
+      {/* Media Embeds Section */}
+      <fieldset className="space-y-4">
+        <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
       </fieldset>
 
       {/* Basic Info Section */}

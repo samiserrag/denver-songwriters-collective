@@ -2102,13 +2102,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
       {/* ============ MEDIA EMBEDS ============ */}
       <div>
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-          Media Links{occurrenceMode ? " (this date only)" : ""}
-          <span className="text-[var(--color-text-secondary)] font-normal ml-1">(optional)</span>
-        </label>
-        <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
-          Add YouTube, Spotify, or other links. Drag to reorder.
-        </p>
+        {occurrenceMode && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+            Editing media links for this date only.
+          </p>
+        )}
         <MediaEmbedsEditor value={mediaEmbedUrls} onChange={setMediaEmbedUrls} />
       </div>
 

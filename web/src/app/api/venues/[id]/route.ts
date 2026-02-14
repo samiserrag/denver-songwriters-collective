@@ -22,6 +22,7 @@ import {
 } from "@/lib/venue/managerAuth";
 import { venueAudit } from "@/lib/audit/venueAudit";
 import { processVenueGeocoding } from "@/lib/venue/geocoding";
+import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 export async function GET(
   request: NextRequest,
@@ -100,13 +101,25 @@ export async function PATCH(
 
     const body = await request.json();
 
+    // Extract media_embed_urls before sanitizing venue fields
+    // (sanitizeVenuePatch strips unknown keys, including media_embed_urls)
+    const mediaEmbedUrls: string[] | undefined = Array.isArray(body.media_embed_urls)
+      ? body.media_embed_urls
+      : undefined;
+
     // Check for disallowed fields (warn in response)
-    const disallowedFields = getDisallowedFields(body);
+    // Exclude media_embed_urls from the disallowed check — it's handled separately
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { media_embed_urls: _mediaUrls, ...bodyForFieldCheck } = body;
+    const disallowedFields = getDisallowedFields(bodyForFieldCheck);
 
     // Sanitize patch to only allowed fields
     const sanitizedPatch = sanitizeVenuePatch(body);
 
-    if (Object.keys(sanitizedPatch).length === 0) {
+    const hasVenueFieldChanges = Object.keys(sanitizedPatch).length > 0;
+    const hasMediaChanges = mediaEmbedUrls !== undefined;
+
+    if (!hasVenueFieldChanges && !hasMediaChanges) {
       return NextResponse.json(
         {
           error: "No valid fields to update",
@@ -118,82 +131,116 @@ export async function PATCH(
       );
     }
 
-    // Trim string values and convert empty strings to null
-    const updates: Record<string, string | null> = {};
-    for (const [key, value] of Object.entries(sanitizedPatch)) {
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        updates[key] = trimmed === "" ? null : trimmed;
-      } else {
-        // Value is null or undefined from sanitized patch
-        updates[key] = value as string | null;
-      }
-    }
-
     // Use service role for the update to bypass RLS
     // (RLS allows public SELECT but requires admin for UPDATE)
     const serviceClient = createServiceRoleClient();
 
-    // Fetch current venue values for audit trail (before snapshot)
-    // Phase 0.6: Include coordinate fields for geocoding logic
-    const { data: existingVenue, error: checkError } = await serviceClient
-      .from("venues")
-      .select(
-        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url, latitude, longitude, geocode_source"
-      )
-      .eq("id", venueId)
-      .single();
+    let updatedVenue = null;
+    let geocodingApplied = false;
+    let updatedFields: string[] = [];
 
-    if (checkError || !existingVenue) {
-      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
-    }
+    // --- Venue field update (only if there are venue field changes) ---
+    if (hasVenueFieldChanges) {
+      // Trim string values and convert empty strings to null
+      const updates: Record<string, string | null> = {};
+      for (const [key, value] of Object.entries(sanitizedPatch)) {
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          updates[key] = trimmed === "" ? null : trimmed;
+        } else {
+          // Value is null or undefined from sanitized patch
+          updates[key] = value as string | null;
+        }
+      }
 
-    // Phase 0.6: Process geocoding if address fields changed
-    const updatesWithGeo = await processVenueGeocoding(
-      existingVenue,
-      updates as Record<string, unknown>
-    );
+      // Fetch current venue values for audit trail (before snapshot)
+      // Phase 0.6: Include coordinate fields for geocoding logic
+      const { data: existingVenue, error: checkError } = await serviceClient
+        .from("venues")
+        .select(
+          "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url, latitude, longitude, geocode_source"
+        )
+        .eq("id", venueId)
+        .single();
 
-    // Capture previous values for changed fields only
-    const previousValues: Record<string, unknown> = {};
-    for (const key of Object.keys(updatesWithGeo)) {
-      previousValues[key] = existingVenue[key as keyof typeof existingVenue];
-    }
+      if (checkError || !existingVenue) {
+        return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+      }
 
-    // Perform the update
-    const { data: updatedVenue, error: updateError } = await serviceClient
-      .from("venues")
-      .update(updatesWithGeo)
-      .eq("id", venueId)
-      .select(
-        "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url, latitude, longitude, geocode_source, geocoded_at"
-      )
-      .single();
-
-    if (updateError) {
-      console.error("[VenueAPI] Update error:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update venue" },
-        { status: 500 }
+      // Phase 0.6: Process geocoding if address fields changed
+      const updatesWithGeo = await processVenueGeocoding(
+        existingVenue,
+        updates as Record<string, unknown>
       );
+
+      // Capture previous values for changed fields only
+      const previousValues: Record<string, unknown> = {};
+      for (const key of Object.keys(updatesWithGeo)) {
+        previousValues[key] = existingVenue[key as keyof typeof existingVenue];
+      }
+
+      // Perform the update
+      const { data: venueResult, error: updateError } = await serviceClient
+        .from("venues")
+        .update(updatesWithGeo)
+        .eq("id", venueId)
+        .select(
+          "id, name, slug, address, city, state, zip, phone, website_url, google_maps_url, map_link, contact_link, neighborhood, accessibility_notes, parking_notes, cover_image_url, latitude, longitude, geocode_source, geocoded_at"
+        )
+        .single();
+
+      if (updateError) {
+        console.error("[VenueAPI] Update error:", updateError);
+        return NextResponse.json(
+          { error: "Failed to update venue" },
+          { status: 500 }
+        );
+      }
+
+      updatedVenue = venueResult;
+      updatedFields = Object.keys(updatesWithGeo);
+      geocodingApplied = !!(updatesWithGeo.latitude && updatesWithGeo.geocode_source === "api");
+
+      // Log the edit for audit trail (async, non-blocking)
+      venueAudit.venueEdited(user.id, {
+        venueId,
+        venueName: existingVenue.name,
+        updatedFields,
+        previousValues,
+        newValues: updatesWithGeo,
+        actorRole: isAdmin ? "admin" : (canEdit ? "host" : "manager"),
+      });
     }
 
-    // Log the edit for audit trail (async, non-blocking)
-    // Phase 0.6: Track whether geocoding was applied
-    const geocodingApplied = !!(updatesWithGeo.latitude && updatesWithGeo.geocode_source === "api");
-    venueAudit.venueEdited(user.id, {
-      venueId,
-      venueName: existingVenue.name,
-      updatedFields: Object.keys(updatesWithGeo),
-      previousValues,
-      newValues: updatesWithGeo,
-      actorRole: isAdmin ? "admin" : (canEdit ? "host" : "manager"),
-    });
+    // --- Media embeds upsert (if media_embed_urls was provided) ---
+    if (hasMediaChanges && mediaEmbedUrls) {
+      try {
+        await upsertMediaEmbeds(
+          serviceClient,
+          { type: "venue", id: venueId },
+          mediaEmbedUrls,
+          user.id
+        );
+      } catch (embedError) {
+        console.error("[VenueAPI] Media embed upsert error:", embedError);
+        // Non-blocking: venue fields were already saved.
+        // Return success with a warning about embeds.
+        return NextResponse.json({
+          success: true,
+          venue: updatedVenue,
+          updatedFields,
+          geocodingApplied,
+          mediaEmbedsError: embedError instanceof Error ? embedError.message : "Failed to save media embeds",
+          disallowedFields:
+            disallowedFields.length > 0 ? disallowedFields : undefined,
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,
       venue: updatedVenue,
-      updatedFields: Object.keys(updatesWithGeo),
+      updatedFields,
       geocodingApplied,
       disallowedFields:
         disallowedFields.length > 0 ? disallowedFields : undefined,

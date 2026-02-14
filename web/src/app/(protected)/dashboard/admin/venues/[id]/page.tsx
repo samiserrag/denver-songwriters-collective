@@ -9,6 +9,7 @@ import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import VenueManagersList from "./_components/VenueManagersList";
 import VenueEditHistory from "./_components/VenueEditHistory";
 import VenueInviteSection from "./_components/VenueInviteSection";
@@ -120,13 +121,18 @@ export default async function AdminVenueDetailPage({
   }
   const inviteProfileMap = new Map(inviteCreatorProfiles.map((p) => [p.id, p]));
 
-  // Fetch venue images
-  const { data: venueImages } = await serviceClient
-    .from("venue_images")
-    .select("id, venue_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
-    .eq("venue_id", venueId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  // Fetch venue images and media embeds in parallel
+  const [{ data: venueImages }, existingEmbeds] = await Promise.all([
+    serviceClient
+      .from("venue_images")
+      .select("id, venue_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
+      .eq("venue_id", venueId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    readMediaEmbeds(serviceClient, { type: "venue", id: venueId }).catch(() => []),
+  ]);
+
+  const initialMediaEmbedUrls = existingEmbeds.map((e: { url: string }) => e.url);
 
   // Fetch venue edit audit logs
   const { data: auditLogs } = await serviceClient
@@ -215,7 +221,7 @@ export default async function AdminVenueDetailPage({
             accessibility_notes: venue.accessibility_notes,
             parking_notes: venue.parking_notes,
             cover_image_url: venue.cover_image_url,
-          }} />
+          }} initialMediaEmbedUrls={initialMediaEmbedUrls} />
         </section>
 
         {/* Venue Photos Section */}
