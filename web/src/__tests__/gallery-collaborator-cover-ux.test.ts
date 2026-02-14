@@ -176,10 +176,31 @@ describe("Gallery Collaborator Notifications — Server route", () => {
     expect(content).toMatch(/albumLink.*albumId/);
   });
 
-  it("should fetch collaborator email via service role client", () => {
-    expect(content).toContain("getServiceRoleClient");
+  it("should resolve email via resolveInviteeEmail helper (auth-first + profiles fallback)", () => {
+    expect(content).toContain("resolveInviteeEmail");
     expect(content).toContain("auth.admin.getUserById");
-    expect(content).toContain("collabEmail");
+    // Auth is primary source
+    expect(content).toContain('source: "auth"');
+    // profiles.email is fallback
+    expect(content).toContain('source: "profiles"');
+    // null/none is final fallback
+    expect(content).toContain('source: "none"');
+  });
+
+  it("should use service role client for auth admin lookup", () => {
+    expect(content).toContain("getServiceRoleClient");
+    expect(content).toContain("serviceClient.auth.admin.getUserById");
+  });
+
+  it("should skip email send when no email is resolved (notification only)", () => {
+    expect(content).toContain("No email for user");
+    expect(content).toContain("skipping email (notification only)");
+    expect(content).toContain("create_user_notification");
+  });
+
+  it("should log diagnostic info with masked email and source", () => {
+    expect(content).toContain("maskedEmail");
+    expect(content).toContain("emailSource");
   });
 
   it("should use server Supabase client (not browser client)", () => {
@@ -622,6 +643,36 @@ describe("CreateAlbumForm — Collaborator invite on create", () => {
 
   it("should note that collaborators must accept", () => {
     expect(content).toContain("they must accept");
+  });
+});
+
+describe("sendEmailWithPreferences — defensive guard against empty recipient", () => {
+  const sendPath = path.join(
+    __dirname,
+    "../lib/email/sendWithPreferences.ts"
+  );
+  const content = fs.readFileSync(sendPath, "utf-8");
+
+  it("should validate recipient is non-empty before attempting send", () => {
+    expect(content).toContain("payload.to");
+    expect(content).toContain(".trim()");
+  });
+
+  it("should return missing_recipient skipReason for empty to", () => {
+    expect(content).toContain('"missing_recipient"');
+    expect(content).toContain("Missing recipient");
+  });
+
+  it("should still create notification even when recipient is missing", () => {
+    // The guard block should still call create_user_notification
+    expect(content).toContain("create_user_notification");
+  });
+
+  it("should never call sendEmail with empty recipient", () => {
+    // The guard returns before reaching sendEmail
+    const guardBlock = content.match(/Step 0:.*?Step 1:/s);
+    expect(guardBlock).not.toBeNull();
+    expect(guardBlock![0]).toContain("return result");
   });
 });
 

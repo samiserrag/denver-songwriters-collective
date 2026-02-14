@@ -58,7 +58,7 @@ export interface SendWithPreferencesResult {
   /**
    * If email was skipped, the reason why
    */
-  skipReason?: "preference_disabled" | "no_category" | "send_failed";
+  skipReason?: "preference_disabled" | "no_category" | "send_failed" | "missing_recipient";
 }
 
 /**
@@ -76,6 +76,31 @@ export async function sendEmailWithPreferences(
     notificationCreated: false,
     emailSent: false,
   };
+
+  // Step 0: Defensive guard — never attempt to send with an empty recipient
+  const toValue = Array.isArray(payload.to) ? payload.to[0] : payload.to;
+  if (!toValue || !toValue.trim()) {
+    console.warn(`[Email] Missing recipient for ${templateKey}, skipping email send`);
+    result.skipReason = "missing_recipient";
+
+    // Still create the notification if requested
+    if (notification) {
+      const { error } = await supabase.rpc("create_user_notification", {
+        p_user_id: userId,
+        p_type: notification.type,
+        p_title: notification.title,
+        p_message: notification.message,
+        p_link: notification.link,
+      });
+      if (!error) {
+        result.notificationCreated = true;
+      } else {
+        console.error("[Email] Failed to create notification:", error.message);
+      }
+    }
+
+    return result;
+  }
 
   // Step 1: Create dashboard notification (always, if requested)
   if (notification) {

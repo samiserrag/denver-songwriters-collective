@@ -16,6 +16,54 @@ import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getCollaboratorInvitedEmail } from "@/lib/email/templates/collaboratorInvited";
 
+// ---------------------------------------------------------------------------
+// Local helper: resolve invitee email address
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves the email address for an invitee profile.
+ *
+ * Resolution order:
+ * 1. Supabase Auth (auth.admin.getUserById) — canonical, always has the login email
+ * 2. profiles.email — fallback if Auth lookup fails or returns no email
+ * 3. null — no email available
+ *
+ * profiles.id == auth.users.id in this schema.
+ */
+async function resolveInviteeEmail(
+  serviceClient: ReturnType<typeof getServiceRoleClient>,
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  profileId: string
+): Promise<{ email: string | null; source: "auth" | "profiles" | "none" }> {
+  // 1. Try Supabase Auth first (preferred — always has the login email)
+  const { data: authData, error: authError } = await serviceClient.auth.admin.getUserById(profileId);
+  const authEmail = authData?.user?.email?.trim() || null;
+
+  if (authError) {
+    console.warn(`[resolveInviteeEmail] Auth lookup failed for ${profileId}: ${authError.message}`);
+  }
+
+  if (authEmail) {
+    return { email: authEmail, source: "auth" };
+  }
+
+  // 2. Fallback: check profiles.email
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", profileId)
+    .single();
+
+  const profileEmail = (profile?.email as string | null)?.trim() || null;
+
+  if (profileEmail) {
+    return { email: profileEmail, source: "profiles" };
+  }
+
+  // 3. No email available
+  return { email: null, source: "none" };
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -115,22 +163,21 @@ export async function POST(
       continue;
     }
 
-    // 5b. Fetch collaborator profile name and email
+    // 5b. Fetch collaborator profile name and resolve email
     const { data: collabProfile } = await supabase
       .from("profiles")
       .select("full_name")
       .eq("id", userId)
       .single();
 
-    const { data: collabAuth, error: collabAuthError } = await serviceClient.auth.admin.getUserById(userId);
-    const collabEmail = collabAuth?.user?.email;
     const collabName = collabProfile?.full_name || "there";
+    const { email: collabEmail, source: emailSource } = await resolveInviteeEmail(serviceClient, supabase, userId);
 
     // Diagnostic logging for email delivery debugging
     const maskedEmail = collabEmail
       ? `${collabEmail[0]}***@${collabEmail.split("@")[1] || "?"}`
       : "NONE";
-    console.log(`[notify-collaborators] user=${userId} email=${maskedEmail} authErr=${collabAuthError?.message ?? "none"}`);
+    console.log(`[notify-collaborators] user=${userId} email=${maskedEmail} source=${emailSource}`);
 
     const notifMessage = `${actorName} invited you to collaborate on the album "${album_name}".`;
 
