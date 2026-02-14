@@ -6,6 +6,7 @@ import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/componen
 import { ProfileComments } from "@/components/comments";
 import type { Database } from "@/lib/supabase/database.types";
 import type { StudioService } from "@/types";
+import Image from "next/image";
 import Link from "next/link";
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,40 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
     .order("name", { ascending: true });
 
   const services: StudioService[] = (dbServices ?? []).map(mapDBServiceToService);
+
+  // Query galleries linked to this studio via gallery_album_links (creator + collaborator)
+  // with legacy fallback to created_by for albums not yet backfilled
+  const { data: linkedAlbumIds } = await supabase
+    .from("gallery_album_links")
+    .select("album_id")
+    .eq("target_type", "profile")
+    .eq("target_id", studio.id);
+
+  let galleries: Array<{ id: string; name: string; slug: string; cover_image_url: string | null; created_at: string }> = [];
+  const linkIds = (linkedAlbumIds ?? []).map((l) => l.album_id);
+
+  if (linkIds.length > 0) {
+    const { data } = await supabase
+      .from("gallery_albums")
+      .select("id, name, slug, cover_image_url, created_at")
+      .in("id", linkIds)
+      .eq("is_published", true)
+      .eq("is_hidden", false)
+      .order("created_at", { ascending: false });
+    galleries = data ?? [];
+  }
+
+  // Legacy fallback: if link table returned nothing, fall back to created_by query
+  if (galleries.length === 0) {
+    const { data: legacyData } = await supabase
+      .from("gallery_albums")
+      .select("id, name, slug, cover_image_url, created_at")
+      .eq("created_by", studio.id)
+      .eq("is_published", true)
+      .eq("is_hidden", false)
+      .order("created_at", { ascending: false });
+    galleries = legacyData ?? [];
+  }
 
   // Build social and tip links
   const socialLinks = buildSocialLinks(studio);
@@ -192,6 +227,52 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
                     <TipIcon type={tip.type} />
                     <span className="font-medium">{tip.label}</span>
                     {tip.handle && <span className="opacity-80">{tip.handle}</span>}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Gallery Albums Section */}
+          {galleries.length > 0 && (
+            <section className="mb-12" data-testid="galleries-created-section">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">Gallery Albums</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {galleries.map((album) => (
+                  <Link
+                    key={album.id}
+                    href={`/gallery/${album.slug}`}
+                    className="group block rounded-lg overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-border-accent)] transition-colors"
+                  >
+                    <div className="relative aspect-[4/3] w-full bg-[var(--color-bg-tertiary)]">
+                      {album.cover_image_url ? (
+                        <Image
+                          src={album.cover_image_url}
+                          alt={album.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-10 h-10 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-text-accent)] transition-colors truncate">
+                        {album.name}
+                      </h3>
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                        {new Date(album.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
                   </Link>
                 ))}
               </div>
