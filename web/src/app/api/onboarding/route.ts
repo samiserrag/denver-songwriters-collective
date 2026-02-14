@@ -10,6 +10,34 @@ import {
 } from '@/lib/referrals';
 import { upsertMediaEmbeds } from '@/lib/mediaEmbedsServer';
 
+/** Trim, convert blanks to null, optionally validate against allowed hosts. */
+function sanitizeSocialUrl(raw: unknown, allowedHosts?: string[]): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  if (!/^https?:\/\//i.test(trimmed)) {
+    if (allowedHosts) {
+      if (trimmed.includes(".")) {
+        return sanitizeSocialUrl(`https://${trimmed}`, allowedHosts);
+      }
+      return null;
+    }
+    return trimmed;
+  }
+
+  if (allowedHosts) {
+    try {
+      const url = new URL(trimmed);
+      const host = url.hostname.replace(/^www\./, "").toLowerCase();
+      if (!allowedHosts.includes(host)) return null;
+    } catch {
+      return null;
+    }
+  }
+  return trimmed;
+}
+
 export async function POST(request: Request) {
   try {
     // 1. Verify user is logged in
@@ -67,15 +95,15 @@ export async function POST(request: Request) {
       is_studio,
       is_fan,
       bio: bio || null,
-      instagram_url: instagram_url || null,
-      spotify_url: spotify_url || null,
-      youtube_url: youtube_url || null,
-      website_url: website_url || null,
-      tiktok_url: tiktok_url || null,
-      bandcamp_url: bandcamp_url || null,
-      venmo_handle: venmo_handle || null,
-      cashapp_handle: cashapp_handle || null,
-      paypal_url: paypal_url || null,
+      instagram_url: sanitizeSocialUrl(instagram_url, ["instagram.com"]),
+      spotify_url: sanitizeSocialUrl(spotify_url, ["open.spotify.com", "spotify.com"]),
+      youtube_url: sanitizeSocialUrl(youtube_url, ["youtube.com", "youtu.be"]),
+      website_url: sanitizeSocialUrl(website_url),
+      tiktok_url: sanitizeSocialUrl(tiktok_url, ["tiktok.com"]),
+      bandcamp_url: sanitizeSocialUrl(bandcamp_url, ["bandcamp.com"]),
+      venmo_handle: sanitizeSocialUrl(venmo_handle),
+      cashapp_handle: sanitizeSocialUrl(cashapp_handle),
+      paypal_url: sanitizeSocialUrl(paypal_url),
       open_to_collabs,
       interested_in_cowriting,
       instruments: instruments?.length > 0 ? instruments : null,

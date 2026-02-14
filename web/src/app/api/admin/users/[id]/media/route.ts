@@ -25,34 +25,32 @@ async function requireAdmin() {
   return { supabase };
 }
 
-// Domain-only validation for social link fields (not embed fields).
-// These are channel/profile URLs, not embeddable content.
-function validateYoutubeSocialUrl(raw: unknown): string | null {
-  if (typeof raw !== "string" || !raw.trim()) return null;
+/** Trim, convert blanks to null, optionally validate against allowed hosts. */
+function sanitizeSocialUrl(raw: unknown, allowedHosts?: string[]): string | null {
+  if (typeof raw !== "string") return null;
   const trimmed = raw.trim();
-  if (!/^https?:\/\//i.test(trimmed)) return trimmed;
-  try {
-    const url = new URL(trimmed);
-    const host = url.hostname.replace(/^www\./, "").toLowerCase();
-    if (!["youtube.com", "youtu.be"].includes(host)) return null;
-    return trimmed;
-  } catch {
-    return null;
-  }
-}
+  if (!trimmed) return null;
 
-function validateSpotifySocialUrl(raw: unknown): string | null {
-  if (typeof raw !== "string" || !raw.trim()) return null;
-  const trimmed = raw.trim();
-  if (!/^https?:\/\//i.test(trimmed)) return trimmed;
-  try {
-    const url = new URL(trimmed);
-    const host = url.hostname.replace(/^www\./, "").toLowerCase();
-    if (!["open.spotify.com", "spotify.com"].includes(host)) return null;
+  if (!/^https?:\/\//i.test(trimmed)) {
+    if (allowedHosts) {
+      if (trimmed.includes(".")) {
+        return sanitizeSocialUrl(`https://${trimmed}`, allowedHosts);
+      }
+      return null;
+    }
     return trimmed;
-  } catch {
-    return null;
   }
+
+  if (allowedHosts) {
+    try {
+      const url = new URL(trimmed);
+      const host = url.hostname.replace(/^www\./, "").toLowerCase();
+      if (!allowedHosts.includes(host)) return null;
+    } catch {
+      return null;
+    }
+  }
+  return trimmed;
 }
 
 export async function PATCH(
@@ -65,8 +63,8 @@ export async function PATCH(
 
   try {
     const body = (await request.json()) as Record<string, unknown>;
-    const youtube_url = validateYoutubeSocialUrl(body.youtube_url);
-    const spotify_url = validateSpotifySocialUrl(body.spotify_url);
+    const youtube_url = sanitizeSocialUrl(body.youtube_url, ["youtube.com", "youtu.be"]);
+    const spotify_url = sanitizeSocialUrl(body.spotify_url, ["open.spotify.com", "spotify.com"]);
 
     const { error: updateError } = await auth.supabase
       .from("profiles")

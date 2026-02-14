@@ -3,6 +3,67 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendAdminProfileAlert } from "@/lib/email/adminProfileAlerts";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
+// ---------------------------------------------------------------------------
+// Social-link URL helpers
+// ---------------------------------------------------------------------------
+
+/** Trim, convert blanks to null, and optionally validate against allowed hosts. */
+function sanitizeSocialUrl(
+  raw: unknown,
+  allowedHosts?: string[],
+): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // If it doesn't look like a URL (no protocol), return as-is for non-URL
+  // handles (e.g. Venmo "@user"). Callers that need a real URL should gate
+  // on allowedHosts — those will reject non-URL strings below.
+  if (!/^https?:\/\//i.test(trimmed)) {
+    // If the caller specified allowed hosts we MUST have a real URL.
+    // Attempt to prepend https:// if the value contains a dot (likely a URL
+    // missing protocol, e.g. "tiktok.com/@user").
+    if (allowedHosts) {
+      if (trimmed.includes(".")) {
+        return sanitizeSocialUrl(`https://${trimmed}`, allowedHosts);
+      }
+      // Not a URL at all — reject by returning null (caller can decide to 400)
+      return null;
+    }
+    return trimmed;
+  }
+
+  // Has a protocol — validate the host if restrictions were given.
+  if (allowedHosts) {
+    try {
+      const url = new URL(trimmed);
+      const host = url.hostname.replace(/^www\./, "").toLowerCase();
+      if (!allowedHosts.includes(host)) return null;
+    } catch {
+      return null;
+    }
+  }
+  return trimmed;
+}
+
+/** Validate a social URL field, returning a 400 NextResponse on failure. */
+function validateSocialField(
+  value: string | null,
+  rawInput: unknown,
+  fieldName: string,
+  label: string,
+): NextResponse | null {
+  // If rawInput was non-empty but sanitized to null, the URL was invalid.
+  const raw = typeof rawInput === "string" ? rawInput.trim() : "";
+  if (raw && value === null) {
+    return NextResponse.json(
+      { error: "Validation failed", fieldErrors: { [fieldName]: `Invalid ${label} URL.` } },
+      { status: 400 },
+    );
+  }
+  return null;
+}
+
 const TRACKED_PROFILE_FIELDS = [
   "full_name",
   "bio",
@@ -55,52 +116,29 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const youtubeRaw = typeof body.youtube_url === "string" ? body.youtube_url.trim() : "";
-    const spotifyRaw = typeof body.spotify_url === "string" ? body.spotify_url.trim() : "";
 
-    // youtube_url is a social/channel link — accept any valid YouTube domain URL
-    // (channel, @handle, /c/, /user/, etc.). Do NOT run through the embed normalizer
-    // which only accepts embeddable video/playlist URLs.
-    let youtubeValue: string | null = youtubeRaw || null;
-    if (youtubeRaw && /^https?:\/\//i.test(youtubeRaw)) {
-      try {
-        const ytUrl = new URL(youtubeRaw);
-        const ytHost = ytUrl.hostname.replace(/^www\./, "").toLowerCase();
-        if (!["youtube.com", "youtu.be"].includes(ytHost)) {
-          return NextResponse.json(
-            { error: "Validation failed", fieldErrors: { youtube_url: "YouTube URL must use youtube.com or youtu.be." } },
-            { status: 400 }
-          );
-        }
-      } catch {
-        return NextResponse.json(
-          { error: "Validation failed", fieldErrors: { youtube_url: "Invalid YouTube URL." } },
-          { status: 400 }
-        );
-      }
-    }
+    // --- Sanitize all social-link URL fields ---
+    // Each field gets trimmed, blanks→null, and domain-validated where appropriate.
+    // The DB has a CHECK constraint on tiktok_url requiring https?:// prefix.
+    const youtubeValue = sanitizeSocialUrl(body.youtube_url, ["youtube.com", "youtu.be"]);
+    const ytErr = validateSocialField(youtubeValue, body.youtube_url, "youtube_url", "YouTube");
+    if (ytErr) return ytErr;
 
-    // spotify_url is a social/profile link — accept any valid Spotify domain URL
-    // (artist, user, etc.). Do NOT run through the embed normalizer which only
-    // accepts embeddable content types (track, album, playlist, show, episode).
-    let spotifyValue: string | null = spotifyRaw || null;
-    if (spotifyRaw && /^https?:\/\//i.test(spotifyRaw)) {
-      try {
-        const spUrl = new URL(spotifyRaw);
-        const spHost = spUrl.hostname.replace(/^www\./, "").toLowerCase();
-        if (!["open.spotify.com", "spotify.com"].includes(spHost)) {
-          return NextResponse.json(
-            { error: "Validation failed", fieldErrors: { spotify_url: "Spotify URL must use open.spotify.com." } },
-            { status: 400 }
-          );
-        }
-      } catch {
-        return NextResponse.json(
-          { error: "Validation failed", fieldErrors: { spotify_url: "Invalid Spotify URL." } },
-          { status: 400 }
-        );
-      }
-    }
+    const spotifyValue = sanitizeSocialUrl(body.spotify_url, ["open.spotify.com", "spotify.com"]);
+    const spErr = validateSocialField(spotifyValue, body.spotify_url, "spotify_url", "Spotify");
+    if (spErr) return spErr;
+
+    const tiktokValue = sanitizeSocialUrl(body.tiktok_url, ["tiktok.com"]);
+    const tkErr = validateSocialField(tiktokValue, body.tiktok_url, "tiktok_url", "TikTok");
+    if (tkErr) return tkErr;
+
+    const instagramValue = sanitizeSocialUrl(body.instagram_url, ["instagram.com"]);
+    const bandcampValue = sanitizeSocialUrl(body.bandcamp_url, ["bandcamp.com"]);
+    // facebook, twitter, website, paypal — no domain restriction
+    const facebookValue = sanitizeSocialUrl(body.facebook_url);
+    const twitterValue = sanitizeSocialUrl(body.twitter_url);
+    const websiteValue = sanitizeSocialUrl(body.website_url);
+    const paypalValue = sanitizeSocialUrl(body.paypal_url);
 
     const updatePayload = {
       full_name: body.full_name || null,
@@ -112,17 +150,17 @@ export async function PUT(request: Request) {
       is_studio: Boolean(body.is_studio),
       is_fan: Boolean(body.is_fan),
       is_public: body.is_public !== false,
-      instagram_url: body.instagram_url || null,
-      facebook_url: body.facebook_url || null,
-      twitter_url: body.twitter_url || null,
-      tiktok_url: body.tiktok_url || null,
+      instagram_url: instagramValue,
+      facebook_url: facebookValue,
+      twitter_url: twitterValue,
+      tiktok_url: tiktokValue,
       youtube_url: youtubeValue,
       spotify_url: spotifyValue,
-      bandcamp_url: body.bandcamp_url || null,
-      website_url: body.website_url || null,
-      venmo_handle: body.venmo_handle || null,
-      cashapp_handle: body.cashapp_handle || null,
-      paypal_url: body.paypal_url || null,
+      bandcamp_url: bandcampValue,
+      website_url: websiteValue,
+      venmo_handle: sanitizeSocialUrl(body.venmo_handle),
+      cashapp_handle: sanitizeSocialUrl(body.cashapp_handle),
+      paypal_url: paypalValue,
       open_to_collabs: Boolean(body.open_to_collabs),
       specialties: Array.isArray(body.specialties) && body.specialties.length > 0 ? body.specialties : null,
       favorite_open_mic: body.favorite_open_mic || null,
