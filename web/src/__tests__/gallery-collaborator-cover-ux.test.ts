@@ -4,10 +4,11 @@
  * Verifies:
  * 1. Profile pages (studios, performers, songwriters) compute displayCoverUrl
  *    using fallback to first visible image when cover_image_url is null
- * 2. AlbumManager triggers create_user_notification RPC for newly added collaborators
+ * 2. AlbumManager calls server-side notify-collaborators route for newly added collaborators
  * 3. Collaborator helper text is present in AlbumManager
  * 4. Save and Publish actions appear in both top and bottom action rows
  * 5. Email template exists with correct structure
+ * 6. Server notify-collaborators route has correct auth checks and RPC calls
  */
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
@@ -34,7 +35,6 @@ describe("Gallery Album Cover Fallback on Profile Pages", () => {
       const content = fs.readFileSync(page.path, "utf-8");
 
       it("should resolve displayCoverUrl with fallback to first visible image", () => {
-        // Must have the galleriesWithCovers mapping
         expect(content).toContain("galleriesWithCovers");
         expect(content).toContain("displayCoverUrl");
       });
@@ -47,9 +47,7 @@ describe("Gallery Album Cover Fallback on Profile Pages", () => {
       });
 
       it("should render using displayCoverUrl not raw cover_image_url in album cards", () => {
-        // The render section should reference album.displayCoverUrl
         expect(content).toMatch(/album\.displayCoverUrl/);
-        // Should NOT use album.cover_image_url in the render section (only in query)
         const renderMatch = content.match(/galleriesWithCovers\.map[\s\S]*?<\/section>/);
         if (renderMatch) {
           expect(renderMatch[0]).not.toContain("album.cover_image_url");
@@ -64,7 +62,7 @@ describe("Gallery Album Cover Fallback on Profile Pages", () => {
   }
 });
 
-describe("Gallery Collaborator Notifications", () => {
+describe("Gallery Collaborator Notifications — AlbumManager client side", () => {
   const albumManagerPath = path.join(
     __dirname,
     "../app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx"
@@ -79,23 +77,91 @@ describe("Gallery Collaborator Notifications", () => {
     expect(content).toMatch(/addedIds.*filter.*prevCollaboratorIds/);
   });
 
-  it("should call create_user_notification RPC for newly added collaborators", () => {
-    expect(content).toContain("create_user_notification");
-    expect(content).toContain("gallery_collaborator_added");
+  it("should call server notify-collaborators route (not client RPC)", () => {
+    expect(content).toContain("/api/gallery-albums/");
+    expect(content).toContain("/notify-collaborators");
+    expect(content).toContain("added_user_ids");
+    expect(content).toContain("album_name");
+    expect(content).toContain("album_slug");
+    // Must NOT contain the old client-side RPC call
+    expect(content).not.toContain('supabase.rpc("create_user_notification"');
+  });
+
+  it("should include credentials in fetch for auth cookie forwarding", () => {
+    expect(content).toContain('credentials: "include"');
   });
 
   it("should only notify after successful reconcile (not if save fails)", () => {
-    // The notification RPC must come AFTER the reconcile try/catch block
     const reconcileIndex = content.indexOf("reconcileAlbumLinks");
-    const notifyIndex = content.indexOf("gallery_collaborator_added");
+    const notifyIndex = content.indexOf("notify-collaborators");
     expect(reconcileIndex).toBeGreaterThan(-1);
     expect(notifyIndex).toBeGreaterThan(-1);
     expect(notifyIndex).toBeGreaterThan(reconcileIndex);
   });
 
-  it("should include album name and link in notification", () => {
+  it("should await the notification fetch and toast on error", () => {
+    expect(content).toContain("await fetch(");
+    expect(content).toContain("collaborator notifications failed");
+  });
+});
+
+describe("Gallery Collaborator Notifications — Server route", () => {
+  const routePath = path.join(
+    __dirname,
+    "../app/api/gallery-albums/[id]/notify-collaborators/route.ts"
+  );
+  const content = fs.readFileSync(routePath, "utf-8");
+
+  it("should exist as a POST handler", () => {
+    expect(fs.existsSync(routePath)).toBe(true);
+    expect(content).toContain("export async function POST");
+  });
+
+  it("should authenticate the caller", () => {
+    expect(content).toContain("auth.getUser()");
+    expect(content).toContain('"Unauthorized"');
+    expect(content).toContain("status: 401");
+  });
+
+  it("should verify album ownership (created_by or admin)", () => {
+    expect(content).toContain("created_by");
+    expect(content).toContain("isAdmin");
+    expect(content).toContain('"Forbidden"');
+    expect(content).toContain("status: 403");
+  });
+
+  it("should call create_user_notification RPC with correct args", () => {
+    expect(content).toContain('supabase.rpc("create_user_notification"');
+    expect(content).toContain("gallery_collaborator_added");
     expect(content).toContain("Added as a collaborator");
     expect(content).toContain("p_link: albumLink");
+  });
+
+  it("should use server Supabase client (not browser client)", () => {
+    expect(content).toContain("createSupabaseServerClient");
+    expect(content).not.toContain("createClient");
+  });
+
+  it("should validate request body", () => {
+    expect(content).toContain("added_user_ids");
+    expect(content).toContain("album_name");
+    expect(content).toContain("album_slug");
+    expect(content).toContain("status: 400");
+  });
+
+  it("should return 404 for missing album", () => {
+    expect(content).toContain('"Album not found"');
+    expect(content).toContain("status: 404");
+  });
+
+  it("should validate UUID format of added_user_ids", () => {
+    expect(content).toContain("UUID_RE");
+    expect(content).toContain("Invalid user ID format");
+  });
+
+  it("should enforce max 10 collaborators per request", () => {
+    expect(content).toContain("added_user_ids.length > 10");
+    expect(content).toContain("Too many collaborators");
   });
 });
 

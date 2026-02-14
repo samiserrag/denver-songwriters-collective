@@ -360,21 +360,28 @@ export default function AlbumManager({
       return;
     }
 
-    // Notify newly added collaborators via RPC (fire-and-forget, don't block save)
+    // Notify newly added collaborators via server route
     const newCollaboratorIds = collaborators.map((c) => c.id);
     const addedIds = newCollaboratorIds.filter((id) => !prevCollaboratorIds.includes(id));
     if (addedIds.length > 0) {
-      const albumLink = `/gallery/${finalSlug}`;
-      for (const userId of addedIds) {
-        supabase.rpc("create_user_notification", {
-          p_user_id: userId,
-          p_type: "gallery_collaborator_added",
-          p_title: "Added as a collaborator",
-          p_message: `You were added as a collaborator on the album "${albumName.trim()}".`,
-          p_link: albumLink,
-        }).then(({ error: notifErr }: { error: { message: string } | null }) => {
-          if (notifErr) console.error("Collaborator notification failed:", notifErr.message);
+      try {
+        const notifyRes = await fetch(`/api/gallery-albums/${album.id}/notify-collaborators`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            added_user_ids: addedIds,
+            album_name: albumName.trim(),
+            album_slug: finalSlug,
+          }),
         });
+        if (!notifyRes.ok) {
+          const detail = await notifyRes.json().catch(() => null);
+          console.error("Collaborator notification failed:", detail?.error || notifyRes.status);
+          toast.error("Album saved, but collaborator notifications failed.");
+        }
+      } catch (err) {
+        console.error("Collaborator notification request failed:", err);
       }
     }
 
