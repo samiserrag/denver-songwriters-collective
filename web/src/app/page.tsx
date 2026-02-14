@@ -102,10 +102,8 @@ function toSpotifyEmbedUrl(url: string): string | null {
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
 
-  // Session available for future auth-aware features
   const {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    data: { user: _session },
+    data: { user },
   } = await supabase.auth.getUser();
 
   // Fetch site settings for hero image URL + playlist URLs
@@ -469,7 +467,7 @@ export default async function HomePage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎸 a songwriter looking to play, improve, or connect</div>
-            <div className="text-lg font-medium text-[var(--color-text-primary)]">🎤 an open mic host or live music venue</div>
+            <Link href="/host" className="text-lg font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent-primary)] transition-colors">🎤 an open mic host or live music venue</Link>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎶 a songwriting group or collective</div>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🎭 a showcase or event promoter</div>
             <div className="text-lg font-medium text-[var(--color-text-primary)]">🌀 a fan of songs and songwriters</div>
@@ -483,6 +481,19 @@ export default async function HomePage() {
               {INVITE_CTA_LABEL}
             </Link>
           </div>
+          {!user && (
+            <div className="mt-8 pt-6 border-t border-[var(--color-border-default)]">
+              <p className="text-base md:text-lg text-[var(--color-text-primary)] mb-4">
+                <Link
+                  href="/signup"
+                  className="font-semibold text-[var(--color-text-accent)] hover:underline"
+                >
+                  Sign up for the CSC
+                </Link>{" "}
+                to receive our Sunday evening weekly digest — upcoming events, featured artists, and collective news straight to your inbox.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

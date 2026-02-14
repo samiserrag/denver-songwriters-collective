@@ -296,6 +296,16 @@ export default function SubmitOpenMicPage() {
               See open mics →
             </Link>
           </div>
+
+          <div className="py-6 border-t border-[var(--color-border-subtle)]">
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">New to hosting on CSC?</h3>
+            <p className="text-[var(--color-text-tertiary)] mb-4">
+              Learn about lineup management, attendance tracking, and everything else you get as a host.
+            </p>
+            <Link href="/host" className="text-[var(--color-text-accent)] hover:underline">
+              See what hosting looks like →
+            </Link>
+          </div>
         </PageContainer>
       </div>
     );

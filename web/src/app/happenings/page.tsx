@@ -1006,6 +1006,16 @@ export default async function HappeningsPage({
           )
         )}
 
+        {/* Host CTA */}
+        <div className="mt-8 pt-6 border-t border-[var(--color-border-subtle)] text-center">
+          <p className="text-[var(--color-text-secondary)]">
+            Want to host your own event or open mic?{" "}
+            <Link href="/host" className="text-[var(--color-text-accent)] hover:underline font-medium">
+              Learn how →
+            </Link>
+          </p>
+        </div>
+
         {/* Phase 4.38: Back to top button - appears when scrolling down */}
         <BackToTop />
       </PageContainer>

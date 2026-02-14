@@ -55,6 +55,7 @@ export function Footer({ className, socialLinks = [] }: FooterProps) {
             <h4 className="text-[var(--color-text-on-inverse-primary)] font-semibold mb-4">Community</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/about" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">About Us</Link></li>
+              <li><Link href="/host" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Host on CSC</Link></li>
               <li><Link href="/submit-open-mic" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Submit Open Mic</Link></li>
               <li><Link href="/get-involved" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Get Involved</Link></li>
               <li><Link href="/partners" className="text-[var(--color-text-on-inverse-secondary)] hover:text-[var(--color-accent-primary)] transition-colors">Partners</Link></li>

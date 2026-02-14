@@ -6,6 +6,25 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### ENHANCEMENT: Link /host page across the site (February 2026)
+
+**Summary:** The `/host` ("Host on CSC") page existed but was only linked from a few internal pages. Added discoverable links and CTAs across 6 touchpoints so hosts and venue operators can find it naturally.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/components/navigation/footer.tsx` | Added "Host on CSC" link in Community column (above "Submit Open Mic") |
+| `web/src/app/submit-open-mic/page.tsx` | Added "New to hosting on CSC?" section at bottom of mode-selection view with link to `/host` |
+| `web/src/app/get-involved/page.tsx` | Added CTA `{ text: "Learn About Hosting", href: "/host" }` to the "Help Host Events" card (was `null`) |
+| `web/src/app/venues/page.tsx` | Added "Are you a venue or open mic host?" CTA below venue grid, linking to `/host` |
+| `web/src/app/page.tsx` | Made "🎤 an open mic host or live music venue" tile a clickable Link to `/host`; also added sign-up CTA for logged-out users |
+| `web/src/app/happenings/page.tsx` | Added "Want to host your own event?" CTA above BackToTop |
+
+**Quality gates:** build succeeds, no new lint errors.
+
+---
+
 ### FEATURE: Gallery Album-Required Enforcement + Album Dashboard (February 2026)
 
 **Summary:** Eliminated the "unassigned photos" anti-pattern by enforcing that every gallery image must belong to an album at every layer: DB constraints, UI components, and admin tools. Replaced the upload-hub UX with an album-first dashboard.

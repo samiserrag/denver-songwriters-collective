@@ -7,7 +7,7 @@ const waysToHelp = [
   {
     title: "Help Host Events",
     description: "Want to run an open mic, showcase, or songwriter meetup? We'll help you get started with venues, promotion, and logistics.",
-    cta: null,
+    cta: { text: "Learn About Hosting", href: "/host" },
   },
   {
     title: "Find & Suggest Venues",

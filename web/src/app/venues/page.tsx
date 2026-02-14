@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { VenueGrid } from "@/components/venue/VenueGrid";
 import { PageContainer, HeroSection } from "@/components/layout";
@@ -118,6 +119,15 @@ export default async function VenuesPage() {
               <VenueGrid venues={venuesWithCounts} />
             </>
           )}
+
+          <div className="mt-8 pt-6 border-t border-[var(--color-border-subtle)] text-center">
+            <p className="text-[var(--color-text-secondary)]">
+              Are you a venue or open mic host?{" "}
+              <Link href="/host" className="text-[var(--color-text-accent)] hover:underline font-medium">
+                Learn how to manage your listing on CSC →
+              </Link>
+            </p>
+          </div>
         </div>
       </PageContainer>
     </>
