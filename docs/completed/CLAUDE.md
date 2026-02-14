@@ -6,6 +6,58 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FEATURE: Gallery Album-Required Enforcement + Album Dashboard (February 2026)
+
+**Summary:** Eliminated the "unassigned photos" anti-pattern by enforcing that every gallery image must belong to an album at every layer: DB constraints, UI components, and admin tools. Replaced the upload-hub UX with an album-first dashboard.
+
+**Root cause:** The previous gallery UX allowed uploading photos without selecting an album (`<option value="">No album</option>` in both user and admin upload flows), creating orphaned "unassigned" photos that were hard to discover, organize, or display. The DB allowed `album_id = NULL`.
+
+**Changes:**
+
+1. **DB enforcement (migration `20260215200000_gallery_require_album.sql`):**
+   - `ALTER COLUMN album_id SET NOT NULL` — no more NULL album_id values
+   - FK changed from `ON DELETE SET NULL` → `ON DELETE RESTRICT` — cannot delete albums with photos
+
+2. **User gallery dashboard (`/dashboard/gallery/page.tsx`):** Rewritten from upload hub to album dashboard. Shows album grid with covers, counts, publish/hidden status. Users create albums first, then navigate to album detail to upload.
+
+3. **New `CreateAlbumForm.tsx`:** Dedicated album creation form with name, draft toggle, venue selector, event selector, and CollaboratorSelect. Calls `reconcileAlbumLinks` with all fields. Redirects to album detail after creation.
+
+4. **BulkUploadGrid (admin):** Removed "No album (add to library)" option. Album is now required: placeholder is "Select album...", upload button disabled until album selected, `uploadAll` has runtime guard.
+
+5. **GalleryAdminTabs (admin):** Album create form now includes venue/event/collaborator selectors + reconcileAlbumLinks call. `handleDeleteAlbum` checks photo count before delete, blocks if > 0. Removed entire "Unassigned Photos" section from albums tab and "unassigned" filter from photos tab.
+
+6. **Deleted components:** `UserGalleryUpload.tsx` and `UnassignedPhotosManager.tsx` — no longer needed.
+
+**Files changed (6 modified, 2 new, 2 deleted):**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260215200000_gallery_require_album.sql` | NEW: NOT NULL + ON DELETE RESTRICT migration |
+| `web/src/app/(protected)/dashboard/gallery/page.tsx` | REWRITTEN: album dashboard replacing upload hub |
+| `web/src/app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx` | NEW: album create form with venue/event/collaborator |
+| `web/src/components/gallery/BulkUploadGrid.tsx` | MODIFIED: album required, no null option |
+| `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` | MODIFIED: selectors + reconcile + delete guard + removed unassigned |
+| `web/src/app/(protected)/dashboard/gallery/UserGalleryUpload.tsx` | DELETED |
+| `web/src/app/(protected)/dashboard/gallery/_components/UnassignedPhotosManager.tsx` | DELETED |
+
+**Tests changed (1 new, 3 deleted, 3 updated):**
+
+| File | Change |
+|------|--------|
+| `web/src/__tests__/gallery-upload-enforcement.test.ts` | NEW: 32 tests covering all enforcement layers |
+| `web/src/__tests__/gallery-upload-ux-nudges.test.tsx` | DELETED: tested deleted UserGalleryUpload |
+| `web/src/app/(protected)/dashboard/gallery/__tests__/user-album-creation.test.tsx` | DELETED: tested deleted UserGalleryUpload |
+| `web/src/__tests__/unassigned-photos-manager.test.tsx` | DELETED: tested deleted UnassignedPhotosManager |
+| `web/src/__tests__/gallery-album-links.test.ts` | UPDATED: UserGalleryUpload wiring → CreateAlbumForm wiring |
+| `web/src/__tests__/phase7a-media-ux-clarity.test.ts` | UPDATED: soft-archive section → album-required verification |
+| `web/src/__tests__/gallery-album-management.test.ts` | UPDATED: User Album Creation UI → CreateAlbumForm |
+
+**Quality gates:** lint clean (0 errors, 5 pre-existing warnings), 3949 tests pass (190 files), build succeeds.
+
+**Migration status:** NOT YET APPLIED TO PRODUCTION. Requires `psql` execution (MODE B per project rules). Safe to apply: verified 0 NULL album_id rows in production.
+
+---
+
 ### FIX: Profile Save 500 — Broken TikTok URL DB Constraint (February 2026) — RESOLVED
 
 **Summary:** Saving a profile with any TikTok URL returned a 500 error due to a PostgreSQL CHECK constraint (`profiles_tiktok_url_format`) with a broken regex. The constraint was added manually to production (never in a migration file) and used escaped forward slashes (`'^(https?:\/\/).+'`) which PostgreSQL's regex engine interpreted as literal backslash-slash sequences, rejecting all valid URLs.

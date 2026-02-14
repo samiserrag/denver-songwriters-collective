@@ -339,7 +339,7 @@ export default function BulkUploadGrid({
           image_url: publicUrl,
           is_approved: true, // Admin uploads are auto-approved
           sort_order: sortOrder,
-          album_id: albumId || null,      // FIXED: Now included during upload
+          album_id: albumId,               // Required: every photo must belong to an album
           venue_id: venueId || null,      // FIXED: Now included during upload
           event_id: eventId || null,      // FIXED: Now included during upload
         })
@@ -365,6 +365,11 @@ export default function BulkUploadGrid({
 
   // Upload all pending files with metadata
   const uploadAll = useCallback(async () => {
+    if (!selectedAlbum) {
+      toast.error("Please select an album before uploading");
+      return;
+    }
+
     const pendingFiles = queuedFiles.filter((f) => f.status === 'pending');
     if (pendingFiles.length === 0) return;
 
@@ -577,7 +582,7 @@ export default function BulkUploadGrid({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs text-[var(--color-text-secondary)] mb-1.5">
-              Album <span className="text-[var(--color-text-tertiary)]">(recommended)</span>
+              Album <span className="text-[var(--color-text-tertiary)]">(required)</span>
             </label>
             <select
               value={selectedAlbum}
@@ -585,7 +590,7 @@ export default function BulkUploadGrid({
               disabled={isUploading}
               className="w-full px-3 py-2.5 rounded-lg bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] text-sm focus:border-[var(--color-border-accent)] focus:outline-none disabled:opacity-50"
             >
-              <option value="">No album (add to library)</option>
+              <option value="">Select album...</option>
               {albums.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -742,11 +747,12 @@ export default function BulkUploadGrid({
             {pendingCount > 0 && (
               <button
                 onClick={uploadAll}
-                disabled={isUploading}
+                disabled={isUploading || !selectedAlbum}
                 className="px-6 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50 text-[var(--color-text-on-accent)] text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                title={!selectedAlbum ? "Select an album first" : undefined}
               >
                 {isUploading && <Spinner className="w-4 h-4" />}
-                {isUploading ? 'Uploading...' : `Upload ${pendingCount} Photo${pendingCount !== 1 ? 's' : ''}`}
+                {isUploading ? 'Uploading...' : !selectedAlbum ? 'Select album to upload' : `Upload ${pendingCount} Photo${pendingCount !== 1 ? 's' : ''}`}
               </button>
             )}
           </div>

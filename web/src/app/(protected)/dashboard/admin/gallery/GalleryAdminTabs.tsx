@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { reconcileAlbumLinks } from "@/lib/gallery/albumLinks";
+import CollaboratorSelect, { type Collaborator } from "@/components/gallery/CollaboratorSelect";
 import { ImageUpload } from "@/components/ui";
 import { toast } from "sonner";
 import BulkUploadGrid from "@/components/gallery/BulkUploadGrid";
@@ -53,13 +55,16 @@ function normalizeRelation<T>(data: T | T[] | null): T | null {
 export default function GalleryAdminTabs({ images, albums, venues, events, userId }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("albums");
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "unassigned">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "approved">("all");
 
   // Album form state
   const [albumName, setAlbumName] = useState("");
   const [albumSlug, setAlbumSlug] = useState("");
   const [albumDescription, setAlbumDescription] = useState("");
   const [albumCover, setAlbumCover] = useState("");
+  const [albumVenueId, setAlbumVenueId] = useState("");
+  const [albumEventId, setAlbumEventId] = useState("");
+  const [albumCollaborators, setAlbumCollaborators] = useState<Collaborator[]>([]);
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
 
   // Album management state
@@ -68,20 +73,13 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
   const [editAlbumName, setEditAlbumName] = useState("");
   const [editAlbumDescription, setEditAlbumDescription] = useState("");
 
-  // Unassigned photo assignment state
-  const [selectedUnassignedPhotos, setSelectedUnassignedPhotos] = useState<Set<string>>(new Set());
-  const [assignToAlbumId, setAssignToAlbumId] = useState<string>("");
-  const [isAssigning, setIsAssigning] = useState(false);
-
   // Calculate counts
-  const unassignedImages = images.filter((img) => !img.album_id);
   const getAlbumPhotoCount = (albumId: string) =>
     images.filter((img) => img.album_id === albumId).length;
 
   const filteredImages = images.filter((img) => {
     if (filter === "pending") return !img.is_approved;
     if (filter === "approved") return img.is_approved;
-    if (filter === "unassigned") return !img.album_id;
     return true;
   });
 
@@ -135,19 +133,37 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
       }
     }
 
-    const { error } = await supabase.from("gallery_albums").insert({
+    const venueIdValue = albumVenueId || null;
+    const eventIdValue = albumEventId || null;
+
+    const { data, error } = await supabase.from("gallery_albums").insert({
       name: albumName.trim(),
       slug: finalSlug,
       description: albumDescription.trim() || null,
       cover_image_url: albumCover || null,
       created_by: userId,
       is_published: false, // Start as draft
-    });
+      venue_id: venueIdValue,
+      event_id: eventIdValue,
+    }).select("id").single();
 
     if (error) {
       toast.error("Failed to create album");
       console.error(error);
     } else {
+      // Reconcile album links (creator + venue + event + collaborators)
+      try {
+        await reconcileAlbumLinks(supabase, data.id, {
+          createdBy: userId,
+          venueId: venueIdValue,
+          eventId: eventIdValue,
+          collaboratorIds: albumCollaborators.map((c) => c.id),
+        });
+      } catch (linkError) {
+        console.error("Album link reconciliation error:", linkError);
+        toast.error("Album created but cross-page links failed. Edit the album to retry.");
+      }
+
       const slugNote = finalSlug !== baseSlug ? ` (slug: ${finalSlug})` : "";
       toast.success(`Album created!${slugNote}`);
     }
@@ -156,15 +172,28 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     setAlbumSlug("");
     setAlbumDescription("");
     setAlbumCover("");
+    setAlbumVenueId("");
+    setAlbumEventId("");
+    setAlbumCollaborators([]);
     setIsCreatingAlbum(false);
     router.refresh();
   };
 
   const handleDeleteAlbum = async (albumId: string) => {
-    if (!confirm("Delete this album? Photos in it will be unassigned, not deleted.")) return;
+    const photoCount = getAlbumPhotoCount(albumId);
+    if (photoCount > 0) {
+      toast.error(`Cannot delete album: it still has ${photoCount} photo${photoCount > 1 ? "s" : ""}. Remove or move all photos first.`);
+      return;
+    }
+    if (!confirm("Delete this empty album? This cannot be undone.")) return;
     const supabase = createClient();
-    await supabase.from("gallery_albums").delete().eq("id", albumId);
-    toast.success("Album deleted");
+    const { error } = await supabase.from("gallery_albums").delete().eq("id", albumId);
+    if (error) {
+      toast.error("Failed to delete album. It may still have photos.");
+      console.error(error);
+    } else {
+      toast.success("Album deleted");
+    }
     router.refresh();
   };
 
@@ -238,56 +267,6 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
     const album = albums.find((a) => a.id === albumId);
     return album?.name || "Unknown Album";
   };
-
-  // Toggle photo selection for assignment
-  const togglePhotoSelection = useCallback((photoId: string) => {
-    setSelectedUnassignedPhotos((prev) => {
-      const next = new Set(prev);
-      if (next.has(photoId)) {
-        next.delete(photoId);
-      } else {
-        next.add(photoId);
-      }
-      return next;
-    });
-  }, []);
-
-  // Assign selected photos to an album
-  const assignPhotosToAlbum = useCallback(async () => {
-    if (!assignToAlbumId || selectedUnassignedPhotos.size === 0) return;
-
-    setIsAssigning(true);
-    const supabase = createClient();
-    const photoIds = Array.from(selectedUnassignedPhotos);
-
-    // Get current max sort_order for the target album
-    const { data: maxSort } = await supabase
-      .from("gallery_images")
-      .select("sort_order")
-      .eq("album_id", assignToAlbumId)
-      .order("sort_order", { ascending: false })
-      .limit(1)
-      .single();
-
-    let nextSortOrder = (maxSort?.sort_order ?? -1) + 1;
-
-    // Update each photo
-    for (const photoId of photoIds) {
-      await supabase
-        .from("gallery_images")
-        .update({
-          album_id: assignToAlbumId,
-          sort_order: nextSortOrder++,
-        })
-        .eq("id", photoId);
-    }
-
-    toast.success(`${photoIds.length} photo(s) added to album`);
-    setSelectedUnassignedPhotos(new Set());
-    setAssignToAlbumId("");
-    setIsAssigning(false);
-    router.refresh();
-  }, [assignToAlbumId, selectedUnassignedPhotos, router]);
 
   return (
     <div>
@@ -369,6 +348,55 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                   placeholder="Description (optional)"
                   className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]"
                 />
+
+                {/* Venue & Event selectors */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
+                      Venue <span className="text-[var(--color-text-tertiary)]">(optional — appears on venue page)</span>
+                    </label>
+                    <select
+                      value={albumVenueId}
+                      onChange={(e) => setAlbumVenueId(e.target.value)}
+                      disabled={isCreatingAlbum}
+                      className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+                    >
+                      <option value="">No venue</option>
+                      {venues.map((v) => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
+                      Event <span className="text-[var(--color-text-tertiary)]">(optional — appears on event page)</span>
+                    </label>
+                    <select
+                      value={albumEventId}
+                      onChange={(e) => setAlbumEventId(e.target.value)}
+                      disabled={isCreatingAlbum}
+                      className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+                    >
+                      <option value="">No event</option>
+                      {events.map((ev) => (
+                        <option key={ev.id} value={ev.id}>{ev.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Collaborators */}
+                <div>
+                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
+                    Collaborators <span className="text-[var(--color-text-tertiary)]">(optional — appears on their profiles)</span>
+                  </label>
+                  <CollaboratorSelect
+                    value={albumCollaborators}
+                    onChange={setAlbumCollaborators}
+                    ownerId={userId}
+                    disabled={isCreatingAlbum}
+                  />
+                </div>
               </div>
             </div>
 
@@ -544,89 +572,6 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
               No albums yet. Create one above!
             </p>
           )}
-
-          {/* Unassigned Photos Section */}
-          {unassignedImages.length > 0 && (
-            <div className="mt-8 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-                <div>
-                  <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
-                    Unassigned Photos ({unassignedImages.length})
-                  </h3>
-                  <p className="text-sm text-[var(--color-text-secondary)]">
-                    Click photos to select, then add them to an album.
-                  </p>
-                </div>
-
-                {/* Assignment controls */}
-                {selectedUnassignedPhotos.size > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm text-[var(--color-text-accent)] font-medium">
-                      {selectedUnassignedPhotos.size} selected
-                    </span>
-                    <select
-                      value={assignToAlbumId}
-                      onChange={(e) => setAssignToAlbumId(e.target.value)}
-                      disabled={isAssigning}
-                      className="px-2 py-1.5 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-                    >
-                      <option value="">Add to album...</option>
-                      {albums.map((album) => (
-                        <option key={album.id} value={album.id}>
-                          {album.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={assignPhotosToAlbum}
-                      disabled={!assignToAlbumId || isAssigning}
-                      className="px-3 py-1.5 text-sm bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg disabled:opacity-50 transition-colors"
-                    >
-                      {isAssigning ? "Adding..." : "Add"}
-                    </button>
-                    <button
-                      onClick={() => setSelectedUnassignedPhotos(new Set())}
-                      disabled={isAssigning}
-                      className="px-3 py-1.5 text-sm border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                {unassignedImages.map((image) => {
-                  const isSelected = selectedUnassignedPhotos.has(image.id);
-                  return (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onClick={() => togglePhotoSelection(image.id)}
-                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                        isSelected
-                          ? "border-[var(--color-accent-primary)] ring-2 ring-[var(--color-accent-primary)]/30"
-                          : "border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
-                      }`}
-                    >
-                      <Image
-                        src={image.image_url}
-                        alt={image.caption || "Unassigned photo"}
-                        fill
-                        sizes="100px"
-                        className="object-cover"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-1 right-1 w-5 h-5 bg-[var(--color-accent-primary)] rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-[var(--color-text-on-accent)]" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -635,7 +580,7 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
         <div>
           {/* Filter */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {(["all", "pending", "approved", "unassigned"] as const).map((f) => (
+            {(["all", "pending", "approved"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -648,7 +593,6 @@ export default function GalleryAdminTabs({ images, albums, venues, events, userI
                 {f === "all" && `All (${images.length})`}
                 {f === "pending" && `Pending (${images.filter((i) => !i.is_approved).length})`}
                 {f === "approved" && `Approved (${images.filter((i) => i.is_approved).length})`}
-                {f === "unassigned" && `Unassigned (${unassignedImages.length})`}
               </button>
             ))}
           </div>

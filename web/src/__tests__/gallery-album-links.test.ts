@@ -7,7 +7,7 @@
  * 3. reconcileAlbumLinks: calls the correct RPC
  * 4. Page wiring: members, songwriters, events, venues query gallery_album_links
  * 5. Album edit wiring: AlbumManager calls reconcileAlbumLinks
- * 6. Album create wiring: UserGalleryUpload calls reconcileAlbumLinks
+ * 6. Album create wiring: CreateAlbumForm calls reconcileAlbumLinks
  * 7. Admin API wiring: route calls reconcileAlbumLinks
  * 8. Resilience: RPC error throws (does not silently succeed)
  */
@@ -364,32 +364,46 @@ describe("AlbumManager wiring", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 6. Album create wiring: UserGalleryUpload calls reconcileAlbumLinks
+// 6. Album create wiring: CreateAlbumForm calls reconcileAlbumLinks
 // ---------------------------------------------------------------------------
-describe("UserGalleryUpload wiring", () => {
+describe("CreateAlbumForm wiring", () => {
   it("imports reconcileAlbumLinks", () => {
     const source = fs.readFileSync(
-      path.join(ROOT, "app/(protected)/dashboard/gallery/UserGalleryUpload.tsx"),
+      path.join(ROOT, "app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx"),
       "utf-8"
     );
     expect(source).toContain("reconcileAlbumLinks");
     expect(source).toContain("@/lib/gallery/albumLinks");
   });
 
-  it("calls reconcile with createdBy after album creation", () => {
+  it("calls reconcile with createdBy, venueId, eventId, collaboratorIds", () => {
     const source = fs.readFileSync(
-      path.join(ROOT, "app/(protected)/dashboard/gallery/UserGalleryUpload.tsx"),
+      path.join(ROOT, "app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx"),
       "utf-8"
     );
-    expect(source).toContain("reconcileAlbumLinks(supabase, data.id, { createdBy: userId })");
+    expect(source).toContain("reconcileAlbumLinks(supabase, data.id,");
+    expect(source).toContain("createdBy: userId");
+    expect(source).toContain("venueId: venueIdValue");
+    expect(source).toContain("eventId: eventIdValue");
+    expect(source).toContain("collaboratorIds:");
   });
 
   it("surfaces reconcile errors to user via toast", () => {
     const source = fs.readFileSync(
-      path.join(ROOT, "app/(protected)/dashboard/gallery/UserGalleryUpload.tsx"),
+      path.join(ROOT, "app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx"),
       "utf-8"
     );
     expect(source).toContain("cross-page links failed");
+  });
+
+  it("has venue and event selectors", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx"),
+      "utf-8"
+    );
+    expect(source).toContain("venueId");
+    expect(source).toContain("eventId");
+    expect(source).toContain("CollaboratorSelect");
   });
 });
 

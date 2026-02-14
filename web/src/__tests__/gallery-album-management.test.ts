@@ -64,34 +64,32 @@ describe('Gallery Album Management', () => {
     });
   });
 
-  describe('User Album Creation UI', () => {
-    const uploadPath = path.join(__dirname, '../app/(protected)/dashboard/gallery/UserGalleryUpload.tsx');
+  describe('User Album Creation UI (CreateAlbumForm)', () => {
+    const createFormPath = path.join(__dirname, '../app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx');
 
-    it('should have labeled "New album" button (not just icon)', () => {
-      const content = fs.readFileSync(uploadPath, 'utf-8');
-      // Button should have visible text, not just a title attribute
-      expect(content).toMatch(/New album/);
-      expect(content).toMatch(/<span.*>New album<\/span>/);
+    it('should have "Create New Album" button', () => {
+      const content = fs.readFileSync(createFormPath, 'utf-8');
+      expect(content).toMatch(/Create New Album/);
     });
 
     it('should have "Save as draft" checkbox option', () => {
-      const content = fs.readFileSync(uploadPath, 'utf-8');
+      const content = fs.readFileSync(createFormPath, 'utf-8');
       expect(content).toMatch(/Save as draft/);
       expect(content).toMatch(/saveAsDraft/);
     });
 
     it('should default to is_published=true (not draft)', () => {
-      const content = fs.readFileSync(uploadPath, 'utf-8');
+      const content = fs.readFileSync(createFormPath, 'utf-8');
       // The logic: is_published: !saveAsDraft (default saveAsDraft=false means is_published=true)
       expect(content).toMatch(/is_published:\s*isPublished/);
       expect(content).toMatch(/const isPublished = !saveAsDraft/);
     });
 
-    it('should show status chip for newly created album', () => {
-      const content = fs.readFileSync(uploadPath, 'utf-8');
-      expect(content).toMatch(/lastCreatedAlbum/);
-      expect(content).toMatch(/Published/);
-      expect(content).toMatch(/Draft.*not visible in public gallery/);
+    it('should have venue and event selectors', () => {
+      const content = fs.readFileSync(createFormPath, 'utf-8');
+      expect(content).toMatch(/venueId/);
+      expect(content).toMatch(/eventId/);
+      expect(content).toMatch(/CollaboratorSelect/);
     });
   });
 

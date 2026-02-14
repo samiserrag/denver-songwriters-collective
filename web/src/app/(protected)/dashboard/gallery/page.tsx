@@ -2,14 +2,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import UserGalleryUpload from "./UserGalleryUpload";
-import { UnassignedPhotosManager } from "./_components/UnassignedPhotosManager";
-import { FolderOpen, Plus } from "lucide-react";
+import { FolderOpen } from "lucide-react";
+import { CreateAlbumForm } from "./_components/CreateAlbumForm";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "My Photos | CSC"
+  title: "My Albums | CSC"
 };
 
 export default async function UserGalleryPage() {
@@ -71,43 +70,28 @@ export default async function UserGalleryPage() {
     })
   ) : [];
 
-  // Fetch user's uploaded photos (for stats and unassigned photos)
+  // Fetch user's uploaded photos (for stats)
   const { data: myPhotos } = await supabase
     .from("gallery_images")
-    .select(`
-      id,
-      image_url,
-      caption,
-      is_published,
-      is_hidden,
-      album_id,
-      created_at
-    `)
-    .eq("uploaded_by", userId)
-    .order("created_at", { ascending: false });
+    .select("id, is_published, is_hidden")
+    .eq("uploaded_by", userId);
 
   // Count visible vs hidden photos
   const visibleCount = myPhotos?.filter(p => p.is_published && !p.is_hidden).length ?? 0;
   const hiddenCount = myPhotos?.filter(p => p.is_hidden).length ?? 0;
-  const unassignedPhotos = myPhotos?.filter(p => !p.album_id) ?? [];
 
-  // Fetch all albums for the upload form (published albums from anyone OR user's own)
-  const { data: allAlbums } = await supabase
-    .from("gallery_albums")
-    .select("id, name")
-    .or(`is_published.eq.true,created_by.eq.${userId}`)
-    .order("name");
-
-  // Fetch venues for metadata
+  // Fetch venues for album create form
   const { data: venues } = await supabase
     .from("venues")
     .select("id, name")
+    .is("deleted_at", null)
     .order("name");
 
-  // Fetch events for metadata
+  // Fetch events for album create form
   const { data: events } = await supabase
     .from("events")
     .select("id, title, event_date")
+    .eq("status", "published")
     .order("event_date", { ascending: false, nullsFirst: false });
 
   return (
@@ -122,10 +106,10 @@ export default async function UserGalleryPage() {
             ← Back to Dashboard
           </Link>
           <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)]">
-            My Photos
+            My Albums
           </h1>
           <p className="text-[var(--color-text-secondary)] mt-2">
-            Organize and share your photos with the community.
+            Create albums and upload photos to share with the community.
           </p>
         </div>
 
@@ -147,13 +131,20 @@ export default async function UserGalleryPage() {
           )}
         </div>
 
+        {/* Create Album Section */}
+        <section className="mb-12">
+          <CreateAlbumForm
+            venues={venues ?? []}
+            events={events ?? []}
+            userId={userId}
+          />
+        </section>
+
         {/* My Albums Section */}
         <section className="mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-              My Albums ({albumsWithCounts.length})
-            </h2>
-          </div>
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
+            My Albums ({albumsWithCounts.length})
+          </h2>
 
           {albumsWithCounts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -213,45 +204,19 @@ export default async function UserGalleryPage() {
               <FolderOpen className="w-12 h-12 text-[var(--color-text-tertiary)] mx-auto mb-4" />
               <p className="text-[var(--color-text-secondary)]">No albums yet.</p>
               <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                Create an album when uploading photos below.
+                Create your first album above to start uploading photos.
               </p>
             </div>
           )}
         </section>
 
-        {/* Upload Section */}
-        <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-          <div className="flex items-center gap-2 mb-4">
-            <Plus className="w-5 h-5 text-[var(--color-text-accent)]" />
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-              Upload New Photos
-            </h2>
-          </div>
-          <UserGalleryUpload
-            albums={allAlbums ?? []}
-            venues={venues ?? []}
-            events={events ?? []}
-            userId={userId}
-          />
-        </section>
-
-        {/* Unassigned Photos Section - with move/delete management */}
-        <UnassignedPhotosManager
-          photos={unassignedPhotos.map((p) => ({
-            id: p.id,
-            image_url: p.image_url,
-            caption: p.caption,
-            is_hidden: p.is_hidden,
-          }))}
-          albums={userAlbums?.map((a) => ({ id: a.id, name: a.name })) ?? []}
-        />
-
         {/* Info Box */}
         <div className="mt-8 p-4 bg-[var(--color-accent-primary)]/10 border border-[var(--color-border-accent)] rounded-lg">
           <h3 className="font-medium text-[var(--color-text-primary)] mb-2">How it works</h3>
           <ul className="text-sm text-[var(--color-text-secondary)] space-y-1">
-            <li>• Photos appear immediately in the gallery</li>
-            <li>• Organize photos into albums for better discovery</li>
+            <li>• Create an album, then upload photos to it</li>
+            <li>• Link albums to venues and events so they appear on those pages</li>
+            <li>• Add collaborators so albums appear on their profiles too</li>
             <li>• Set any photo as the album cover</li>
             <li>• Admins may hide photos that violate community guidelines</li>
           </ul>

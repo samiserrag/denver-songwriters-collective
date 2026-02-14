@@ -89,25 +89,23 @@ describe("Phase 7A: Event cover upload contract", () => {
   });
 });
 
-describe("Phase 7A: Gallery soft-archive contract", () => {
-  it("uses is_hidden=true updates for unassigned photos", async () => {
+describe("Phase 7A: Gallery soft-archive contract (updated)", () => {
+  it("UnassignedPhotosManager removed — album-required invariant enforced at DB level", async () => {
     const fs = await import("fs");
-    const source = fs.readFileSync(
-      "src/app/(protected)/dashboard/gallery/_components/UnassignedPhotosManager.tsx",
-      "utf-8"
+    const path = await import("path");
+    const filePath = path.resolve(
+      "src/app/(protected)/dashboard/gallery/_components/UnassignedPhotosManager.tsx"
     );
-    expect(source).toContain(".update({ is_hidden: true })");
-    expect(source).not.toContain(".delete()");
+    expect(fs.existsSync(filePath)).toBe(false);
   });
 
-  it("uses hide/restore confirmation copy", async () => {
+  it("gallery_images.album_id is NOT NULL via migration", async () => {
     const fs = await import("fs");
-    const source = fs.readFileSync(
-      "src/app/(protected)/dashboard/gallery/_components/UnassignedPhotosManager.tsx",
-      "utf-8"
-    );
-    expect(source).toContain("An admin can restore them if needed.");
-    expect(source).toContain("hide them");
+    const migrationPath = "../../supabase/migrations/20260215200000_gallery_require_album.sql";
+    const path = await import("path");
+    const resolved = path.resolve(__dirname, "..", migrationPath);
+    const source = fs.readFileSync(resolved, "utf-8");
+    expect(source).toContain("ALTER COLUMN album_id SET NOT NULL");
   });
 });
 

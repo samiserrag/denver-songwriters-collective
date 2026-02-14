@@ -12,7 +12,7 @@ import { describe, it, expect } from "vitest";
 describe("Photo Reordering", () => {
   describe("sort_order computation", () => {
     it("should assign sequential sort_order starting from 0", () => {
-      // Simulates the logic in UserGalleryUpload
+      // Simulates the sort_order computation logic used during photo uploads
       const files = ["a.jpg", "b.jpg", "c.jpg"];
       const startSortOrder = 0;
 
