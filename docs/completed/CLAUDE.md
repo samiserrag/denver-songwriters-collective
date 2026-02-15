@@ -6,11 +6,11 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
-### FEATURE: Gallery collaborator opt-in invites with email notifications (February 2026)
+### FEATURE: Gallery collaborator opt-in invites — full end-to-end (February 2026)
 
-**Summary:** Replaced the implicit collaborator-on-save model with an explicit opt-in invitation flow. Collaborators now receive an invite (in-app notification + email) and must accept before the album appears on their profile. Added safe email resolution, defensive email guards, diagnostic logging across the full email pipeline, and applied the backing database migration.
+**Summary:** Replaced the implicit collaborator-on-save model with an explicit opt-in invitation flow. Collaborators receive an invite (in-app notification + email) and must accept before the album appears on their profile. Includes safe email resolution, defensive email guards, diagnostic logging, database migration, save/remove/re-add lifecycle, email accept/decline links, and notification state transitions.
 
-**Commits:** `07ad8e9e`, `6f684071`, `ba684bc4`, `4ba9f558`
+**Commits:** `07ad8e9e`, `6f684071`, `ba684bc4`, `4ba9f558`, `dff22eb0`, `1f5d70d9`, `8c8c8f41`, `f0f92d2d`
 
 **Migration:** `20260216000000_gallery_collaboration_invites.sql` — applied via MODE B (direct psql), recorded in `supabase_migrations.schema_migrations`.
 
@@ -19,14 +19,19 @@ This file holds the historical implementation log that was previously under the 
 | File | Change |
 |------|--------|
 | `supabase/migrations/20260216000000_gallery_collaboration_invites.sql` | **New** — creates `gallery_collaboration_invites` table, RLS policies (invitee read/respond, owner read/manage/delete, admin all), indexes, grants, updates `reconcile_gallery_album_links` RPC to exclude collaborator rows, backfills accepted invites for existing collaborators |
-| `web/src/app/api/gallery-albums/[id]/notify-collaborators/route.ts` | Added `resolveInviteeEmail()` helper (Auth → profiles.email → null fallback), restructured to skip email when no email resolved (notification-only path), added diagnostic logging with masked email and source |
-| `web/src/lib/email/sendWithPreferences.ts` | Added `"missing_recipient"` to skipReason union, Step 0 defensive guard (validates non-empty `to` before any send), diagnostic logging for category resolution, preference check, and send result |
+| `web/src/app/api/gallery-albums/[id]/notify-collaborators/route.ts` | Added `resolveInviteeEmail()` helper (Auth → profiles.email → null fallback), restructured to skip email when no email resolved (notification-only path), diagnostic logging with masked email and source |
+| `web/src/app/api/gallery-albums/[id]/respond-collaboration/route.ts` | After accepting, transitions the invite notification from `gallery_collaborator_invite` → `gallery_collaborator_added` in DB so "Remove myself" button appears regardless of accept origin (email, banner, notification) |
+| `web/src/lib/email/sendWithPreferences.ts` | Added `"missing_recipient"` to skipReason union, Step 0 defensive guard, diagnostic logging for category resolution, preference check, and send result |
 | `web/src/lib/email/mailer.ts` | Added `[Email] SMTP attempting` log line before `transporter.sendMail` |
 | `web/src/lib/gallery/albumLinks.ts` | Removed `collaboratorIds` from `AlbumLinkInput` and `buildDesiredAlbumLinks()` |
-| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Removed `collaboratorIds` from reconcile call and admin PATCH body, updated label to "Invite collaborators" |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Removed `collaboratorIds` from reconcile, updated label to "Invite collaborators", calls `remove-collaborator` API for dropped collaborators on save, calls `notify-collaborators` for added ones |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/page.tsx` | `initialCollaborators` now loaded from both `gallery_album_links` (accepted) AND `gallery_collaboration_invites` (pending/accepted), fixing dirty-state loop after save |
 | `web/src/app/(protected)/dashboard/gallery/_components/CreateAlbumForm.tsx` | Removed `collaboratorIds` from reconcile, added notify-collaborators POST fetch, updated label |
 | `web/src/app/api/admin/gallery-albums/[id]/route.ts` | Removed `collaborator_ids` parsing and reconcile passing |
 | `web/src/app/(protected)/dashboard/admin/gallery/GalleryAdminTabs.tsx` | Removed `collaboratorIds` from reconcile call |
+| `web/src/app/gallery/[slug]/page.tsx` | Reads `?action=accept/decline` query params from email links, passes `autoAction` to CollaborationInviteBanner |
+| `web/src/app/gallery/[slug]/_components/CollaborationInviteBanner.tsx` | Added `autoAction` prop with `useEffect` auto-trigger on mount (for email links), shows green success banner after accepting instead of just dismissing |
+| `web/src/app/(protected)/dashboard/notifications/NotificationsList.tsx` | On accept: transitions notification to `gallery_collaborator_added` type locally (shows "Remove myself") instead of removing it; declined invites still removed |
 | `web/src/lib/email/templates/collaboratorInvited.ts` | Fixed `createButton` color args (only "gold" and "green" valid) |
 | `web/src/lib/email/registry.ts` | Added `collaboratorInvited` to all 5 registration points |
 | `web/src/lib/notifications/preferences.ts` | Added `collaboratorInvited: "event_updates"` to `EMAIL_CATEGORY_MAP` |
@@ -39,6 +44,9 @@ This file holds the historical implementation log that was previously under the 
 - Option 2: Separate `gallery_collaboration_invites` table for invite lifecycle; `gallery_album_links` only for accepted display links
 - Reconcile RPC guards: `AND link_role != 'collaborator'` on both DELETE and INSERT prevents venue/event saves from wiping collaborator links
 - Email resolution chain: Auth (`getUserById`) → `profiles.email` → null, with two-layer defense (route skip + sendWithPreferences guard)
+- Notification lifecycle: invite notification transitions to `gallery_collaborator_added` type on accept (DB-level, in respond-collaboration route) so "Remove myself" is always available
+- Save lifecycle: AlbumManager calls `remove-collaborator` for dropped IDs and `notify-collaborators` for added IDs; `initialCollaborators` loaded from both links + invites to prevent dirty-state loop
+- Email accept: album page reads `?action=accept/decline` query params → passes `autoAction` to banner → auto-triggers respond-collaboration API on mount
 
 **Quality gates:** 192 test files, 4056 tests pass, build succeeds.
 
