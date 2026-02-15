@@ -6,7 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { reconcileAlbumLinks } from "@/lib/gallery/albumLinks";
 import { toast } from "sonner";
-import { Star, Check, X, MessageSquare, GripVertical, Trash2 } from "lucide-react";
+import { Star, Check, X, MessageSquare, GripVertical, Trash2, Upload } from "lucide-react";
 import { MediaEmbedsEditor } from "@/components/media";
 import CollaboratorSelect, { type Collaborator } from "@/components/gallery/CollaboratorSelect";
 import {
@@ -209,6 +209,8 @@ export default function AlbumManager({
   const [isModeratingComments, setIsModeratingComments] = useState(false);
   const [images, setImages] = useState(initialImages);
   const [isReordering, setIsReordering] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
 
   // Album linkage state (venue, event, collaborators)
   const [selectedVenueId, setSelectedVenueId] = useState(initialVenueId || "");
@@ -644,6 +646,72 @@ export default function AlbumManager({
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
+  // Upload photos to this album
+  const handleUploadPhotos = async () => {
+    if (uploadFiles.length === 0) return;
+    setIsUploadingPhotos(true);
+    const supabase = createClient();
+
+    // Determine starting sort_order
+    let startSortOrder = 0;
+    const { data: maxSort } = await supabase
+      .from("gallery_images")
+      .select("sort_order")
+      .eq("album_id", album.id)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .single();
+    startSortOrder = (maxSort?.sort_order ?? -1) + 1;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const file = uploadFiles[i];
+      try {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${currentUserId}/${Date.now()}-${i}.${fileExt}`;
+
+        const { error: storageError } = await supabase.storage
+          .from("gallery-images")
+          .upload(fileName, file);
+
+        if (storageError) throw storageError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("gallery-images")
+          .getPublicUrl(fileName);
+
+        const { error: insertError } = await supabase
+          .from("gallery_images")
+          .insert({
+            image_url: publicUrl,
+            album_id: album.id,
+            sort_order: startSortOrder + i,
+            uploaded_by: currentUserId,
+            is_approved: true,
+          });
+
+        if (insertError) throw insertError;
+        successCount++;
+      } catch (err) {
+        console.error("Upload error:", err);
+        errorCount++;
+      }
+    }
+
+    setIsUploadingPhotos(false);
+    setUploadFiles([]);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} photo${successCount > 1 ? "s" : ""} uploaded`);
+      router.refresh();
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} upload${errorCount > 1 ? "s" : ""} failed`);
+    }
+  };
+
   // Get first visible image for fallback
   const firstVisibleImage = images.find((img) => img.is_published && !img.is_hidden);
   const displayCoverUrl = currentCoverUrl || firstVisibleImage?.image_url;
@@ -1021,6 +1089,88 @@ export default function AlbumManager({
             <p className="text-sm text-[var(--color-text-tertiary)] mt-2">
               Go to your gallery dashboard and select this album when uploading.
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Upload Photos Section */}
+      <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Upload className="w-5 h-5 text-[var(--color-text-secondary)]" />
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            Upload Photos
+          </h3>
+        </div>
+        <div
+          onDrop={(e) => {
+            e.preventDefault();
+            const droppedFiles = Array.from(e.dataTransfer.files).filter(f =>
+              f.type.startsWith("image/")
+            );
+            setUploadFiles(prev => [...prev, ...droppedFiles]);
+          }}
+          onDragOver={(e) => e.preventDefault()}
+          className="border-2 border-dashed border-[var(--color-border-default)] rounded-lg p-6 text-center hover:border-[var(--color-border-accent)] transition-colors cursor-pointer"
+          onClick={() => document.getElementById("album-upload-input")?.click()}
+        >
+          <input
+            id="album-upload-input"
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              if (e.target.files) {
+                const maxSize = 10 * 1024 * 1024;
+                const validFiles = Array.from(e.target.files).filter(f => {
+                  if (f.size > maxSize) {
+                    toast.error(`${f.name} is too large (max 10MB)`);
+                    return false;
+                  }
+                  return true;
+                });
+                setUploadFiles(prev => [...prev, ...validFiles]);
+              }
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
+          <div className="text-3xl mb-2">📷</div>
+          <p className="text-sm text-[var(--color-text-primary)] font-medium">
+            Drop photos here or click to select
+          </p>
+          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+            Max 10MB per photo. JPG, PNG, WebP supported.
+          </p>
+        </div>
+        {uploadFiles.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {uploadFiles.length} file{uploadFiles.length > 1 ? "s" : ""} selected
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {uploadFiles.map((file, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 px-2 py-1 bg-[var(--color-bg-tertiary)] rounded text-xs text-[var(--color-text-secondary)]">
+                  <span className="max-w-[120px] truncate">{file.name}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setUploadFiles(prev => prev.filter((_, i) => i !== idx));
+                    }}
+                    className="text-[var(--color-text-tertiary)] hover:text-red-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleUploadPhotos}
+              disabled={isUploadingPhotos}
+              className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              {isUploadingPhotos ? "Uploading..." : `Upload ${uploadFiles.length} Photo${uploadFiles.length > 1 ? "s" : ""}`}
+            </button>
           </div>
         )}
       </div>

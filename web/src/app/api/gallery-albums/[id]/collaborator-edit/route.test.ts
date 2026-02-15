@@ -116,10 +116,18 @@ describe("POST /api/gallery-albums/[id]/collaborator-edit", () => {
     expect(data.error).toContain("cover_image_url");
   });
 
+  it("rejects media_embed_urls (not in allowlist)", async () => {
+    mockUser = { id: "user-1" };
+    mockCollabLink = { album_id: ALBUM_ID };
+    const res = await callRoute({ media_embed_urls: ["https://youtube.com/watch?v=abc"] });
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.error).toContain("media_embed_urls");
+  });
+
   it("returns 400 when body is empty", async () => {
     mockUser = { id: "user-1" };
     const res = await callRoute({});
-    // No allowed fields → 400
     expect(res.status).toBe(400);
   });
 
@@ -141,7 +149,7 @@ describe("POST /api/gallery-albums/[id]/collaborator-edit", () => {
 
   it("allows admin to update without being collaborator", async () => {
     mockUser = { id: "admin-1", app_metadata: { role: "admin" } };
-    mockCollabLink = null; // not a collaborator
+    mockCollabLink = null;
     const res = await callRoute({ youtube_url: "https://youtube.com/test" });
     expect(res.status).toBe(200);
     const data = await res.json();
