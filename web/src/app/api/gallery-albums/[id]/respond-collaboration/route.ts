@@ -110,6 +110,23 @@ export async function POST(
         );
       }
     }
+
+    // 7. Transition the invite notification to "collaborator_added" so "Remove myself" is available
+    //    Match on user_id + type + link containing the albumId
+    const { error: notifError } = await (serviceClient as any)
+      .from("notifications")
+      .update({
+        type: "gallery_collaborator_added",
+        title: "Collaboration accepted",
+      })
+      .eq("user_id", user.id)
+      .eq("type", "gallery_collaborator_invite")
+      .like("link", `%${albumId}%`);
+
+    if (notifError) {
+      console.warn("[respond-collaboration] Notification transition failed:", notifError.message);
+      // Non-blocking — the accept still succeeded
+    }
   }
 
   return NextResponse.json({ ok: true, status: response });
