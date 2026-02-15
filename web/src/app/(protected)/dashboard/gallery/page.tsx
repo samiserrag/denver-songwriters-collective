@@ -22,8 +22,8 @@ export default async function UserGalleryPage() {
 
   const userId = sessionUser.id;
 
-  // Fetch user's albums with photo counts
-  const { data: userAlbums } = await supabase
+  // Fetch user's owned albums
+  const { data: ownedAlbums } = await supabase
     .from("gallery_albums")
     .select(`
       id,
@@ -33,14 +33,54 @@ export default async function UserGalleryPage() {
       cover_image_url,
       is_published,
       is_hidden,
-      created_at
+      created_at,
+      created_by
     `)
     .eq("created_by", userId)
     .order("created_at", { ascending: false });
 
-  // Get photo counts for each album
-  const albumsWithCounts = userAlbums ? await Promise.all(
-    userAlbums.map(async (album) => {
+  // Fetch collaborator album IDs via gallery_album_links
+  const { data: collabLinks } = await supabase
+    .from("gallery_album_links")
+    .select("album_id")
+    .eq("target_type", "profile")
+    .eq("target_id", userId)
+    .eq("link_role", "collaborator");
+
+  const collabAlbumIds = (collabLinks ?? [])
+    .map((l) => l.album_id)
+    .filter((id) => !(ownedAlbums ?? []).some((a) => a.id === id));
+
+  // Fetch collaborator albums (RLS collaborator_select policy allows this)
+  let collabAlbums: typeof ownedAlbums = [];
+  if (collabAlbumIds.length > 0) {
+    const { data } = await supabase
+      .from("gallery_albums")
+      .select(`
+        id,
+        name,
+        slug,
+        description,
+        cover_image_url,
+        is_published,
+        is_hidden,
+        created_at,
+        created_by
+      `)
+      .in("id", collabAlbumIds)
+      .order("created_at", { ascending: false });
+    collabAlbums = data;
+  }
+
+  // Merge owned + collaborator albums, tag each with role
+  const allAlbums = [
+    ...(ownedAlbums ?? []).map((a) => ({ ...a, role: "owner" as const })),
+    ...(collabAlbums ?? []).map((a) => ({ ...a, role: "collaborator" as const })),
+  ];
+
+  // Get photo counts and cover fallbacks for each album
+  const albumsWithCounts = await Promise.all(
+    allAlbums.map(async (album) => {
       const { count } = await supabase
         .from("gallery_images")
         .select("*", { count: "exact", head: true })
@@ -68,7 +108,7 @@ export default async function UserGalleryPage() {
         displayCoverUrl: album.cover_image_url || fallbackCoverUrl,
       };
     })
-  ) : [];
+  );
 
   // Fetch user's uploaded photos (for stats)
   const { data: myPhotos } = await supabase
@@ -93,6 +133,9 @@ export default async function UserGalleryPage() {
     .select("id, title, event_date")
     .eq("status", "published")
     .order("event_date", { ascending: false, nullsFirst: false });
+
+  const ownedCount = (ownedAlbums ?? []).length;
+  const collabCount = (collabAlbums ?? []).length;
 
   return (
     <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
@@ -175,6 +218,11 @@ export default async function UserGalleryPage() {
 
                     {/* Status Badges */}
                     <div className="absolute top-2 left-2 flex gap-1">
+                      {album.role === "collaborator" && (
+                        <span className="px-2 py-0.5 bg-blue-500/90 text-white text-xs rounded-full">
+                          Collaborator
+                        </span>
+                      )}
                       {album.is_hidden && (
                         <span className="px-2 py-0.5 bg-red-500/90 text-white text-xs rounded-full">
                           Hidden

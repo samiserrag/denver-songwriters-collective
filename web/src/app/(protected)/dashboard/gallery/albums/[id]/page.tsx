@@ -69,9 +69,24 @@ export default async function AlbumManagementPage({
     notFound();
   }
 
-  // Check permissions: must be album owner or admin
+  // Check permissions: must be album owner, admin, or accepted collaborator
   const isOwner = album.created_by === userId;
+
+  // Check if user is an accepted collaborator via gallery_album_links
+  let isCollaborator = false;
   if (!isOwner && !isAdmin) {
+    const { data: collabLink } = await supabase
+      .from("gallery_album_links")
+      .select("album_id")
+      .eq("album_id", id)
+      .eq("target_type", "profile")
+      .eq("target_id", userId)
+      .eq("link_role", "collaborator")
+      .maybeSingle();
+    isCollaborator = !!collabLink;
+  }
+
+  if (!isOwner && !isAdmin && !isCollaborator) {
     return (
       <main className="min-h-screen bg-[var(--color-background)] py-12 px-6">
         <div className="max-w-4xl mx-auto">
@@ -101,7 +116,8 @@ export default async function AlbumManagementPage({
         is_published,
         is_hidden,
         sort_order,
-        created_at
+        created_at,
+        uploaded_by
       `)
       .eq("album_id", id)
       .order("sort_order", { ascending: true })
@@ -183,6 +199,8 @@ export default async function AlbumManagementPage({
           album={album}
           images={images ?? []}
           isAdmin={isAdmin}
+          isCollaborator={isCollaborator}
+          currentUserId={userId}
           mediaEmbedUrls={mediaEmbedUrls}
           venues={venues ?? []}
           events={(events ?? []) as Array<{ id: string; title: string; event_date: string | null }>}

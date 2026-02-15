@@ -49,6 +49,7 @@ interface GalleryImage {
   is_hidden: boolean;
   sort_order: number | null;
   created_at: string;
+  uploaded_by?: string;
 }
 
 interface Venue {
@@ -66,6 +67,8 @@ interface AlbumManagerProps {
   album: Album;
   images: GalleryImage[];
   isAdmin: boolean;
+  isCollaborator?: boolean;
+  currentUserId: string;
   mediaEmbedUrls?: string[];
   venues?: Venue[];
   events?: Event[];
@@ -79,10 +82,13 @@ function SortablePhotoCard({
   image,
   isCover,
   onSetCover,
+  readOnly,
 }: {
   image: GalleryImage;
   isCover: boolean;
   onSetCover: () => void;
+  /** When true, hides drag handle and set-as-cover button (collaborator viewing non-owned photo) */
+  readOnly?: boolean;
 }) {
   const {
     attributes,
@@ -91,7 +97,7 @@ function SortablePhotoCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: image.id });
+  } = useSortable({ id: image.id, disabled: readOnly });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -118,15 +124,17 @@ function SortablePhotoCard({
         className="object-cover object-top"
       />
 
-      {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute top-2 left-2 p-1.5 bg-black/60 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Drag to reorder"
-      >
-        <GripVertical className="w-4 h-4 text-white" />
-      </div>
+      {/* Drag handle — hidden for read-only collaborator photos */}
+      {!readOnly && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 p-1.5 bg-black/60 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-4 h-4 text-white" />
+        </div>
+      )}
 
       {/* Cover Badge */}
       {isCover && (
@@ -147,12 +155,14 @@ function SortablePhotoCard({
         </div>
       )}
 
-      {/* Set as Cover Button */}
+      {/* Set as Cover Button — hidden for read-only collaborator photos */}
       <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
         {isCover ? (
           <div className="text-center text-white text-xs font-medium">
             Current Cover
           </div>
+        ) : readOnly ? (
+          <div className="text-center text-white/60 text-xs">View only</div>
         ) : (
           <button
             onClick={onSetCover}
@@ -171,6 +181,8 @@ export default function AlbumManager({
   album,
   images: initialImages,
   isAdmin,
+  isCollaborator = false,
+  currentUserId,
   mediaEmbedUrls: initialMediaEmbedUrls = [],
   venues = [],
   events = [],
@@ -179,6 +191,10 @@ export default function AlbumManager({
   initialCollaborators = [],
 }: AlbumManagerProps) {
   const router = useRouter();
+  const isOwner = album.created_by === currentUserId;
+  // Collaborator-only: not owner, not admin, is collaborator
+  const isCollaboratorOnly = isCollaborator && !isOwner && !isAdmin;
+
   const [albumName, setAlbumName] = useState(album.name);
   const [albumDescription, setAlbumDescription] = useState(album.description || "");
   const [albumYoutubeUrl, setAlbumYoutubeUrl] = useState(album.youtube_url || "");
@@ -186,6 +202,7 @@ export default function AlbumManager({
   const [mediaEmbedUrls, setMediaEmbedUrls] = useState<string[]>(initialMediaEmbedUrls);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
   const [currentCoverUrl, setCurrentCoverUrl] = useState(album.cover_image_url);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -198,19 +215,26 @@ export default function AlbumManager({
   const [selectedEventId, setSelectedEventId] = useState(initialEventId || "");
   const [collaborators, setCollaborators] = useState<Collaborator[]>(initialCollaborators);
 
-  // Track unsaved changes
-  const hasUnsavedChanges =
-    albumName !== album.name ||
-    albumDescription !== (album.description || "") ||
-    selectedVenueId !== (initialVenueId || "") ||
-    selectedEventId !== (initialEventId || "") ||
-    JSON.stringify(collaborators.map((c) => c.id).sort()) !==
-      JSON.stringify(initialCollaborators.map((c) => c.id).sort()) ||
-    (isAdmin && (
-      albumYoutubeUrl !== (album.youtube_url || "") ||
-      albumSpotifyUrl !== (album.spotify_url || "") ||
-      JSON.stringify(mediaEmbedUrls) !== JSON.stringify(initialMediaEmbedUrls)
-    ));
+  // Track unsaved changes — collaborators can only edit limited fields
+  const hasUnsavedChanges = isCollaboratorOnly
+    ? (
+        albumDescription !== (album.description || "") ||
+        albumYoutubeUrl !== (album.youtube_url || "") ||
+        albumSpotifyUrl !== (album.spotify_url || "")
+      )
+    : (
+        albumName !== album.name ||
+        albumDescription !== (album.description || "") ||
+        selectedVenueId !== (initialVenueId || "") ||
+        selectedEventId !== (initialEventId || "") ||
+        JSON.stringify(collaborators.map((c) => c.id).sort()) !==
+          JSON.stringify(initialCollaborators.map((c) => c.id).sort()) ||
+        (isAdmin && (
+          albumYoutubeUrl !== (album.youtube_url || "") ||
+          albumSpotifyUrl !== (album.spotify_url || "") ||
+          JSON.stringify(mediaEmbedUrls) !== JSON.stringify(initialMediaEmbedUrls)
+        ))
+      );
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -264,16 +288,49 @@ export default function AlbumManager({
 
   // Save album details
   const handleSaveDetails = async () => {
-    if (!albumName.trim()) {
+    // Collaborators skip name validation (they can't edit it)
+    if (!isCollaboratorOnly && !albumName.trim()) {
       toast.error("Album name is required");
       return;
     }
 
+    setIsSaving(true);
+    setFieldErrors({});
+
+    // ── Collaborator-only save path ──
+    if (isCollaboratorOnly) {
+      try {
+        const res = await fetch(`/api/gallery-albums/${album.id}/collaborator-edit`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: albumDescription.trim() || null,
+            youtube_url: albumYoutubeUrl || null,
+            spotify_url: albumSpotifyUrl || null,
+          }),
+        });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null);
+          toast.error(payload?.error || "Failed to update album");
+          setIsSaving(false);
+          return;
+        }
+      } catch {
+        toast.error("Network error. Please try again.");
+        setIsSaving(false);
+        return;
+      }
+      setIsSaving(false);
+      toast.success("Album updated");
+      router.refresh();
+      return;
+    }
+
+    // ── Owner / Admin save path (unchanged) ──
     // Capture previous collaborator IDs before save (for notification delta)
     const prevCollaboratorIds = initialCollaborators.map((c) => c.id);
 
-    setIsSaving(true);
-    setFieldErrors({});
     const supabase = createClient();
 
     // Generate new slug from name
@@ -416,6 +473,31 @@ export default function AlbumManager({
     setSelectedEventId(initialEventId || "");
     setCollaborators(initialCollaborators);
     setFieldErrors({});
+  };
+
+  // Leave collaboration (collaborator removes themselves)
+  const handleLeaveCollaboration = async () => {
+    if (!window.confirm("Leave this collaboration? The album will no longer appear on your profile or in My Albums.")) {
+      return;
+    }
+    setIsLeaving(true);
+    try {
+      const res = await fetch(`/api/gallery-albums/${album.id}/leave-collaboration`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (res.ok) {
+        toast.success("You have left this collaboration.");
+        router.push("/dashboard/gallery");
+      } else {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error || "Failed to leave collaboration.");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setIsLeaving(false);
+    }
   };
 
   // Toggle publish state with inline feedback (no toasts)
@@ -585,6 +667,13 @@ export default function AlbumManager({
           {images.length} {images.length === 1 ? "photo" : "photos"}
         </span>
 
+        {/* Collaborator badge */}
+        {isCollaboratorOnly && (
+          <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full font-medium">
+            Collaborator
+          </span>
+        )}
+
         {album.is_hidden && !isAdmin && (
           <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full" title="Contact us if you think this is a mistake">
             Hidden by admin
@@ -607,17 +696,19 @@ export default function AlbumManager({
           {album.is_published ? "Published" : "Draft"}
         </span>
 
-        {/* Explicit publish/unpublish button */}
-        <button
-          onClick={handleTogglePublish}
-          className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-            album.is_published
-              ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
-              : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
-          }`}
-        >
-          {album.is_published ? "Unpublish" : "Publish"}
-        </button>
+        {/* Publish/Unpublish button — hidden for collaborators */}
+        {!isCollaboratorOnly && (
+          <button
+            onClick={handleTogglePublish}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+              album.is_published
+                ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
+                : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
+            }`}
+          >
+            {album.is_published ? "Unpublish" : "Publish"}
+          </button>
+        )}
 
         {/* Save button (top) */}
         <button
@@ -640,17 +731,30 @@ export default function AlbumManager({
           </button>
         )}
 
-        {/* Delete album button */}
-        <button
-          onClick={handleDeleteAlbum}
-          disabled={isDeleting}
-          className="px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 disabled:opacity-50"
-        >
-          <span className="flex items-center gap-1.5">
-            <Trash2 className="w-3.5 h-3.5" />
-            {isDeleting ? "Deleting..." : "Delete Album"}
-          </span>
-        </button>
+        {/* Delete album button — hidden for collaborators */}
+        {!isCollaboratorOnly && (
+          <button
+            onClick={handleDeleteAlbum}
+            disabled={isDeleting}
+            className="px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 disabled:opacity-50"
+          >
+            <span className="flex items-center gap-1.5">
+              <Trash2 className="w-3.5 h-3.5" />
+              {isDeleting ? "Deleting..." : "Delete Album"}
+            </span>
+          </button>
+        )}
+
+        {/* Leave collaboration button — collaborators only */}
+        {isCollaboratorOnly && (
+          <button
+            onClick={handleLeaveCollaboration}
+            disabled={isLeaving}
+            className="px-3 py-1.5 text-sm rounded-lg font-medium transition-colors bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 disabled:opacity-50"
+          >
+            {isLeaving ? "Leaving..." : "Leave Collaboration"}
+          </button>
+        )}
 
         {/* Unsaved changes indicator */}
         {hasUnsavedChanges && (
@@ -673,17 +777,20 @@ export default function AlbumManager({
           Album Details
         </h3>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-              Album Name
-            </label>
-            <input
-              type="text"
-              value={albumName}
-              onChange={(e) => setAlbumName(e.target.value)}
-              className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
-            />
-          </div>
+          {/* Album Name — hidden for collaborators (read-only in heading above) */}
+          {!isCollaboratorOnly && (
+            <div>
+              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                Album Name
+              </label>
+              <input
+                type="text"
+                value={albumName}
+                onChange={(e) => setAlbumName(e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)]"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
               Description <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
@@ -695,67 +802,101 @@ export default function AlbumManager({
               className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-accent)] resize-none"
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Venue Selector */}
+          {/* YouTube & Spotify — available to collaborators and admins */}
+          {(isCollaboratorOnly || isAdmin) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  YouTube URL <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={albumYoutubeUrl}
+                  onChange={(e) => setAlbumYoutubeUrl(e.target.value)}
+                  placeholder="https://youtube.com/..."
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm focus:outline-none focus:border-[var(--color-border-accent)]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  Spotify URL <span className="font-normal text-[var(--color-text-tertiary)]">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={albumSpotifyUrl}
+                  onChange={(e) => setAlbumSpotifyUrl(e.target.value)}
+                  placeholder="https://open.spotify.com/..."
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm focus:outline-none focus:border-[var(--color-border-accent)]"
+                />
+              </div>
+            </div>
+          )}
+          {/* Venue & Event selectors — hidden for collaborators */}
+          {!isCollaboratorOnly && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Venue Selector */}
+              <div>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  Venue <span className="font-normal text-[var(--color-text-tertiary)]">(optional — appears on venue page)</span>
+                </label>
+                <select
+                  value={selectedVenueId}
+                  onChange={(e) => setSelectedVenueId(e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+                >
+                  <option value="">No venue</option>
+                  {venues.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Event Selector */}
+              <div>
+                <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                  Event <span className="font-normal text-[var(--color-text-tertiary)]">(optional — appears on event page)</span>
+                </label>
+                <select
+                  value={selectedEventId}
+                  onChange={(e) => setSelectedEventId(e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
+                >
+                  <option value="">No event</option>
+                  {events.map((ev) => {
+                    const dateLabel = ev.event_date
+                      ? ` — ${new Date(ev.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          timeZone: "America/Denver",
+                        })}`
+                      : "";
+                    return (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.title}{dateLabel}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+          {/* Collaborators — hidden for collaborators */}
+          {!isCollaboratorOnly && (
             <div>
               <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                Venue <span className="font-normal text-[var(--color-text-tertiary)]">(optional — appears on venue page)</span>
+                Invite collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — they must accept before the album appears on their profile)</span>
               </label>
-              <select
-                value={selectedVenueId}
-                onChange={(e) => setSelectedVenueId(e.target.value)}
-                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
-              >
-                <option value="">No venue</option>
-                {venues.map((v) => (
-                  <option key={v.id} value={v.id}>{v.name}</option>
-                ))}
-              </select>
+              <CollaboratorSelect
+                value={collaborators}
+                onChange={setCollaborators}
+                ownerId={album.created_by}
+                disabled={isSaving}
+              />
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                Invites are sent when you click Save.
+              </p>
             </div>
-            {/* Event Selector */}
-            <div>
-              <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                Event <span className="font-normal text-[var(--color-text-tertiary)]">(optional — appears on event page)</span>
-              </label>
-              <select
-                value={selectedEventId}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm"
-              >
-                <option value="">No event</option>
-                {events.map((ev) => {
-                  const dateLabel = ev.event_date
-                    ? ` — ${new Date(ev.event_date + "T12:00:00Z").toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        timeZone: "America/Denver",
-                      })}`
-                    : "";
-                  return (
-                    <option key={ev.id} value={ev.id}>
-                      {ev.title}{dateLabel}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </div>
-          {/* Collaborators */}
-          <div>
-            <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
-              Invite collaborators <span className="font-normal text-[var(--color-text-tertiary)]">(optional — they must accept before the album appears on their profile)</span>
-            </label>
-            <CollaboratorSelect
-              value={collaborators}
-              onChange={setCollaborators}
-              ownerId={album.created_by}
-              disabled={isSaving}
-            />
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-              Invites are sent when you click Save.
-            </p>
-          </div>
+          )}
           {isAdmin && (
             <div>
               <label className="block text-sm text-[var(--color-text-secondary)] mb-1">
@@ -783,16 +924,19 @@ export default function AlbumManager({
                 Cancel
               </button>
             )}
-            <button
-              onClick={handleTogglePublish}
-              className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
-                album.is_published
-                  ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
-                  : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
-              }`}
-            >
-              {album.is_published ? "Unpublish" : "Publish"}
-            </button>
+            {/* Publish button — hidden for collaborators */}
+            {!isCollaboratorOnly && (
+              <button
+                onClick={handleTogglePublish}
+                className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${
+                  album.is_published
+                    ? "bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]"
+                    : "bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)]"
+                }`}
+              >
+                {album.is_published ? "Unpublish" : "Publish"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -842,7 +986,9 @@ export default function AlbumManager({
           )}
         </div>
         <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-          Drag photos to reorder. Click &quot;Set as cover&quot; to choose the album cover.
+          {isCollaboratorOnly
+            ? "You can view all photos. Reordering and cover selection are managed by the album owner."
+            : "Drag photos to reorder. Click \"Set as cover\" to choose the album cover."}
         </p>
 
         {images.length > 0 ? (
@@ -862,6 +1008,7 @@ export default function AlbumManager({
                     image={image}
                     isCover={currentCoverUrl === image.image_url}
                     onSetCover={() => handleSetCover(image.image_url)}
+                    readOnly={isCollaboratorOnly}
                   />
                 ))}
               </div>
@@ -878,7 +1025,8 @@ export default function AlbumManager({
         )}
       </div>
 
-      {/* Comment Moderation Section */}
+      {/* Comment Moderation Section — hidden for collaborators */}
+      {!isCollaboratorOnly && (
       <div className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
         <div className="flex items-center gap-2 mb-4">
           <MessageSquare className="w-5 h-5 text-[var(--color-text-secondary)]" />
@@ -906,6 +1054,7 @@ export default function AlbumManager({
           </button>
         </div>
       </div>
+      )}
 
       {/* Owner context for hidden albums (non-admin) */}
       {album.is_hidden && !isAdmin && (
@@ -913,6 +1062,16 @@ export default function AlbumManager({
           <p className="text-sm text-amber-800 dark:text-amber-300">
             This album has been hidden by an admin and is not visible in the public gallery.
             Contact us if you think this is a mistake.
+          </p>
+        </div>
+      )}
+
+      {/* Collaborator Info */}
+      {isCollaboratorOnly && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Collaborator view:</strong> You can edit the description, YouTube &amp; Spotify URLs, and upload photos.
+            Album name, cover image, venue, event, publish status, and collaborator invites are managed by the album owner.
           </p>
         </div>
       )}
