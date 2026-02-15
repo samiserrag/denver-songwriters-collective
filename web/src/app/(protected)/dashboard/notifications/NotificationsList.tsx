@@ -308,9 +308,18 @@ export default function NotificationsList({
       });
       const data = await res.json();
       if (res.ok) {
-        // Remove the notification from local state after responding
-        setItems(prev => prev.filter(n => n.id !== notification.id));
-        setTotal(prev => prev - 1);
+        if (response === "declined") {
+          // Remove declined invites from the list
+          setItems(prev => prev.filter(n => n.id !== notification.id));
+          setTotal(prev => prev - 1);
+        } else {
+          // Accepted: update in place so user can still see the album link
+          setItems(prev => prev.map(n =>
+            n.id === notification.id
+              ? { ...n, type: "gallery_collaborator_added" as const, title: "Collaboration accepted", message: n.message?.replace("invited you to collaborate on", "You are now a collaborator on") ?? n.message, is_read: true }
+              : n
+          ));
+        }
       } else {
         alert(data.error || `Failed to ${response === "accepted" ? "accept" : "decline"} invite.`);
       }

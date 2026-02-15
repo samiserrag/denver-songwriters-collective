@@ -1,24 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface CollaborationInviteBannerProps {
   albumId: string;
   albumName: string;
   inviterName: string;
+  /** If set, auto-triggers accept or decline on mount (from email link) */
+  autoAction?: "accept" | "decline";
 }
 
 export default function CollaborationInviteBanner({
   albumId,
   albumName,
   inviterName,
+  autoAction,
 }: CollaborationInviteBannerProps) {
   const router = useRouter();
   const [responding, setResponding] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
-
-  if (dismissed) return null;
+  const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const autoActionFired = useRef(false);
 
   const handleRespond = async (response: "accepted" | "declined") => {
     setResponding(response);
@@ -31,9 +34,11 @@ export default function CollaborationInviteBanner({
       });
       const data = await res.json();
       if (res.ok) {
-        setDismissed(true);
         if (response === "accepted") {
+          setResultMessage("You're now a collaborator on this album! It will appear on your profile.");
           router.refresh();
+        } else {
+          setDismissed(true);
         }
       } else {
         alert(data.error || `Failed to ${response === "accepted" ? "accept" : "decline"}.`);
@@ -44,6 +49,29 @@ export default function CollaborationInviteBanner({
       setResponding(null);
     }
   };
+
+  // Auto-trigger accept/decline from email link query params
+  useEffect(() => {
+    if (autoAction && !autoActionFired.current) {
+      autoActionFired.current = true;
+      const response = autoAction === "accept" ? "accepted" : "declined";
+      handleRespond(response);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAction]);
+
+  if (dismissed) return null;
+
+  // Show success message after accepting
+  if (resultMessage) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <p className="text-sm font-medium text-green-800">
+          ✅ {resultMessage}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[var(--color-bg-tertiary)] border border-[var(--color-border-accent)] rounded-lg p-4 mb-6">

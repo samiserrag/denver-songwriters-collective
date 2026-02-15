@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; action?: string; albumId?: string }>;
 }
 
 const IMAGES_PER_PAGE = 24;
@@ -77,6 +77,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
   const supabase = await createSupabaseServerClient();
   const page = Math.max(1, parseInt(query.page || "1", 10));
   const offset = (page - 1) * IMAGES_PER_PAGE;
+  const emailAction = query.action === "accept" || query.action === "decline" ? query.action : undefined;
 
   // Fetch album details
   const { data: album, error: albumError } = await supabase
@@ -202,6 +203,7 @@ export default async function AlbumPage({ params, searchParams }: PageProps) {
             albumId={album.id}
             albumName={album.name}
             inviterName={pendingInvite.inviterName}
+            autoAction={emailAction}
           />
         </div>
       )}
