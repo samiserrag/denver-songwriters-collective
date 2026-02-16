@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -698,16 +698,18 @@ export default function AlbumManager({
     setCropQueue(rest);
   };
 
+  // Track how many uploads succeeded/failed during this crop session
+  const uploadResultsRef = useRef({ success: 0, failed: 0 });
+
   // Handle crop completion for current file (cropped version)
   const handleCropComplete = async (croppedFile: File) => {
     setIsUploadingPhotos(true);
     try {
       await uploadSinglePhoto(croppedFile);
-      toast.success("Photo uploaded");
-      router.refresh();
+      uploadResultsRef.current.success++;
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error("Upload failed");
+      uploadResultsRef.current.failed++;
     }
     setIsUploadingPhotos(false);
     advanceCropQueue();
@@ -719,11 +721,10 @@ export default function AlbumManager({
     setIsUploadingPhotos(true);
     try {
       await uploadSinglePhoto(currentCropFile);
-      toast.success("Photo uploaded");
-      router.refresh();
+      uploadResultsRef.current.success++;
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error("Upload failed");
+      uploadResultsRef.current.failed++;
     }
     setIsUploadingPhotos(false);
     advanceCropQueue();
@@ -734,16 +735,28 @@ export default function AlbumManager({
     advanceCropQueue();
   };
 
-  // Move to next file in queue, or finish
+  // Move to next file in queue, or finish — refresh page only when all done
   const advanceCropQueue = () => {
     if (cropQueue.length > 0) {
       const [next, ...rest] = cropQueue;
       setCurrentCropFile(next);
       setCropQueue(rest);
     } else {
+      // All files processed — show results and refresh
       setCurrentCropFile(null);
       setCropQueue([]);
       setUploadFiles([]);
+      const { success, failed } = uploadResultsRef.current;
+      if (success > 0) {
+        toast.success(`${success} photo${success > 1 ? "s" : ""} uploaded`);
+      }
+      if (failed > 0) {
+        toast.error(`${failed} upload${failed > 1 ? "s" : ""} failed`);
+      }
+      uploadResultsRef.current = { success: 0, failed: 0 };
+      if (success > 0) {
+        router.refresh();
+      }
     }
   };
 
