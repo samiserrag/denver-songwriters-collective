@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { Database } from "@/lib/supabase/database.types";
 import NotificationsList from "./notifications/NotificationsList";
+import EmailPreferencesSection from "./notifications/EmailPreferencesSection";
 import InvitationsList from "./invitations/InvitationsList";
 
 export const dynamic = "force-dynamic";
@@ -283,6 +284,9 @@ export default async function DashboardPage() {
               initialCursor={notificationCursor}
               initialTotal={notificationCount || 0}
             />
+            <Suspense fallback={null}>
+              <EmailPreferencesSection />
+            </Suspense>
           </section>
 
           {/* Secondary Links */}

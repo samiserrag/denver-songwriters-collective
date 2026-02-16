@@ -121,6 +121,8 @@ export function wrapEmailHtml(content: string, options?: { headerImageUrl?: stri
               </p>
               <p style="margin: 16px 0 0 0; font-size: 12px;">
                 <a href="${SITE_URL}" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">coloradosongwriterscollective.org</a>
+                &nbsp;&middot;&nbsp;
+                <a href="${SITE_URL}/dashboard?emailPrefs=1" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">Manage email preferences</a>
               </p>
             </td>
           </tr>
@@ -339,5 +341,6 @@ export function wrapEmailText(content: string): string {
 ---
 — From Sami Serrag on Behalf of The Colorado Songwriters Collective
 You can reply directly to this email if you need anything.
-${SITE_URL}`;
+${SITE_URL}
+Manage email preferences: ${SITE_URL}/dashboard?emailPrefs=1`;
 }

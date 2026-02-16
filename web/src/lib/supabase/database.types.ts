@@ -2182,6 +2182,7 @@ export type Database = {
           created_at: string
           email_admin_notifications: boolean
           email_claim_updates: boolean
+          email_enabled: boolean
           email_event_updates: boolean
           updated_at: string
           user_id: string
@@ -2190,6 +2191,7 @@ export type Database = {
           created_at?: string
           email_admin_notifications?: boolean
           email_claim_updates?: boolean
+          email_enabled?: boolean
           email_event_updates?: boolean
           updated_at?: string
           user_id: string
@@ -2198,6 +2200,7 @@ export type Database = {
           created_at?: string
           email_admin_notifications?: boolean
           email_claim_updates?: boolean
+          email_enabled?: boolean
           email_event_updates?: boolean
           updated_at?: string
           user_id?: string
@@ -3601,6 +3604,7 @@ export type Database = {
         Args: {
           p_email_admin_notifications?: boolean
           p_email_claim_updates?: boolean
+          p_email_enabled?: boolean
           p_email_event_updates?: boolean
           p_user_id: string
         }
@@ -3608,6 +3612,7 @@ export type Database = {
           created_at: string
           email_admin_notifications: boolean
           email_claim_updates: boolean
+          email_enabled: boolean
           email_event_updates: boolean
           updated_at: string
           user_id: string

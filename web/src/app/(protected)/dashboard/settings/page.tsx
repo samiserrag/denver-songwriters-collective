@@ -55,7 +55,7 @@ export default function SettingsPage() {
   }, [supabase]);
 
   // Handle preference toggle
-  const handleToggle = async (key: keyof typeof DEFAULT_PREFERENCES, value: boolean) => {
+  const handleToggle = async (key: keyof Omit<NotificationPreferences, "user_id" | "created_at" | "updated_at">, value: boolean) => {
     if (!userId || !prefs) return;
 
     setPrefsSaving(true);
@@ -198,6 +198,36 @@ export default function SettingsPage() {
             <div className="text-[var(--color-text-tertiary)]">Loading preferences...</div>
           ) : prefs ? (
             <div className="space-y-4">
+              {/* Master No-Emails Toggle */}
+              <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div>
+                  <span className="text-[var(--color-text-primary)] font-medium">No emails</span>
+                  <p className="text-[var(--color-text-tertiary)] text-sm">
+                    Turn off all email notifications
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!prefs.email_enabled}
+                  onClick={() => handleToggle("email_enabled", !prefs.email_enabled)}
+                  disabled={prefsSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    !prefs.email_enabled
+                      ? "bg-[var(--color-accent-primary)]"
+                      : "bg-[var(--color-bg-tertiary)]"
+                  } ${prefsSaving ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      !prefs.email_enabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </label>
+
+              {/* Category toggles - disabled when master is off */}
+              <div className={`space-y-4 ${!prefs.email_enabled ? "opacity-50" : ""}`}>
               {/* Claim Updates Toggle */}
               <label className="flex items-center justify-between gap-4 cursor-pointer">
                 <div>
@@ -211,7 +241,7 @@ export default function SettingsPage() {
                   role="switch"
                   aria-checked={prefs.email_claim_updates}
                   onClick={() => handleToggle("email_claim_updates", !prefs.email_claim_updates)}
-                  disabled={prefsSaving}
+                  disabled={prefsSaving || !prefs.email_enabled}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     prefs.email_claim_updates
                       ? "bg-[var(--color-accent-primary)]"
@@ -239,7 +269,7 @@ export default function SettingsPage() {
                   role="switch"
                   aria-checked={prefs.email_event_updates}
                   onClick={() => handleToggle("email_event_updates", !prefs.email_event_updates)}
-                  disabled={prefsSaving}
+                  disabled={prefsSaving || !prefs.email_enabled}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     prefs.email_event_updates
                       ? "bg-[var(--color-accent-primary)]"
@@ -268,7 +298,7 @@ export default function SettingsPage() {
                     role="switch"
                     aria-checked={prefs.email_admin_notifications}
                     onClick={() => handleToggle("email_admin_notifications", !prefs.email_admin_notifications)}
-                    disabled={prefsSaving}
+                    disabled={prefsSaving || !prefs.email_enabled}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       prefs.email_admin_notifications
                         ? "bg-[var(--color-accent-primary)]"
@@ -283,6 +313,7 @@ export default function SettingsPage() {
                   </button>
                 </label>
               )}
+              </div>
 
               {/* Saved confirmation */}
               {prefsSaved && (

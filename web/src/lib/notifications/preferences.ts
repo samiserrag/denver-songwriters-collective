@@ -10,6 +10,7 @@ import type { Database } from "../supabase/database.types";
 
 export interface NotificationPreferences {
   user_id: string;
+  email_enabled: boolean;
   email_claim_updates: boolean;
   email_event_updates: boolean;
   email_admin_notifications: boolean;
@@ -21,6 +22,7 @@ export interface NotificationPreferences {
  * Default preferences (all emails enabled)
  */
 export const DEFAULT_PREFERENCES: Omit<NotificationPreferences, "user_id" | "created_at" | "updated_at"> = {
+  email_enabled: true,
   email_claim_updates: true,
   email_event_updates: true,
   email_admin_notifications: true,
@@ -62,6 +64,7 @@ export async function upsertPreferences(
 ): Promise<NotificationPreferences | null> {
   const { data, error } = await supabase.rpc("upsert_notification_preferences", {
     p_user_id: userId,
+    p_email_enabled: patch.email_enabled,
     p_email_claim_updates: patch.email_claim_updates,
     p_email_event_updates: patch.email_event_updates,
     p_email_admin_notifications: patch.email_admin_notifications,
@@ -84,6 +87,9 @@ export async function shouldSendEmail(
   category: "claim_updates" | "event_updates" | "admin_notifications"
 ): Promise<boolean> {
   const prefs = await getPreferences(supabase, userId);
+
+  // Master kill-switch: no emails at all
+  if (!prefs.email_enabled) return false;
 
   switch (category) {
     case "claim_updates":

@@ -15,14 +15,16 @@ import {
 describe("Notification Preferences", () => {
   describe("DEFAULT_PREFERENCES", () => {
     it("defaults all email preferences to true", () => {
+      expect(DEFAULT_PREFERENCES.email_enabled).toBe(true);
       expect(DEFAULT_PREFERENCES.email_claim_updates).toBe(true);
       expect(DEFAULT_PREFERENCES.email_event_updates).toBe(true);
       expect(DEFAULT_PREFERENCES.email_admin_notifications).toBe(true);
     });
 
-    it("has exactly 3 preference keys", () => {
+    it("has exactly 4 preference keys", () => {
       const keys = Object.keys(DEFAULT_PREFERENCES);
-      expect(keys).toHaveLength(3);
+      expect(keys).toHaveLength(4);
+      expect(keys).toContain("email_enabled");
       expect(keys).toContain("email_claim_updates");
       expect(keys).toContain("email_event_updates");
       expect(keys).toContain("email_admin_notifications");
