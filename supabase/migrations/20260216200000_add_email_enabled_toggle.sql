@@ -8,6 +8,9 @@ ALTER TABLE notification_preferences
 COMMENT ON COLUMN notification_preferences.email_enabled
   IS 'Master kill-switch: when false, no emails are sent regardless of category toggles';
 
+-- Drop the old 3-param overload so the GRANT below is unambiguous
+DROP FUNCTION IF EXISTS upsert_notification_preferences(uuid, boolean, boolean, boolean);
+
 -- Rebuild the upsert RPC to accept the new column
 CREATE OR REPLACE FUNCTION upsert_notification_preferences(
   p_user_id uuid,
@@ -51,4 +54,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION upsert_notification_preferences TO authenticated;
+GRANT EXECUTE ON FUNCTION upsert_notification_preferences(uuid, boolean, boolean, boolean, boolean) TO authenticated;
