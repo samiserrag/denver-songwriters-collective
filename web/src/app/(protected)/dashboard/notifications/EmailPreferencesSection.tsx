@@ -146,6 +146,18 @@ export default function EmailPreferencesSection() {
           ▸
         </span>
         <span>Email preferences</span>
+        {!loading && prefs && (
+          <span
+            data-testid="email-status-indicator"
+            className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
+              prefs.email_enabled
+                ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                : "bg-red-500/10 text-red-600 dark:text-red-400"
+            }`}
+          >
+            {prefs.email_enabled ? "Emails on" : "Emails off"}
+          </span>
+        )}
       </button>
 
       {open && (

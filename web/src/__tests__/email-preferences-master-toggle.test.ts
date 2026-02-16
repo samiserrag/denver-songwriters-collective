@@ -2,8 +2,9 @@
  * Email Preferences Master Toggle Tests
  *
  * Tests that the email_enabled master toggle correctly gates all email sending,
- * the email footer includes the preferences link, and the EmailPreferencesSection
- * component behavior.
+ * the email footer includes the preferences link, the EmailPreferencesSection
+ * component behavior, middleware redirect preservation, status indicator,
+ * and audit logging.
  */
 
 import { describe, it, expect } from "vitest";
@@ -166,6 +167,15 @@ describe("EmailPreferencesSection design contracts", () => {
     expect(componentSrc).toContain("Stop all emails");
     expect(componentSrc).not.toContain('"No emails"');
   });
+
+  it("shows email status indicator with data-testid", () => {
+    expect(componentSrc).toContain('data-testid="email-status-indicator"');
+  });
+
+  it("displays 'Emails on' when enabled and 'Emails off' when disabled", () => {
+    expect(componentSrc).toContain('"Emails on"');
+    expect(componentSrc).toContain('"Emails off"');
+  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -185,5 +195,109 @@ describe("Settings page email preferences copy", () => {
 
   it("disables category toggles when email_enabled is false", () => {
     expect(settingsSrc).toContain("!prefs.email_enabled");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  5) Proxy preserves query params through login redirect             */
+/* ------------------------------------------------------------------ */
+
+describe("Auth redirect proxy", () => {
+  const proxyPath = path.join(__dirname, "../proxy.ts");
+  const proxySrc = fs.readFileSync(proxyPath, "utf-8");
+
+  it("exists at web/src/proxy.ts", () => {
+    expect(fs.existsSync(proxyPath)).toBe(true);
+  });
+
+  it("matches /dashboard routes", () => {
+    expect(proxySrc).toContain('"/dashboard/:path*"');
+  });
+
+  it("sets redirectTo search param on login redirect", () => {
+    expect(proxySrc).toContain('"redirectTo"');
+  });
+
+  it("preserves pathname and search params in redirect URL", () => {
+    // Verify it reads both pathname and search from the request
+    expect(proxySrc).toContain("pathname");
+    expect(proxySrc).toContain("search");
+    // Verify it combines them into the redirectTo value
+    expect(proxySrc).toContain("`${pathname}${search}`");
+  });
+
+  it("redirects to /login when user is not authenticated", () => {
+    expect(proxySrc).toContain('"/login"');
+    expect(proxySrc).toContain("NextResponse.redirect");
+  });
+
+  it("login page reads redirectTo param", () => {
+    const loginSrc = fs.readFileSync(
+      path.join(__dirname, "../app/login/page.tsx"),
+      "utf-8"
+    );
+    expect(loginSrc).toContain('"redirectTo"');
+    expect(loginSrc).toContain("router.push(redirectTo)");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  6) Email audit logging (source-level verification)                */
+/* ------------------------------------------------------------------ */
+
+describe("Email audit logging", () => {
+  const sendSrc = fs.readFileSync(
+    path.join(__dirname, "../lib/email/sendWithPreferences.ts"),
+    "utf-8"
+  );
+
+  it("imports appLogger", () => {
+    expect(sendSrc).toContain('import { appLogger } from "../appLogger"');
+  });
+
+  it("logs missing_recipient skip reason", () => {
+    expect(sendSrc).toContain('"missing_recipient"');
+    expect(sendSrc).toContain("email_audit: skipped — missing recipient");
+  });
+
+  it("logs preference_disabled skip reason", () => {
+    expect(sendSrc).toContain("email_audit: skipped — preference disabled");
+    expect(sendSrc).toContain('"preference_disabled"');
+  });
+
+  it("logs successful sends", () => {
+    expect(sendSrc).toContain('email_audit: sent"');
+  });
+
+  it("logs send failures", () => {
+    expect(sendSrc).toContain("email_audit: send failed");
+  });
+
+  it("uses source: email_prefs_audit for all audit entries", () => {
+    // Count occurrences of the source tag
+    const matches = sendSrc.match(/source: "email_prefs_audit"/g);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("includes recipientDomain helper that extracts domain only", () => {
+    expect(sendSrc).toContain("function recipientDomain");
+    // Must split on @ and return domain part only
+    expect(sendSrc).toContain('.split("@")');
+  });
+
+  it("does not log full email body or sensitive content", () => {
+    // The audit context should not include body, html, or full email address
+    expect(sendSrc).not.toContain("payload.html");
+    expect(sendSrc).not.toContain("payload.text");
+    expect(sendSrc).not.toContain("payload.to,");
+  });
+
+  it("logs notification creation", () => {
+    expect(sendSrc).toContain("email_audit: notification created");
+  });
+
+  it("logs admin email preference skip", () => {
+    expect(sendSrc).toContain("email_audit: admin email skipped");
   });
 });

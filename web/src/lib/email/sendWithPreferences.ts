@@ -4,12 +4,23 @@
  * Wraps the base sendEmail function to respect user email preferences.
  * Always creates dashboard notification first (canonical), then sends email
  * only if the user's preferences allow it.
+ *
+ * All decisions are audit-logged via appLogger for admin observability.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../supabase/database.types";
 import { sendEmail, type EmailPayload } from "./mailer";
 import { shouldSendEmail, getEmailCategory } from "../notifications/preferences";
+import { appLogger } from "../appLogger";
+
+/** Extract recipient domain for logging (no full address) */
+function recipientDomain(to: string | string[] | undefined): string | undefined {
+  const addr = Array.isArray(to) ? to[0] : to;
+  if (!addr) return undefined;
+  const parts = addr.split("@");
+  return parts.length === 2 ? parts[1] : undefined;
+}
 
 export interface SendWithPreferencesOptions {
   /**
@@ -77,11 +88,23 @@ export async function sendEmailWithPreferences(
     emailSent: false,
   };
 
+  // Shared context for all audit log entries in this call
+  const auditCtx = {
+    templateKey,
+    userId,
+    notificationType: notification?.type ?? null,
+    recipientDomain: recipientDomain(payload.to),
+  };
+
   // Step 0: Defensive guard — never attempt to send with an empty recipient
   const toValue = Array.isArray(payload.to) ? payload.to[0] : payload.to;
   if (!toValue || !toValue.trim()) {
-    console.warn(`[Email] Missing recipient for ${templateKey}, skipping email send`);
     result.skipReason = "missing_recipient";
+
+    appLogger.warn("email_audit: skipped — missing recipient", {
+      ...auditCtx,
+      skipReason: "missing_recipient",
+    }, { source: "email_prefs_audit", userId });
 
     // Still create the notification if requested
     if (notification) {
@@ -95,7 +118,10 @@ export async function sendEmailWithPreferences(
       if (!error) {
         result.notificationCreated = true;
       } else {
-        console.error("[Email] Failed to create notification:", error.message);
+        appLogger.error("email_audit: failed to create notification", {
+          ...auditCtx,
+          error: error.message,
+        }, { source: "email_prefs_audit", userId });
       }
     }
 
@@ -114,8 +140,14 @@ export async function sendEmailWithPreferences(
 
     if (!error) {
       result.notificationCreated = true;
+      appLogger.info("email_audit: notification created", {
+        ...auditCtx,
+      }, { source: "email_prefs_audit", userId });
     } else {
-      console.error("[Email] Failed to create notification:", error.message);
+      appLogger.error("email_audit: failed to create notification", {
+        ...auditCtx,
+        error: error.message,
+      }, { source: "email_prefs_audit", userId });
     }
   }
 
@@ -123,29 +155,58 @@ export async function sendEmailWithPreferences(
   const category = getEmailCategory(templateKey);
   if (!category) {
     // Unknown category - send email anyway (backwards compatibility)
-    console.log(`[Email] No category for "${templateKey}", sending anyway (backwards compat)`);
+    appLogger.warn("email_audit: no category mapping, sending anyway", {
+      ...auditCtx,
+      skipReason: "no_category",
+    }, { source: "email_prefs_audit", userId });
+
     const sent = await sendEmail(payload);
     result.emailSent = sent;
     if (!sent) {
       result.skipReason = "send_failed";
+      appLogger.error("email_audit: send failed (no category)", {
+        ...auditCtx,
+        skipReason: "send_failed",
+      }, { source: "email_prefs_audit", userId });
+    } else {
+      appLogger.info("email_audit: sent (no category, backwards compat)", {
+        ...auditCtx,
+        outcome: "sent",
+      }, { source: "email_prefs_audit", userId });
     }
     return result;
   }
 
   // Step 3: Check user preference
   const shouldSend = await shouldSendEmail(supabase, userId, category);
-  console.log(`[Email] Preference check: template="${templateKey}" category="${category}" shouldSend=${shouldSend}`);
   if (!shouldSend) {
     result.skipReason = "preference_disabled";
+
+    appLogger.info("email_audit: skipped — preference disabled", {
+      ...auditCtx,
+      category,
+      skipReason: "preference_disabled",
+    }, { source: "email_prefs_audit", userId });
+
     return result;
   }
 
   // Step 4: Send email
   const sent = await sendEmail(payload);
-  console.log(`[Email] sendEmail result: template="${templateKey}" sent=${sent}`);
   result.emailSent = sent;
   if (!sent) {
     result.skipReason = "send_failed";
+    appLogger.error("email_audit: send failed", {
+      ...auditCtx,
+      category,
+      skipReason: "send_failed",
+    }, { source: "email_prefs_audit", userId });
+  } else {
+    appLogger.info("email_audit: sent", {
+      ...auditCtx,
+      category,
+      outcome: "sent",
+    }, { source: "email_prefs_audit", userId });
   }
 
   return result;
@@ -170,7 +231,12 @@ export async function sendAdminEmailWithPreferences(
     if (category) {
       const shouldSend = await shouldSendEmail(supabase, adminUserId, category);
       if (!shouldSend) {
-        console.log(`[Email] Skipped (admin preference off): ${templateKey}`);
+        appLogger.info("email_audit: admin email skipped — preference disabled", {
+          templateKey,
+          userId: adminUserId,
+          category,
+          skipReason: "preference_disabled",
+        }, { source: "email_prefs_audit", userId: adminUserId });
         return false;
       }
     }

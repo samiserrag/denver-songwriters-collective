@@ -660,7 +660,7 @@ describe("sendEmailWithPreferences — defensive guard against empty recipient",
 
   it("should return missing_recipient skipReason for empty to", () => {
     expect(content).toContain('"missing_recipient"');
-    expect(content).toContain("Missing recipient");
+    expect(content).toContain("missing recipient");
   });
 
   it("should still create notification even when recipient is missing", () => {

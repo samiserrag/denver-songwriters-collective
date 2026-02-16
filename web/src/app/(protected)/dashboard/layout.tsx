@@ -14,6 +14,8 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
 
   if (sessionUserError || !sessionUser) {
+    // Middleware handles redirect with ?redirectTo= for deep-link preservation.
+    // This is a server-side fallback in case middleware is bypassed.
     redirect("/login");
   }
 
