@@ -14,6 +14,7 @@ See full backlog in `docs/completed/CLAUDE.md` or `docs/known-issues.md`.
 - Empty `alt=""` on user avatars (9 occurrences across 7 components) — accessibility concern
 
 ### P2 (Nice to Fix)
+- **Login redirect loses `?emailPrefs=1` deep link** — When an unauthenticated user clicks the "Manage email preferences" link in an email footer, `dashboard/layout.tsx` redirects to `/login` without forwarding the original URL. The login page supports `?redirectTo=` but the query param is lost. Fix: pass `returnTo` through the auth redirect chain so `?emailPrefs=1` survives the login round-trip.
 - Typography token docs drift
 - Loading.tsx coverage gaps
 - Duplicate VenueSelector components

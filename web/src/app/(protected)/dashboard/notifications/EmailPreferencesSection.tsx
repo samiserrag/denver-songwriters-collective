@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -54,7 +54,23 @@ export default function EmailPreferencesSection() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const didScrollRef = useRef(false);
+
   const supabase = createClient();
+
+  // Scroll into view once when opened via deep link
+  useEffect(() => {
+    if (forceOpen && open && !didScrollRef.current) {
+      didScrollRef.current = true;
+      requestAnimationFrame(() => {
+        sectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    }
+  }, [forceOpen, open]);
 
   useEffect(() => {
     async function load() {
@@ -92,6 +108,8 @@ export default function EmailPreferencesSection() {
     value: boolean
   ) => {
     if (!userId || !prefs) return;
+    // Block category writes when master is off
+    if (key !== "email_enabled" && !prefs.email_enabled) return;
 
     setSaving(true);
     setSaved(false);
@@ -111,7 +129,11 @@ export default function EmailPreferencesSection() {
   const masterOff = prefs ? !prefs.email_enabled : false;
 
   return (
-    <div className="mt-4 border-t border-[var(--color-border-default)] pt-4">
+    <div
+      id="email-preferences"
+      ref={sectionRef}
+      className="mt-4 border-t border-[var(--color-border-default)] pt-4"
+    >
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -129,7 +151,7 @@ export default function EmailPreferencesSection() {
       {open && (
         <div className="mt-3 space-y-3">
           <p className="text-[var(--color-text-tertiary)] text-xs">
-            Notifications still appear in your dashboard.
+            Dashboard notifications will still appear.
           </p>
 
           {loading ? (
@@ -142,10 +164,10 @@ export default function EmailPreferencesSection() {
               <label className="flex items-center justify-between gap-4 cursor-pointer">
                 <div>
                   <span className="text-[var(--color-text-primary)] font-medium">
-                    No emails
+                    Stop all emails
                   </span>
                   <p className="text-[var(--color-text-tertiary)] text-xs">
-                    Turn off all email notifications
+                    Disable every email from this site
                   </p>
                 </div>
                 <Toggle
