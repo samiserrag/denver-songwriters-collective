@@ -99,6 +99,14 @@ Migrations must be idempotent and work on fresh databases, not just production.
 | Backfill INSERT with hardcoded UUIDs | Add `WHERE EXISTS (SELECT 1 FROM ... WHERE id = 'uuid')` |
 | REVOKE/GRANT on functions that may not exist | Wrap in `DO $$ ... IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = '...') THEN ... END IF; ... $$` |
 
+### Known SECURITY DEFINER Functions
+
+| Function | Purpose | Callable By |
+|----------|---------|-------------|
+| `public.is_album_collaborator(album_uuid)` | Breaks circular RLS dependency between `gallery_albums` and `gallery_album_links` by bypassing RLS on `gallery_album_links` to check collaborator status | `authenticated` only |
+| `notify_new_user()` | Auth trigger for new user notifications | Trigger context only |
+| `rpc_book_studio_service()` | Studio booking RPC | `authenticated` only |
+
 ### SECURITY DEFINER Function Pattern
 
 When revoking EXECUTE from SECURITY DEFINER functions, use conditional DO blocks:

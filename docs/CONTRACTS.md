@@ -114,6 +114,15 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 - `profile_images`, `event_images`, `venue_images` use soft-delete via `deleted_at`.
 - `gallery_images` user deletion is soft-archive via `is_hidden = true` (not row deletion).
 - User-facing media flows should not hard-delete DB rows directly.
+- **Album deletion exception:** Deleting an album hard-deletes all its `gallery_images` rows and storage files (FK is `ON DELETE RESTRICT`, so the app handles cleanup before album removal). The confirm dialog communicates the photo count being deleted.
+
+### Gallery Upload Contract
+
+- Gallery photo uploads use a **staged workflow**: files are selected, cropped (or kept as originals via CropModal), then staged as local previews with "Unsaved" badges.
+- Staged photos are **not uploaded** until the user explicitly clicks Save.
+- Staged photos can be reordered via drag-and-drop and removed individually before saving.
+- The Save button activates when staged photos exist (counted as unsaved changes).
+- On Save, staged photos upload to `gallery-images` storage and insert into `gallery_images` table in the staged order.
 
 ### Aspect Ratio Contract by Surface
 

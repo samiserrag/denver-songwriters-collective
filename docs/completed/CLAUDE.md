@@ -6,6 +6,37 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FEATURE: Staged photo upload flow, album deletion with photos, RLS recursion fix (February 2026)
+
+**Summary:** Three related improvements to the gallery album management system:
+
+1. **Staged upload flow** — Photos are no longer auto-saved during the crop flow. After selecting files and processing them through CropModal (original vs cropped), photos are staged as local client-side previews with "Unsaved" badges. They can be reordered via drag-and-drop and removed before saving. Photos only upload to storage and insert into `gallery_images` when the user clicks Save.
+
+2. **Album deletion with photos** — Removed the guard that blocked album deletion when photos existed. The confirm dialog now shows the photo count being deleted. On confirm, the app removes storage files and DB image rows before deleting the album (FK is `ON DELETE RESTRICT`).
+
+3. **RLS infinite recursion fix** — The `gallery_albums_collaborator_select` policy had a subquery on `gallery_album_links`, whose `owner_manage` policy had a subquery back on `gallery_albums`, causing infinite recursion for authenticated users. Fixed by creating a `SECURITY DEFINER` function `is_album_collaborator()` that bypasses RLS on `gallery_album_links`.
+
+**Commits:** `ffdc7042`, `fdb3550f`, `029853ff`, `cef5dc94`, `e64a6a93`, `1fef4ed2`
+
+**Migration:** `20260216100000_gallery_collaborator_access.sql` — applied via MODE B (direct psql), recorded in `schema_migrations`. Includes `is_album_collaborator()` SECURITY DEFINER function and collaborator SELECT/INSERT policies.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260216100000_gallery_collaborator_access.sql` | Creates `is_album_collaborator()` SECURITY DEFINER function, collaborator SELECT policy on `gallery_albums`, collaborator INSERT policy on `gallery_images` |
+| `web/src/app/(protected)/dashboard/gallery/albums/[id]/AlbumManager.tsx` | Staged upload flow: `StagedPhoto` interface, `SortableStagedCard` component, `stagedPhotos` state, `stagePhoto()`/`removeStagedPhoto()`/`handleStagedDragEnd()` handlers, `uploadStagedPhotos()` called during save, `hasUnsavedChanges` includes staged photos, cancel clears staged photos. Album deletion: removes storage files + DB rows before album delete. CropModal integration with sequential crop queue. |
+| `docs/CONTRACTS.md` | Added Gallery Upload Contract (staged workflow) and album deletion exception to Deletion and Visibility Contract |
+| `SECURITY.md` | Added `is_album_collaborator` to Known SECURITY DEFINER Functions table |
+
+**Key architecture decisions:**
+- `SECURITY DEFINER` function `is_album_collaborator()` breaks circular RLS by querying `gallery_album_links` without RLS evaluation, called only by authenticated users
+- Staged photos stored as `{ id, file: File, previewUrl: string }` in client state using `URL.createObjectURL()` — no server round-trips until Save
+- Album deletion handles FK RESTRICT by explicitly deleting `gallery_images` rows and storage files before the album row
+- `useEffect` cleanup revokes object URLs on unmount; cancel also revokes
+
+---
+
 ### FEATURE: Gallery collaborator opt-in invites — full end-to-end (February 2026)
 
 **Summary:** Replaced the implicit collaborator-on-save model with an explicit opt-in invitation flow. Collaborators receive an invite (in-app notification + email) and must accept before the album appears on their profile. Includes safe email resolution, defensive email guards, diagnostic logging, database migration, save/remove/re-add lifecycle, email accept/decline links, and notification state transitions.
