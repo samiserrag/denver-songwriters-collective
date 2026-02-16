@@ -53,6 +53,13 @@ interface GalleryImage {
   uploaded_by?: string;
 }
 
+/** A photo that has been cropped/selected but not yet saved to the database */
+interface StagedPhoto {
+  id: string; // client-side ID for DnD
+  file: File;
+  previewUrl: string; // object URL for preview
+}
+
 interface Venue {
   id: string;
   name: string;
@@ -178,6 +185,74 @@ function SortablePhotoCard({
   );
 }
 
+// Sortable card for staged (not yet saved) photos
+function SortableStagedCard({
+  staged,
+  onRemove,
+}: {
+  staged: StagedPhoto;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: staged.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative aspect-square rounded-lg overflow-hidden border-2 border-dashed border-amber-400 dark:border-amber-500 group"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={staged.previewUrl}
+        alt="Staged photo"
+        className="w-full h-full object-cover object-top"
+      />
+
+      {/* "Unsaved" badge */}
+      <div className="absolute top-2 right-2">
+        <span className="px-2 py-1 bg-amber-500/90 text-white text-xs rounded-full font-medium">
+          Unsaved
+        </span>
+      </div>
+
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 p-1.5 bg-black/60 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4 text-white" />
+      </div>
+
+      {/* Remove button */}
+      <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+        <button
+          onClick={onRemove}
+          className="w-full px-3 py-1.5 bg-red-500/90 hover:bg-red-600 text-white text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
+        >
+          <X className="w-3 h-3" />
+          Remove
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AlbumManager({
   album,
   images: initialImages,
@@ -213,10 +288,20 @@ export default function AlbumManager({
   useEffect(() => { setImages(initialImages); }, [initialImages]);
   const [isReordering, setIsReordering] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
-  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   // Crop flow: process files one at a time through CropModal
   const [cropQueue, setCropQueue] = useState<File[]>([]);
   const [currentCropFile, setCurrentCropFile] = useState<File | null>(null);
+
+  // Staged photos: cropped/selected but not yet saved to the database
+  const [stagedPhotos, setStagedPhotos] = useState<StagedPhoto[]>([]);
+
+  // Clean up object URLs when staged photos are removed
+  useEffect(() => {
+    return () => {
+      stagedPhotos.forEach((sp) => URL.revokeObjectURL(sp.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Album linkage state (venue, event, collaborators)
   const [selectedVenueId, setSelectedVenueId] = useState(initialVenueId || "");
@@ -224,7 +309,8 @@ export default function AlbumManager({
   const [collaborators, setCollaborators] = useState<Collaborator[]>(initialCollaborators);
 
   // Track unsaved changes — collaborators can only edit limited fields
-  const hasUnsavedChanges = isCollaboratorOnly
+  const hasStagedPhotos = stagedPhotos.length > 0;
+  const hasUnsavedChanges = hasStagedPhotos || (isCollaboratorOnly
     ? (
         albumDescription !== (album.description || "") ||
         albumYoutubeUrl !== (album.youtube_url || "") ||
@@ -242,7 +328,7 @@ export default function AlbumManager({
           albumSpotifyUrl !== (album.spotify_url || "") ||
           JSON.stringify(mediaEmbedUrls) !== JSON.stringify(initialMediaEmbedUrls)
         ))
-      );
+      ));
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -294,6 +380,64 @@ export default function AlbumManager({
       .replace(/(^-|-$)/g, "");
   };
 
+  // Upload all staged photos to storage + DB (called during save)
+  const uploadStagedPhotos = async (): Promise<{ success: number; failed: number }> => {
+    if (stagedPhotos.length === 0) return { success: 0, failed: 0 };
+
+    const supabase = createClient();
+    let success = 0;
+    let failed = 0;
+
+    // Get current max sort_order once
+    const { data: maxSort } = await supabase
+      .from("gallery_images")
+      .select("sort_order")
+      .eq("album_id", album.id)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .single();
+    let nextSortOrder = (maxSort?.sort_order ?? -1) + 1;
+
+    for (const staged of stagedPhotos) {
+      try {
+        const fileExt = staged.file.name.split(".").pop();
+        const fileName = `${currentUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`;
+
+        const { error: storageError } = await supabase.storage
+          .from("gallery-images")
+          .upload(fileName, staged.file);
+        if (storageError) throw storageError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("gallery-images")
+          .getPublicUrl(fileName);
+
+        const { error: insertError } = await supabase
+          .from("gallery_images")
+          .insert({
+            image_url: publicUrl,
+            album_id: album.id,
+            sort_order: nextSortOrder,
+            uploaded_by: currentUserId,
+            is_approved: true,
+          });
+        if (insertError) throw insertError;
+
+        nextSortOrder++;
+        success++;
+      } catch (err) {
+        console.error("Upload error:", err);
+        failed++;
+      }
+    }
+
+    // Clean up object URLs
+    stagedPhotos.forEach((sp) => URL.revokeObjectURL(sp.previewUrl));
+    setStagedPhotos([]);
+
+    return { success, failed };
+  };
+
   // Save album details
   const handleSaveDetails = async () => {
     // Collaborators skip name validation (they can't edit it)
@@ -329,6 +473,12 @@ export default function AlbumManager({
         setIsSaving(false);
         return;
       }
+
+      // Upload staged photos for collaborator
+      const { success, failed } = await uploadStagedPhotos();
+      if (success > 0) toast.success(`${success} photo${success > 1 ? "s" : ""} uploaded`);
+      if (failed > 0) toast.error(`${failed} upload${failed > 1 ? "s" : ""} failed`);
+
       setIsSaving(false);
       toast.success("Album updated");
       router.refresh();
@@ -465,6 +615,11 @@ export default function AlbumManager({
       }
     }
 
+    // Upload staged photos for owner/admin
+    const { success: photoSuccess, failed: photoFailed } = await uploadStagedPhotos();
+    if (photoSuccess > 0) toast.success(`${photoSuccess} photo${photoSuccess > 1 ? "s" : ""} uploaded`);
+    if (photoFailed > 0) toast.error(`${photoFailed} upload${photoFailed > 1 ? "s" : ""} failed`);
+
     setIsSaving(false);
     toast.success("Album updated");
     router.refresh();
@@ -481,6 +636,10 @@ export default function AlbumManager({
     setSelectedEventId(initialEventId || "");
     setCollaborators(initialCollaborators);
     setFieldErrors({});
+    // Clear staged photos
+    stagedPhotos.forEach((sp) => URL.revokeObjectURL(sp.previewUrl));
+    setStagedPhotos([]);
+    setUploadFiles([]);
   };
 
   // Leave collaboration (collaborator removes themselves)
@@ -652,46 +811,6 @@ export default function AlbumManager({
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  // Upload a single file to this album (called after crop decision)
-  const uploadSinglePhoto = async (file: File) => {
-    const supabase = createClient();
-
-    // Determine next sort_order
-    const { data: maxSort } = await supabase
-      .from("gallery_images")
-      .select("sort_order")
-      .eq("album_id", album.id)
-      .order("sort_order", { ascending: false })
-      .limit(1)
-      .single();
-    const sortOrder = (maxSort?.sort_order ?? -1) + 1;
-
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${currentUserId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`;
-
-    const { error: storageError } = await supabase.storage
-      .from("gallery-images")
-      .upload(fileName, file);
-
-    if (storageError) throw storageError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from("gallery-images")
-      .getPublicUrl(fileName);
-
-    const { error: insertError } = await supabase
-      .from("gallery_images")
-      .insert({
-        image_url: publicUrl,
-        album_id: album.id,
-        sort_order: sortOrder,
-        uploaded_by: currentUserId,
-        is_approved: true,
-      });
-
-    if (insertError) throw insertError;
-  };
-
   // Start crop flow: queue all selected files, pop first into CropModal
   const startCropFlow = () => {
     if (uploadFiles.length === 0) return;
@@ -700,35 +819,23 @@ export default function AlbumManager({
     setCropQueue(rest);
   };
 
-  // Track how many uploads succeeded/failed during this crop session
-  const uploadResultsRef = useRef({ success: 0, failed: 0 });
+  // Stage a file as a preview (no upload yet)
+  const stagePhoto = (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    const id = `staged-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setStagedPhotos((prev) => [...prev, { id, file, previewUrl }]);
+  };
 
-  // Handle crop completion for current file (cropped version)
-  const handleCropComplete = async (croppedFile: File) => {
-    setIsUploadingPhotos(true);
-    try {
-      await uploadSinglePhoto(croppedFile);
-      uploadResultsRef.current.success++;
-    } catch (err) {
-      console.error("Upload error:", err);
-      uploadResultsRef.current.failed++;
-    }
-    setIsUploadingPhotos(false);
+  // Handle crop completion for current file (cropped version) — stage only
+  const handleCropComplete = (croppedFile: File) => {
+    stagePhoto(croppedFile);
     advanceCropQueue();
   };
 
-  // Handle "Save original" for current file
-  const handleUseOriginal = async () => {
+  // Handle "Save original" for current file — stage only
+  const handleUseOriginal = () => {
     if (!currentCropFile) return;
-    setIsUploadingPhotos(true);
-    try {
-      await uploadSinglePhoto(currentCropFile);
-      uploadResultsRef.current.success++;
-    } catch (err) {
-      console.error("Upload error:", err);
-      uploadResultsRef.current.failed++;
-    }
-    setIsUploadingPhotos(false);
+    stagePhoto(currentCropFile);
     advanceCropQueue();
   };
 
@@ -737,30 +844,43 @@ export default function AlbumManager({
     advanceCropQueue();
   };
 
-  // Move to next file in queue, or finish — refresh page only when all done
+  // Move to next file in queue, or finish
   const advanceCropQueue = () => {
     if (cropQueue.length > 0) {
       const [next, ...rest] = cropQueue;
       setCurrentCropFile(next);
       setCropQueue(rest);
     } else {
-      // All files processed — show results and refresh
+      // All files processed — staged photos now visible, Save button active
       setCurrentCropFile(null);
       setCropQueue([]);
       setUploadFiles([]);
-      const { success, failed } = uploadResultsRef.current;
-      if (success > 0) {
-        toast.success(`${success} photo${success > 1 ? "s" : ""} uploaded`);
-      }
-      if (failed > 0) {
-        toast.error(`${failed} upload${failed > 1 ? "s" : ""} failed`);
-      }
-      uploadResultsRef.current = { success: 0, failed: 0 };
-      if (success > 0) {
-        router.refresh();
-      }
+      toast.info("Photos staged. Click Save to upload them.");
     }
   };
+
+  // Remove a staged photo before saving
+  const removeStagedPhoto = (stagedId: string) => {
+    setStagedPhotos((prev) => {
+      const removed = prev.find((sp) => sp.id === stagedId);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((sp) => sp.id !== stagedId);
+    });
+  };
+
+  // Reorder staged photos via drag-and-drop
+  const handleStagedDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      setStagedPhotos((prev) => {
+        const oldIndex = prev.findIndex((sp) => sp.id === active.id);
+        const newIndex = prev.findIndex((sp) => sp.id === over.id);
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    },
+    []
+  );
 
   // Get first visible image for fallback
   const firstVisibleImage = images.find((img) => img.is_published && !img.is_hidden);
@@ -781,7 +901,7 @@ export default function AlbumManager({
         </h3>
       </div>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        Uploads go into this album after you click Upload.
+        Select photos, crop or keep originals, then click Save to upload them to this album.
       </p>
       <div
         onDrop={(e) => {
@@ -847,11 +967,10 @@ export default function AlbumManager({
           </div>
           <button
             onClick={startCropFlow}
-            disabled={isUploadingPhotos}
             className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            {isUploadingPhotos ? "Uploading..." : `Upload ${uploadFiles.length} Photo${uploadFiles.length > 1 ? "s" : ""}`}
+            {`Prepare ${uploadFiles.length} Photo${uploadFiles.length > 1 ? "s" : ""}`}
           </button>
         </div>
       )}
@@ -1186,6 +1305,43 @@ export default function AlbumManager({
         )}
       </div>
 
+      {/* Staged Photos (unsaved) */}
+      {stagedPhotos.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-amber-700 dark:text-amber-400">
+              Staged Photos ({stagedPhotos.length})
+            </h3>
+            <span className="text-sm text-amber-600 dark:text-amber-400 italic">
+              Click Save to upload these photos
+            </span>
+          </div>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            Drag to reorder before saving. These photos will be added to the album when you click Save.
+          </p>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleStagedDragEnd}
+          >
+            <SortableContext
+              items={stagedPhotos.map((sp) => sp.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {stagedPhotos.map((sp) => (
+                  <SortableStagedCard
+                    key={sp.id}
+                    staged={sp}
+                    onRemove={() => removeStagedPhoto(sp.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+      )}
+
       {/* Images Grid - Drag to Reorder, Set as Cover */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -1227,7 +1383,7 @@ export default function AlbumManager({
               </div>
             </SortableContext>
           </DndContext>
-        ) : (
+        ) : !hasStagedPhotos ? (
           <div className="text-center py-12 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-default)]">
             <div className="text-4xl mb-4">📷</div>
             <p className="text-[var(--color-text-primary)] font-medium">Add photos to finish this album.</p>
@@ -1235,7 +1391,7 @@ export default function AlbumManager({
               Go to your gallery dashboard and select this album when uploading.
             </p>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Upload Photos — shown here for owners/admins (collaborators get it above) */}
