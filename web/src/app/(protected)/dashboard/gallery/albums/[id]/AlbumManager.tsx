@@ -687,22 +687,55 @@ export default function AlbumManager({
     }
   };
 
-  // Delete album (UI guard + confirm + DB delete)
+  // Delete album — removes all photos (storage + DB rows), then the album itself
   const handleDeleteAlbum = async () => {
-    if (images.length > 0) {
-      toast.error(
-        `Cannot delete album: it still has ${images.length} photo${images.length > 1 ? "s" : ""}. Remove or move all photos first.`
-      );
-      return;
-    }
+    const photoCount = images.length;
+    const message = photoCount > 0
+      ? `Permanently delete this album and its ${photoCount} photo${photoCount > 1 ? "s" : ""}? This cannot be undone.`
+      : "Permanently delete this album? This cannot be undone.";
 
-    if (!window.confirm("Permanently delete this album? This cannot be undone.")) {
+    if (!window.confirm(message)) {
       return;
     }
 
     setIsDeleting(true);
     const supabase = createClient();
 
+    // Delete photos from storage + DB before removing the album (FK is RESTRICT)
+    if (photoCount > 0) {
+      // Extract storage paths from public URLs
+      const storagePaths = images
+        .map((img) => {
+          const match = img.image_url.match(/\/gallery-images\/(.+)$/);
+          return match ? match[1] : null;
+        })
+        .filter((p): p is string => p !== null);
+
+      // Remove files from storage (best-effort; DB rows are the authority)
+      if (storagePaths.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from("gallery-images")
+          .remove(storagePaths);
+        if (storageError) {
+          console.warn("Storage cleanup partial failure:", storageError);
+        }
+      }
+
+      // Delete all image DB rows for this album
+      const { error: imgDeleteError } = await supabase
+        .from("gallery_images")
+        .delete()
+        .eq("album_id", album.id);
+
+      if (imgDeleteError) {
+        setIsDeleting(false);
+        toast.error("Failed to remove album photos. Please try again.");
+        console.error(imgDeleteError);
+        return;
+      }
+    }
+
+    // Now delete the album itself
     const { error } = await supabase
       .from("gallery_albums")
       .delete()
@@ -710,12 +743,7 @@ export default function AlbumManager({
 
     if (error) {
       setIsDeleting(false);
-      // Handle FK restrict or other DB errors
-      if (error.message?.includes("violates foreign key") || error.code === "23503") {
-        toast.error("Album has photos — remove or move them first.");
-      } else {
-        toast.error("Failed to delete album.");
-      }
+      toast.error("Failed to delete album.");
       console.error(error);
       return;
     }
