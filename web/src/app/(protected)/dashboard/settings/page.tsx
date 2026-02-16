@@ -315,6 +315,10 @@ export default function SettingsPage() {
               )}
               </div>
 
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-2 italic">
+                Security and account recovery emails are always delivered.
+              </p>
+
               {/* Saved confirmation */}
               {prefsSaved && (
                 <p className="text-green-500 text-sm mt-4">

@@ -11,7 +11,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../supabase/database.types";
 import { sendEmail, type EmailPayload } from "./mailer";
-import { shouldSendEmail, getEmailCategory } from "../notifications/preferences";
+import { shouldSendEmail, getEmailCategory, isEssentialEmail } from "../notifications/preferences";
 import { appLogger } from "../appLogger";
 
 /** Extract recipient domain for logging (no full address) */
@@ -151,29 +151,36 @@ export async function sendEmailWithPreferences(
     }
   }
 
-  // Step 2: Check preference category for this template
-  const category = getEmailCategory(templateKey);
-  if (!category) {
-    // Unknown category - send email anyway (backwards compatibility)
-    appLogger.warn("email_audit: no category mapping, sending anyway", {
-      ...auditCtx,
-      skipReason: "no_category",
-    }, { source: "email_prefs_audit", userId });
-
+  // Step 2a: Essential emails bypass all preference checks
+  if (isEssentialEmail(templateKey)) {
     const sent = await sendEmail(payload);
     result.emailSent = sent;
     if (!sent) {
       result.skipReason = "send_failed";
-      appLogger.error("email_audit: send failed (no category)", {
+      appLogger.error("email_audit: essential email send failed", {
         ...auditCtx,
         skipReason: "send_failed",
       }, { source: "email_prefs_audit", userId });
     } else {
-      appLogger.info("email_audit: sent (no category, backwards compat)", {
+      appLogger.info("email_audit: essential email sent (bypasses preferences)", {
         ...auditCtx,
         outcome: "sent",
       }, { source: "email_prefs_audit", userId });
     }
+    return result;
+  }
+
+  // Step 2b: Check preference category for this template
+  const category = getEmailCategory(templateKey);
+  if (!category) {
+    // Unmapped template — skip and log to force developers to add mapping
+    result.skipReason = "no_category";
+
+    appLogger.error("email_audit: skipped — unmapped template (add to EMAIL_CATEGORY_MAP)", {
+      ...auditCtx,
+      skipReason: "no_category",
+    }, { source: "email_prefs_audit", userId });
+
     return result;
   }
 

@@ -271,6 +271,10 @@ export default function EmailPreferencesSection() {
               {saved && (
                 <p className="text-green-500 text-xs">Saved.</p>
               )}
+
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-2 italic">
+                Security and account recovery emails are always delivered.
+              </p>
             </div>
           ) : (
             <div className="text-[var(--color-text-tertiary)] text-sm">
