@@ -4,7 +4,7 @@
  * Verifies:
  * 1. Dashboard renders NotificationsList without compact prop
  * 2. Dashboard passes full pagination props (initialCursor, initialTotal)
- * 3. Separate notifications page no longer exists
+ * 3. Standalone notifications page exists with EmailPreferencesSection
  * 4. Sidebar nav does not link to /dashboard/notifications
  * 5. NotificationsList has no compact prop in its interface
  */
@@ -42,13 +42,22 @@ describe("Inline Notifications on Dashboard", () => {
   });
 });
 
-describe("Separate Notifications Page Removed", () => {
-  it("should not have a standalone notifications page.tsx", () => {
+describe("Standalone Notifications Page", () => {
+  it("should exist as a full-page notifications view", () => {
     const pagePath = path.join(
       __dirname,
       "../app/(protected)/dashboard/notifications/page.tsx"
     );
-    expect(fs.existsSync(pagePath)).toBe(false);
+    expect(fs.existsSync(pagePath)).toBe(true);
+  });
+
+  it("should include EmailPreferencesSection", () => {
+    const pagePath = path.join(
+      __dirname,
+      "../app/(protected)/dashboard/notifications/page.tsx"
+    );
+    const content = fs.readFileSync(pagePath, "utf-8");
+    expect(content).toContain("EmailPreferencesSection");
   });
 });
 
