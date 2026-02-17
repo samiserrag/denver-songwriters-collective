@@ -33,8 +33,11 @@ This file holds reference material that is useful during investigations and exec
 | VenueSelector | `web/src/components/ui/VenueSelector.tsx` |
 | Next occurrence logic | `web/src/lib/events/nextOccurrence.ts` |
 | Recurrence contract | `web/src/lib/events/recurrenceContract.ts` |
+| Email preferences logic | `web/src/lib/notifications/preferences.ts` |
+| Email send with preferences | `web/src/lib/email/sendWithPreferences.ts` |
 | Recurrence canonicalization | `web/src/lib/events/recurrenceCanonicalization.ts` |
 | Form date helpers | `web/src/lib/events/formDateHelpers.ts` |
+| EmailPreferencesSection | `web/src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` |
 | CommentThread (shared) | `web/src/components/comments/CommentThread.tsx` |
 | ProfileComments | `web/src/components/comments/ProfileComments.tsx` |
 | GalleryComments | `web/src/components/gallery/GalleryComments.tsx` |
@@ -153,6 +156,9 @@ All tests live in `web/src/` and run via `npm run test -- --run`.
 | `__tests__/phase5-14b-dashboard-and-rsvp-fixes.test.ts` | 3-tab dashboard, RSVP reactivation, tab UX (47 tests) |
 | `lib/featureFlags.test.ts` | Feature flags |
 | `__tests__/gtm-3-editorial-and-newsletter-unsubscribe.test.ts` | GTM-3: editorial layer, newsletter unsubscribe, token security, template rendering (130 tests) |
+| `__tests__/email-template-coverage.test.ts` | Email template coverage: every registry template categorized (30 tests) |
+| `__tests__/email-preferences-master-toggle.test.ts` | Master toggle, status indicator, audit logging, redirect (37 tests) |
+| `__tests__/notification-preferences.test.ts` | Category mapping, preference logic (19 tests) |
 
 ### Archived Tests
 

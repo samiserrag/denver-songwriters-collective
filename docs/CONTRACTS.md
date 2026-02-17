@@ -846,3 +846,51 @@ Success banner must use theme tokens, not hardcoded colors:
 | Test File | Contracts Enforced |
 |-----------|-------------------|
 | `__tests__/phase4-48b-guest-rsvp.test.ts` | Schema, verification flow, AttendeeList, theme tokens |
+
+---
+
+## Contract: Email Preferences (PR #122)
+
+> **Track Status:** February 2026
+
+### Core Principles
+
+- Preferences gate **email delivery only**; dashboard notifications always appear
+- Essential security emails bypass all preference checks
+- Unmapped templates are skipped (never silently sent)
+- Every template must be categorized — CI enforces this
+
+### Essential Email Contract
+
+| Rule | Enforcement |
+|------|-------------|
+| `verificationCode` always delivered | `ESSENTIAL_EMAILS` set in `preferences.ts` |
+| Essential emails bypass master toggle | `sendWithPreferences.ts` step 2a |
+| Users informed | Disclaimer: "Security and account recovery emails are always delivered." |
+
+### Category Mapping Contract
+
+| Rule | Enforcement |
+|------|-------------|
+| Every registry template must be in `EMAIL_CATEGORY_MAP` or `ESSENTIAL_EMAILS` | `email-template-coverage.test.ts` (CI) |
+| No template in both maps simultaneously | `email-template-coverage.test.ts` |
+| Unmapped templates are skipped with error log | `sendWithPreferences.ts` step 2b |
+| Categories are valid (`claim_updates` / `event_updates` / `admin_notifications`) | `email-template-coverage.test.ts` |
+
+### Adding a New Template
+
+1. Add key to `EmailTemplateKey` union in `registry.ts`
+2. Add entry to `TEMPLATE_REGISTRY`
+3. Add to `EMAIL_CATEGORY_MAP` or `ESSENTIAL_EMAILS` in `preferences.ts`
+4. Send via `sendEmailWithPreferences()` (not raw `sendEmail()`)
+5. Run `npx vitest run email-template-coverage` — test fails if uncategorized
+
+See `docs/email-preferences.md` for the full developer contract and decision tree.
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/email-template-coverage.test.ts` | All templates categorized, valid categories, no overlap |
+| `__tests__/email-preferences-master-toggle.test.ts` | Master toggle, status indicator, audit logging |
+| `__tests__/notification-preferences.test.ts` | Category mapping, preference logic |

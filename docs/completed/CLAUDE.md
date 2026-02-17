@@ -6,6 +6,36 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FEATURE: Email Preferences — Developer Contract, Essential Emails, Audit Logging (February 2026)
+
+**Summary:** End-to-end email preference system with developer contract enforcement. Users can control email delivery via master toggle and per-category toggles. Essential security emails (e.g., verification codes) bypass all preferences. Unmapped templates are blocked with error logging. CI test enforces that every registry template is categorized.
+
+**PR:** #122
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/lib/notifications/preferences.ts` | `ESSENTIAL_EMAILS` set, full `EMAIL_CATEGORY_MAP` (30 templates), `isEssentialEmail()` helper |
+| `web/src/lib/email/sendWithPreferences.ts` | Essential email bypass (step 2a), unmapped skip+log (step 2b), audit logging via `appLogger` |
+| `web/src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` | Email status indicator badge ("Emails on/off"), essential email disclaimer |
+| `web/src/app/(protected)/dashboard/settings/page.tsx` | Essential email disclaimer |
+| `web/src/__tests__/email-template-coverage.test.ts` | CI guard: every registry template must be in `EMAIL_CATEGORY_MAP` or `ESSENTIAL_EMAILS` (30 tests) |
+| `web/src/__tests__/email-preferences-master-toggle.test.ts` | Extended from 19 to 37 tests: proxy redirect, audit logging, status indicator |
+| `web/src/__tests__/notification-preferences.test.ts` | Updated for new category mappings (19 tests) |
+| `docs/email-preferences.md` | Developer contract: checklist for adding templates, decision tree, runtime behavior |
+| `docs/CONTRACTS.md` | Email Preferences contract section added |
+| `docs/emails/EMAIL_INVENTORY.md` | Updated with new templates, essential emails section, preference behavior |
+
+**Key architecture decisions:**
+- `verificationCode` is the only essential email (security/auth)
+- Unmapped templates **skip and log error** rather than silently sending — prevents surprise emails
+- `email-template-coverage.test.ts` uses `it.each(getAllTemplateKeys())` to auto-detect new templates
+- Audit logging uses `appLogger` with source `email_prefs_audit`, domain-only recipient for privacy
+- `proxy.ts` already preserved `?emailPrefs=1` through login redirects (confirmed, not reimplemented)
+
+---
+
 ### FEATURE: Staged photo upload flow, album deletion with photos, RLS recursion fix (February 2026)
 
 **Summary:** Three related improvements to the gallery album management system:

@@ -1,6 +1,6 @@
 # DSC Email Inventory
 
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 **Status:** Complete audit of all email use cases
 
 ## Email Audit Status
@@ -8,8 +8,9 @@
 ✅ **Completed December 2025** — All templates audited for tone guide alignment.
 ✅ **Phase 4.24 (January 2026)** — Added 6 new templates for event claims and occurrence overrides.
 ✅ **Phase 4.25 (January 2026)** — Added user email preferences; dashboard notifications remain canonical.
+✅ **Email Preferences Developer Contract (February 2026)** — Essential emails, full category mapping, unmapped template guard, CI coverage test.
 
-PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68
+PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68, #122
 
 ---
 
@@ -18,28 +19,43 @@ PRs: #56, #57, #58, #59, #60, #61, #65, #66, #67, #68
 **Key Principle:** Preferences gate email delivery only. Dashboard notifications always appear (canonical).
 
 Users can control email delivery via `/dashboard/settings`:
+- **Master toggle** (`email_enabled`) — Stops all non-essential emails
 - **Event claim updates** — Submission confirmations, approvals, rejections
-- **Event updates** — Reminders, time/location changes, cancellations
+- **Event updates** — Reminders, time/location changes, cancellations, digests
 - **Admin alerts** — (Admins only) Claims, submissions, community activity
 
 **How it works:**
 1. Dashboard notification is created first (always)
-2. Email is sent only if user's preference allows
-3. Unsubscribing from emails never hides dashboard notifications
+2. Essential emails (e.g., `verificationCode`) bypass all preference checks
+3. Unmapped templates are **skipped and logged as errors** (never silently sent)
+4. Email is sent only if user's master toggle + category toggle both allow
+5. Unsubscribing from emails never hides dashboard notifications
+
+**Essential emails (always delivered):**
+- `verificationCode` — Guest slot claim verification (security)
+
+Users see: *"Security and account recovery emails are always delivered."*
 
 **Implementation:**
 - `notification_preferences` table stores per-user toggles
 - `sendEmailWithPreferences()` helper enforces the preference check
-- Templates mapped to categories via `EMAIL_CATEGORY_MAP`
+- Templates mapped to categories via `EMAIL_CATEGORY_MAP` in `preferences.ts`
+- `ESSENTIAL_EMAILS` set in `preferences.ts` for security/auth bypass
+- `email-template-coverage.test.ts` enforces all templates are categorized (CI guard)
+
+**Developer contract:** See `docs/email-preferences.md` for full checklist when adding templates.
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| **Total Use Cases** | 21 |
-| **Covered (template exists + wired)** | 11 |
+| **Total Use Cases** | 31 |
+| **Registry Templates** | 26 |
+| **Covered (template exists + wired)** | 21 |
 | **Templates Only (not wired)** | 9 |
 | **Inline (needs consolidation)** | 2 |
+| **Categorized in EMAIL_CATEGORY_MAP** | 30 |
+| **Essential (bypass preferences)** | 1 |
 
 ---
 
@@ -227,9 +243,20 @@ web/src/lib/email/
 ├── index.ts                 # Main exports
 ├── mailer.ts                # SMTP transport (nodemailer)
 ├── render.ts                # Shared layout/styling
-├── registry.ts              # Template registry with types (19 templates)
+├── registry.ts              # Template registry with types (26 templates)
+├── sendWithPreferences.ts   # Preference-aware send with audit logging
 ├── email.test.ts            # Template tests (61 tests)
 └── templates/
+
+web/src/lib/notifications/
+├── preferences.ts           # EMAIL_CATEGORY_MAP, ESSENTIAL_EMAILS, shouldSendEmail()
+└── ...
+
+web/src/__tests__/
+├── email-template-coverage.test.ts         # CI guard: every template must be categorized
+├── email-preferences-master-toggle.test.ts # Master toggle, status indicator, audit logging
+├── notification-preferences.test.ts        # Category map, preference logic
+└── ...
     ├── verificationCode.ts  # Guest verification
     ├── claimConfirmed.ts    # Guest claim + waitlist
     ├── waitlistOffer.ts     # Guest promotion
@@ -269,6 +296,40 @@ The `newsletterWelcome.ts` template exists but is not used by the route.
 
 ---
 
+## Additional Templates (Added Post-Audit)
+
+### Weekly Digests (GTM-2)
+
+| # | Use Case | Trigger | Template | Category | Status |
+|---|----------|---------|----------|----------|--------|
+| 22 | Weekly Open Mics Digest | Cron: Sunday 3:00 UTC | `weeklyOpenMicsDigest.ts` | event_updates | Covered |
+| 23 | Weekly Happenings Digest | Cron: Sunday 3:00 UTC | `weeklyHappeningsDigest.ts` | event_updates | Covered |
+
+### Gallery Collaboration
+
+| # | Use Case | Trigger | Template | Category | Status |
+|---|----------|---------|----------|----------|--------|
+| 24 | Collaborator Added | Album owner adds collaborator | `collaboratorAdded.ts` | event_updates | Covered |
+| 25 | Collaborator Invited | Album invite sent | `collaboratorInvited.ts` | event_updates | Covered |
+
+### Event Interaction
+
+| # | Use Case | Trigger | Template | Category | Status |
+|---|----------|---------|----------|----------|--------|
+| 26 | Event Comment Notification | New comment on event | `eventCommentNotification` | event_updates | Covered |
+| 27 | RSVP Host Notification | New RSVP on event | `rsvpHostNotification` | event_updates | Covered |
+| 28 | Cohost Invitation | Host invites cohost | `cohostInvitation` | event_updates | Covered |
+| 29 | Event Restored | Admin restores event | `eventRestored.ts` | event_updates | Template only |
+
+### Admin (Additional)
+
+| # | Use Case | Trigger | Template | Category | Status |
+|---|----------|---------|----------|----------|--------|
+| 30 | Admin Suggestion Notification | New suggestion submitted | `adminSuggestionNotification.ts` | admin_notifications | Covered |
+| 31 | Feedback Notification | New feedback submitted | `feedbackNotification.ts` | admin_notifications | Covered |
+
+---
+
 ## Missing Templates (Future)
 
 | Use Case | Priority | Notes |
@@ -276,7 +337,6 @@ The `newsletterWelcome.ts` template exists but is not used by the route.
 | Offer Expiring Soon | Low | Requires scheduler |
 | Host Message to Lineup | Low | Manual send feature |
 | Post-Event Thanks | Low | After event automation |
-| Weekly Digest | Low | Newsletter infrastructure |
 
 ---
 

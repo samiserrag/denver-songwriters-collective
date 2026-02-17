@@ -14,3 +14,5 @@ This docs-local memory keeps deep reference material out of global context.
 - Product north star: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/PRODUCT_NORTH_STAR.md`
 - Contracts: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/CONTRACTS.md`
 - UX principles: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/DSC_UX_PRINCIPLES.md`
+- Email preferences developer contract: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/email-preferences.md`
+- Email inventory: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/emails/EMAIL_INVENTORY.md`
