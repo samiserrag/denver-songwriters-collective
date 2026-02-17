@@ -66,11 +66,15 @@ describe("Notification Preferences", () => {
       expect(getEmailCategory("")).toBeNull();
     });
 
-    it("returns null for templates not in the category map", () => {
-      // These templates exist but are not preference-gated
+    it("returns null for essential templates not in the category map", () => {
+      // verificationCode is in ESSENTIAL_EMAILS, not EMAIL_CATEGORY_MAP
       expect(getEmailCategory("verificationCode")).toBeNull();
-      expect(getEmailCategory("claimConfirmed")).toBeNull();
-      expect(getEmailCategory("newsletterWelcome")).toBeNull();
+    });
+
+    it("returns correct category for previously uncategorized templates", () => {
+      // These were added to EMAIL_CATEGORY_MAP as part of the developer contract
+      expect(getEmailCategory("claimConfirmed")).toBe("claim_updates");
+      expect(getEmailCategory("newsletterWelcome")).toBe("event_updates");
     });
   });
 

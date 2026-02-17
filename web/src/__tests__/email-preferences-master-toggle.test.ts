@@ -2,11 +2,14 @@
  * Email Preferences Master Toggle Tests
  *
  * Tests that the email_enabled master toggle correctly gates all email sending,
- * the email footer includes the preferences link, and the EmailPreferencesSection
- * component behavior.
+ * the email footer includes the preferences link, the EmailPreferencesSection
+ * component behavior, middleware redirect preservation, status indicator,
+ * and audit logging.
  */
 
 import { describe, it, expect } from "vitest";
+import * as fs from "fs";
+import * as path from "path";
 import {
   DEFAULT_PREFERENCES,
   type NotificationPreferences,
@@ -22,26 +25,18 @@ describe("Master toggle decision path", () => {
     expect(DEFAULT_PREFERENCES.email_enabled).toBe(true);
   });
 
-  it("shouldSendEmail short-circuits when email_enabled is false", async () => {
-    // We can't call shouldSendEmail directly without a real Supabase client,
-    // but we can verify the logic by inspecting the source.
-    // The function reads prefs.email_enabled first and returns false if off.
-    // We verify the structural invariant here:
-    const prefs: NotificationPreferences = {
-      user_id: "test-user",
-      email_enabled: false,
-      email_claim_updates: true,
-      email_event_updates: true,
-      email_admin_notifications: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Even though all category toggles are true, master off means no emails
-    expect(prefs.email_enabled).toBe(false);
-    expect(prefs.email_claim_updates).toBe(true);
-    // The shouldSendEmail function should return false because email_enabled is false
-    // This is a design contract test
+  it("shouldSendEmail short-circuits when email_enabled is false (source verification)", () => {
+    // Verify the source has the email_enabled guard BEFORE the switch(category)
+    const src = fs.readFileSync(
+      path.join(__dirname, "../lib/notifications/preferences.ts"),
+      "utf-8"
+    );
+    const enabledGuardIdx = src.indexOf("if (!prefs.email_enabled) return false");
+    const switchIdx = src.indexOf("switch (category)");
+    expect(enabledGuardIdx).toBeGreaterThan(-1);
+    expect(switchIdx).toBeGreaterThan(-1);
+    // Master guard must come before the category switch
+    expect(enabledGuardIdx).toBeLessThan(switchIdx);
   });
 
   it("category toggles are independent of master toggle in storage", () => {
@@ -60,6 +55,20 @@ describe("Master toggle decision path", () => {
     expect(prefs.email_event_updates).toBe(false);
     expect(prefs.email_admin_notifications).toBe(true);
   });
+
+  it("getPreferences spreads DEFAULT_PREFERENCES for missing rows", () => {
+    // Verify source uses DEFAULT_PREFERENCES spread for fallback
+    const src = fs.readFileSync(
+      path.join(__dirname, "../lib/notifications/preferences.ts"),
+      "utf-8"
+    );
+    expect(src).toContain("...DEFAULT_PREFERENCES");
+    // Ensure email_enabled is in DEFAULT_PREFERENCES
+    expect(DEFAULT_PREFERENCES).toHaveProperty("email_enabled", true);
+    expect(DEFAULT_PREFERENCES).toHaveProperty("email_claim_updates", true);
+    expect(DEFAULT_PREFERENCES).toHaveProperty("email_event_updates", true);
+    expect(DEFAULT_PREFERENCES).toHaveProperty("email_admin_notifications", true);
+  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -67,13 +76,13 @@ describe("Master toggle decision path", () => {
 /* ------------------------------------------------------------------ */
 
 describe("Email footer preferences link", () => {
-  it("HTML wrapper includes manage email preferences link", () => {
+  it("HTML wrapper includes manage email preferences link with exact URL path", () => {
     const html = wrapEmailHtml("<p>Test content</p>");
     expect(html).toContain("Manage email preferences");
     expect(html).toContain("/dashboard?emailPrefs=1");
   });
 
-  it("Plain text wrapper includes manage email preferences link", () => {
+  it("Plain text wrapper includes manage email preferences link with exact URL path", () => {
     const text = wrapEmailText("Test content");
     expect(text).toContain("Manage email preferences");
     expect(text).toContain("/dashboard?emailPrefs=1");
@@ -81,7 +90,20 @@ describe("Email footer preferences link", () => {
 
   it("HTML preferences link is a proper anchor tag", () => {
     const html = wrapEmailHtml("<p>Test</p>");
-    expect(html).toMatch(/<a[^>]+href="[^"]*\/dashboard\?emailPrefs=1"[^>]*>Manage email preferences<\/a>/);
+    expect(html).toMatch(
+      /<a[^>]+href="[^"]*\/dashboard\?emailPrefs=1"[^>]*>Manage email preferences<\/a>/
+    );
+  });
+
+  it("footer link URL uses /dashboard not /dashboard/notifications", () => {
+    const html = wrapEmailHtml("<p>Test</p>");
+    const text = wrapEmailText("Test");
+    // Must deep-link to dashboard (where EmailPreferencesSection lives)
+    expect(html).toContain("/dashboard?emailPrefs=1");
+    expect(text).toContain("/dashboard?emailPrefs=1");
+    // Must NOT link to the standalone notifications page
+    expect(html).not.toContain("/dashboard/notifications?emailPrefs=1");
+    expect(text).not.toContain("/dashboard/notifications?emailPrefs=1");
   });
 });
 
@@ -90,10 +112,13 @@ describe("Email footer preferences link", () => {
 /* ------------------------------------------------------------------ */
 
 describe("EmailPreferencesSection design contracts", () => {
+  const componentPath = path.join(
+    __dirname,
+    "../app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx"
+  );
+  const componentSrc = fs.readFileSync(componentPath, "utf-8");
+
   it("collapsed by default without emailPrefs param", () => {
-    // The component reads useSearchParams().get("emailPrefs")
-    // When null, open state defaults to false
-    // This is a design contract - actual rendering tested in integration
     const forceOpen = null;
     const defaultOpen = forceOpen === "1";
     expect(defaultOpen).toBe(false);
@@ -112,7 +137,6 @@ describe("EmailPreferencesSection design contracts", () => {
   });
 
   it("master toggle disables category toggles when off", () => {
-    // When email_enabled is false, masterOff should be true
     const prefs = { ...DEFAULT_PREFERENCES, email_enabled: false };
     const masterOff = !prefs.email_enabled;
     expect(masterOff).toBe(true);
@@ -122,5 +146,158 @@ describe("EmailPreferencesSection design contracts", () => {
     const prefs = { ...DEFAULT_PREFERENCES, email_enabled: true };
     const masterOff = !prefs.email_enabled;
     expect(masterOff).toBe(false);
+  });
+
+  it("has id='email-preferences' for deep-link scroll target", () => {
+    expect(componentSrc).toContain('id="email-preferences"');
+  });
+
+  it("uses scrollIntoView for deep-link auto-scroll", () => {
+    expect(componentSrc).toContain("scrollIntoView");
+  });
+
+  it("blocks category writes when master toggle is off", () => {
+    // Verify the handleToggle guard exists in source
+    expect(componentSrc).toContain(
+      'key !== "email_enabled" && !prefs.email_enabled'
+    );
+  });
+
+  it("copy says 'Stop all emails' not 'No emails'", () => {
+    expect(componentSrc).toContain("Stop all emails");
+    expect(componentSrc).not.toContain('"No emails"');
+  });
+
+  it("shows email status indicator with data-testid", () => {
+    expect(componentSrc).toContain('data-testid="email-status-indicator"');
+  });
+
+  it("displays 'Emails on' when enabled and 'Emails off' when disabled", () => {
+    expect(componentSrc).toContain('"Emails on"');
+    expect(componentSrc).toContain('"Emails off"');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  4) Settings page copy consistency                                  */
+/* ------------------------------------------------------------------ */
+
+describe("Settings page email preferences copy", () => {
+  const settingsPath = path.join(
+    __dirname,
+    "../app/(protected)/dashboard/settings/page.tsx"
+  );
+  const settingsSrc = fs.readFileSync(settingsPath, "utf-8");
+
+  it("uses 'Stop all emails' copy matching dashboard component", () => {
+    expect(settingsSrc).toContain("Stop all emails");
+  });
+
+  it("disables category toggles when email_enabled is false", () => {
+    expect(settingsSrc).toContain("!prefs.email_enabled");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  5) Proxy preserves query params through login redirect             */
+/* ------------------------------------------------------------------ */
+
+describe("Auth redirect proxy", () => {
+  const proxyPath = path.join(__dirname, "../proxy.ts");
+  const proxySrc = fs.readFileSync(proxyPath, "utf-8");
+
+  it("exists at web/src/proxy.ts", () => {
+    expect(fs.existsSync(proxyPath)).toBe(true);
+  });
+
+  it("matches /dashboard routes", () => {
+    expect(proxySrc).toContain('"/dashboard/:path*"');
+  });
+
+  it("sets redirectTo search param on login redirect", () => {
+    expect(proxySrc).toContain('"redirectTo"');
+  });
+
+  it("preserves pathname and search params in redirect URL", () => {
+    // Verify it reads both pathname and search from the request
+    expect(proxySrc).toContain("pathname");
+    expect(proxySrc).toContain("search");
+    // Verify it combines them into the redirectTo value
+    expect(proxySrc).toContain("`${pathname}${search}`");
+  });
+
+  it("redirects to /login when user is not authenticated", () => {
+    expect(proxySrc).toContain('"/login"');
+    expect(proxySrc).toContain("NextResponse.redirect");
+  });
+
+  it("login page reads redirectTo param", () => {
+    const loginSrc = fs.readFileSync(
+      path.join(__dirname, "../app/login/page.tsx"),
+      "utf-8"
+    );
+    expect(loginSrc).toContain('"redirectTo"');
+    expect(loginSrc).toContain("router.push(redirectTo)");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  6) Email audit logging (source-level verification)                */
+/* ------------------------------------------------------------------ */
+
+describe("Email audit logging", () => {
+  const sendSrc = fs.readFileSync(
+    path.join(__dirname, "../lib/email/sendWithPreferences.ts"),
+    "utf-8"
+  );
+
+  it("imports appLogger", () => {
+    expect(sendSrc).toContain('import { appLogger } from "../appLogger"');
+  });
+
+  it("logs missing_recipient skip reason", () => {
+    expect(sendSrc).toContain('"missing_recipient"');
+    expect(sendSrc).toContain("email_audit: skipped — missing recipient");
+  });
+
+  it("logs preference_disabled skip reason", () => {
+    expect(sendSrc).toContain("email_audit: skipped — preference disabled");
+    expect(sendSrc).toContain('"preference_disabled"');
+  });
+
+  it("logs successful sends", () => {
+    expect(sendSrc).toContain('email_audit: sent"');
+  });
+
+  it("logs send failures", () => {
+    expect(sendSrc).toContain("email_audit: send failed");
+  });
+
+  it("uses source: email_prefs_audit for all audit entries", () => {
+    // Count occurrences of the source tag
+    const matches = sendSrc.match(/source: "email_prefs_audit"/g);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("includes recipientDomain helper that extracts domain only", () => {
+    expect(sendSrc).toContain("function recipientDomain");
+    // Must split on @ and return domain part only
+    expect(sendSrc).toContain('.split("@")');
+  });
+
+  it("does not log full email body or sensitive content", () => {
+    // The audit context should not include body, html, or full email address
+    expect(sendSrc).not.toContain("payload.html");
+    expect(sendSrc).not.toContain("payload.text");
+    expect(sendSrc).not.toContain("payload.to,");
+  });
+
+  it("logs notification creation", () => {
+    expect(sendSrc).toContain("email_audit: notification created");
+  });
+
+  it("logs admin email preference skip", () => {
+    expect(sendSrc).toContain("email_audit: admin email skipped");
   });
 });

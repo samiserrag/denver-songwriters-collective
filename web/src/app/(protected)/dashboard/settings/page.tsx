@@ -201,9 +201,9 @@ export default function SettingsPage() {
               {/* Master No-Emails Toggle */}
               <label className="flex items-center justify-between gap-4 cursor-pointer">
                 <div>
-                  <span className="text-[var(--color-text-primary)] font-medium">No emails</span>
+                  <span className="text-[var(--color-text-primary)] font-medium">Stop all emails</span>
                   <p className="text-[var(--color-text-tertiary)] text-sm">
-                    Turn off all email notifications
+                    Disable every email from this site
                   </p>
                 </div>
                 <button
@@ -314,6 +314,10 @@ export default function SettingsPage() {
                 </label>
               )}
               </div>
+
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-2 italic">
+                Security and account recovery emails are always delivered.
+              </p>
 
               {/* Saved confirmation */}
               {prefsSaved && (

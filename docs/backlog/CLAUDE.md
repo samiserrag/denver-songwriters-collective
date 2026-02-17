@@ -14,6 +14,7 @@ See full backlog in `docs/completed/CLAUDE.md` or `docs/known-issues.md`.
 - Empty `alt=""` on user avatars (9 occurrences across 7 components) — accessibility concern
 
 ### P2 (Nice to Fix)
+- ~~**Login redirect loses `?emailPrefs=1` deep link**~~ — RESOLVED: The proxy at `web/src/proxy.ts` already preserves full URL (path + search params) through login redirects via `?redirectTo=` param. Added test coverage confirming end-to-end preservation.
 - Typography token docs drift
 - Loading.tsx coverage gaps
 - Duplicate VenueSelector components

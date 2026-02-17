@@ -104,13 +104,30 @@ export async function shouldSendEmail(
 }
 
 /**
- * Category mapping for email templates
+ * Essential emails that bypass all preference checks.
+ * These are security or account-recovery emails that must always be delivered.
+ */
+export const ESSENTIAL_EMAILS: ReadonlySet<string> = new Set([
+  "verificationCode", // Guest slot claim verification — security
+]);
+
+/**
+ * Category mapping for email templates.
+ *
+ * DEVELOPER CONTRACT: Every template in registry.ts MUST appear here
+ * or in ESSENTIAL_EMAILS. A test enforces this — if you add a new
+ * template without categorizing it, CI will fail.
+ *
+ * See docs/email-preferences.md for the full checklist.
  */
 export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates" | "admin_notifications"> = {
   // Claim-related templates (events)
   eventClaimSubmitted: "claim_updates",
   eventClaimApproved: "claim_updates",
   eventClaimRejected: "claim_updates",
+  hostApproval: "claim_updates",
+  hostRejection: "claim_updates",
+  claimConfirmed: "claim_updates",
   // Claim-related templates (venues) - ABC8
   venueClaimApproved: "claim_updates",
   venueClaimRejected: "claim_updates",
@@ -123,11 +140,15 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
   occurrenceCancelledHost: "event_updates",
   occurrenceModifiedHost: "event_updates",
   rsvpConfirmation: "event_updates",
+  waitlistOffer: "event_updates",
   waitlistPromotion: "event_updates",
   eventCommentNotification: "event_updates",
   rsvpHostNotification: "event_updates",
   weeklyOpenMicsDigest: "event_updates",
   weeklyHappeningsDigest: "event_updates",
+  newsletterWelcome: "event_updates",
+  suggestionResponse: "event_updates",
+  cohostInvitation: "event_updates",
 
   // Gallery-related templates
   collaboratorAdded: "event_updates",
@@ -135,7 +156,9 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
 
   // Admin-related templates
   adminEventClaimNotification: "admin_notifications",
+  adminSuggestionNotification: "admin_notifications",
   contactNotification: "admin_notifications",
+  feedbackNotification: "admin_notifications",
 };
 
 /**
@@ -145,4 +168,11 @@ export function getEmailCategory(
   templateKey: string
 ): "claim_updates" | "event_updates" | "admin_notifications" | null {
   return EMAIL_CATEGORY_MAP[templateKey] ?? null;
+}
+
+/**
+ * Check if a template is an essential email that bypasses preferences
+ */
+export function isEssentialEmail(templateKey: string): boolean {
+  return ESSENTIAL_EMAILS.has(templateKey);
 }
