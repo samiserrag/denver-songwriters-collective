@@ -6,6 +6,28 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Private Events RLS Recursion + CI Migration Guard (February 2026)
+
+**Summary:** After PR2 foundation migration was applied, authenticated event reads hit RLS recursion (`events` policy referenced `event_attendee_invites` while invite policies referenced `events`). This temporarily hid events from authenticated surfaces. Emergency hotfix removed the recursive branch and restored visibility. Follow-up hardened CI migration behavior by moving rollback SQL out of active migration execution path and updating contract tests.
+
+**Hotfix Migration:** `20260218032000_fix_private_events_rls_recursion.sql`
+**Rollback Archive Path:** `supabase/migrations/_archived/20260218030001_private_events_foundation_rollback.sql`
+**Commits:** `789e53a1`, `19241f07`, `f38e7536`
+
+**What changed:**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260218032000_fix_private_events_rls_recursion.sql` | Removes recursive invitee branch from `public_read_events` policy to break cross-policy recursion |
+| `supabase/migrations/_archived/20260218030001_private_events_foundation_rollback.sql` | Rollback SQL moved out of active migration chain |
+| `web/src/__tests__/pr2-private-events-rls-contract.test.ts` | Rollback path assertion updated to archived location |
+| `docs/investigation/private-invite-only-events-stopgate.md` | Incident addendum with root cause and prevention controls |
+| `docs/GOVERNANCE.md` | Added required RLS runtime safety gate + rollback file placement rule |
+
+**Verification:** Local web tests pass (`198/198`, `4187/4187`). Tripwire regression addressed by removing rollback SQL from active migrations.
+
+---
+
 ### SCHEMA: Private Events Foundation — Migration Applied (February 2026)
 
 **Summary:** Applied `20260218030000_private_events_foundation.sql` via Mode B (direct psql). Adds `visibility` column to events (default `'public'`, constrained to `'public' | 'invite_only'`), creates `event_attendee_invites` table with full RLS, and replaces the permissive `public_read_events` policy with a visibility-aware policy. All 92 existing events migrated with `visibility = 'public'` — zero behavior change.

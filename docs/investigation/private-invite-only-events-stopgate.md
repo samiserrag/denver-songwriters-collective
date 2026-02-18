@@ -2,8 +2,40 @@
 
 **Author:** Claude Opus 4.6 (Repo Agent)
 **Date:** 2026-02-17
-**Status:** APPROVED — PR1 (leak fixes) and PR2 (schema + RLS) shipped and applied. PR3–PR6 pending.
+**Status:** APPROVED — PR1 shipped. PR2 shipped/applied, followed by emergency hotfix for RLS recursion. PR3–PR6 pending.
 **Governance:** Per `00-governance-and-safety.md` — investigation-only, no code changes
+
+---
+
+## Incident Addendum (2026-02-18)
+
+### What happened
+
+After applying PR2 migration `20260218030000_private_events_foundation.sql` in production (Mode B), event surfaces temporarily returned no rows for authenticated users (including admin event management views).
+
+### Root cause
+
+The new `events.public_read_events` policy referenced `event_attendee_invites`, while `event_attendee_invites` policies referenced `events`. This created a bidirectional RLS dependency and triggered PostgreSQL policy recursion at read time (`infinite recursion detected in policy for relation "events"`).
+
+### Why the stop-gate missed it
+
+The stop-gate and contract tests validated schema shape and policy text, but did not execute runtime RLS reads as `anon` and `authenticated` against the live policy graph. This allowed a structurally valid policy set to ship with a runtime recursion failure mode.
+
+### Secondary issue discovered
+
+Rollback file `20260218030001_private_events_foundation_rollback.sql` was left in active `supabase/migrations/`. Clean-database CI (RLS Tripwire) attempted to apply it as a forward migration, causing downstream migration failures.
+
+### Recovery executed
+
+1. Emergency policy hotfix applied and migrated (`20260218032000_fix_private_events_rls_recursion.sql`) to remove the recursive branch.
+2. Rollback file moved out of active execution path to `supabase/migrations/_archived/20260218030001_private_events_foundation_rollback.sql`.
+3. Regression contract test updated to reference the archived rollback path.
+
+### Preventive controls (now required for this tract)
+
+1. Add runtime RLS smoke checks for policy migrations (`anon` and `authenticated` reads) before marking stop-gate complete.
+2. Never keep rollback-only SQL inside active `supabase/migrations/`.
+3. Treat bidirectional cross-table RLS references as high-risk and require explicit recursion review.
 
 ---
 
@@ -416,7 +448,9 @@ Tests to add:
 | PR | Status | Commit | Notes |
 |----|--------|--------|-------|
 | PR1: Leak hotfixes | ✅ Shipped | `46237526` | OG route + search API filters + 8 tests |
-| PR2: Schema + RLS | ✅ Shipped + Applied | `fc182da7` | Migration applied via Mode B; 92/92 events = `public`; 40 tests |
+| PR2: Schema + RLS | ✅ Shipped + Applied | `fc182da7` | Migration applied via Mode B; 92/92 events = `public`; later required recursion hotfix |
+| PR2a: RLS recursion hotfix | ✅ Shipped + Applied | `789e53a1` + `20260218032000` | Removed recursive branch in `public_read_events`; restored live visibility |
+| PR2b: CI/contract follow-up | ✅ Shipped | `19241f07`, `f38e7536` | Archived rollback SQL path + updated contract test path |
 | PR3: Host/admin invite UI/API | Pending | — | — |
 | PR4: Read-surface hardening | Pending | — | — |
 | PR5: Non-member token flow | Pending | — | — |

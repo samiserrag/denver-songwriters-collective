@@ -266,7 +266,16 @@ This project's remote database has many historical migrations applied before the
 - If MODE B is used, do NOT also run `npx supabase db push`
 - Always record applied migrations in `supabase_migrations.schema_migrations`
 - Always verify schema with `\d table_name` after applying
+- Rollback-only SQL files must live in `supabase/migrations/_archived/` (never in active `supabase/migrations/`)
 - Stop-gate approval required before applying any migration
+
+### RLS Policy Safety Gate (Required for policy changes)
+
+For any migration that adds/changes RLS policies:
+
+1. Run runtime RLS smoke queries as both `anon` and `authenticated` before declaring success.
+2. Explicitly check for policy recursion risk when policies reference other RLS-protected tables.
+3. Do not close stop-gate on policy text checks alone; include runtime read verification evidence.
 
 ### Direct SQL Allowed (Data Corrections Only)
 
