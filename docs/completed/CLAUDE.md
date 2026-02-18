@@ -6,6 +6,16 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### POSTMORTEM: Private Events RLS Recursion Incident (February 2026)
+
+**Summary:** Blameless postmortem documenting the RLS recursion incident from PR2 of the private events tract. Identifies four invalid assumptions in the stop-gate process, proposes concrete guardrails (runtime RLS smoke tests, recursion-risk review, rollback file placement rules), and provides an updated stop-gate checklist template for all future migrations.
+
+**Deliverable:** `docs/postmortems/2026-02-18-private-events-rls-recursion.md`
+
+**Guardrails codified:** `30-supabase-migrations-and-deploy.md` updated with runtime RLS smoke test requirement, rollback file placement rule, and cross-table recursion check protocol.
+
+---
+
 ### HOTFIX: Private Events RLS Recursion + CI Migration Guard (February 2026)
 
 **Summary:** After PR2 foundation migration was applied, authenticated event reads hit RLS recursion (`events` policy referenced `event_attendee_invites` while invite policies referenced `events`). This temporarily hid events from authenticated surfaces. Emergency hotfix removed the recursive branch and restored visibility. Follow-up hardened CI migration behavior by moving rollback SQL out of active migration execution path and updating contract tests.

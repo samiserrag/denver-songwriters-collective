@@ -62,6 +62,11 @@ git push origin main
 - Always record applied migrations in `supabase_migrations.schema_migrations`
 - Do NOT push to `main` until the migration is confirmed applied on remote
 
+#### Rollback File Placement (added 2026-02-18, per incident postmortem)
+
+- Rollback-only SQL files MUST NOT be placed in `supabase/migrations/`. They MUST be placed in `supabase/migrations/_archived/` with a clear header comment: `-- ROLLBACK ONLY — DO NOT APPLY AS FORWARD MIGRATION`.
+- CI applies all files in `supabase/migrations/` in timestamp order. A rollback file in this directory will be applied as a forward migration on clean-database CI runs, causing cascading failures.
+
 #### Stop-Gate Protocol for Migrations
 
 Before applying any migration:
@@ -71,6 +76,21 @@ Before applying any migration:
 After applying:
 1. Report: which mode was used, exact migrations applied, verification query results
 2. Confirm schema integrity
+3. **Runtime RLS smoke test (REQUIRED for any migration that creates, modifies, or drops RLS policies):**
+   - Run `SELECT` as `anon` role against affected tables — must return rows (not error)
+   - Run `SELECT` as `authenticated` role against affected tables — must return rows (not error)
+   - If either query fails with a policy evaluation error, STOP and rollback before pushing to main
+4. Load production site as anonymous, authenticated, and admin users to verify surfaces render
+
+#### Cross-Table RLS Recursion Check (added 2026-02-18, per incident postmortem)
+
+Before writing any RLS policy that contains a subquery referencing another table:
+1. Check whether that other table has RLS policies that reference back to this table.
+2. If a bidirectional cycle exists, this is a **HIGH-risk recursion hazard**. PostgreSQL will raise `infinite recursion detected in policy for relation` at query time.
+3. To break the cycle, use one of: a `SECURITY DEFINER` helper function (bypasses RLS on the inner lookup), a materialized boolean flag column, or defer the check to application-layer logic.
+4. Document the cycle and resolution in the migration header comment.
+
+**Reference:** `docs/postmortems/2026-02-18-private-events-rls-recursion.md`
 
 ---
 
