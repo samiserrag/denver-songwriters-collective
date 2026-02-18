@@ -197,7 +197,7 @@ describe("PR2: Rollback migration exists", () => {
   it("rollback file exists and restores original policy", () => {
     const rollbackPath = join(
       REPO_ROOT,
-      "supabase/migrations/20260218030001_private_events_foundation_rollback.sql"
+      "supabase/migrations/_archived/20260218030001_private_events_foundation_rollback.sql"
     );
     const rollbackSQL = readFileSync(rollbackPath, "utf-8");
     expect(rollbackSQL).toContain("USING (true)");
