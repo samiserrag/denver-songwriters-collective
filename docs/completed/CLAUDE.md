@@ -11,7 +11,7 @@ This file holds the historical implementation log that was previously under the 
 **Summary:** Applied `20260218030000_private_events_foundation.sql` via Mode B (direct psql). Adds `visibility` column to events (default `'public'`, constrained to `'public' | 'invite_only'`), creates `event_attendee_invites` table with full RLS, and replaces the permissive `public_read_events` policy with a visibility-aware policy. All 92 existing events migrated with `visibility = 'public'` — zero behavior change.
 
 **Migration:** `20260218030000_private_events_foundation.sql`
-**Rollback:** `20260218030001_private_events_foundation_rollback.sql`
+**Rollback:** `supabase/migrations/_archived/20260218030001_private_events_foundation_rollback.sql`
 **Mode:** B (direct psql)
 
 **Schema changes:**
@@ -31,7 +31,7 @@ This file holds the historical implementation log that was previously under the 
 
 ### UX: Event Form — Unlimited Series Default + Time Picker Redesign (February 2026)
 
-**Summary:** Weekly series now defaults to "No end date (ongoing)" instead of 4 occurrences. Time picker redesigned: 12-hour dropdown (12:00–11:45 in 15-min increments) with separate typed AM/PM input (PM default), replacing the old combined AM/PM-embedded dropdown.
+**Summary:** Weekly series now defaults to "No end date (ongoing)" instead of 4 occurrences. Time picker redesigned: 12-hour dropdown (12:00–11:45 in 15-min increments) with separate AM/PM dropdown (PM default), replacing the old combined AM/PM-embedded dropdown.
 
 **Changes:**
 

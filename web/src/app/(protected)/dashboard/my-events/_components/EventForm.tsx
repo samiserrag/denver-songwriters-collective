@@ -47,18 +47,16 @@ function DateDayIndicator({ dateValue }: { dateValue: string }) {
   );
 }
 
-// Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
 // 12-hour time options: 12:00, 12:15, 12:30, 12:45, 1:00, ..., 11:30, 11:45
 // These are display-only values; combined with AM/PM to produce the 24-hour value stored in DB
-const HOUR_MINUTE_OPTIONS: { display: string; hour12: number; minute: number }[] = [];
+const HOUR_MINUTE_OPTIONS: { display: string }[] = [];
 for (let i = 0; i < 48; i++) {
   // Start at 12:00, then 12:15, 12:30, 12:45, 1:00, ..., 11:45
-  const hour12 = i < 4 ? 12 : Math.floor(i / 4) + (i >= 4 ? 0 : 0);
   const rawHour = Math.floor(i / 4);
   const actualHour12 = rawHour === 0 ? 12 : rawHour;
   const minute = (i % 4) * 15;
   const display = `${actualHour12}:${minute.toString().padStart(2, "0")}`;
-  HOUR_MINUTE_OPTIONS.push({ display, hour12: actualHour12, minute });
+  HOUR_MINUTE_OPTIONS.push({ display });
 }
 
 // Convert 12-hour display + AM/PM to 24-hour HH:MM:SS for database storage
@@ -78,21 +76,13 @@ function to24Hour(display: string, ampm: string): string {
 function from24Hour(value: string): { display: string; ampm: string } {
   if (!value) return { display: "", ampm: "PM" };
   const parts = value.split(":");
-  let hour = parseInt(parts[0], 10);
+  const hour = parseInt(parts[0], 10);
   const minute = parseInt(parts[1], 10);
   const ampm = hour >= 12 ? "PM" : "AM";
   const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   const display = `${hour12}:${minute.toString().padStart(2, "0")}`;
   return { display, ampm };
 }
-
-// Legacy TIME_OPTIONS kept for backward compatibility with any external references
-const TIME_OPTIONS: { value: string; label: string }[] = HOUR_MINUTE_OPTIONS.flatMap(({ display, hour12, minute }) =>
-  ["AM", "PM"].map(ampm => ({
-    value: to24Hour(display, ampm),
-    label: `${display} ${ampm}`,
-  }))
-);
 
 // Inline TimePicker: hour:minute dropdown + AM/PM dropdown (PM default)
 function TimePicker({
@@ -107,18 +97,10 @@ function TimePicker({
   placeholder?: string;
 }) {
   const parsed = from24Hour(value);
-  const [display, setDisplay] = useState(parsed.display);
-  const [ampm, setAmpm] = useState(parsed.ampm || "PM");
-
-  // Sync when external value changes (e.g., form reset or edit mode load)
-  useEffect(() => {
-    const p = from24Hour(value);
-    setDisplay(p.display);
-    setAmpm(p.ampm || "PM");
-  }, [value]);
+  const display = parsed.display;
+  const ampm = parsed.ampm || "PM";
 
   const handleDisplayChange = (newDisplay: string) => {
-    setDisplay(newDisplay);
     if (newDisplay) {
       onChange(to24Hour(newDisplay, ampm));
     } else {
@@ -127,7 +109,6 @@ function TimePicker({
   };
 
   const handleAmpmChange = (newAmpm: "AM" | "PM") => {
-    setAmpm(newAmpm);
     if (display) {
       onChange(to24Hour(display, newAmpm));
     }
@@ -270,7 +251,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     actionUrl?: string;
     actionLabel?: string;
   } | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(event?.cover_image_url || null);
   const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);

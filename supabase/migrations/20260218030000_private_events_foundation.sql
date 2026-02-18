@@ -11,7 +11,7 @@
 -- - Max 200 invites per event enforced at application layer, not DB constraint
 -- - Non-member token cookie duration: 24 hours (enforced at application layer)
 --
--- Rollback: See 20260218030001_private_events_foundation_rollback.sql
+-- Rollback: See _archived/20260218030001_private_events_foundation_rollback.sql
 --
 -- @see docs/investigation/private-invite-only-events-stopgate.md
 
