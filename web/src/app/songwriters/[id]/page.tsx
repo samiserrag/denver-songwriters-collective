@@ -204,6 +204,8 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
       start_time,
       end_time,
       recurrence_rule,
+      max_occurrences,
+      custom_dates,
       is_recurring,
       status,
       cover_image_url,

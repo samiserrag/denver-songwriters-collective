@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { SeriesEntry } from "@/lib/events/nextOccurrence";
 
 /**
@@ -262,5 +264,23 @@ describe("Hosted Happenings - Query Contract", () => {
     expect(validStatuses).toContain("unverified");
     expect(validStatuses).not.toContain("cancelled");
     expect(validStatuses).not.toContain("draft");
+  });
+
+  it("members profile query includes custom recurrence fields", () => {
+    const membersPageSource = readFileSync(
+      join(process.cwd(), "src/app/members/[id]/page.tsx"),
+      "utf-8"
+    );
+    expect(membersPageSource).toContain("max_occurrences");
+    expect(membersPageSource).toContain("custom_dates");
+  });
+
+  it("songwriters profile query includes custom recurrence fields", () => {
+    const songwritersPageSource = readFileSync(
+      join(process.cwd(), "src/app/songwriters/[id]/page.tsx"),
+      "utf-8"
+    );
+    expect(songwritersPageSource).toContain("max_occurrences");
+    expect(songwritersPageSource).toContain("custom_dates");
   });
 });

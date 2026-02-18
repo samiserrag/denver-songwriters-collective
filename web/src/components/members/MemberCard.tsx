@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Member } from "@/types";
-import { SpotlightBadge } from "@/components/special/spotlight-badge";
 import { SocialLinks } from "@/components/special/social-links";
 import { ImagePlaceholder } from "@/components/ui";
 import { RoleBadges } from "./RoleBadges";
@@ -107,13 +106,6 @@ export function MemberCard({ member, className }: MemberCardProps) {
               initials={getInitials(member.name)}
               className="w-full h-full"
             />
-          )}
-
-          {/* Spotlight badge */}
-          {member.isSpotlight && (
-            <div className="absolute top-3 right-3">
-              <SpotlightBadge />
-            </div>
           )}
 
           {/* Role badge */}
