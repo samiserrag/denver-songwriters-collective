@@ -2,7 +2,7 @@
 
 **Author:** Claude Opus 4.6 (Repo Agent)
 **Date:** 2026-02-17
-**Status:** STOP-GATE — Awaiting Sami approval before any implementation
+**Status:** APPROVED — PR1 (leak fixes) and PR2 (schema + RLS) shipped and applied. PR3–PR6 pending.
 **Governance:** Per `00-governance-and-safety.md` — investigation-only, no code changes
 
 ---
@@ -411,4 +411,13 @@ Tests to add:
 
 ---
 
-*No code changes. No migrations applied. Awaiting stop-gate approval.*
+## 9. Execution Log
+
+| PR | Status | Commit | Notes |
+|----|--------|--------|-------|
+| PR1: Leak hotfixes | ✅ Shipped | `46237526` | OG route + search API filters + 8 tests |
+| PR2: Schema + RLS | ✅ Shipped + Applied | `fc182da7` | Migration applied via Mode B; 92/92 events = `public`; 40 tests |
+| PR3: Host/admin invite UI/API | Pending | — | — |
+| PR4: Read-surface hardening | Pending | — | — |
+| PR5: Non-member token flow | Pending | — | — |
+| PR6: CI guardrail expansion | Pending | — | — |

@@ -6,6 +6,56 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### SCHEMA: Private Events Foundation — Migration Applied (February 2026)
+
+**Summary:** Applied `20260218030000_private_events_foundation.sql` via Mode B (direct psql). Adds `visibility` column to events (default `'public'`, constrained to `'public' | 'invite_only'`), creates `event_attendee_invites` table with full RLS, and replaces the permissive `public_read_events` policy with a visibility-aware policy. All 92 existing events migrated with `visibility = 'public'` — zero behavior change.
+
+**Migration:** `20260218030000_private_events_foundation.sql`
+**Rollback:** `20260218030001_private_events_foundation_rollback.sql`
+**Mode:** B (direct psql)
+
+**Schema changes:**
+
+| Object | Type | Notes |
+|--------|------|-------|
+| `events.visibility` | Column (TEXT NOT NULL DEFAULT 'public') | CHECK: `'public'` or `'invite_only'` |
+| `event_attendee_invites` | Table | Member + email invite gating; RLS enabled |
+| `public_read_events` | RLS Policy (replaced) | Now visibility-aware: public events visible to all; invite-only to host/co-host/accepted invitee/admin |
+| `idx_events_visibility` | Index | Filter index on visibility |
+| `idx_events_published_public` | Index | Composite: published + public |
+| `idx_attendee_invites_accepted` | Index | Hot-path for RLS subquery |
+
+**Verification:** 92/92 events = `visibility = 'public'`. Empty `event_attendee_invites` table. RLS policy confirmed via `pg_policies`.
+
+---
+
+### UX: Event Form — Unlimited Series Default + Time Picker Redesign (February 2026)
+
+**Summary:** Weekly series now defaults to "No end date (ongoing)" instead of 4 occurrences. Time picker redesigned: 12-hour dropdown (12:00–11:45 in 15-min increments) with separate typed AM/PM input (PM default), replacing the old combined AM/PM-embedded dropdown.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx` | New `TimePicker` component with `HOUR_MINUTE_OPTIONS`, `to24Hour()`, `from24Hour()` helpers; weekly default changed from `"4"` to `"0"` |
+
+---
+
+### FIX: OG Metadata + Search API Leak Hotfixes (February 2026)
+
+**Summary:** Closed two pre-existing metadata leaks. OG event route now filters by `is_published=true` and returns a generic fallback for unpublished events. Search API now filters non-open-mic events by `is_published=true` AND `status=active`.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/og/event/[id]/route.tsx` | Added `is_published=true` filter; generic fallback for null events |
+| `web/src/app/api/search/route.ts` | Added `is_published=true` + `status=active` filters to non-open-mic query |
+| `web/src/__tests__/pr1-leak-hotfixes.test.ts` | 8 source-code contract tests |
+| `web/src/__tests__/pr2-private-events-rls-contract.test.ts` | 40 RLS contract tests |
+
+---
+
 ### UX: Homepage CSC Official Happenings — Verified Filter, ENDED Pill, Past-Events-Last Sort (February 2026)
 
 **Summary:** Three UX improvements to the CSC Official Happenings section on the homepage:

@@ -368,7 +368,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | HARDEN-02 | Email observability + operational monitoring | P1 | OPEN | Document and enforce queryable skip reasons, suppression rates, send failures, and admin read-only visibility patterns |
 | HARDEN-03 | Email template governance runbook | P1 | OPEN | Expand template addition contract with owner checklist, enforcement boundaries, and CI expectations |
 | HARDEN-04 | Moderation foundation contract | P2 | OPEN | Define minimal future-proof moderation hooks and admin-only control boundaries without changing current behavior |
-| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | OPEN — high priority | Event visibility restricted to invitees only; invites must support existing members and non-members without metadata leakage on public surfaces |
+| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | IN PROGRESS — PR1+PR2 shipped, PR3–PR6 pending | Schema + RLS foundation applied (92 events migrated). Leak hotfixes shipped. Next: host UI, surface hardening, token flow, CI tests |
 
 ### Homepage / Navigation / UX
 
