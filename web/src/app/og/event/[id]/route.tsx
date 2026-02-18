@@ -26,22 +26,39 @@ export async function GET(
   const selectFields = `
     title, event_type, event_date, start_time,
     venue_name, cover_image_url, status, last_verified_at,
+    is_published,
     recurrence_rule, day_of_week,
     venue:venues!events_venue_id_fkey(name, city, state)
   `;
 
-  // Query event by slug or UUID
+  // Query event by slug or UUID — only published events expose OG metadata
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
         .select(selectFields)
         .eq("id", id)
+        .eq("is_published", true)
         .single()
     : await supabase
         .from("events")
         .select(selectFields)
         .eq("slug", id)
+        .eq("is_published", true)
         .single();
+
+  // Return generic fallback OG for unpublished/missing events (no metadata leak)
+  if (!event) {
+    return new ImageResponse(
+      renderOgCard({
+        title: "Happening",
+        chips: [{ label: "Event", variant: "gold" }],
+        fallbackEmoji: "🎵",
+        kindLabel: "Event",
+        kindVariant: "gold",
+      }),
+      { width: 1200, height: 630 }
+    );
+  }
 
   const title = event?.title ?? "Happening";
   const eventType = event?.event_type as EventType | undefined;

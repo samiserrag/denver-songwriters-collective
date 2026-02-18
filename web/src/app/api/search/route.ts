@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       .or(`title.ilike.${like}`)
       .limit(5),
 
-    // Events (non-open-mic) - search title, description
+    // Events (non-open-mic) - search title, description (published + active only)
     supabase
       .from("events")
       .select(`
@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
         venue_name
       `)
       .neq("event_type", "open_mic")
+      .eq("is_published", true)
+      .eq("status", "active")
       .or(`title.ilike.${like},description.ilike.${like}`)
       .limit(5),
 
