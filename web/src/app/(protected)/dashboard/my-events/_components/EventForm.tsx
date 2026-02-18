@@ -48,16 +48,135 @@ function DateDayIndicator({ dateValue }: { dateValue: string }) {
 }
 
 // Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
-const TIME_OPTIONS: { value: string; label: string }[] = [];
-for (let hour = 6; hour <= 23; hour++) {
-  for (const minute of [0, 30]) {
-    if (hour === 23 && minute === 30) continue; // Skip 11:30 PM
-    const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const label = `${hour12}:${minute.toString().padStart(2, "0")} ${ampm}`;
-    const value = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
-    TIME_OPTIONS.push({ value, label });
+// 12-hour time options: 12:00, 12:15, 12:30, 12:45, 1:00, ..., 11:30, 11:45
+// These are display-only values; combined with AM/PM to produce the 24-hour value stored in DB
+const HOUR_MINUTE_OPTIONS: { display: string; hour12: number; minute: number }[] = [];
+for (let i = 0; i < 48; i++) {
+  // Start at 12:00, then 12:15, 12:30, 12:45, 1:00, ..., 11:45
+  const hour12 = i < 4 ? 12 : Math.floor(i / 4) + (i >= 4 ? 0 : 0);
+  const rawHour = Math.floor(i / 4);
+  const actualHour12 = rawHour === 0 ? 12 : rawHour;
+  const minute = (i % 4) * 15;
+  const display = `${actualHour12}:${minute.toString().padStart(2, "0")}`;
+  HOUR_MINUTE_OPTIONS.push({ display, hour12: actualHour12, minute });
+}
+
+// Convert 12-hour display + AM/PM to 24-hour HH:MM:SS for database storage
+function to24Hour(display: string, ampm: string): string {
+  const [hourStr, minuteStr] = display.split(":");
+  let hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+  if (ampm === "AM") {
+    if (hour === 12) hour = 0;
+  } else {
+    if (hour !== 12) hour += 12;
   }
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
+}
+
+// Convert 24-hour HH:MM:SS to { display, ampm } for form state
+function from24Hour(value: string): { display: string; ampm: string } {
+  if (!value) return { display: "", ampm: "PM" };
+  const parts = value.split(":");
+  let hour = parseInt(parts[0], 10);
+  const minute = parseInt(parts[1], 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const display = `${hour12}:${minute.toString().padStart(2, "0")}`;
+  return { display, ampm };
+}
+
+// Legacy TIME_OPTIONS kept for backward compatibility with any external references
+const TIME_OPTIONS: { value: string; label: string }[] = HOUR_MINUTE_OPTIONS.flatMap(({ display, hour12, minute }) =>
+  ["AM", "PM"].map(ampm => ({
+    value: to24Hour(display, ampm),
+    label: `${display} ${ampm}`,
+  }))
+);
+
+// Inline TimePicker: hour:minute dropdown + typed AM/PM input (PM default)
+function TimePicker({
+  value,
+  onChange,
+  required,
+  placeholder = "Select time",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  placeholder?: string;
+}) {
+  const parsed = from24Hour(value);
+  const [display, setDisplay] = useState(parsed.display);
+  const [ampm, setAmpm] = useState(parsed.ampm || "PM");
+
+  // Sync when external value changes (e.g., form reset or edit mode load)
+  useEffect(() => {
+    const p = from24Hour(value);
+    setDisplay(p.display);
+    setAmpm(p.ampm || "PM");
+  }, [value]);
+
+  const handleDisplayChange = (newDisplay: string) => {
+    setDisplay(newDisplay);
+    if (newDisplay) {
+      onChange(to24Hour(newDisplay, ampm));
+    } else {
+      onChange("");
+    }
+  };
+
+  const handleAmpmChange = (newAmpm: string) => {
+    // Normalize to uppercase AM or PM
+    const normalized = newAmpm.toUpperCase().replace(/[^AMP]/g, "").slice(0, 2);
+    if (normalized === "AM" || normalized === "PM") {
+      setAmpm(normalized);
+      if (display) {
+        onChange(to24Hour(display, normalized));
+      }
+    } else {
+      // Allow partial typing (e.g., "A" or "P")
+      setAmpm(newAmpm.toUpperCase().slice(0, 2));
+    }
+  };
+
+  const inputClass =
+    "px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none";
+
+  return (
+    <div className="flex gap-2 items-center">
+      <select
+        value={display}
+        onChange={(e) => handleDisplayChange(e.target.value)}
+        required={required}
+        className={`flex-1 ${inputClass}`}
+      >
+        <option value="">{placeholder}</option>
+        {HOUR_MINUTE_OPTIONS.map(({ display: d }) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+      <input
+        type="text"
+        value={ampm}
+        onChange={(e) => handleAmpmChange(e.target.value)}
+        onBlur={() => {
+          // On blur, snap to nearest valid value
+          if (ampm.startsWith("A")) setAmpm("AM");
+          else setAmpm("PM");
+          if (display) {
+            const final = ampm.startsWith("A") ? "AM" : "PM";
+            onChange(to24Hour(display, final));
+          }
+        }}
+        maxLength={2}
+        placeholder="PM"
+        className={`w-16 text-center font-medium ${inputClass}`}
+      />
+    </div>
+  );
 }
 
 interface Venue {
@@ -1061,48 +1180,33 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             <span className="text-red-500">Start Time</span>
             <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
           </label>
-          <select
+          <TimePicker
             value={formData.start_time}
-            onChange={(e) => updateField("start_time", e.target.value)}
+            onChange={(v) => updateField("start_time", v)}
             required
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            <option value="">Select time</option>
-            {TIME_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
+            placeholder="Select time"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             End Time <span className="font-normal">(optional)</span>
           </label>
-          <select
+          <TimePicker
             value={formData.end_time}
-            onChange={(e) => updateField("end_time", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            <option value="">Select time</option>
-            {TIME_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
+            onChange={(v) => updateField("end_time", v)}
+            placeholder="Select time"
+          />
         </div>
         {/* Signup Time - prominently displayed for in-person signup time at venue */}
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
             Signup Time <span className="font-normal">(optional)</span>
           </label>
-          <select
+          <TimePicker
             value={formData.signup_time}
-            onChange={(e) => updateField("signup_time", e.target.value)}
-            className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-          >
-            <option value="">Select time...</option>
-            {TIME_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
+            onChange={(v) => updateField("signup_time", v)}
+            placeholder="Select time..."
+          />
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">When does in-person signup typically begin?</p>
         </div>
       </div>
@@ -1390,7 +1494,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               type="button"
               onClick={() => {
                 updateField("series_mode", "weekly");
-                updateField("occurrence_count", "4");
+                updateField("occurrence_count", "0");
                 setCustomDates([]);
               }}
               className={`p-3 rounded-lg border text-left transition-colors ${
