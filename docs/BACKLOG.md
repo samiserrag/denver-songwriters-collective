@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-02-11
+> **Last Updated:** 2026-02-17
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -360,6 +360,16 @@ Polish member profiles before external test users see them. Three scope areas:
 - STOP-GATE: `docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`
 - Contract alignment: `docs/CONTRACTS.md` (Region + Community Platform Architecture section)
 
+### Security & Governance Hardening (Current Phase)
+
+| ID | Item | Priority | Status | Notes |
+|----|------|----------|--------|-------|
+| HARDEN-01 | Gallery RLS + storage security contract | P0 | OPEN | Formalize owner/collaborator/admin permission matrix for `gallery_albums`, `gallery_images`, and `gallery_album_links`; add negative privilege-escalation and storage abuse tests |
+| HARDEN-02 | Email observability + operational monitoring | P1 | OPEN | Document and enforce queryable skip reasons, suppression rates, send failures, and admin read-only visibility patterns |
+| HARDEN-03 | Email template governance runbook | P1 | OPEN | Expand template addition contract with owner checklist, enforcement boundaries, and CI expectations |
+| HARDEN-04 | Moderation foundation contract | P2 | OPEN | Define minimal future-proof moderation hooks and admin-only control boundaries without changing current behavior |
+| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | OPEN — high priority | Event visibility restricted to invitees only; invites must support existing members and non-members without metadata leakage on public surfaces |
+
 ### Homepage / Navigation / UX
 
 | ID | Item | Priority | Status |
@@ -423,6 +433,32 @@ Polish member profiles before external test users see them. Three scope areas:
 | INT-03 | New "My Happenings" category in member dashboard | P2 | OPEN | Shows interested events |
 | INT-04 | Notify host when member marks interested (dashboard only, no email) | P2 | OPEN | Dashboard notification |
 | INT-05 | Show location address on always-visible happening cards | P2 | OPEN | Currently venue name only |
+
+---
+
+### EVENTS-PRIVATE-01 — Private Invite-Only Events (Members + Non-Members)
+
+**Status:** OPEN (High Priority)
+**Priority:** P0
+**Added:** 2026-02-17
+
+**Problem Statement:**
+Hosts need private events (for workshops, rehearsals, and invite-only sessions) that are invisible to non-invitees across public discovery surfaces.
+
+**Minimum contract requirements:**
+- Private events must be hidden from non-invitees on homepage rails, `/happenings`, search, embeds, and public API reads.
+- Invite flow must support existing members and non-members (signup/login + token acceptance path).
+- Non-invitees must not receive partial metadata; visibility failures should behave as not-found/hidden.
+
+**Coupling to reuse:**
+- Reuse invite token lifecycle patterns from `event_invites` and `venue_invites`.
+- Preserve invite redirects through auth handoff (existing proxy redirect behavior).
+- Route all invite notifications through preference-aware email and dashboard notification patterns.
+
+**STOP-GATE required before execution:**
+1. Schema + RLS design for private visibility and invite membership checks.
+2. Threat model for token abuse, replay, and enumeration.
+3. Regression matrix covering all discovery surfaces and acceptance paths.
 
 ---
 

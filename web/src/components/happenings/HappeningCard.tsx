@@ -756,7 +756,7 @@ export function HappeningCard({
                   "px-2 py-1 text-xs font-bold uppercase tracking-wide rounded-full",
                   "bg-black/50 backdrop-blur-sm",
                   isCancelled && "text-red-400",
-                  !isCancelled && showEnded && "text-white/70",
+                  !isCancelled && showEnded && "text-red-400",
                   !isCancelled && !showEnded && showUnconfirmedBadge && "text-amber-300"
                 )}
               >

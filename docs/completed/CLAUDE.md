@@ -6,6 +6,34 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### UX: Homepage CSC Official Happenings — Verified Filter, ENDED Pill, Past-Events-Last Sort (February 2026)
+
+**Summary:** Three UX improvements to the CSC Official Happenings section on the homepage:
+1. Only verified events (admin checkbox = `last_verified_at IS NOT NULL`) appear in the section.
+2. The "ENDED" status pill on past event cards now uses red text (`text-red-400`) matching the cancelled pill styling for better visual prominence.
+3. Past/ended events sort to the end of the section, with upcoming events shown first.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/page.tsx` | Added `.not("last_verified_at", "is", null)` to CSC official events query; added post-fetch stable sort pushing `event_date < today` events last |
+| `web/src/components/happenings/HappeningCard.tsx` | Changed ended badge color from `text-white/70` to `text-red-400` |
+
+**Verification:** Build passes, 4139 tests pass (196 files). No schema changes.
+
+---
+
+### INVESTIGATION: Private Invite-Only Events — STOP-GATE (February 2026)
+
+**Summary:** Full investigation for private invite-only event visibility. 14 read surfaces audited, schema proposed (`visibility` column + `event_attendee_invites` table), RLS contract matrix built, threat model documented. Two pre-existing leaks discovered (OG route missing `is_published` check, search API missing status filter for non-open-mic events).
+
+**Deliverable:** `docs/investigation/private-invite-only-events-stopgate.md`
+
+**Status:** STOP-GATE — awaiting Sami approval on 7 gate questions before any implementation.
+
+---
+
 ### FEATURE: Email Preferences — Developer Contract, Essential Emails, Audit Logging (February 2026)
 
 **Summary:** End-to-end email preference system with developer contract enforcement. Users can control email delivery via master toggle and per-category toggles. Essential security emails (e.g., verification codes) bypass all preferences. Unmapped templates are blocked with error logging. CI test enforces that every registry template is categorized.

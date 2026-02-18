@@ -117,14 +117,16 @@ export default async function HomePage() {
   const today = getTodayDenver();
 
   const [upcomingEventsRes, tonightsHappeningsRes, spotlightHappeningsRes, featuredMembersRes, hostSpotlightMembersRes, spotlightOpenMicsRes, featuredBlogRes, latestBlogRes, highlightsRes, spotlightOpenMicEventsRes] = await Promise.all([
-    // Single events query - upcoming CSC events (published only)
+    // Single events query - upcoming CSC events (published + verified only)
     // Filter: one-time events must be today or future, OR recurring events (have recurrence_rule)
+    // Only show verified events (last_verified_at is set) per admin checkbox
     supabase
       .from("events")
       .select("*")
       .eq("is_dsc_event", true)
       .eq("is_published", true)
       .eq("status", "active")
+      .not("last_verified_at", "is", null)
       .or(`event_date.gte.${today},recurrence_rule.not.is.null`)
       .order("event_date", { ascending: true })
       .limit(6),
@@ -284,6 +286,13 @@ export default async function HomePage() {
       return mapDBEventToEvent({ ...dbEvent, rsvp_count: rsvpCount, claimed_slots: claimedSlots });
     })
   );
+  // Sort past/ended events last within the CSC official section
+  upcomingEvents.sort((a, b) => {
+    const aIsPast = a.event_date ? a.event_date < today : false;
+    const bIsPast = b.event_date ? b.event_date < today : false;
+    if (aIsPast !== bIsPast) return aIsPast ? 1 : -1;
+    return 0; // preserve existing date order within each group
+  });
   const featuredMembers: Member[] = (featuredMembersRes.data ?? []).map(mapDBProfileToMember);
   const hostSpotlightMembers: Member[] = (hostSpotlightMembersRes.data ?? []).map(mapDBProfileToMember);
 
