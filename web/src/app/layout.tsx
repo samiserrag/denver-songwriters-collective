@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ScrollReset } from "@/components/layout/ScrollReset";
 import { getSiteSettings } from "@/lib/site-settings";
+import { DEFAULT_SHARE_IMAGE, selectShareImageUrl } from "@/lib/share-image";
 import { ThemeInitializer } from "@/components/ui/ThemeInitializer";
 import "./globals.css";
 
@@ -65,7 +66,6 @@ const fraunces = localFont({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
-const DEFAULT_SHARE_IMAGE = "/images/hero-bg.jpg";
 
 function normalizeShareImageUrl(value: string): string {
   const trimmed = value.trim();
@@ -98,7 +98,11 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteSettings = await getSiteSettings();
-  const shareImageSource = siteSettings.socialShareImageUrl || siteSettings.heroImageUrl || DEFAULT_SHARE_IMAGE;
+  const shareImageSource = selectShareImageUrl({
+    socialShareImageUrl: siteSettings.socialShareImageUrl,
+    heroImageUrl: siteSettings.heroImageUrl,
+    defaultImage: DEFAULT_SHARE_IMAGE,
+  });
   const shareImage = addCacheBust(
     normalizeShareImageUrl(shareImageSource),
     siteSettings.updatedAt

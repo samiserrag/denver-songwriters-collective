@@ -132,6 +132,34 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Site Settings Asset URLs
+
+### Scope
+
+- Global site asset URLs are managed via `public.site_settings` row `id = 'global'`.
+- Admin updates flow through `/dashboard/admin/site-social-links`.
+
+### Asset Fields Contract
+
+| Column | Purpose |
+|--------|---------|
+| `hero_image_url` | Homepage hero background image source |
+| `social_share_image_url` | Dedicated Open Graph / Twitter card image source |
+| `email_header_image_url` | Shared email header image source |
+| `youtube_playlist_url` | Homepage YouTube playlist source |
+| `spotify_playlist_url` | Homepage Spotify playlist source |
+
+### Share Metadata Precedence Contract
+
+- Root metadata (`og:image`, `twitter:image`) must resolve image source in this order:
+1. `social_share_image_url`
+2. `hero_image_url`
+3. Default fallback `/images/hero-bg.jpg`
+- Empty/whitespace values are treated as unset.
+- The selected image URL must include cache-busting using `site_settings.updated_at` to reduce stale scraper previews.
+
+---
+
 ## Contract: Community Invite & Referral Attribution (Phase 7B.1)
 
 ### Scope Contract
