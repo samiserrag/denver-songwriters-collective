@@ -31,6 +31,7 @@ export async function POST(request: Request) {
 
     // Extract optional asset URL fields (empty string or valid URL accepted)
     const heroImageUrl = typeof body?.heroImageUrl === "string" ? body.heroImageUrl.trim() : undefined;
+    const socialShareImageUrl = typeof body?.socialShareImageUrl === "string" ? body.socialShareImageUrl.trim() : undefined;
     const emailHeaderImageUrl = typeof body?.emailHeaderImageUrl === "string" ? body.emailHeaderImageUrl.trim() : undefined;
     const youtubePlaylistUrl = typeof body?.youtubePlaylistUrl === "string" ? body.youtubePlaylistUrl.trim() : undefined;
     const spotifyPlaylistUrl = typeof body?.spotifyPlaylistUrl === "string" ? body.spotifyPlaylistUrl.trim() : undefined;
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     };
 
     if (heroImageUrl !== undefined) updatePayload.hero_image_url = heroImageUrl || null;
+    if (socialShareImageUrl !== undefined) updatePayload.social_share_image_url = socialShareImageUrl || null;
     if (emailHeaderImageUrl !== undefined) updatePayload.email_header_image_url = emailHeaderImageUrl || null;
     if (youtubePlaylistUrl !== undefined) updatePayload.youtube_playlist_url = youtubePlaylistUrl || null;
     if (spotifyPlaylistUrl !== undefined) updatePayload.spotify_playlist_url = spotifyPlaylistUrl || null;
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
       success: true,
       socialLinks,
       heroImageUrl: heroImageUrl ?? null,
+      socialShareImageUrl: socialShareImageUrl ?? null,
       emailHeaderImageUrl: emailHeaderImageUrl ?? null,
       youtubePlaylistUrl: youtubePlaylistUrl ?? null,
       spotifyPlaylistUrl: spotifyPlaylistUrl ?? null,

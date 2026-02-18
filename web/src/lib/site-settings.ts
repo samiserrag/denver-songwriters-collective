@@ -11,6 +11,7 @@ export interface SiteSettings {
   fontPreset: string;
   socialLinks: SiteSocialLink[];
   heroImageUrl: string;
+  socialShareImageUrl: string;
   updatedAt?: string;
   emailHeaderImageUrl: string;
   youtubePlaylistUrl: string;
@@ -32,6 +33,14 @@ function resolveHeroImageUrl(value: string | null | undefined): string {
   return trimmed;
 }
 
+function resolveSocialShareImageUrl(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed || RETIRED_HERO_IMAGE_URLS.has(trimmed)) {
+    return "";
+  }
+  return trimmed;
+}
+
 /**
  * Fetch site settings from database (server-side)
  * Returns default empty strings if settings don't exist
@@ -46,7 +55,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     // Note: site_settings table may not be in database.types.ts until migration is run
     const { data, error } = await (supabase as any)
       .from("site_settings")
-      .select("theme_preset, font_preset, social_links, hero_image_url, email_header_image_url, youtube_playlist_url, spotify_playlist_url, updated_at")
+      .select("theme_preset, font_preset, social_links, hero_image_url, social_share_image_url, email_header_image_url, youtube_playlist_url, spotify_playlist_url, updated_at")
       .eq("id", "global")
       .single();
 
@@ -56,6 +65,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         fontPreset: "",
         socialLinks: DEFAULT_SITE_SOCIAL_LINKS,
         heroImageUrl: DEFAULT_HERO_IMAGE_URL,
+        socialShareImageUrl: "",
         emailHeaderImageUrl: "",
         youtubePlaylistUrl: "",
         spotifyPlaylistUrl: "",
@@ -69,6 +79,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       fontPreset: data.font_preset ?? "",
       socialLinks: socialLinks.length > 0 ? socialLinks : DEFAULT_SITE_SOCIAL_LINKS,
       heroImageUrl: resolveHeroImageUrl(data.hero_image_url),
+      socialShareImageUrl: resolveSocialShareImageUrl(data.social_share_image_url),
       updatedAt: data.updated_at ?? undefined,
       emailHeaderImageUrl: data.email_header_image_url ?? "",
       youtubePlaylistUrl: data.youtube_playlist_url ?? "",
@@ -80,6 +91,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       fontPreset: "",
       socialLinks: DEFAULT_SITE_SOCIAL_LINKS,
       heroImageUrl: DEFAULT_HERO_IMAGE_URL,
+      socialShareImageUrl: "",
       emailHeaderImageUrl: "",
       youtubePlaylistUrl: "",
       spotifyPlaylistUrl: "",

@@ -98,8 +98,9 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteSettings = await getSiteSettings();
+  const shareImageSource = siteSettings.socialShareImageUrl || siteSettings.heroImageUrl || DEFAULT_SHARE_IMAGE;
   const shareImage = addCacheBust(
-    normalizeShareImageUrl(siteSettings.heroImageUrl || DEFAULT_SHARE_IMAGE),
+    normalizeShareImageUrl(shareImageSource),
     siteSettings.updatedAt
   );
 

@@ -6,6 +6,7 @@ import type { SiteSocialLink } from "@/lib/site-social-links";
 interface SiteSocialLinksSettingsProps {
   initialLinks: SiteSocialLink[];
   initialHeroImageUrl?: string;
+  initialSocialShareImageUrl?: string;
   initialEmailHeaderImageUrl?: string;
   initialYoutubePlaylistUrl?: string;
   initialSpotifyPlaylistUrl?: string;
@@ -33,6 +34,7 @@ function newLink(): SiteSocialLink {
 export function SiteSocialLinksSettings({
   initialLinks,
   initialHeroImageUrl = "",
+  initialSocialShareImageUrl = "",
   initialEmailHeaderImageUrl = "",
   initialYoutubePlaylistUrl = "",
   initialSpotifyPlaylistUrl = "",
@@ -41,6 +43,7 @@ export function SiteSocialLinksSettings({
     initialLinks.length > 0 ? initialLinks : [newLink()]
   );
   const [heroImageUrl, setHeroImageUrl] = React.useState(initialHeroImageUrl);
+  const [socialShareImageUrl, setSocialShareImageUrl] = React.useState(initialSocialShareImageUrl);
   const [emailHeaderImageUrl, setEmailHeaderImageUrl] = React.useState(initialEmailHeaderImageUrl);
   const [youtubePlaylistUrl, setYoutubePlaylistUrl] = React.useState(initialYoutubePlaylistUrl);
   const [spotifyPlaylistUrl, setSpotifyPlaylistUrl] = React.useState(initialSpotifyPlaylistUrl);
@@ -77,6 +80,7 @@ export function SiteSocialLinksSettings({
         body: JSON.stringify({
           socialLinks: links,
           heroImageUrl,
+          socialShareImageUrl,
           emailHeaderImageUrl,
           youtubePlaylistUrl,
           spotifyPlaylistUrl,
@@ -119,7 +123,22 @@ export function SiteSocialLinksSettings({
               className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border-default)] rounded-md text-sm"
             />
             <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-              Path like /images/hero-bg.jpg or a full URL. This powers both the homepage hero background and social share preview image.
+              Path like /images/hero-bg.jpg or a full URL for the homepage hero background.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+              Social Share Image URL
+            </label>
+            <input
+              value={socialShareImageUrl}
+              onChange={(e) => setSocialShareImageUrl(e.target.value)}
+              placeholder="Leave blank to use hero image URL"
+              className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border-default)] rounded-md text-sm"
+            />
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+              Optional URL used for Open Graph and Twitter cards (Facebook, LinkedIn, etc.). Leave blank to reuse the hero image URL.
             </p>
           </div>
 

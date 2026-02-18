@@ -45,13 +45,14 @@ export default async function AdminSiteSocialLinksPage() {
           Site Social Links
         </h1>
         <p className="text-[var(--color-text-secondary)] mt-2 mb-6">
-          Manage global social links plus shared site assets. The hero image URL is reused for social share previews.
+          Manage global social links plus shared site assets, including a dedicated social share card image.
         </p>
 
         <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
           <SiteSocialLinksSettings
             initialLinks={siteSettings.socialLinks}
             initialHeroImageUrl={siteSettings.heroImageUrl}
+            initialSocialShareImageUrl={siteSettings.socialShareImageUrl}
             initialEmailHeaderImageUrl={siteSettings.emailHeaderImageUrl}
             initialYoutubePlaylistUrl={siteSettings.youtubePlaylistUrl}
             initialSpotifyPlaylistUrl={siteSettings.spotifyPlaylistUrl}
