@@ -94,7 +94,7 @@ const TIME_OPTIONS: { value: string; label: string }[] = HOUR_MINUTE_OPTIONS.fla
   }))
 );
 
-// Inline TimePicker: hour:minute dropdown + typed AM/PM input (PM default)
+// Inline TimePicker: hour:minute dropdown + AM/PM dropdown (PM default)
 function TimePicker({
   value,
   onChange,
@@ -126,17 +126,10 @@ function TimePicker({
     }
   };
 
-  const handleAmpmChange = (newAmpm: string) => {
-    // Normalize to uppercase AM or PM
-    const normalized = newAmpm.toUpperCase().replace(/[^AMP]/g, "").slice(0, 2);
-    if (normalized === "AM" || normalized === "PM") {
-      setAmpm(normalized);
-      if (display) {
-        onChange(to24Hour(display, normalized));
-      }
-    } else {
-      // Allow partial typing (e.g., "A" or "P")
-      setAmpm(newAmpm.toUpperCase().slice(0, 2));
+  const handleAmpmChange = (newAmpm: "AM" | "PM") => {
+    setAmpm(newAmpm);
+    if (display) {
+      onChange(to24Hour(display, newAmpm));
     }
   };
 
@@ -158,23 +151,15 @@ function TimePicker({
           </option>
         ))}
       </select>
-      <input
-        type="text"
+      <select
         value={ampm}
-        onChange={(e) => handleAmpmChange(e.target.value)}
-        onBlur={() => {
-          // On blur, snap to nearest valid value
-          if (ampm.startsWith("A")) setAmpm("AM");
-          else setAmpm("PM");
-          if (display) {
-            const final = ampm.startsWith("A") ? "AM" : "PM";
-            onChange(to24Hour(display, final));
-          }
-        }}
-        maxLength={2}
-        placeholder="PM"
-        className={`w-16 text-center font-medium ${inputClass}`}
-      />
+        onChange={(e) => handleAmpmChange(e.target.value as "AM" | "PM")}
+        aria-label="AM/PM"
+        className={`w-20 text-center font-medium ${inputClass}`}
+      >
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
     </div>
   );
 }
