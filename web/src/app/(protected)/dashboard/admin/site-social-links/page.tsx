@@ -45,7 +45,7 @@ export default async function AdminSiteSocialLinksPage() {
           Site Social Links
         </h1>
         <p className="text-[var(--color-text-secondary)] mt-2 mb-6">
-          Manage global social links shown in the site header and footer.
+          Manage global social links plus shared site assets. The hero image URL is reused for social share previews.
         </p>
 
         <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">

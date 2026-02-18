@@ -119,7 +119,7 @@ export function SiteSocialLinksSettings({
               className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border-default)] rounded-md text-sm"
             />
             <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-              Path like /images/hero-bg.jpg or a full URL for the homepage hero background.
+              Path like /images/hero-bg.jpg or a full URL. This powers both the homepage hero background and social share preview image.
             </p>
           </div>
 

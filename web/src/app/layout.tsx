@@ -65,6 +65,29 @@ const fraunces = localFont({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
+const DEFAULT_SHARE_IMAGE = "/images/hero-bg.jpg";
+
+function normalizeShareImageUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return DEFAULT_SHARE_IMAGE;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function addCacheBust(imageUrl: string, version?: string): string {
+  if (!version) return imageUrl;
+  try {
+    const absolute = /^https?:\/\//i.test(imageUrl)
+      ? new URL(imageUrl)
+      : new URL(imageUrl, siteUrl);
+    absolute.searchParams.set("v", version);
+    return /^https?:\/\//i.test(imageUrl)
+      ? absolute.toString()
+      : `${absolute.pathname}${absolute.search}`;
+  } catch {
+    return imageUrl;
+  }
+}
 
 export const viewport: Viewport = {
   themeColor: "#d4a853",
@@ -73,72 +96,78 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: "The Colorado Songwriters Collective",
-    template: "%s | The Colorado Songwriters Collective",
-  },
-  description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "CSC",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  keywords: [
-    "Denver songwriters",
-    "open mics Denver",
-    "songwriter community",
-    "Denver music scene",
-    "live music Denver",
-    "songwriter showcase",
-    "Colorado musicians",
-    "Denver open mic nights",
-  ],
-  authors: [{ name: "The Colorado Songwriters Collective" }],
-  creator: "The Colorado Songwriters Collective",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: siteUrl,
-    siteName: "The Colorado Songwriters Collective",
-    title: "The Colorado Songwriters Collective",
+export async function generateMetadata(): Promise<Metadata> {
+  const siteSettings = await getSiteSettings();
+  const shareImage = addCacheBust(
+    normalizeShareImageUrl(siteSettings.heroImageUrl || DEFAULT_SHARE_IMAGE),
+    siteSettings.updatedAt
+  );
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: "The Colorado Songwriters Collective",
+      template: "%s | The Colorado Songwriters Collective",
+    },
     description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
-    images: [
-      {
-        url: "/images/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "The Colorado Songwriters Collective - Find your people. Find your stage. Find your songs.",
-      },
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: "CSC",
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    keywords: [
+      "Denver songwriters",
+      "open mics Denver",
+      "songwriter community",
+      "Denver music scene",
+      "live music Denver",
+      "songwriter showcase",
+      "Colorado musicians",
+      "Denver open mic nights",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "The Colorado Songwriters Collective",
-    description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
-    images: ["/images/og-image.jpg"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: "The Colorado Songwriters Collective" }],
+    creator: "The Colorado Songwriters Collective",
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      url: siteUrl,
+      siteName: "The Colorado Songwriters Collective",
+      title: "The Colorado Songwriters Collective",
+      description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
+      images: [
+        {
+          url: shareImage,
+          alt: "The Colorado Songwriters Collective - Find your people. Find your stage. Find your songs.",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "The Colorado Songwriters Collective",
+      description: "Find your people. Find your stage. Find your songs. Denver's community hub for songwriters, open mics, showcases, and collaboration.",
+      images: [shareImage],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  verification: {
-    // Add Google Search Console verification if available
-    // google: "your-verification-code",
-  },
-};
+    verification: {
+      // Add Google Search Console verification if available
+      // google: "your-verification-code",
+    },
+  };
+}
 
 export default async function RootLayout({
   children,

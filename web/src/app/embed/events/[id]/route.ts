@@ -435,7 +435,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   const eventType = (embedEvent.event_type as EventType | null) ?? "other";
   const eventTypeLabel = EVENT_TYPE_CONFIG[eventType as EventType]?.label ?? "Event";
   const siteUrl = getSiteUrl();
-  const imageUrl = embedEvent.cover_image_url || `${siteUrl}/images/hero/denver-songwriters-hero.jpg`;
+  const imageUrl = embedEvent.cover_image_url || `${siteUrl}/images/hero-bg.jpg`;
   const canonicalPath = embedEvent.event_type === "open_mic" ? `/open-mics/${embedEvent.slug || embedEvent.id}` : `/events/${embedEvent.slug || embedEvent.id}`;
   const canonicalUrl = `${siteUrl}${canonicalPath}`;
   const detailUrl = isDateKey(selectedDate) ? `${canonicalUrl}?date=${selectedDate}` : canonicalUrl;
