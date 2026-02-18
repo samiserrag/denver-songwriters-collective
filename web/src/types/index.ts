@@ -60,6 +60,8 @@ export interface Event {
   last_verified_at?: string | null;
   verified_by?: string | null;
   source?: string | null;
+  // Visibility (private events)
+  visibility?: "public" | "invite_only";
 }
 
 export interface EventWithVenue extends Event {

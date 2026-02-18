@@ -634,6 +634,66 @@ export type Database = {
           },
         ]
       }
+      event_attendee_invites: {
+        Row: {
+          id: string
+          event_id: string
+          user_id: string | null
+          email: string | null
+          token_hash: string | null
+          status: string
+          invited_by: string
+          created_at: string
+          expires_at: string
+          accepted_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          user_id?: string | null
+          email?: string | null
+          token_hash?: string | null
+          status?: string
+          invited_by: string
+          created_at?: string
+          expires_at?: string
+          accepted_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          user_id?: string | null
+          email?: string | null
+          token_hash?: string | null
+          status?: string
+          invited_by?: string
+          created_at?: string
+          expires_at?: string
+          accepted_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendee_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendee_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_images: {
         Row: {
           created_at: string | null
@@ -1172,6 +1232,7 @@ export type Database = {
           venue_id: string | null
           venue_name: string | null
           verified_by: string | null
+          visibility: string
           youtube_url: string | null
         }
         Insert: {
@@ -1243,6 +1304,7 @@ export type Database = {
           venue_id?: string | null
           venue_name?: string | null
           verified_by?: string | null
+          visibility?: string
           youtube_url?: string | null
         }
         Update: {
@@ -1314,6 +1376,7 @@ export type Database = {
           venue_id?: string | null
           venue_name?: string | null
           verified_by?: string | null
+          visibility?: string
           youtube_url?: string | null
         }
         Relationships: [

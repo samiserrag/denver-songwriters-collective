@@ -16,6 +16,7 @@ export function mapDBEventToEvent(
     // Preserve full DB event row so card-critical fields (verification/location/age)
     // remain available in homepage CSC rail cards.
     ...dbEvent,
+    visibility: dbEvent.visibility as "public" | "invite_only",
     description: dbEvent.description ?? undefined,
     date: dbEvent.event_date,
     event_date: dbEvent.event_date,

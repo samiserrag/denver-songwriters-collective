@@ -17,6 +17,10 @@ export type HostRole = "host" | "cohost";
 
 export type InvitationStatus = "pending" | "accepted" | "declined";
 
+export type EventVisibility = "public" | "invite_only";
+
+export type AttendeeInviteStatus = "pending" | "accepted" | "declined" | "revoked" | "expired";
+
 export interface CSCEvent {
   id: string;
   title: string;
@@ -34,6 +38,7 @@ export interface CSCEvent {
   frequency: string | null;
   specific_dates: string[] | null;
   status: string;
+  visibility: EventVisibility;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -89,6 +94,31 @@ export interface EventComment {
   is_hidden: boolean;
   created_at: string;
   updated_at: string;
+  user?: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
+export interface EventAttendeeInvite {
+  id: string;
+  event_id: string;
+  user_id: string | null;
+  email: string | null;
+  token_hash: string | null;
+  status: AttendeeInviteStatus;
+  invited_by: string;
+  created_at: string;
+  expires_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  revoked_by: string | null;
+  // Joined data
+  inviter?: {
+    id: string;
+    full_name: string | null;
+  };
   user?: {
     id: string;
     full_name: string | null;
