@@ -246,7 +246,11 @@ export async function POST(request: Request) {
 
   const body = await request.json();
 
-  if (body.youtube_url !== undefined || body.spotify_url !== undefined) {
+  // Non-admins may send youtube_url/spotify_url as empty strings (form always includes them).
+  // Only block when actually setting a non-empty value.
+  const hasNonEmptyMediaEmbed = !!(body.youtube_url?.trim?.() || body.spotify_url?.trim?.());
+
+  if (hasNonEmptyMediaEmbed) {
     if (!isAdmin) {
       return NextResponse.json({ error: "Only admins can update media embed fields." }, { status: 403 });
     }

@@ -190,7 +190,11 @@ export async function PATCH(
     "spotify_url",
   ];
 
-  if (body.youtube_url !== undefined || body.spotify_url !== undefined) {
+  // Non-admins may send youtube_url/spotify_url as empty strings (form always includes them).
+  // Only block when actually setting a non-empty value.
+  const hasNonEmptyMediaEmbed = !!(body.youtube_url?.trim?.() || body.spotify_url?.trim?.());
+
+  if (hasNonEmptyMediaEmbed) {
     if (!isAdmin) {
       return NextResponse.json({ error: "Only admins can update media embed fields." }, { status: 403 });
     }
@@ -218,11 +222,16 @@ export async function PATCH(
   const now = new Date().toISOString();
   const updates: Record<string, unknown> = { updated_at: now };
 
+  // Non-admins: strip media embed fields so they don't overwrite existing values
+  const mediaEmbedFields = ["youtube_url", "spotify_url"];
+
   // Fields that should convert empty strings to null (database type constraints)
   const nullableTimeFields = ["start_time", "end_time"];
 
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
+      // Skip media embed fields for non-admins
+      if (!isAdmin && mediaEmbedFields.includes(field)) continue;
       // Convert empty strings to null for time fields (PostgreSQL time type can't accept "")
       if (nullableTimeFields.includes(field) && body[field] === "") {
         updates[field] = null;
