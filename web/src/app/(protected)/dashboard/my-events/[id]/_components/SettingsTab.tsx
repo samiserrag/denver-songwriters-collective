@@ -1,6 +1,7 @@
 "use client";
 
 import CoHostManager from "../../_components/CoHostManager";
+import AttendeeInviteManager from "../../_components/AttendeeInviteManager";
 import CancelEventButton from "./CancelEventButton";
 
 interface EventHost {
@@ -19,6 +20,7 @@ interface SettingsTabProps {
   eventId: string;
   eventTitle: string;
   eventStatus: string;
+  eventVisibility: string;
   hosts: EventHost[];
   currentUserId: string;
   currentUserRole: "host" | "cohost";
@@ -40,6 +42,7 @@ export default function SettingsTab({
   eventId,
   eventTitle,
   eventStatus,
+  eventVisibility,
   hosts,
   currentUserId,
   currentUserRole,
@@ -64,6 +67,15 @@ export default function SettingsTab({
           isSoleHost={acceptedHostCount === 1}
         />
       </section>
+
+      {/* Attendee Invites - only for primary hosts and admins, only for invite-only events */}
+      {(isPrimaryHost || isAdmin) && (
+        <AttendeeInviteManager
+          eventId={eventId}
+          eventTitle={eventTitle}
+          isInviteOnly={eventVisibility === "invite_only"}
+        />
+      )}
 
       {/* Invite Links - only for admins and primary hosts */}
       {(isAdmin || isEventOwner) && (

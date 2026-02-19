@@ -276,6 +276,7 @@ export default async function EditEventPage({
           eventSlug={event.slug}
           eventTitle={event.title}
           eventStatus={event.status}
+          eventVisibility={event.visibility ?? "public"}
           capacity={event.capacity}
           isRecurring={event.is_recurring ?? false}
           availableDates={availableDates}

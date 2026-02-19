@@ -24,6 +24,7 @@ interface EventManagementClientProps {
   eventSlug: string | null;
   eventTitle: string;
   eventStatus: string;
+  eventVisibility: string;
   capacity: number | null;
   isRecurring: boolean;
   availableDates: string[];
@@ -57,6 +58,7 @@ export default function EventManagementClient({
   eventSlug,
   eventTitle,
   eventStatus,
+  eventVisibility,
   capacity,
   isRecurring,
   availableDates,
@@ -131,6 +133,7 @@ export default function EventManagementClient({
             eventId={eventId}
             eventTitle={eventTitle}
             eventStatus={eventStatus}
+            eventVisibility={eventVisibility}
             hosts={hosts}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}

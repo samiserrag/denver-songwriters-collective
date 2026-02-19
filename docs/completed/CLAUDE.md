@@ -6,6 +6,39 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Missing Event-Images Host Storage Policies (February 2026)
+
+**Summary:** Event image uploads were failing for all non-admin hosts with `StorageApiError: new row violates row-level security policy`. Root cause: migration `20260118120000` (which defined host-level storage INSERT/UPDATE/DELETE policies for the `event-images` bucket) was never applied to production. Meanwhile, migration `20260118200000` dropped the old user-id-based policy. Net result: only the admin INSERT policy existed, blocking all host uploads. Pre-dates private events work entirely.
+
+**Migration:** `20260218040000_fix_event_images_host_storage_policy.sql`
+**Applied via:** Supabase Management API (Mode B)
+
+**Policies created:**
+- `Event hosts can upload to event-images bucket` (INSERT)
+- `Event hosts can update event-images storage` (UPDATE)
+- `Event hosts can delete event-images storage` (DELETE)
+
+---
+
+### PR3: Host/Admin Attendee Invite Management (February 2026)
+
+**Summary:** Implements the attendee invite management API and UI for invite-only events. Only primary hosts and admins can create, view, and revoke attendee invites (co-hosts excluded per Sami's decision). Enforces 200 invite cap at application layer. Supports member invites (by user_id) and email invites (with SHA-256 token scaffolding for PR5). No RLS policy changes — all data access uses service role client after application-layer auth verification.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/my-events/[id]/attendee-invites/route.ts` | NEW — POST/GET/PATCH API for attendee invite CRUD + revoke |
+| `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx` | NEW — Client component for invite management UI |
+| `web/src/app/(protected)/dashboard/my-events/[id]/_components/SettingsTab.tsx` | Added AttendeeInviteManager rendering for primary host/admin |
+| `web/src/app/(protected)/dashboard/my-events/[id]/_components/EventManagementClient.tsx` | Added eventVisibility prop passthrough |
+| `web/src/app/(protected)/dashboard/my-events/[id]/page.tsx` | Passes event.visibility to EventManagementClient |
+| `web/src/__tests__/pr3-attendee-invite-management.test.ts` | NEW — 44 contract tests (auth, cap, CRUD, UI, wiring, RLS safety) |
+
+**RLS safety confirmation:** No migrations created. No RLS policies created, modified, or dropped. API uses `createServiceRoleClient()` after verifying host/admin auth at application layer.
+
+---
+
 ### POSTMORTEM: Private Events RLS Recursion Incident (February 2026)
 
 **Summary:** Blameless postmortem documenting the RLS recursion incident from PR2 of the private events tract. Identifies four invalid assumptions in the stop-gate process, proposes concrete guardrails (runtime RLS smoke tests, recursion-risk review, rollback file placement rules), and provides an updated stop-gate checklist template for all future migrations.
