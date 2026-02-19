@@ -15,6 +15,8 @@
 
 -- Event hosts can upload event images to event-images bucket
 -- Path format: {event_id}/{uuid}.{ext}
+-- DROP IF EXISTS for idempotency (policy may already exist from 20260118120000)
+DROP POLICY IF EXISTS "Event hosts can upload to event-images bucket" ON storage.objects;
 CREATE POLICY "Event hosts can upload to event-images bucket"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -36,6 +38,7 @@ WITH CHECK (
 );
 
 -- Event hosts can update their event images in storage
+DROP POLICY IF EXISTS "Event hosts can update event-images storage" ON storage.objects;
 CREATE POLICY "Event hosts can update event-images storage"
 ON storage.objects FOR UPDATE
 TO authenticated
@@ -73,6 +76,7 @@ WITH CHECK (
 );
 
 -- Event hosts can delete their event images from storage
+DROP POLICY IF EXISTS "Event hosts can delete event-images storage" ON storage.objects;
 CREATE POLICY "Event hosts can delete event-images storage"
 ON storage.objects FOR DELETE
 TO authenticated

@@ -134,10 +134,20 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // DEBUG: Log full auth state for 403 investigation
+  console.log(`[PATCH /api/my-events/${eventId}] Auth state: userId=${sessionUser.id}, email=${sessionUser.email}`);
+
   const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
+  console.log(`[PATCH /api/my-events/${eventId}] canManage result: ${JSON.stringify(canManage)}`);
+
   if (!canManage.allowed) {
-    console.error(`[PATCH /api/my-events/${eventId}] 403 for user ${sessionUser.id}: ${canManage.reason}`);
-    return NextResponse.json({ error: "Forbidden", debug_reason: canManage.reason }, { status: 403 });
+    console.error(`[PATCH /api/my-events/${eventId}] 403 DENIED for user ${sessionUser.id} (${sessionUser.email}): ${canManage.reason}`);
+    return NextResponse.json({
+      error: "Forbidden",
+      debug_reason: canManage.reason,
+      debug_user: { id: sessionUser.id, email: sessionUser.email },
+      debug_event_id: eventId,
+    }, { status: 403 });
   }
 
   // Check host/admin status for CSC branding permission
