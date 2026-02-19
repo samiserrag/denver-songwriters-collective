@@ -182,3 +182,27 @@ These layout decisions are **locked** and must not be changed without explicit a
 
 ---
 
+## API Route Known Footguns
+
+### Media embed fields are admin-only but the form always sends them
+
+The event form (`EventForm.tsx`) always includes `youtube_url`, `spotify_url`, and `media_embed_urls` in the request body — even when empty. The PATCH/POST handlers in `/api/my-events/` have an admin-only guard for these fields.
+
+**Current guard (after Feb 2026 fix):** Only blocks when a non-empty URL is set:
+```typescript
+const hasNonEmptyMediaEmbed = !!(body.youtube_url?.trim?.() || body.spotify_url?.trim?.());
+```
+
+**If you add new admin-only fields to any event API route**, use the same pattern — check for non-empty values, not `!== undefined`. The form sends all fields in every request.
+
+### Multiple 403 paths in event management routes
+
+`/api/my-events/[id]/route.ts` has multiple points that return 403:
+1. `canManageEvent()` — user is not host/cohost/admin
+2. Media embed guard — non-admin sending non-empty media URLs
+3. CSC branding guard — non-approved-host setting `is_dsc_event`
+
+When debugging a 403, **always check the response body** to identify which guard fired. Use Chrome MCP `javascript_tool` to execute `fetch()` from the user's session — see `40-ops-observability-and-debug.md`.
+
+---
+

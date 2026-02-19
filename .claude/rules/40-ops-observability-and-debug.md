@@ -107,6 +107,41 @@ curl -i -sS "https://api.axiom.co/v1/datasets/${AXIOM_DRAIN_DATASET}/ingest" -H 
 axiom query "['${AXIOM_DRAIN_DATASET}'] | where source == 'local-terminal' and message == 'axiom drain token smoke test' | sort by _time desc | limit 5" --format table
 ```
 
+**Axiom Field Names (vercel-runtime dataset):**
+
+The dataset uses `proxy.*` prefixed field names. **Always use bracket notation** for dotted fields:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `['proxy.method']` | HTTP method | `'PATCH'` |
+| `['proxy.path']` | Full request URL path | `'/api/my-events/...'` |
+| `['proxy.statusCode']` | HTTP response status | `403` |
+| `['proxy.host']` | Request hostname | `'coloradosongwriterscollective.org'` |
+| `['proxy.referer']` | Referer URL | `'https://...'` |
+| `['proxy.userAgent']` | User agent (array) | `['Mozilla/...']` |
+| `['proxy.clientIp']` | Client IP address | `'174.51.68.5'` |
+| `path` | Vercel route pattern or `/_middleware` | `'/api/my-events/[id]'` |
+| `deploymentId` | Vercel deployment ID | `'dpl_...'` |
+| `message` | Function stdout: START/END/REPORT + `console.log`/`console.error` output | |
+| `level` | `'info'`, `'warning'`, `'error'` | |
+| `statusCode` | Same as `proxy.statusCode` | `403` |
+
+**Common Axiom Queries:**
+
+```bash
+# 403/500 errors on a specific API route
+axiom query "['vercel-runtime'] | where ['proxy.method'] == 'PATCH' and ['proxy.path'] contains 'my-events' and ['proxy.statusCode'] == 403 | sort by _time desc | limit 5" --format json
+
+# All requests from a specific deployment
+axiom query "['vercel-runtime'] | where deploymentId == 'dpl_xxx' | sort by _time desc | limit 10" --format json
+
+# Check if middleware is intercepting a route
+axiom query "['vercel-runtime'] | where path == '/_middleware' and ['proxy.path'] contains 'my-events' | sort by _time desc | limit 5" --format json
+
+# Console output from a specific function invocation
+axiom query "['vercel-runtime'] | where message contains 'PATCH /api/my-events' | sort by _time desc | limit 5" --format json
+```
+
 **APL (Axiom Processing Language) Quick Reference:**
 
 | Operation | Syntax |
@@ -117,7 +152,8 @@ axiom query "['${AXIOM_DRAIN_DATASET}'] | where source == 'local-terminal' and m
 | Limit | `take 50` |
 | Aggregate | `summarize count() by path` |
 | String match | `where path contains '/api/'` |
-| Status codes | `where status >= 400 and status < 500` |
+| Status codes | `where ['proxy.statusCode'] >= 400 and ['proxy.statusCode'] < 500` |
+| Dotted fields | Always use bracket notation: `['proxy.method']` |
 
 **Security Notes:**
 - The Axiom API token is stored in `~/.axiom/auth` after `axiom auth login`
@@ -228,6 +264,69 @@ Filter for warnings containing "hydration" or "undefined"
 | Version too old | Run `claude update` (requires 2.0.73+) |
 
 **Documentation:** https://code.claude.com/docs/en/chrome
+
+### Chrome MCP for API Debugging (IMPORTANT)
+
+When a user reports a client-side error (e.g., 403, 500) and you can't determine the cause from server logs:
+
+1. Use `javascript_tool` to execute `fetch()` from the user's authenticated browser session
+2. This captures the **full response body** which often contains the actual error message
+3. Server logs may only show the status code, not which guard returned it
+
+**Example — diagnosing a 403:**
+```javascript
+// Execute in the browser via javascript_tool
+(async () => {
+  const res = await fetch('/api/my-events/EVENT_ID', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'test' })
+  });
+  const body = await res.text();
+  window.__debugResult = { status: res.status, body: body.substring(0, 1000) };
+  return window.__debugResult;
+})()
+```
+
+This approach revealed the Feb 2026 403 bug: the response was `{"error":"Only admins can update media embed fields."}` — a completely different guard from what the investigation assumed.
+
+---
+
+## Supabase Direct DB Access
+
+The agent can query the production database directly via the Supabase Management API:
+
+```bash
+# Get and decode the token
+RAW_TOKEN=$(security find-generic-password -s "Supabase CLI" -a "supabase" -w)
+DECODED=$(echo "$RAW_TOKEN" | sed 's/go-keyring-base64://' | base64 -d)
+
+# Query production DB
+curl -s -X POST "https://api.supabase.com/v1/projects/oipozdbfxyskoscsgbfq/database/query" \
+  -H "Authorization: Bearer ${DECODED}" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT id, host_id, visibility FROM events WHERE id = '\''EVENT_UUID'\'' "}'
+```
+
+Use this to verify data state when debugging permission/RLS issues — don't guess what the DB contains.
+
+---
+
+## Known Debugging Pitfalls
+
+### Multiple 403 guards in the same route
+
+API routes may have **multiple points** that return `{ status: 403 }`. When debugging a 403:
+1. **Do NOT assume** which guard is returning the error
+2. **Read the response body** — each guard returns a different error message
+3. Use Chrome MCP `javascript_tool` + `fetch()` to see the actual response body from the user's session
+4. Check Axiom `message` field for console.log/console.error output
+
+**Example (Feb 2026 incident):** `/api/my-events/[id]` PATCH handler had TWO 403 paths:
+- `canManageEvent()` → `{ error: "Forbidden" }`
+- Media embed admin guard → `{ error: "Only admins can update media embed fields." }`
+
+The investigation spent hours debugging `canManageEvent` when the actual 403 came from the media embed guard (which triggers when the form sends empty `youtube_url`/`spotify_url` strings).
 
 ---
 

@@ -11,6 +11,24 @@ This project uses scoped Claude Code memory rules to keep global context small w
 - For governance workflow and stop-gate protocol, see `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/GOVERNANCE.md`.
 - For database security invariants, see `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/SECURITY.md`.
 
+## CLI tools available (USE THESE FIRST)
+
+This repo has authenticated CLI access to production infrastructure. **Use these tools proactively** — don't guess when you can query.
+
+| Tool | Command | What it does |
+|------|---------|-------------|
+| **Axiom** | `axiom query "['vercel-runtime'] \| ..."` | Query Vercel runtime logs (function invocations, errors, console output). See `40-ops-observability-and-debug.md` for field names and query patterns. |
+| **Supabase DB** | `curl -X POST "https://api.supabase.com/v1/projects/{ref}/database/query"` | Execute SQL on production DB. Token: `security find-generic-password -s "Supabase CLI" -a "supabase" -w` (decode `go-keyring-base64:` prefix with `sed + base64 -d`). Project ref: `oipozdbfxyskoscsgbfq`. |
+| **Vercel CLI** | `npx vercel ls`, `npx vercel logs <url>` | List deployments, stream runtime logs. |
+| **GitHub CLI** | `gh run list`, `gh run view <id> --log-failed` | Check CI status, read failure logs. |
+| **Chrome MCP** | `mcp__Claude_in_Chrome__*` tools | Control browser: click, type, execute JS, read network/console, take screenshots. Critical for debugging client-side issues — can execute `fetch()` from a logged-in session to see actual API response bodies. |
+
+**When debugging production issues, always:**
+1. Check Axiom logs first (`axiom query`) for the actual error
+2. Query the DB directly if you need to verify data state
+3. Use Chrome MCP `javascript_tool` to execute `fetch()` from the user's session when the error is client-facing (captures the full response body including error messages that may differ from what `canManageEvent` or other server-side checks suggest)
+4. Check `gh run list` for CI status before and after pushing
+
 ## Project overview
 
 A community platform for Denver-area songwriters to discover open mics, connect with musicians, and stay informed about local music events.
