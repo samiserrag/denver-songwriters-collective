@@ -19,6 +19,7 @@ import { SuggestUpdateSection } from "@/components/events/SuggestUpdateSection";
 import { MediaEmbedsSection, PosterMedia, OrderedMediaEmbeds } from "@/components/media";
 import { readEventEmbedsWithFallback } from "@/lib/mediaEmbedsServer";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { checkInviteeAccess } from "@/lib/attendee-session/checkInviteeAccess";
 import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState, formatVerifiedDate, shouldShowUnconfirmedBadge } from "@/lib/events/verification";
 import { VenueLink } from "@/components/venue/VenueLink";
@@ -76,19 +77,21 @@ export async function generateMetadata({
   const supabase = await createSupabaseServerClient();
 
   // Support both UUID and slug lookups
+  // PR4: Include visibility to suppress metadata for invite-only events (defense-in-depth)
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
-        .select("title, description, event_type, venue_name, slug")
+        .select("title, description, event_type, venue_name, slug, visibility")
         .eq("id", id)
         .single()
     : await supabase
         .from("events")
-        .select("title, description, event_type, venue_name, slug")
+        .select("title, description, event_type, venue_name, slug, visibility")
         .eq("slug", id)
         .single();
 
-  if (!event) {
+  // PR4: Return generic metadata for missing OR invite-only events (404-not-403: don't leak existence)
+  if (!event || event.visibility !== "public") {
     return {
       title: "Happening Not Found | The Colorado Songwriters Collective",
       description: "This happening could not be found.",
@@ -185,10 +188,11 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase ABC4: Added recurrence_rule for recurrence display + upcoming dates
   // Phase 4.x: Added cost_label, external_url, timezone, online_url, signup_url, signup_mode for full event info display
   // Phase 5.08: Added signup_time for signup meta display
+  // PR4: Added visibility for invite-only gate
   const eventSelectQuery = `
       id, title, description, event_type, venue_name, venue_address, venue_id,
       day_of_week, start_time, end_time, capacity, cover_image_url,
-      is_dsc_event, status, created_at, event_date, slug,
+      is_dsc_event, status, created_at, event_date, slug, visibility,
       has_timeslots, total_slots, slot_duration_minutes, is_published,
       is_recurring, recurrence_pattern, recurrence_rule, max_occurrences,
       custom_location_name, custom_address, custom_city, custom_state,
@@ -256,6 +260,53 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
     if (!isAdmin && !hostEntry) {
       redirect("/happenings");
+    }
+  }
+
+  // PR5: Invite-only gate — host/co-host/admin/accepted-invitee can view.
+  // Uses notFound() (404) not redirect/403 to avoid leaking event existence.
+  // Invitee access checked server-side on every request (no stale reads).
+  if ((event as { visibility?: string }).visibility === "invite_only") {
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+
+    let hasAccess = false;
+
+    if (sessionUser) {
+      // Check admin
+      const isAdmin = await checkAdminRole(supabase, sessionUser.id);
+      if (isAdmin) {
+        hasAccess = true;
+      } else if (event.host_id === sessionUser.id) {
+        // Primary host
+        hasAccess = true;
+      } else {
+        // Check co-host (user-scoped query, no service-role needed)
+        const { data: hostEntry } = await supabase
+          .from("event_hosts")
+          .select("id")
+          .eq("event_id", event.id)
+          .eq("user_id", sessionUser.id)
+          .eq("invitation_status", "accepted")
+          .maybeSingle();
+
+        if (hostEntry) {
+          hasAccess = true;
+        }
+      }
+    }
+
+    // If not host/co-host/admin, check invitee access (member + non-member cookie)
+    // Service-role used only for invite status lookup, user identity from auth/cookie
+    if (!hasAccess) {
+      const inviteeResult = await checkInviteeAccess(
+        event.id,
+        sessionUser?.id ?? null
+      );
+      hasAccess = inviteeResult.hasAccess;
+    }
+
+    if (!hasAccess) {
+      notFound();
     }
   }
 

@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git diff in guardrail steps
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,6 +30,76 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # ── PR6 Guardrail A: Rollback file scanner ──────────────────
+      # Prevents rollback-only SQL from landing in supabase/migrations/
+      # (which CI applies as forward migrations on db reset).
+      # Files in _archived/, _duplicates_backup/, _archive_remote_squash_*
+      # are excluded — those are safe holding areas.
+      - name: "Guardrail: Rollback file scanner"
+        working-directory: .
+        run: |
+          set -euo pipefail
+          FAIL=0
+          for f in $(find supabase/migrations -maxdepth 1 -name '*.sql' -not -path '*/_*' | sort); do
+            base=$(basename "$f")
+            # Check filename
+            if echo "$base" | grep -qi 'rollback'; then
+              echo "::error file=$f::Rollback file in active migrations: $base (move to supabase/migrations/_archived/)"
+              FAIL=1
+            fi
+            # Check first 5 lines for ROLLBACK header
+            if head -n 5 "$f" | grep -qi '^\-\-.*ROLLBACK'; then
+              echo "::error file=$f::Rollback header detected in first 5 lines of $base (move to supabase/migrations/_archived/)"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then
+            echo "❌ Rollback file scanner failed. See errors above."
+            exit 1
+          fi
+          echo "✅ Rollback file scanner passed."
+
+      # ── PR6 Guardrail C: Policy-change acknowledgment scanner ───
+      # Any new or modified .sql file containing CREATE/ALTER/DROP POLICY
+      # must include a review header: "-- REVIEWED: policy change acknowledged"
+      # Scoped to changed files only (git diff against base branch).
+      - name: "Guardrail: Policy-change acknowledgment"
+        working-directory: .
+        run: |
+          set -euo pipefail
+
+          # Determine base ref for diff
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          # If BASE is empty or all zeros (first push), skip
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "✅ Policy-change scanner skipped (no base ref for diff)."
+            exit 0
+          fi
+
+          FAIL=0
+          # Get changed .sql files in supabase/migrations/ (excluding archived dirs)
+          CHANGED_SQL=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- 'supabase/migrations/*.sql' | grep -v '/_' || true)
+
+          for f in $CHANGED_SQL; do
+            if grep -qiE 'CREATE\s+POLICY|ALTER\s+POLICY|DROP\s+POLICY|ENABLE\s+ROW\s+LEVEL\s+SECURITY|DISABLE\s+ROW\s+LEVEL\s+SECURITY' "$f"; then
+              if ! grep -q '-- REVIEWED: policy change acknowledged' "$f"; then
+                echo "::error file=$f::Policy change detected without review header. Add '-- REVIEWED: policy change acknowledged' to $f"
+                FAIL=1
+              fi
+            fi
+          done
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo "❌ Policy-change acknowledgment failed. See errors above."
+            exit 1
+          fi
+          echo "✅ Policy-change acknowledgment passed."
 
       - name: Run linter
         run: npm run lint

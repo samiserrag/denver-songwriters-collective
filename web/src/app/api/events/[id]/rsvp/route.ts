@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 import { getRsvpConfirmationEmail } from "@/lib/emailTemplates";
@@ -19,6 +20,7 @@ import {
   formatDateKeyForEmail,
 } from "@/lib/events/dateKeyContract";
 import { SITE_URL } from "@/lib/email/render";
+import { checkInviteeAccess } from "@/lib/attendee-session/checkInviteeAccess";
 
 // GET - Get current user's RSVP status for this event (per occurrence)
 export async function GET(
@@ -118,13 +120,42 @@ export async function POST(
   }
 
   // Get event - must be active and published (Phase 4.43c: RSVP available for all events)
-  const { data: event, error: eventError } = await supabase
+  // First try user-scoped (covers public events + hosts/admins via RLS)
+  let event: {
+    id: string; slug: string | null; title: string | null; capacity: number | null;
+    is_dsc_event: boolean | null; status: string | null; is_published: boolean | null;
+    event_date: string | null; start_time: string | null; venue_name: string | null;
+    venue_address: string | null; visibility?: string | null;
+  } | null = null;
+
+  const { data: userScopedEvent } = await supabase
     .from("events")
-    .select("id, slug, title, capacity, is_dsc_event, status, is_published, event_date, start_time, venue_name, venue_address")
+    .select("id, slug, title, capacity, is_dsc_event, status, is_published, event_date, start_time, venue_name, venue_address, visibility")
     .eq("id", eventId)
     .single();
 
-  if (eventError || !event) {
+  if (userScopedEvent) {
+    event = userScopedEvent;
+  } else {
+    // PR5: If user-scoped fetch fails, check if it's an invite-only event the user is invited to
+    const serviceClient = createServiceRoleClient();
+    const { data: serviceEvent } = await serviceClient
+      .from("events")
+      .select("id, slug, title, capacity, is_dsc_event, status, is_published, event_date, start_time, venue_name, venue_address, visibility")
+      .eq("id", eventId)
+      .eq("visibility", "invite_only")
+      .single();
+
+    if (serviceEvent) {
+      // Verify invitee access (re-checks invite status in DB)
+      const inviteeResult = await checkInviteeAccess(eventId, sessionUser.id);
+      if (inviteeResult.hasAccess) {
+        event = serviceEvent;
+      }
+    }
+  }
+
+  if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 

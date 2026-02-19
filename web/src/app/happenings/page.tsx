@@ -117,6 +117,7 @@ export default async function HappeningsPage({
       .from("events")
       .select("event_date")
       .eq("is_published", true)
+      .eq("visibility", "public")
       .in("status", [...DISCOVERY_STATUS_FILTER])
       .not("event_date", "is", null)
       .order("event_date", { ascending: true })
@@ -158,6 +159,7 @@ export default async function HappeningsPage({
       ${DISCOVERY_VENUE_SELECT_WITH_COORDS}
     `)
     .eq("is_published", true)
+    .eq("visibility", "public")
     .in("status", [...DISCOVERY_STATUS_FILTER]);
 
   // Fetch occurrence overrides for the window

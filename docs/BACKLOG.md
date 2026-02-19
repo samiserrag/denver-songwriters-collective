@@ -368,7 +368,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | HARDEN-02 | Email observability + operational monitoring | P1 | OPEN | Document and enforce queryable skip reasons, suppression rates, send failures, and admin read-only visibility patterns |
 | HARDEN-03 | Email template governance runbook | P1 | OPEN | Expand template addition contract with owner checklist, enforcement boundaries, and CI expectations |
 | HARDEN-04 | Moderation foundation contract | P2 | OPEN | Define minimal future-proof moderation hooks and admin-only control boundaries without changing current behavior |
-| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | IN PROGRESS — PR1+PR2 shipped, PR3–PR6 pending | Schema + RLS foundation applied (92 events migrated). Leak hotfixes shipped. Next: host UI, surface hardening, token flow, CI tests |
+| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | IN PROGRESS — PR1–PR6 shipped (core contract live) | Schema + RLS foundation applied (92 events migrated). Host/admin invite management, read-surface hardening, member+token accept flow, and CI guardrails shipped. Next: operational polish and support playbook. |
 
 ### Homepage / Navigation / UX
 
@@ -438,7 +438,7 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ### EVENTS-PRIVATE-01 — Private Invite-Only Events (Members + Non-Members)
 
-**Status:** OPEN (High Priority)
+**Status:** IN PROGRESS (Core shipped PR1–PR6)
 **Priority:** P0
 **Added:** 2026-02-17
 
@@ -459,6 +459,14 @@ Hosts need private events (for workshops, rehearsals, and invite-only sessions) 
 1. Schema + RLS design for private visibility and invite membership checks.
 2. Threat model for token abuse, replay, and enumeration.
 3. Regression matrix covering all discovery surfaces and acceptance paths.
+
+**Progress update (2026-02-19):**
+- PR1: Leak hotfixes on OG/search shipped.
+- PR2: Foundation schema + visibility model shipped; recursion incident postmortem and guardrails documented.
+- PR3: Host/admin attendee invite management UI/API shipped.
+- PR4: Read-surface hardening shipped (discovery, metadata, OG, embed, detail gating).
+- PR5: Member + non-member invite acceptance flow shipped (JWT attendee cookie + server-side invite recheck).
+- PR6: CI guardrails + negative privilege-escalation contract tests shipped.
 
 ---
 

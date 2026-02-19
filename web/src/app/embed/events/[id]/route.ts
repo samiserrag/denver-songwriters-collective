@@ -338,7 +338,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     ? await supabase
         .from("events")
         .select(`
-          id, slug, title, description, event_type, is_published,
+          id, slug, title, description, event_type, is_published, visibility,
           is_dsc_event, status, last_verified_at, verified_by, source, host_id,
           event_date, day_of_week, start_time, end_time, recurrence_rule, custom_dates,
           venue_id, venue_name, venue_address, location_mode, online_url,
@@ -352,7 +352,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     : await supabase
         .from("events")
         .select(`
-          id, slug, title, description, event_type, is_published,
+          id, slug, title, description, event_type, is_published, visibility,
           is_dsc_event, status, last_verified_at, verified_by, source, host_id,
           event_date, day_of_week, start_time, end_time, recurrence_rule, custom_dates,
           venue_id, venue_name, venue_address, location_mode, online_url,
@@ -369,7 +369,8 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   }
 
   const embedEvent = event as unknown as EmbedEvent;
-  if (!embedEvent.is_published) {
+  // PR4: Block unpublished AND invite-only events from external embeds (404-not-403)
+  if (!embedEvent.is_published || (event.visibility !== "public")) {
     return renderStatusCard("Event not found", "This event is unavailable or no longer public.", 404);
   }
 

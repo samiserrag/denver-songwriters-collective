@@ -125,6 +125,7 @@ export default async function HomePage() {
       .select("*")
       .eq("is_dsc_event", true)
       .eq("is_published", true)
+      .eq("visibility", "public")
       .eq("status", "active")
       .not("last_verified_at", "is", null)
       .or(`event_date.gte.${today},recurrence_rule.not.is.null`)
@@ -140,6 +141,7 @@ export default async function HomePage() {
         ${DISCOVERY_VENUE_SELECT}
       `)
       .eq("is_published", true)
+      .eq("visibility", "public")
       .in("status", [...DISCOVERY_STATUS_FILTER])
       .limit(200),
     // Spotlight happenings - admin-selected featured events
@@ -151,6 +153,7 @@ export default async function HomePage() {
       `)
       .eq("is_spotlight", true)
       .eq("is_published", true)
+      .eq("visibility", "public")
       .eq("status", "active")
       .order("event_date", { ascending: true })
       .limit(6),
@@ -190,6 +193,7 @@ export default async function HomePage() {
       `)
       .eq("event_type", "open_mic")
       .eq("status", "active")
+      .eq("visibility", "public")
       .eq("is_featured", true)
       .order("featured_rank", { ascending: true })
       .order("day_of_week", { ascending: true })
@@ -252,6 +256,7 @@ export default async function HomePage() {
       .eq("event_type", "open_mic")
       .eq("is_spotlight", true)
       .eq("is_published", true)
+      .eq("visibility", "public")
       .eq("status", "active")
       .order("event_date", { ascending: true })
       .limit(6),

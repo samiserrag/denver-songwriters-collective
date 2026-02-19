@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     // Fetch event details (include host_id for notification fan-out)
     const { data: event } = await supabase
       .from("events")
-      .select("id, slug, title, capacity, status, event_date, start_time, venue_name, venue_address, host_id")
+      .select("id, slug, title, capacity, status, event_date, start_time, venue_name, venue_address, host_id, visibility")
       .eq("id", verification.event_id)
       .single();
 
@@ -177,6 +177,11 @@ export async function POST(request: NextRequest) {
         { error: "Event not found" },
         { status: 404 }
       );
+    }
+
+    // PR5: Invite-only events do not allow guest RSVPs
+    if ((event as { visibility?: string }).visibility === "invite_only") {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     if (event.status !== "active") {

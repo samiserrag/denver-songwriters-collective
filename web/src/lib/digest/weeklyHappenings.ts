@@ -152,6 +152,7 @@ async function fetchHappeningEvents(
       venue:venues!left(id, name, slug, city, state, zip)
     `)
     .eq("is_published", true)
+    .eq("visibility", "public")
     .eq("status", "active");
 
   if (error) {

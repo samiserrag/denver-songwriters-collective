@@ -26,24 +26,27 @@ export async function GET(
   const selectFields = `
     title, event_type, event_date, start_time,
     venue_name, cover_image_url, status, last_verified_at,
-    is_published,
+    is_published, visibility,
     recurrence_rule, day_of_week,
     venue:venues!events_venue_id_fkey(name, city, state)
   `;
 
-  // Query event by slug or UUID — only published events expose OG metadata
+  // Query event by slug or UUID — only published PUBLIC events expose OG metadata
+  // PR4: Added visibility='public' filter (defense-in-depth; RLS also blocks invite-only for anon)
   const { data: event } = isUUID(id)
     ? await supabase
         .from("events")
         .select(selectFields)
         .eq("id", id)
         .eq("is_published", true)
+        .eq("visibility", "public")
         .single()
     : await supabase
         .from("events")
         .select(selectFields)
         .eq("slug", id)
         .eq("is_published", true)
+        .eq("visibility", "public")
         .single();
 
   // Return generic fallback OG for unpublished/missing events (no metadata leak)

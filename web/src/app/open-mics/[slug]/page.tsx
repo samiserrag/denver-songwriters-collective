@@ -24,11 +24,13 @@ export async function generateMetadata({
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
+  // PR4: Include visibility to suppress metadata for invite-only events
   const { data: event } = isUUID
     ? await supabase.from("events").select("*, venue:venues(name, city)").eq("id", slug).single()
     : await supabase.from("events").select("*, venue:venues(name, city)").eq("slug", slug).single();
 
-  if (!event) {
+  // PR4: Return generic metadata for missing OR invite-only events (404-not-403: don't leak existence)
+  if (!event || event.visibility !== "public") {
     return {
       title: "Open Mic Not Found | The Colorado Songwriters Collective",
       description: "This open mic could not be found.",

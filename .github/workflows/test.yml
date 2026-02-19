@@ -1,4 +1,11 @@
-name: CI
+# Legacy CI workflow — consolidated into ci.yml (PR6).
+# This file now delegates to the primary CI workflow to avoid
+# duplicate runs and ensure guardrail steps cannot be bypassed.
+#
+# The ci.yml quality-gate job runs: guardrails → lint → test → build.
+# This workflow runs the same test + build steps as a secondary signal.
+
+name: CI (Build)
 
 on:
   push:
@@ -28,15 +35,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # ── PR6 Guardrail A: Rollback file scanner (duplicated from ci.yml) ──
+      - name: "Guardrail: Rollback file scanner"
+        working-directory: .
+        run: |
+          set -euo pipefail
+          FAIL=0
+          for f in $(find supabase/migrations -maxdepth 1 -name '*.sql' -not -path '*/_*' | sort); do
+            base=$(basename "$f")
+            if echo "$base" | grep -qi 'rollback'; then
+              echo "::error file=$f::Rollback file in active migrations: $base (move to supabase/migrations/_archived/)"
+              FAIL=1
+            fi
+            if head -n 5 "$f" | grep -qi '^\-\-.*ROLLBACK'; then
+              echo "::error file=$f::Rollback header detected in first 5 lines of $base (move to supabase/migrations/_archived/)"
+              FAIL=1
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then exit 1; fi
+          echo "✅ Rollback file scanner passed."
+
       - name: Build project
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-for-build
 
-      # Optional: type-check if script exists
-      - name: Type check
-        if: ${{ hashFiles('web/tsconfig.json') != '' }}
-        run: npm run type-check || echo "No type-check script"
-
-      # Optional: lint if script exists
-      - name: Lint
-        if: ${{ hashFiles('web/.eslintrc*') != '' }}
-        run: npm run lint || echo "No lint script"
+      - name: Run tests
+        run: npm test

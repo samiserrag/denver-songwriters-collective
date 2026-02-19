@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { getEventCommentNotificationEmail } from "@/lib/email/templates/eventCommentNotification";
@@ -9,6 +10,7 @@ import {
   formatDateKeyShort,
 } from "@/lib/events/dateKeyContract";
 import { SITE_URL } from "@/lib/email/render";
+import { checkInviteeAccess } from "@/lib/attendee-session/checkInviteeAccess";
 
 // GET - Get comments for event (includes replies)
 // Phase ABC6: Comments are scoped by date_key for per-occurrence threads
@@ -18,6 +20,12 @@ export async function GET(
 ) {
   const { id: eventId } = await params;
   const supabase = await createSupabaseServerClient();
+
+  // PR5: Check event visibility — gate invite-only events
+  const eventAccess = await checkEventAccess(supabase, eventId);
+  if (!eventAccess.allowed) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
 
   // Phase ABC6: Get date_key from query params
   const url = new URL(request.url);
@@ -117,13 +125,36 @@ export async function POST(
   }
 
   // Verify event exists (no CSC gate - comments work on all events)
-  const { data: event, error: eventError } = await supabase
+  // PR5: For invite-only events, try user-scoped first, then service-role + invitee check
+  let event: { id: string; title: string | null; slug: string | null } | null = null;
+
+  const { data: userScopedEvent } = await supabase
     .from("events")
-    .select("id, title, slug")
+    .select("id, title, slug, visibility")
     .eq("id", eventId)
     .single();
 
-  if (eventError || !event) {
+  if (userScopedEvent) {
+    event = userScopedEvent;
+  } else {
+    // PR5: Check if it's an invite-only event the user is invited to
+    const serviceClient = createServiceRoleClient();
+    const { data: serviceEvent } = await serviceClient
+      .from("events")
+      .select("id, title, slug, visibility")
+      .eq("id", eventId)
+      .eq("visibility", "invite_only")
+      .single();
+
+    if (serviceEvent) {
+      const inviteeResult = await checkInviteeAccess(eventId, sessionUser.id);
+      if (inviteeResult.hasAccess) {
+        event = serviceEvent;
+      }
+    }
+  }
+
+  if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
@@ -369,4 +400,52 @@ async function notifyUser(
       link: `${eventUrl}#comments`,
     },
   });
+}
+
+/**
+ * PR5: Check if the current request has access to this event's comments.
+ * For public events, always allowed.
+ * For invite-only events, must be host/co-host/admin/accepted-invitee.
+ *
+ * Uses user-scoped RLS first (which covers public + host/admin).
+ * If that fails, checks service-role for invite-only + invitee access.
+ */
+async function checkEventAccess(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  eventId: string
+): Promise<{ allowed: boolean }> {
+  // Try user-scoped fetch (covers public events + hosts/co-hosts/admins via RLS)
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, visibility")
+    .eq("id", eventId)
+    .single();
+
+  if (event) {
+    return { allowed: true };
+  }
+
+  // User-scoped fetch failed — check if it's an invite-only event
+  const serviceClient = createServiceRoleClient();
+  const { data: serviceEvent } = await serviceClient
+    .from("events")
+    .select("id, visibility")
+    .eq("id", eventId)
+    .eq("visibility", "invite_only")
+    .single();
+
+  if (!serviceEvent) {
+    return { allowed: false };
+  }
+
+  // It's invite-only — check invitee access
+  const {
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
+
+  const inviteeResult = await checkInviteeAccess(
+    eventId,
+    sessionUser?.id ?? null
+  );
+  return { allowed: inviteeResult.hasAccess };
 }

@@ -144,9 +144,14 @@ export async function POST(request: NextRequest) {
     // Fetch event details for email
     const { data: event } = await supabase
       .from("events")
-      .select("id, title")
+      .select("id, title, visibility")
       .eq("id", verification.event_id)
       .single();
+
+    // PR5: Invite-only events do not allow guest timeslot claims
+    if ((event as { visibility?: string })?.visibility === "invite_only") {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
 
     const eventTitle = event?.title || "Open Mic";
 

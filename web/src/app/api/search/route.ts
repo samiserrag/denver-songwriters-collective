@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       `)
       .eq("event_type", "open_mic")
       .eq("status", "active")
+      .eq("visibility", "public")
       .or(`title.ilike.${like}`)
       .limit(5),
 
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       `)
       .neq("event_type", "open_mic")
       .eq("is_published", true)
+      .eq("visibility", "public")
       .eq("status", "active")
       .or(`title.ilike.${like},description.ilike.${like}`)
       .limit(5),
@@ -113,6 +115,7 @@ export async function GET(request: NextRequest) {
       `)
       .eq("event_type", "open_mic")
       .eq("status", "active")
+      .eq("visibility", "public")
       .in("venue_id", venueIds)
       .limit(5);
 

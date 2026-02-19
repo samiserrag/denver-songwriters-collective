@@ -92,5 +92,29 @@ Before writing any RLS policy that contains a subquery referencing another table
 
 **Reference:** `docs/postmortems/2026-02-18-private-events-rls-recursion.md`
 
+#### CI-Enforced Guardrails (added PR6, 2026-02-19)
+
+Three automated guardrails run in CI (`ci.yml` and `test.yml`):
+
+1. **Guardrail A — Rollback File Scanner** (CI bash step)
+   - Scans `supabase/migrations/*.sql` (excluding `_archived/`, `_duplicates_backup/`)
+   - Fails if any filename contains "rollback" (case-insensitive)
+   - Fails if any file has a `-- ROLLBACK` header in the first 5 lines
+   - Also enforced by vitest: `pr6-ci-guardrails.test.ts`
+
+2. **Guardrail B — Bidirectional RLS Cycle Detector** (vitest)
+   - Processes all migrations in timestamp order, tracking DROP/CREATE POLICY
+   - Builds a directed graph from active policy bodies (table→table references)
+   - Detects cycles via DFS and fails with a clear message naming the cycle
+   - Test: `pr6-ci-guardrails.test.ts`
+
+3. **Guardrail C — Policy-Change Acknowledgment** (CI bash step, git-diff scoped)
+   - Scans only new/modified `.sql` files in the current PR (via `git diff`)
+   - If a file contains `CREATE POLICY`, `ALTER POLICY`, `DROP POLICY`, `ENABLE/DISABLE ROW LEVEL SECURITY`:
+     - Requires the header comment: `-- REVIEWED: policy change acknowledged`
+   - Skipped on first push (no base ref for diff)
+
+**To acknowledge a policy change:** Add the line `-- REVIEWED: policy change acknowledged` anywhere in the migration file containing the policy SQL.
+
 ---
 

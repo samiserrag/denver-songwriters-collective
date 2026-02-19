@@ -162,11 +162,16 @@ export async function POST(request: NextRequest) {
     // Fetch event details
     const { data: event } = await supabase
       .from("events")
-      .select("id, slug, title, host_id, is_published")
+      .select("id, slug, title, host_id, is_published, visibility")
       .eq("id", verification.event_id)
       .single();
 
     if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // PR5: Invite-only events do not allow guest comments
+    if ((event as { visibility?: string }).visibility === "invite_only") {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 

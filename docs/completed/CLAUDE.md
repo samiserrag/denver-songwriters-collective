@@ -59,6 +59,70 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### PR4: Invite-Only Read Surface Hardening (February 2026)
+
+**Summary:** Hardened event read surfaces so invite-only events are never discoverable and never leaked by metadata/OG/embed routes. Discovery/search/digest queries now explicitly filter `visibility='public'`. Invite-only event detail paths return not-found behavior for unauthorized access.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/page.tsx` | Added `visibility='public'` filters to homepage event queries |
+| `web/src/app/happenings/page.tsx` | Added `visibility='public'` filters to discovery queries |
+| `web/src/app/api/search/route.ts` | Added `visibility='public'` filters to event search queries |
+| `web/src/lib/digest/weeklyHappenings.ts` | Added `visibility='public'` filter to digest query |
+| `web/src/app/events/[id]/page.tsx` | Metadata fallback for non-public events; invite-only access gate |
+| `web/src/app/open-mics/[slug]/page.tsx` | Metadata fallback for non-public events |
+| `web/src/app/og/event/[id]/route.tsx` | Restricted OG metadata to `visibility='public'` events |
+| `web/src/app/embed/events/[id]/route.ts` | Added invite-only 404 gate for embed responses |
+| `web/src/__tests__/pr4-read-surface-hardening.test.ts` | NEW — 32 contract tests |
+
+---
+
+### PR5: Invitee Access Path (Member + Non-Member Token) (February 2026)
+
+**Summary:** Added invite acceptance and access flow for invite-only events without introducing new RLS policy dependencies. Member invites are accepted by `invite_id`; non-member invites use token hash validation and a signed HTTP-only attendee cookie. Access is re-checked server-side on every request via invite status lookup.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/attendee-invites/accept/route.ts` | NEW — member accept endpoint (`invite_id` flow) |
+| `web/src/app/api/attendee-invites/accept-token/route.ts` | NEW — token accept endpoint with per-IP rate limiting + cookie set |
+| `web/src/app/attendee-invite/page.tsx` | NEW — invite landing page for member/token flows |
+| `web/src/lib/attendee-session/cookie.ts` | NEW — signed attendee cookie helpers (`ATTENDEE_INVITE_COOKIE_SECRET`) |
+| `web/src/lib/attendee-session/checkInviteeAccess.ts` | NEW — server-side invitee access check (member + cookie) |
+| `web/src/app/events/[id]/page.tsx` | Invite-only detail gate now supports accepted invitees |
+| `web/src/app/api/events/[id]/rsvp/route.ts` | Invite-only RSVP gating for accepted invitees |
+| `web/src/app/api/events/[id]/comments/route.ts` | Invite-only comments gating for accepted invitees |
+| `web/src/app/api/guest/*` | Guest verification flows now return not-found for invite-only events |
+| `web/src/__tests__/pr5-invitee-access.test.ts` | NEW — 70 contract tests |
+
+**RLS safety confirmation:** No new migrations and no RLS policy changes. Invitee access is app-layer + service-role lookup only, preserving the post-incident non-recursive policy graph.
+
+---
+
+### PR6: CI Guardrails + Negative Privilege Contracts (February 2026)
+
+**Summary:** Added CI enforcement for migration safety and policy-change discipline, plus privilege-escalation contract tests for invite-only behavior across APIs and read surfaces.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `.github/workflows/ci.yml` | Added rollback scanner and policy-change acknowledgment guardrail steps |
+| `.github/workflows/test.yml` | Added rollback scanner and explicit test step |
+| `.claude/rules/30-supabase-migrations-and-deploy.md` | Documented CI-enforced guardrails |
+| `web/src/__tests__/pr6-ci-guardrails.test.ts` | NEW — 11 guardrail tests |
+| `web/src/__tests__/pr6-negative-privilege-matrix.test.ts` | NEW — 34 privilege matrix tests |
+
+**Guardrails:**
+- Guardrail A: rollback files blocked from active migrations
+- Guardrail B: RLS policy-cycle detector (migration graph)
+- Guardrail C: policy-change acknowledgment required on changed migration SQL
+
+---
+
 ### POSTMORTEM: Private Events RLS Recursion Incident (February 2026)
 
 **Summary:** Blameless postmortem documenting the RLS recursion incident from PR2 of the private events tract. Identifies four invalid assumptions in the stop-gate process, proposes concrete guardrails (runtime RLS smoke tests, recursion-risk review, rollback file placement rules), and provides an updated stop-gate checklist template for all future migrations.

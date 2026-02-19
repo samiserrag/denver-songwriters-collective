@@ -84,11 +84,16 @@ export async function POST(request: NextRequest) {
     // Fetch event and validate
     const { data: event, error: eventError } = await supabase
       .from("events")
-      .select("id, title, is_published, status, capacity")
+      .select("id, title, is_published, status, capacity, visibility")
       .eq("id", event_id)
       .single();
 
     if (eventError || !event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // PR5: Invite-only events do not allow guest RSVPs (guests must accept invite first)
+    if ((event as { visibility?: string }).visibility === "invite_only") {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
