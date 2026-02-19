@@ -1,5 +1,4 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
@@ -12,22 +11,13 @@ import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEm
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 // Helper to check if user can manage event
-async function canManageEvent(_supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
-  // Use service role client for permission checks to bypass RLS.
-  // The user is already authenticated via getUser() before this is called.
-  const serviceClient = createServiceRoleClient();
-
-  // Check admin (using profiles.role)
-  const { data: profile } = await serviceClient
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (profile?.role === "admin") return true;
+async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
+  // Check admin (using profiles.role, not app_metadata)
+  const isAdmin = await checkAdminRole(supabase, userId);
+  if (isAdmin) return true;
 
   // Check event owner (events.host_id) — the original creator
-  const { data: event } = await serviceClient
+  const { data: event } = await supabase
     .from("events")
     .select("host_id")
     .eq("id", eventId)
@@ -36,7 +26,7 @@ async function canManageEvent(_supabase: SupabaseClient, userId: string, eventId
   if (event?.host_id === userId) return true;
 
   // Check co-host (event_hosts table)
-  const { data: hostEntry } = await serviceClient
+  const { data: hostEntry } = await supabase
     .from("event_hosts")
     .select("role")
     .eq("event_id", eventId)

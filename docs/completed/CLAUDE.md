@@ -6,6 +6,26 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Event Save 403 for Non-Admin Hosts (February 2026)
+
+**Summary:** Non-admin hosts could not save events — the PATCH handler returned 403 with `"Only admins can update media embed fields."` The event form always sends `youtube_url` and `spotify_url` as empty strings, and the admin-only guard checked `body.youtube_url !== undefined` which is `true` for empty strings. This blocked ALL non-admin saves regardless of whether media embed fields actually changed.
+
+**Root cause:** The media embed guard (`body.youtube_url !== undefined || body.spotify_url !== undefined`) was too broad. Empty strings from the form triggered it, and since the user isn't admin, it returned 403 before reaching the actual update logic.
+
+**Fix (commit `99be0cc8`):**
+- Changed guard to only trigger when a non-empty URL is actually being set: `!!(body.youtube_url?.trim?.() || body.spotify_url?.trim?.())`
+- Non-admins: media embed fields are stripped from the update payload to prevent accidentally clearing admin-set values
+- Same fix applied to POST (create) route for consistency
+
+**Collateral fixes during investigation:**
+- `d77f4326`: Supabase server client cookie handling upgraded from deprecated `get(name)` to `getAll()`/`setAll()` pattern (required by `@supabase/ssr` for chunked JWT cookies)
+- `5a353ee7`: `canManageEvent()` expanded to check `events.host_id` in addition to `event_hosts` table (previously only checked `event_hosts`)
+- `63357462`: Storage hotfix migration made idempotent with `DROP POLICY IF EXISTS` (fixed CI RLS Tripwire)
+
+**Debugging approach:** Used Chrome MCP to execute `fetch()` directly from the browser session, which captured the actual 403 response body `{"error":"Only admins can update media embed fields."}` — identifying the real guard that was rejecting the request.
+
+---
+
 ### HOTFIX: Missing Event-Images Host Storage Policies (February 2026)
 
 **Summary:** Event image uploads were failing for all non-admin hosts with `StorageApiError: new row violates row-level security policy`. Root cause: migration `20260118120000` (which defined host-level storage INSERT/UPDATE/DELETE policies for the `event-images` bucket) was never applied to production. Meanwhile, migration `20260118200000` dropped the old user-id-based policy. Net result: only the admin INSERT policy existed, blocking all host uploads. Pre-dates private events work entirely.
