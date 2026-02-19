@@ -11,22 +11,26 @@ import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEm
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 // Helper to check if user can manage event
-async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
+async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<{ allowed: boolean; reason?: string }> {
   // Check admin (using profiles.role, not app_metadata)
   const isAdmin = await checkAdminRole(supabase, userId);
-  if (isAdmin) return true;
+  if (isAdmin) return { allowed: true };
 
   // Check event owner (events.host_id) — the original creator
-  const { data: event } = await supabase
+  const { data: event, error: eventError } = await supabase
     .from("events")
     .select("host_id")
     .eq("id", eventId)
     .single();
 
-  if (event?.host_id === userId) return true;
+  if (eventError) {
+    return { allowed: false, reason: `event_lookup_failed: ${eventError.message}` };
+  }
+
+  if (event?.host_id === userId) return { allowed: true };
 
   // Check co-host (event_hosts table)
-  const { data: hostEntry } = await supabase
+  const { data: hostEntry, error: hostError } = await supabase
     .from("event_hosts")
     .select("role")
     .eq("event_id", eventId)
@@ -34,7 +38,13 @@ async function canManageEvent(supabase: SupabaseClient, userId: string, eventId:
     .eq("invitation_status", "accepted")
     .maybeSingle();
 
-  return !!hostEntry;
+  if (hostError) {
+    return { allowed: false, reason: `host_lookup_failed: ${hostError.message}` };
+  }
+
+  if (hostEntry) return { allowed: true };
+
+  return { allowed: false, reason: `no_permission: userId=${userId}, event.host_id=${event?.host_id}, hostEntry=${JSON.stringify(hostEntry)}` };
 }
 
 // GET - Get single event with full details (for editing)
@@ -51,8 +61,9 @@ export async function GET(
   }
 
   const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
-  if (!canManage) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!canManage.allowed) {
+    console.error(`[GET /api/my-events/${eventId}] 403 for user ${sessionUser.id}: ${canManage.reason}`);
+    return NextResponse.json({ error: "Forbidden", debug_reason: canManage.reason }, { status: 403 });
   }
 
   // Note: event_hosts.user_id references auth.users, not profiles
@@ -124,8 +135,9 @@ export async function PATCH(
   }
 
   const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
-  if (!canManage) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!canManage.allowed) {
+    console.error(`[PATCH /api/my-events/${eventId}] 403 for user ${sessionUser.id}: ${canManage.reason}`);
+    return NextResponse.json({ error: "Forbidden", debug_reason: canManage.reason }, { status: 403 });
   }
 
   // Check host/admin status for CSC branding permission
@@ -644,8 +656,9 @@ export async function DELETE(
   }
 
   const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
-  if (!canManage) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!canManage.allowed) {
+    console.error(`[DELETE /api/my-events/${eventId}] 403 for user ${sessionUser.id}: ${canManage.reason}`);
+    return NextResponse.json({ error: "Forbidden", debug_reason: canManage.reason }, { status: 403 });
   }
 
   // Check if hard delete requested via query param
