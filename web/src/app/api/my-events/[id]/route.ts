@@ -16,7 +16,16 @@ async function canManageEvent(supabase: SupabaseClient, userId: string, eventId:
   const isAdmin = await checkAdminRole(supabase, userId);
   if (isAdmin) return true;
 
-  // Check host
+  // Check event owner (events.host_id) — the original creator
+  const { data: event } = await supabase
+    .from("events")
+    .select("host_id")
+    .eq("id", eventId)
+    .single();
+
+  if (event?.host_id === userId) return true;
+
+  // Check co-host (event_hosts table)
   const { data: hostEntry } = await supabase
     .from("event_hosts")
     .select("role")
