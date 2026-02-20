@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 const WEB_SRC = join(__dirname, "..");
@@ -247,7 +247,6 @@ describe("PR4: No migration or policy changes", () => {
   it("no new .sql migration files were added in PR4", () => {
     // This test documents the constraint. The actual check is done at merge time.
     // The latest migration should still be 20260218040000 (from PR3 hotfix).
-    const { readdirSync } = require("fs");
     const migrationsDir = join(__dirname, "..", "..", "..", "supabase/migrations");
     const migrations = readdirSync(migrationsDir)
       .filter((f: string) => f.endsWith(".sql") && !f.startsWith("_"))
