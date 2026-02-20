@@ -6,7 +6,7 @@
  * - Ordinal initialization from recurrence_rule
  * - Series controls visibility in edit mode
  * - Submit logic rebuilding recurrence_rule from ordinals
- * - Day of Week visibility rules
+ * - Day-of-week is derived from anchor date (no dropdown)
  * - max_occurrences sent on edit save
  * - Monthly "No end date" radio pattern
  */
@@ -212,50 +212,28 @@ describe("max_occurrences from occurrence_count", () => {
   });
 });
 
-// ============ DAY OF WEEK VISIBILITY TESTS ============
-// These test when the Day of Week dropdown should be visible
+// ============ DAY OF WEEK INPUT TESTS ============
+// Day-of-week dropdown is removed; weekday is always derived from anchor date.
 
 describe("Day of Week dropdown visibility", () => {
-  // Helper that mirrors the condition in EventForm
-  function shouldShowDayOfWeek(mode: "create" | "edit", seriesMode: string): boolean {
-    const isWeeklyLike = seriesMode === "weekly" || seriesMode === "biweekly";
-    return (mode === "edit" && isWeeklyLike) || (mode === "create" && isWeeklyLike);
+  function shouldShowDayOfWeekDropdown(): boolean {
+    return false;
   }
 
-  it("shows for create + weekly", () => {
-    expect(shouldShowDayOfWeek("create", "weekly")).toBe(true);
+  it("never shows for create + weekly", () => {
+    expect(shouldShowDayOfWeekDropdown()).toBe(false);
   });
 
-  it("shows for edit + weekly", () => {
-    expect(shouldShowDayOfWeek("edit", "weekly")).toBe(true);
+  it("never shows for edit + weekly", () => {
+    expect(shouldShowDayOfWeekDropdown()).toBe(false);
   });
 
-  it("shows for create + biweekly", () => {
-    expect(shouldShowDayOfWeek("create", "biweekly")).toBe(true);
+  it("never shows for create + biweekly", () => {
+    expect(shouldShowDayOfWeekDropdown()).toBe(false);
   });
 
-  it("shows for edit + biweekly", () => {
-    expect(shouldShowDayOfWeek("edit", "biweekly")).toBe(true);
-  });
-
-  it("hides for edit + monthly (derives from date)", () => {
-    expect(shouldShowDayOfWeek("edit", "monthly")).toBe(false);
-  });
-
-  it("hides for create + monthly (derives from date)", () => {
-    expect(shouldShowDayOfWeek("create", "monthly")).toBe(false);
-  });
-
-  it("hides for create + single", () => {
-    expect(shouldShowDayOfWeek("create", "single")).toBe(false);
-  });
-
-  it("hides for edit + single", () => {
-    expect(shouldShowDayOfWeek("edit", "single")).toBe(false);
-  });
-
-  it("hides for create + custom", () => {
-    expect(shouldShowDayOfWeek("create", "custom")).toBe(false);
+  it("never shows for edit + biweekly", () => {
+    expect(shouldShowDayOfWeekDropdown()).toBe(false);
   });
 });
 
@@ -398,12 +376,11 @@ describe("Edit mode save body construction", () => {
     seriesMode: string;
     selectedOrdinals: number[];
     occurrenceCount: string;
-    dayOfWeek: string;
     eventDate: string;
   }
 
   function buildEditBody(params: EditBodyParams) {
-    const { seriesMode, selectedOrdinals, occurrenceCount, dayOfWeek } = params;
+    const { seriesMode, selectedOrdinals, occurrenceCount, eventDate } = params;
 
     let recurrenceRule: string | null = null;
     if (seriesMode === "monthly") {
@@ -419,10 +396,16 @@ describe("Edit mode save body construction", () => {
     }
 
     const maxOccurrences = (parseInt(occurrenceCount) || 0) > 0 ? parseInt(occurrenceCount) : null;
+    const derivedDayOfWeek = eventDate
+      ? new Date(`${eventDate}T12:00:00Z`).toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: "UTC",
+      })
+      : null;
 
     return {
       recurrence_rule: recurrenceRule,
-      day_of_week: dayOfWeek || null,
+      day_of_week: seriesMode === "single" ? null : derivedDayOfWeek,
       max_occurrences: maxOccurrences,
     };
   }
@@ -432,7 +415,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "monthly",
       selectedOrdinals: [3],
       occurrenceCount: "0",
-      dayOfWeek: "Thursday",
       eventDate: "2026-02-19",
     });
     expect(body.recurrence_rule).toBe("3rd");
@@ -445,7 +427,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "monthly",
       selectedOrdinals: [1, 3],
       occurrenceCount: "6",
-      dayOfWeek: "Sunday",
       eventDate: "2026-03-01",
     });
     expect(body.recurrence_rule).toBe("1st/3rd");
@@ -458,8 +439,7 @@ describe("Edit mode save body construction", () => {
       seriesMode: "weekly",
       selectedOrdinals: [1], // ignored for weekly
       occurrenceCount: "0",
-      dayOfWeek: "Tuesday",
-      eventDate: "2026-01-14",
+      eventDate: "2026-01-13",
     });
     expect(body.recurrence_rule).toBe("weekly");
     expect(body.day_of_week).toBe("Tuesday");
@@ -471,8 +451,7 @@ describe("Edit mode save body construction", () => {
       seriesMode: "weekly",
       selectedOrdinals: [1],
       occurrenceCount: "12",
-      dayOfWeek: "Friday",
-      eventDate: "2026-02-07",
+      eventDate: "2026-02-06",
     });
     expect(body.recurrence_rule).toBe("weekly");
     expect(body.day_of_week).toBe("Friday");
@@ -484,7 +463,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "biweekly",
       selectedOrdinals: [1],
       occurrenceCount: "0",
-      dayOfWeek: "Thursday",
       eventDate: "2026-01-15",
     });
     expect(body.recurrence_rule).toBe("biweekly");
@@ -497,7 +475,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "biweekly",
       selectedOrdinals: [1],
       occurrenceCount: "8",
-      dayOfWeek: "Thursday",
       eventDate: "2026-01-15",
     });
     expect(body.recurrence_rule).toBe("biweekly");
@@ -510,7 +487,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "single",
       selectedOrdinals: [1],
       occurrenceCount: "0",
-      dayOfWeek: "",
       eventDate: "2026-03-15",
     });
     expect(body.recurrence_rule).toBeNull();
@@ -524,7 +500,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "monthly",
       selectedOrdinals: [1, 3],
       occurrenceCount: "0",
-      dayOfWeek: "Thursday",
       eventDate: "2026-02-19",
     });
     expect(body.recurrence_rule).toBe("1st/3rd");
@@ -535,7 +510,6 @@ describe("Edit mode save body construction", () => {
       seriesMode: "monthly",
       selectedOrdinals: [3],
       occurrenceCount: "10",
-      dayOfWeek: "Thursday",
       eventDate: "2026-02-19",
     });
     expect(body.max_occurrences).toBe(10);

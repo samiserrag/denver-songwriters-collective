@@ -4,7 +4,7 @@
  * Tests for:
  * 1. Mountain Time date helpers (formDateHelpers.ts)
  * 2. Edit page authorization (404 fix)
- * 3. Weekday/date bi-directional sync
+ * 3. Anchor-date weekday derivation
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -268,34 +268,13 @@ describe("Event Edit Page Authorization - Phase 4.42e 404 Fix", () => {
   });
 });
 
-describe("Weekday/Date Bi-directional Sync", () => {
+describe("Anchor Date Weekday Derivation", () => {
   /**
-   * Tests for the bi-directional sync between Day of Week and First Event Date:
-   * A) When Day of Week changes → First Event Date snaps to that weekday
-   * B) When First Event Date changes → Day of Week updates to match
+   * Anchor date is source-of-truth for recurring schedules.
+   * Weekday is derived from the selected anchor date.
    */
 
-  describe("Day of Week → First Event Date sync", () => {
-    it("selecting Monday should set start_date to next Monday", () => {
-      // Simulates: user selects "Monday" from dropdown
-      // Expected: start_date is set to getNextDayOfWeekMT("Monday")
-      const selectedDay = "Monday";
-      const expectedDate = getNextDayOfWeekMT(selectedDay);
-
-      // Mock sets today as 2026-01-05 (Monday), so next Monday is 2026-01-12
-      expect(expectedDate).toBe("2026-01-12");
-    });
-
-    it("selecting Wednesday should set start_date to next Wednesday", () => {
-      const selectedDay = "Wednesday";
-      const expectedDate = getNextDayOfWeekMT(selectedDay);
-
-      // Today is Monday, so next Wednesday is in 2 days
-      expect(expectedDate).toBe("2026-01-07");
-    });
-  });
-
-  describe("First Event Date → Day of Week sync", () => {
+  describe("Anchor Date → Day of Week sync", () => {
     it("selecting a Tuesday date should set day_of_week to Tuesday", () => {
       // Simulates: user picks 2026-01-06 from date picker
       // Expected: day_of_week is set to "Tuesday"
@@ -324,17 +303,15 @@ describe("Weekday/Date Bi-directional Sync", () => {
       }
     });
 
-    it("changing day_of_week and start_date together should maintain alignment", () => {
-      // User selects "Thursday"
-      const selectedDay = "Thursday";
-      const startDate = getNextDayOfWeekMT(selectedDay);
+    it("anchor date is preserved exactly (no auto-snap)", () => {
+      const selectedAnchorDate = "2026-02-17";
+      const startDate = selectedAnchorDate;
 
-      // Generate series
       const seriesDates = generateSeriesDates(startDate, 3);
 
-      // All should be Thursdays
+      expect(seriesDates[0]).toBe("2026-02-17");
       for (const date of seriesDates) {
-        expect(weekdayNameFromDateMT(date)).toBe("Thursday");
+        expect(weekdayNameFromDateMT(date)).toBe("Tuesday");
       }
     });
   });

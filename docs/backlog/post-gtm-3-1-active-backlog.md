@@ -12,7 +12,7 @@
 
 | Order | Canonical ID | Priority | Status | Canonical Entry | STOP-GATE / Contract |
 |------|---------------|----------|--------|-----------------|----------------------|
-| 1 | `EVENTS-PRIVATE-01` | P0 | OPEN — high-priority tract added for invite-only private event visibility | [`docs/BACKLOG.md`](../BACKLOG.md) | STOP-GATE required before execution (schema + RLS + no-leak surface audit) |
+| 1 | `EVENTS-PRIVATE-01` | P0 | DONE — PR1–PR6 shipped (commit `ecc43353`): schema + RLS, invite management, read-surface hardening, member+token accept, CI guardrails | [`docs/BACKLOG.md`](../BACKLOG.md) | Investigation: [`docs/investigation/private-invite-only-events-stopgate.md`](../investigation/private-invite-only-events-stopgate.md) |
 | 2 | `HARDEN-01` | P0 | OPEN — gallery RLS/storage contract formalization + negative privilege tests | [`docs/BACKLOG.md`](../BACKLOG.md) | Contract alignment: [`docs/CONTRACTS.md`](../CONTRACTS.md), security baseline: [`SECURITY.md`](../../SECURITY.md) |
 | 3 | `UX-10` | P0 | DONE — canonical parity restored, error states added (`da131a0`, `90c9de4`, `9851a16`) | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/ux-blog-gallery-visibility-parity-stopgate.md`](../investigation/ux-blog-gallery-visibility-parity-stopgate.md) |
 | 4 | `UX-11` | P0 | DONE — recurring slug redirect markers removed (`90c9de4`, `9851a16`) | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/ux-facebook-sharing-stopgate.md`](../investigation/ux-facebook-sharing-stopgate.md) |
@@ -40,7 +40,7 @@ These are complete and remain tracked in canonical backlog for regression protec
 
 ## Next High Priority Tract Plan (Consolidated)
 
-1. Start `EVENTS-PRIVATE-01` STOP-GATE investigation: visibility model, invite lifecycle, and no-leak contract across discovery/search/embed surfaces.
+1. ~~Start `EVENTS-PRIVATE-01` STOP-GATE investigation~~ — **DONE** (PR1–PR6 shipped, commit `ecc43353`)
 2. Execute `HARDEN-01` as the immediate security tract: gallery RLS/storage permission matrix + negative privilege tests.
 3. Continue invite/share tract as `GROWTH-01` (Phase 7B.2 only): managed invite email requires a separate STOP-GATE.
 4. Keep `STRAT-01` in parallel as governance architecture only until phased execution approval.

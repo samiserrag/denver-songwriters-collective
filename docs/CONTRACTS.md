@@ -200,6 +200,40 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Invite-Only Event Visibility & Access (EVENTS-PRIVATE-01)
+
+> Shipped PR1–PR6, commit `ecc43353`. Enforced by contract tests in `pr4-*`, `pr5-*`, `pr6-*` test files.
+
+### Discovery Surface Exclusion
+
+- All public discovery surfaces filter to `visibility != 'invite_only'`: homepage, `/happenings`, search API, open-mics slug pages, weekly digest, OG image route, embed route
+- OG/embed routes return generic not-found fallback (no title/description leak)
+- Event detail page shows invite-required gate for unauthorized visitors
+
+### Attendee Invite Access
+
+- Members accept by `invite_id` via `/api/attendee-invites/accept`
+- Non-members accept by token via `/api/attendee-invites/accept-token` (SHA-256 hash in DB, per-IP rate limiting)
+- Token acceptance sets signed HTTP-only `attendee_invite_*` cookie (`ATTENDEE_INVITE_COOKIE_SECRET`, `secure: true` unconditionally)
+- `checkInviteeAccess()` re-verifies invite status server-side on every request (no cache)
+- Revoked/expired invites immediately hide the event
+
+### API Access Pattern
+
+- Authenticated APIs (RSVP, comments) use two-step fetch: user-scoped RLS first, then service-role fallback for invite-only events + invitee access check
+- All 7 guest verification routes return 404 for invite-only events (no guest interaction with private events)
+- All deny paths return 404 (never 403) to avoid leaking event existence
+
+### Test Coverage
+
+| Test File | Count | Scope |
+|-----------|-------|-------|
+| `pr4-read-surface-hardening.test.ts` | 325 | Discovery exclusion, OG/embed fallback, detail page gate |
+| `pr5-invitee-access.test.ts` | 519 | Token/member accept, cookie security, API gating, guest blocking |
+| `pr6-negative-privilege-matrix.test.ts` | 34 | Behavioral route tests + source-contract privilege checks |
+
+---
+
 ## Contract: Region + Community Platform Architecture (STRAT-01, Docs-Only)
 
 > Strategic contract for future implementation phases. No enforcement code is introduced in this section.
@@ -537,6 +571,42 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 | Date label | `event.event_date` | "JAN 15" badge |
 | Fallback | When `event_date` is null/invalid | "LIVE" |
 | Start time | `event.start_time` | "7:00 PM" display |
+
+---
+
+## Contract: Event Form Recurrence Anchor (February 2026)
+
+**Scope:** `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx`
+
+### Source-of-Truth Rule
+
+- For recurring modes (`weekly`, `biweekly`, `monthly`), **Anchor Date (First Event)** is the only scheduling source of truth.
+- `day_of_week` is derived from the anchor date and is not directly user-selected.
+- Day-of-week dropdown UI is forbidden for recurring modes.
+
+### Persistence Rule
+
+- On create/edit submit for recurring modes:
+  - `event_date` must be set from anchor date.
+  - `start_date` must be set from anchor date.
+  - `day_of_week` must be derived from anchor date (`weekdayNameFromDateMT`).
+- Anchor date must not auto-snap to "next weekday" from a day selector.
+
+### Cadence Rule
+
+- `weekly` cadence: every 7 days from anchor date.
+- `biweekly` cadence: every 14 days from anchor date.
+- A saved biweekly series must preserve the exact chosen anchor date and expand forward in 14-day increments.
+
+### Validation Rule
+
+- Recurring modes require `Anchor Date (First Event)`.
+- `Day of Week` is not a required input field in recurring modes.
+
+### Test Coverage
+
+- `web/src/__tests__/edit-form-series-controls.test.ts`
+- `web/src/__tests__/event-creation-ux.test.ts`
 
 ---
 

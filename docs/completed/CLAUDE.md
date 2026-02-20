@@ -9515,3 +9515,27 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - Server + client logging support
 
 ---
+
+### Event Recurrence Anchor Source-of-Truth (February 2026) — RESOLVED
+
+**Goal:** Prevent contradictory recurrence inputs by removing day-of-week selection from recurring form flows and making anchor date the single source of truth.
+
+**Summary:** Weekly/biweekly/monthly recurrence now derives weekday from anchor date only. The recurring Day-of-Week dropdown path was removed, recurring validation now requires Anchor Date, and submit canonicalization always sends `event_date` and `start_date` from the chosen anchor. This also removes legacy auto-snap behavior that could shift a selected anchor to the "next" weekday.
+
+| Area | Change |
+|------|--------|
+| Event form UI | Removed recurring Day-of-Week dropdown from create/edit flows |
+| Validation | Recurring modes require `Anchor Date (First Event)`; no Day-of-Week required input |
+| Submit payload | `event_date`, `start_date`, and derived `day_of_week` now all come from anchor date |
+| Biweekly correctness | Existing 14-day cadence preserved; anchor now persists exactly as selected |
+| Preview text | Day labels now use weekday derived from anchor date |
+
+**Files touched:**
+- `web/src/app/(protected)/dashboard/my-events/_components/EventForm.tsx`
+- `web/src/__tests__/edit-form-series-controls.test.ts`
+- `web/src/__tests__/event-creation-ux.test.ts`
+
+**Verification:**
+- `npm test -- src/__tests__/edit-form-series-controls.test.ts src/__tests__/event-creation-ux.test.ts src/__tests__/phase4-42k-event-creation-fixes.test.ts`
+- `npm run lint` (warnings only; no errors)
+- `npm run build`

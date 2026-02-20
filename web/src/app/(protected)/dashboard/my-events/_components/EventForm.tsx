@@ -10,7 +10,6 @@ import SlotConfigSection, {
 } from "./SlotConfigSection";
 import {
   EVENT_TYPE_CONFIG,
-  DAYS_OF_WEEK,
   type EventType
 } from "@/types/events";
 
@@ -18,9 +17,7 @@ import {
 const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
 import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
-// Phase 4.42e: Import Mountain Time date helpers for series date alignment
 import {
-  getNextDayOfWeekMT,
   weekdayNameFromDateMT,
 } from "@/lib/events/formDateHelpers";
 // Phase 4.84: Rolling window notice for series settings
@@ -437,6 +434,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     : "single";
 
   const isWeeklyLikeMode = formData.series_mode === "weekly" || formData.series_mode === "biweekly";
+  const effectiveAnchorDate = formData.start_date || formData.event_date || event?.event_date || "";
+  const derivedAnchorDayOfWeek = weekdayNameFromDateMT(effectiveAnchorDate) || formData.day_of_week || "";
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
@@ -497,7 +496,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       title: formData.title || "Event Title",
       event_type: formData.event_type,
       is_dsc_event: formData.is_dsc_event,
-      day_of_week: formData.day_of_week || undefined,
+      day_of_week: derivedAnchorDayOfWeek || undefined,
       start_time: formData.start_time || undefined,
       end_time: formData.end_time || undefined,
       recurrence_rule: previewRecurrenceRule,
@@ -523,7 +522,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     formData.title,
     formData.event_type,
     formData.is_dsc_event,
-    formData.day_of_week,
+    derivedAnchorDayOfWeek,
     formData.start_time,
     formData.end_time,
     formData.venue_id,
@@ -610,15 +609,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
     // Series-related validations only apply when NOT in occurrence mode
     if (!occurrenceMode) {
-      // Day of Week required for weekly series (user selects from dropdown)
-      // Monthly mode derives day_of_week from the date picker automatically
-      if (mode === "create" && isWeeklyLikeMode && !formData.day_of_week) {
-        missingFields.push("Day of Week");
-      }
-      // In edit mode, day_of_week is only required for weekly series (not monthly/custom)
-      // Monthly mode derives day_of_week from the date picker automatically via weekdayNameFromDateMT
-      if (mode === "edit" && event?.recurrence_rule && isWeeklyLikeMode && !formData.day_of_week) {
-        missingFields.push("Day of Week");
+      // Anchor date is the single source of truth for recurring series.
+      if ((mode === "create" || mode === "edit") && (isWeeklyLikeMode || formData.series_mode === "monthly") && !effectiveAnchorDate) {
+        missingFields.push("Anchor Date (First Event)");
       }
     }
 
@@ -651,9 +644,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       if (formData.series_mode === "single" && !formData.start_date) {
         missingFields.push("Event Date");
       } else if ((isWeeklyLikeMode || formData.series_mode === "monthly")) {
-        const effectiveStartDate = formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null);
-        if (!effectiveStartDate) {
-          missingFields.push("First Event Date");
+        if (!effectiveAnchorDate) {
+          missingFields.push("Anchor Date (First Event)");
         }
       }
     }
@@ -760,6 +752,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       // Determine recurrence settings
       let effectiveRecurrenceRule: string | null = null;
       let effectiveDayOfWeek: string | null = null;
+      const anchorDate = formData.start_date || formData.event_date || event?.event_date || null;
 
       if (mode === "edit") {
         // Edit mode: rebuild recurrence_rule from ordinals for monthly, preserve for weekly/custom
@@ -776,13 +769,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         } else {
           effectiveRecurrenceRule = null; // single event
         }
-        // Only preserve day_of_week for recurring modes (weekly/monthly); clear for single/custom
+        // Anchor date is source of truth for recurring day_of_week.
         if (isWeeklyLikeMode || formData.series_mode === "monthly") {
-          // Use explicit day_of_week if set; otherwise derive from anchor date
-          effectiveDayOfWeek = formData.day_of_week || null;
-          if (!effectiveDayOfWeek && formData.start_date) {
-            effectiveDayOfWeek = weekdayNameFromDateMT(formData.start_date);
-          }
+          effectiveDayOfWeek = anchorDate ? weekdayNameFromDateMT(anchorDate) : null;
         } else {
           effectiveDayOfWeek = null;
         }
@@ -799,7 +788,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           effectiveRecurrenceRule = ordinalTexts.join("/");
         }
         const isRecurring = isWeeklyLikeMode || formData.series_mode === "monthly";
-        effectiveDayOfWeek = isRecurring ? formData.day_of_week : null;
+        effectiveDayOfWeek = isRecurring && anchorDate ? weekdayNameFromDateMT(anchorDate) : null;
       }
 
       const body = {
@@ -817,10 +806,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         total_slots: slotConfig.has_timeslots ? slotConfig.total_slots : null,
         slot_duration_minutes: slotConfig.has_timeslots ? slotConfig.slot_duration_minutes : null,
         allow_guests: slotConfig.has_timeslots ? slotConfig.allow_guests : null,
-        // Event date (anchor) - sync from start_date in edit mode
-        event_date: formData.start_date || formData.event_date || null,
+        // Anchor date is the source of truth for recurring schedules.
+        event_date: anchorDate,
         // Series configuration
-        start_date: formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null),
+        start_date: anchorDate,
         occurrence_count: parseInt(formData.occurrence_count) || 0,
         series_mode: formData.series_mode,
         custom_dates: formData.series_mode === "custom" ? customDates : (mode === "edit" ? null : undefined),
@@ -1122,35 +1111,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             )}
           </div>
         )}
-        {/* Day of Week - only shown for weekly series (create or edit).
-            Monthly events derive day_of_week from the date picker.
-            Single-date and custom-date events derive from selected date(s).
-            Hidden in occurrence mode (series-level control). */}
-        {!occurrenceMode && ((mode === "edit" && isWeeklyLikeMode) || (mode === "create" && isWeeklyLikeMode)) && (
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              <span className="text-red-500">Day of Week</span>
-              <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-            </label>
-            <select
-              value={formData.day_of_week}
-              onChange={(e) => {
-                updateField("day_of_week", e.target.value);
-                // Phase 4.42e: Auto-snap start date to selected weekday (Mountain Time)
-                if (e.target.value) {
-                  updateField("start_date", getNextDayOfWeekMT(e.target.value));
-                }
-              }}
-              required
-              className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
-            >
-              <option value="">Select day</option>
-              {DAYS_OF_WEEK.map(day => (
-                <option key={day} value={day}>{day}</option>
-              ))}
-            </select>
-          </div>
-        )}
         <div>
           <label className="block text-sm font-medium mb-2">
             <span className="text-red-500">Start Time</span>
@@ -1239,7 +1199,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </p>
 
               {/* Pattern Summary */}
-              {formData.day_of_week && selectedOrdinals.length > 0 && (
+              {derivedAnchorDayOfWeek && selectedOrdinals.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-[var(--color-border-default)]">
                   <p className="text-sm font-medium text-[var(--color-text-primary)]">
                     Pattern:{" "}
@@ -1249,7 +1209,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                         const ordinalTexts = selectedOrdinals
                           .sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b)
                           .map(o => ordinalWords[o] || `${o}th`);
-                        return `${ordinalTexts.join(" & ")} ${formData.day_of_week} of the month`;
+                        return `${ordinalTexts.join(" & ")} ${derivedAnchorDayOfWeek} of the month`;
                       })()}
                     </span>
                   </p>
@@ -1278,13 +1238,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 </p>
 
                 {/* Phase 5.06: Persistent warning when day_of_week changes */}
-                {formData.day_of_week && originalDayOfWeek && formData.day_of_week !== originalDayOfWeek && (
+                {derivedAnchorDayOfWeek && originalDayOfWeek && derivedAnchorDayOfWeek !== originalDayOfWeek && (
                   <div className="mt-3 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
                     <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                      ⚠️ This series will move to <span className="font-bold">{formData.day_of_week}s</span>
+                      ⚠️ This series will move to <span className="font-bold">{derivedAnchorDayOfWeek}s</span>
                     </p>
                     <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                      All future occurrences will shift from {originalDayOfWeek}s to {formData.day_of_week}s. Past RSVPs and overrides will remain attached to their original dates.
+                      All future occurrences will shift from {originalDayOfWeek}s to {derivedAnchorDayOfWeek}s. Past RSVPs and overrides will remain attached to their original dates.
                     </p>
                   </div>
                 )}
@@ -1394,13 +1354,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   : "Changing this date shifts the weekly cadence and can move the weekday."}
               </p>
 
-              {formData.day_of_week && originalDayOfWeek && formData.day_of_week !== originalDayOfWeek && (
+              {derivedAnchorDayOfWeek && originalDayOfWeek && derivedAnchorDayOfWeek !== originalDayOfWeek && (
                 <div className="mt-3 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                    ⚠️ This series will move to <span className="font-bold">{formData.day_of_week}s</span>
+                    ⚠️ This series will move to <span className="font-bold">{derivedAnchorDayOfWeek}s</span>
                   </p>
                   <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                    All future occurrences will shift from {originalDayOfWeek}s to {formData.day_of_week}s. Past RSVPs and overrides will remain attached to their original dates.
+                    All future occurrences will shift from {originalDayOfWeek}s to {derivedAnchorDayOfWeek}s. Past RSVPs and overrides will remain attached to their original dates.
                   </p>
                 </div>
               )}
@@ -1624,11 +1584,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 <label className="block text-sm font-medium mb-2">
                   <span className="text-red-500">Anchor Date (First Event)</span>
                   <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-                  <DateDayIndicator dateValue={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")} />
+                  <DateDayIndicator dateValue={formData.start_date} />
                 </label>
                 <input
                   type="date"
-                  value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
+                  value={formData.start_date || ""}
                   onChange={(e) => {
                     updateField("start_date", e.target.value);
                     if (e.target.value) {
@@ -1793,11 +1753,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   <label className="block text-sm font-medium mb-2">
                     <span className="text-red-500">Anchor Date (First Event)</span>
                     <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
-                    <DateDayIndicator dateValue={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")} />
+                    <DateDayIndicator dateValue={formData.start_date} />
                   </label>
                   <input
                     type="date"
-                    value={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")}
+                    value={formData.start_date || ""}
                     onChange={(e) => {
                       updateField("start_date", e.target.value);
                       if (e.target.value) {
@@ -1853,7 +1813,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               </div>
 
               {/* Pattern Summary */}
-              {formData.day_of_week && selectedOrdinals.length > 0 && (
+              {derivedAnchorDayOfWeek && selectedOrdinals.length > 0 && (
                 <div className="pt-2 border-t border-[var(--color-border-default)]">
                   <p className="text-sm font-medium text-[var(--color-text-primary)]">
                     Pattern:{" "}
@@ -1863,7 +1823,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                         const ordinalTexts = selectedOrdinals
                           .sort((a, b) => a === -1 ? 1 : b === -1 ? -1 : a - b)
                           .map(o => ordinalWords[o] || `${o}th`);
-                        return `${ordinalTexts.join(" & ")} ${formData.day_of_week} of the month`;
+                        return `${ordinalTexts.join(" & ")} ${derivedAnchorDayOfWeek} of the month`;
                       })()}
                     </span>
                   </p>
@@ -2524,8 +2484,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   {formData.title || "Event Title"}
                 </h2>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
-                  {formData.day_of_week && (
-                    <span>{formData.day_of_week}s</span>
+                  {derivedAnchorDayOfWeek && (
+                    <span>{derivedAnchorDayOfWeek}s</span>
                   )}
                   {formData.start_time && (
                     <span>{formatTimeToAMPM(formData.start_time)}</span>

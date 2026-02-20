@@ -196,6 +196,16 @@ Polish member profiles before external test users see them. Three scope areas:
 
 **Investigation Doc:** `docs/investigation/phase5-06-ux-polish-stopgate.md`
 
+### Phase 5.08 — Recurrence Anchor Contract (February 2026) — COMPLETE
+
+| Item | Description | Status |
+|------|-------------|--------|
+| Weekly/Biweekly anchor source of truth | Removed Day-of-Week dropdown from recurring flows; anchor date is canonical input | DONE |
+| Submit canonicalization | `event_date`, `start_date`, and derived `day_of_week` all sourced from anchor date | DONE |
+| Anchor no-snap behavior | Removed "next weekday" snap path; preserves exact selected anchor date | DONE |
+| Biweekly cadence safety | Existing 14-day cadence retained; edits now preserve intended biweekly anchors | DONE |
+| Tests | Updated recurrence form tests + anchor derivation tests | DONE |
+
 ### Phase 5.04 — Signup Time UX (January 2026) — PARTIALLY COMPLETE
 
 | Item | Description | Status |
@@ -368,7 +378,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | HARDEN-02 | Email observability + operational monitoring | P1 | OPEN | Document and enforce queryable skip reasons, suppression rates, send failures, and admin read-only visibility patterns |
 | HARDEN-03 | Email template governance runbook | P1 | OPEN | Expand template addition contract with owner checklist, enforcement boundaries, and CI expectations |
 | HARDEN-04 | Moderation foundation contract | P2 | OPEN | Define minimal future-proof moderation hooks and admin-only control boundaries without changing current behavior |
-| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | IN PROGRESS — PR1–PR6 shipped (core contract live) | Schema + RLS foundation applied (92 events migrated). Host/admin invite management, read-surface hardening, member+token accept flow, and CI guardrails shipped. Next: operational polish and support playbook. |
+| EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | DONE — PR1–PR6 shipped (commit `ecc43353`) | Schema + RLS foundation, host/admin invite management, read-surface hardening, member+token accept flow, CI guardrails, and negative privilege contract tests all shipped. Contract: `docs/CONTRACTS.md` §Invite-Only Event Visibility & Access. |
 
 ### Homepage / Navigation / UX
 
@@ -438,7 +448,7 @@ Polish member profiles before external test users see them. Three scope areas:
 
 ### EVENTS-PRIVATE-01 — Private Invite-Only Events (Members + Non-Members)
 
-**Status:** IN PROGRESS (Core shipped PR1–PR6)
+**Status:** DONE (PR1–PR6 shipped, commit `ecc43353`)
 **Priority:** P0
 **Added:** 2026-02-17
 
