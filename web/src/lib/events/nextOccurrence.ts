@@ -651,7 +651,14 @@ export function expandOccurrencesForEvent(
 
     case "biweekly":
       // Biweekly - every other week
-      expandBiweekly(targetDayIndex, effectiveStart, effectiveEndKey, effectiveMaxOccurrences, occurrences);
+      expandBiweekly(
+        targetDayIndex,
+        effectiveStart,
+        effectiveEndKey,
+        effectiveMaxOccurrences,
+        occurrences,
+        event.event_date ?? null
+      );
       break;
 
     case "weekly":
@@ -753,16 +760,31 @@ function expandBiweekly(
   startKey: string,
   endKey: string,
   maxOccurrences: number,
-  occurrences: ExpandedOccurrence[]
+  occurrences: ExpandedOccurrence[],
+  anchorDateKey: string | null
 ): void {
-  const startDate = dateFromDenverKey(startKey);
-  const startDayIndex = startDate.getUTCDay();
+  // Biweekly must preserve parity from the true anchor date.
+  // If the anchor is before the window, jump forward in 14-day increments
+  // from that anchor rather than re-seeding from "next weekday in window".
+  let anchor = anchorDateKey || startKey;
+  const anchorDayIndex = dateFromDenverKey(anchor).getUTCDay();
 
-  // Find first occurrence >= startKey
-  let daysUntil = dayOfWeek - startDayIndex;
-  if (daysUntil < 0) daysUntil += 7;
+  // Defensive fallback for inconsistent legacy rows where day_of_week and anchor mismatch.
+  if (anchorDayIndex !== dayOfWeek) {
+    let daysUntil = dayOfWeek - anchorDayIndex;
+    if (daysUntil < 0) daysUntil += 7;
+    anchor = addDaysDenver(anchor, daysUntil);
+  }
 
-  let current = addDaysDenver(startKey, daysUntil);
+  let current = anchor;
+
+  if (current < startKey) {
+    const startDate = dateFromDenverKey(startKey);
+    const anchorDate = dateFromDenverKey(anchor);
+    const diffDays = Math.floor((startDate.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24));
+    const jumps = Math.ceil(diffDays / 14);
+    current = addDaysDenver(anchor, jumps * 14);
+  }
 
   while (current <= endKey && occurrences.length < maxOccurrences) {
     occurrences.push({ dateKey: current, isConfident: true });

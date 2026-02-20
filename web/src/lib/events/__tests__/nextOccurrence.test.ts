@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   computeNextOccurrence,
+  expandOccurrencesForEvent,
   formatDateGroupHeader,
   groupEventsByNextOccurrence,
   getTodayDenver,
@@ -745,6 +746,51 @@ describe("nextOccurrence", () => {
       expect(groups.get("2025-02-12")?.some(e => e.id === "2nd-wed")).toBe(true);
       expect(groups.get("2025-02-19")?.some(e => e.id === "3rd-wed")).toBe(true);
       expect(groups.get("2025-02-26")?.some(e => e.id === "4th-wed")).toBe(true);
+    });
+  });
+
+  describe("Biweekly anchor parity", () => {
+    it("preserves anchor parity when anchor is before the window start", () => {
+      const occurrences = expandOccurrencesForEvent(
+        {
+          event_date: "2026-02-17", // Tuesday anchor
+          day_of_week: "Tuesday",
+          recurrence_rule: "biweekly",
+        },
+        {
+          startKey: "2026-02-20",
+          endKey: "2026-03-31",
+        }
+      );
+
+      expect(occurrences.map((o) => o.dateKey)).toEqual([
+        "2026-03-03",
+        "2026-03-17",
+        "2026-03-31",
+      ]);
+    });
+
+    it("respects max_occurrences from the anchor without shifting to alternating wrong weeks", () => {
+      const occurrences = expandOccurrencesForEvent(
+        {
+          event_date: "2026-02-17", // Tuesday anchor
+          day_of_week: "Tuesday",
+          recurrence_rule: "biweekly",
+          max_occurrences: 4, // 2/17, 3/3, 3/17, 3/31
+        },
+        {
+          startKey: "2026-02-20",
+          endKey: "2026-04-30",
+        }
+      );
+
+      expect(occurrences.map((o) => o.dateKey)).toEqual([
+        "2026-03-03",
+        "2026-03-17",
+        "2026-03-31",
+      ]);
+      expect(occurrences.some((o) => o.dateKey === "2026-02-24")).toBe(false);
+      expect(occurrences.some((o) => o.dateKey === "2026-04-14")).toBe(false);
     });
   });
 
