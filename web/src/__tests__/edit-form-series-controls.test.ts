@@ -259,6 +259,32 @@ describe("Day of Week dropdown visibility", () => {
   });
 });
 
+describe("Anchor date visibility in edit mode", () => {
+  function shouldShowAnchorDateInEdit(seriesMode: string): boolean {
+    return seriesMode === "weekly" || seriesMode === "biweekly" || seriesMode === "monthly";
+  }
+
+  it("shows for edit + weekly", () => {
+    expect(shouldShowAnchorDateInEdit("weekly")).toBe(true);
+  });
+
+  it("shows for edit + biweekly", () => {
+    expect(shouldShowAnchorDateInEdit("biweekly")).toBe(true);
+  });
+
+  it("shows for edit + monthly", () => {
+    expect(shouldShowAnchorDateInEdit("monthly")).toBe(true);
+  });
+
+  it("hides for edit + custom", () => {
+    expect(shouldShowAnchorDateInEdit("custom")).toBe(false);
+  });
+
+  it("hides for edit + single", () => {
+    expect(shouldShowAnchorDateInEdit("single")).toBe(false);
+  });
+});
+
 // ============ SINGLE EVENT DATE VISIBILITY TESTS ============
 // Regression guard: single-date events must show an editable date in both create and edit modes.
 

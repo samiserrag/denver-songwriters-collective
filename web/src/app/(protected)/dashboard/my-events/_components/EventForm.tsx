@@ -1370,6 +1370,43 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
+          {/* Weekly/Biweekly: Anchor date controls recurrence cadence in edit mode */}
+          {isWeeklyLikeMode && (
+            <div className="pt-2 border-t border-[var(--color-border-default)]">
+              <label className="block text-sm font-medium mb-2">
+                <span className="text-[var(--color-text-secondary)]">Anchor Date (First Event)</span>
+                <DateDayIndicator dateValue={formData.start_date || event?.event_date || ""} />
+              </label>
+              <input
+                type="date"
+                value={formData.start_date || event?.event_date || ""}
+                onChange={(e) => {
+                  updateField("start_date", e.target.value);
+                  if (e.target.value) {
+                    updateField("day_of_week", weekdayNameFromDateMT(e.target.value));
+                  }
+                }}
+                className="w-full px-4 py-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-border-accent)] focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                {formData.series_mode === "biweekly"
+                  ? "Changing this date shifts the every-other-week cadence and can move the weekday."
+                  : "Changing this date shifts the weekly cadence and can move the weekday."}
+              </p>
+
+              {formData.day_of_week && originalDayOfWeek && formData.day_of_week !== originalDayOfWeek && (
+                <div className="mt-3 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    ⚠️ This series will move to <span className="font-bold">{formData.day_of_week}s</span>
+                  </p>
+                  <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                    All future occurrences will shift from {originalDayOfWeek}s to {formData.day_of_week}s. Past RSVPs and overrides will remain attached to their original dates.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Series Length (not applicable for custom dates) */}
           {formData.series_mode !== "custom" && (
           <div>
@@ -1585,7 +1622,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             <>
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  <span className="text-red-500">First Event Date</span>
+                  <span className="text-red-500">Anchor Date (First Event)</span>
                   <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
                   <DateDayIndicator dateValue={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")} />
                 </label>
@@ -1706,7 +1743,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           {mode === "create" && formData.series_mode === "monthly" && (
             <div className="space-y-4">
               <p className="text-sm text-[var(--color-text-secondary)]">
-                Choose which week(s) of the month your happening occurs. The day of week is set by your First Event Date below.
+                Choose which week(s) of the month your happening occurs. The day of week is set by your Anchor Date below.
               </p>
 
               {/* Ordinal Selection - Which weeks of the month */}
@@ -1750,11 +1787,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 </p>
               </div>
 
-              {/* First Event Date and Number of Events */}
+              {/* Anchor Date and Number of Events */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    <span className="text-red-500">First Event Date</span>
+                    <span className="text-red-500">Anchor Date (First Event)</span>
                     <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
                     <DateDayIndicator dateValue={formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : "")} />
                   </label>
