@@ -355,7 +355,8 @@ export async function POST(request: Request) {
   // Determine series configuration
   // Phase 4.x: Support four series modes:
   // - "single": One-time event (single date, no recurrence)
-  // - "weekly": Weekly recurring series (creates multiple event records)
+  // - "weekly": Weekly recurring series (single event row + recurrence_rule="weekly")
+  // - "biweekly": Every-other-week recurring series (single event row + recurrence_rule="biweekly")
   // - "monthly": Monthly ordinal pattern (creates SINGLE event with recurrence_rule like "1st/3rd")
   // - "custom": Custom dates (non-predictable, creates multiple event records)
   const seriesMode = (body.series_mode as string) || "single";
@@ -395,6 +396,13 @@ export async function POST(request: Request) {
     eventDates = [startDate];
     // Enforce recurrence_rule server-side (don't rely on client setting it)
     body.recurrence_rule = "weekly";
+  } else if (seriesMode === "biweekly") {
+    // Biweekly series mode: create a SINGLE event record with recurrence_rule="biweekly"
+    // max_occurrences controls whether it's infinite (null/0) or finite (N)
+    // Expansion to actual dates happens at query time via expandOccurrencesForEvent()
+    eventDates = [startDate];
+    // Enforce recurrence_rule server-side (don't rely on client setting it)
+    body.recurrence_rule = "biweekly";
   } else {
     // Single event mode (default): just the start date
     eventDates = [startDate];

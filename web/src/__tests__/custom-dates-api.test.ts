@@ -4,6 +4,7 @@
  * Tests for the three series modes in event creation:
  * - "single": One-time event (single date)
  * - "weekly": Weekly recurring series (predictable dates)
+ * - "biweekly": Every-other-week recurring series (predictable dates)
  * - "custom": Custom dates (non-predictable, user-specified dates)
  */
 
@@ -229,6 +230,58 @@ describe("POST /api/my-events - Series Mode Support", () => {
       expect(capturedInsertPayloads.length).toBe(1);
       expect(capturedInsertPayloads[0].max_occurrences).toBe(6);
       expect(capturedInsertPayloads[0].recurrence_rule).toBe("weekly");
+    });
+  });
+
+  describe("Biweekly mode", () => {
+    it("creates a single DB row with recurrence_rule='biweekly' for biweekly series", async () => {
+      const request = new Request("http://localhost/api/my-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Biweekly Open Mic",
+          event_type: "open_mic",
+          start_time: "19:00",
+          start_date: "2026-01-15",
+          day_of_week: "Thursday",
+          venue_id: "venue-1",
+          series_mode: "biweekly",
+          occurrence_count: 0,
+        })
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].event_date).toBe("2026-01-15");
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("biweekly");
+      expect(capturedInsertPayloads[0].max_occurrences).toBeNull();
+      expect(capturedInsertPayloads[0].series_id).toBeNull();
+    });
+
+    it("sets max_occurrences when occurrence_count is specified", async () => {
+      const request = new Request("http://localhost/api/my-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Limited Biweekly Series",
+          event_type: "open_mic",
+          start_time: "19:00",
+          start_date: "2026-01-15",
+          day_of_week: "Thursday",
+          venue_id: "venue-1",
+          series_mode: "biweekly",
+          occurrence_count: 6,
+        })
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].max_occurrences).toBe(6);
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("biweekly");
     });
   });
 

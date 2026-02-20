@@ -285,9 +285,10 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     start_date: event?.event_date || "",
     occurrence_count: event?.max_occurrences ? event.max_occurrences.toString() : "0", // 0 = no end date (ongoing), >0 = finite series
     series_mode: (mode === "edit" && event?.recurrence_rule
-      ? (event.recurrence_rule === "weekly" || event.recurrence_rule === "biweekly" ? "weekly"
+      ? (event.recurrence_rule === "biweekly" ? "biweekly"
+        : event.recurrence_rule === "weekly" ? "weekly"
         : event.recurrence_rule === "custom" ? "custom" : "monthly")
-      : "single") as "single" | "weekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
+      : "single") as "single" | "weekly" | "biweekly" | "monthly" | "custom", // Phase 4.x: Series mode selection
     // Phase 3 scan-first fields
     timezone: event?.timezone || "America/Denver",
     location_mode: event?.location_mode || "venue",
@@ -430,9 +431,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
 
   // Track original series mode for edit-mode change detection
   const initialSeriesMode = mode === "edit" && event?.recurrence_rule
-    ? (event.recurrence_rule === "weekly" || event.recurrence_rule === "biweekly" ? "weekly"
+    ? (event.recurrence_rule === "biweekly" ? "biweekly"
+      : event.recurrence_rule === "weekly" ? "weekly"
       : event.recurrence_rule === "custom" ? "custom" : "monthly")
     : "single";
+
+  const isWeeklyLikeMode = formData.series_mode === "weekly" || formData.series_mode === "biweekly";
 
   const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
 
@@ -481,6 +485,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     let previewRecurrenceRule: string | undefined;
     if (formData.series_mode === "weekly") {
       previewRecurrenceRule = "weekly";
+    } else if (formData.series_mode === "biweekly") {
+      previewRecurrenceRule = "biweekly";
     } else if (formData.series_mode === "monthly" && selectedOrdinals.length > 0) {
       previewRecurrenceRule = buildRecurrenceRuleFromOrdinals(selectedOrdinals);
     } else if (formData.series_mode === "custom") {
@@ -606,12 +612,12 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     if (!occurrenceMode) {
       // Day of Week required for weekly series (user selects from dropdown)
       // Monthly mode derives day_of_week from the date picker automatically
-      if (mode === "create" && formData.series_mode === "weekly" && !formData.day_of_week) {
+      if (mode === "create" && isWeeklyLikeMode && !formData.day_of_week) {
         missingFields.push("Day of Week");
       }
       // In edit mode, day_of_week is only required for weekly series (not monthly/custom)
       // Monthly mode derives day_of_week from the date picker automatically via weekdayNameFromDateMT
-      if (mode === "edit" && event?.recurrence_rule && formData.series_mode === "weekly" && !formData.day_of_week) {
+      if (mode === "edit" && event?.recurrence_rule && isWeeklyLikeMode && !formData.day_of_week) {
         missingFields.push("Day of Week");
       }
     }
@@ -644,7 +650,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     if (!occurrenceMode && mode === "create") {
       if (formData.series_mode === "single" && !formData.start_date) {
         missingFields.push("Event Date");
-      } else if ((formData.series_mode === "weekly" || formData.series_mode === "monthly")) {
+      } else if ((isWeeklyLikeMode || formData.series_mode === "monthly")) {
         const effectiveStartDate = formData.start_date || (formData.day_of_week ? getNextDayOfWeekMT(formData.day_of_week) : null);
         if (!effectiveStartDate) {
           missingFields.push("First Event Date");
@@ -763,13 +769,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           effectiveRecurrenceRule = ordinalTexts.join("/");
         } else if (formData.series_mode === "weekly") {
           effectiveRecurrenceRule = "weekly";
+        } else if (formData.series_mode === "biweekly") {
+          effectiveRecurrenceRule = "biweekly";
         } else if (formData.series_mode === "custom") {
           effectiveRecurrenceRule = "custom";
         } else {
           effectiveRecurrenceRule = null; // single event
         }
         // Only preserve day_of_week for recurring modes (weekly/monthly); clear for single/custom
-        if (formData.series_mode === "weekly" || formData.series_mode === "monthly") {
+        if (isWeeklyLikeMode || formData.series_mode === "monthly") {
           // Use explicit day_of_week if set; otherwise derive from anchor date
           effectiveDayOfWeek = formData.day_of_week || null;
           if (!effectiveDayOfWeek && formData.start_date) {
@@ -782,13 +790,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         // Create mode: derive from series_mode selection
         if (formData.series_mode === "weekly") {
           effectiveRecurrenceRule = "weekly";
+        } else if (formData.series_mode === "biweekly") {
+          effectiveRecurrenceRule = "biweekly";
         } else if (formData.series_mode === "monthly") {
           // Convert ordinals to text format (e.g., [1, 3] => "1st/3rd")
           const ordinalWords: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", [-1]: "last" };
           const ordinalTexts = selectedOrdinals.sort((a, b) => a - b).map(o => ordinalWords[o] || `${o}th`);
           effectiveRecurrenceRule = ordinalTexts.join("/");
         }
-        const isRecurring = formData.series_mode === "weekly" || formData.series_mode === "monthly";
+        const isRecurring = isWeeklyLikeMode || formData.series_mode === "monthly";
         effectiveDayOfWeek = isRecurring ? formData.day_of_week : null;
       }
 
@@ -1116,7 +1126,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             Monthly events derive day_of_week from the date picker.
             Single-date and custom-date events derive from selected date(s).
             Hidden in occurrence mode (series-level control). */}
-        {!occurrenceMode && ((mode === "edit" && formData.series_mode === "weekly") || (mode === "create" && formData.series_mode === "weekly")) && (
+        {!occurrenceMode && ((mode === "edit" && isWeeklyLikeMode) || (mode === "create" && isWeeklyLikeMode)) && (
           <div>
             <label className="block text-sm font-medium mb-2">
               <span className="text-red-500">Day of Week</span>
@@ -1182,7 +1192,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
       {/* ============ SECTION 3a-edit: SERIES CONTROLS (Edit Mode) ============ */}
       {/* Show ordinal checkboxes for monthly events, series length for weekly/monthly, or dates for custom */}
       {/* Hidden in occurrence mode (series-level controls) */}
-      {!occurrenceMode && mode === "edit" && (formData.series_mode === "monthly" || formData.series_mode === "weekly" || formData.series_mode === "custom") && (
+      {!occurrenceMode && mode === "edit" && (formData.series_mode === "monthly" || isWeeklyLikeMode || formData.series_mode === "custom") && (
         <div className="p-4 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg space-y-4">
           <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
             Series Settings
@@ -1378,7 +1388,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                 <div>
                   <span className="text-sm font-medium text-[var(--color-text-primary)]">No end date (ongoing)</span>
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {formData.series_mode === "weekly" ? "Repeats every week indefinitely" : "Repeats every month indefinitely"}
+                    {formData.series_mode === "weekly"
+                      ? "Repeats every week indefinitely"
+                      : formData.series_mode === "biweekly"
+                        ? "Repeats every other week indefinitely"
+                        : "Repeats every month indefinitely"}
                   </p>
                 </div>
               </label>
@@ -1387,13 +1401,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   type="radio"
                   name="edit_series_end_mode"
                   checked={formData.occurrence_count !== "0"}
-                  onChange={() => updateField("occurrence_count", formData.series_mode === "weekly" ? "4" : "6")}
+                  onChange={() => updateField("occurrence_count", isWeeklyLikeMode ? "4" : "6")}
                   className="accent-[var(--color-accent)]"
                 />
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-[var(--color-text-primary)]">Ends after</span>
                   <select
-                    value={formData.occurrence_count === "0" ? (formData.series_mode === "weekly" ? "4" : "6") : formData.occurrence_count}
+                    value={formData.occurrence_count === "0" ? (isWeeklyLikeMode ? "4" : "6") : formData.occurrence_count}
                     onChange={(e) => updateField("occurrence_count", e.target.value)}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1475,6 +1489,22 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             <button
               type="button"
               onClick={() => {
+                updateField("series_mode", "biweekly");
+                updateField("occurrence_count", "0");
+                setCustomDates([]);
+              }}
+              className={`p-3 rounded-lg border text-left transition-colors ${
+                formData.series_mode === "biweekly"
+                  ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)]"
+                  : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-border-accent)]"
+              }`}
+            >
+              <span className="block text-sm font-medium text-[var(--color-text-primary)]">Every Other Week</span>
+              <span className="block text-xs text-[var(--color-text-secondary)] mt-0.5">Same day every 2 weeks (biweekly)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
                 updateField("series_mode", "monthly");
                 updateField("occurrence_count", "0");
                 setCustomDates([]);
@@ -1551,7 +1581,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           )}
 
-          {mode === "create" && formData.series_mode === "weekly" && (
+          {mode === "create" && isWeeklyLikeMode && (
             <>
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -1589,7 +1619,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                     />
                     <div>
                       <span className="text-sm font-medium text-[var(--color-text-primary)]">No end date (ongoing)</span>
-                      <p className="text-xs text-[var(--color-text-secondary)]">Repeats every week indefinitely</p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        {formData.series_mode === "biweekly"
+                          ? "Repeats every other week indefinitely"
+                          : "Repeats every week indefinitely"}
+                      </p>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-default)] cursor-pointer hover:border-[var(--color-border-accent)] transition-colors">
@@ -1632,13 +1666,14 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                   <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                     {formData.occurrence_count === "0"
                       ? "Upcoming occurrences (repeats indefinitely):"
-                      : `Series will run for ${formData.occurrence_count} weeks:`}
+                      : `Series will run for ${formData.occurrence_count} occurrences:`}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {Array.from({ length: Math.min(formData.occurrence_count === "0" ? 6 : parseInt(formData.occurrence_count), 12) }, (_, i) => {
                       const startDate = new Date(formData.start_date + "T12:00:00Z");
                       const eventDate = new Date(startDate);
-                      eventDate.setDate(startDate.getDate() + (i * 7));
+                      const intervalDays = formData.series_mode === "biweekly" ? 14 : 7;
+                      eventDate.setDate(startDate.getDate() + (i * intervalDays));
                       return (
                         <span
                           key={i}
@@ -1650,7 +1685,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
                     })}
                     {formData.occurrence_count === "0" && (
                       <span className="px-2 py-1 text-xs text-[var(--color-text-secondary)] italic">
-                        and every week after...
+                        {formData.series_mode === "biweekly" ? "and every other week after..." : "and every week after..."}
                       </span>
                     )}
                     {formData.occurrence_count !== "0" && parseInt(formData.occurrence_count) > 12 && (

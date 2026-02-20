@@ -93,6 +93,8 @@ describe("Recurrence rule rebuild from ordinals", () => {
       return ordinalTexts.join("/");
     } else if (seriesMode === "weekly") {
       return "weekly";
+    } else if (seriesMode === "biweekly") {
+      return "biweekly";
     }
     return null; // single event
   }
@@ -125,6 +127,10 @@ describe("Recurrence rule rebuild from ordinals", () => {
     expect(buildRecurrenceRule("weekly", [1, 3])).toBe("weekly");
   });
 
+  it("biweekly mode always returns 'biweekly'", () => {
+    expect(buildRecurrenceRule("biweekly", [1, 3])).toBe("biweekly");
+  });
+
   it("single mode returns null", () => {
     expect(buildRecurrenceRule("single", [1])).toBeNull();
   });
@@ -135,9 +141,10 @@ describe("Recurrence rule rebuild from ordinals", () => {
 
 describe("Series mode detection from event data", () => {
   // Helper that mirrors the initialization logic in EventForm
-  function detectSeriesMode(recurrenceRule: string | null | undefined): "single" | "weekly" | "monthly" | "custom" {
+  function detectSeriesMode(recurrenceRule: string | null | undefined): "single" | "weekly" | "biweekly" | "monthly" | "custom" {
     if (!recurrenceRule) return "single";
-    if (recurrenceRule === "weekly" || recurrenceRule === "biweekly") return "weekly";
+    if (recurrenceRule === "weekly") return "weekly";
+    if (recurrenceRule === "biweekly") return "biweekly";
     return "monthly";
   }
 
@@ -145,8 +152,8 @@ describe("Series mode detection from event data", () => {
     expect(detectSeriesMode("weekly")).toBe("weekly");
   });
 
-  it("detects 'biweekly' → weekly mode", () => {
-    expect(detectSeriesMode("biweekly")).toBe("weekly");
+  it("detects 'biweekly' → biweekly mode", () => {
+    expect(detectSeriesMode("biweekly")).toBe("biweekly");
   });
 
   it("detects '3rd' → monthly mode", () => {
@@ -211,7 +218,8 @@ describe("max_occurrences from occurrence_count", () => {
 describe("Day of Week dropdown visibility", () => {
   // Helper that mirrors the condition in EventForm
   function shouldShowDayOfWeek(mode: "create" | "edit", seriesMode: string): boolean {
-    return (mode === "edit" && seriesMode === "weekly") || (mode === "create" && seriesMode === "weekly");
+    const isWeeklyLike = seriesMode === "weekly" || seriesMode === "biweekly";
+    return (mode === "edit" && isWeeklyLike) || (mode === "create" && isWeeklyLike);
   }
 
   it("shows for create + weekly", () => {
@@ -220,6 +228,14 @@ describe("Day of Week dropdown visibility", () => {
 
   it("shows for edit + weekly", () => {
     expect(shouldShowDayOfWeek("edit", "weekly")).toBe(true);
+  });
+
+  it("shows for create + biweekly", () => {
+    expect(shouldShowDayOfWeek("create", "biweekly")).toBe(true);
+  });
+
+  it("shows for edit + biweekly", () => {
+    expect(shouldShowDayOfWeek("edit", "biweekly")).toBe(true);
   });
 
   it("hides for edit + monthly (derives from date)", () => {
@@ -262,6 +278,10 @@ describe("Single event date input visibility", () => {
 
   it("hides date input for edit + weekly", () => {
     expect(shouldShowSingleDateInput("edit", "weekly")).toBe(false);
+  });
+
+  it("hides date input for edit + biweekly", () => {
+    expect(shouldShowSingleDateInput("edit", "biweekly")).toBe(false);
   });
 });
 
@@ -368,6 +388,8 @@ describe("Edit mode save body construction", () => {
       recurrenceRule = ordinalTexts.join("/");
     } else if (seriesMode === "weekly") {
       recurrenceRule = "weekly";
+    } else if (seriesMode === "biweekly") {
+      recurrenceRule = "biweekly";
     }
 
     const maxOccurrences = (parseInt(occurrenceCount) || 0) > 0 ? parseInt(occurrenceCount) : null;
@@ -429,6 +451,32 @@ describe("Edit mode save body construction", () => {
     expect(body.recurrence_rule).toBe("weekly");
     expect(body.day_of_week).toBe("Friday");
     expect(body.max_occurrences).toBe(12);
+  });
+
+  it("biweekly event, no end date", () => {
+    const body = buildEditBody({
+      seriesMode: "biweekly",
+      selectedOrdinals: [1],
+      occurrenceCount: "0",
+      dayOfWeek: "Thursday",
+      eventDate: "2026-01-15",
+    });
+    expect(body.recurrence_rule).toBe("biweekly");
+    expect(body.day_of_week).toBe("Thursday");
+    expect(body.max_occurrences).toBeNull();
+  });
+
+  it("biweekly event, ends after 8", () => {
+    const body = buildEditBody({
+      seriesMode: "biweekly",
+      selectedOrdinals: [1],
+      occurrenceCount: "8",
+      dayOfWeek: "Thursday",
+      eventDate: "2026-01-15",
+    });
+    expect(body.recurrence_rule).toBe("biweekly");
+    expect(body.day_of_week).toBe("Thursday");
+    expect(body.max_occurrences).toBe(8);
   });
 
   it("single event clears recurrence", () => {

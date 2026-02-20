@@ -164,6 +164,31 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
       expect(capturedInsertPayloads[0].max_occurrences).toBe(4);
     });
 
+    it("sets host_id for biweekly series (single row model)", async () => {
+      const request = new Request("http://localhost/api/my-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Biweekly Song Circle",
+          event_type: "song_circle",
+          start_time: "19:00",
+          start_date: "2026-01-15",
+          venue_id: "venue-1",
+          series_mode: "biweekly",
+          occurrence_count: 4,
+          day_of_week: "Thursday",
+        })
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+
+      expect(capturedInsertPayloads.length).toBe(1);
+      expect(capturedInsertPayloads[0].host_id).toBe("user-123-abc");
+      expect(capturedInsertPayloads[0].recurrence_rule).toBe("biweekly");
+      expect(capturedInsertPayloads[0].max_occurrences).toBe(4);
+    });
+
     it("host_id matches session user id exactly", async () => {
       mockSession = { user: { id: "different-user-456" } };
 
