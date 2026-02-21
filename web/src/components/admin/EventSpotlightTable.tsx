@@ -27,9 +27,10 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
    const [rows, setRows] = useState(events ?? []);
    const [loadingId, setLoadingId] = useState<string | null>(null);
    const [deleteModal, setDeleteModal] = useState<{ id: string; title: string } | null>(null);
-   const [deleteConfirm, setDeleteConfirm] = useState("");
-   const [deleting, setDeleting] = useState(false);
-   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const badgeBase = "inline-flex items-center rounded border px-1.5 py-0.5 text-xs leading-none";
 
    // CRITICAL: Guard MUST be first line
    if (!events || !Array.isArray(events)) {
@@ -127,61 +128,61 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
   }
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-white/10 p-4 bg-black/20">
-      <table className="min-w-full text-left text-[var(--color-text-primary)]">
-        <thead className="border-b border-white/10 text-gold-400">
+    <div className="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3 md:p-4">
+      <table className="w-full table-fixed text-left text-[var(--color-text-primary)]">
+        <thead className="border-b border-[var(--color-border-default)] text-[var(--color-text-accent)]">
           <tr>
-            <th className="py-2 px-3">Title</th>
-            <th className="py-2 px-3">Status</th>
-            <th className="py-2 px-3">Date</th>
-            <th className="py-2 px-3">Venue</th>
-            <th className="py-2 px-3">Host</th>
-            <th className="py-2 px-3">Type</th>
-            <th className="py-2 px-3">Cost</th>
-            <th className="py-2 px-3">Verified</th>
-            <th className="py-2 px-3">Spotlight</th>
-            <th className="py-2 px-3">Actions</th>
+            <th className="w-[24%] px-2 py-2 text-sm font-semibold">Title</th>
+            <th className="w-[16%] px-2 py-2 text-sm font-semibold">Status</th>
+            <th className="w-[9%] px-2 py-2 text-sm font-semibold">Date</th>
+            <th className="w-[14%] px-2 py-2 text-sm font-semibold">Venue</th>
+            <th className="w-[11%] px-2 py-2 text-sm font-semibold">Host</th>
+            <th className="w-[8%] px-2 py-2 text-sm font-semibold">Type</th>
+            <th className="w-[8%] px-2 py-2 text-sm font-semibold">Cost</th>
+            <th className="w-[4%] px-2 py-2 text-center text-sm font-semibold">Verified</th>
+            <th className="w-[4%] px-2 py-2 text-center text-sm font-semibold">Spotlight</th>
+            <th className="w-[12%] px-2 py-2 text-sm font-semibold">Actions</th>
           </tr>
         </thead>
 
         <tbody>
           {rows.map((ev) => (
-            <tr key={ev.id} className="border-b border-white/5">
-              <td className="py-2 px-3">
+            <tr key={ev.id} className="border-b border-[var(--color-border-subtle)] align-top">
+              <td className="px-2 py-3">
                 <Link
                   href={`/events/${ev.slug || ev.id}`}
-                  className="text-[var(--color-text-accent)] hover:underline"
+                  className="block break-words text-[var(--color-text-accent)] hover:underline leading-snug"
                   target="_blank"
                 >
                   {ev.title}
                 </Link>
               </td>
-              <td className="py-2 px-3">
-                <div className="flex items-center gap-1">
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+              <td className="px-2 py-3">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={`${badgeBase} ${
                     ev.is_published
-                      ? "bg-emerald-900/50 text-emerald-400"
-                      : "bg-amber-900/50 text-amber-400"
+                      ? "border-[var(--pill-border-success)] bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)]"
+                      : "border-[var(--pill-border-warning)] bg-[var(--pill-bg-warning)] text-[var(--pill-fg-warning)]"
                   }`}>
                     {ev.is_published ? "Published" : "Draft"}
                   </span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  <span className={`${badgeBase} ${
                     ev.status === "active"
-                      ? "bg-green-900/50 text-green-400"
-                      : "bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)]"
+                      ? "border-[var(--pill-border-success)] bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)]"
+                      : "border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--pill-fg-on-muted)]"
                   }`}>
                     {ev.status}
                   </span>
                 </div>
               </td>
-              <td className="py-2 px-3">{ev.event_date}</td>
-              <td className="py-2 px-3">{ev.venues?.name ?? ev.venue_name ?? "—"}</td>
+              <td className="px-2 py-3 text-sm break-words">{ev.event_date}</td>
+              <td className="px-2 py-3 text-sm break-words">{ev.venues?.name ?? ev.venue_name ?? "—"}</td>
 
-              <td className="py-2 px-3">
+              <td className="px-2 py-3">
                 {(() => {
                   const host = Array.isArray(ev.host) ? ev.host[0] : ev.host;
                   if (!ev.host_id) {
-                    return <span className="text-xs text-amber-300">No host</span>;
+                    return <span className="text-xs text-[var(--color-text-tertiary)]">No host</span>;
                   }
                   if (!host?.id) {
                     return <span className="text-xs text-[var(--color-text-tertiary)]">Host linked</span>;
@@ -190,7 +191,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                     <Link
                       href={`/members/${host.slug || host.id}`}
                       target="_blank"
-                      className="text-[var(--color-text-accent)] hover:underline text-sm"
+                      className="text-sm text-[var(--color-text-accent)] hover:underline break-words"
                     >
                       {host.full_name || "View host"}
                     </Link>
@@ -198,25 +199,25 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                 })()}
               </td>
 
-              <td className="py-2 px-3">
+              <td className="px-2 py-3">
                 {ev.has_timeslots ? (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-400">
+                  <span className={`${badgeBase} border-[var(--color-border-accent)] bg-[var(--pill-bg-accent)] text-[var(--pill-fg-on-accent)]`}>
                     Timeslots
                   </span>
                 ) : (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-tertiary)]">
+                  <span className={`${badgeBase} border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] text-[var(--pill-fg-on-muted)]`}>
                     RSVP
                   </span>
                 )}
               </td>
 
-              <td className="py-2 px-3">
+              <td className="px-2 py-3">
                 {ev.is_free ? (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-900/50 text-emerald-300">
+                  <span className={`${badgeBase} border-[var(--pill-border-success)] bg-[var(--pill-bg-success)] text-[var(--pill-fg-success)]`}>
                     Free
                   </span>
                 ) : ev.cost_label ? (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-300">
+                  <span className={`${badgeBase} max-w-full whitespace-normal break-words border-[var(--color-border-accent)] bg-[var(--pill-bg-accent)] text-[var(--pill-fg-on-accent)]`}>
                     {ev.cost_label}
                   </span>
                 ) : (
@@ -224,7 +225,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                 )}
               </td>
 
-              <td className="py-2 px-3">
+              <td className="px-2 py-3 text-center">
                 <input
                   type="checkbox"
                   checked={!!ev.last_verified_at}
@@ -235,7 +236,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                 />
               </td>
 
-              <td className="py-2 px-3">
+              <td className="px-2 py-3 text-center">
                 <input
                   type="checkbox"
                   checked={ev.is_spotlight ?? false}
@@ -246,14 +247,14 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                 />
               </td>
 
-              <td className="py-2 px-3">
+              <td className="px-2 py-3">
                 {loadingId === ev.id ? (
-                  <span className="text-gold-400">Saving…</span>
+                  <span className="text-[var(--color-text-accent)]">Saving…</span>
                 ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/dashboard/my-events/${ev.id}`}
-                      className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded text-[var(--color-text-primary)] text-xs"
+                      className="rounded px-2 py-1 text-xs text-white bg-blue-600 hover:bg-blue-500"
                     >
                       Edit
                     </Link>
@@ -262,14 +263,14 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                         <Link
                           href={`/events/${ev.id}/display`}
                           target="_blank"
-                          className="px-2 py-1 bg-purple-600 hover:bg-purple-500 rounded text-[var(--color-text-primary)] text-xs"
+                          className="rounded px-2 py-1 text-xs text-white bg-purple-600 hover:bg-purple-500"
                           title="TV Display for venue screens"
                         >
                           📺 TV
                         </Link>
                         <Link
                           href={`/events/${ev.id}/lineup`}
-                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-[var(--color-text-primary)] text-xs"
+                          className="rounded px-2 py-1 text-xs text-white bg-emerald-600 hover:bg-emerald-500"
                           title="Control lineup during event"
                         >
                           🎤 Control
@@ -278,7 +279,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
                     )}
                     <button
                       onClick={() => setDeleteModal({ id: ev.id, title: ev.title })}
-                      className="px-2 py-1 bg-red-600 hover:bg-red-500 rounded text-[var(--color-text-primary)] text-xs"
+                      className="rounded px-2 py-1 text-xs text-white bg-red-600 hover:bg-red-500"
                     >
                       Delete
                     </button>
@@ -293,7 +294,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
       {/* Delete Confirmation Modal */}
       {deleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-[var(--color-bg-input)] border border-white/10 rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-[var(--color-bg-input)] border border-[var(--color-border-default)] rounded-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Delete Event</h3>
             <p className="text-[var(--color-text-secondary)] mb-2">
               Are you sure you want to delete <strong className="text-[var(--color-text-primary)]">{deleteModal.title}</strong>?
@@ -309,7 +310,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder="DELETE"
-              className="w-full px-3 py-2 bg-black border border-white/20 rounded text-[var(--color-text-primary)] mb-4 focus:border-red-500 focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded text-[var(--color-text-primary)] mb-4 focus:border-red-500 focus:outline-none"
             />
             <div className="flex gap-3">
               <button

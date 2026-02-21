@@ -98,7 +98,7 @@ export default async function AdminEventsPage() {
    }
 
    return (
-     <div className="min-h-screen w-full px-6 py-12 max-w-5xl mx-auto">
+     <div className="min-h-screen w-full px-4 py-10 md:px-6 md:py-12 max-w-7xl mx-auto">
        <div className="flex items-center justify-between mb-8">
          <div>
            <h1 className="text-4xl font-bold text-[var(--color-text-accent)]">Manage Happenings</h1>

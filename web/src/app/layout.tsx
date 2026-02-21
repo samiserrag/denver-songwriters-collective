@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Header, Footer, ShareSiteCtaBar } from "@/components/navigation";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ScrollReset } from "@/components/layout/ScrollReset";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -204,6 +205,19 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
         <link rel="dns-prefetch" href="https://oipozdbfxyskoscsgbfq.supabase.co" />
 
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-7D09XHWWS7" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-7D09XHWWS7');
+            `,
+          }}
+        />
+
         {/*
           Note: The hero image LCP is optimized via next/image with priority prop.
           Next.js automatically handles preload and format optimization (WebP/AVIF).
@@ -272,6 +286,7 @@ export default async function RootLayout({
         <ShareSiteCtaBar position="bottom" />
         <Footer socialLinks={siteSettings.socialLinks} />
         <Toaster />
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>

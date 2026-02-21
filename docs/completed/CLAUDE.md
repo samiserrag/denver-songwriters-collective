@@ -9571,3 +9571,44 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 **Verification:**
 - `npm test -- src/__tests__/admin-verification-queue.test.ts src/__tests__/verification-state.test.ts`
 - `npm test -- src/__tests__/phase4-42k-event-creation-fixes.test.ts src/__tests__/edit-form-series-controls.test.ts`
+
+---
+
+### Admin Events Table Layout + Sunrise Theme Fix (February 2026) — RESOLVED
+
+**Goal:** Remove sideways scrolling/cut-off columns on `/dashboard/admin/events` and eliminate dark-theme hardcoded table colors that rendered poorly in Sunrise.
+
+**Summary:**
+- Admin events table shell now uses semantic theme tokens (no hardcoded dark-only `bg-black/20`, `text-gold-400`, `border-white/10`).
+- Table switched to `table-fixed` with explicit column widths and wrapped cell content to avoid horizontal clipping.
+- Admin events page container widened from `max-w-5xl` to `max-w-7xl` to fit management columns.
+- Modal input/border styling moved to theme tokens for better Sunrise contrast consistency.
+- Added regression tests locking layout/theme contract.
+
+**Files touched:**
+- `web/src/components/admin/EventSpotlightTable.tsx`
+- `web/src/app/(protected)/dashboard/admin/events/page.tsx`
+- `web/src/__tests__/admin-events-table-layout.test.ts`
+
+**Verification:**
+- `npm test -- src/__tests__/admin-events-table-layout.test.ts src/__tests__/event-status-legacy-lock.test.ts`
+- `npm run build`
+
+---
+
+### Analytics + Google Tag Setup (February 2026) — RESOLVED
+
+**Goal:** Enable Vercel Analytics and install Google tag `G-7D09XHWWS7` globally.
+
+**Summary:**
+- Added `@vercel/analytics` dependency to web app.
+- Imported and rendered `<Analytics />` in root layout.
+- Added Google tag script and inline `gtag('config', 'G-7D09XHWWS7')` in root layout `<head>`.
+
+**Files touched:**
+- `web/package.json`
+- `web/package-lock.json`
+- `web/src/app/layout.tsx`
+
+**Verification:**
+- `npm run build`
