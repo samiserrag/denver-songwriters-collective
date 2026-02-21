@@ -116,8 +116,8 @@ export function renderOgCard({
     : imageUrl;
 
   // Avatar mode uses a taller image zone and minimal content bar
-  const imageZoneHeight = imageFit === "avatar" ? 530 : 400;
-  const contentBarHeight = imageFit === "avatar" ? 100 : 230;
+  const imageZoneHeight = imageFit === "avatar" ? 480 : 400;
+  const contentBarHeight = imageFit === "avatar" ? 150 : 230;
 
   return (
     <div
@@ -243,43 +243,45 @@ export function renderOgCard({
           </div>
         )}
 
-        {/* CSC Wordmark — top-right with dark scrim for readability */}
-        <div
-          style={{
-            position: "absolute",
-            top: "16px",
-            right: "20px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            backgroundColor: "rgba(0, 0, 0, 0.55)",
-            borderRadius: "12px",
-            padding: "12px 20px",
-          }}
-        >
-          <span
+        {/* CSC Wordmark — top-right (hidden for avatar mode, shown in content bar instead) */}
+        {imageFit !== "avatar" && (
+          <div
             style={{
-              fontSize: "24px",
-              fontWeight: "700",
-              color: COLORS.goldAccent,
-              lineHeight: 1.25,
-              letterSpacing: "0.5px",
+              position: "absolute",
+              top: "16px",
+              right: "20px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              backgroundColor: "rgba(0, 0, 0, 0.55)",
+              borderRadius: "12px",
+              padding: "12px 20px",
             }}
           >
-            The Colorado Songwriters
-          </span>
-          <span
-            style={{
-              fontSize: "24px",
-              fontWeight: "700",
-              color: COLORS.goldAccent,
-              lineHeight: 1.25,
-              letterSpacing: "0.5px",
-            }}
-          >
-            Collective
-          </span>
-        </div>
+            <span
+              style={{
+                fontSize: "24px",
+                fontWeight: "700",
+                color: COLORS.goldAccent,
+                lineHeight: 1.25,
+                letterSpacing: "0.5px",
+              }}
+            >
+              The Colorado Songwriters
+            </span>
+            <span
+              style={{
+                fontSize: "24px",
+                fontWeight: "700",
+                color: COLORS.goldAccent,
+                lineHeight: 1.25,
+                letterSpacing: "0.5px",
+              }}
+            >
+              Collective
+            </span>
+          </div>
+        )}
 
         {/* Date overlay badge (events) — bottom-left above gradient */}
         {dateOverlay && (
@@ -328,7 +330,7 @@ export function renderOgCard({
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          alignItems: imageFit === "avatar" ? "center" : "flex-start",
+          alignItems: "flex-start",
           padding: imageFit === "avatar" ? "0 24px" : "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
@@ -338,85 +340,125 @@ export function renderOgCard({
         }}
       >
         {imageFit === "avatar" ? (
-          /* Compact centered layout: Row 1 = name, Row 2 = kind + location + chips */
-          <>
-            {/* Row 1: Name */}
-            <div
-              style={{
-                fontSize: title.length > 30 ? "32px" : "38px",
-                fontWeight: "bold",
-                color: COLORS.textPrimary,
-                lineHeight: 1.1,
-              }}
-            >
-              {title.length > 40 ? title.slice(0, 40) + "…" : title}
-            </div>
-
-            {/* Row 2: Kind label + location + chips */}
+          /* Avatar layout: Row 1 = kind (left) + name (center) + chips (right), Row 2 = CSC wordmark */
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            {/* Row 1: Three-column layout */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
-                marginTop: "4px",
+                justifyContent: "space-between",
+                width: "100%",
               }}
             >
+              {/* Left: Kind label + location */}
               <div
                 style={{
-                  fontSize: "18px",
-                  color: COLORS.textSecondary,
-                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  minWidth: "200px",
                 }}
               >
-                {kindLabel}
-              </div>
-              {subtitle && (
-                <>
-                  <div
-                    style={{
-                      width: "1px",
-                      height: "14px",
-                      backgroundColor: COLORS.contentBarBorder,
-                    }}
-                  />
-                  <div
-                    style={{
-                      fontSize: "18px",
-                      color: COLORS.textSecondary,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {subtitle}
-                  </div>
-                </>
-              )}
-              {chips.length > 0 && (
                 <div
                   style={{
-                    width: "1px",
-                    height: "14px",
-                    backgroundColor: COLORS.contentBarBorder,
-                  }}
-                />
-              )}
-              {chips.slice(0, 4).map((chip, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    backgroundColor: COLORS.pillBg,
-                    border: `1.5px solid ${COLORS.pillBorder}`,
-                    borderRadius: "12px",
-                    padding: "3px 12px",
-                    fontSize: "14px",
-                    color: COLORS.pillText,
-                    fontWeight: "600",
+                    fontSize: "18px",
+                    color: COLORS.textSecondary,
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {chip.label}
+                  {kindLabel}
                 </div>
-              ))}
+                {subtitle && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "1px",
+                        height: "14px",
+                        backgroundColor: COLORS.contentBarBorder,
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontSize: "18px",
+                        color: COLORS.textSecondary,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {subtitle}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Center: Name */}
+              <div
+                style={{
+                  fontSize: title.length > 30 ? "32px" : "38px",
+                  fontWeight: "bold",
+                  color: COLORS.textPrimary,
+                  lineHeight: 1.1,
+                  textAlign: "center",
+                }}
+              >
+                {title.length > 40 ? title.slice(0, 40) + "…" : title}
+              </div>
+
+              {/* Right: Genre chips */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  justifyContent: "flex-end",
+                  minWidth: "200px",
+                }}
+              >
+                {chips.slice(0, 4).map((chip, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: COLORS.pillBg,
+                      border: `1.5px solid ${COLORS.pillBorder}`,
+                      borderRadius: "12px",
+                      padding: "3px 12px",
+                      fontSize: "14px",
+                      color: COLORS.pillText,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {chip.label}
+                  </div>
+                ))}
+              </div>
             </div>
-          </>
+
+            {/* Row 2: CSC Wordmark centered */}
+            <div
+              style={{
+                fontSize: "16px",
+                fontWeight: "600",
+                color: COLORS.goldAccent,
+                marginTop: "6px",
+                letterSpacing: "0.5px",
+              }}
+            >
+              The Colorado Songwriters Collective
+            </div>
+          </div>
         ) : (
           /* Standard layout for non-avatar cards */
           <>
