@@ -78,6 +78,24 @@ export interface OgCardProps {
 }
 
 /**
+ * Normalize a Supabase storage URL to use the image transformation endpoint.
+ * This strips EXIF orientation data so images render right-side-up in Satori/OG.
+ * e.g. .../object/public/avatars/... → .../render/image/public/avatars/...
+ */
+function normalizeImageUrl(url: string): string {
+  if (!url) return url;
+  // Supabase storage public URLs contain /object/public/
+  // The render endpoint at /render/image/public/ applies transforms and strips EXIF
+  if (url.includes("/storage/v1/object/public/")) {
+    return url.replace(
+      "/storage/v1/object/public/",
+      "/storage/v1/render/image/public/"
+    );
+  }
+  return url;
+}
+
+/**
  * Renders the OG card JSX for use with ImageResponse.
  */
 export function renderOgCard({
@@ -92,6 +110,11 @@ export function renderOgCard({
   dateOverlay,
   cityLabel,
 }: OgCardProps): React.ReactElement {
+  // Normalize avatar images to strip EXIF orientation
+  const resolvedImageUrl = imageUrl && imageFit === "avatar"
+    ? normalizeImageUrl(imageUrl)
+    : imageUrl;
+
   return (
     <div
       style={{
@@ -117,7 +140,7 @@ export function renderOgCard({
         }}
       >
         {/* Entity image or branded fallback */}
-        {imageUrl && imageFit === "avatar" ? (
+        {resolvedImageUrl && imageFit === "avatar" ? (
           /* Centered circular avatar for profile OG cards */
           <div
             style={{
@@ -131,7 +154,7 @@ export function renderOgCard({
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img */}
             <img
-              src={imageUrl}
+              src={resolvedImageUrl}
               width={280}
               height={280}
               alt=""
@@ -140,7 +163,7 @@ export function renderOgCard({
                 height: "280px",
                 borderRadius: "140px",
                 objectFit: "cover",
-                objectPosition: "top",
+                objectPosition: "center",
                 border: `4px solid ${COLORS.goldAccent}`,
                 boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
               }}
@@ -302,7 +325,9 @@ export function renderOgCard({
           padding: "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
-          background: `radial-gradient(ellipse at top, rgba(255, 216, 106, 0.14), ${COLORS.backgroundSecondary} 70%)`,
+          background: imageFit === "avatar"
+            ? COLORS.backgroundSecondary
+            : `radial-gradient(ellipse at top, rgba(255, 216, 106, 0.14), ${COLORS.backgroundSecondary} 70%)`,
         }}
       >
         {/* Title — large and dominant */}
