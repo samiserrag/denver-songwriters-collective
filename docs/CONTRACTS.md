@@ -992,3 +992,59 @@ See `docs/email-preferences.md` for the full developer contract and decision tre
 | `__tests__/email-template-coverage.test.ts` | All templates categorized, valid categories, no overlap |
 | `__tests__/email-preferences-master-toggle.test.ts` | Master toggle, status indicator, audit logging |
 | `__tests__/notification-preferences.test.ts` | Category mapping, preference logic |
+
+---
+
+## Contract: Admin Events Table Layout + Theme Safety
+
+> **Track Status:** February 2026
+
+**Scope:** `/dashboard/admin/events` table shell and row rendering
+
+### Layout Rules
+
+- The admin events table must not require horizontal page scrolling to access core columns.
+- Table layout must be fixed-width (`table-fixed`) with explicit column widths for management columns.
+- Long values (title, venue, host, cost) must wrap within the cell (no clipping).
+- The admin page container for this surface must remain `max-w-7xl` (or wider equivalent) to preserve column fit.
+
+### Theme Rules
+
+- Table shell styling must use semantic theme tokens, not dark-theme literals.
+- Forbidden on this surface:
+  - `bg-black/20`
+  - `text-gold-400`
+  - `border-white/10`
+- Modal/input chrome on this surface must use tokenized colors (`--color-bg-*`, `--color-border-*`, `--color-text-*`).
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/admin-events-table-layout.test.ts` | Fixed table layout, no horizontal-scroll wrapper, tokenized theme shell, wide container |
+
+---
+
+## Contract: Global Analytics + Google Tag
+
+> **Track Status:** February 2026
+
+### Installation Rules
+
+- Vercel Analytics must be installed via `@vercel/analytics`.
+- Root app layout must import from `@vercel/analytics/next` and render `<Analytics />` exactly once.
+- Root app layout must keep `<SpeedInsights />` active (both signals run together).
+
+### Google Tag Rule
+
+- Global Google tag must be installed in root layout `<head>` and use:
+  - Script source: `https://www.googletagmanager.com/gtag/js?id=G-7D09XHWWS7`
+  - Config ID: `G-7D09XHWWS7`
+- Tag must be present once globally (no per-page duplicate injection).
+
+### Source of Truth
+
+| File | Responsibility |
+|------|----------------|
+| `app/layout.tsx` | Global analytics + Google tag injection |
+| `package.json` | `@vercel/analytics` dependency |

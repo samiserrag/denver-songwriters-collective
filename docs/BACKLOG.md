@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-02-17
+> **Last Updated:** 2026-02-21
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -46,6 +46,8 @@
 | **Homepage CTA pills text update** | DONE | Commit `dfe46d7` — "See All Happenings" / "See Open Mics" | Sami |
 | **Member pages basic completeness** | OPEN | See Member Pages section below | Sami |
 | **[GROWTH-01] Community Invite / Referral Growth Loop (Phase 7B)** | PARTIAL DONE | 7B.1 share-first shipped; 7B.2 managed invite email deferred behind separate STOP-GATE (`docs/investigation/phase7b-community-invite-growth-stopgate.md`) | Sami |
+| **[UX-12] Admin events table responsive/no-side-scroll + Sunrise-safe styling** | DONE | Commit `5bfaf009` | Sami |
+| **[OPS-05] Global analytics instrumentation (Vercel + Google tag)** | DONE | Commit `5bfaf009` | Sami |
 
 ### P2 — NICE TO HAVE
 
