@@ -172,7 +172,7 @@ export default async function HomePage() {
       .select("*")
       .eq("is_featured", true)
       .eq("is_public", true)
-      .or("spotlight_type.eq.host,is_host.eq.true")
+      .eq("spotlight_type", "host")
       .order("featured_rank", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(4),
@@ -835,7 +835,7 @@ export default async function HomePage() {
                 href="/host"
                 className="text-[var(--color-text-accent)] hover:text-[var(--color-accent-primary)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
-                Become a CSC host
+                Become a host and create a happening
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
