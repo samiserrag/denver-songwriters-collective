@@ -65,7 +65,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
     .or("is_songwriter.eq.true,is_host.eq.true,is_studio.eq.true,is_fan.eq.true")
     .order("is_featured", { ascending: false })
     .order("featured_rank", { ascending: true })
-    .order("full_name", { ascending: true });
+    .order("created_at", { ascending: false });
 
   // Fetch all venue manager user_ids in a single query (no N+1)
   const { data: venueManagers } = await supabase

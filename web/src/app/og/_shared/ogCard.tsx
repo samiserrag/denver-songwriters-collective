@@ -69,8 +69,8 @@ export interface OgCardProps {
     name: string;
     avatarUrl?: string | null;
   };
-  /** Image fit mode: "cover" (default) or "contain" (letterbox for venues) */
-  imageFit?: "cover" | "contain";
+  /** Image fit mode: "cover" (default), "contain" (letterbox for venues), or "avatar" (centered circle for profiles) */
+  imageFit?: "cover" | "contain" | "avatar";
   /** Date overlay badge on image zone (events only) */
   dateOverlay?: string;
   /** City label shown bottom-right on image zone */
@@ -117,7 +117,36 @@ export function renderOgCard({
         }}
       >
         {/* Entity image or branded fallback */}
-        {imageUrl ? (
+        {imageUrl && imageFit === "avatar" ? (
+          /* Centered circular avatar for profile OG cards */
+          <div
+            style={{
+              width: "1200px",
+              height: "400px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: `linear-gradient(135deg, ${COLORS.backgroundSecondary} 0%, ${COLORS.backgroundTertiary} 50%, ${COLORS.backgroundSecondary} 100%)`,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img */}
+            <img
+              src={imageUrl}
+              width={280}
+              height={280}
+              alt=""
+              style={{
+                width: "280px",
+                height: "280px",
+                borderRadius: "140px",
+                objectFit: "cover",
+                objectPosition: "top",
+                border: `4px solid ${COLORS.goldAccent}`,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+              }}
+            />
+          </div>
+        ) : imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img
           <img
             src={imageUrl}
@@ -127,7 +156,7 @@ export function renderOgCard({
             style={{
               width: "1200px",
               height: "400px",
-              objectFit: imageFit,
+              objectFit: imageFit === "contain" ? "contain" : "cover",
               objectPosition: imageFit === "contain" ? "center" : "top",
               backgroundColor: COLORS.backgroundSecondary,
             }}

@@ -59,6 +59,7 @@ export async function GET(
       subtitle,
       chips,
       imageUrl: avatarUrl,
+      imageFit: "avatar",
       fallbackEmoji: "🎤",
       kindLabel,
       kindVariant: isSongwriter ? "gold" : "emerald",
