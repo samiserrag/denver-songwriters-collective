@@ -86,6 +86,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
   const [updatingSpotlight, setUpdatingSpotlight] = useState<string | null>(null);
+  const [togglingHostSpotlight, setTogglingHostSpotlight] = useState<string | null>(null);
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
   const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
   const [mediaModal, setMediaModal] = useState<{
@@ -165,6 +166,22 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       console.error("Update spotlight error:", err);
     } finally {
       setUpdatingSpotlight(null);
+    }
+  };
+
+  const handleHostSpotlightToggle = async (user: Profile) => {
+    setTogglingHostSpotlight(user.id);
+    try {
+      const isCurrentlyHostSpotlight = user.is_featured && user.spotlight_type === "host";
+      const result = await updateSpotlightType(user.id, isCurrentlyHostSpotlight ? null : "host");
+      if (!result.success) {
+        console.error("Toggle host spotlight error:", result.error);
+      }
+      router.refresh();
+    } catch (err) {
+      console.error("Toggle host spotlight error:", err);
+    } finally {
+      setTogglingHostSpotlight(null);
     }
   };
 
@@ -343,6 +360,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
               <th className="py-2 px-3">Email</th>
               <th className="py-2 px-3">Type</th>
               <th className="py-2 px-3">Host</th>
+              <th className="py-2 px-3">Host Spotlight</th>
               <th className="py-2 px-3">Spotlight</th>
               <th className="py-2 px-3">Created</th>
               <th className="py-2 px-3">Actions</th>
@@ -393,6 +411,28 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                       </button>
                     ) : isUserHost(u) && !isUserSongwriter(u) ? (
                       <span className="text-emerald-700 dark:text-emerald-300 text-xs">Primary Host</span>
+                    ) : (
+                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3">
+                    {/* Host Spotlight toggle — only for hosts */}
+                    {isUserHost(u) ? (
+                      <button
+                        onClick={() => handleHostSpotlightToggle(u)}
+                        disabled={togglingHostSpotlight === u.id}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          u.is_featured && u.spotlight_type === "host"
+                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        {togglingHostSpotlight === u.id
+                          ? "..."
+                          : u.is_featured && u.spotlight_type === "host"
+                          ? "Yes"
+                          : "No"}
+                      </button>
                     ) : (
                       <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
@@ -474,7 +514,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="py-6 px-3 text-center text-[var(--color-text-secondary)]"
                 >
                   No users found for this filter.
