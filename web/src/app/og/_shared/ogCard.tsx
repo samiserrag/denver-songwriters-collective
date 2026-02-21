@@ -347,9 +347,7 @@ export function renderOgCard({
           padding: isCompactBar ? "0 24px" : "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
-          background: isCompactBar
-            ? COLORS.backgroundSecondary
-            : `radial-gradient(ellipse at top, rgba(255, 216, 106, 0.14), ${COLORS.backgroundSecondary} 70%)`,
+          background: COLORS.backgroundSecondary,
         }}
       >
         {isCompactBar ? (
