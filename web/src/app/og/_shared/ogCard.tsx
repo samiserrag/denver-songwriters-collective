@@ -77,23 +77,9 @@ export interface OgCardProps {
   cityLabel?: string;
 }
 
-/**
- * Normalize a Supabase storage URL to use the image transformation endpoint.
- * This strips EXIF orientation data so images render right-side-up in Satori/OG.
- * e.g. .../object/public/avatars/... → .../render/image/public/avatars/...
- */
-function normalizeImageUrl(url: string): string {
-  if (!url) return url;
-  // Supabase storage public URLs contain /object/public/
-  // The render endpoint at /render/image/public/ applies transforms and strips EXIF
-  if (url.includes("/storage/v1/object/public/")) {
-    return url.replace(
-      "/storage/v1/object/public/",
-      "/storage/v1/render/image/public/"
-    );
-  }
-  return url;
-}
+// Note: Supabase image transform endpoint (/render/image/) requires Pro plan.
+// We use the original storage URL directly. EXIF orientation is handled by
+// objectPosition: "center" which works for most profile photos.
 
 /**
  * Renders the OG card JSX for use with ImageResponse.
@@ -110,10 +96,7 @@ export function renderOgCard({
   dateOverlay,
   cityLabel,
 }: OgCardProps): React.ReactElement {
-  // Normalize avatar images to strip EXIF orientation
-  const resolvedImageUrl = imageUrl && imageFit === "avatar"
-    ? normalizeImageUrl(imageUrl)
-    : imageUrl;
+  const resolvedImageUrl = imageUrl;
 
   // Avatar mode uses a taller image zone and minimal content bar
   const imageZoneHeight = imageFit === "avatar" ? 480 : 400;
@@ -340,123 +323,113 @@ export function renderOgCard({
         }}
       >
         {imageFit === "avatar" ? (
-          /* Avatar layout: Row 1 = kind (left) + name (center) + chips (right), Row 2 = CSC wordmark */
+          /* Avatar layout: CSC (left) | name+kind (center) | chips (right) — equal flex columns */
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
+              justifyContent: "center",
               width: "100%",
+              height: "100%",
             }}
           >
-            {/* Row 1: Three-column layout */}
+            {/* Left column: CSC Wordmark + location — fixed flex basis */}
             <div
               style={{
+                flex: "1",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "4px",
               }}
             >
-              {/* Left: Kind label + location */}
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  minWidth: "200px",
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: COLORS.goldAccent,
+                  letterSpacing: "0.3px",
+                  lineHeight: 1.3,
                 }}
               >
+                The Colorado Songwriters Collective
+              </div>
+              {subtitle && (
                 <div
                   style={{
                     fontSize: "18px",
                     color: COLORS.textSecondary,
-                    whiteSpace: "nowrap",
                   }}
                 >
-                  {kindLabel}
+                  {subtitle}
                 </div>
-                {subtitle && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "1px",
-                        height: "14px",
-                        backgroundColor: COLORS.contentBarBorder,
-                      }}
-                    />
-                    <div
-                      style={{
-                        fontSize: "18px",
-                        color: COLORS.textSecondary,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {subtitle}
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
+            </div>
 
-              {/* Center: Name */}
+            {/* Center column: Name + kind — gets 2x space */}
+            <div
+              style={{
+                flex: "2",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
               <div
                 style={{
-                  fontSize: title.length > 30 ? "32px" : "38px",
+                  fontSize: "56px",
                   fontWeight: "bold",
                   color: COLORS.textPrimary,
                   lineHeight: 1.1,
                   textAlign: "center",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: "100%",
                 }}
               >
-                {title.length > 40 ? title.slice(0, 40) + "…" : title}
+                {title}
               </div>
-
-              {/* Right: Genre chips */}
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  justifyContent: "flex-end",
-                  minWidth: "200px",
+                  fontSize: "20px",
+                  color: COLORS.textSecondary,
+                  marginTop: "6px",
+                  letterSpacing: "0.3px",
                 }}
               >
-                {chips.slice(0, 4).map((chip, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      backgroundColor: COLORS.pillBg,
-                      border: `1.5px solid ${COLORS.pillBorder}`,
-                      borderRadius: "12px",
-                      padding: "3px 12px",
-                      fontSize: "14px",
-                      color: COLORS.pillText,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {chip.label}
-                  </div>
-                ))}
+                {kindLabel}
               </div>
             </div>
 
-            {/* Row 2: CSC Wordmark centered */}
+            {/* Right column: Genre chips — fixed flex basis */}
             <div
               style={{
-                fontSize: "16px",
-                fontWeight: "600",
-                color: COLORS.goldAccent,
-                marginTop: "6px",
-                letterSpacing: "0.5px",
+                flex: "1",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                justifyContent: "flex-end",
+                flexWrap: "wrap",
               }}
             >
-              The Colorado Songwriters Collective
+              {chips.slice(0, 4).map((chip, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    backgroundColor: COLORS.pillBg,
+                    border: `1.5px solid ${COLORS.pillBorder}`,
+                    borderRadius: "16px",
+                    padding: "4px 14px",
+                    fontSize: "18px",
+                    color: COLORS.pillText,
+                    fontWeight: "600",
+                  }}
+                >
+                  {chip.label}
+                </div>
+              ))}
             </div>
           </div>
         ) : (
