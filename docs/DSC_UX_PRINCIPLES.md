@@ -200,7 +200,28 @@ If you have to explain a flow verbally more than once:
 
 ---
 
-## 15. The North Star
+## 15. Balanced Alignment Across Surfaces
+
+When a layout contains three logical content groups (branding, primary content, metadata), prefer **tri-column balanced alignment** over single-axis alignment.
+
+**Pattern:**
+- Each column is center-aligned *within its own region*
+- The primary content column (center) gets proportionally more space
+- Side columns anchor to left and right but center their own content
+- Content wraps gracefully within each column when space is limited
+
+**Why this matters:**
+- Pure left-alignment wastes right-side space and feels unfinished
+- Pure center-alignment loses the visual hierarchy between primary and supporting content
+- Tri-column balance creates intentional, polished compositions where every element has breathing room
+
+**Applies to:** OG cards, social media images, content bars, footer bars, any three-group horizontal layout.
+
+**Reference:** See PRODUCT_NORTH_STAR §8.4 for the formal pattern definition.
+
+---
+
+## 16. The North Star
 
 > A songwriter should never wonder why something happened, where something went, or how to fix it.
 
@@ -217,11 +238,11 @@ If the system answers those three questions consistently, the UX is succeeding.
 | Phase 4.89 | §2 Visibility vs Trust — Confirmation separate from visibility |
 | Phase 4.82 | §4 Centralize Logic — Override patch field propagation |
 | Phase 4.83 | §4 Centralize Logic — Recurrence canonicalization |
-| Phase 4.92 | §16 Ownership & Invites — Event invite primitives audit |
+| Phase 4.92 | §17 Ownership & Invites — Event invite primitives audit |
 
 ---
 
-## 16. Ownership & Invitation Systems (Mandatory Checklist)
+## 17. Ownership & Invitation Systems (Mandatory Checklist)
 
 Any feature involving ownership, invites, claims, roles, delegation, approvals, revocation, or acceptance flows **must** follow the [Ownership & Invitation UX Checklist](ux/ownership-invitation-ux-checklist.md).
 

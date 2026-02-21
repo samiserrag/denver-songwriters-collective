@@ -329,6 +329,28 @@ Scarcity helps decisions. Popularity games destroy trust.
 
 > **Implementation note:** All card implementations must use the `card-spotlight` class for consistent surface treatment across themes.
 
+### 8.4 Tri-Column Balanced Alignment (System Pattern)
+
+When a surface has three distinct content groups, use a **balanced tri-column layout** with these rules:
+
+* **Left column:** Branding / organizational context — center-aligned to itself, anchored to the left region
+* **Center column:** Primary content (name, title, key info) — center-aligned, visually dominant
+* **Right column:** Supporting metadata (chips, tags, secondary info) — center-aligned to itself, anchored to the right region
+
+**Rules:**
+* Each column is center-aligned *within its own space* — not flush-left or flush-right within the column
+* The center column gets 2x the flex space of side columns (flex ratio 1:2:1)
+* Side columns gracefully wrap content when space is constrained
+* The center column uses overflow/ellipsis for very long content
+* This pattern creates visual symmetry and balance across the full width without forcing everything to one alignment axis
+
+**Applies to:**
+* OG social share images (profile cards, event cards)
+* Any content bar, footer bar, or status bar with three logical groups
+* Social media preview layouts
+
+**Why:** Single-axis alignment (all left-aligned, or all centered) creates visual imbalance when content groups have different purposes. Tri-column balance lets each group breathe in its own space while the overall composition feels intentional and polished.
+
 ---
 
 ## 9. Event Creation UX (Everyone, Not Just Admins)

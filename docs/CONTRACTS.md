@@ -1025,6 +1025,58 @@ See `docs/email-preferences.md` for the full developer contract and decision tre
 
 ---
 
+## Contract: OG Social Share Images (Profile Cards)
+
+> **Track Status:** February 2026
+
+### Layout Contract (1200x630)
+
+OG profile cards use a **photo-dominant vertical poster** layout:
+
+| Zone | Height | Content |
+|------|--------|---------|
+| Image Zone | 480px (~76%) | Circular avatar (460px), gradient background, gold border |
+| Content Bar | 150px (~24%) | Tri-column balanced layout |
+
+### Tri-Column Content Bar Layout
+
+The content bar uses the **Tri-Column Balanced Alignment** pattern (see PRODUCT_NORTH_STAR §8.4):
+
+| Column | Flex | Content | Alignment |
+|--------|------|---------|-----------|
+| Left | 1 | "The Colorado Songwriters Collective (CSC)" | Center-aligned to itself |
+| Center | 2 | Name (56px bold) + Kind/City line | Center-aligned, dominant |
+| Right | 1 | Genre chips (gold pills) | Center-aligned to itself |
+
+### Content Rules
+
+- **Name:** 56px bold, consistent size regardless of length, ellipsis overflow for very long names
+- **Kind + City line:** Format is `{kindLabel} : {city}` when city exists, otherwise just `{kindLabel}` (e.g., "Songwriter & Host : Denver, CO")
+- **CSC wordmark:** Always shows "The Colorado Songwriters Collective (CSC)", center-aligned within the left column
+- **Genre chips:** Gold pill style, max 4, center-aligned within the right column, wrap gracefully
+
+### Image Rules
+
+- Avatar uses original Supabase storage URL (no render/transform endpoint)
+- No image: branded gradient background + fallback emoji
+- Image zone overlays (kind badge, CSC wordmark, date, city) are hidden for avatar mode — all info lives in the content bar
+
+### Color Tokens (Night Theme)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| bg-primary | `#0B0F1A` | Card background |
+| bg-secondary | `#11162B` | Content bar, image fallback |
+| accent-gold | `#FFD86A` | CSC wordmark, pill text/border |
+| text-primary | `#FAF9F7` | Name |
+| text-secondary | `rgba(250, 249, 247, 0.70)` | Kind label, city |
+
+### Source File
+
+**File:** `web/src/app/og/_shared/ogCard.tsx`
+
+---
+
 ## Contract: Global Analytics + Google Tag
 
 > **Track Status:** February 2026

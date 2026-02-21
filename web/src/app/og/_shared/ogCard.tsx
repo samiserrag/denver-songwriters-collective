@@ -393,14 +393,14 @@ export function renderOgCard({
               </div>
             </div>
 
-            {/* Right column: Genre chips — fixed flex basis */}
+            {/* Right column: Genre chips — center-aligned to itself, right side of card */}
             <div
               style={{
                 flex: "1",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                justifyContent: "flex-end",
+                justifyContent: "center",
                 flexWrap: "wrap",
               }}
             >
