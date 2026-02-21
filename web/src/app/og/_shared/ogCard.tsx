@@ -69,8 +69,8 @@ export interface OgCardProps {
     name: string;
     avatarUrl?: string | null;
   };
-  /** Image fit mode: "cover" (default), "contain" (letterbox for venues), or "avatar" (centered circle for profiles) */
-  imageFit?: "cover" | "contain" | "avatar";
+  /** Image fit mode: "cover" (default), "contain" (letterbox), "avatar" (circle for profiles), "event" (centered rounded rect) */
+  imageFit?: "cover" | "contain" | "avatar" | "event";
   /** Date overlay badge on image zone (events only) */
   dateOverlay?: string;
   /** City label shown bottom-right on image zone */
@@ -98,9 +98,10 @@ export function renderOgCard({
 }: OgCardProps): React.ReactElement {
   const resolvedImageUrl = imageUrl;
 
-  // Avatar mode uses a taller image zone and minimal content bar
-  const imageZoneHeight = imageFit === "avatar" ? 480 : 400;
-  const contentBarHeight = imageFit === "avatar" ? 150 : 230;
+  // Avatar and event modes use a taller image zone and minimal content bar
+  const isCompactBar = imageFit === "avatar" || imageFit === "event";
+  const imageZoneHeight = isCompactBar ? 480 : 400;
+  const contentBarHeight = isCompactBar ? 150 : 230;
 
   return (
     <div
@@ -156,16 +157,45 @@ export function renderOgCard({
               }}
             />
           </div>
+        ) : resolvedImageUrl && imageFit === "event" ? (
+          /* Centered rounded-rectangle cover for event OG cards */
+          <div
+            style={{
+              width: "1200px",
+              height: `${imageZoneHeight}px`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: `linear-gradient(135deg, ${COLORS.backgroundSecondary} 0%, ${COLORS.backgroundTertiary} 50%, ${COLORS.backgroundSecondary} 100%)`,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img */}
+            <img
+              src={resolvedImageUrl}
+              width={680}
+              height={440}
+              alt=""
+              style={{
+                width: "680px",
+                height: "440px",
+                borderRadius: "20px",
+                objectFit: "cover",
+                objectPosition: "center",
+                border: `3px solid ${COLORS.goldAccent}`,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+              }}
+            />
+          </div>
         ) : imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img
           <img
             src={imageUrl}
             width={1200}
-            height={400}
+            height={imageZoneHeight}
             alt=""
             style={{
               width: "1200px",
-              height: "400px",
+              height: `${imageZoneHeight}px`,
               objectFit: imageFit === "contain" ? "contain" : "cover",
               objectPosition: imageFit === "contain" ? "center" : "top",
               backgroundColor: COLORS.backgroundSecondary,
@@ -176,7 +206,7 @@ export function renderOgCard({
           <div
             style={{
               width: "1200px",
-              height: "400px",
+              height: `${imageZoneHeight}px`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -206,8 +236,8 @@ export function renderOgCard({
           }}
         />
 
-        {/* Kind badge — top-left (hidden for avatar mode, shown in content bar instead) */}
-        {imageFit !== "avatar" && (
+        {/* Kind badge — top-left (hidden for avatar/event modes, shown in content bar instead) */}
+        {!isCompactBar && (
           <div
             style={{
               position: "absolute",
@@ -226,8 +256,8 @@ export function renderOgCard({
           </div>
         )}
 
-        {/* CSC Wordmark — top-right (hidden for avatar mode, shown in content bar instead) */}
-        {imageFit !== "avatar" && (
+        {/* CSC Wordmark — top-right (hidden for avatar/event modes, shown in content bar instead) */}
+        {!isCompactBar && (
           <div
             style={{
               position: "absolute",
@@ -266,8 +296,8 @@ export function renderOgCard({
           </div>
         )}
 
-        {/* Date overlay badge (events) — bottom-left above gradient */}
-        {dateOverlay && (
+        {/* Date overlay badge (events) — bottom-left above gradient (hidden in event mode, shown in content bar) */}
+        {dateOverlay && !isCompactBar && (
           <div
             style={{
               position: "absolute",
@@ -285,8 +315,8 @@ export function renderOgCard({
           </div>
         )}
 
-        {/* City label — bottom-right */}
-        {cityLabel && (
+        {/* City label — bottom-right (hidden in event mode) */}
+        {cityLabel && !isCompactBar && (
           <div
             style={{
               position: "absolute",
@@ -314,16 +344,16 @@ export function renderOgCard({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "flex-start",
-          padding: imageFit === "avatar" ? "0 24px" : "0 48px",
+          padding: isCompactBar ? "0 24px" : "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
-          background: imageFit === "avatar"
+          background: isCompactBar
             ? COLORS.backgroundSecondary
             : `radial-gradient(ellipse at top, rgba(255, 216, 106, 0.14), ${COLORS.backgroundSecondary} 70%)`,
         }}
       >
-        {imageFit === "avatar" ? (
-          /* Avatar layout: CSC (left) | name+kind (center) | chips (right) — equal flex columns */
+        {isCompactBar ? (
+          /* Tri-column layout for avatar and event modes */
           <div
             style={{
               display: "flex",
@@ -333,7 +363,7 @@ export function renderOgCard({
               height: "100%",
             }}
           >
-            {/* Left column: CSC Wordmark — center-aligned to itself, left side of card */}
+            {/* Left column: CSC Wordmark */}
             <div
               style={{
                 flex: "1",
@@ -356,7 +386,7 @@ export function renderOgCard({
               </div>
             </div>
 
-            {/* Center column: Name + kind — gets 2x space */}
+            {/* Center column: Title + subtitle — gets 2x space */}
             <div
               style={{
                 flex: "2",
@@ -368,7 +398,9 @@ export function renderOgCard({
             >
               <div
                 style={{
-                  fontSize: "56px",
+                  fontSize: imageFit === "event"
+                    ? (title.length > 30 ? "36px" : title.length > 20 ? "42px" : "48px")
+                    : "56px",
                   fontWeight: "bold",
                   color: COLORS.textPrimary,
                   lineHeight: 1.1,
@@ -387,39 +419,64 @@ export function renderOgCard({
                   color: COLORS.textSecondary,
                   marginTop: "6px",
                   letterSpacing: "0.3px",
+                  textAlign: "center",
                 }}
               >
-                {subtitle ? `${kindLabel} : ${subtitle}` : kindLabel}
+                {imageFit === "event"
+                  ? subtitle
+                  : (subtitle ? `${kindLabel} : ${subtitle}` : kindLabel)}
               </div>
             </div>
 
-            {/* Right column: Genre chips — center-aligned to itself, right side of card */}
+            {/* Right column: chips (avatar) or date + chips (event) */}
             <div
               style={{
                 flex: "1",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
                 gap: "8px",
                 justifyContent: "center",
-                flexWrap: "wrap",
               }}
             >
-              {chips.slice(0, 4).map((chip, idx) => (
+              {imageFit === "event" && dateOverlay && (
                 <div
-                  key={idx}
                   style={{
-                    backgroundColor: COLORS.pillBg,
-                    border: `1.5px solid ${COLORS.pillBorder}`,
-                    borderRadius: "16px",
-                    padding: "4px 14px",
-                    fontSize: "18px",
-                    color: COLORS.pillText,
+                    fontSize: "16px",
                     fontWeight: "600",
+                    color: COLORS.textPrimary,
+                    textAlign: "center",
+                    lineHeight: 1.3,
                   }}
                 >
-                  {chip.label}
+                  {dateOverlay}
                 </div>
-              ))}
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {chips.slice(0, imageFit === "event" ? 2 : 4).map((chip, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: COLORS.pillBg,
+                      border: `1.5px solid ${COLORS.pillBorder}`,
+                      borderRadius: "16px",
+                      padding: "4px 14px",
+                      fontSize: "18px",
+                      color: COLORS.pillText,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {chip.label}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : (

@@ -75,11 +75,10 @@ export async function GET(
   const venueCity = venueData?.city ?? "";
   const venueState = venueData?.state ?? "";
 
-  // Build subtitle: venue name + city
-  const locationParts = [venueName, [venueCity, venueState].filter(Boolean).join(", ")].filter(Boolean);
-  const subtitle = locationParts.length > 0
-    ? `📍 ${locationParts.join(" · ")}`
-    : undefined;
+  // Build subtitle for tri-column center: "Open Mic : Venue Name" format
+  const subtitle = venueName
+    ? `${typeLabel} : ${venueName}`
+    : typeLabel;
 
   // Format date overlay
   const recurrenceRule = event?.recurrence_rule;
@@ -161,6 +160,7 @@ export async function GET(
       subtitle,
       chips,
       imageUrl: coverImage,
+      imageFit: "event",
       fallbackEmoji: "🎵",
       kindLabel: typeLabel,
       kindVariant: "gold",
