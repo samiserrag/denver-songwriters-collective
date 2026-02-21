@@ -64,12 +64,6 @@ function getAdminProfileHref(u: Profile): string {
   return `/members/${identifier}`;
 }
 
-const SPOTLIGHT_OPTIONS = [
-  { value: "", label: "Off" },
-  { value: "performer", label: "Artist Spotlight" },
-  { value: "host", label: "Host Spotlight" },
-  { value: "studio", label: "Studio Spotlight" },
-];
 
 // Filter types - flag-based with admin using role
 type FilterType = "all" | "songwriters" | "studios" | "hosts" | "fans" | "admin";
@@ -85,8 +79,9 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
-  const [updatingSpotlight, setUpdatingSpotlight] = useState<string | null>(null);
+  const [togglingArtistSpotlight, setTogglingArtistSpotlight] = useState<string | null>(null);
   const [togglingHostSpotlight, setTogglingHostSpotlight] = useState<string | null>(null);
+  const [togglingStudioSpotlight, setTogglingStudioSpotlight] = useState<string | null>(null);
   const [togglingHost, setTogglingHost] = useState<string | null>(null);
   const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
   const [mediaModal, setMediaModal] = useState<{
@@ -153,19 +148,19 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
     });
   }, [users, search, filterType, deletedUserIds, emailMap]);
 
-  const handleSpotlightChange = async (user: Profile, value: string) => {
-    setUpdatingSpotlight(user.id);
+  const handleArtistSpotlightToggle = async (user: Profile) => {
+    setTogglingArtistSpotlight(user.id);
     try {
-      const spotlightType = value === "" ? null : (value as "performer" | "host" | "studio");
-      const result = await updateSpotlightType(user.id, spotlightType);
+      const isCurrently = user.is_featured && user.spotlight_type === "performer";
+      const result = await updateSpotlightType(user.id, isCurrently ? null : "performer");
       if (!result.success) {
-        console.error("Update spotlight error:", result.error);
+        console.error("Toggle artist spotlight error:", result.error);
       }
       router.refresh();
     } catch (err) {
-      console.error("Update spotlight error:", err);
+      console.error("Toggle artist spotlight error:", err);
     } finally {
-      setUpdatingSpotlight(null);
+      setTogglingArtistSpotlight(null);
     }
   };
 
@@ -182,6 +177,22 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
       console.error("Toggle host spotlight error:", err);
     } finally {
       setTogglingHostSpotlight(null);
+    }
+  };
+
+  const handleStudioSpotlightToggle = async (user: Profile) => {
+    setTogglingStudioSpotlight(user.id);
+    try {
+      const isCurrently = user.is_featured && user.spotlight_type === "studio";
+      const result = await updateSpotlightType(user.id, isCurrently ? null : "studio");
+      if (!result.success) {
+        console.error("Toggle studio spotlight error:", result.error);
+      }
+      router.refresh();
+    } catch (err) {
+      console.error("Toggle studio spotlight error:", err);
+    } finally {
+      setTogglingStudioSpotlight(null);
     }
   };
 
@@ -302,24 +313,6 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
     }
   };
 
-  const getSpotlightValue = (user: Profile): string => {
-    if (!user.is_featured) return "";
-    return user.spotlight_type || "";
-  };
-
-  const getSpotlightDisplayClass = (value: string): string => {
-    switch (value) {
-      case "performer":
-        return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700";
-      case "host":
-        return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700";
-      case "studio":
-        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700";
-      default:
-        return "bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600";
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -360,17 +353,15 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
               <th className="py-2 px-3">Email</th>
               <th className="py-2 px-3">Type</th>
               <th className="py-2 px-3">Host</th>
+              <th className="py-2 px-3">Artist Spotlight</th>
               <th className="py-2 px-3">Host Spotlight</th>
-              <th className="py-2 px-3">Spotlight</th>
+              <th className="py-2 px-3">Studio Spotlight</th>
               <th className="py-2 px-3">Created</th>
               <th className="py-2 px-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((u) => {
-              const spotlightValue = getSpotlightValue(u);
-              // Spotlight eligibility: songwriters, hosts, or studios (flag-based)
-              const canBeSpotlighted = isUserSongwriter(u) || isUserHost(u) || isUserStudio(u);
               return (
                 <tr key={u.id} className="border-b border-[var(--color-border-default)]/30">
                   <td className="py-2 px-3 text-[var(--color-text-primary)]">
@@ -416,6 +407,28 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                     )}
                   </td>
                   <td className="py-2 px-3">
+                    {/* Artist Spotlight toggle — only for songwriters */}
+                    {isUserSongwriter(u) ? (
+                      <button
+                        onClick={() => handleArtistSpotlightToggle(u)}
+                        disabled={togglingArtistSpotlight === u.id}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          u.is_featured && u.spotlight_type === "performer"
+                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        {togglingArtistSpotlight === u.id
+                          ? "..."
+                          : u.is_featured && u.spotlight_type === "performer"
+                          ? "Yes"
+                          : "No"}
+                      </button>
+                    ) : (
+                      <span className="text-[var(--color-text-secondary)] text-xs">-</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3">
                     {/* Host Spotlight toggle — only for hosts */}
                     {isUserHost(u) ? (
                       <button
@@ -438,22 +451,23 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
                     )}
                   </td>
                   <td className="py-2 px-3">
-                    {/* Spotlight eligibility: songwriters, hosts, studios (flag-based) */}
-                    {canBeSpotlighted ? (
-                      <select
-                        value={spotlightValue}
-                        onChange={(e) => handleSpotlightChange(u, e.target.value)}
-                        disabled={updatingSpotlight === u.id}
-                        className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors border cursor-pointer ${getSpotlightDisplayClass(spotlightValue)} ${
-                          updatingSpotlight === u.id ? "opacity-50" : ""
+                    {/* Studio Spotlight toggle — only for studios */}
+                    {isUserStudio(u) ? (
+                      <button
+                        onClick={() => handleStudioSpotlightToggle(u)}
+                        disabled={togglingStudioSpotlight === u.id}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          u.is_featured && u.spotlight_type === "studio"
+                            ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 hover:bg-purple-200 dark:hover:bg-purple-900/50"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700"
                         }`}
                       >
-                        {SPOTLIGHT_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value} className="bg-white text-gray-900">
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                        {togglingStudioSpotlight === u.id
+                          ? "..."
+                          : u.is_featured && u.spotlight_type === "studio"
+                          ? "Yes"
+                          : "No"}
+                      </button>
                     ) : (
                       <span className="text-[var(--color-text-secondary)] text-xs">-</span>
                     )}
@@ -514,7 +528,7 @@ export default function UserDirectoryTable({ users, emailMap = {}, isSuperAdmin 
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="py-6 px-3 text-center text-[var(--color-text-secondary)]"
                 >
                   No users found for this filter.
