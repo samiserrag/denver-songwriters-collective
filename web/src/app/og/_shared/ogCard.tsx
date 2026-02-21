@@ -115,6 +115,10 @@ export function renderOgCard({
     ? normalizeImageUrl(imageUrl)
     : imageUrl;
 
+  // Avatar mode uses a taller image zone and compact content bar
+  const imageZoneHeight = imageFit === "avatar" ? 480 : 400;
+  const contentBarHeight = imageFit === "avatar" ? 150 : 230;
+
   return (
     <div
       style={{
@@ -127,11 +131,11 @@ export function renderOgCard({
         overflow: "hidden",
       }}
     >
-      {/* ===== IMAGE ZONE (top 400px) ===== */}
+      {/* ===== IMAGE ZONE ===== */}
       <div
         style={{
           width: "1200px",
-          height: "400px",
+          height: `${imageZoneHeight}px`,
           position: "relative",
           display: "flex",
           alignItems: "center",
@@ -141,11 +145,11 @@ export function renderOgCard({
       >
         {/* Entity image or branded fallback */}
         {resolvedImageUrl && imageFit === "avatar" ? (
-          /* Centered circular avatar for profile OG cards */
+          /* Centered circular avatar for profile OG cards — large & dominant */
           <div
             style={{
               width: "1200px",
-              height: "400px",
+              height: `${imageZoneHeight}px`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -155,13 +159,13 @@ export function renderOgCard({
             {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img */}
             <img
               src={resolvedImageUrl}
-              width={280}
-              height={280}
+              width={380}
+              height={380}
               alt=""
               style={{
-                width: "280px",
-                height: "280px",
-                borderRadius: "140px",
+                width: "380px",
+                height: "380px",
+                borderRadius: "190px",
                 objectFit: "cover",
                 objectPosition: "center",
                 border: `4px solid ${COLORS.goldAccent}`,
@@ -219,16 +223,16 @@ export function renderOgCard({
           }}
         />
 
-        {/* Kind badge — top-left */}
+        {/* Kind badge — top-left (smaller for avatar mode) */}
         <div
           style={{
             position: "absolute",
             top: "20px",
             left: "24px",
             backgroundColor: COLORS.kindBadgeBg,
-            borderRadius: "18px",
-            padding: "16px 32px",
-            fontSize: "48px",
+            borderRadius: imageFit === "avatar" ? "14px" : "18px",
+            padding: imageFit === "avatar" ? "10px 22px" : "16px 32px",
+            fontSize: imageFit === "avatar" ? "28px" : "48px",
             fontWeight: "700",
             color: COLORS.textPrimary,
             letterSpacing: "0.5px",
@@ -260,7 +264,7 @@ export function renderOgCard({
               letterSpacing: "0.5px",
             }}
           >
-            Colorado Songwriters
+            The Colorado Songwriters
           </span>
           <span
             style={{
@@ -314,15 +318,15 @@ export function renderOgCard({
         )}
       </div>
 
-      {/* ===== CONTENT BAR (bottom 230px) ===== */}
+      {/* ===== CONTENT BAR ===== */}
       <div
         style={{
           width: "1200px",
-          height: "230px",
+          height: `${contentBarHeight}px`,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "0 48px",
+          padding: imageFit === "avatar" ? "0 48px" : "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
           background: imageFit === "avatar"
@@ -330,6 +334,75 @@ export function renderOgCard({
             : `radial-gradient(ellipse at top, rgba(255, 216, 106, 0.14), ${COLORS.backgroundSecondary} 70%)`,
         }}
       >
+        {imageFit === "avatar" ? (
+          /* Compact 2-row layout for avatar cards: Row 1 = name + location, Row 2 = chips */
+          <>
+            {/* Row 1: Name + location inline */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: "20px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: title.length > 30 ? "36px" : "42px",
+                  fontWeight: "bold",
+                  color: COLORS.textPrimary,
+                  lineHeight: 1.15,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {title.length > 40 ? title.slice(0, 40) + "…" : title}
+              </div>
+              {subtitle && (
+                <div
+                  style={{
+                    fontSize: "22px",
+                    color: COLORS.textSecondary,
+                    lineHeight: 1.3,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {subtitle}
+                </div>
+              )}
+            </div>
+
+            {/* Row 2: Chips */}
+            {chips.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginTop: "10px",
+                }}
+              >
+                {chips.slice(0, 4).map((chip, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: COLORS.pillBg,
+                      border: `1.5px solid ${COLORS.pillBorder}`,
+                      borderRadius: "14px",
+                      padding: "4px 14px",
+                      fontSize: "16px",
+                      color: COLORS.pillText,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {chip.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          /* Standard layout for non-avatar cards */
+          <>
         {/* Title — large and dominant */}
         <div
           style={{
@@ -454,6 +527,8 @@ export function renderOgCard({
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );
