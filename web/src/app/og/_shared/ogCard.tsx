@@ -116,8 +116,8 @@ export function renderOgCard({
     : imageUrl;
 
   // Avatar mode uses a taller image zone and compact content bar
-  const imageZoneHeight = imageFit === "avatar" ? 480 : 400;
-  const contentBarHeight = imageFit === "avatar" ? 150 : 230;
+  const imageZoneHeight = imageFit === "avatar" ? 500 : 400;
+  const contentBarHeight = imageFit === "avatar" ? 130 : 230;
 
   return (
     <div
@@ -159,13 +159,13 @@ export function renderOgCard({
             {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img */}
             <img
               src={resolvedImageUrl}
-              width={380}
-              height={380}
+              width={420}
+              height={420}
               alt=""
               style={{
-                width: "380px",
-                height: "380px",
-                borderRadius: "190px",
+                width: "420px",
+                height: "420px",
+                borderRadius: "210px",
                 objectFit: "cover",
                 objectPosition: "center",
                 border: `4px solid ${COLORS.goldAccent}`,
@@ -326,7 +326,8 @@ export function renderOgCard({
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: imageFit === "avatar" ? "0 48px" : "0 48px",
+          alignItems: imageFit === "avatar" ? "center" : "flex-start",
+          padding: "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
           background: imageFit === "avatar"
@@ -335,14 +336,14 @@ export function renderOgCard({
         }}
       >
         {imageFit === "avatar" ? (
-          /* Compact 2-row layout for avatar cards: Row 1 = name + location, Row 2 = chips */
+          /* Compact centered layout for avatar cards: name, location + chips below */
           <>
-            {/* Row 1: Name + location inline */}
+            {/* Row 1: Name centered */}
             <div
               style={{
                 display: "flex",
-                alignItems: "baseline",
-                gap: "20px",
+                justifyContent: "center",
+                width: "100%",
               }}
             >
               <div
@@ -351,6 +352,7 @@ export function renderOgCard({
                   fontWeight: "bold",
                   color: COLORS.textPrimary,
                   lineHeight: 1.15,
+                  textAlign: "center",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -358,47 +360,56 @@ export function renderOgCard({
               >
                 {title.length > 40 ? title.slice(0, 40) + "…" : title}
               </div>
+            </div>
+
+            {/* Row 2: Location + chips centered */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "16px",
+                marginTop: "6px",
+                width: "100%",
+              }}
+            >
               {subtitle && (
                 <div
                   style={{
-                    fontSize: "22px",
+                    fontSize: "20px",
                     color: COLORS.textSecondary,
-                    lineHeight: 1.3,
                     whiteSpace: "nowrap",
                   }}
                 >
                   {subtitle}
                 </div>
               )}
+              {subtitle && chips.length > 0 && (
+                <div
+                  style={{
+                    width: "1px",
+                    height: "18px",
+                    backgroundColor: COLORS.contentBarBorder,
+                  }}
+                />
+              )}
+              {chips.slice(0, 4).map((chip, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    backgroundColor: COLORS.pillBg,
+                    border: `1.5px solid ${COLORS.pillBorder}`,
+                    borderRadius: "14px",
+                    padding: "4px 14px",
+                    fontSize: "16px",
+                    color: COLORS.pillText,
+                    fontWeight: "600",
+                  }}
+                >
+                  {chip.label}
+                </div>
+              ))}
             </div>
-
-            {/* Row 2: Chips */}
-            {chips.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  marginTop: "10px",
-                }}
-              >
-                {chips.slice(0, 4).map((chip, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      backgroundColor: COLORS.pillBg,
-                      border: `1.5px solid ${COLORS.pillBorder}`,
-                      borderRadius: "14px",
-                      padding: "4px 14px",
-                      fontSize: "16px",
-                      color: COLORS.pillText,
-                      fontWeight: "600",
-                    }}
-                  >
-                    {chip.label}
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         ) : (
           /* Standard layout for non-avatar cards */
