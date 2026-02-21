@@ -115,9 +115,9 @@ export function renderOgCard({
     ? normalizeImageUrl(imageUrl)
     : imageUrl;
 
-  // Avatar mode uses a taller image zone and compact content bar
-  const imageZoneHeight = imageFit === "avatar" ? 500 : 400;
-  const contentBarHeight = imageFit === "avatar" ? 130 : 230;
+  // Avatar mode uses a taller image zone and minimal content bar
+  const imageZoneHeight = imageFit === "avatar" ? 530 : 400;
+  const contentBarHeight = imageFit === "avatar" ? 100 : 230;
 
   return (
     <div
@@ -159,13 +159,13 @@ export function renderOgCard({
             {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse requires raw img */}
             <img
               src={resolvedImageUrl}
-              width={420}
-              height={420}
+              width={460}
+              height={460}
               alt=""
               style={{
-                width: "420px",
-                height: "420px",
-                borderRadius: "210px",
+                width: "460px",
+                height: "460px",
+                borderRadius: "230px",
                 objectFit: "cover",
                 objectPosition: "center",
                 border: `4px solid ${COLORS.goldAccent}`,
@@ -223,23 +223,25 @@ export function renderOgCard({
           }}
         />
 
-        {/* Kind badge — top-left (smaller for avatar mode) */}
-        <div
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "24px",
-            backgroundColor: COLORS.kindBadgeBg,
-            borderRadius: imageFit === "avatar" ? "14px" : "18px",
-            padding: imageFit === "avatar" ? "10px 22px" : "16px 32px",
-            fontSize: imageFit === "avatar" ? "28px" : "48px",
-            fontWeight: "700",
-            color: COLORS.textPrimary,
-            letterSpacing: "0.5px",
-          }}
-        >
-          {kindLabel}
-        </div>
+        {/* Kind badge — top-left (hidden for avatar mode, shown in content bar instead) */}
+        {imageFit !== "avatar" && (
+          <div
+            style={{
+              position: "absolute",
+              top: "20px",
+              left: "24px",
+              backgroundColor: COLORS.kindBadgeBg,
+              borderRadius: "18px",
+              padding: "16px 32px",
+              fontSize: "48px",
+              fontWeight: "700",
+              color: COLORS.textPrimary,
+              letterSpacing: "0.5px",
+            }}
+          >
+            {kindLabel}
+          </div>
+        )}
 
         {/* CSC Wordmark — top-right with dark scrim for readability */}
         <div
@@ -327,7 +329,7 @@ export function renderOgCard({
           flexDirection: "column",
           justifyContent: "center",
           alignItems: imageFit === "avatar" ? "center" : "flex-start",
-          padding: "0 48px",
+          padding: imageFit === "avatar" ? "0 24px" : "0 48px",
           position: "relative",
           borderTop: `1px solid ${COLORS.contentBarBorder}`,
           background: imageFit === "avatar"
@@ -336,59 +338,63 @@ export function renderOgCard({
         }}
       >
         {imageFit === "avatar" ? (
-          /* Compact centered layout for avatar cards: name, location + chips below */
+          /* Compact centered layout: Row 1 = name, Row 2 = kind + location + chips */
           <>
-            {/* Row 1: Name centered */}
+            {/* Row 1: Name */}
+            <div
+              style={{
+                fontSize: title.length > 30 ? "32px" : "38px",
+                fontWeight: "bold",
+                color: COLORS.textPrimary,
+                lineHeight: 1.1,
+              }}
+            >
+              {title.length > 40 ? title.slice(0, 40) + "…" : title}
+            </div>
+
+            {/* Row 2: Kind label + location + chips */}
             <div
               style={{
                 display: "flex",
-                justifyContent: "center",
-                width: "100%",
+                alignItems: "center",
+                gap: "12px",
+                marginTop: "4px",
               }}
             >
               <div
                 style={{
-                  fontSize: title.length > 30 ? "36px" : "42px",
-                  fontWeight: "bold",
-                  color: COLORS.textPrimary,
-                  lineHeight: 1.15,
-                  textAlign: "center",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  fontSize: "18px",
+                  color: COLORS.textSecondary,
                   whiteSpace: "nowrap",
                 }}
               >
-                {title.length > 40 ? title.slice(0, 40) + "…" : title}
+                {kindLabel}
               </div>
-            </div>
-
-            {/* Row 2: Location + chips centered */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "16px",
-                marginTop: "6px",
-                width: "100%",
-              }}
-            >
               {subtitle && (
-                <div
-                  style={{
-                    fontSize: "20px",
-                    color: COLORS.textSecondary,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {subtitle}
-                </div>
+                <>
+                  <div
+                    style={{
+                      width: "1px",
+                      height: "14px",
+                      backgroundColor: COLORS.contentBarBorder,
+                    }}
+                  />
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      color: COLORS.textSecondary,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {subtitle}
+                  </div>
+                </>
               )}
-              {subtitle && chips.length > 0 && (
+              {chips.length > 0 && (
                 <div
                   style={{
                     width: "1px",
-                    height: "18px",
+                    height: "14px",
                     backgroundColor: COLORS.contentBarBorder,
                   }}
                 />
@@ -399,9 +405,9 @@ export function renderOgCard({
                   style={{
                     backgroundColor: COLORS.pillBg,
                     border: `1.5px solid ${COLORS.pillBorder}`,
-                    borderRadius: "14px",
-                    padding: "4px 14px",
-                    fontSize: "16px",
+                    borderRadius: "12px",
+                    padding: "3px 12px",
+                    fontSize: "14px",
                     color: COLORS.pillText,
                     fontWeight: "600",
                   }}
