@@ -90,25 +90,23 @@ export function MemberCard({ member, className }: MemberCardProps) {
           className
         )}
       >
-        {/* Avatar Section */}
-        <div className="pt-6 pb-2 flex flex-col items-center gap-2">
-          <div className="relative">
-            <div className="h-28 w-28 rounded-full overflow-hidden bg-[var(--color-indigo-900)] border-2 border-[var(--color-accent-primary)]/30 shadow-lg">
-              {member.avatarUrl ? (
-                <Image
-                  src={member.avatarUrl}
-                  alt={member.name}
-                  width={112}
-                  height={112}
-                  sizes="112px"
-                  className="h-full w-full object-cover object-top"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center text-[var(--color-text-secondary)] text-xl font-semibold tracking-wider">
-                  {getInitials(member.name)}
-                </div>
-              )}
-            </div>
+        {/* Avatar Section — circle fills card width with padding */}
+        <div className="px-6 pt-6 pb-2 flex flex-col items-center gap-2">
+          <div className="w-full aspect-square rounded-full overflow-hidden bg-[var(--color-indigo-900)] border-2 border-[var(--color-accent-primary)]/30 shadow-lg">
+            {member.avatarUrl ? (
+              <Image
+                src={member.avatarUrl}
+                alt={member.name}
+                width={320}
+                height={320}
+                sizes="(max-width: 768px) 40vw, (max-width: 1024px) 25vw, 20vw"
+                className="h-full w-full object-cover object-top"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-[var(--color-text-secondary)] text-3xl font-semibold tracking-wider">
+                {getInitials(member.name)}
+              </div>
+            )}
           </div>
           <RoleBadges flags={roleBadgeFlags} mode="single" size="sm" />
         </div>
