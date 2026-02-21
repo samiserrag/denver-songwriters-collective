@@ -6,7 +6,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Member } from "@/types";
 import { SocialLinks } from "@/components/special/social-links";
-import { ImagePlaceholder } from "@/components/ui";
+
 import { RoleBadges } from "./RoleBadges";
 
 interface MemberCardProps {
@@ -90,28 +90,27 @@ export function MemberCard({ member, className }: MemberCardProps) {
           className
         )}
       >
-        {/* Image Section */}
-        <div className="relative aspect-[4/3] overflow-hidden">
-          {member.avatarUrl ? (
-            <Image
-              src={member.avatarUrl}
-              alt={member.name}
-              fill
-              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              // Phase 4.38: Use object-top to prioritize showing head/face, preventing top crop
-              className="object-cover object-top"
-            />
-          ) : (
-            <ImagePlaceholder
-              initials={getInitials(member.name)}
-              className="w-full h-full"
-            />
-          )}
-
-          {/* Role badge */}
-          <div className="absolute top-3 left-3">
-            <RoleBadges flags={roleBadgeFlags} mode="single" size="sm" />
+        {/* Avatar Section */}
+        <div className="pt-6 pb-2 flex flex-col items-center gap-2">
+          <div className="relative">
+            <div className="h-28 w-28 rounded-full overflow-hidden bg-[var(--color-indigo-900)] border-2 border-[var(--color-accent-primary)]/30 shadow-lg">
+              {member.avatarUrl ? (
+                <Image
+                  src={member.avatarUrl}
+                  alt={member.name}
+                  width={112}
+                  height={112}
+                  sizes="112px"
+                  className="h-full w-full object-cover object-top"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-[var(--color-text-secondary)] text-xl font-semibold tracking-wider">
+                  {getInitials(member.name)}
+                </div>
+              )}
+            </div>
           </div>
+          <RoleBadges flags={roleBadgeFlags} mode="single" size="sm" />
         </div>
 
         {/* Content Section */}

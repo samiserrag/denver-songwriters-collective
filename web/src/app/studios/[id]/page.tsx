@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PageContainer, HeroSection } from "@/components/layout";
 import { ServiceCard } from "@/components/studios";
+import { SongwriterAvatar } from "@/components/songwriters";
 import { SocialIcon, TipIcon, buildSocialLinks, buildTipLinks } from "@/components/profile";
 import { ProfileComments } from "@/components/comments";
 import type { Database } from "@/lib/supabase/database.types";
@@ -133,12 +134,25 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
     <>
       <HeroSection minHeight="auto">
         <PageContainer>
+          <div className="flex flex-col items-center text-center pt-8 pb-4">
+            {/* Avatar */}
+            {studio.avatar_url && (
+              <div className="mb-8">
+                <SongwriterAvatar
+                  src={studio.avatar_url}
+                  alt={studio.full_name ?? "Studio"}
+                  size="2xl"
+                  className="ring-4 ring-[var(--color-accent-primary)]/30 shadow-2xl"
+                />
+              </div>
+            )}
+
           <h1 className="text-[var(--color-text-accent)] text-[length:var(--font-size-heading-xl)] font-[var(--font-family-serif)] italic mb-4">
             {studio.full_name ?? "Studio"}
           </h1>
 
           {/* Identity badges - flag-based */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
             <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-sm font-medium">
               🎚️ Recording Studio
             </span>
@@ -156,7 +170,7 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
 
           {/* Social Links */}
           {socialLinks.length > 0 && (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
               {socialLinks.map((link) => (
                 <Link
                   key={link.type}
@@ -172,6 +186,7 @@ export default async function StudioDetailPage({ params }: StudioDetailPageProps
               ))}
             </div>
           )}
+          </div>
         </PageContainer>
       </HeroSection>
 
