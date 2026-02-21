@@ -46,13 +46,13 @@ export async function generateMetadata({
   const { data: profile } = isUUID(id)
     ? await supabase
         .from("profiles")
-        .select("full_name, bio, avatar_url, slug, city, state, genres, instruments")
+        .select("full_name, bio, avatar_url, slug, city, state, genres, instruments, is_songwriter, is_host")
         .eq("id", id)
         .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
         .single()
     : await supabase
         .from("profiles")
-        .select("full_name, bio, avatar_url, slug, city, state, genres, instruments")
+        .select("full_name, bio, avatar_url, slug, city, state, genres, instruments, is_songwriter, is_host")
         .eq("slug", id)
         .or("is_songwriter.eq.true,is_host.eq.true,role.in.(performer,host)")
         .single();
@@ -68,7 +68,14 @@ export async function generateMetadata({
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const genreText = profile.genres?.slice(0, 3).join(", ");
 
-  const title = `${name} | The Colorado Songwriters Collective`;
+  // Determine role label for OG title
+  const isSongwriter = profile.is_songwriter ?? true;
+  const isHost = profile.is_host ?? false;
+  let roleLabel = "Songwriter";
+  if (isSongwriter && isHost) roleLabel = "Songwriter & Host";
+  else if (isHost) roleLabel = "Host";
+
+  const title = `${name} | ${roleLabel}`;
   const description = profile.bio
     ? profile.bio.slice(0, 155) + (profile.bio.length > 155 ? "..." : "")
     : `${name}${location ? ` from ${location}` : ""}${genreText ? `. Genres: ${genreText}` : ""}. Connect with songwriters in Denver.`;
@@ -92,7 +99,7 @@ export async function generateMetadata({
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${name} - The Colorado Songwriters Collective`,
+          alt: `${name} - ${roleLabel}`,
         },
       ],
     },

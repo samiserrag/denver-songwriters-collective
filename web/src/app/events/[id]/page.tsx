@@ -99,7 +99,7 @@ export async function generateMetadata({
   }
 
   const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
-  const title = `${event.title} | ${config.label} | The Colorado Songwriters Collective`;
+  const title = `${event.title} | ${config.label}`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
     : `Join us for ${event.title}${event.venue_name ? ` at ${event.venue_name}` : ""}. A ${config.label.toLowerCase()} hosted by The Colorado Songwriters Collective.`;
@@ -123,7 +123,7 @@ export async function generateMetadata({
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${event.title} - The Colorado Songwriters Collective`,
+          alt: `${event.title} - ${config.label}`,
         },
       ],
     },

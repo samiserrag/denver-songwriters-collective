@@ -42,14 +42,16 @@ export async function generateMetadata({
   const dayText = event.day_of_week ? `${event.day_of_week}s` : "";
   const timeText = event.start_time ? formatTimeToAMPM(event.start_time) : "";
 
-  const title = `${event.title} | Open Mic in ${venueCity}`;
+  const title = `${event.title} | Open Mic`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
     : `Join ${event.title} at ${venueName}${dayText ? ` every ${dayText}` : ""}${timeText ? ` at ${timeText}` : ""}. Find open mics in Denver with The Colorado Songwriters Collective.`;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
   // Canonical URL points to /events/ since that's where users land
-  const canonicalUrl = `${siteUrl}/events/${event.slug || event.id}`;
+  const canonicalSlug = event.slug || event.id;
+  const canonicalUrl = `${siteUrl}/events/${canonicalSlug}`;
+  const ogImageUrl = `${siteUrl}/og/event/${canonicalSlug}`;
 
   return {
     title,
@@ -61,11 +63,20 @@ export async function generateMetadata({
       siteName: "The Colorado Songwriters Collective",
       type: "website",
       locale: "en_US",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${event.title} - Open Mic`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImageUrl],
     },
     alternates: {
       canonical: canonicalUrl,
