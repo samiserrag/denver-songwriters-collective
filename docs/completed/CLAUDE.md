@@ -9539,3 +9539,35 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - `npm test -- src/__tests__/edit-form-series-controls.test.ts src/__tests__/event-creation-ux.test.ts src/__tests__/phase4-42k-event-creation-fixes.test.ts`
 - `npm run lint` (warnings only; no errors)
 - `npm run build`
+
+---
+
+### Event Status Legacy Cleanup (February 2026) — RESOLVED
+
+**Goal:** Remove legacy verification status drift (`needs_verification` / `unverified`) from active admin flows while preserving the verification contract (`last_verified_at` / `verified_by`).
+
+**Summary:** Verification checkbox and status writes are now aligned to modern semantics:
+- Verification action (`bulk-verify`) now forces `status='active'` on verify.
+- Legacy verification statuses are normalized to `active` in write paths.
+- Admin event edit status dropdown no longer offers legacy verification status values.
+- One-time production normalization converted remaining legacy rows to `active`.
+
+| Area | Change |
+|------|--------|
+| Bulk verify API | `verify` now writes `status='active'` plus verification timestamp/user |
+| Open mic admin status API | Legacy verification statuses are normalized to `active` |
+| My Events PATCH API | Incoming legacy verification statuses are normalized to `active` |
+| Admin event edit UI | Removed `needs_verification` / `unverified` from selectable statuses |
+| Admin events table UX | Local row state now reflects `active` immediately on verify |
+| Data cleanup | Production one-time update: `UPDATE 8` legacy rows to `active` |
+
+**Files touched:**
+- `web/src/app/api/admin/ops/events/bulk-verify/route.ts`
+- `web/src/app/api/admin/open-mics/[id]/status/route.ts`
+- `web/src/app/api/my-events/[id]/route.ts`
+- `web/src/app/(protected)/dashboard/admin/events/[id]/edit/EventEditForm.tsx`
+- `web/src/components/admin/EventSpotlightTable.tsx`
+
+**Verification:**
+- `npm test -- src/__tests__/admin-verification-queue.test.ts src/__tests__/verification-state.test.ts`
+- `npm test -- src/__tests__/phase4-42k-event-creation-fixes.test.ts src/__tests__/edit-form-series-controls.test.ts`

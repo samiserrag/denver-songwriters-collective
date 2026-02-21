@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
   const updatePayload =
     action === "verify"
       ? {
+          status: "active",
           last_verified_at: new Date().toISOString(),
           verified_by: user.id,
         }

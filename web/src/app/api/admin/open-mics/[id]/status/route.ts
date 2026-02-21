@@ -7,8 +7,10 @@ import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 
 // Allowed status values (whitelist)
-const ALLOWED_STATUSES = ["active", "needs_verification", "unverified", "inactive", "cancelled"] as const;
+const ALLOWED_STATUSES = ["active", "inactive", "cancelled"] as const;
 type OpenMicStatus = typeof ALLOWED_STATUSES[number];
+
+const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 
 function isValidStatus(status: string): status is OpenMicStatus {
   return ALLOWED_STATUSES.includes(status as OpenMicStatus);
@@ -47,14 +49,18 @@ export async function POST(
       return NextResponse.json({ error: "Missing required field: status" }, { status: 400 });
     }
 
-    if (!isValidStatus(body.status)) {
+    const normalizedStatus = LEGACY_VERIFICATION_STATUSES.has(body.status)
+      ? "active"
+      : body.status;
+
+    if (!isValidStatus(normalizedStatus)) {
       return NextResponse.json(
         { error: `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(", ")}` },
         { status: 400 }
       );
     }
 
-    const newStatus = body.status;
+    const newStatus = normalizedStatus;
     const note = typeof body.note === "string" ? body.note.slice(0, 500) : "";
 
     // Use service role client for admin operations

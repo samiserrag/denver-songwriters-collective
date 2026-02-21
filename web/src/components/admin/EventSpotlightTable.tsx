@@ -91,6 +91,7 @@ type DBEvent = Database["public"]["Tables"]["events"]["Row"] & {
           ev.id === id
             ? {
                 ...ev,
+                status: action === "verify" ? "active" : ev.status,
                 last_verified_at: action === "verify" ? new Date().toISOString() : null,
               }
             : ev

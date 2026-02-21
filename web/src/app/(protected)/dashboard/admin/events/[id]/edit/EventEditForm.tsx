@@ -38,7 +38,7 @@ interface EventEditFormProps {
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
-const STATUSES = ["active", "inactive", "cancelled", "duplicate", "needs_verification", "unverified"];
+const STATUSES = ["active", "inactive", "cancelled", "duplicate"];
 const EVENT_TYPES = ["open_mic", "showcase", "song_circle", "workshop", "jam_session", "kindred_group", "gig", "meetup", "other"];
 
 // Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
@@ -61,6 +61,11 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const normalizedInitialStatus =
+    event.status === "needs_verification" || event.status === "unverified"
+      ? "active"
+      : event.status || "active";
+
   const [form, setForm] = useState({
     title: event.title || "",
     venue_id: event.venue_id || "",
@@ -73,7 +78,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
     description: event.description || "",
     category: event.category || "",
     categories: event.categories || [],
-    status: event.status || "active",
+    status: normalizedInitialStatus,
     event_type: event.event_type || "open_mic",
     external_url: event.external_url || "",
   });
@@ -104,9 +109,15 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
     // Phase 4.x: Sync verification with status
     // When status is "active", the event should be confirmed (last_verified_at set)
     // This ensures the admin status dropdown and verify checkbox stay in sync
+    const normalizedStatus =
+      form.status === "needs_verification" || form.status === "unverified"
+        ? "active"
+        : form.status;
+
     const now = new Date().toISOString();
-    const isActivating = form.status === "active" && event.status !== "active";
-    const isDeactivating = form.status !== "active" && event.status === "active";
+    const wasActive = normalizedInitialStatus === "active";
+    const isActivating = normalizedStatus === "active" && !wasActive;
+    const isDeactivating = normalizedStatus !== "active" && wasActive;
 
     const { error: updateError } = await supabase
       .from("events")
@@ -122,7 +133,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         description: form.description,
         category: form.category,
         categories: form.categories,
-        status: form.status,
+        status: normalizedStatus,
         event_type: form.event_type,
         external_url: form.external_url || null,
         // Auto-confirm when activating, clear when deactivating

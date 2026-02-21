@@ -10,6 +10,8 @@ import { sendEventRestoredNotifications } from "@/lib/notifications/eventRestore
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
+const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
+
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
   // Check admin (using profiles.role, not app_metadata)
@@ -139,6 +141,12 @@ export async function PATCH(
   const canCreateCSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
+
+  // Verification is now tracked by last_verified_at/verified_by only.
+  // Normalize legacy verification statuses to active to avoid reintroducing old status semantics.
+  if (LEGACY_VERIFICATION_STATUSES.has(body.status)) {
+    body.status = "active";
+  }
 
   // Validate online_url required for online/hybrid events
   if ((body.location_mode === "online" || body.location_mode === "hybrid") && !body.online_url) {
