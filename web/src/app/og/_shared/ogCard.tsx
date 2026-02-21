@@ -333,14 +333,13 @@ export function renderOgCard({
               height: "100%",
             }}
           >
-            {/* Left column: CSC Wordmark + location — fixed flex basis */}
+            {/* Left column: CSC Wordmark — center-aligned to itself, left side of card */}
             <div
               style={{
                 flex: "1",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "4px",
+                alignItems: "center",
               }}
             >
               <div
@@ -350,20 +349,11 @@ export function renderOgCard({
                   color: COLORS.goldAccent,
                   letterSpacing: "0.3px",
                   lineHeight: 1.3,
+                  textAlign: "center",
                 }}
               >
-                The Colorado Songwriters Collective
+                The Colorado Songwriters Collective (CSC)
               </div>
-              {subtitle && (
-                <div
-                  style={{
-                    fontSize: "18px",
-                    color: COLORS.textSecondary,
-                  }}
-                >
-                  {subtitle}
-                </div>
-              )}
             </div>
 
             {/* Center column: Name + kind — gets 2x space */}
@@ -399,7 +389,7 @@ export function renderOgCard({
                   letterSpacing: "0.3px",
                 }}
               >
-                {kindLabel}
+                {subtitle ? `${kindLabel} : ${subtitle}` : kindLabel}
               </div>
             </div>
 
