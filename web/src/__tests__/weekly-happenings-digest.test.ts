@@ -115,14 +115,19 @@ describe("Event Type Coverage", () => {
     "gig",
     "kindred_group",
     "jam_session",
+    "poetry",
+    "irish",
+    "blues",
+    "bluegrass",
+    "comedy",
     "other",
   ];
 
-  it("includes all 9 event types in EVENT_TYPE_CONFIG", () => {
+  it("includes all 14 event types in EVENT_TYPE_CONFIG", () => {
     for (const eventType of ALL_EVENT_TYPES) {
       expect(EVENT_TYPE_CONFIG[eventType as keyof typeof EVENT_TYPE_CONFIG]).toBeDefined();
     }
-    expect(Object.keys(EVENT_TYPE_CONFIG).length).toBe(9);
+    expect(Object.keys(EVENT_TYPE_CONFIG).length).toBe(14);
   });
 
   it("each event type has an icon for email display", () => {

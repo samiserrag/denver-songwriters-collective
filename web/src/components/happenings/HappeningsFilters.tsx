@@ -141,6 +141,11 @@ const TYPE_OPTIONS = [
   { value: "gig", label: "Gigs" },
   { value: "kindred_group", label: "Kindred Songwriter Groups" },
   { value: "jam_session", label: "Jam Sessions" },
+  { value: "poetry", label: "Poetry" },
+  { value: "irish", label: "Irish" },
+  { value: "blues", label: "Blues" },
+  { value: "bluegrass", label: "Bluegrass" },
+  { value: "comedy", label: "Comedy" },
   { value: "other", label: "Other" },
 ] as const;
 
@@ -418,6 +423,11 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const isShowsActive = type === "shows";
   const isKindredActive = type === "kindred_group";
   const isJamSessionsActive = type === "jam_session";
+  const isPoetryActive = type === "poetry";
+  const isIrishActive = type === "irish";
+  const isBluesActive = type === "blues";
+  const isBluegrassActive = type === "bluegrass";
+  const isComedyActive = type === "comedy";
 
   // Build active filter summary for collapsed state
   const activeFilterSummary: string[] = [];
@@ -440,7 +450,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const advancedFilterCount = [
     selectedDays.length > 0,
     time !== "upcoming" && time !== "",
-    type && !isOpenMicsActive && !isShowsActive && !isKindredActive && !isJamSessionsActive,
+    type && !isOpenMicsActive && !isShowsActive && !isKindredActive && !isJamSessionsActive && !isPoetryActive && !isIrishActive && !isBluesActive && !isBluegrassActive && !isComedyActive,
     location,
     cost,
     verify,
@@ -449,108 +459,49 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Quick Filter Cards - 5 engaging buttons in flexible wrap layout */}
+      {/* Quick Filter Cards - engaging buttons with emoji icons in flexible wrap layout */}
       <div className="flex flex-wrap gap-2 sm:gap-3">
-        <button
-          onClick={() => {
-            // If already active, clear it; otherwise set it
-            if (isOpenMicsActive) {
-              updateFilter("type", null);
-            } else {
-              // Clear csc if setting type
-              router.push(buildUrl({ type: "open_mic", csc: null }));
-            }
-          }}
-          className={cn(
-            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
-            isOpenMicsActive
-              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
-          )}
-        >
-          <MicIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">Open Mics</span>
-        </button>
-
-        <button
-          onClick={() => {
-            if (isCscActive) {
-              updateFilter("csc", null);
-            } else {
-              // Clear type if setting csc
-              router.push(buildUrl({ csc: "1", type: null }));
-            }
-          }}
-          className={cn(
-            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
-            isCscActive
-              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
-          )}
-        >
-          <StarIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">CSC</span>
-        </button>
-
-        <button
-          onClick={() => {
-            if (isShowsActive) {
-              updateFilter("type", null);
-            } else {
-              // Clear csc if setting type
-              router.push(buildUrl({ type: "shows", csc: null }));
-            }
-          }}
-          className={cn(
-            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
-            isShowsActive
-              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
-          )}
-        >
-          <MusicIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">Shows</span>
-        </button>
-
-        <button
-          onClick={() => {
-            if (isKindredActive) {
-              updateFilter("type", null);
-            } else {
-              // Clear csc if setting type
-              router.push(buildUrl({ type: "kindred_group", csc: null }));
-            }
-          }}
-          className={cn(
-            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
-            isKindredActive
-              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
-          )}
-        >
-          <HeartIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">Kindred</span>
-        </button>
-
-        <button
-          onClick={() => {
-            if (isJamSessionsActive) {
-              updateFilter("type", null);
-            } else {
-              // Clear csc if setting type
-              router.push(buildUrl({ type: "jam_session", csc: null }));
-            }
-          }}
-          className={cn(
-            "flex-1 min-w-[100px] py-3 px-3 rounded-xl text-center font-medium transition-all",
-            isJamSessionsActive
-              ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
-              : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
-          )}
-        >
-          <GuitarIcon className="w-5 h-5 mx-auto mb-0.5" />
-          <span className="text-sm">Jams</span>
-        </button>
+        {/* Type filter buttons with emojis from EVENT_TYPE_CONFIG */}
+        {([
+          { type: "open_mic", label: "Open Mics", emoji: "🎤", isActive: isOpenMicsActive },
+          { type: "csc", label: "CSC", emoji: "⭐", isActive: isCscActive },
+          { type: "shows", label: "Shows", emoji: "🎭", isActive: isShowsActive },
+          { type: "kindred_group", label: "Kindred", emoji: "🤝", isActive: isKindredActive },
+          { type: "jam_session", label: "Jams", emoji: "🎸", isActive: isJamSessionsActive },
+          { type: "poetry", label: "Poetry", emoji: "✒️", isActive: isPoetryActive },
+          { type: "irish", label: "Irish", emoji: "☘️", isActive: isIrishActive },
+          { type: "blues", label: "Blues", emoji: "🎸", isActive: isBluesActive },
+          { type: "bluegrass", label: "Bluegrass", emoji: "🪕", isActive: isBluegrassActive },
+          { type: "comedy", label: "Comedy", emoji: "😂", isActive: isComedyActive },
+        ] as const).map((filter) => (
+          <button
+            key={filter.type}
+            onClick={() => {
+              if (filter.type === "csc") {
+                if (filter.isActive) {
+                  updateFilter("csc", null);
+                } else {
+                  router.push(buildUrl({ csc: "1", type: null }));
+                }
+              } else {
+                if (filter.isActive) {
+                  updateFilter("type", null);
+                } else {
+                  router.push(buildUrl({ type: filter.type, csc: null }));
+                }
+              }
+            }}
+            className={cn(
+              "flex-1 min-w-[90px] py-3 px-3 rounded-xl text-center font-medium transition-all",
+              filter.isActive
+                ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] shadow-lg"
+                : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] hover:shadow-md"
+            )}
+          >
+            <span className="text-xl block mb-0.5">{filter.emoji}</span>
+            <span className="text-sm">{filter.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Search - polished */}

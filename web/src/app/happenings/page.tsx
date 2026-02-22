@@ -234,6 +234,16 @@ export default async function HappeningsPage({
     query = query.eq("event_type", "kindred_group");
   } else if (typeFilter === "jam_session") {
     query = query.eq("event_type", "jam_session");
+  } else if (typeFilter === "poetry") {
+    query = query.eq("event_type", "poetry");
+  } else if (typeFilter === "irish") {
+    query = query.eq("event_type", "irish");
+  } else if (typeFilter === "blues") {
+    query = query.eq("event_type", "blues");
+  } else if (typeFilter === "bluegrass") {
+    query = query.eq("event_type", "bluegrass");
+  } else if (typeFilter === "comedy") {
+    query = query.eq("event_type", "comedy");
   } else if (typeFilter === "other") {
     query = query.eq("event_type", "other");
   }
@@ -520,6 +530,11 @@ export default async function HappeningsPage({
     if (typeFilter === "gig") return "Gigs";
     if (typeFilter === "kindred_group") return "Kindred Songwriter Groups";
     if (typeFilter === "jam_session") return "Jam Sessions";
+    if (typeFilter === "poetry") return "Poetry";
+    if (typeFilter === "irish") return "Irish Sessions";
+    if (typeFilter === "blues") return "Blues";
+    if (typeFilter === "bluegrass") return "Bluegrass";
+    if (typeFilter === "comedy") return "Comedy";
     if (cscFilter) return "CSC Events";
     return null;
   };
@@ -540,6 +555,11 @@ export default async function HappeningsPage({
         gig: "Gigs",
         kindred_group: "Kindred Songwriter Groups",
         jam_session: "Jam Sessions",
+        poetry: "Poetry",
+        irish: "Irish Sessions",
+        blues: "Blues",
+        bluegrass: "Bluegrass",
+        comedy: "Comedy",
         other: "Other",
       };
       parts.push(labels[typeFilter] || typeFilter);
