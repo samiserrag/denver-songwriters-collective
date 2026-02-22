@@ -6,6 +6,29 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### UX: New Private & Invites Tab + Visibility Save Guard (February 2026)
+
+**Summary:** Added a dedicated `Private & Invites` tab in event management. Privacy mode (`public` vs `invite_only`) now has a focused UI with save action, and invite tooling moved out of general settings. PATCH validation now explicitly allows `visibility` updates and restricts changes to admin/primary-host authority.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/[id]/_components/EventManagementTabs.tsx` | Added `privacy` tab (`Private & Invites`) |
+| `web/src/app/(protected)/dashboard/my-events/[id]/_components/PrivacyTab.tsx` | NEW — privacy selector + save + invite tools |
+| `web/src/app/(protected)/dashboard/my-events/[id]/_components/EventManagementClient.tsx` | Wired new tab and local visibility state |
+| `web/src/app/(protected)/dashboard/my-events/[id]/_components/SettingsTab.tsx` | Removed invite tooling (co-host + danger zone only) |
+| `web/src/app/api/my-events/[id]/route.ts` | Added `visibility` to allowed PATCH fields + value validation + host/admin authorization guard |
+| `web/src/__tests__/event-management-tabs.test.ts` | Updated tab contract assertions (5-tab model) |
+| `web/src/__tests__/pr3-attendee-invite-management.test.ts` | Updated integration contract to target `PrivacyTab`; added visibility-guard checks |
+| `web/src/__tests__/phase5-14b-dashboard-and-rsvp-fixes.test.ts` | Updated tab fixture to include `privacy` |
+
+**Verification:**  
+- `npx vitest run src/__tests__/event-management-tabs.test.ts src/__tests__/pr3-attendee-invite-management.test.ts src/__tests__/phase5-14b-dashboard-and-rsvp-fixes.test.ts` → 124/124 passing  
+- `npm run build` → success
+
+---
+
 ### HOTFIX: Event Save 403 for Non-Admin Hosts (February 2026)
 
 **Summary:** Non-admin hosts could not save events — the PATCH handler returned 403 with `"Only admins can update media embed fields."` The event form always sends `youtube_url` and `spotify_url` as empty strings, and the admin-only guard checked `body.youtube_url !== undefined` which is `true` for empty strings. This blocked ALL non-admin saves regardless of whether media embed fields actually changed.

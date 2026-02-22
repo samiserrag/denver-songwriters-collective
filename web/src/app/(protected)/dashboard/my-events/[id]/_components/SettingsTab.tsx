@@ -1,7 +1,6 @@
 "use client";
 
 import CoHostManager from "../../_components/CoHostManager";
-import AttendeeInviteManager from "../../_components/AttendeeInviteManager";
 import CancelEventButton from "./CancelEventButton";
 
 interface EventHost {
@@ -20,14 +19,11 @@ interface SettingsTabProps {
   eventId: string;
   eventTitle: string;
   eventStatus: string;
-  eventVisibility: string;
   hosts: EventHost[];
   currentUserId: string;
   currentUserRole: "host" | "cohost";
   isPrimaryHost: boolean;
   isAdmin: boolean;
-  isEventOwner: boolean;
-  EventInviteSection: React.ReactNode;
 }
 
 /**
@@ -35,21 +31,17 @@ interface SettingsTabProps {
  *
  * Contains:
  * - Co-host management
- * - Event invites (for admins/primary hosts)
  * - Danger zone (cancel event)
  */
 export default function SettingsTab({
   eventId,
   eventTitle,
   eventStatus,
-  eventVisibility,
   hosts,
   currentUserId,
   currentUserRole,
   isPrimaryHost,
   isAdmin,
-  isEventOwner,
-  EventInviteSection,
 }: SettingsTabProps) {
   const acceptedHostCount = hosts.filter((h) => h.invitation_status === "accepted").length;
 
@@ -67,23 +59,6 @@ export default function SettingsTab({
           isSoleHost={acceptedHostCount === 1}
         />
       </section>
-
-      {/* Attendee Invites - only for primary hosts and admins, only for invite-only events */}
-      {(isPrimaryHost || isAdmin) && (
-        <AttendeeInviteManager
-          eventId={eventId}
-          eventTitle={eventTitle}
-          isInviteOnly={eventVisibility === "invite_only"}
-        />
-      )}
-
-      {/* Invite Links - only for admins and primary hosts */}
-      {(isAdmin || isEventOwner) && (
-        <section className="p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Invite Links</h2>
-          {EventInviteSection}
-        </section>
-      )}
 
       {/* Danger Zone */}
       {isPrimaryHost && eventStatus === "active" && (

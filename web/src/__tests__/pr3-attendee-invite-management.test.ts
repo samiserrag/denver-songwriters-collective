@@ -6,7 +6,7 @@
  * 2. API route enforces 200 invite cap
  * 3. API route handles all CRUD + revoke operations
  * 4. UI component structure (invite modes, status badges, revoke)
- * 5. Integration wiring (SettingsTab renders AttendeeInviteManager)
+ * 5. Integration wiring (Private & Invites tab renders AttendeeInviteManager)
  * 6. No changes to RLS policy graph (explicit safety check)
  *
  * @see docs/investigation/private-invite-only-events-stopgate.md
@@ -198,6 +198,29 @@ describe("PR3: Attendee Invite API — PATCH (Revoke)", () => {
   });
 });
 
+describe("PR3+: Event visibility update guardrails", () => {
+  const eventPatchRouteSource = readFileSync(
+    join(WEB_SRC, "app/api/my-events/[id]/route.ts"),
+    "utf-8"
+  );
+
+  it("allows visibility in PATCH allowedFields", () => {
+    expect(eventPatchRouteSource).toContain('"visibility"');
+  });
+
+  it("validates visibility values to public/invite_only", () => {
+    expect(eventPatchRouteSource).toContain('body.visibility !== "public"');
+    expect(eventPatchRouteSource).toContain('body.visibility !== "invite_only"');
+  });
+
+  it("restricts visibility updates to admins or primary host", () => {
+    expect(eventPatchRouteSource).toContain("canEditEventVisibility");
+    expect(eventPatchRouteSource).toContain(
+      "Only admins or the primary host can change event privacy"
+    );
+  });
+});
+
 // ============================================================================
 // UI Component Contract Tests
 // ============================================================================
@@ -271,11 +294,11 @@ describe("PR3: AttendeeInviteManager UI", () => {
 // Integration Wiring Tests
 // ============================================================================
 
-const SETTINGS_TAB_PATH = join(
+const PRIVACY_TAB_PATH = join(
   WEB_SRC,
-  "app/(protected)/dashboard/my-events/[id]/_components/SettingsTab.tsx"
+  "app/(protected)/dashboard/my-events/[id]/_components/PrivacyTab.tsx"
 );
-const settingsTabSource = readFileSync(SETTINGS_TAB_PATH, "utf-8");
+const privacyTabSource = readFileSync(PRIVACY_TAB_PATH, "utf-8");
 
 const EVENT_MGMT_CLIENT_PATH = join(
   WEB_SRC,
@@ -284,31 +307,31 @@ const EVENT_MGMT_CLIENT_PATH = join(
 const eventMgmtClientSource = readFileSync(EVENT_MGMT_CLIENT_PATH, "utf-8");
 
 describe("PR3: Integration Wiring", () => {
-  it("SettingsTab imports AttendeeInviteManager", () => {
-    expect(settingsTabSource).toContain(
+  it("PrivacyTab imports AttendeeInviteManager", () => {
+    expect(privacyTabSource).toContain(
       'import AttendeeInviteManager from "../../_components/AttendeeInviteManager"'
     );
   });
 
-  it("SettingsTab accepts eventVisibility prop", () => {
-    expect(settingsTabSource).toContain("eventVisibility: string");
+  it("PrivacyTab accepts eventVisibility prop", () => {
+    expect(privacyTabSource).toContain("eventVisibility: string");
   });
 
-  it("SettingsTab renders AttendeeInviteManager for primary host or admin", () => {
-    expect(settingsTabSource).toContain("(isPrimaryHost || isAdmin)");
-    expect(settingsTabSource).toContain("<AttendeeInviteManager");
+  it("PrivacyTab renders AttendeeInviteManager for primary host or admin", () => {
+    expect(privacyTabSource).toContain("canManageAttendeeInvites");
+    expect(privacyTabSource).toContain("<AttendeeInviteManager");
   });
 
-  it("SettingsTab passes isInviteOnly based on eventVisibility", () => {
-    expect(settingsTabSource).toContain(
-      'isInviteOnly={eventVisibility === "invite_only"}'
+  it("PrivacyTab passes isInviteOnly based on selected visibility", () => {
+    expect(privacyTabSource).toContain(
+      'isInviteOnly={selectedVisibility === "invite_only"}'
     );
   });
 
-  it("EventManagementClient passes eventVisibility to SettingsTab", () => {
+  it("EventManagementClient passes eventVisibility to PrivacyTab", () => {
     expect(eventMgmtClientSource).toContain("eventVisibility: string");
     expect(eventMgmtClientSource).toContain(
-      "eventVisibility={eventVisibility}"
+      "eventVisibility={currentEventVisibility}"
     );
   });
 });

@@ -224,6 +224,15 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 - All 7 guest verification routes return 404 for invite-only events (no guest interaction with private events)
 - All deny paths return 404 (never 403) to avoid leaking event existence
 
+### Management UI Contract
+
+- Event privacy controls live in the dedicated dashboard tab: `Private & Invites`
+- Visibility mode is host/admin controlled in app-layer PATCH validation:
+1. Allowed values: `public | invite_only`
+2. Allowed editors: admin, event owner (`events.host_id`), accepted primary host (`event_hosts.role='host'`)
+3. Co-hosts cannot change visibility
+- Attendee invite tools are shown in the same tab and only when user has host/admin invite authority
+
 ### Test Coverage
 
 | Test File | Count | Scope |

@@ -1,6 +1,6 @@
 "use client";
 
-export type TabId = "details" | "attendees" | "lineup" | "settings";
+export type TabId = "details" | "attendees" | "lineup" | "privacy" | "settings";
 
 interface Tab {
   id: TabId;
@@ -12,6 +12,7 @@ const TABS: Tab[] = [
   { id: "details", label: "Details", icon: "📝" },
   { id: "attendees", label: "Attendees", icon: "👥" },
   { id: "lineup", label: "Lineup", icon: "🎤" },
+  { id: "privacy", label: "Private & Invites", icon: "🔒" },
   { id: "settings", label: "Host & Co-Host Settings", icon: "⚙️" },
 ];
 
@@ -30,7 +31,8 @@ interface EventManagementTabsProps {
  * - Details: Event form (title, schedule, location, etc.)
  * - Attendees: RSVPs with full profile cards and management
  * - Lineup: Performer signups with full details
- * - Settings: Co-hosts, invites, danger zone
+ * - Private & Invites: Visibility mode + invite tooling
+ * - Settings: Co-hosts and danger zone
  */
 export default function EventManagementTabs({
   activeTab,

@@ -7,7 +7,8 @@
  * - Details: Event form editing
  * - Attendees: RSVPs with profile cards and per-occurrence filtering
  * - Lineup: Performer signups with per-occurrence filtering
- * - Settings: Co-hosts, invites, danger zone
+ * - Private & Invites: Visibility mode + attendee/host invites
+ * - Settings: Co-hosts, danger zone
  *
  * INVARIANTS:
  * 1. Tab navigation preserves the selected date for recurring events
@@ -24,19 +25,20 @@ describe("EventManagementTabs Component", () => {
     { id: "details", label: "Details", icon: "📝" },
     { id: "attendees", label: "Attendees", icon: "👥" },
     { id: "lineup", label: "Lineup", icon: "🎤" },
+    { id: "privacy", label: "Private & Invites", icon: "🔒" },
     { id: "settings", label: "Host & Co-Host Settings", icon: "⚙️" },
   ];
 
   describe("Tab visibility rules", () => {
-    it("shows all 4 tabs when event has timeslots", () => {
+    it("shows all 5 tabs when event has timeslots", () => {
       const hasTimeslots = true;
       const visibleTabs = TABS.filter((tab) => {
         if (tab.id === "lineup" && !hasTimeslots) return false;
         return true;
       });
 
-      expect(visibleTabs.length).toBe(4);
-      expect(visibleTabs.map((t) => t.id)).toEqual(["details", "attendees", "lineup", "settings"]);
+      expect(visibleTabs.length).toBe(5);
+      expect(visibleTabs.map((t) => t.id)).toEqual(["details", "attendees", "lineup", "privacy", "settings"]);
     });
 
     it("hides lineup tab when event does not have timeslots", () => {
@@ -46,8 +48,8 @@ describe("EventManagementTabs Component", () => {
         return true;
       });
 
-      expect(visibleTabs.length).toBe(3);
-      expect(visibleTabs.map((t) => t.id)).toEqual(["details", "attendees", "settings"]);
+      expect(visibleTabs.length).toBe(4);
+      expect(visibleTabs.map((t) => t.id)).toEqual(["details", "attendees", "privacy", "settings"]);
       expect(visibleTabs.find((t) => t.id === "lineup")).toBeUndefined();
     });
   });

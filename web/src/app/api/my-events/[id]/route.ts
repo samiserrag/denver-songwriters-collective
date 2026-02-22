@@ -39,6 +39,32 @@ async function canManageEvent(supabase: SupabaseClient, userId: string, eventId:
   return !!hostEntry;
 }
 
+// Visibility changes are restricted to owner/primary host/admin.
+async function canEditEventVisibility(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
+  const isAdmin = await checkAdminRole(supabase, userId);
+  if (isAdmin) return true;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("host_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!event) return false;
+  if (event.host_id === userId) return true;
+
+  const { data: primaryHostEntry } = await supabase
+    .from("event_hosts")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("user_id", userId)
+    .eq("role", "host")
+    .eq("invitation_status", "accepted")
+    .maybeSingle();
+
+  return !!primaryHostEntry;
+}
+
 // GET - Get single event with full details (for editing)
 export async function GET(
   request: Request,
@@ -142,6 +168,20 @@ export async function PATCH(
 
   const body = await request.json();
 
+  if (body.visibility !== undefined) {
+    if (body.visibility !== "public" && body.visibility !== "invite_only") {
+      return NextResponse.json({ error: "Invalid visibility value" }, { status: 400 });
+    }
+
+    const canEditVisibility = await canEditEventVisibility(supabase, sessionUser.id, eventId);
+    if (!canEditVisibility) {
+      return NextResponse.json(
+        { error: "Only admins or the primary host can change event privacy" },
+        { status: 403 }
+      );
+    }
+  }
+
   // Verification is now tracked by last_verified_at/verified_by only.
   // Normalize legacy verification statuses to active to avoid reintroducing old status semantics.
   if (LEGACY_VERIFICATION_STATUSES.has(body.status)) {
@@ -170,6 +210,7 @@ export async function PATCH(
     "title", "description", "event_type", "capacity", "host_notes",
     "day_of_week", "start_time", "event_date", "is_recurring",
     "end_time", "status", "recurrence_rule", "cover_image_url", "is_published",
+    "visibility",
     // Phase 3 fields
     "timezone", "location_mode", "online_url", "is_free", "cost_label",
     "signup_mode", "signup_url", "signup_deadline", "signup_time", "age_policy",

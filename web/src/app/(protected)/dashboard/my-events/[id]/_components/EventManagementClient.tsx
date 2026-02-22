@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EventManagementTabs, { TabId } from "./EventManagementTabs";
 import AttendeesTab from "./AttendeesTab";
 import LineupTab from "./LineupTab";
+import PrivacyTab from "./PrivacyTab";
 import SettingsTab from "./SettingsTab";
 
 interface EventHost {
@@ -77,6 +78,11 @@ export default function EventManagementClient({
   SeriesEditingNotice,
 }: EventManagementClientProps) {
   const [activeTab, setActiveTab] = useState<TabId>("details");
+  const [currentEventVisibility, setCurrentEventVisibility] = useState(eventVisibility);
+
+  useEffect(() => {
+    setCurrentEventVisibility(eventVisibility);
+  }, [eventVisibility]);
 
   // For badge counts - these will be fetched/passed as needed
   // For now, we use 0 as placeholder since actual counts come from the tab components
@@ -128,19 +134,29 @@ export default function EventManagementClient({
           />
         )}
 
+        {activeTab === "privacy" && (
+          <PrivacyTab
+            eventId={eventId}
+            eventTitle={eventTitle}
+            eventVisibility={currentEventVisibility}
+            isPrimaryHost={isPrimaryHost}
+            isAdmin={isAdmin}
+            isEventOwner={isEventOwner}
+            EventInviteSection={EventInviteSection}
+            onVisibilityChange={setCurrentEventVisibility}
+          />
+        )}
+
         {activeTab === "settings" && (
           <SettingsTab
             eventId={eventId}
             eventTitle={eventTitle}
             eventStatus={eventStatus}
-            eventVisibility={eventVisibility}
             hosts={hosts}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
             isPrimaryHost={isPrimaryHost}
             isAdmin={isAdmin}
-            isEventOwner={isEventOwner}
-            EventInviteSection={EventInviteSection}
           />
         )}
       </div>

@@ -363,6 +363,7 @@ describe("Event Management Tabs - Enhanced UX (Phase 5.14b)", () => {
         { id: "details", label: "Details", icon: "📝" },
         { id: "attendees", label: "Attendees", icon: "👥" },
         { id: "lineup", label: "Lineup", icon: "🎤" },
+        { id: "privacy", label: "Private & Invites", icon: "🔒" },
         { id: "settings", label: "Host & Co-Host Settings", icon: "⚙️" },
       ];
 
@@ -377,6 +378,7 @@ describe("Event Management Tabs - Enhanced UX (Phase 5.14b)", () => {
         { id: "details", label: "Details", icon: "📝" },
         { id: "attendees", label: "Attendees", icon: "👥" },
         { id: "lineup", label: "Lineup", icon: "🎤" },
+        { id: "privacy", label: "Private & Invites", icon: "🔒" },
         { id: "settings", label: "Host & Co-Host Settings", icon: "⚙️" },
       ];
 
