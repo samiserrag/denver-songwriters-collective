@@ -2,59 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-
 interface Props {
   eventId: string;
   isPublished: boolean;
   status: string;
+  hasSignupActivity: boolean;
 }
 
-export default function PublishButton({ eventId, isPublished, status }: Props) {
+export default function PublishButton({ eventId, isPublished, status, hasSignupActivity }: Props) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle restore for cancelled events
-  const handleRestore = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/my-events/${eventId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ restore: true }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        console.error("Failed to restore event:", data.error);
-        setIsLoading(false);
-        return;
-      }
-
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to restore event:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Cancelled events show restore button
-  if (status === "cancelled") {
-    return (
-      <button
-        onClick={handleRestore}
-        disabled={isLoading}
-        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-      >
-        {isLoading ? "Restoring..." : "Restore Event"}
-      </button>
-    );
-  }
+  if (status === "cancelled") return null;
 
   const handleTogglePublish = async () => {
+    if (isPublished && hasSignupActivity) {
+      return;
+    }
+
     setIsLoading(true);
-    const supabase = createClient();
 
     // When publishing, also set status to active and auto-confirm
     // When unpublishing, keep status as-is (don't reset to draft)
@@ -69,13 +35,15 @@ export default function PublishButton({ eventId, isPublished, status }: Props) {
       updates.last_verified_at = new Date().toISOString();
     }
 
-    const { error } = await supabase
-      .from("events")
-      .update(updates)
-      .eq("id", eventId);
+    const response = await fetch(`/api/my-events/${eventId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
 
-    if (error) {
-      console.error("Failed to update publish status:", error);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.error("Failed to update publish status:", data.error || "unknown error");
       setIsLoading(false);
       return;
     }
@@ -89,10 +57,11 @@ export default function PublishButton({ eventId, isPublished, status }: Props) {
     return (
       <button
         onClick={handleTogglePublish}
-        disabled={isLoading}
-        className="px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] rounded transition-colors disabled:opacity-50"
+        disabled={isLoading || hasSignupActivity}
+        title={hasSignupActivity ? "Unpublish is disabled when RSVP/timeslot activity exists. Use Cancel instead." : undefined}
+        className="px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? "..." : "Unpublish"}
+        {isLoading ? "..." : hasSignupActivity ? "Unpublish disabled" : "Unpublish"}
       </button>
     );
   }

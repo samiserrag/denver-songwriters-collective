@@ -3,14 +3,121 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
+import { sendEventCancelledNotifications } from "@/lib/notifications/eventCancelled";
 import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
-import { sendEventRestoredNotifications } from "@/lib/notifications/eventRestored";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
+const NOTIFICATION_IGNORED_FIELDS = new Set([
+  "updated_at",
+  "last_major_update_at",
+  "published_at",
+  "last_verified_at",
+  "verified_by",
+  "cancelled_at",
+  "cancel_reason",
+  "status",
+]);
+
+const EVENT_UPDATE_FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  description: "Description",
+  event_type: "Type",
+  capacity: "Capacity",
+  host_notes: "Host notes",
+  day_of_week: "Date",
+  event_date: "Date",
+  start_time: "Time",
+  end_time: "End time",
+  recurrence_rule: "Recurrence pattern",
+  max_occurrences: "Series length",
+  custom_dates: "Custom dates",
+  cover_image_url: "Cover image",
+  visibility: "Privacy",
+  timezone: "Timezone",
+  location_mode: "Location mode",
+  online_url: "Online link",
+  venue_id: "Venue",
+  venue_name: "Venue",
+  venue_address: "Address",
+  custom_location_name: "Custom location",
+  custom_address: "Address",
+  custom_city: "City",
+  custom_state: "State",
+  location_notes: "Location notes",
+  is_free: "Cost",
+  cost_label: "Cost",
+  signup_mode: "Signup mode",
+  signup_url: "Signup link",
+  signup_deadline: "Signup deadline",
+  signup_time: "Signup time",
+  age_policy: "Age policy",
+  has_timeslots: "Performer slots",
+  total_slots: "Slot count",
+  slot_duration_minutes: "Slot length",
+  allow_guest_slots: "Guest slots",
+  external_url: "External link",
+  categories: "Categories",
+  is_published: "Published state",
+};
+
+function normalizeValueForComparison(value: unknown): unknown {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    return [...value].map((item) => (item === undefined ? null : item)).sort();
+  }
+
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  return value;
+}
+
+function areValuesEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(normalizeValueForComparison(a)) === JSON.stringify(normalizeValueForComparison(b));
+}
+
+function formatNotificationDate(
+  eventLike: { event_date?: string | null; day_of_week?: string | null } | null | undefined
+): string {
+  if (eventLike?.event_date) {
+    return formatDateKeyForEmail(eventLike.event_date);
+  }
+  return eventLike?.day_of_week || "TBD";
+}
+
+function collectChangedFieldLabels(
+  prevEvent: Record<string, unknown> | null | undefined,
+  nextEvent: Record<string, unknown> | null | undefined,
+  candidateKeys: string[]
+): string[] {
+  if (!prevEvent || !nextEvent) {
+    return [];
+  }
+
+  const labels: string[] = [];
+  const seen = new Set<string>();
+
+  for (const key of candidateKeys) {
+    if (NOTIFICATION_IGNORED_FIELDS.has(key)) continue;
+    const label = EVENT_UPDATE_FIELD_LABELS[key];
+    if (!label) continue;
+
+    if (!areValuesEqual(prevEvent[key], nextEvent[key]) && !seen.has(label)) {
+      seen.add(label);
+      labels.push(label);
+    }
+  }
+
+  return labels;
+}
 
 // Helper to check if user can manage event
 async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
@@ -160,7 +267,7 @@ export async function PATCH(
   const isApprovedHost = await checkHostStatus(supabase, sessionUser.id);
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name")
     .eq("id", sessionUser.id)
     .single();
   const isAdmin = profile?.role === "admin";
@@ -406,15 +513,37 @@ export async function PATCH(
   // Get current event state before update (for first publish check, timeslot regeneration, and notifications)
   const { data: prevEvent } = await supabase
     .from("events")
-    .select(`
-      is_published, published_at, status,
-      has_timeslots, total_slots, slot_duration_minutes,
-      event_date, start_time, end_time, venue_id, location_mode, day_of_week,
-      title, venue_name, venue_address, slug,
-      recurrence_rule, max_occurrences, custom_dates
-    `)
+    .select("*")
     .eq("id", eventId)
     .single();
+
+  const isUnpublishTransition = prevEvent?.is_published === true && body.is_published === false;
+  if (isUnpublishTransition) {
+    const { count: activeRsvpCount } = await supabase
+      .from("event_rsvps")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .in("status", ["confirmed", "waitlist", "offered"]);
+
+    const { count: activeClaimCountForUnpublish } = await supabase
+      .from("timeslot_claims")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .in("status", ["confirmed", "performed", "waitlist", "offered"]);
+
+    const hasSignupActivity = (activeRsvpCount ?? 0) > 0 || (activeClaimCountForUnpublish ?? 0) > 0;
+    if (hasSignupActivity) {
+      return NextResponse.json(
+        {
+          error: "Can't unpublish events with active RSVPs or performer claims.",
+          details: "Use Cancel instead. The event stays visible as cancelled and attendees are notified automatically.",
+          activeRsvpCount: activeRsvpCount ?? 0,
+          activeClaimCount: activeClaimCountForUnpublish ?? 0,
+        },
+        { status: 409 }
+      );
+    }
+  }
 
   // Phase 4.83: Canonicalize day_of_week for ordinal monthly rules
   // If recurrence_rule is ordinal monthly and day_of_week is missing, derive from anchor date
@@ -597,27 +726,33 @@ export async function PATCH(
     console.log(`[PATCH /api/my-events/${eventId}] Future timeslots regenerated: ${slotsCreated} slots across ${futureDates.length} dates`);
   }
 
-  // Send restore notifications if event was uncancelled
-  const wasRestored = isRestoreAction && prevEvent?.status === "cancelled";
-  if (wasRestored && prevEvent) {
-    // Fire-and-forget - don't block the response
-    sendEventRestoredNotifications(supabase, {
+  // Send event update notifications on any meaningful host edit.
+  // Skip cancellation and explicit restore because those have separate UX/email behavior.
+  const statusBecomingCancelled = body.status === "cancelled" && prevEvent?.status !== "cancelled";
+  const statusBecomingRestored = isRestoreAction && prevEvent?.status === "cancelled";
+  const changedFieldLabels = collectChangedFieldLabels(
+    prevEvent as Record<string, unknown> | undefined,
+    event as Record<string, unknown> | undefined,
+    Object.keys(updates)
+  );
+  const shouldNotifyUpdate = !!prevEvent?.is_published
+    && !statusBecomingCancelled
+    && !statusBecomingRestored
+    && changedFieldLabels.length > 0;
+
+  if (statusBecomingCancelled && prevEvent) {
+    sendEventCancelledNotifications(supabase, {
       eventId,
-      eventSlug: prevEvent.slug,
-      eventTitle: prevEvent.title || "Event",
-      eventDate: prevEvent.event_date ? formatDateKeyForEmail(prevEvent.event_date) : (prevEvent.day_of_week || ""),
-      eventTime: prevEvent.start_time || undefined,
-      venueName: prevEvent.venue_name || "TBD",
+      eventSlug: event.slug || prevEvent.slug || null,
+      eventTitle: event.title || prevEvent.title || "Event",
+      eventDate: formatNotificationDate(event),
+      venueName: event.venue_name || prevEvent.venue_name || "TBD",
+      cancelReason: (updates.cancel_reason as string | null) || prevEvent.cancel_reason || null,
+      hostName: profile?.full_name || null,
     }).catch((err) => {
-      console.error(`[PATCH /api/my-events/${eventId}] Failed to send restore notifications:`, err);
+      console.error(`[PATCH /api/my-events/${eventId}] Failed to send cancellation notifications:`, err);
     });
   }
-
-  // Phase 4.36: Send event updated notifications if major fields changed
-  // Skip if: event becoming cancelled (handled by DELETE handler)
-  // All events are always published now, so we just check for major changes on active events
-  const statusBecomingCancelled = body.status === "cancelled" && prevEvent?.status !== "cancelled";
-  const shouldNotifyUpdate = hasMajorChange && prevEvent?.is_published && !statusBecomingCancelled;
 
   if (shouldNotifyUpdate && prevEvent) {
     // Build changes object comparing prev to new values
@@ -626,58 +761,62 @@ export async function PATCH(
       time?: { old: string; new: string };
       venue?: { old: string; new: string };
       address?: { old: string; new: string };
+      details?: string[];
     } = {};
 
-    // Only include fields that actually changed
-    if (body.event_date !== undefined && body.event_date !== prevEvent.event_date) {
+    if (
+      !areValuesEqual(prevEvent.event_date, event.event_date)
+      || !areValuesEqual(prevEvent.day_of_week, event.day_of_week)
+    ) {
       changes.date = {
-        old: prevEvent.event_date || "TBD",
-        new: body.event_date || "TBD"
+        old: formatNotificationDate(prevEvent),
+        new: formatNotificationDate(event)
       };
     }
 
-    if (body.start_time !== undefined && body.start_time !== prevEvent.start_time) {
+    if (!areValuesEqual(prevEvent.start_time, event.start_time)) {
       changes.time = {
         old: prevEvent.start_time || "TBD",
-        new: body.start_time || "TBD"
+        new: event.start_time || "TBD"
       };
     }
 
-    if (body.day_of_week !== undefined && body.day_of_week !== prevEvent.day_of_week) {
-      // Treat day change as a date change
-      changes.date = {
-        old: prevEvent.day_of_week || prevEvent.event_date || "TBD",
-        new: body.day_of_week || body.event_date || "TBD"
-      };
-    }
-
-    // Venue change - use venue_name for display
     const prevVenueName = prevEvent.venue_name || "TBD";
-    const newVenueName = (updates.venue_name as string) || prevVenueName;
-    if (body.venue_id !== undefined && body.venue_id !== prevEvent.venue_id) {
+    const newVenueName = event.venue_name || "TBD";
+    if (!areValuesEqual(prevEvent.venue_name, event.venue_name)) {
       changes.venue = {
         old: prevVenueName,
         new: newVenueName
       };
     }
 
-    // Only notify if there are actual visible changes
-    if (Object.keys(changes).length > 0) {
-      // Fire-and-forget - don't block the response
-      const effectiveEventDate = body.event_date || prevEvent.event_date;
-      sendEventUpdatedNotifications(supabase, {
-        eventId,
-        eventSlug: prevEvent.slug,
-        eventTitle: prevEvent.title || "Event",
-        changes,
-        eventDate: effectiveEventDate ? formatDateKeyForEmail(effectiveEventDate) : (body.day_of_week || prevEvent.day_of_week || ""),
-        eventTime: body.start_time || prevEvent.start_time || "",
-        venueName: newVenueName,
-        venueAddress: (updates.venue_address as string) || prevEvent.venue_address || undefined
-      }).catch((err) => {
-        console.error(`[PATCH /api/my-events/${eventId}] Failed to send update notifications:`, err);
-      });
+    if (!areValuesEqual(prevEvent.venue_address, event.venue_address)) {
+      changes.address = {
+        old: prevEvent.venue_address || "TBD",
+        new: event.venue_address || "TBD"
+      };
     }
+
+    const detailLabels = changedFieldLabels.filter(
+      (label) => !["Date", "Time", "Venue", "Address"].includes(label)
+    );
+    if (detailLabels.length > 0) {
+      changes.details = detailLabels;
+    }
+
+    // Fire-and-forget - do not block update response.
+    sendEventUpdatedNotifications(supabase, {
+      eventId,
+      eventSlug: event.slug || prevEvent.slug,
+      eventTitle: event.title || prevEvent.title || "Event",
+      changes,
+      eventDate: formatNotificationDate(event),
+      eventTime: event.start_time || "",
+      venueName: newVenueName,
+      venueAddress: event.venue_address || undefined
+    }).catch((err) => {
+      console.error(`[PATCH /api/my-events/${eventId}] Failed to send update notifications:`, err);
+    });
   }
 
   return NextResponse.json(event);
@@ -713,7 +852,7 @@ export async function DELETE(
   // Get event details including publish status
   const { data: event, error: eventError } = await supabase
     .from("events")
-    .select("id, title, is_published, host_id")
+    .select("id, slug, title, event_date, venue_name, is_published, host_id")
     .eq("id", eventId)
     .single();
 
@@ -746,13 +885,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, deleted: true });
   }
 
-  // Soft delete (cancel) - existing behavior for published events
-  const { data: rsvpUsers } = await supabase
-    .from("event_rsvps")
-    .select("user_id")
-    .eq("event_id", eventId)
-    .in("status", ["confirmed", "waitlist"]);
-
   // Parse optional cancel_reason from request body
   let cancelReason: string | null = null;
   try {
@@ -779,25 +911,24 @@ export async function DELETE(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Notify all RSVPed users that the event was cancelled
-  if (rsvpUsers && rsvpUsers.length > 0 && event?.title) {
-    const notificationResults = await Promise.allSettled(
-      rsvpUsers.map((rsvp) =>
-        supabase.rpc("create_user_notification", {
-          p_user_id: rsvp.user_id,
-          p_type: "event_cancelled",
-          p_title: "Event Cancelled",
-          p_message: `"${event.title}" has been cancelled by the host.`,
-          p_link: null
-        })
-      )
-    );
+  if (event?.title) {
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", sessionUser.id)
+      .maybeSingle();
 
-    // Log any notification failures without failing the request
-    const failures = notificationResults.filter((r) => r.status === "rejected");
-    if (failures.length > 0) {
-      console.error(`Failed to send ${failures.length} event cancellation notifications`);
-    }
+    sendEventCancelledNotifications(supabase, {
+      eventId,
+      eventSlug: event.slug,
+      eventTitle: event.title,
+      eventDate: formatNotificationDate(event),
+      venueName: event.venue_name || "TBD",
+      cancelReason,
+      hostName: actorProfile?.full_name || null,
+    }).catch((notifyError) => {
+      console.error(`[DELETE /api/my-events/${eventId}] Failed to send cancellation notifications:`, notifyError);
+    });
   }
 
   return NextResponse.json({ success: true });

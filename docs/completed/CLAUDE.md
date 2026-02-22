@@ -9778,3 +9778,66 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 **Verification:**
 - `cd web && npx vitest run src/__tests__/pr3-attendee-invite-management.test.ts src/lib/email/email.test.ts src/__tests__/email-template-coverage.test.ts`
 - `cd web && npm run build`
+
+---
+
+### Host Edit Update Emails (RSVP + Timeslot Audience) (February 2026) — RESOLVED
+
+**Goal:** Ensure host edits to published events automatically notify everyone signed up (audience + performers), with a clear change summary and direct event link.
+
+**Summary:**
+- Expanded update notification trigger from "major fields only" to **all meaningful host-edited fields** on published events.
+- Added change-summary labels to event update emails for non-date/time/venue edits (for example: title, description, capacity, signup mode, slot settings, privacy, etc.).
+- Kept rich before/after diffs for date/time/venue/address when those fields change.
+- Expanded recipients to include:
+  - Member RSVPs and member timeslot claimants (dashboard notification + preference-gated email)
+  - Guest RSVPs and guest timeslot claimants (direct email, no dashboard profile required)
+- Explicitly skips update blast on cancellation and restore transitions to avoid conflicting event lifecycle messaging.
+
+**Files touched:**
+- `web/src/app/api/my-events/[id]/route.ts`
+- `web/src/lib/notifications/eventUpdated.ts`
+- `web/src/lib/email/templates/eventUpdated.ts`
+- `web/src/__tests__/publish-confirmation-and-updates.test.ts`
+
+**Verification:**
+- `cd web && npx vitest run src/__tests__/email-cancel-links.test.ts src/__tests__/custom-dates-edit.test.ts src/__tests__/api-my-events-timeslots.test.ts src/__tests__/publish-confirmation-and-updates.test.ts`
+- `cd web && npx vitest run src/lib/email/email.test.ts src/__tests__/notification-preferences.test.ts`
+- `cd web && npm run build`
+
+---
+
+### Slug Redirect History + Cancel/Unpublish Guardrails (February 2026) — RESOLVED
+
+**Goal:** Keep old event links working after slug changes, extend per-occurrence host edit notifications, add visible cancel/uncancel controls, and prevent unsafe unpublish when attendees exist.
+
+**Summary:**
+- Added migration-backed slug history (`event_slug_redirects`) and updated `handle_event_slug()` trigger to preserve previous slugs.
+- Event detail route now resolves old slugs and redirects to canonical current slug while preserving `?date=` occurrence context.
+- Per-occurrence override saves now notify signed-up attendees:
+  - Cancel transition: occurrence cancellation notifications
+  - Other meaningful host edits: date-scoped update notifications
+- Main event edit header now exposes explicit Cancel/Uncancel controls; single-occurrence edit page now includes Cancel/Uncancel control.
+- Updated cancel UX copy: cancellation notifies attendees and keeps event visible as cancelled.
+- Unpublish is now blocked when active RSVP/timeslot activity exists, enforced in both UI and API.
+
+**Files touched:**
+- `supabase/migrations/20260222160000_event_slug_redirect_history.sql`
+- `web/src/app/events/[id]/page.tsx`
+- `web/src/lib/notifications/eventUpdated.ts`
+- `web/src/lib/notifications/occurrenceCancelled.ts`
+- `web/src/app/api/my-events/[id]/overrides/route.ts`
+- `web/src/app/api/my-events/[id]/route.ts`
+- `web/src/app/(protected)/dashboard/my-events/[id]/_components/PublishButton.tsx`
+- `web/src/app/(protected)/dashboard/my-events/[id]/_components/CancelEventButton.tsx`
+- `web/src/app/(protected)/dashboard/my-events/[id]/_components/SettingsTab.tsx`
+- `web/src/app/(protected)/dashboard/my-events/[id]/page.tsx`
+- `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/page.tsx`
+- `web/src/app/(protected)/dashboard/my-events/[id]/overrides/[dateKey]/_components/OccurrenceCancelToggle.tsx`
+- `web/src/__tests__/slug-redirect-and-cancel-guardrails.test.ts`
+- `web/src/__tests__/pr6-ci-guardrails.test.ts`
+- `docs/CONTRACTS.md`
+
+**Verification:**
+- `cd web && npx vitest run src/__tests__/publish-confirmation-and-updates.test.ts src/__tests__/phase5-03-occurrence-cancellation-ux.test.ts src/__tests__/occurrence-reschedule.test.ts src/__tests__/slug-redirect-and-cancel-guardrails.test.ts`
+- `cd web && npm run build`

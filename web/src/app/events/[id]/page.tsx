@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -66,6 +67,13 @@ function isDateInOccurrences(
   occurrences: Array<{ dateKey: string }>
 ): boolean {
   return occurrences.some((occ) => occ.dateKey === dateKey);
+}
+
+function buildCanonicalEventPath(eventIdentifier: string, selectedDateKey?: string): string {
+  if (isValidDateKey(selectedDateKey)) {
+    return `/events/${eventIdentifier}?date=${selectedDateKey}`;
+  }
+  return `/events/${eventIdentifier}`;
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
@@ -202,9 +210,42 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
       series_id, external_url, timezone, online_url, signup_url, signup_mode,
       custom_dates, signup_time, youtube_url, spotify_url
     `;
-  const { data: event, error } = isUUID(id)
-    ? await supabase.from("events").select(eventSelectQuery).eq("id", id).single()
-    : await supabase.from("events").select(eventSelectQuery).eq("slug", id).single();
+  let event: any = null;
+  let error: { message: string } | null = null;
+
+  if (isUUID(id)) {
+    const result = await supabase.from("events").select(eventSelectQuery).eq("id", id).single();
+    event = result.data;
+    error = result.error;
+  } else {
+    const result = await supabase.from("events").select(eventSelectQuery).eq("slug", id).single();
+    event = result.data;
+    error = result.error;
+
+    // Old slug fallback: resolve redirect history and forward to current slug.
+    if (!event || error) {
+      const serviceClient = createServiceRoleClient();
+      const { data: slugRedirect } = await (serviceClient as any)
+        .from("event_slug_redirects")
+        .select("event_id")
+        .eq("old_slug", id)
+        .maybeSingle();
+
+      if (slugRedirect?.event_id) {
+        // Re-fetch with the request-scoped client so invite-only/draft visibility rules still apply.
+        const redirectedResult = await supabase
+          .from("events")
+          .select(eventSelectQuery)
+          .eq("id", slugRedirect.event_id)
+          .maybeSingle();
+
+        if (redirectedResult.data) {
+          const canonicalIdentifier = redirectedResult.data.slug || redirectedResult.data.id;
+          redirect(buildCanonicalEventPath(canonicalIdentifier, selectedDateKey));
+        }
+      }
+    }
+  }
 
   if (error || !event) {
     notFound();
@@ -212,7 +253,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
   // Phase 4.38: Canonical slug redirect - if accessed by UUID and event has slug, redirect to canonical
   if (isUUID(id) && event.slug) {
-    redirect(`/events/${event.slug}`);
+    redirect(buildCanonicalEventPath(event.slug, selectedDateKey));
   }
 
   // Phase ABC: Series date routing for many-event series

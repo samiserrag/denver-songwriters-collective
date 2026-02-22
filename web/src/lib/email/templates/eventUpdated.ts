@@ -31,6 +31,7 @@ export interface EventUpdatedEmailParams {
     time?: { old: string; new: string };
     venue?: { old: string; new: string };
     address?: { old: string; new: string };
+    details?: string[];
   };
   // Current (updated) values for display
   eventDate: string;
@@ -91,6 +92,17 @@ export function getEventUpdatedEmail(params: EventUpdatedEmailParams): {
   if (changes.address) {
     changeLines.push(`Address: ${changes.address.old} → ${changes.address.new}`);
     changeHtml.push(`<li><strong>Address:</strong> <span style="text-decoration: line-through; color: ${EMAIL_COLORS.textMuted};">${escapeHtml(changes.address.old)}</span> → <span style="color: ${EMAIL_COLORS.success};">${escapeHtml(changes.address.new)}</span></li>`);
+  }
+  if (changes.details && changes.details.length > 0) {
+    for (const detail of changes.details) {
+      changeLines.push(`${detail}: updated`);
+      changeHtml.push(`<li><strong>${escapeHtml(detail)}:</strong> updated</li>`);
+    }
+  }
+
+  if (changeLines.length === 0) {
+    changeLines.push("Event details were updated");
+    changeHtml.push("<li>Event details were updated</li>");
   }
 
   const htmlContent = `

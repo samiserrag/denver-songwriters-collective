@@ -60,15 +60,15 @@ export default function SettingsTab({
         />
       </section>
 
-      {/* Danger Zone */}
-      {isPrimaryHost && eventStatus === "active" && (
+      {/* Event status controls */}
+      {isPrimaryHost && (eventStatus === "active" || eventStatus === "cancelled") && (
         <section className="p-6 bg-red-100 dark:bg-red-950/30 border border-red-300 dark:border-red-900/50 rounded-lg">
           <h2 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-4">Danger Zone</h2>
           <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-            Cancelling this event will notify all attendees and remove it from public listings.
-            This action cannot be undone.
+            Cancelling marks the event as cancelled, notifies attendees, and keeps the event visible.
+            Use unpublish only when there are no RSVPs or performer claims.
           </p>
-          <CancelEventButton eventId={eventId} />
+          <CancelEventButton eventId={eventId} status={eventStatus} />
         </section>
       )}
 

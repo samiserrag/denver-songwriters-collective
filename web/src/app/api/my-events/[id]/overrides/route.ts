@@ -3,6 +3,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { getTodayDenver } from "@/lib/events/nextOccurrence";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
+import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
+import { sendOccurrenceCancelledNotifications } from "@/lib/notifications/occurrenceCancelled";
 
 /**
  * Occurrence Override API — Per-occurrence field overrides for recurring events.
@@ -59,6 +62,28 @@ function sanitizeOverridePatch(patch: Record<string, unknown>): Record<string, u
     }
   }
   return sanitized;
+}
+
+function formatTimeForEmail(timeValue: string | null | undefined): string {
+  if (!timeValue) return "TBD";
+  const [rawHours, rawMinutes] = timeValue.split(":");
+  const hours = Number(rawHours);
+  const minutes = Number(rawMinutes ?? 0);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return timeValue;
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
+function normalizeForCompare(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return JSON.stringify([...value].sort());
+  if (typeof value === "string") return value.trim();
+  return JSON.stringify(value);
+}
+
+function valuesChanged(before: unknown, after: unknown): boolean {
+  return normalizeForCompare(before) !== normalizeForCompare(after);
 }
 
 /**
@@ -172,6 +197,19 @@ export async function POST(
     return NextResponse.json({ error: "date_key must be YYYY-MM-DD format" }, { status: 400 });
   }
 
+  const { data: baseEvent } = await supabase
+    .from("events")
+    .select("id, slug, title, is_published, start_time, venue_name, venue_address")
+    .eq("id", eventId)
+    .single();
+
+  const { data: existingOverride } = await supabase
+    .from("occurrence_overrides")
+    .select("*")
+    .eq("event_id", eventId)
+    .eq("date_key", date_key)
+    .maybeSingle();
+
   // Build upsert payload
   const upsertPayload: Record<string, unknown> = {
     event_id: eventId,
@@ -233,41 +271,207 @@ export async function POST(
     !upsertPayload.override_notes &&
     !upsertPayload.override_patch;
 
+  let action: "reverted" | "upserted" = "upserted";
+
   if (isEmptyOverride) {
-    // Delete existing override if any
-    await supabase
+    const { error: deleteError } = await supabase
       .from("occurrence_overrides")
       .delete()
       .eq("event_id", eventId)
       .eq("date_key", date_key);
 
-    return NextResponse.json({ success: true, action: "reverted" });
-  }
+    if (deleteError) {
+      console.error("[Overrides POST] Delete error:", deleteError);
+      return NextResponse.json({ error: "Failed to revert override" }, { status: 500 });
+    }
+    action = "reverted";
+  } else {
+    const { error } = await supabase
+      .from("occurrence_overrides")
+      .upsert(upsertPayload, { onConflict: "event_id,date_key" });
 
-  const { error } = await supabase
-    .from("occurrence_overrides")
-    .upsert(upsertPayload, { onConflict: "event_id,date_key" });
+    if (error) {
+      console.error("[Overrides POST] Upsert error:", error);
+      return NextResponse.json({ error: "Failed to save override" }, { status: 500 });
+    }
 
-  if (error) {
-    console.error("[Overrides POST] Upsert error:", error);
-    return NextResponse.json({ error: "Failed to save override" }, { status: 500 });
-  }
-
-  // Upsert override-scoped media embeds (non-fatal on error)
-  if (Array.isArray(body.media_embed_urls)) {
-    try {
-      await upsertMediaEmbeds(
-        supabase,
-        { type: "event_override", id: eventId, date_key },
-        body.media_embed_urls as string[],
-        sessionUser.id
-      );
-    } catch (err) {
-      console.error(`[Overrides POST] Media embed upsert error for ${date_key}:`, err);
+    // Upsert override-scoped media embeds (non-fatal on error)
+    if (Array.isArray(body.media_embed_urls)) {
+      try {
+        await upsertMediaEmbeds(
+          supabase,
+          { type: "event_override", id: eventId, date_key },
+          body.media_embed_urls as string[],
+          sessionUser.id
+        );
+      } catch (err) {
+        console.error(`[Overrides POST] Media embed upsert error for ${date_key}:`, err);
+      }
     }
   }
 
-  return NextResponse.json({ success: true, action: "upserted" });
+  const { data: currentOverride } = await supabase
+    .from("occurrence_overrides")
+    .select("*")
+    .eq("event_id", eventId)
+    .eq("date_key", date_key)
+    .maybeSingle();
+
+  // Notify signed-up attendees on occurrence-level host edits.
+  // - cancelled transition => occurrence cancellation notification
+  // - modified/reverted changes => standard event update notification (date_key scoped)
+  if (baseEvent?.is_published) {
+    const previousStatus = existingOverride?.status ?? "normal";
+    const nextStatus = currentOverride?.status ?? "normal";
+
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", sessionUser.id)
+      .maybeSingle();
+
+    if (previousStatus !== "cancelled" && nextStatus === "cancelled") {
+      sendOccurrenceCancelledNotifications(supabase, {
+        eventId,
+        eventSlug: baseEvent.slug,
+        eventTitle: baseEvent.title,
+        dateKey: date_key,
+        occurrenceDateLabel: formatDateKeyForEmail(date_key),
+        venueName: baseEvent.venue_name || "TBD",
+        reason: typeof override_notes === "string" ? override_notes : null,
+        hostName: actorProfile?.full_name ?? null,
+      }).catch((err) => {
+        console.error(`[Overrides POST] Failed to send occurrence cancellation notifications for ${date_key}:`, err);
+      });
+    } else {
+      const beforePatch = (existingOverride as { override_patch?: Record<string, unknown> | null } | null)?.override_patch || {};
+      const afterPatch = (currentOverride as { override_patch?: Record<string, unknown> | null } | null)?.override_patch || {};
+
+      const beforeDate = typeof beforePatch.event_date === "string" ? beforePatch.event_date : date_key;
+      const afterDate = typeof afterPatch.event_date === "string" ? afterPatch.event_date : date_key;
+
+      const beforeStartTime =
+        (typeof beforePatch.start_time === "string" ? beforePatch.start_time : null)
+        || existingOverride?.override_start_time
+        || baseEvent.start_time;
+      const afterStartTime =
+        (typeof afterPatch.start_time === "string" ? afterPatch.start_time : null)
+        || currentOverride?.override_start_time
+        || baseEvent.start_time;
+
+      const beforeVenueName =
+        (typeof beforePatch.custom_location_name === "string" ? beforePatch.custom_location_name : null)
+        || baseEvent.venue_name;
+      const afterVenueName =
+        (typeof afterPatch.custom_location_name === "string" ? afterPatch.custom_location_name : null)
+        || baseEvent.venue_name;
+
+      const beforeAddress = beforePatch.custom_address || baseEvent.venue_address;
+      const afterAddress = afterPatch.custom_address || baseEvent.venue_address;
+
+      const changes: {
+        date?: { old: string; new: string };
+        time?: { old: string; new: string };
+        venue?: { old: string; new: string };
+        address?: { old: string; new: string };
+        details?: string[];
+      } = {};
+
+      if (valuesChanged(beforeDate, afterDate)) {
+        changes.date = {
+          old: formatDateKeyForEmail(beforeDate),
+          new: formatDateKeyForEmail(afterDate),
+        };
+      }
+
+      if (valuesChanged(beforeStartTime, afterStartTime)) {
+        changes.time = {
+          old: formatTimeForEmail(beforeStartTime),
+          new: formatTimeForEmail(afterStartTime),
+        };
+      }
+
+      if (valuesChanged(beforeVenueName, afterVenueName)) {
+        changes.venue = {
+          old: String(beforeVenueName || "TBD"),
+          new: String(afterVenueName || "TBD"),
+        };
+      }
+
+      if (valuesChanged(beforeAddress, afterAddress)) {
+        changes.address = {
+          old: String(beforeAddress || "TBD"),
+          new: String(afterAddress || "TBD"),
+        };
+      }
+
+      const detailLabels: Record<string, string> = {
+        title: "Title",
+        description: "Description",
+        end_time: "End time",
+        capacity: "Capacity",
+        cost_label: "Cost",
+        is_free: "Cost",
+        signup_url: "Signup link",
+        signup_time: "Signup time",
+        age_policy: "Age policy",
+        host_notes: "Host notes",
+        location_notes: "Location notes",
+        external_url: "External link",
+        categories: "Categories",
+        cover_image_url: "Cover image",
+      };
+
+      const detailChanges: string[] = [];
+      const keysToCheck = new Set<string>([
+        ...Object.keys(beforePatch),
+        ...Object.keys(afterPatch),
+      ]);
+
+      for (const key of keysToCheck) {
+        const label = detailLabels[key];
+        if (!label) continue;
+        if (["event_date", "start_time", "custom_location_name", "custom_address"].includes(key)) continue;
+        if (valuesChanged(beforePatch[key], afterPatch[key])) {
+          detailChanges.push(label);
+        }
+      }
+
+      if (valuesChanged(existingOverride?.override_notes, currentOverride?.override_notes)) {
+        detailChanges.push("Host notes");
+      }
+
+      if (detailChanges.length > 0) {
+        changes.details = [...new Set(detailChanges)];
+      }
+
+      const hasMeaningfulChange = !!(
+        changes.date
+        || changes.time
+        || changes.venue
+        || changes.address
+        || (changes.details && changes.details.length > 0)
+      );
+
+      if (hasMeaningfulChange) {
+        sendEventUpdatedNotifications(supabase, {
+          eventId,
+          eventSlug: baseEvent.slug,
+          dateKey: date_key,
+          eventTitle: baseEvent.title,
+          changes,
+          eventDate: formatDateKeyForEmail(afterDate),
+          eventTime: formatTimeForEmail(afterStartTime),
+          venueName: String(afterVenueName || "TBD"),
+          venueAddress: afterAddress ? String(afterAddress) : undefined,
+        }).catch((err) => {
+          console.error(`[Overrides POST] Failed to send occurrence update notifications for ${date_key}:`, err);
+        });
+      }
+    }
+  }
+
+  return NextResponse.json({ success: true, action });
 }
 
 // ─── DELETE: Revert override (remove row entirely) ──────────────────────────

@@ -3,7 +3,7 @@
  *
  * Tests for:
  * 1. Publish confirmation gate (host must confirm event is real)
- * 2. Event updated notifications triggered on major field changes
+ * 2. Event updated notifications triggered on host edits to published events
  * 3. Deduplication of RSVP + timeslot claimants
  * 4. Skip notifications on first publish and cancellation
  */
@@ -111,51 +111,52 @@ describe("Publish Confirmation Gate", () => {
 // ============================================
 
 describe("Event Updated Notification Triggers", () => {
-  // Major fields that trigger notifications
-  const majorFields = ["event_date", "start_time", "end_time", "venue_id", "location_mode", "day_of_week"];
+  // Host-edit fields that now trigger notifications
+  const trackedFields = [
+    "event_date",
+    "start_time",
+    "end_time",
+    "venue_id",
+    "location_mode",
+    "day_of_week",
+    "title",
+    "description",
+    "capacity",
+    "event_type",
+    "cost_label",
+    "signup_mode",
+  ];
 
-  describe("Major Field Detection", () => {
-    for (const field of majorFields) {
-      it(`should detect ${field} as a major field change`, () => {
+  describe("Host Edit Detection", () => {
+    for (const field of trackedFields) {
+      it(`should detect ${field} as a host edit change`, () => {
         const body: Record<string, unknown> = {};
         body[field] = "new_value";
 
-        const hasMajorChange = majorFields.some(f => body[f] !== undefined);
+        const hasTrackedChange = trackedFields.some(f => body[f] !== undefined);
 
-        expect(hasMajorChange).toBe(true);
+        expect(hasTrackedChange).toBe(true);
       });
     }
 
-    it("should NOT trigger for host_notes change (non-major)", () => {
+    it("should trigger for title change", () => {
+      const body = { title: "New Title" };
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
+      expect(hasTrackedChange).toBe(true);
+    });
+
+    it("should trigger for description change", () => {
+      const body = { description: "Updated description" };
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
+      expect(hasTrackedChange).toBe(true);
+    });
+
+    it("should NOT trigger for host_notes change when it is the only field in the request", () => {
       const body = { host_notes: "Updated notes" };
 
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
 
-      expect(hasMajorChange).toBe(false);
-    });
-
-    it("should NOT trigger for description change (non-major)", () => {
-      const body = { description: "Updated description" };
-
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
-
-      expect(hasMajorChange).toBe(false);
-    });
-
-    it("should NOT trigger for title change (non-major)", () => {
-      const body = { title: "New Title" };
-
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
-
-      expect(hasMajorChange).toBe(false);
-    });
-
-    it("should NOT trigger for capacity change (non-major)", () => {
-      const body = { capacity: 20 };
-
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
-
-      expect(hasMajorChange).toBe(false);
+      expect(hasTrackedChange).toBe(false);
     });
   });
 
@@ -165,12 +166,10 @@ describe("Event Updated Notification Triggers", () => {
       const body = { is_published: true, start_time: "19:00:00" };
 
       const wasPublished = prevEvent.is_published;
-      const willPublish = body.is_published === true;
-      const isNewPublish = willPublish && !wasPublished;
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
 
       // Skip if first publish
-      const shouldNotify = hasMajorChange && wasPublished && !isNewPublish;
+      const shouldNotify = hasTrackedChange && wasPublished;
 
       expect(shouldNotify).toBe(false);
     });
@@ -179,26 +178,25 @@ describe("Event Updated Notification Triggers", () => {
       const prevEvent = { is_published: true, status: "active" };
       const body = { status: "cancelled", start_time: "19:00:00" };
 
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
       const wasPublished = prevEvent.is_published;
       const statusBecomingCancelled = body.status === "cancelled" && prevEvent.status !== "cancelled";
 
       // Skip if cancellation
-      const shouldNotify = hasMajorChange && wasPublished && !statusBecomingCancelled;
+      const shouldNotify = hasTrackedChange && wasPublished && !statusBecomingCancelled;
 
       expect(shouldNotify).toBe(false);
     });
 
-    it("should notify on major change to published event", () => {
+    it("should notify on host edit to published event", () => {
       const prevEvent = { is_published: true, status: "active" };
-      const body = { start_time: "20:00:00" }; // Changed from 19:00 to 20:00
+      const body = { description: "Updated details for attendees" };
 
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
       const wasPublished = prevEvent.is_published;
-      const isNewPublish = false; // Not changing is_published
       const statusBecomingCancelled = false;
 
-      const shouldNotify = hasMajorChange && wasPublished && !isNewPublish && !statusBecomingCancelled;
+      const shouldNotify = hasTrackedChange && wasPublished && !statusBecomingCancelled;
 
       expect(shouldNotify).toBe(true);
     });
@@ -207,10 +205,10 @@ describe("Event Updated Notification Triggers", () => {
       const prevEvent = { is_published: false, status: "draft" };
       const body = { start_time: "20:00:00" };
 
-      const hasMajorChange = majorFields.some(f => body[f as keyof typeof body] !== undefined);
+      const hasTrackedChange = trackedFields.some(f => body[f as keyof typeof body] !== undefined);
       const wasPublished = prevEvent.is_published;
 
-      const shouldNotify = hasMajorChange && wasPublished;
+      const shouldNotify = hasTrackedChange && wasPublished;
 
       expect(shouldNotify).toBe(false);
     });

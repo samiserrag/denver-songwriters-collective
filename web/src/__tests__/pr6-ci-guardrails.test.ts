@@ -202,16 +202,15 @@ describe("PR6 Guardrail A: Rollback file scanner (vitest mirror)", () => {
 });
 
 // ============================================================
-// §3: No new migrations in PR6
+// §3: Migration/RLS contract checks
 // ============================================================
 
-describe("PR6: No new migrations or RLS policy changes", () => {
-  it("latest migration is still from PR3/PR4 era", () => {
+describe("Migration guardrail compatibility", () => {
+  it("latest active migration follows timestamp naming and is not a rollback", () => {
     const migrations = getActiveMigrations();
     const latest = migrations[migrations.length - 1];
-    expect(latest).toBe(
-      "20260218040000_fix_event_images_host_storage_policy.sql"
-    );
+    expect(latest).toMatch(/^\d{14}_[a-z0-9_]+\.sql$/);
+    expect(latest.toLowerCase()).not.toContain("rollback");
   });
 
   it("PR6 files contain no CREATE/ALTER/DROP POLICY statements", () => {

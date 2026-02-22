@@ -5,6 +5,7 @@ import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { readEventEmbedsWithFallback } from "@/lib/mediaEmbedsServer";
 import { formatDateGroupHeader, getTodayDenver, addDaysDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import EventForm from "../../../_components/EventForm";
+import OccurrenceCancelToggle from "./_components/OccurrenceCancelToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,7 @@ export default async function EditOccurrencePage({ params }: PageProps) {
   const overrideRescheduledDate = typeof overridePatch?.event_date === "string"
     ? (overridePatch.event_date as string)
     : undefined;
+  const isOccurrenceCancelled = existingOverride?.status === "cancelled";
 
   const todayKey = getTodayDenver();
   const dateLabel = formatDateGroupHeader(dateKey, todayKey);
@@ -147,6 +149,13 @@ export default async function EditOccurrencePage({ params }: PageProps) {
           <p className="text-sm text-[var(--color-text-secondary)]">
             {event.title} — {dateKey}
           </p>
+          <div className="mt-3">
+            <OccurrenceCancelToggle
+              eventId={eventId}
+              dateKey={dateKey}
+              isCancelled={isOccurrenceCancelled}
+            />
+          </div>
         </div>
 
         {/* Occurrence Mode Banner */}
@@ -154,6 +163,9 @@ export default async function EditOccurrencePage({ params }: PageProps) {
           <p className="text-sm text-amber-800 dark:text-amber-400">
             You are editing a single occurrence. Changes here only affect{" "}
             <strong>{dateLabel}</strong> — the series schedule remains unchanged.
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-500 mt-2">
+            Cancelling this occurrence notifies attending people for this date and keeps the event series visible.
           </p>
         </div>
 

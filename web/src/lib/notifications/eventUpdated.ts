@@ -1,14 +1,16 @@
 /**
  * Event Updated Notifications
  *
- * Sends notifications to all signed-up users (RSVPs + timeslot claimants) when
- * major event details change. Uses dashboard notifications as canonical and
- * preference-gated emails.
+ * Sends notifications to all signed-up attendees (RSVPs + timeslot claimants)
+ * when published event details change.
+ * - Members: dashboard notification + preference-gated email
+ * - Guests: direct email
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../supabase/database.types";
 import { sendEmailWithPreferences } from "../email/sendWithPreferences";
+import { sendEmail } from "../email/mailer";
 import { getEventUpdatedEmail } from "../email/templates/eventUpdated";
 
 const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://coloradosongwriterscollective.org";
@@ -16,12 +18,14 @@ const SITE_URL = process.env.PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL
 export interface EventUpdateParams {
   eventId: string;
   eventSlug?: string | null;
+  dateKey?: string | null;
   eventTitle: string;
   changes: {
     date?: { old: string; new: string };
     time?: { old: string; new: string };
     venue?: { old: string; new: string };
     address?: { old: string; new: string };
+    details?: string[];
   };
   eventDate: string;
   eventTime: string;
@@ -30,7 +34,7 @@ export interface EventUpdateParams {
 }
 
 interface AttendeeInfo {
-  userId: string;
+  userId: string | null;
   email: string;
   fullName: string | null;
 }
@@ -40,86 +44,102 @@ interface AttendeeInfo {
  */
 async function getEventAttendees(
   supabase: SupabaseClient<Database>,
-  eventId: string
+  eventId: string,
+  dateKey?: string | null
 ): Promise<AttendeeInfo[]> {
   const attendeeMap = new Map<string, AttendeeInfo>();
 
   // 1. Get RSVP attendees (confirmed, waitlist, offered)
-  const { data: rsvps } = await supabase
+  let rsvpQuery = supabase
     .from("event_rsvps")
-    .select("user_id")
+    .select(`
+      user_id,
+      guest_name,
+      guest_email,
+      user:profiles!event_rsvps_user_id_fkey(email, full_name)
+    `)
     .eq("event_id", eventId)
     .in("status", ["confirmed", "waitlist", "offered"]);
 
-  if (rsvps) {
-    for (const rsvp of rsvps) {
-      if (rsvp.user_id && !attendeeMap.has(rsvp.user_id)) {
-        attendeeMap.set(rsvp.user_id, {
-          userId: rsvp.user_id,
-          email: "",
-          fullName: null
-        });
-      }
-    }
+  if (dateKey) {
+    rsvpQuery = rsvpQuery.eq("date_key", dateKey);
   }
 
-  // 2. Get timeslot claimants (confirmed, waitlist, offered)
-  const { data: timeslots } = await supabase
-    .from("event_timeslots")
-    .select("id")
-    .eq("event_id", eventId);
+  const { data: rsvps } = await rsvpQuery;
 
-  if (timeslots && timeslots.length > 0) {
-    const slotIds = timeslots.map(s => s.id);
-    const { data: claims } = await supabase
-      .from("timeslot_claims")
-      .select("member_id")
-      .in("timeslot_id", slotIds)
-      .in("status", ["confirmed", "waitlist", "offered"]);
-
-    if (claims) {
-      for (const claim of claims) {
-        if (claim.member_id && !attendeeMap.has(claim.member_id)) {
-          attendeeMap.set(claim.member_id, {
-            userId: claim.member_id,
-            email: "",
-            fullName: null
+  if (rsvps) {
+    for (const rsvp of rsvps) {
+      if (rsvp.user_id && rsvp.user) {
+        const member = rsvp.user as unknown as { email: string | null; full_name: string | null } | null;
+        const email = member?.email?.trim().toLowerCase();
+        if (!email) continue;
+        if (!attendeeMap.has(email)) {
+          attendeeMap.set(email, {
+            userId: rsvp.user_id,
+            email,
+            fullName: member?.full_name ?? null
+          });
+        }
+      } else if (rsvp.guest_email) {
+        const email = rsvp.guest_email.trim().toLowerCase();
+        if (!attendeeMap.has(email)) {
+          attendeeMap.set(email, {
+            userId: null,
+            email,
+            fullName: rsvp.guest_name ?? null
           });
         }
       }
     }
   }
 
-  // 3. Fetch profile info for all user IDs
-  const userIds = Array.from(attendeeMap.keys());
-  if (userIds.length === 0) {
-    return [];
+  // 2. Get timeslot claimants (confirmed, waitlist, offered)
+  let claimsQuery = supabase
+    .from("timeslot_claims")
+    .select(`
+      member_id,
+      guest_name,
+      guest_email,
+      member:profiles!timeslot_claims_member_id_fkey(email, full_name)
+    `)
+    .eq("event_id", eventId)
+    .in("status", ["confirmed", "waitlist", "offered"]);
+
+  if (dateKey) {
+    claimsQuery = claimsQuery.eq("date_key", dateKey);
   }
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, email, full_name")
-    .in("id", userIds);
+  const { data: claims } = await claimsQuery;
 
-  if (profiles) {
-    for (const profile of profiles) {
-      const attendee = attendeeMap.get(profile.id);
-      if (attendee && profile.email) {
-        attendee.email = profile.email;
-        attendee.fullName = profile.full_name;
+  if (claims) {
+    for (const claim of claims) {
+      if (claim.member_id && claim.member) {
+        const member = claim.member as unknown as { email: string | null; full_name: string | null } | null;
+        const email = member?.email?.trim().toLowerCase();
+        if (!email) continue;
+
+        // Prefer performer/timeslot context if recipient appears in both lists.
+        attendeeMap.set(email, {
+          userId: claim.member_id,
+          email,
+          fullName: member?.full_name ?? null
+        });
+      } else if (claim.guest_email) {
+        const email = claim.guest_email.trim().toLowerCase();
+        attendeeMap.set(email, {
+          userId: null,
+          email,
+          fullName: claim.guest_name ?? null
+        });
       }
     }
   }
 
-  // Filter out users without email
-  return Array.from(attendeeMap.values()).filter(a => a.email);
+  return Array.from(attendeeMap.values());
 }
 
 /**
- * Send event updated notifications to all attendees
- *
- * Creates dashboard notification for each user (canonical), then sends
- * preference-gated email.
+ * Send event updated notifications to all attendees.
  */
 export async function sendEventUpdatedNotifications(
   supabase: SupabaseClient<Database>,
@@ -128,6 +148,7 @@ export async function sendEventUpdatedNotifications(
   const {
     eventId,
     eventSlug,
+    dateKey,
     eventTitle,
     changes,
     eventDate,
@@ -136,7 +157,7 @@ export async function sendEventUpdatedNotifications(
     venueAddress
   } = params;
 
-  const attendees = await getEventAttendees(supabase, eventId);
+  const attendees = await getEventAttendees(supabase, eventId, dateKey);
 
   if (attendees.length === 0) {
     console.log(`[eventUpdated] No attendees to notify for event ${eventId}`);
@@ -151,11 +172,15 @@ export async function sendEventUpdatedNotifications(
   if (changes.time) changeSummary.push("time");
   if (changes.venue) changeSummary.push("venue");
   if (changes.address) changeSummary.push("address");
+  if (changes.details && changes.details.length > 0) {
+    changeSummary.push(...changes.details);
+  }
   const changeText = changeSummary.length > 0
-    ? `${changeSummary.join(", ")} changed`
+    ? `${changeSummary.slice(0, 4).join(", ")}${changeSummary.length > 4 ? ` +${changeSummary.length - 4} more` : ""}`
     : "Details updated";
 
-  const eventUrl = `${SITE_URL}/events/${eventSlug || eventId}`;
+  const dateParam = dateKey ? `?date=${dateKey}` : "";
+  const eventUrl = `${SITE_URL}/events/${eventSlug || eventId}${dateParam}`;
 
   let notified = 0;
   let errors = 0;
@@ -168,6 +193,7 @@ export async function sendEventUpdatedNotifications(
         eventTitle,
         eventId,
         eventSlug,
+        dateKey: dateKey || undefined,
         changes,
         eventDate,
         eventTime,
@@ -175,32 +201,46 @@ export async function sendEventUpdatedNotifications(
         venueAddress
       });
 
-      const result = await sendEmailWithPreferences({
-        supabase,
-        userId: attendee.userId,
-        templateKey: "eventUpdated",
-        payload: {
+      if (attendee.userId) {
+        return sendEmailWithPreferences({
+          supabase,
+          userId: attendee.userId,
+          templateKey: "eventUpdated",
+          payload: {
+            to: attendee.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text
+          },
+          notification: {
+            type: "event_updated",
+            title: `Updated: ${eventTitle}`,
+            message: `The host updated ${changeText}. Tap to review the latest details.`,
+            link: eventUrl
+          }
+        });
+      }
+
+      // Guest recipient (no profile): send direct email only.
+      if (!attendee.userId) {
+        await sendEmail({
           to: attendee.email,
           subject: emailContent.subject,
           html: emailContent.html,
-          text: emailContent.text
-        },
-        notification: {
-          type: "event_updated",
-          title: `Updated: ${eventTitle}`,
-          message: `The ${changeText}. Tap to review the new details.`,
-          link: eventUrl
-        }
-      });
+          text: emailContent.text,
+          templateName: "eventUpdated"
+        });
+        return { emailSent: true, notificationCreated: false };
+      }
 
-      return result;
+      return { emailSent: false, notificationCreated: false };
     })
   );
 
   // Count results
   for (const result of results) {
     if (result.status === "fulfilled") {
-      if (result.value.notificationCreated || result.value.emailSent) {
+      if (result.value?.notificationCreated || result.value?.emailSent) {
         notified++;
       }
     } else {

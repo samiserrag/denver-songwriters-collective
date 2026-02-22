@@ -258,6 +258,32 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 
 ---
 
+## Contract: Event URL + Cancellation Lifecycle (EVENTS-UX-02)
+
+### Slug Continuity Contract
+
+- Event title/date edits may change `events.slug`.
+- Old event slugs must continue to resolve and redirect to the current slug.
+- Redirects must preserve occurrence context (`?date=YYYY-MM-DD`) when present.
+- Redirect lookup must not bypass normal visibility checks (private/draft access rules still apply after resolution).
+
+### Cancellation Contract
+
+- Event cancellation must not hard-delete the event.
+- Cancellation marks event status as cancelled, keeps the event visible, and disables RSVP/timeslot participation.
+- Cancel action must notify affected attendees (RSVP + performer claimants).
+- Uncancel restores event status without sending a restoration email blast.
+
+### Unpublish Safety Contract
+
+- Unpublish must be blocked when any active RSVP or performer claim exists.
+- Hosts should use cancel (not unpublish) for attended events.
+- This guard is enforced both:
+1. In UI controls (button unavailable/disabled)
+2. In API validation (server-side reject to prevent bypass)
+
+---
+
 ## Contract: Region + Community Platform Architecture (STRAT-01, Docs-Only)
 
 > Strategic contract for future implementation phases. No enforcement code is introduced in this section.

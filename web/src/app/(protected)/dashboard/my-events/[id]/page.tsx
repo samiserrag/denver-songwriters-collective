@@ -12,6 +12,7 @@ import EventInviteSection from "./_components/EventInviteSection";
 import LineupControlSection from "./_components/LineupControlSection";
 import PublishButton from "./_components/PublishButton";
 import EventManagementClient from "./_components/EventManagementClient";
+import CancelEventButton from "./_components/CancelEventButton";
 
 export const dynamic = "force-dynamic";
 
@@ -183,6 +184,14 @@ export default async function EditEventPage({
     .in("status", ["confirmed", "performed", "waitlist"]);
   const hasActiveClaims = (activeClaimCount ?? 0) > 0;
 
+  const { count: activeRsvpCount } = await supabase
+    .from("event_rsvps")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .in("status", ["confirmed", "waitlist", "offered"]);
+  const hasActiveRsvps = (activeRsvpCount ?? 0) > 0;
+  const hasSignupActivity = hasActiveClaims || hasActiveRsvps;
+
   // Determine user's role for the client component
   const currentUserRole: "host" | "cohost" = userHost?.role === "host" ? "host" : "cohost";
 
@@ -240,7 +249,15 @@ export default async function EditEventPage({
               eventId={eventId}
               isPublished={event.is_published}
               status={event.status}
+              hasSignupActivity={hasSignupActivity}
             />
+            {isPrimaryHost && (
+              <CancelEventButton
+                eventId={eventId}
+                status={event.status}
+                compact
+              />
+            )}
 
             {/* Status badge */}
             {event.status === "cancelled" ? (
@@ -269,6 +286,12 @@ export default async function EditEventPage({
             )}
           </div>
         </div>
+
+        {isPrimaryHost && event.status === "active" && (
+          <p className="text-xs text-[var(--color-text-secondary)] mb-6">
+            Cancel marks this event as cancelled, notifies attending people, and keeps it visible.
+          </p>
+        )}
 
         {/* Phase 5.14: Tabbed Layout */}
         <EventManagementClient
