@@ -6,6 +6,23 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Attendee Member Search in Private & Invites Tab (February 2026)
+
+**Summary:** Fixed member search in `AttendeeInviteManager`. The UI was calling `GET /api/my-events/[id]/cohosts?search=...` and expecting `results`, but the API only supports `POST` with `search_name` and returns `matches`.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx` | Switched search call to POST with `{ search_name }`, mapped `matches -> { id, full_name }`, clears results on non-OK |
+| `web/src/__tests__/pr3-attendee-invite-management.test.ts` | Added regression assertions for POST cohost search and `matches` mapping |
+
+**Verification:**  
+- `npx vitest run src/__tests__/pr3-attendee-invite-management.test.ts` → 49/49 passing  
+- `npm run build` → success
+
+---
+
 ### UX: New Private & Invites Tab + Visibility Save Guard (February 2026)
 
 **Summary:** Added a dedicated `Private & Invites` tab in event management. Privacy mode (`public` vs `invite_only`) now has a focused UI with save action, and invite tooling moved out of general settings. PATCH validation now explicitly allows `visibility` updates and restricts changes to admin/primary-host authority.

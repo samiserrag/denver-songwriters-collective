@@ -97,16 +97,28 @@ export default function AttendeeInviteManager({
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(
-          `/api/my-events/${eventId}/cohosts?search=${encodeURIComponent(memberSearch)}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          // The cohosts search returns { results: [...] }
-          setSearchResults(data.results || []);
+        const res = await fetch(`/api/my-events/${eventId}/cohosts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ search_name: memberSearch }),
+        });
+
+        if (!res.ok) {
+          setSearchResults([]);
+          return;
         }
+
+        const data = await res.json();
+        const matches = Array.isArray(data.matches) ? data.matches : [];
+        setSearchResults(
+          matches.map((m: { id: string; name: string | null }) => ({
+            id: m.id,
+            full_name: m.name,
+          }))
+        );
       } catch {
         // Silently fail search
+        setSearchResults([]);
       } finally {
         setSearching(false);
       }

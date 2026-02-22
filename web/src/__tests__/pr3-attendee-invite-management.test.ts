@@ -284,6 +284,17 @@ describe("PR3: AttendeeInviteManager UI", () => {
     );
   });
 
+  it("uses POST member search against cohosts route", () => {
+    expect(uiSource).toContain("`/api/my-events/${eventId}/cohosts`");
+    expect(uiSource).toContain('method: "POST"');
+    expect(uiSource).toContain("search_name: memberSearch");
+  });
+
+  it("maps cohost search matches payload to full_name", () => {
+    expect(uiSource).toContain("data.matches");
+    expect(uiSource).toContain("full_name: m.name");
+  });
+
   it("validates email format before submitting", () => {
     expect(uiSource).toContain("emailRegex");
     expect(uiSource).toContain("Please enter a valid email address");
