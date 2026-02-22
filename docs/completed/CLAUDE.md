@@ -9841,3 +9841,29 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 **Verification:**
 - `cd web && npx vitest run src/__tests__/publish-confirmation-and-updates.test.ts src/__tests__/phase5-03-occurrence-cancellation-ux.test.ts src/__tests__/occurrence-reschedule.test.ts src/__tests__/slug-redirect-and-cancel-guardrails.test.ts`
 - `cd web && npm run build`
+
+---
+
+### CI Hotfix: Guardrail Grep + Legacy Migration Test Pins (February 2026) — RESOLVED
+
+**Goal:** Restore GitHub Actions after failures in `CI`, `CI (Build)`, and `Web Tests` triggered by a guardrail script parsing bug and brittle migration filename assertions.
+
+**Summary:**
+- Fixed policy-ack guardrail grep invocation so the review-header string is treated as a pattern, not a CLI flag (`grep -q -- ...`).
+- Replaced brittle PR4/PR5 tests that pinned "latest migration filename" forever with a stable baseline-presence assertion.
+- Added the required review header to `20260222160000_event_slug_redirect_history.sql` so guardrail C passes when policy-related SQL is present.
+- Re-ran targeted guardrail and contract tests locally, then pushed and confirmed all four GitHub workflows passed.
+
+**Files touched:**
+- `.github/workflows/ci.yml`
+- `web/src/__tests__/pr4-read-surface-hardening.test.ts`
+- `web/src/__tests__/pr5-invitee-access.test.ts`
+- `supabase/migrations/20260222160000_event_slug_redirect_history.sql`
+
+**Verification:**
+- `cd web && npm test --silent -- src/__tests__/pr4-read-surface-hardening.test.ts src/__tests__/pr5-invitee-access.test.ts src/__tests__/pr6-ci-guardrails.test.ts`
+- GitHub Actions rerun after fix:
+  - `CI` ✅
+  - `CI (Build)` ✅
+  - `Web Tests` ✅
+  - `Supabase RLS Tripwire` ✅
