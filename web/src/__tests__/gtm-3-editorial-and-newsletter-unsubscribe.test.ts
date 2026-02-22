@@ -931,7 +931,7 @@ describe("Part B: Editorial Layer", () => {
   // GTM-3.1: Cron Schedule + Baseball Card Renderer + Slug/URL Normalization
   // =========================================================================
 
-  describe("GTM-3.1: Cron schedule update to Sunday 23:00 UTC", () => {
+  describe("GTM-3.1: Cron schedule update to Sunday 23:20 UTC", () => {
     const vercelConfig = fs.readFileSync(
       path.join(process.cwd(), "vercel.json"),
       "utf-8"
@@ -941,17 +941,17 @@ describe("Part B: Editorial Layer", () => {
       "utf-8"
     );
 
-    it("vercel.json schedules weekly-happenings at 0 23 * * 0 (Sunday 23:00 UTC)", () => {
+    it("vercel.json schedules weekly-happenings at 20 23 * * 0 (Sunday 23:20 UTC)", () => {
       const config = JSON.parse(vercelConfig);
       const happeningsCron = config.crons?.find(
         (c: { path: string }) => c.path === "/api/cron/weekly-happenings"
       );
       expect(happeningsCron).toBeDefined();
-      expect(happeningsCron.schedule).toBe("0 23 * * 0");
+      expect(happeningsCron.schedule).toBe("20 23 * * 0");
     });
 
     it("cron route documents MST/MDT timing in header comment", () => {
-      expect(cronSource).toContain("Sunday 23:00 UTC");
+      expect(cronSource).toContain("Sunday 23:20 UTC");
       expect(cronSource).toContain("MST");
       expect(cronSource).toContain("MDT");
     });
