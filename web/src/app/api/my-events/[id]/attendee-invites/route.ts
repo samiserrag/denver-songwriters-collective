@@ -130,6 +130,8 @@ export async function POST(
     const body = await request.json();
     const userId = body.user_id?.trim() || null;
     const email = body.email?.trim().toLowerCase() || null;
+    const memberInviteStatus = userId ? "accepted" : "pending";
+    const memberAcceptedAt = userId ? new Date().toISOString() : null;
 
     // Validate: must provide user_id or email (not both, not neither)
     if (!userId && !email) {
@@ -233,10 +235,10 @@ export async function POST(
       const { data: reactivatedInvite, error: reactivationError } = await serviceClient
         .from("event_attendee_invites")
         .update({
-          status: "pending",
+          status: memberInviteStatus,
           invited_by: sessionUser.id,
           expires_at: nextExpiresAt,
-          accepted_at: null,
+          accepted_at: memberAcceptedAt,
           revoked_at: null,
           revoked_by: null,
           ...(email ? { token_hash: tokenHashForStorage } : {}),
@@ -261,8 +263,9 @@ export async function POST(
         .insert({
           event_id: eventId,
           invited_by: sessionUser.id,
-          status: "pending",
+          status: memberInviteStatus,
           expires_at: nextExpiresAt,
+          accepted_at: memberAcceptedAt,
           ...(userId ? { user_id: userId } : {}),
           ...(email ? { email, token_hash: tokenHashForStorage } : {}),
         })
@@ -300,7 +303,9 @@ export async function POST(
 
     // Member invite notifications/emails: invite in dashboard + preference-aware email.
     if (userId) {
-      const inviteLink = `/attendee-invite?invite_id=${invite.id}`;
+      const eventLink = event.slug
+        ? `/events/${event.slug}`
+        : `/events/${event.id}`;
       const inviterNameFallback = sessionUser.email || "A CSC host";
       const inviteeName = invitedProfile?.full_name || "there";
 
@@ -318,8 +323,8 @@ export async function POST(
         const notification = {
           type: "attendee_invitation",
           title: `You're invited: ${event.title}`,
-          message: `${inviterName} invited you to "${event.title}". Accept to view and RSVP.`,
-          link: inviteLink,
+          message: `${inviterName} invited you to "${event.title}". Open the event page to RSVP.`,
+          link: eventLink,
         };
 
         if (inviteeEmail) {
@@ -330,6 +335,7 @@ export async function POST(
             eventSlug: event.slug,
             eventId: event.id,
             inviteId: invite.id,
+            isPrivateEvent: event.visibility === "invite_only",
             venueName: event.venue_name,
             startTime: event.start_time,
           });

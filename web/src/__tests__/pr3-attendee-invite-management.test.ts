@@ -131,10 +131,15 @@ describe("PR3: Attendee Invite API — Member Invites", () => {
   it("reactivates inactive invites instead of blocking re-invite", () => {
     expect(apiRouteSource).toContain("matchingInvite");
     expect(apiRouteSource).toContain("wasReactivated = true");
-    expect(apiRouteSource).toContain('status: "pending"');
-    expect(apiRouteSource).toContain("accepted_at: null");
+    expect(apiRouteSource).toContain("status: memberInviteStatus");
+    expect(apiRouteSource).toContain("accepted_at: memberAcceptedAt");
     expect(apiRouteSource).toContain("revoked_at: null");
     expect(apiRouteSource).toContain("revoked_by: null");
+  });
+
+  it("auto-accepts member invites for direct RSVP flow", () => {
+    expect(apiRouteSource).toContain("memberInviteStatus");
+    expect(apiRouteSource).toContain("userId ? \"accepted\" : \"pending\"");
   });
 });
 
@@ -369,7 +374,8 @@ describe("PR3+: Invite delivery signals", () => {
     expect(apiRouteSource).toContain("sendEmailWithPreferences");
     expect(apiRouteSource).toContain("attendee_invitation");
     expect(apiRouteSource).toContain("attendeeInvitation");
-    expect(apiRouteSource).toContain("/attendee-invite?invite_id=");
+    expect(apiRouteSource).toContain("const eventLink = event.slug");
+    expect(apiRouteSource).toContain('Open the event page to RSVP.');
   });
 });
 

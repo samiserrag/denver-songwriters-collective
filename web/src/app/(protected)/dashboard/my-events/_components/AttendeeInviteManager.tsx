@@ -321,7 +321,7 @@ export default function AttendeeInviteManager({
         </div>
       )}
       {success && (
-        <div className="mb-3 p-2 text-sm text-emerald-300 bg-emerald-500/10 rounded border border-emerald-500/20">
+        <div className="mb-3 p-2 text-sm text-[var(--color-text-primary)] bg-[var(--color-bg-tertiary)] rounded border border-[var(--color-border-default)]">
           {success}
         </div>
       )}

@@ -9716,3 +9716,29 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - `cd web && npx vitest run src/lib/email/email.test.ts src/__tests__/pr3-attendee-invite-management.test.ts`
 - `cd web && npm test --silent` (205 files / 4405 tests passed)
 - `cd web && npm run build`
+
+---
+
+### Attendee Invite Email + UX Follow-Up (February 2026) — RESOLVED
+
+**Goal:** Remove confusing invite acceptance flow and polish invite messaging for public/private events.
+
+**Summary:**
+- Removed green-on-green success styling in attendee invite manager; success notices now use neutral themed contrast tokens.
+- Updated attendee invite email copy to be visibility-aware:
+  - Public events: "invited you to a happening"
+  - Invite-only events: "invited you to a private happening"
+- Removed the email "Accept Invite & RSVP" button and replaced it with a single "View Event & RSVP" button linking directly to the event page.
+- Updated member invite creation/reactivation behavior to auto-accept member invites (`status='accepted'`) so direct event-page links work immediately.
+- Updated notification copy from "Accept to view and RSVP" to "Open the event page to RSVP."
+- Updated PR3 contract tests to reflect event-page delivery and auto-accept member invite behavior.
+
+**Files touched:**
+- `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx`
+- `web/src/app/api/my-events/[id]/attendee-invites/route.ts`
+- `web/src/lib/email/templates/attendeeInvitation.ts`
+- `web/src/__tests__/pr3-attendee-invite-management.test.ts`
+
+**Verification:**
+- `cd web && npx vitest run src/__tests__/pr3-attendee-invite-management.test.ts src/lib/email/email.test.ts src/__tests__/email-template-coverage.test.ts`
+- `cd web && npm run build`

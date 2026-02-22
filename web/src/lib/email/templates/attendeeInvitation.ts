@@ -22,7 +22,8 @@ export interface AttendeeInvitationEmailParams {
   eventTitle: string;
   eventSlug?: string | null;
   eventId: string;
-  inviteId: string;
+  inviteId?: string;
+  isPrivateEvent?: boolean;
   venueName?: string | null;
   startTime?: string | null;
 }
@@ -40,7 +41,7 @@ export function getAttendeeInvitationEmail(
     eventTitle,
     eventSlug,
     eventId,
-    inviteId,
+    isPrivateEvent = false,
     venueName,
     startTime,
   } = params;
@@ -49,41 +50,34 @@ export function getAttendeeInvitationEmail(
   const safeInviterName = escapeHtml(inviterName);
   const subject = `You’re invited to "${eventTitle}" — The Colorado Songwriters Collective`;
 
-  const acceptInviteLink = `${SITE_URL}/attendee-invite?invite_id=${inviteId}`;
   const eventLink = eventSlug
     ? `${SITE_URL}/events/${eventSlug}`
     : `${SITE_URL}/events/${eventId}`;
+  const visibilityLabel = isPrivateEvent ? "a private happening" : "a happening";
 
   const eventDetails = [venueName, startTime].filter(Boolean).join(" • ");
 
   const htmlContent = `
 ${paragraph(getGreeting(inviteeName))}
 
-${paragraph(`<strong>${safeInviterName}</strong> invited you to a private happening on The Colorado Songwriters Collective.`)}
+${paragraph(`<strong>${safeInviterName}</strong> invited you to ${visibilityLabel} on The Colorado Songwriters Collective.`)}
 
 ${neutralBox("🎶", safeEventTitle, eventDetails || undefined)}
 
-${paragraph("Tap below to accept your invite. You’ll be taken to the event page where you can RSVP.")}
-
-${createButton("Accept Invite & RSVP", acceptInviteLink, "green")}
-
-${paragraph("Want to preview the event page first?")}
-${createButton("View Event Page", eventLink)}
+${paragraph("Tap below to view the event page and RSVP.")}
+${createButton("View Event & RSVP", eventLink)}
 `;
 
   const html = wrapEmailHtml(htmlContent);
 
   const textContent = `${getGreeting(inviteeName)}
 
-${inviterName} invited you to a private happening on The Colorado Songwriters Collective.
+${inviterName} invited you to ${visibilityLabel} on The Colorado Songwriters Collective.
 
 ${eventTitle}
 ${eventDetails}
 
-Accept your invite and RSVP:
-${acceptInviteLink}
-
-View event page:
+View event page and RSVP:
 ${eventLink}`;
 
   const text = wrapEmailText(textContent);
