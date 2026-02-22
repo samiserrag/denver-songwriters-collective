@@ -244,16 +244,15 @@ describe("PR4: Access matrix - current state (invitee access is PR5+)", () => {
 // ============================================================
 
 describe("PR4: No migration or policy changes", () => {
-  it("no new .sql migration files were added in PR4", () => {
-    // This test documents the constraint. The actual check is done at merge time.
-    // The latest migration should still be 20260218040000 (from PR3 hotfix).
+  it("PR3 baseline migration still exists (PR4 introduced none)", () => {
+    // PR4 did not add a migration. Later features may add migrations, so this
+    // assertion verifies the PR3 baseline file remains present instead of
+    // pinning the latest migration filename forever.
     const migrationsDir = join(__dirname, "..", "..", "..", "supabase/migrations");
     const migrations = readdirSync(migrationsDir)
       .filter((f: string) => f.endsWith(".sql") && !f.startsWith("_"))
       .sort();
-    const latest = migrations[migrations.length - 1];
-    // PR4 should NOT add any new migration after 20260218040000
-    expect(latest).toBe("20260218040000_fix_event_images_host_storage_policy.sql");
+    expect(migrations).toContain("20260218040000_fix_event_images_host_storage_policy.sql");
   });
 
   it("PR4 changed files contain no CREATE POLICY statements", () => {

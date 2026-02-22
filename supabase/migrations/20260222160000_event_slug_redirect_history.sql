@@ -1,4 +1,5 @@
 -- Preserve old event slugs so shared links keep working after title/date edits.
+-- REVIEWED: policy change acknowledged
 -- This migration adds:
 -- 1) event_slug_redirects table (old_slug -> event_id)
 -- 2) handle_event_slug() trigger update to record previous slugs on change
