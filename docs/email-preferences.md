@@ -1,6 +1,6 @@
 # Email Preferences — Developer Contract
 
-> Last updated: 2025-02-16
+> Last updated: 2026-02-22
 
 ## How it works
 
@@ -84,3 +84,7 @@ All decisions are audit-logged via `appLogger` with source `email_prefs_audit`.
 | `src/__tests__/email-template-coverage.test.ts` | CI guard: every template must be categorized |
 | `src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` | Dashboard UI |
 | `src/app/(protected)/dashboard/settings/page.tsx` | Settings page UI |
+
+### Recent template additions
+
+- `attendeeInvitation` is categorized as `event_updates`.

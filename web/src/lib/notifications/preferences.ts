@@ -149,6 +149,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
   newsletterWelcome: "event_updates",
   suggestionResponse: "event_updates",
   cohostInvitation: "event_updates",
+  attendeeInvitation: "event_updates",
 
   // Gallery-related templates
   collaboratorAdded: "event_updates",

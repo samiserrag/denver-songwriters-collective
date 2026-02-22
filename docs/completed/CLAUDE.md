@@ -6,6 +6,30 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### UX + Notifications: Bulk Member Attendee Invites (February 2026)
+
+**Summary:** Upgraded attendee invites to auto-load member candidates with checkbox multi-select in the `Private & Invites` tab. Hosts/admins can now select multiple members and send invites in one action. Member invites now trigger dashboard notifications and preference-aware transactional email invites with an acceptance link that routes to the event RSVP flow.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx` | Auto-load member candidates, checkbox selection UI, batch invite action |
+| `web/src/app/api/my-events/[id]/attendee-invites/route.ts` | `GET ?include_members=true` support, member candidates payload, member invite notification+email dispatch |
+| `web/src/lib/email/templates/attendeeInvitation.ts` | NEW template for attendee invite email |
+| `web/src/lib/email/registry.ts` | Registered `attendeeInvitation` template |
+| `web/src/lib/notifications/preferences.ts` | Mapped `attendeeInvitation` to `event_updates` |
+| `web/src/lib/email/index.ts` | Exported attendee invitation template |
+| `web/src/__tests__/pr3-attendee-invite-management.test.ts` | Updated UI/API contract checks for member candidates, batch invites, and delivery hooks |
+| `web/src/__tests__/email-template-coverage.test.ts` | Coverage remains green with new registry key |
+| `docs/email-preferences.md` | Updated template category contract note |
+
+**Verification:**  
+- `npx vitest run src/__tests__/pr3-attendee-invite-management.test.ts src/__tests__/email-template-coverage.test.ts` → 81/81 passing  
+- `npm run build` → success
+
+---
+
 ### HOTFIX: Keep Attendee Invites Visible in Public Mode (February 2026)
 
 **Summary:** Attendee invites now stay visible in the `Private & Invites` tab even when the event is `public`. The section no longer unmounts for public events; it now shows mode-aware helper copy so hosts can prep invite lists before switching to `invite_only`.

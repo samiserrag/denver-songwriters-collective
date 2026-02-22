@@ -109,6 +109,10 @@ import {
   getCollaboratorInvitedEmail,
   type CollaboratorInvitedEmailParams,
 } from "./templates/collaboratorInvited";
+import {
+  getAttendeeInvitationEmail,
+  type AttendeeInvitationEmailParams,
+} from "./templates/attendeeInvitation";
 
 /**
  * All available email template keys
@@ -139,7 +143,8 @@ export type EmailTemplateKey =
   | "weeklyOpenMicsDigest"
   | "weeklyHappeningsDigest"
   | "collaboratorAdded"
-  | "collaboratorInvited";
+  | "collaboratorInvited"
+  | "attendeeInvitation";
 
 /**
  * Map of template keys to their parameter types
@@ -171,6 +176,7 @@ export interface EmailTemplateParams {
   weeklyHappeningsDigest: WeeklyHappeningsDigestParams;
   collaboratorAdded: CollaboratorAddedEmailParams;
   collaboratorInvited: CollaboratorInvitedEmailParams;
+  attendeeInvitation: AttendeeInvitationEmailParams;
 }
 
 /**
@@ -406,6 +412,14 @@ export const TEMPLATE_REGISTRY: Record<EmailTemplateKey, TemplateMetadata> = {
     hasLinks: true,
     requiresEventTitle: false,
   },
+  attendeeInvitation: {
+    key: "attendeeInvitation",
+    name: "Attendee Invitation",
+    description: "Invitation for a member to accept access to an invite-only event",
+    audience: "member",
+    hasLinks: true,
+    requiresEventTitle: true,
+  },
 };
 
 /**
@@ -476,6 +490,8 @@ export function getTemplate<K extends EmailTemplateKey>(
       return getCollaboratorAddedEmail(params as CollaboratorAddedEmailParams);
     case "collaboratorInvited":
       return getCollaboratorInvitedEmail(params as CollaboratorInvitedEmailParams);
+    case "attendeeInvitation":
+      return getAttendeeInvitationEmail(params as AttendeeInvitationEmailParams);
     default: {
       // Exhaustive check - this should never happen
       const _exhaustive: never = key;
@@ -526,6 +542,7 @@ export {
   getWeeklyHappeningsDigestEmail,
   getCollaboratorAddedEmail,
   getCollaboratorInvitedEmail,
+  getAttendeeInvitationEmail,
 };
 
 // Re-export param types
@@ -556,4 +573,5 @@ export type {
   WeeklyHappeningsDigestParams,
   CollaboratorAddedEmailParams,
   CollaboratorInvitedEmailParams,
+  AttendeeInvitationEmailParams,
 };

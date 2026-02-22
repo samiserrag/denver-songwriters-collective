@@ -2,7 +2,7 @@
  * Event Attendee Invites API — PR3 (Private Events Tract)
  *
  * POST: Create attendee invite (by user_id or email)
- * GET: List attendee invites for an event
+ * GET: List attendee invites for an event (+ optional member candidates)
  * PATCH: Revoke an attendee invite
  *
  * Authorization: Admin OR primary host (events.host_id === auth.uid())
@@ -19,6 +19,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import crypto from "crypto";
+import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
+import { getAttendeeInvitationEmail } from "@/lib/email/templates/attendeeInvitation";
 
 /** Max attendee invites per event (application-layer enforcement) */
 const MAX_INVITES_PER_EVENT = 200;
@@ -33,13 +35,21 @@ async function checkAttendeeInviteAuth(
   userId: string
 ): Promise<{
   authorized: boolean;
-  event?: { id: string; title: string; host_id: string | null; visibility: string };
+  event?: {
+    id: string;
+    title: string;
+    host_id: string | null;
+    visibility: string;
+    slug: string | null;
+    venue_name: string | null;
+    start_time: string | null;
+  };
 }> {
   const isAdmin = await checkAdminRole(supabase, userId);
 
   const { data: event, error } = await supabase
     .from("events")
-    .select("id, title, host_id, visibility")
+    .select("id, title, host_id, visibility, slug, venue_name, start_time")
     .eq("id", eventId)
     .single();
 
@@ -55,12 +65,32 @@ async function checkAttendeeInviteAuth(
   return { authorized: false, event };
 }
 
+async function resolveMemberEmail(
+  serviceClient: ReturnType<typeof createServiceRoleClient>,
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string
+): Promise<string | null> {
+  const { data: authData } = await serviceClient.auth.admin.getUserById(userId);
+  const authEmail = authData?.user?.email?.trim() || null;
+  if (authEmail) return authEmail;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return profile?.email?.trim() || null;
+}
+
 /**
  * POST: Create an attendee invite
  *
  * Body:
  * - { user_id: string } — invite an existing member
  * - { email: string } — invite a non-member by email (scaffolds token flow)
+ *
+ * Member invites also trigger dashboard notification + preference-gated email.
  */
 export async function POST(
   request: NextRequest,
@@ -139,6 +169,8 @@ export async function POST(
     // Build insert payload with proper typing for Supabase
     let tokenHashForResponse: string | null = null;
 
+    let invitedProfile: { id: string; full_name: string | null } | null = null;
+
     if (userId) {
       // Member invite: verify the user exists
       const { data: profile } = await serviceClient
@@ -153,6 +185,8 @@ export async function POST(
           { status: 404 }
         );
       }
+
+      invitedProfile = profile;
     } else if (email) {
       // Email invite: generate token for non-member access
       const token = crypto.randomBytes(32).toString("hex");
@@ -197,6 +231,70 @@ export async function POST(
       `[AttendeeInvite] Created invite ${invite.id} for event ${eventId} (${userId ? `user:${userId}` : `email:${email}`})`
     );
 
+    // Member invite notifications/emails: invite in dashboard + preference-aware email.
+    if (userId) {
+      const inviteLink = `/attendee-invite?invite_id=${invite.id}`;
+      const inviterNameFallback = sessionUser.email || "A CSC host";
+      const inviteeName = invitedProfile?.full_name || "there";
+
+      try {
+        const [inviterProfile, inviteeEmail] = await Promise.all([
+          serviceClient
+            .from("profiles")
+            .select("full_name")
+            .eq("id", sessionUser.id)
+            .maybeSingle(),
+          resolveMemberEmail(serviceClient, supabase, userId),
+        ]);
+
+        const inviterName = inviterProfile.data?.full_name || inviterNameFallback;
+        const notification = {
+          type: "attendee_invitation",
+          title: `You're invited: ${event.title}`,
+          message: `${inviterName} invited you to "${event.title}". Accept to view and RSVP.`,
+          link: inviteLink,
+        };
+
+        if (inviteeEmail) {
+          const emailContent = getAttendeeInvitationEmail({
+            inviteeName,
+            inviterName,
+            eventTitle: event.title,
+            eventSlug: event.slug,
+            eventId: event.id,
+            inviteId: invite.id,
+            venueName: event.venue_name,
+            startTime: event.start_time,
+          });
+
+          await sendEmailWithPreferences({
+            supabase,
+            userId,
+            templateKey: "attendeeInvitation",
+            payload: {
+              to: inviteeEmail,
+              subject: emailContent.subject,
+              html: emailContent.html,
+              text: emailContent.text,
+              templateName: "attendeeInvitation",
+            },
+            notification,
+          });
+        } else {
+          await supabase.rpc("create_user_notification", {
+            p_user_id: userId,
+            p_type: notification.type,
+            p_title: notification.title,
+            p_message: notification.message,
+            p_link: notification.link,
+          });
+        }
+      } catch (notifyError) {
+        // Non-fatal: invite is already created.
+        console.error("[AttendeeInvite] Notification/email error:", notifyError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       invite,
@@ -221,6 +319,7 @@ export async function POST(
  * GET: List all attendee invites for this event
  *
  * Returns invites with computed status and joined user profile data.
+ * Optional query: ?include_members=true adds member candidate list.
  */
 export async function GET(
   request: NextRequest,
@@ -258,6 +357,8 @@ export async function GET(
 
     // Use service role to fetch all invites (bypasses invitee-only read policy)
     const serviceClient = createServiceRoleClient();
+    const includeMembers =
+      request.nextUrl.searchParams.get("include_members") === "true";
 
     const { data: invites, error } = await serviceClient
       .from("event_attendee_invites")
@@ -311,10 +412,32 @@ export async function GET(
       user: invite.user_id ? profileMap[invite.user_id] || null : null,
     }));
 
+    let memberCandidates: Array<{
+      id: string;
+      full_name: string | null;
+      avatar_url: string | null;
+    }> = [];
+
+    if (includeMembers) {
+      const { data: members } = await serviceClient
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .neq("id", sessionUser.id)
+        .order("full_name", { ascending: true })
+        .limit(500);
+
+      memberCandidates = (members || []).map((m) => ({
+        id: m.id,
+        full_name: m.full_name,
+        avatar_url: m.avatar_url,
+      }));
+    }
+
     return NextResponse.json({
       invites: enrichedInvites,
       total: enrichedInvites.length,
       cap: MAX_INVITES_PER_EVENT,
+      member_candidates: memberCandidates,
     });
   } catch (error) {
     console.error("[AttendeeInvite] Unexpected error:", error);

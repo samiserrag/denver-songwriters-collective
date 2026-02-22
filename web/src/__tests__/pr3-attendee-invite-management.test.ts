@@ -285,15 +285,15 @@ describe("PR3: AttendeeInviteManager UI", () => {
     );
   });
 
-  it("uses POST member search against cohosts route", () => {
-    expect(uiSource).toContain("`/api/my-events/${eventId}/cohosts`");
-    expect(uiSource).toContain('method: "POST"');
-    expect(uiSource).toContain("search_name: memberSearch");
+  it("loads member candidates from attendee-invites GET", () => {
+    expect(uiSource).toContain("include_members=true");
+    expect(uiSource).toContain("member_candidates");
   });
 
-  it("maps cohost search matches payload to full_name", () => {
-    expect(uiSource).toContain("data.matches");
-    expect(uiSource).toContain("full_name: m.name");
+  it("supports checkbox-based batch member invites", () => {
+    expect(uiSource).toContain("selectedMemberIds");
+    expect(uiSource).toContain("Invite Selected");
+    expect(uiSource).toContain('type="checkbox"');
   });
 
   it("validates email format before submitting", () => {
@@ -345,6 +345,15 @@ describe("PR3: Integration Wiring", () => {
     expect(eventMgmtClientSource).toContain(
       "eventVisibility={currentEventVisibility}"
     );
+  });
+});
+
+describe("PR3+: Invite delivery signals", () => {
+  it("creates member invite notifications and preference-aware emails", () => {
+    expect(apiRouteSource).toContain("sendEmailWithPreferences");
+    expect(apiRouteSource).toContain("attendee_invitation");
+    expect(apiRouteSource).toContain("attendeeInvitation");
+    expect(apiRouteSource).toContain("/attendee-invite?invite_id=");
   });
 });
 

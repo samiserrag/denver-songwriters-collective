@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 /**
  * AttendeeInviteManager — PR3 (Private Events Tract)
@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react";
  * Only visible to primary host and admin (co-hosts excluded).
  *
  * Features:
- * - Invite existing members (search by name → user_id)
+ * - Auto-load members with checkbox multi-select (filterable by name)
  * - Invite non-members by email (token scaffolding; full flow in PR5)
  * - View invite statuses (pending/accepted/declined/revoked/expired)
  * - Revoke invites
@@ -40,6 +40,12 @@ interface AttendeeInviteManagerProps {
   isInviteOnly: boolean;
 }
 
+interface MemberCandidate {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 export default function AttendeeInviteManager({
   eventId,
   eventTitle,
@@ -55,10 +61,8 @@ export default function AttendeeInviteManager({
   // Invite form state
   const [inviteMode, setInviteMode] = useState<"member" | "email">("member");
   const [memberSearch, setMemberSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<
-    { id: string; full_name: string | null }[]
-  >([]);
-  const [searching, setSearching] = useState(false);
+  const [memberCandidates, setMemberCandidates] = useState<MemberCandidate[]>([]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -66,7 +70,9 @@ export default function AttendeeInviteManager({
   const fetchInvites = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/my-events/${eventId}/attendee-invites`);
+      const res = await fetch(
+        `/api/my-events/${eventId}/attendee-invites?include_members=true`
+      );
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Failed to load invites");
@@ -76,6 +82,7 @@ export default function AttendeeInviteManager({
       setInvites(data.invites || []);
       setTotal(data.total || 0);
       setCap(data.cap || 200);
+      setMemberCandidates(data.member_candidates || []);
     } catch {
       setError("Failed to load invites");
     } finally {
@@ -87,51 +94,7 @@ export default function AttendeeInviteManager({
     fetchInvites();
   }, [fetchInvites]);
 
-  // Search for existing members
-  useEffect(() => {
-    if (inviteMode !== "member" || memberSearch.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await fetch(`/api/my-events/${eventId}/cohosts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ search_name: memberSearch }),
-        });
-
-        if (!res.ok) {
-          setSearchResults([]);
-          return;
-        }
-
-        const data = await res.json();
-        const matches = Array.isArray(data.matches) ? data.matches : [];
-        setSearchResults(
-          matches.map((m: { id: string; name: string | null }) => ({
-            id: m.id,
-            full_name: m.name,
-          }))
-        );
-      } catch {
-        // Silently fail search
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [memberSearch, inviteMode, eventId]);
-
-  const handleInviteMember = async (userId: string) => {
-    setSubmitting(true);
-    setError(null);
-    setSuccess(null);
-
+  const handleInviteMember = async (userId: string): Promise<{ ok: boolean; message?: string }> => {
     try {
       const res = await fetch(`/api/my-events/${eventId}/attendee-invites`, {
         method: "POST",
@@ -142,19 +105,103 @@ export default function AttendeeInviteManager({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to invite member");
-        return;
+        return { ok: false, message: data.error || "Failed to invite member" };
       }
 
-      setSuccess("Invite sent successfully");
-      setMemberSearch("");
-      setSearchResults([]);
-      await fetchInvites();
+      return { ok: true };
     } catch {
-      setError("Failed to invite member");
-    } finally {
-      setSubmitting(false);
+      return { ok: false, message: "Failed to invite member" };
     }
+  };
+
+  const invitedMemberIds = useMemo(() => {
+    return new Set(
+      invites
+        .filter((invite) => invite.user_id)
+        .map((invite) => invite.user_id as string)
+    );
+  }, [invites]);
+
+  const filteredMemberCandidates = useMemo(() => {
+    const needle = memberSearch.trim().toLowerCase();
+    if (!needle) return memberCandidates;
+    return memberCandidates.filter((member) =>
+      (member.full_name || "").toLowerCase().includes(needle)
+    );
+  }, [memberCandidates, memberSearch]);
+
+  const selectableMemberIds = useMemo(() => {
+    return filteredMemberCandidates
+      .filter((member) => !invitedMemberIds.has(member.id))
+      .map((member) => member.id);
+  }, [filteredMemberCandidates, invitedMemberIds]);
+
+  const allSelectableChecked =
+    selectableMemberIds.length > 0 &&
+    selectableMemberIds.every((memberId) => selectedMemberIds.includes(memberId));
+
+  useEffect(() => {
+    setSelectedMemberIds((prev) =>
+      prev.filter(
+        (memberId) =>
+          memberCandidates.some((candidate) => candidate.id === memberId) &&
+          !invitedMemberIds.has(memberId)
+      )
+    );
+  }, [memberCandidates, invitedMemberIds]);
+
+  const handleToggleMember = (memberId: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const handleToggleAllFiltered = () => {
+    if (allSelectableChecked) {
+      setSelectedMemberIds((prev) =>
+        prev.filter((memberId) => !selectableMemberIds.includes(memberId))
+      );
+      return;
+    }
+
+    setSelectedMemberIds((prev) => [...new Set([...prev, ...selectableMemberIds])]);
+  };
+
+  const handleInviteSelectedMembers = async () => {
+    if (selectedMemberIds.length === 0) return;
+
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
+
+    let successCount = 0;
+    const failedMessages: string[] = [];
+
+    for (const memberId of selectedMemberIds) {
+      if (invitedMemberIds.has(memberId)) continue;
+      const result = await handleInviteMember(memberId);
+      if (result.ok) {
+        successCount += 1;
+      } else if (result.message) {
+        failedMessages.push(result.message);
+      }
+    }
+
+    if (successCount > 0) {
+      setSuccess(
+        `Sent ${successCount} invite${successCount === 1 ? "" : "s"}. Members received a dashboard notification and invite email when available.`
+      );
+    }
+    if (failedMessages.length > 0) {
+      const uniqueFailures = [...new Set(failedMessages)];
+      setError(uniqueFailures[0] || "Some invites failed.");
+    }
+
+    setSelectedMemberIds([]);
+    await fetchInvites();
+    setSubmitting(false);
   };
 
   const handleInviteEmail = async () => {
@@ -310,31 +357,68 @@ export default function AttendeeInviteManager({
               placeholder="Search for a member by name..."
               className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-border-accent)] focus:outline-none text-sm"
             />
-            {searching && (
-              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                Searching...
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {filteredMemberCandidates.length} member
+                {filteredMemberCandidates.length === 1 ? "" : "s"} shown
               </p>
-            )}
-            {searchResults.length > 0 && (
-              <div className="mt-2 border border-[var(--color-border-default)] rounded-lg overflow-hidden">
-                {searchResults.map((result) => (
-                  <button
-                    key={result.id}
-                    type="button"
-                    onClick={() => handleInviteMember(result.id)}
-                    disabled={submitting}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-tertiary)] transition-colors disabled:opacity-50 border-b border-[var(--color-border-default)] last:border-b-0"
-                  >
-                    <span className="text-[var(--color-text-primary)]">
-                      {result.full_name || "Unknown"}
-                    </span>
-                    <span className="ml-2 text-xs text-[var(--color-text-secondary)]">
-                      Click to invite
-                    </span>
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleAllFiltered}
+                  disabled={selectableMemberIds.length === 0}
+                  className="px-2 py-1 text-xs rounded border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {allSelectableChecked ? "Clear filtered" : "Select filtered"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleInviteSelectedMembers}
+                  disabled={submitting || selectedMemberIds.length === 0}
+                  className="px-3 py-1.5 text-xs rounded bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] disabled:opacity-50"
+                >
+                  {submitting
+                    ? "Sending..."
+                    : `Invite Selected (${selectedMemberIds.length})`}
+                </button>
               </div>
-            )}
+            </div>
+
+            <div className="mt-2 max-h-60 overflow-y-auto border border-[var(--color-border-default)] rounded-lg bg-[var(--color-bg-tertiary)]">
+              {filteredMemberCandidates.length === 0 ? (
+                <p className="px-3 py-3 text-sm text-[var(--color-text-secondary)]">
+                  No members match that search.
+                </p>
+              ) : (
+                filteredMemberCandidates.map((member) => {
+                  const isAlreadyInvited = invitedMemberIds.has(member.id);
+                  const checked = selectedMemberIds.includes(member.id);
+                  return (
+                    <label
+                      key={member.id}
+                      className="flex items-center justify-between gap-3 px-3 py-2 border-b border-[var(--color-border-default)] last:border-b-0"
+                    >
+                      <span className="flex items-center gap-3 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={isAlreadyInvited}
+                          onChange={() => handleToggleMember(member.id)}
+                        />
+                        <span className="text-sm text-[var(--color-text-primary)] truncate">
+                          {member.full_name || "Unknown member"}
+                        </span>
+                      </span>
+                      {isAlreadyInvited && (
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          Already invited
+                        </span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex gap-2">
