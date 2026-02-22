@@ -9692,3 +9692,27 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 
 **Verification:**
 - `npm run build`
+
+---
+
+### Attendee Invite Re-Invite + CI Fix (February 2026) — RESOLVED
+
+**Goal:** Fix failing GitHub CI from the new attendee-invite template and allow revoked/expired attendee invites to be re-invited cleanly.
+
+**Summary:**
+- Fixed brittle email registry test after adding `attendeeInvitation` template key (26 -> 27).
+- Updated attendee invite API to reactivate inactive invite rows (`revoked` / `declined` / expired `pending`) instead of returning duplicate conflicts.
+- Reactivation now resets invite state to `pending`, clears revoke/accept fields, and refreshes expiry.
+- Updated member-picker UI so "Already invited" only applies to active invites (`pending`/`accepted`), allowing hosts to re-invite previously inactive rows.
+- Updated PR3 contract tests to lock reactivation behavior and new token hash variable usage.
+
+**Files touched:**
+- `web/src/app/api/my-events/[id]/attendee-invites/route.ts`
+- `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx`
+- `web/src/lib/email/email.test.ts`
+- `web/src/__tests__/pr3-attendee-invite-management.test.ts`
+
+**Verification:**
+- `cd web && npx vitest run src/lib/email/email.test.ts src/__tests__/pr3-attendee-invite-management.test.ts`
+- `cd web && npm test --silent` (205 files / 4405 tests passed)
+- `cd web && npm run build`

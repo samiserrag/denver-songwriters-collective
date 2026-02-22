@@ -117,7 +117,12 @@ export default function AttendeeInviteManager({
   const invitedMemberIds = useMemo(() => {
     return new Set(
       invites
-        .filter((invite) => invite.user_id)
+        .filter(
+          (invite) =>
+            invite.user_id &&
+            (invite.effective_status === "pending" ||
+              invite.effective_status === "accepted")
+        )
         .map((invite) => invite.user_id as string)
     );
   }, [invites]);

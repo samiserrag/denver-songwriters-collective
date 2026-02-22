@@ -85,9 +85,11 @@ describe("PR3: Attendee Invite API — Cap Enforcement", () => {
 
   it("counts active invites (pending + accepted) before insert", () => {
     expect(apiRouteSource).toContain(
-      '.in("status", ["pending", "accepted"])'
+      "const isActiveInvite ="
     );
-    expect(apiRouteSource).toContain("count: \"exact\"");
+    expect(apiRouteSource).toContain("activeInviteCount");
+    expect(apiRouteSource).toContain("invite.status === \"accepted\"");
+    expect(apiRouteSource).toContain("invite.status === \"pending\"");
   });
 
   it("rejects invite when cap is reached", () => {
@@ -125,13 +127,22 @@ describe("PR3: Attendee Invite API — Member Invites", () => {
     );
     expect(apiRouteSource).toContain("{ status: 409 }");
   });
+
+  it("reactivates inactive invites instead of blocking re-invite", () => {
+    expect(apiRouteSource).toContain("matchingInvite");
+    expect(apiRouteSource).toContain("wasReactivated = true");
+    expect(apiRouteSource).toContain('status: "pending"');
+    expect(apiRouteSource).toContain("accepted_at: null");
+    expect(apiRouteSource).toContain("revoked_at: null");
+    expect(apiRouteSource).toContain("revoked_by: null");
+  });
 });
 
 describe("PR3: Attendee Invite API — Email Invites", () => {
   it("accepts email in POST body", () => {
     expect(apiRouteSource).toContain("body.email");
     expect(apiRouteSource).toContain("email,");
-    expect(apiRouteSource).toContain("token_hash: tokenHashForResponse");
+    expect(apiRouteSource).toContain("token_hash: tokenHashForStorage");
   });
 
   it("normalizes email to lowercase", () => {
@@ -141,7 +152,7 @@ describe("PR3: Attendee Invite API — Email Invites", () => {
   it("generates SHA-256 token hash for email invites", () => {
     expect(apiRouteSource).toContain('crypto.randomBytes(32)');
     expect(apiRouteSource).toContain('createHash("sha256")');
-    expect(apiRouteSource).toContain("tokenHashForResponse");
+    expect(apiRouteSource).toContain("tokenHashForStorage");
   });
 
   it("validates that at least user_id or email is provided", () => {
@@ -294,6 +305,11 @@ describe("PR3: AttendeeInviteManager UI", () => {
     expect(uiSource).toContain("selectedMemberIds");
     expect(uiSource).toContain("Invite Selected");
     expect(uiSource).toContain('type="checkbox"');
+  });
+
+  it("only marks active member invites as already invited", () => {
+    expect(uiSource).toContain("invite.effective_status === \"pending\"");
+    expect(uiSource).toContain("invite.effective_status === \"accepted\"");
   });
 
   it("validates email format before submitting", () => {

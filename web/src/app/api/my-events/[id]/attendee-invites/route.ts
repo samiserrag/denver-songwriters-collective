@@ -24,6 +24,7 @@ import { getAttendeeInvitationEmail } from "@/lib/email/templates/attendeeInvita
 
 /** Max attendee invites per event (application-layer enforcement) */
 const MAX_INVITES_PER_EVENT = 200;
+const INVITE_EXPIRY_DAYS = 30;
 
 /**
  * Check if user is authorized to manage attendee invites for this event.
@@ -138,26 +139,51 @@ export async function POST(
       );
     }
 
-    // Use service role for insert (RLS on event_attendee_invites requires host check
-    // which we've already verified above)
+    // Use service role for invite reads/writes (authorization already checked above).
     const serviceClient = createServiceRoleClient();
 
-    // Enforce invite cap
-    const { count: existingCount, error: countError } = await serviceClient
-      .from("event_attendee_invites")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .in("status", ["pending", "accepted"]);
+    const now = new Date();
+    const nextExpiresAt = new Date(
+      Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+    ).toISOString();
+    const isActiveInvite = (invite: { status: string; expires_at: string | null }) => {
+      if (invite.status === "accepted") return true;
+      if (invite.status === "pending") {
+        if (!invite.expires_at) return true;
+        return new Date(invite.expires_at) >= now;
+      }
+      return false;
+    };
 
-    if (countError) {
-      console.error("[AttendeeInvite] Count error:", countError);
+    const { data: existingInvites, error: existingInvitesError } = await serviceClient
+      .from("event_attendee_invites")
+      .select("id, user_id, email, status, expires_at")
+      .eq("event_id", eventId);
+
+    if (existingInvitesError) {
+      console.error("[AttendeeInvite] Existing invite fetch error:", existingInvitesError);
       return NextResponse.json(
-        { error: "Failed to check invite count" },
+        { error: "Failed to check existing invites" },
         { status: 500 }
       );
     }
 
-    if ((existingCount ?? 0) >= MAX_INVITES_PER_EVENT) {
+    const matchingInvite = (existingInvites || []).find((invite) =>
+      userId ? invite.user_id === userId : invite.email === email
+    );
+    const hasActiveMatchingInvite = matchingInvite
+      ? isActiveInvite(matchingInvite)
+      : false;
+    const activeInviteCount = (existingInvites || []).filter(isActiveInvite).length;
+
+    if (hasActiveMatchingInvite) {
+      return NextResponse.json(
+        { error: "This person has already been invited to this event" },
+        { status: 409 }
+      );
+    }
+
+    if (activeInviteCount >= MAX_INVITES_PER_EVENT) {
       return NextResponse.json(
         {
           error: `Maximum of ${MAX_INVITES_PER_EVENT} attendee invites per event reached`,
@@ -166,13 +192,17 @@ export async function POST(
       );
     }
 
-    // Build insert payload with proper typing for Supabase
-    let tokenHashForResponse: string | null = null;
+    let tokenHashForStorage: string | null = null;
+    if (email) {
+      const token = crypto.randomBytes(32).toString("hex");
+      tokenHashForStorage = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+    }
 
     let invitedProfile: { id: string; full_name: string | null } | null = null;
-
     if (userId) {
-      // Member invite: verify the user exists
       const { data: profile } = await serviceClient
         .from("profiles")
         .select("id, full_name")
@@ -180,47 +210,84 @@ export async function POST(
         .single();
 
       if (!profile) {
-        return NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
       invitedProfile = profile;
-    } else if (email) {
-      // Email invite: generate token for non-member access
-      const token = crypto.randomBytes(32).toString("hex");
-      tokenHashForResponse = crypto
-        .createHash("sha256")
-        .update(token)
-        .digest("hex");
-
-      // Token is returned only once in the response (not stored as plaintext)
-      // Full token flow (email sending, acceptance) is in PR5
     }
 
-    // Insert invite
-    const { data: invite, error: insertError } = await serviceClient
-      .from("event_attendee_invites")
-      .insert({
-        event_id: eventId,
-        invited_by: sessionUser.id,
-        status: "pending",
-        ...(userId ? { user_id: userId } : {}),
-        ...(email ? { email, token_hash: tokenHashForResponse } : {}),
-      })
-      .select("id, event_id, user_id, email, status, created_at, expires_at")
-      .single();
+    let invite:
+      | {
+          id: string;
+          event_id: string;
+          user_id: string | null;
+          email: string | null;
+          status: string;
+          created_at: string;
+          expires_at: string;
+        }
+      | null = null;
+    let wasReactivated = false;
 
-    if (insertError) {
-      // Handle duplicate constraint violations
-      if (insertError.code === "23505") {
+    if (matchingInvite) {
+      const { data: reactivatedInvite, error: reactivationError } = await serviceClient
+        .from("event_attendee_invites")
+        .update({
+          status: "pending",
+          invited_by: sessionUser.id,
+          expires_at: nextExpiresAt,
+          accepted_at: null,
+          revoked_at: null,
+          revoked_by: null,
+          ...(email ? { token_hash: tokenHashForStorage } : {}),
+        })
+        .eq("id", matchingInvite.id)
+        .select("id, event_id, user_id, email, status, created_at, expires_at")
+        .single();
+
+      if (reactivationError || !reactivatedInvite) {
+        console.error("[AttendeeInvite] Reactivation error:", reactivationError);
         return NextResponse.json(
-          { error: "This person has already been invited to this event" },
-          { status: 409 }
+          { error: "Failed to reactivate invite" },
+          { status: 500 }
         );
       }
-      console.error("[AttendeeInvite] Insert error:", insertError);
+
+      invite = reactivatedInvite;
+      wasReactivated = true;
+    } else {
+      const { data: insertedInvite, error: insertError } = await serviceClient
+        .from("event_attendee_invites")
+        .insert({
+          event_id: eventId,
+          invited_by: sessionUser.id,
+          status: "pending",
+          expires_at: nextExpiresAt,
+          ...(userId ? { user_id: userId } : {}),
+          ...(email ? { email, token_hash: tokenHashForStorage } : {}),
+        })
+        .select("id, event_id, user_id, email, status, created_at, expires_at")
+        .single();
+
+      if (insertError) {
+        // Handle race-condition duplicate violations.
+        if (insertError.code === "23505") {
+          return NextResponse.json(
+            { error: "This person has already been invited to this event" },
+            { status: 409 }
+          );
+        }
+        console.error("[AttendeeInvite] Insert error:", insertError);
+        return NextResponse.json(
+          { error: "Failed to create invite" },
+          { status: 500 }
+        );
+      }
+
+      invite = insertedInvite;
+    }
+
+    if (!invite) {
       return NextResponse.json(
         { error: "Failed to create invite" },
         { status: 500 }
@@ -228,7 +295,7 @@ export async function POST(
     }
 
     console.log(
-      `[AttendeeInvite] Created invite ${invite.id} for event ${eventId} (${userId ? `user:${userId}` : `email:${email}`})`
+      `[AttendeeInvite] ${wasReactivated ? "Reactivated" : "Created"} invite ${invite.id} for event ${eventId} (${userId ? `user:${userId}` : `email:${email}`})`
     );
 
     // Member invite notifications/emails: invite in dashboard + preference-aware email.
@@ -298,11 +365,14 @@ export async function POST(
     return NextResponse.json({
       success: true,
       invite,
+      reactivated: wasReactivated,
       // Include message for email invites (token acceptance flow is in PR5)
       ...(email
         ? {
             message:
-              "Email invite created. Token-based acceptance flow is available in PR5.",
+              wasReactivated
+                ? "Email invite reactivated. Token-based acceptance flow is available in PR5."
+                : "Email invite created. Token-based acceptance flow is available in PR5.",
           }
         : {}),
     });
