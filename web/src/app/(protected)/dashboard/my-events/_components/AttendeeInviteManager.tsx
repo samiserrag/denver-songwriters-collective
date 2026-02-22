@@ -36,7 +36,7 @@ interface AttendeeInvite {
 interface AttendeeInviteManagerProps {
   eventId: string;
   eventTitle: string;
-  /** Whether the event is invite-only (controls section visibility) */
+  /** Whether the event is currently invite-only (controls copy only) */
   isInviteOnly: boolean;
 }
 
@@ -223,10 +223,6 @@ export default function AttendeeInviteManager({
     }
   };
 
-  if (!isInviteOnly) {
-    return null;
-  }
-
   const statusBadge = (status: string) => {
     const colors: Record<string, string> = {
       pending: "bg-amber-500/20 text-amber-300",
@@ -258,7 +254,9 @@ export default function AttendeeInviteManager({
         Attendee Invites
       </h3>
       <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-        This event is invite-only. Only invited people can see and RSVP to it.{" "}
+        {isInviteOnly
+          ? "This event is invite-only. Only invited people can see and RSVP to it."
+          : "This event is currently public. You can still prepare invite lists here for when you switch it to private."}{" "}
         <span className="text-[var(--color-text-secondary)]">
           ({total}/{cap} invites used)
         </span>

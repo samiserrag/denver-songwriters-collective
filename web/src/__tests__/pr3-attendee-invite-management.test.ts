@@ -244,9 +244,10 @@ describe("PR3: AttendeeInviteManager UI", () => {
     expect(uiSource).toContain("isInviteOnly: boolean");
   });
 
-  it("returns null when event is not invite-only", () => {
-    expect(uiSource).toContain("if (!isInviteOnly)");
-    expect(uiSource).toContain("return null");
+  it("renders section for both public and invite-only modes", () => {
+    expect(uiSource).not.toContain("if (!isInviteOnly)");
+    expect(uiSource).toContain("currently public");
+    expect(uiSource).toContain("invite-only");
   });
 
   it("supports member search and email invite modes", () => {

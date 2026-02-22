@@ -6,6 +6,22 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Keep Attendee Invites Visible in Public Mode (February 2026)
+
+**Summary:** Attendee invites now stay visible in the `Private & Invites` tab even when the event is `public`. The section no longer unmounts for public events; it now shows mode-aware helper copy so hosts can prep invite lists before switching to `invite_only`.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx` | Removed public-mode early return; updated helper text to branch by `isInviteOnly` |
+| `web/src/__tests__/pr3-attendee-invite-management.test.ts` | Updated UI contract to enforce section visibility for both public and private modes |
+
+**Verification:**  
+- `npx vitest run src/__tests__/pr3-attendee-invite-management.test.ts` → 49/49 passing
+
+---
+
 ### HOTFIX: Attendee Member Search in Private & Invites Tab (February 2026)
 
 **Summary:** Fixed member search in `AttendeeInviteManager`. The UI was calling `GET /api/my-events/[id]/cohosts?search=...` and expecting `results`, but the API only supports `POST` with `search_name` and returns `matches`.
