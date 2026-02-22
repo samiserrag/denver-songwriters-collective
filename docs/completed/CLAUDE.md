@@ -6,6 +6,26 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Attendee Invite Email Routing + Waitlist Full-State Messaging (February 2026)
+
+**Summary:** Finalized attendee invite messaging and routing to remove broken acceptance links for member invites, improve privacy-aware wording, and eliminate low-contrast success feedback in the invite manager. Also clarified the full-capacity RSVP state so users see explicit waitlist email expectations before joining.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/lib/email/templates/attendeeInvitation.ts` | Removed accept-link CTA and replaced with direct `View Event & RSVP` CTA; private/public copy now uses `isPrivateEvent` |
+| `web/src/app/api/my-events/[id]/attendee-invites/route.ts` | Member invites now create/reactivate as `accepted`; notification copy updated to event-page RSVP flow; template receives `isPrivateEvent` |
+| `web/src/app/(protected)/dashboard/my-events/_components/AttendeeInviteManager.tsx` | Replaced green-on-green success styling with neutral theme-safe styling |
+| `web/src/components/events/RSVPButton.tsx` | Added explicit full-state helper line: joining waitlist triggers email when a spot opens |
+| `web/src/__tests__/pr3-attendee-invite-management.test.ts` | Updated invite-flow contract assertions for reactivation and email content behavior |
+
+**Verification:**  
+- `npx vitest run src/__tests__/pr3-attendee-invite-management.test.ts src/__tests__/phase4-51c-guest-rsvp-discoverability.test.ts src/__tests__/phase4-51c-guest-rsvp-notifications.test.ts` → passing  
+- `npm run build` → success
+
+---
+
 ### UX + Notifications: Bulk Member Attendee Invites (February 2026)
 
 **Summary:** Upgraded attendee invites to auto-load member candidates with checkbox multi-select in the `Private & Invites` tab. Hosts/admins can now select multiple members and send invites in one action. Member invites now trigger dashboard notifications and preference-aware transactional email invites with an acceptance link that routes to the event RSVP flow.

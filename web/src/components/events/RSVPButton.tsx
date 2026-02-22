@@ -278,9 +278,14 @@ export function RSVPButton({
       {capacity !== null && (
         <div className="text-sm">
           {isFull ? (
-            <span className="text-amber-800 dark:text-amber-400 font-medium">
-              Event is full - Waitlist available
-            </span>
+            <div className="space-y-1">
+              <p className="text-amber-800 dark:text-amber-400 font-medium">
+                Event is full - Waitlist available
+              </p>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Join the waitlist and we&apos;ll email you if a spot opens up.
+              </p>
+            </div>
           ) : (
             <span className="text-[var(--color-text-secondary)]">
               <span className="text-[var(--color-text-primary)] font-medium">{remaining}</span> of{" "}
