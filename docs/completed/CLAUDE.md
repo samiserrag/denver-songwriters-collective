@@ -6,6 +6,31 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### FIX: Digest Idempotency Lock Key Collision + Cron Schedule Change (February 2026)
+
+**Problem:** The weekly happenings digest cron fired at 4:00 PM MST on Sunday Feb 22 but skipped sending because the idempotency guard found the lock for `2026-W08` already claimed. The lock had been incorrectly claimed by a manual "Send now" on Feb 15 — which used the editorial picker's "next week" default (`2026-W08`) as the lock key instead of the current week (`2026-W07`).
+
+**Root cause:** The admin send route (`/api/admin/digest/send`) used a single `weekKey` variable for both the idempotency lock AND editorial content resolution. The admin page's editorial picker defaults to "next week" (for content prep convenience), so clicking "Send now" would lock a future week, causing the cron to skip when that week actually arrived.
+
+**Fix:**
+1. Separated `lockWeekKey` (always `computeWeekKey()` = current ISO week) from `editorialWeekKey` (admin picker value, used only for editorial content lookup).
+2. Changed cron schedule from `0 23 * * 0` (4:00 PM MST) to `20 23 * * 0` (4:20 PM MST).
+3. Corrected stale DB lock rows in `digest_send_log`.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/admin/digest/send/route.ts` | Split `weekKey` into `lockWeekKey` + `editorialWeekKey`; lock always uses `computeWeekKey()` |
+| `web/vercel.json` | Cron schedule: `0 23 * * 0` → `20 23 * * 0` (Sunday 4:20 PM MST) |
+| `web/src/app/api/cron/weekly-happenings/route.ts` | Updated header comment to reflect new schedule |
+| `web/src/app/(protected)/dashboard/admin/email/page.tsx` | Updated info footer to reflect 4:20 PM MST |
+| `docs/runbooks/CLAUDE.md` | Updated cron schedule table + added idempotency lock key documentation |
+
+**Key invariant (new):** The idempotency lock key is ALWAYS `computeWeekKey()` (current ISO week). The editorial picker's week key is NEVER used for locking — only for editorial content resolution. This prevents the "next week" default from poisoning a future week's lock.
+
+---
+
 ### HOTFIX: Sunrise Theme Contrast Hardening for Status Colors (February 2026)
 
 **Summary:** Added sunrise-only global overrides for hardcoded Tailwind red/green/amber status utilities to prevent low-contrast text/background combinations (for example green-on-green accepted pills and faint red revoke links). Night theme behavior remains unchanged.

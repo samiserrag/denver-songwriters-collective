@@ -75,10 +75,17 @@ export async function POST(request: NextRequest) {
   }
 
   const serviceClient = createServiceRoleClient();
-  const weekKey =
+
+  // Idempotency lock ALWAYS uses the current week — never the editorial picker.
+  // The editorial picker's weekKey is only used for editorial content resolution.
+  // Bug fix: previously, the admin "Send now" passed the editorial picker's
+  // weekKey (which defaults to "next week") as the lock key, causing the cron
+  // to skip the actual week because it found a lock for a future week.
+  const lockWeekKey = computeWeekKey();
+  const editorialWeekKey =
     typeof requestedWeekKey === "string" && requestedWeekKey.trim()
       ? requestedWeekKey.trim()
-      : computeWeekKey();
+      : lockWeekKey;
 
   try {
     // Get admin's email for test mode
@@ -106,11 +113,11 @@ export async function POST(request: NextRequest) {
       if (digestType === "weekly_happenings") {
         const digestData = await getUpcomingHappenings(serviceClient);
 
-        // GTM-3: Resolve editorial for test send
-        console.log(`[AdminTestSend] Using weekKey ${weekKey}`);
+        // GTM-3: Resolve editorial for test send (uses editorial picker week key)
+        console.log(`[AdminTestSend] Using editorialWeekKey ${editorialWeekKey}`);
         let resolvedEditorial: ResolvedEditorial | undefined;
         try {
-          const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
+          const editorial = await getEditorial(serviceClient, editorialWeekKey, "weekly_happenings");
           if (editorial) {
             const result = await resolveEditorialWithDiagnostics(serviceClient, editorial);
             resolvedEditorial = result.resolved;
@@ -150,7 +157,7 @@ export async function POST(request: NextRequest) {
           sent: result.sent,
           failed: result.failed,
           sentTo: adminProfile.email,
-          weekKey,
+          weekKey: editorialWeekKey,
           hasEditorial: !!resolvedEditorial,
           previewHtml: result.previewHtml,
           previewSubject: result.previewSubject,
@@ -179,7 +186,7 @@ export async function POST(request: NextRequest) {
           sent: result.sent,
           failed: result.failed,
           sentTo: adminProfile.email,
-          weekKey,
+          weekKey: lockWeekKey,
           previewHtml: result.previewHtml,
           previewSubject: result.previewSubject,
         });
@@ -187,7 +194,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Full mode — respects idempotency lock
-    console.log(`[AdminFullSend] Using weekKey ${weekKey}`);
+    // Lock key is ALWAYS the current week; editorial key may differ (admin picker)
+    console.log(`[AdminFullSend] lockWeekKey=${lockWeekKey}, editorialWeekKey=${editorialWeekKey}`);
 
     if (digestType === "weekly_happenings") {
       const digestData = await getUpcomingHappenings(serviceClient);
@@ -201,12 +209,12 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Attempt idempotency lock
+      // Attempt idempotency lock — always uses current week
       const lock = await claimDigestSendLock(
         serviceClient,
         "weekly_happenings",
         recipients.length,
-        weekKey
+        lockWeekKey
       );
 
       if (!lock.acquired) {
@@ -214,20 +222,21 @@ export async function POST(request: NextRequest) {
           success: false,
           message:
             lock.reason === "already_sent"
-              ? `Already sent for ${weekKey}. Use "Send test to me" to preview without the lock.`
+              ? `Already sent for ${lockWeekKey}. Use "Send test to me" to preview without the lock.`
               : "Idempotency lock error. Try again later.",
           skipped: true,
           reason: lock.reason,
-          weekKey,
+          weekKey: lockWeekKey,
         });
       }
 
       // GTM-3: Resolve editorial AFTER lock (Delta 1)
+      // Editorial uses the picker's week key so admin can prep content ahead of time
       let resolvedEditorial: ResolvedEditorial | undefined;
       try {
-        const editorial = await getEditorial(serviceClient, weekKey, "weekly_happenings");
+        const editorial = await getEditorial(serviceClient, editorialWeekKey, "weekly_happenings");
         if (editorial) {
-          console.log(`[AdminFullSend] Found editorial for ${weekKey}, resolving references...`);
+          console.log(`[AdminFullSend] Found editorial for ${editorialWeekKey}, resolving references...`);
           resolvedEditorial = await resolveEditorial(serviceClient, editorial);
           console.log("[AdminFullSend] Editorial resolved successfully");
         }
@@ -257,7 +266,7 @@ export async function POST(request: NextRequest) {
         sent: result.sent,
         failed: result.failed,
         total: result.total,
-        weekKey,
+        weekKey: lockWeekKey,
         hasEditorial: !!resolvedEditorial,
       });
     } else {
@@ -276,7 +285,7 @@ export async function POST(request: NextRequest) {
         serviceClient,
         "weekly_open_mics",
         recipients.length,
-        weekKey
+        lockWeekKey
       );
 
       if (!lock.acquired) {
@@ -284,11 +293,11 @@ export async function POST(request: NextRequest) {
           success: false,
           message:
             lock.reason === "already_sent"
-              ? `Already sent for ${weekKey}. Use "Send test to me" to preview without the lock.`
+              ? `Already sent for ${lockWeekKey}. Use "Send test to me" to preview without the lock.`
               : "Idempotency lock error. Try again later.",
           skipped: true,
           reason: lock.reason,
-          weekKey,
+          weekKey: lockWeekKey,
         });
       }
 
@@ -313,7 +322,7 @@ export async function POST(request: NextRequest) {
         sent: result.sent,
         failed: result.failed,
         total: result.total,
-        weekKey,
+        weekKey: lockWeekKey,
       });
     }
   } catch (error) {

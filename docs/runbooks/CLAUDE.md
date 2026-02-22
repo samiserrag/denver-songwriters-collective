@@ -64,7 +64,7 @@ This file holds reference material that is useful during investigations and exec
 | Route | Schedule | Purpose |
 |-------|----------|---------|
 | `/api/cron/weekly-open-mics` | `0 3 * * 0` (Sunday 3:00 UTC) | Weekly Open Mics Digest email |
-| `/api/cron/weekly-happenings` | `0 3 * * 0` (Sunday 3:00 UTC) | Weekly Happenings Digest email (ALL event types) |
+| `/api/cron/weekly-happenings` | `20 23 * * 0` (Sunday 23:20 UTC) | Weekly Happenings Digest email (ALL event types) |
 
 **Cron Configuration:** `web/vercel.json`
 
@@ -107,10 +107,13 @@ This file holds reference material that is useful during investigations and exec
 - Cron routes validate this header before processing
 
 **Timezone Notes:**
-- Cron schedule `0 3 * * 0` = Sunday 3:00 UTC
-- MST (winter): 8:00 PM Saturday Denver time
-- MDT (summer): 9:00 PM Saturday Denver time
+- Open Mics cron: `0 3 * * 0` = Sunday 3:00 UTC = Saturday 8:00 PM MST / 9:00 PM MDT
+- Happenings cron: `20 23 * * 0` = Sunday 23:20 UTC = Sunday 4:20 PM MST / 5:20 PM MDT
 - Digest covers Sunday through Saturday (7-day window)
+
+**Idempotency Lock Key:**
+- The lock key is ALWAYS `computeWeekKey()` (current ISO week in Denver timezone).
+- The admin "Send now" button uses `computeWeekKey()` for the lock, and the editorial picker's week key only for editorial content resolution. These are intentionally separate to prevent the editorial picker (which defaults to "next week") from poisoning a future week's lock.
 
 ---
 

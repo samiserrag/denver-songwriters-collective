@@ -1,9 +1,9 @@
 /**
  * Weekly Happenings Cron Handler
  *
- * Triggered by Vercel Cron at 0 23 * * 0 (Sunday 23:00 UTC)
- * MST (winter): Sunday 4:00 PM Denver | MDT (summer): Sunday 5:00 PM Denver
- * Manual seasonal adjustment: use 22:00 UTC for MDT 4 PM, 23:00 UTC for MST 4 PM.
+ * Triggered by Vercel Cron at 20 23 * * 0 (Sunday 23:20 UTC)
+ * MST (winter): Sunday 4:20 PM Denver | MDT (summer): Sunday 5:20 PM Denver
+ * Manual seasonal adjustment: use 22:20 UTC for MDT 4:20 PM, 23:20 UTC for MST 4:20 PM.
  * Sends weekly digest emails covering ALL event types to all opted-in users.
  *
  * Control hierarchy (GTM-2):

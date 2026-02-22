@@ -303,7 +303,7 @@ The `newsletterWelcome.ts` template exists but is not used by the route.
 | # | Use Case | Trigger | Template | Category | Status |
 |---|----------|---------|----------|----------|--------|
 | 22 | Weekly Open Mics Digest | Cron: Sunday 3:00 UTC | `weeklyOpenMicsDigest.ts` | event_updates | Covered |
-| 23 | Weekly Happenings Digest | Cron: Sunday 3:00 UTC | `weeklyHappeningsDigest.ts` | event_updates | Covered |
+| 23 | Weekly Happenings Digest | Cron: Sunday 23:20 UTC (4:20 PM MST) | `weeklyHappeningsDigest.ts` | event_updates | Covered |
 
 ### Gallery Collaboration
 
