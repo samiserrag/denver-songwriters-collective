@@ -134,15 +134,23 @@ function renderRichTextInlineHtml(text: string): string {
 }
 
 function renderRichTextPreviewHtml(content: string): string {
-  const trimmed = content.trim();
-  if (!trimmed) {
+  const normalized = content.replace(/\r\n/g, "\n").replace(/^\n+|\n+$/g, "");
+  if (!normalized.trim()) {
     return `<p style="margin: 0; color: var(--color-text-tertiary);">No intro note yet.</p>`;
   }
 
-  return trimmed
+  return normalized
     .split(/\n\s*\n/)
     .map((paragraph) => {
-      const withBreaks = renderRichTextInlineHtml(paragraph).replace(/\n/g, "<br>");
+      const renderedLines = paragraph.split("\n").map((line) => {
+        const leading = line.match(/^[\t ]+/)?.[0] ?? "";
+        const nbspPrefix = leading
+          .replace(/\t/g, "    ")
+          .replace(/ /g, "&nbsp;");
+        const contentOnly = line.slice(leading.length);
+        return `${nbspPrefix}${renderRichTextInlineHtml(contentOnly)}`;
+      });
+      const withBreaks = renderedLines.join("<br>");
       return `<p style="margin: 0 0 12px 0; color: var(--color-text-primary); line-height: 1.6; font-style: italic;">${withBreaks}</p>`;
     })
     .join("");

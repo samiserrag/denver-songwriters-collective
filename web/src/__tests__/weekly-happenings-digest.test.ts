@@ -823,6 +823,24 @@ describe("Editorial featured ordering", () => {
     expect(email.text).toContain("CSC (https://coloradosongwriterscollective.org/happenings)");
   });
 
+  it("preserves intro note indentation in HTML output", () => {
+    const byDate = new Map([["2026-01-27", [occurrence]]]);
+    const editorial = {
+      introNote: "  Indented line\n\tTabbed line",
+    };
+
+    const email = getWeeklyHappeningsDigestEmail({
+      firstName: "Sami",
+      byDate,
+      totalCount: 1,
+      venueCount: 1,
+      editorial,
+    });
+
+    expect(email.html).toContain("&nbsp;&nbsp;Indented line");
+    expect(email.html).toContain("&nbsp;&nbsp;&nbsp;&nbsp;Tabbed line");
+  });
+
   it("renders only the featured event when no other featured items exist", () => {
     const byDate = new Map([["2026-01-27", [occurrence]]]);
     const editorial = {

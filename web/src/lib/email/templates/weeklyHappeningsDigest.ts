@@ -203,13 +203,21 @@ function formatIntroInlineHtml(text: string): string {
 }
 
 function formatIntroNoteHtml(introNote: string): string {
-  const trimmed = introNote.trim();
-  if (!trimmed) return "";
+  const normalized = introNote.replace(/\r\n/g, "\n").replace(/^\n+|\n+$/g, "");
+  if (!normalized.trim()) return "";
 
-  const paragraphs = trimmed.split(/\n\s*\n/);
+  const paragraphs = normalized.split(/\n\s*\n/);
   const paragraphHtml = paragraphs
     .map((paragraph) => {
-      const withBreaks = formatIntroInlineHtml(paragraph).replace(/\n/g, "<br>");
+      const renderedLines = paragraph.split("\n").map((line) => {
+        const leading = line.match(/^[\t ]+/)?.[0] ?? "";
+        const nbspPrefix = leading
+          .replace(/\t/g, "    ")
+          .replace(/ /g, "&nbsp;");
+        const content = line.slice(leading.length);
+        return `${nbspPrefix}${formatIntroInlineHtml(content)}`;
+      });
+      const withBreaks = renderedLines.join("<br>");
       return `<p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.6; font-style: italic;">${withBreaks}</p>`;
     })
     .join("");

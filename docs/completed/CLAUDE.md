@@ -9878,6 +9878,7 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
 - Replaced digest Intro Note plain textarea with a toolbar + preview editor (bold, italic, link insertion, markdown syntax support).
 - Removed hardcoded digest sentence `"Here's what's happening in the Denver songwriter community this week."` from both HTML and plain-text email output, while keeping the salutation (`Hi {name},`).
 - Added markdown link rendering support to digest intro-note email HTML + plain-text fallback formatting.
+- Follow-up: intro-note indentation now preserves leading whitespace (including first-line indents and tabs) in both admin preview and rendered email HTML.
 - Added hyperlink insertion support to the blog editor toolbar.
 - Added markdown link rendering on published blog pages and in blog editor preview.
 
