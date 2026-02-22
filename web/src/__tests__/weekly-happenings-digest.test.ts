@@ -201,7 +201,7 @@ describe("getWeeklyHappeningsDigestEmail", () => {
     expect(email.subject).toBe("Happenings This Week in Denver");
   });
 
-  it("uses correct intro text", () => {
+  it("keeps salutation and does not inject hardcoded intro sentence", () => {
     const byDate = new Map([["2026-01-27", [mockOccurrence]]]);
     const email = getWeeklyHappeningsDigestEmail({
       firstName: null,
@@ -210,8 +210,10 @@ describe("getWeeklyHappeningsDigestEmail", () => {
       venueCount: 1,
     });
 
-    expect(email.html).toContain("Here's what's happening in the Denver songwriter community this week.");
-    expect(email.text).toContain("Here's what's happening in the Denver songwriter community this week.");
+    expect(email.html).toContain("Hi there,");
+    expect(email.text).toContain("Hi there,");
+    expect(email.html).not.toContain("Here's what's happening in the Denver songwriter community this week.");
+    expect(email.text).not.toContain("Here's what's happening in the Denver songwriter community this week.");
   });
 
   it("uses 'happenings' terminology in summary", () => {
@@ -797,6 +799,28 @@ describe("Editorial featured ordering", () => {
 
     const happeningsLinks = html.match(/>happenings<\/a>/g) || [];
     expect(happeningsLinks.length).toBe(2);
+  });
+
+  it("renders intro note links and emphasis", () => {
+    const byDate = new Map([["2026-01-27", [occurrence]]]);
+    const editorial = {
+      introNote:
+        "Check **this update** and visit [CSC](https://coloradosongwriterscollective.org/happenings).",
+    };
+
+    const email = getWeeklyHappeningsDigestEmail({
+      firstName: "Sami",
+      byDate,
+      totalCount: 1,
+      venueCount: 1,
+      editorial,
+    });
+
+    expect(email.html).toContain("<strong");
+    expect(email.html).toContain(">this update<");
+    expect(email.html).toContain('href="https://coloradosongwriterscollective.org/happenings"');
+    expect(email.text).toContain("this update");
+    expect(email.text).toContain("CSC (https://coloradosongwriterscollective.org/happenings)");
   });
 
   it("renders only the featured event when no other featured items exist", () => {

@@ -121,6 +121,51 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
     }
   };
 
+  const normalizeMarkdownLink = (rawUrl: string): string | null => {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return null;
+
+    if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || trimmed.startsWith("/")) {
+      return trimmed;
+    }
+    if (/^www\./i.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+
+    return null;
+  };
+
+  const insertLinkAtCursor = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = formData.content.substring(start, end).trim();
+    const label = selectedText || prompt("Link text:", "Read more")?.trim() || "Read more";
+    const rawUrl = prompt("Enter URL (https://...):", "https://");
+    if (!rawUrl) return;
+
+    const url = normalizeMarkdownLink(rawUrl);
+    if (!url) {
+      toast.error("Invalid URL. Use https://, http://, mailto:, /path, or www.");
+      return;
+    }
+
+    const markdownLink = `[${label}](${url})`;
+    const newText =
+      formData.content.substring(0, start) +
+      markdownLink +
+      formData.content.substring(end);
+
+    setFormData((prev) => ({ ...prev, content: newText }));
+    setTimeout(() => {
+      textarea.focus();
+      const cursor = start + markdownLink.length;
+      textarea.setSelectionRange(cursor, cursor);
+    }, 0);
+  };
+
   // Cover image upload handler
   const handleCoverUpload = useCallback(async (file: File): Promise<string | null> => {
     const supabase = createClient();
@@ -366,6 +411,32 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
 
   // Simple markdown preview renderer
   const renderPreview = (content: string) => {
+    const renderInlineMarkdownHtml = (text: string) => {
+      const linkTokens: string[] = [];
+      const tokenized = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+        const normalizedUrl = normalizeMarkdownLink(url);
+        const safeLabel = escapeHtml(label.trim() || "link");
+        if (!normalizedUrl) {
+          return safeLabel;
+        }
+
+        const token = `__BLOG_LINK_${linkTokens.length}__`;
+        linkTokens.push(
+          `<a href="${escapeHtml(normalizedUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--color-text-accent); text-decoration: underline;">${safeLabel}</a>`
+        );
+        return token;
+      });
+
+      let html = escapeHtml(tokenized);
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
+      html = html.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
+
+      for (let i = 0; i < linkTokens.length; i++) {
+        html = html.replace(`__BLOG_LINK_${i}__`, linkTokens[i]);
+      }
+      return html;
+    };
+
     return content.split("\n\n").map((block, i) => {
       const imgMatch = block.match(/!\[([^\]]*)\]\(([^)]+)\)/);
       if (imgMatch) {
@@ -403,13 +474,8 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
         );
       }
 
-      // Escape HTML first to prevent XSS, then apply markdown formatting
-      let text = escapeHtml(block);
-      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
-      text = text.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
-
       return (
-        <p key={i} className="text-[var(--color-text-secondary)] leading-relaxed my-3" dangerouslySetInnerHTML={{ __html: text }} />
+        <p key={i} className="text-[var(--color-text-secondary)] leading-relaxed my-3" dangerouslySetInnerHTML={{ __html: renderInlineMarkdownHtml(block) }} />
       );
     });
   };
@@ -547,6 +613,14 @@ export default function BlogPostForm({ authorId, post, initialGallery = [], isAd
             title="Italic"
           >
             I
+          </button>
+          <button
+            type="button"
+            onClick={insertLinkAtCursor}
+            className="px-3 py-1.5 text-sm bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] rounded transition-colors"
+            title="Insert Link"
+          >
+            Link
           </button>
           <div className="w-px h-6 bg-[var(--color-border-default)] mx-1" />
           <button

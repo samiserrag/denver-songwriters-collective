@@ -9867,3 +9867,27 @@ Scan-first, image-forward card design. See PRODUCT_NORTH_STAR.md v2.0.
   - `CI (Build)` ✅
   - `Web Tests` ✅
   - `Supabase RLS Tripwire` ✅
+
+---
+
+### Digest Intro Rich Text + Link Support (February 2026) — RESOLVED
+
+**Goal:** Upgrade the digest intro editor to a blog-style rich text experience, remove hardcoded intro copy, and support hyperlinks in both blog and digest editorial content.
+
+**Summary:**
+- Replaced digest Intro Note plain textarea with a toolbar + preview editor (bold, italic, link insertion, markdown syntax support).
+- Removed hardcoded digest sentence `"Here's what's happening in the Denver songwriter community this week."` from both HTML and plain-text email output, while keeping the salutation (`Hi {name},`).
+- Added markdown link rendering support to digest intro-note email HTML + plain-text fallback formatting.
+- Added hyperlink insertion support to the blog editor toolbar.
+- Added markdown link rendering on published blog pages and in blog editor preview.
+
+**Files touched:**
+- `web/src/app/(protected)/dashboard/admin/email/page.tsx`
+- `web/src/lib/email/templates/weeklyHappeningsDigest.ts`
+- `web/src/app/(protected)/dashboard/admin/blog/BlogPostForm.tsx`
+- `web/src/app/blog/[slug]/page.tsx`
+- `web/src/__tests__/weekly-happenings-digest.test.ts`
+
+**Verification:**
+- `cd web && npm test --silent -- src/__tests__/weekly-happenings-digest.test.ts`
+- `cd web && npm run build`

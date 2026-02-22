@@ -9,6 +9,7 @@ import BlogComments from "@/components/blog/BlogComments";
 import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import { escapeHtml } from "@/lib/highlight";
 
 export const dynamic = "force-dynamic";
 
@@ -171,32 +172,44 @@ export default async function BlogPostPage({ params }: Props) {
     : null;
   const embedsEnabled = isExternalEmbedsEnabled();
 
-  // Helper to render inline markdown (bold, italic)
-  const renderInlineMarkdown = (text: string): React.ReactNode => {
-    // Handle **bold** and *italic* (but not list markers)
-    const parts: React.ReactNode[] = [];
-    let remaining = text;
-    let keyIndex = 0;
+  const normalizeMarkdownLink = (rawUrl: string): string | null => {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return null;
+    if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || trimmed.startsWith("/")) {
+      return trimmed;
+    }
+    if (/^www\./i.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return null;
+  };
 
-    while (remaining.length > 0) {
-      // Match **bold**
-      const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-      if (boldMatch && boldMatch.index !== undefined) {
-        // Add text before the match
-        if (boldMatch.index > 0) {
-          parts.push(remaining.slice(0, boldMatch.index));
-        }
-        // Add the bold text
-        parts.push(<strong key={`bold-${keyIndex++}`} className="font-semibold text-[var(--color-text-primary)]">{boldMatch[1]}</strong>);
-        remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
-        continue;
+  // Helper to render inline markdown (bold, italic, links)
+  const renderInlineMarkdown = (text: string): React.ReactNode => {
+    const linkTokens: string[] = [];
+    const tokenized = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+      const normalizedUrl = normalizeMarkdownLink(url);
+      const safeLabel = escapeHtml(label.trim() || "link");
+      if (!normalizedUrl) {
+        return safeLabel;
       }
-      // No more matches, add the rest
-      parts.push(remaining);
-      break;
+
+      const token = `__BLOG_LINK_${linkTokens.length}__`;
+      linkTokens.push(
+        `<a href="${escapeHtml(normalizedUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--color-text-accent); text-decoration: underline;">${safeLabel}</a>`
+      );
+      return token;
+    });
+
+    let html = escapeHtml(tokenized);
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-[var(--color-text-primary)]">$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+    for (let i = 0; i < linkTokens.length; i++) {
+      html = html.replace(`__BLOG_LINK_${i}__`, linkTokens[i]);
     }
 
-    return parts.length === 1 ? parts[0] : parts;
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
   };
 
   // Simple markdown-like rendering (paragraphs, headers, lists)

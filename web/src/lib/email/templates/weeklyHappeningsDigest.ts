@@ -155,15 +155,61 @@ function formatEmptyStateHtml(): string {
 // Editorial HTML Helpers (GTM-3)
 // ============================================================
 
+function normalizeInlineLinkForEmail(rawUrl: string): string | null {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return `${SITE_URL}${trimmed}`;
+  }
+
+  if (/^www\./i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  return null;
+}
+
+function formatIntroInlineHtml(text: string): string {
+  const linkTokens: string[] = [];
+  const tokenized = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+    const normalizedUrl = normalizeInlineLinkForEmail(url);
+    const safeLabel = escapeHtml(label.trim() || "link");
+
+    if (!normalizedUrl) {
+      return safeLabel;
+    }
+
+    const token = `__EMAIL_LINK_${linkTokens.length}__`;
+    linkTokens.push(
+      `<a href="${escapeHtml(normalizedUrl)}" style="color: ${EMAIL_COLORS.accent}; text-decoration: underline;">${safeLabel}</a>`
+    );
+    return token;
+  });
+
+  let html = escapeHtml(tokenized);
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+  for (let i = 0; i < linkTokens.length; i++) {
+    html = html.replace(`__EMAIL_LINK_${i}__`, linkTokens[i]);
+  }
+
+  return html;
+}
+
 function formatIntroNoteHtml(introNote: string): string {
   const trimmed = introNote.trim();
   if (!trimmed) return "";
 
-  const escaped = escapeHtml(trimmed);
-  const paragraphs = escaped.split(/\n\s*\n/);
+  const paragraphs = trimmed.split(/\n\s*\n/);
   const paragraphHtml = paragraphs
     .map((paragraph) => {
-      const withBreaks = paragraph.replace(/\n/g, "<br>");
+      const withBreaks = formatIntroInlineHtml(paragraph).replace(/\n/g, "<br>");
       return `<p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.6; font-style: italic;">${withBreaks}</p>`;
     })
     .join("");
@@ -351,7 +397,14 @@ function formatGalleryFeatureHtml(
 // ============================================================
 
 function formatIntroNoteText(introNote: string): string {
-  return introNote;
+  return introNote
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+      const normalizedUrl = normalizeInlineLinkForEmail(url);
+      const safeLabel = label.trim() || "link";
+      return normalizedUrl ? `${safeLabel} (${normalizedUrl})` : safeLabel;
+    })
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1");
 }
 
 function formatFeaturedHappeningsText(
@@ -544,10 +597,6 @@ export function getWeeklyHappeningsDigestEmail(
   const htmlContent = `
     ${getGreeting(firstName)}
 
-    <p style="margin: 0 0 16px 0; color: ${EMAIL_COLORS.textPrimary}; font-size: 15px; line-height: 1.6;">
-      Here's what's happening in the Denver songwriter community this week.
-    </p>
-
     ${introNoteHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${introNoteHtml}</table>` : ""}
 
     ${featuredTopHtml ? `<table cellpadding="0" cellspacing="0" style="width: 100%;">${featuredTopHtml}</table>` : ""}
@@ -673,8 +722,6 @@ export function getWeeklyHappeningsDigestEmail(
 
   const textParts = [
     greeting,
-    "",
-    "Here's what's happening in the Denver songwriter community this week.",
     "",
     ...editorialTextParts,
     ...featuredTextParts,

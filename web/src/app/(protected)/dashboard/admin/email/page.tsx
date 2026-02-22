@@ -12,6 +12,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { escapeHtml } from "@/lib/highlight";
 
 interface DigestSetting {
   id: string;
@@ -91,6 +92,62 @@ const DIGEST_LABELS: Record<string, string> = {
   weekly_open_mics: "Weekly Open Mics Digest",
 };
 
+function normalizeMarkdownLink(rawUrl: string): string | null {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  if (/^www\./i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  return null;
+}
+
+function renderRichTextInlineHtml(text: string): string {
+  const linkTokens: string[] = [];
+  const tokenized = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+    const normalizedUrl = normalizeMarkdownLink(url);
+    const safeLabel = escapeHtml(label.trim() || "link");
+
+    if (!normalizedUrl) {
+      return safeLabel;
+    }
+
+    const token = `__EDITOR_LINK_${linkTokens.length}__`;
+    linkTokens.push(
+      `<a href="${escapeHtml(normalizedUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--color-text-accent); text-decoration: underline;">${safeLabel}</a>`
+    );
+    return token;
+  });
+
+  let html = escapeHtml(tokenized);
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+
+  for (let i = 0; i < linkTokens.length; i++) {
+    html = html.replace(`__EDITOR_LINK_${i}__`, linkTokens[i]);
+  }
+  return html;
+}
+
+function renderRichTextPreviewHtml(content: string): string {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return `<p style="margin: 0; color: var(--color-text-tertiary);">No intro note yet.</p>`;
+  }
+
+  return trimmed
+    .split(/\n\s*\n/)
+    .map((paragraph) => {
+      const withBreaks = renderRichTextInlineHtml(paragraph).replace(/\n/g, "<br>");
+      return `<p style="margin: 0 0 12px 0; color: var(--color-text-primary); line-height: 1.6; font-style: italic;">${withBreaks}</p>`;
+    })
+    .join("");
+}
+
 export default function AdminEmailPage() {
   const [settings, setSettings] = useState<DigestSetting[]>([]);
   const [history, setHistory] = useState<SendHistoryEntry[]>([]);
@@ -124,6 +181,8 @@ export default function AdminEmailPage() {
   });
   const [editorialLoading, setEditorialLoading] = useState(false);
   const [editorialSaving, setEditorialSaving] = useState(false);
+  const [showIntroNotePreview, setShowIntroNotePreview] = useState(false);
+  const introNoteTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [editorialResult, setEditorialResult] = useState<{
     message: string;
     variant: "success" | "error";
@@ -230,6 +289,58 @@ export default function AdminEmailPage() {
       setEditorialSaving(false);
     }
   };
+
+  const insertIntroFormatting = useCallback((before: string, after = "") => {
+    const textarea = introNoteTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const current = editorial.intro_note;
+    const selected = current.slice(start, end);
+    const replacement = `${before}${selected}${after}`;
+    const next = `${current.slice(0, start)}${replacement}${current.slice(end)}`;
+
+    setEditorial((prev) => ({ ...prev, intro_note: next }));
+
+    setTimeout(() => {
+      textarea.focus();
+      const cursor = selected ? start + replacement.length : start + before.length;
+      textarea.setSelectionRange(cursor, cursor);
+    }, 0);
+  }, [editorial.intro_note]);
+
+  const insertIntroLink = useCallback(() => {
+    const textarea = introNoteTextareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = editorial.intro_note.slice(start, end).trim();
+    const label = selected || window.prompt("Link text:", "Read more")?.trim() || "Read more";
+    const urlInput = window.prompt("Link URL (https://...):", "https://");
+    if (!urlInput) return;
+
+    const normalizedUrl = normalizeMarkdownLink(urlInput);
+    if (!normalizedUrl) {
+      setEditorialResult({
+        message: "Invalid link URL. Use https://, http://, mailto:, /path, or www.",
+        variant: "error",
+      });
+      return;
+    }
+
+    const markdownLink = `[${label}](${normalizedUrl})`;
+    const current = editorial.intro_note;
+    const next = `${current.slice(0, start)}${markdownLink}${current.slice(end)}`;
+    setEditorial((prev) => ({ ...prev, intro_note: next }));
+
+    setTimeout(() => {
+      textarea.focus();
+      const cursor = start + markdownLink.length;
+      textarea.setSelectionRange(cursor, cursor);
+    }, 0);
+  }, [editorial.intro_note]);
 
   // GTM-3: Load editorial when week key changes
   useEffect(() => {
@@ -677,15 +788,61 @@ export default function AdminEmailPage() {
           <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
             Intro Note
           </label>
-          <textarea
-            value={editorial.intro_note}
-            onChange={(e) =>
-              setEditorial((prev) => ({ ...prev, intro_note: e.target.value }))
-            }
-            placeholder="A personal message that appears at the top of the digest..."
-            rows={3}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-vertical"
-          />
+          <div className="border border-[var(--color-border-default)] rounded-lg overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2 p-2 bg-[var(--color-bg-tertiary)] border-b border-[var(--color-border-default)]">
+              <button
+                type="button"
+                onClick={() => insertIntroFormatting("**", "**")}
+                className="px-3 py-1 text-xs rounded border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
+              >
+                Bold
+              </button>
+              <button
+                type="button"
+                onClick={() => insertIntroFormatting("*", "*")}
+                className="px-3 py-1 text-xs rounded border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
+              >
+                Italic
+              </button>
+              <button
+                type="button"
+                onClick={insertIntroLink}
+                className="px-3 py-1 text-xs rounded border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
+              >
+                Link
+              </button>
+              <div className="flex-1" />
+              <button
+                type="button"
+                onClick={() => setShowIntroNotePreview((prev) => !prev)}
+                className="px-3 py-1 text-xs rounded border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
+              >
+                {showIntroNotePreview ? "Edit" : "Preview"}
+              </button>
+            </div>
+            {showIntroNotePreview ? (
+              <div
+                className="px-4 py-3 text-sm bg-[var(--color-bg-primary)]"
+                dangerouslySetInnerHTML={{
+                  __html: renderRichTextPreviewHtml(editorial.intro_note),
+                }}
+              />
+            ) : (
+              <textarea
+                ref={introNoteTextareaRef}
+                value={editorial.intro_note}
+                onChange={(e) =>
+                  setEditorial((prev) => ({ ...prev, intro_note: e.target.value }))
+                }
+                placeholder="A personal message that appears at the top of the digest..."
+                rows={6}
+                className="w-full px-3 py-2 text-sm bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] resize-vertical focus:outline-none"
+              />
+            )}
+          </div>
+          <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+            Supports markdown-style rich text: <code>**bold**</code>, <code>*italic*</code>, and <code>[link text](https://...)</code>.
+          </p>
         </div>
 
         {/* Featured happenings */}
