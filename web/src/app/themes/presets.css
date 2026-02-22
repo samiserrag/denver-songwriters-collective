@@ -85,6 +85,68 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SUNRISE CONTRAST SAFETY OVERRIDES
+   Hardcoded Tailwind status utilities (emerald/red/amber) can be too low-contrast
+   on light surfaces. Keep overrides sunrise-only so Night remains unchanged.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root[data-theme="sunrise"] .text-emerald-300,
+:root[data-theme="sunrise"] .text-emerald-400,
+:root[data-theme="sunrise"] .text-emerald-500,
+:root[data-theme="sunrise"] .text-emerald-600,
+:root[data-theme="sunrise"] .text-green-300,
+:root[data-theme="sunrise"] .text-green-400,
+:root[data-theme="sunrise"] .text-green-500 {
+  color: #065f46 !important;
+}
+
+:root[data-theme="sunrise"] .text-red-300,
+:root[data-theme="sunrise"] .text-red-400,
+:root[data-theme="sunrise"] .text-red-500,
+:root[data-theme="sunrise"] .text-red-600 {
+  color: #b91c1c !important;
+}
+
+:root[data-theme="sunrise"] .text-amber-300,
+:root[data-theme="sunrise"] .text-amber-400,
+:root[data-theme="sunrise"] .text-yellow-400 {
+  color: #92400e !important;
+}
+
+:root[data-theme="sunrise"] .hover\:text-emerald-300:hover,
+:root[data-theme="sunrise"] .hover\:text-emerald-400:hover,
+:root[data-theme="sunrise"] .hover\:text-emerald-500:hover,
+:root[data-theme="sunrise"] .hover\:text-red-300:hover,
+:root[data-theme="sunrise"] .hover\:text-red-400:hover,
+:root[data-theme="sunrise"] .hover\:text-red-500:hover,
+:root[data-theme="sunrise"] .hover\:text-amber-300:hover,
+:root[data-theme="sunrise"] .hover\:text-amber-400:hover {
+  filter: brightness(0.92);
+}
+
+:root[data-theme="sunrise"] .bg-emerald-500\/10,
+:root[data-theme="sunrise"] .bg-emerald-500\/20,
+:root[data-theme="sunrise"] .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.22) !important;
+}
+
+:root[data-theme="sunrise"] .border-emerald-500\/30,
+:root[data-theme="sunrise"] .border-emerald-300 {
+  border-color: rgba(5, 150, 105, 0.45) !important;
+}
+
+:root[data-theme="sunrise"] .bg-red-500\/10,
+:root[data-theme="sunrise"] .bg-red-500\/20,
+:root[data-theme="sunrise"] .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+:root[data-theme="sunrise"] .border-red-500\/30,
+:root[data-theme="sunrise"] .border-red-300 {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    DARK THEME - Night
    ═══════════════════════════════════════════════════════════════ */
 
@@ -182,6 +244,63 @@
     --pill-bg-success: rgba(16, 185, 129, 0.15); /* emerald-500/15 */
     --pill-fg-success: #065F46; /* emerald-800: dark on light bg */
     --pill-border-success: rgba(16, 185, 129, 0.30);
+  }
+
+  /* Mirror sunrise contrast overrides for Auto mode when system is light. */
+  :root:not([data-theme]) .text-emerald-300,
+  :root:not([data-theme]) .text-emerald-400,
+  :root:not([data-theme]) .text-emerald-500,
+  :root:not([data-theme]) .text-emerald-600,
+  :root:not([data-theme]) .text-green-300,
+  :root:not([data-theme]) .text-green-400,
+  :root:not([data-theme]) .text-green-500 {
+    color: #065f46 !important;
+  }
+
+  :root:not([data-theme]) .text-red-300,
+  :root:not([data-theme]) .text-red-400,
+  :root:not([data-theme]) .text-red-500,
+  :root:not([data-theme]) .text-red-600 {
+    color: #b91c1c !important;
+  }
+
+  :root:not([data-theme]) .text-amber-300,
+  :root:not([data-theme]) .text-amber-400,
+  :root:not([data-theme]) .text-yellow-400 {
+    color: #92400e !important;
+  }
+
+  :root:not([data-theme]) .hover\:text-emerald-300:hover,
+  :root:not([data-theme]) .hover\:text-emerald-400:hover,
+  :root:not([data-theme]) .hover\:text-emerald-500:hover,
+  :root:not([data-theme]) .hover\:text-red-300:hover,
+  :root:not([data-theme]) .hover\:text-red-400:hover,
+  :root:not([data-theme]) .hover\:text-red-500:hover,
+  :root:not([data-theme]) .hover\:text-amber-300:hover,
+  :root:not([data-theme]) .hover\:text-amber-400:hover {
+    filter: brightness(0.92);
+  }
+
+  :root:not([data-theme]) .bg-emerald-500\/10,
+  :root:not([data-theme]) .bg-emerald-500\/20,
+  :root:not([data-theme]) .bg-emerald-100 {
+    background-color: rgba(16, 185, 129, 0.22) !important;
+  }
+
+  :root:not([data-theme]) .border-emerald-500\/30,
+  :root:not([data-theme]) .border-emerald-300 {
+    border-color: rgba(5, 150, 105, 0.45) !important;
+  }
+
+  :root:not([data-theme]) .bg-red-500\/10,
+  :root:not([data-theme]) .bg-red-500\/20,
+  :root:not([data-theme]) .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+  }
+
+  :root:not([data-theme]) .border-red-500\/30,
+  :root:not([data-theme]) .border-red-300 {
+    border-color: rgba(220, 38, 38, 0.4) !important;
   }
 }
 

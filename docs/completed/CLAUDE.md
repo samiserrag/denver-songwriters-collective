@@ -6,6 +6,22 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### HOTFIX: Sunrise Theme Contrast Hardening for Status Colors (February 2026)
+
+**Summary:** Added sunrise-only global overrides for hardcoded Tailwind red/green/amber status utilities to prevent low-contrast text/background combinations (for example green-on-green accepted pills and faint red revoke links). Night theme behavior remains unchanged.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/themes/presets.css` | Added sunrise + auto-light contrast overrides for common `text-*`, `bg-*`, and `border-*` status utility classes and hover variants |
+
+**Verification:**  
+- `npx vitest run src/__tests__/admin-events-table-layout.test.ts src/__tests__/phase4-48b-guest-rsvp.test.ts` → passing  
+- `npm run build` → success
+
+---
+
 ### HOTFIX: Attendee Invite Email Routing + Waitlist Full-State Messaging (February 2026)
 
 **Summary:** Finalized attendee invite messaging and routing to remove broken acceptance links for member invites, improve privacy-aware wording, and eliminate low-contrast success feedback in the invite manager. Also clarified the full-capacity RSVP state so users see explicit waitlist email expectations before joining.
