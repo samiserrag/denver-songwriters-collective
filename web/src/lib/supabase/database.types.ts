@@ -3700,6 +3700,11 @@ export type Database = {
         | "meetup"
         | "kindred_group"
         | "jam_session"
+        | "poetry"
+        | "irish"
+        | "blues"
+        | "bluegrass"
+        | "comedy"
       notification_type:
         | "new_user"
         | "event_signup"
@@ -3847,6 +3852,11 @@ export const Constants = {
         "meetup",
         "kindred_group",
         "jam_session",
+        "poetry",
+        "irish",
+        "blues",
+        "bluegrass",
+        "comedy",
       ],
       notification_type: [
         "new_user",

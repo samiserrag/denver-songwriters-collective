@@ -330,6 +330,11 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   gig: "Gig",
   kindred_group: "Kindred Songwriter Groups",
   jam_session: "Jam Session",
+  poetry: "Poetry",
+  irish: "Irish",
+  blues: "Blues",
+  bluegrass: "Bluegrass",
+  comedy: "Comedy",
   other: "Event",
 };
 
@@ -345,6 +350,11 @@ const DEFAULT_EVENT_IMAGES: Record<string, string> = {
   gig: "/images/event-defaults/gig.svg",
   kindred_group: "/images/event-defaults/song-circle.svg", // Uses song circle icon (similar community vibe)
   jam_session: "/images/event-defaults/gig.svg", // Uses gig icon (music/performance vibe)
+  poetry: "/images/event-defaults/event.svg",
+  irish: "/images/event-defaults/event.svg",
+  blues: "/images/event-defaults/gig.svg",
+  bluegrass: "/images/event-defaults/gig.svg",
+  comedy: "/images/event-defaults/event.svg",
   other: "/images/event-defaults/event.svg",
 };
 

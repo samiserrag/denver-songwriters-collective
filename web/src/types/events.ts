@@ -9,6 +9,11 @@ export type EventType =
   | "gig"
   | "kindred_group"
   | "jam_session"
+  | "poetry"
+  | "irish"
+  | "blues"
+  | "bluegrass"
+  | "comedy"
   | "other";
 
 export type RSVPStatus = "confirmed" | "waitlist" | "cancelled";
@@ -190,7 +195,7 @@ export const EVENT_TYPE_CONFIG: Record<EventType, {
   song_circle: {
     label: "Song Circle",
     description: "Intimate gathering for sharing original songs and feedback",
-    icon: "🎸",
+    icon: "🎶",
     defaultCapacity: 12
   },
   workshop: {
@@ -208,19 +213,19 @@ export const EVENT_TYPE_CONFIG: Record<EventType, {
   showcase: {
     label: "Showcase",
     description: "Curated performance event with selected artists",
-    icon: "🎤",
+    icon: "🎭",
     defaultCapacity: null
   },
   open_mic: {
     label: "Open Mic",
     description: "Open performance slots for all skill levels",
-    icon: "🎵",
+    icon: "🎤",
     defaultCapacity: null
   },
   gig: {
     label: "Gig / Performance",
     description: "A scheduled performance or concert by an artist or band",
-    icon: "🎸",
+    icon: "🎵",
     defaultCapacity: null
   },
   kindred_group: {
@@ -233,6 +238,36 @@ export const EVENT_TYPE_CONFIG: Record<EventType, {
     label: "Jam Session",
     description: "Casual music gathering for jamming and improvisation",
     icon: "🎸",
+    defaultCapacity: null
+  },
+  poetry: {
+    label: "Poetry",
+    description: "Spoken word and poetry performance or open mic",
+    icon: "✒️",
+    defaultCapacity: null
+  },
+  irish: {
+    label: "Irish",
+    description: "Traditional Irish music session or gathering",
+    icon: "☘️",
+    defaultCapacity: null
+  },
+  blues: {
+    label: "Blues",
+    description: "Blues music jam, open mic, or performance",
+    icon: "🎸",
+    defaultCapacity: null
+  },
+  bluegrass: {
+    label: "Bluegrass",
+    description: "Bluegrass music jam, picking circle, or performance",
+    icon: "🪕",
+    defaultCapacity: null
+  },
+  comedy: {
+    label: "Comedy",
+    description: "Stand-up comedy open mic or showcase",
+    icon: "😂",
     defaultCapacity: null
   },
   other: {
