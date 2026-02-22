@@ -218,6 +218,21 @@ See [docs/GOVERNANCE.md](./GOVERNANCE.md) for the full stop-gate workflow.
 - `checkInviteeAccess()` re-verifies invite status server-side on every request (no cache)
 - Revoked/expired invites immediately hide the event
 
+### Attendee Invite Email Contract
+
+- Attendee invitation email copy must be visibility-aware:
+1. `invite_only` events use "private happening" wording
+2. `public` events use non-private wording
+- The attendee invitation email must use one CTA only: `View Event & RSVP`.
+- The CTA target must be the event detail page (`/events/[slug|id]`) and must not use `/attendee-invite` links for member invitations.
+- Member invites created from host/admin tools are treated as accepted access grants at creation/reactivation time; event-page access should work directly from the email link.
+
+### Waitlist Full-State UX Contract
+
+- When an event is at capacity, RSVP UI must show `Join Waitlist` as the primary call-to-action.
+- Full-state helper copy must tell users they will receive an email if a spot opens.
+- Waitlist cancel/leave controls must remain available for users who already joined.
+
 ### API Access Pattern
 
 - Authenticated APIs (RSVP, comments) use two-step fetch: user-scoped RLS first, then service-role fallback for invite-only events + invitee access check
