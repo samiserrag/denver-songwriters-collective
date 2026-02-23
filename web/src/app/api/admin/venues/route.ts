@@ -2,8 +2,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
-import { processVenueGeocoding } from "@/lib/venue/geocoding";
+import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
 import { Database } from "@/lib/supabase/database.types";
+import {
+  buildGeocodingWarning,
+  notifyVenueGeocodingFailure,
+} from "@/lib/venue/geocodingMonitoring";
 
 // GET - Get all venues (admin only)
 export async function GET() {
@@ -99,7 +103,11 @@ export async function POST(request: Request) {
   };
 
   // Ensure venue creation goes through the same geocoding pipeline as venue edits.
-  const geocodedInsert = await processVenueGeocoding(null, baseInsert) as Database["public"]["Tables"]["venues"]["Insert"];
+  const { updates: geocodedInsertRaw, geocodingStatus } = await processVenueGeocodingWithStatus(
+    null,
+    baseInsert
+  );
+  const geocodedInsert = geocodedInsertRaw as Database["public"]["Tables"]["venues"]["Insert"];
 
   const { data, error } = await serviceClient
     .from("venues")
@@ -111,5 +119,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data, { status: 201 });
+  let geocodingWarning:
+    | ReturnType<typeof buildGeocodingWarning>
+    | undefined;
+
+  if (geocodingStatus.attempted && !geocodingStatus.success) {
+    geocodingWarning = buildGeocodingWarning(geocodingStatus);
+    await notifyVenueGeocodingFailure({
+      route: "POST /api/admin/venues",
+      actorId: user.id,
+      actorEmail: user.email,
+      venueId: data.id,
+      venueName: data.name,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      zip: data.zip,
+      googleMapsUrl: data.google_maps_url,
+      geocodingStatus,
+    });
+  }
+
+  return NextResponse.json(
+    {
+      ...data,
+      geocodingApplied: geocodingStatus.success,
+      geocodingWarning,
+    },
+    { status: 201 }
+  );
 }

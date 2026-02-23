@@ -14,7 +14,11 @@ import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { venueAudit } from "@/lib/audit/venueAudit";
 import { MANAGER_EDITABLE_VENUE_FIELDS } from "@/lib/venue/managerAuth";
-import { processVenueGeocoding } from "@/lib/venue/geocoding";
+import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
+import {
+  buildGeocodingWarning,
+  notifyVenueGeocodingFailure,
+} from "@/lib/venue/geocodingMonitoring";
 
 // GET - Get a single venue (admin only)
 export async function GET(
@@ -125,7 +129,8 @@ export async function PATCH(
   }
 
   // Phase 0.6: Process geocoding if address fields changed
-  const updatesWithGeo = await processVenueGeocoding(existingVenue, updates);
+  const { updates: updatesWithGeo, geocodingStatus } =
+    await processVenueGeocodingWithStatus(existingVenue, updates);
 
   // Capture previous values for changed fields only
   const previousValues: Record<string, unknown> = {};
@@ -148,7 +153,7 @@ export async function PATCH(
   }
 
   // Log the edit for audit trail (async, non-blocking)
-  const geocodingApplied = !!(updatesWithGeo.latitude && updatesWithGeo.geocode_source === "api");
+  const geocodingApplied = geocodingStatus.success;
   venueAudit.venueEdited(user.id, {
     venueId,
     venueName: existingVenue.name,
@@ -158,9 +163,37 @@ export async function PATCH(
     actorRole: "admin",
   });
 
+  let geocodingWarning:
+    | ReturnType<typeof buildGeocodingWarning>
+    | undefined;
+  if (geocodingStatus.attempted && !geocodingStatus.success) {
+    geocodingWarning = buildGeocodingWarning(geocodingStatus);
+    await notifyVenueGeocodingFailure({
+      route: "PATCH /api/admin/venues/[id]",
+      actorId: user.id,
+      actorEmail: user.email,
+      venueId,
+      venueName: existingVenue.name,
+      address:
+        (updatesWithGeo.address as string | null | undefined) ??
+        existingVenue.address,
+      city:
+        (updatesWithGeo.city as string | null | undefined) ?? existingVenue.city,
+      state:
+        (updatesWithGeo.state as string | null | undefined) ??
+        existingVenue.state,
+      zip: (updatesWithGeo.zip as string | null | undefined) ?? existingVenue.zip,
+      googleMapsUrl:
+        (updatesWithGeo.google_maps_url as string | null | undefined) ??
+        existingVenue.google_maps_url,
+      geocodingStatus,
+    });
+  }
+
   return NextResponse.json({
     ...data[0],
     geocodingApplied,
+    geocodingWarning,
   });
 }
 

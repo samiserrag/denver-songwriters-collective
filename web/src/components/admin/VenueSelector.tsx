@@ -94,6 +94,11 @@ export default function VenueSelector({
       // Reset and close form
       setNewVenue(initialNewVenue);
       setShowNewVenueForm(false);
+      if (typeof (payload as { geocodingWarning?: { message?: string } }).geocodingWarning?.message === "string") {
+        setError(
+          `Venue created, but geocoding could not complete. ${(payload as { geocodingWarning: { message: string } }).geocodingWarning.message} Admin was notified.`
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create venue");
     } finally {

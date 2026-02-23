@@ -816,6 +816,7 @@ All primary discovery surfaces (Homepage, `/happenings`) MUST use:
 - Venue creation from selector UIs must go through `POST /api/admin/venues` (server-side), not direct browser inserts.
 - `POST /api/admin/venues` must run `processVenueGeocoding()` before insert.
 - New venues with valid address data should receive `latitude/longitude` immediately when `GOOGLE_GEOCODING_API_KEY` is configured.
+- If geocoding fails on venue create/edit, the API must return a visible `geocodingWarning` payload and emit an admin alert email + app log entry (no silent failure).
 - Discovery map must remain resilient when coordinates are missing by using city-centroid fallback in map pin adaptation.
 
 ### Venue Join Alias Rule

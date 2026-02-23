@@ -21,8 +21,12 @@ import {
   MANAGER_EDITABLE_VENUE_FIELDS,
 } from "@/lib/venue/managerAuth";
 import { venueAudit } from "@/lib/audit/venueAudit";
-import { processVenueGeocoding } from "@/lib/venue/geocoding";
+import { processVenueGeocodingWithStatus } from "@/lib/venue/geocoding";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import {
+  buildGeocodingWarning,
+  notifyVenueGeocodingFailure,
+} from "@/lib/venue/geocodingMonitoring";
 
 export async function GET(
   request: NextRequest,
@@ -137,6 +141,9 @@ export async function PATCH(
 
     let updatedVenue = null;
     let geocodingApplied = false;
+    let geocodingWarning:
+      | ReturnType<typeof buildGeocodingWarning>
+      | undefined;
     let updatedFields: string[] = [];
 
     // --- Venue field update (only if there are venue field changes) ---
@@ -168,7 +175,7 @@ export async function PATCH(
       }
 
       // Phase 0.6: Process geocoding if address fields changed
-      const updatesWithGeo = await processVenueGeocoding(
+      const { updates: updatesWithGeo, geocodingStatus } = await processVenueGeocodingWithStatus(
         existingVenue,
         updates as Record<string, unknown>
       );
@@ -199,7 +206,34 @@ export async function PATCH(
 
       updatedVenue = venueResult;
       updatedFields = Object.keys(updatesWithGeo);
-      geocodingApplied = !!(updatesWithGeo.latitude && updatesWithGeo.geocode_source === "api");
+      geocodingApplied = geocodingStatus.success;
+
+      if (geocodingStatus.attempted && !geocodingStatus.success) {
+        geocodingWarning = buildGeocodingWarning(geocodingStatus);
+        await notifyVenueGeocodingFailure({
+          route: "PATCH /api/venues/[id]",
+          actorId: user.id,
+          actorEmail: user.email,
+          venueId,
+          venueName: existingVenue.name,
+          address:
+            (updatesWithGeo.address as string | null | undefined) ??
+            existingVenue.address,
+          city:
+            (updatesWithGeo.city as string | null | undefined) ??
+            existingVenue.city,
+          state:
+            (updatesWithGeo.state as string | null | undefined) ??
+            existingVenue.state,
+          zip:
+            (updatesWithGeo.zip as string | null | undefined) ??
+            existingVenue.zip,
+          googleMapsUrl:
+            (updatesWithGeo.google_maps_url as string | null | undefined) ??
+            existingVenue.google_maps_url,
+          geocodingStatus,
+        });
+      }
 
       // Log the edit for audit trail (async, non-blocking)
       venueAudit.venueEdited(user.id, {
@@ -230,6 +264,7 @@ export async function PATCH(
           venue: updatedVenue,
           updatedFields,
           geocodingApplied,
+          geocodingWarning,
           mediaEmbedsError: embedError instanceof Error ? embedError.message : "Failed to save media embeds",
           disallowedFields:
             disallowedFields.length > 0 ? disallowedFields : undefined,
@@ -242,6 +277,7 @@ export async function PATCH(
       venue: updatedVenue,
       updatedFields,
       geocodingApplied,
+      geocodingWarning,
       disallowedFields:
         disallowedFields.length > 0 ? disallowedFields : undefined,
     });

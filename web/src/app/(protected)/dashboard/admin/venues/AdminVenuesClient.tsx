@@ -102,11 +102,16 @@ export default function AdminVenuesClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newVenue),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Failed to create venue");
       }
       await fetchVenues();
+      if (data.geocodingWarning?.message) {
+        alert(
+          `Venue created, but geocoding could not complete. ${data.geocodingWarning.message} Admin was notified.`
+        );
+      }
       setNewVenue({
         name: "",
         address: "",
@@ -137,11 +142,16 @@ export default function AdminVenuesClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingVenue),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Failed to update venue");
       }
       await fetchVenues();
+      if (data.geocodingWarning?.message) {
+        alert(
+          `Venue updated, but geocoding could not complete. ${data.geocodingWarning.message} Admin was notified.`
+        );
+      }
       setEditingVenue(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update venue");
