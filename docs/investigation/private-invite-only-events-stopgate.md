@@ -60,7 +60,7 @@ The existing `event_invites` table (Phase 4.94) handles host/cohost invitation t
 | 3 | OG image generation | `app/og/event/[id]/route.tsx` | **None** | Yes | HIGH — metadata leaks title, venue, date |
 | 4 | Search API | `app/api/search/route.ts` | Open mics: `status='active'`; Others: **no status filter** | Yes | HIGH — full-text search returns private events |
 | 5 | Weekly happenings digest | `lib/digest/weeklyHappenings.ts` | `is_published=true` + `status='active'` | No (email) | MEDIUM — sent to all digest subscribers |
-| 6 | Weekly open mics digest | `lib/email/templates/weeklyOpenMicsDigest.ts` | `event_type='open_mic'` + `status='active'` | No (email) | LOW — private open mics unlikely but possible |
+| 6 | Weekly open mics digest | `lib/email/templates/weeklyOpenMicsDigest.ts` | `event_type @> '{open_mic}'` (`.contains()`) + `status='active'` | No (email) | LOW — private open mics unlikely but possible |
 | 7 | Embed widget | `app/embed/events/[id]/route.ts` | `is_published=true` | Yes | HIGH — guessable slug returns full HTML |
 | 8 | RSVP API | `app/api/events/[id]/rsvp/route.ts` | `is_published=true` | Yes* | MEDIUM — confirms event existence |
 | 9 | Comments API | `app/api/events/[id]/comments/route.ts` | `is_published=true` | Yes | MEDIUM — confirms event existence |

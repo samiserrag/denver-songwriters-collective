@@ -261,7 +261,7 @@ CREATE UNIQUE INDEX digest_preferences_user_id_idx ON digest_preferences(user_id
 
 **Changes:**
 - Rename `weeklyOpenMicsDigest` → `weeklyHappeningsDigest` (or keep both)
-- Query all event types (`event_type IN ('open_mic', 'showcase', 'jam_session', etc.)`)
+- Query all event types (use `.overlaps("event_type", types)` — `event_type` is now `text[]`)
 - Update email template subject/copy
 - Update cron job
 

@@ -441,6 +441,105 @@ Decision-critical fields must never disappear silently.
 
 ---
 
+## Contract: Event Type Data Model (EVENTS-TYPE-01)
+
+> **Track Status:** February 2026 — Shipped commit `9b947732`. Migration `20260223010000_event_type_to_array.sql`.
+
+### Core Principle
+
+Events can belong to **multiple types simultaneously** (e.g., a blues jam is both `jam_session` and `blues`). The `event_type` column is a PostgreSQL `text[]` array, not a single enum.
+
+### Schema Contract
+
+| Property | Value |
+|----------|-------|
+| Column | `events.event_type` |
+| Type | `text[]` (PostgreSQL array) |
+| Default | `ARRAY['open_mic']::text[]` |
+| CHECK constraint | `cardinality(event_type) > 0` AND all elements in valid set |
+| Index | GIN index (`idx_events_event_type_gin`) |
+
+### Valid Event Types
+
+```
+open_mic, showcase, song_circle, workshop, other, gig, meetup,
+kindred_group, jam_session, poetry, irish, blues, bluegrass, comedy
+```
+
+**Invariant:** At least one type is required. Empty arrays are rejected by the CHECK constraint.
+
+### TypeScript Contract
+
+| Interface | Field | Type |
+|-----------|-------|------|
+| `CSCEvent` | `event_type` | `EventType[]` |
+| `CreateEventForm` | `event_type` | `EventType[]` |
+| `Database["public"]["Tables"]["events"]["Row"]` | `event_type` | `string[]` |
+
+### Query Pattern Contract
+
+| Operation | Old Pattern (Forbidden) | New Pattern (Required) |
+|-----------|------------------------|----------------------|
+| Single type filter | `.eq("event_type", "open_mic")` | `.contains("event_type", ["open_mic"])` |
+| Multi-type filter | `.in("event_type", types)` | `.overlaps("event_type", types)` |
+| Exclude type | `.neq("event_type", "open_mic")` | `.not("event_type", "cs", '{"open_mic"}')` |
+
+**Forbidden:** `.eq("event_type", ...)` on discovery/filter queries. PostgREST `.eq` matches exact array equality, not containment.
+
+### Display Priority Contract (`getPrimaryEventType`)
+
+When a single type must be displayed (icon, label, default image), use `getPrimaryEventType()`:
+
+**Genre-priority types** take precedence (in order): `blues`, `bluegrass`, `irish`, `poetry`, `comedy`
+
+**Fallback:** First element of the array, then `"other"`.
+
+**Usage:** Icon selection, `EVENT_TYPE_CONFIG` lookup, `getDefaultImageForType()`, email digest emoji.
+
+**Rationale:** A "blues jam" should display the blues icon, not the generic jam session icon.
+
+### Open Mic Routing Contract
+
+Routing uses `.includes("open_mic")` on the array, not scalar equality:
+
+| Pattern | Route |
+|---------|-------|
+| `types.includes("open_mic")` | `/open-mics/[slug]` |
+| Otherwise | `/events/[slug\|id]` |
+
+### Form Contract (Multi-Select)
+
+- Event type selection uses **toggle buttons** (same pattern as `categories` multi-select)
+- Minimum 1 type selected (enforced client-side and server-side)
+- All 14 types available in admin create/edit forms
+- API validates each array element against the valid types set
+
+### CSV/Ops Pipeline Contract
+
+| Direction | Format |
+|-----------|--------|
+| Export (DB → CSV) | Pipe-delimited: `jam_session\|blues` |
+| Import (CSV → DB) | Split on `\|`, trim, filter empty, deduplicate, wrap in array |
+| Diff comparison | Arrays sorted before comparison; pipe-delimited CSV string compared element-wise against DB array |
+
+### Email Digest Contract
+
+- `getEventTypeEmoji()` accepts `string | string[]`
+- Genre-priority types (blues, bluegrass, irish, poetry, comedy) take icon precedence over generic types
+- A "blues jam" renders 🎸 (blues), not 🎸 (generic jam_session)
+
+### Test Coverage
+
+| Test File | Contracts Enforced |
+|-----------|-------------------|
+| `__tests__/weekly-happenings-digest.test.ts` | Array event_type in digest pipeline |
+| `__tests__/happenings-filters.test.ts` | `.contains()` / `.overlaps()` query patterns |
+| `__tests__/ops-event-csv.test.ts` | Pipe-delimited serialization |
+| `__tests__/ops-event-diff.test.ts` | Array-aware diff comparison |
+| `__tests__/card-variants.test.tsx` | `getPrimaryEventType` display fallback |
+
+---
+
 ## Contract: Filtering Behavior
 
 ### Day-of-Week Filter (Lens, not sort)
@@ -550,6 +649,9 @@ interface HappeningCardProps {
 | `/happenings` | **Yes** (inside hero) | Hero content |
 | `/happenings?type=open_mic` | **No** | Inline h1 ("Open Mics") |
 | `/happenings?type=dsc` | **No** | Inline h1 ("DSC Happenings") |
+| `/happenings?type=blues` (etc.) | **No** | Inline h1 (type label) |
+
+> **Note:** Type filters use `.contains()` for single-type and `.overlaps()` for meta-filters (e.g., "shows"). See EVENTS-TYPE-01 contract.
 
 **Rationale:**
 - Filtered views prioritize content density

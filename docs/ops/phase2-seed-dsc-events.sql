@@ -4,7 +4,10 @@
 -- This file is safe + auditable + includes rollback.
 --
 -- Investigation results (2025-12-27):
---   event_type enum: open_mic, showcase, song_circle, workshop, other
+--   event_type: text[] array (was enum). Valid: open_mic, showcase, song_circle,
+--     workshop, other, gig, meetup, kindred_group, jam_session, poetry, irish,
+--     blues, bluegrass, comedy. Insert as ARRAY['type'] syntax.
+--   (Historical note: was single enum before migration 20260223010000)
 --   status values: active, unverified, needs_verification, inactive, cancelled
 --   venue_id: 16c0a286-163c-49ec-8167-f22ab31f86fb (Second Dawn Brewing - Central Park)
 --

@@ -32,7 +32,7 @@
     └── File: `lib/digest/weeklyOpenMics.ts`
     └── Function: `getUpcomingOpenMics(supabase, { todayKey })`
     └── Query filters:
-        - event_type = 'open_mic'          <-- INJECTION POINT FOR GTM-1
+        - event_type @> '{open_mic}' (`.contains()`)  <-- event_type is now text[]
         - is_published = true
         - status = 'active'
     └── Returns: DigestData { byDate, totalCount, venueCount, dateRange }
@@ -84,7 +84,7 @@
 
 | Location | Current State | GTM-2 Extension Point |
 |----------|---------------|----------------------|
-| `fetchOpenMicEvents()` | Hardcoded `event_type = 'open_mic'` | Accept `eventTypes[]` param |
+| `fetchOpenMicEvents()` | `.contains("event_type", ["open_mic"])` (event_type is text[]) | Accept `eventTypes[]` param, use `.overlaps()` |
 | `getUpcomingOpenMics()` | No preferences param | Accept `DigestPreferences` param |
 | `getDigestRecipients()` | Returns all eligible users | Join with `digest_preferences` |
 

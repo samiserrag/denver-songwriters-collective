@@ -19,7 +19,7 @@
 
 - Events CSV export/import (update-only, no verification timestamps)
 - Overrides CSV export/import (create-or-update via upsert)
-- Bulk actions: verify, unverify, status, event_type, venue_id
+- Bulk actions: verify, unverify, status, event_type (text[] array, pipe-delimited in CSV), venue_id
 - Verification managed via UI buttons only (not CSV)
 
 ---
