@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import fs from "fs";
 
 // =============================================================================
 // Test 1: Dropdown Order Contract
@@ -257,5 +258,27 @@ describe("EventForm canCreateVenue prop", () => {
       expect(computedCanCreateCSC).toBe(canCreateCSC);
       expect(computedCanCreateVenue).toBe(canCreateVenue);
     });
+  });
+});
+
+// =============================================================================
+// Test 7: Venue Creation Geocoding Path
+// =============================================================================
+
+describe("Venue creation geocoding contract", () => {
+  it("venue selectors should create venues via API endpoint (not direct browser insert)", () => {
+    const uiSelectorSource = fs.readFileSync(
+      "src/components/ui/VenueSelector.tsx",
+      "utf-8"
+    );
+    const adminSelectorSource = fs.readFileSync(
+      "src/components/admin/VenueSelector.tsx",
+      "utf-8"
+    );
+
+    expect(uiSelectorSource).toContain('fetch("/api/admin/venues"');
+    expect(adminSelectorSource).toContain('fetch("/api/admin/venues"');
+    expect(uiSelectorSource).not.toContain('.from("venues")');
+    expect(adminSelectorSource).not.toContain('.from("venues")');
   });
 });

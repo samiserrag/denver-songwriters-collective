@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 interface Venue {
   id: string;
@@ -71,10 +70,10 @@ export default function VenueSelector({
     setError(null);
 
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { data, error: insertError } = await supabase
-        .from("venues")
-        .insert({
+      const response = await fetch("/api/admin/venues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: newVenue.name.trim(),
           address: newVenue.address.trim(),
           city: newVenue.city.trim() || "Denver",
@@ -83,11 +82,15 @@ export default function VenueSelector({
           phone: newVenue.phone.trim() || null,
           website_url: newVenue.website_url.trim() || null,
           google_maps_url: newVenue.google_maps_url.trim() || null,
-        })
-        .select("id, name, address, city, state")
-        .single();
-
-      if (insertError) throw insertError;
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.error === "string" ? payload.error : "Failed to create venue"
+        );
+      }
+      const data = payload as Venue;
 
       // Select the newly created venue
       onVenueChange(data.id);

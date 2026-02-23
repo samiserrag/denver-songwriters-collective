@@ -811,6 +811,13 @@ All primary discovery surfaces (Homepage, `/happenings`) MUST use:
 | `DISCOVERY_VENUE_SELECT` | `venue:venues!left(id, slug, name, address, city, state, google_maps_url, website_url)` | Standard venue join (no coords) |
 | `DISCOVERY_VENUE_SELECT_WITH_COORDS` | Same + `latitude, longitude` | Extended venue join (map view) |
 
+### Venue Geocoding Contract
+
+- Venue creation from selector UIs must go through `POST /api/admin/venues` (server-side), not direct browser inserts.
+- `POST /api/admin/venues` must run `processVenueGeocoding()` before insert.
+- New venues with valid address data should receive `latitude/longitude` immediately when `GOOGLE_GEOCODING_API_KEY` is configured.
+- Discovery map must remain resilient when coordinates are missing by using city-centroid fallback in map pin adaptation.
+
 ### Venue Join Alias Rule
 
 PostgREST venue joins MUST use the singular alias `venue:venues!left(...)` so the result is `event.venue` (object), NOT `event.venues` (array). Components read `event.venue.city` / `event.venue.state`.

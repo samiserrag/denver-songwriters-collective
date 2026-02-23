@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { processVenueGeocoding } from "@/lib/venue/geocoding";
+import { Database } from "@/lib/supabase/database.types";
 
 // GET - Get all venues (admin only)
 export async function GET() {
@@ -85,18 +87,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Venue name is required" }, { status: 400 });
   }
 
+  const baseInsert: Database["public"]["Tables"]["venues"]["Insert"] = {
+    name: name.trim(),
+    address: address?.trim() || "",
+    city: city?.trim() || "Denver",
+    state: state?.trim() || "CO",
+    zip: zip?.trim() || null,
+    website_url: website_url?.trim() || null,
+    phone: phone?.trim() || null,
+    google_maps_url: google_maps_url?.trim() || null,
+  };
+
+  // Ensure venue creation goes through the same geocoding pipeline as venue edits.
+  const geocodedInsert = await processVenueGeocoding(null, baseInsert) as Database["public"]["Tables"]["venues"]["Insert"];
+
   const { data, error } = await serviceClient
     .from("venues")
-    .insert({
-      name: name.trim(),
-      address: address?.trim() || "",
-      city: city?.trim() || "Denver",
-      state: state?.trim() || "CO",
-      zip: zip?.trim() || null,
-      website_url: website_url?.trim() || null,
-      phone: phone?.trim() || null,
-      google_maps_url: google_maps_url?.trim() || null,
-    })
+    .insert(geocodedInsert)
     .select()
     .single();
 
