@@ -611,6 +611,108 @@ export default async function HappeningsPage({
     return null;
   };
 
+  const toCityStateKey = (city?: string | null, state?: string | null): string | null => {
+    const normalizedCity = city?.trim().toLowerCase().replace(/,+$/, "").trim();
+    if (!normalizedCity) return null;
+    const normalizedState = state?.trim().toLowerCase().replace(/,+$/, "").trim() || "";
+    return `${normalizedCity}|${normalizedState}`;
+  };
+
+  let mapPinResult: ReturnType<typeof occurrencesToMapPins> | null = null;
+  if (viewMode === "map") {
+    const allOccurrences: EventOccurrenceEntry<any>[] = [];
+    for (const entries of filteredGroups.values()) {
+      allOccurrences.push(...entries);
+    }
+
+    // Build override venue map for MapPinConfig (includes lat/lng for venue resolution)
+    const mapOverrideVenueMap = new Map<string, {
+      name: string;
+      slug?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+      city?: string | null;
+      state?: string | null;
+    }>();
+    for (const [vid, data] of overrideVenueMap.entries()) {
+      mapOverrideVenueMap.set(vid, {
+        name: data.name,
+        slug: data.slug,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        city: data.city,
+        state: data.state,
+      });
+    }
+
+    // Build city centroid fallback map for entries whose venue rows are missing coords.
+    // This keeps map discovery usable even when some venues are not fully geocoded.
+    const missingCityStateKeys = new Set<string>();
+    for (const entry of allOccurrences) {
+      const patch = entry.override?.override_patch as Record<string, unknown> | null | undefined;
+      const overrideVenueId = patch?.venue_id as string | undefined;
+      if (overrideVenueId) {
+        const overrideVenue = mapOverrideVenueMap.get(overrideVenueId);
+        if (overrideVenue && (typeof overrideVenue.latitude !== "number" || typeof overrideVenue.longitude !== "number")) {
+          const key = toCityStateKey(overrideVenue.city, overrideVenue.state);
+          if (key) {
+            missingCityStateKeys.add(key);
+          }
+        }
+      }
+
+      const venue = entry.event.venue as {
+        city?: string | null;
+        state?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
+      } | null | undefined;
+      if (venue && (typeof venue.latitude !== "number" || typeof venue.longitude !== "number")) {
+        const key = toCityStateKey(venue.city, venue.state);
+        if (key) {
+          missingCityStateKeys.add(key);
+        }
+      }
+    }
+
+    const cityCentroidMap = new Map<string, { latitude: number; longitude: number }>();
+    if (missingCityStateKeys.size > 0) {
+      const { data: centroidVenues } = await supabase
+        .from("venues")
+        .select("city, state, latitude, longitude")
+        .not("latitude", "is", null)
+        .not("longitude", "is", null);
+
+      const aggregates = new Map<string, { latSum: number; lngSum: number; count: number }>();
+      for (const venue of centroidVenues || []) {
+        const key = toCityStateKey(venue.city, venue.state);
+        if (!key || !missingCityStateKeys.has(key)) continue;
+        const agg = aggregates.get(key) || { latSum: 0, lngSum: 0, count: 0 };
+        agg.latSum += venue.latitude as number;
+        agg.lngSum += venue.longitude as number;
+        agg.count += 1;
+        aggregates.set(key, agg);
+      }
+
+      for (const [key, agg] of aggregates.entries()) {
+        if (agg.count > 0) {
+          cityCentroidMap.set(key, {
+            latitude: agg.latSum / agg.count,
+            longitude: agg.lngSum / agg.count,
+          });
+        }
+      }
+    }
+
+    const mapConfig: MapPinConfig = {
+      maxPins: 500,
+      overrideVenueMap: mapOverrideVenueMap,
+      cityCentroidMap,
+    };
+
+    mapPinResult = occurrencesToMapPins(allOccurrences, mapConfig);
+  }
+
   return (
     <>
       {showHero && (
@@ -746,42 +848,7 @@ export default async function HappeningsPage({
         {/* Phase 4.54/1.0: Conditional rendering based on view mode */}
         {viewMode === "map" ? (
           /* Map View - geographic pins (Phase 1.0) */
-          (() => {
-            // Flatten all occurrences from filteredGroups for map rendering
-            const allOccurrences: EventOccurrenceEntry<any>[] = [];
-            for (const entries of filteredGroups.values()) {
-              allOccurrences.push(...entries);
-            }
-
-            // Build override venue map for MapPinConfig (includes lat/lng for venue resolution)
-            const mapOverrideVenueMap = new Map<string, {
-              name: string;
-              slug?: string | null;
-              latitude?: number | null;
-              longitude?: number | null;
-              city?: string | null;
-              state?: string | null;
-            }>();
-            for (const [vid, data] of overrideVenueMap.entries()) {
-              mapOverrideVenueMap.set(vid, {
-                name: data.name,
-                slug: data.slug,
-                latitude: data.latitude,
-                longitude: data.longitude,
-                city: data.city,
-                state: data.state,
-              });
-            }
-
-            const mapConfig: MapPinConfig = {
-              maxPins: 500,
-              overrideVenueMap: mapOverrideVenueMap,
-            };
-
-            const pinResult = occurrencesToMapPins(allOccurrences, mapConfig);
-
-            return <MapView pinResult={pinResult} className="mt-4" />;
-          })()
+          <MapView pinResult={mapPinResult || { pins: [], excludedMissingCoords: 0, excludedOnlineOnly: 0, limitExceeded: false, totalProcessed: 0 }} className="mt-4" />
         ) : viewMode === "series" ? (
           /* Series View - one row per event/series */
           (() => {

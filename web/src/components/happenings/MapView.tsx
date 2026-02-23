@@ -10,7 +10,7 @@
  * STOP-GATE 1 Contract:
  * - One pin per venue (multiple events grouped)
  * - Max 500 pins before showing fallback message
- * - Center on Denver (39.7392, -104.9903), zoom 11
+ * - Default viewport covers Colorado statewide
  * - Uses react-leaflet for React integration
  * - Uses leaflet.markercluster for pin clustering
  *

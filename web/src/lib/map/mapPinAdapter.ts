@@ -84,6 +84,14 @@ interface OverrideVenueData {
 }
 
 /**
+ * Fallback centroid for a city/state when venue-level coordinates are missing.
+ */
+interface CityCentroidData {
+  latitude: number;
+  longitude: number;
+}
+
+/**
  * Configuration for map pin generation.
  */
 export interface MapPinConfig {
@@ -91,6 +99,8 @@ export interface MapPinConfig {
   maxPins: number;
   /** Override venue map for resolving override_patch.venue_id */
   overrideVenueMap?: Map<string, OverrideVenueData>;
+  /** Optional city/state centroid map for venues missing exact coordinates */
+  cityCentroidMap?: Map<string, CityCentroidData>;
 }
 
 /**
@@ -145,7 +155,8 @@ function formatTime(time: string | null): string | null {
  */
 function resolveCoordinates(
   entry: EventOccurrenceEntry<any>,
-  overrideVenueMap?: Map<string, OverrideVenueData>
+  overrideVenueMap?: Map<string, OverrideVenueData>,
+  cityCentroidMap?: Map<string, CityCentroidData>
 ): {
   latitude: number;
   longitude: number;
@@ -155,23 +166,42 @@ function resolveCoordinates(
 } | null {
   const event = entry.event;
   const overridePatch = entry.override?.override_patch as Record<string, unknown> | null;
+  const cityStateKey = (city?: string | null, state?: string | null): string | null => {
+    const normalizedCity = city?.trim().toLowerCase().replace(/,+$/, "").trim();
+    if (!normalizedCity) return null;
+    const normalizedState = state?.trim().toLowerCase().replace(/,+$/, "").trim() || "";
+    return `${normalizedCity}|${normalizedState}`;
+  };
 
   // Priority 1: Override venue
   const overrideVenueId = overridePatch?.venue_id as string | undefined;
   if (overrideVenueId && overrideVenueMap) {
     const overrideVenue = overrideVenueMap.get(overrideVenueId);
-    if (
-      overrideVenue &&
-      typeof overrideVenue.latitude === "number" &&
-      typeof overrideVenue.longitude === "number"
-    ) {
-      return {
-        latitude: overrideVenue.latitude,
-        longitude: overrideVenue.longitude,
-        venueName: overrideVenue.name,
-        venueSlug: overrideVenue.slug || null,
-        venueId: overrideVenueId,
-      };
+    if (overrideVenue) {
+      if (
+        typeof overrideVenue.latitude === "number" &&
+        typeof overrideVenue.longitude === "number"
+      ) {
+        return {
+          latitude: overrideVenue.latitude,
+          longitude: overrideVenue.longitude,
+          venueName: overrideVenue.name,
+          venueSlug: overrideVenue.slug || null,
+          venueId: overrideVenueId,
+        };
+      }
+
+      const overrideCityKey = cityStateKey(overrideVenue.city, overrideVenue.state);
+      if (overrideCityKey && cityCentroidMap?.has(overrideCityKey)) {
+        const centroid = cityCentroidMap.get(overrideCityKey)!;
+        return {
+          latitude: centroid.latitude,
+          longitude: centroid.longitude,
+          venueName: overrideVenue.name,
+          venueSlug: overrideVenue.slug || null,
+          venueId: overrideVenueId,
+        };
+      }
     }
   }
 
@@ -185,6 +215,21 @@ function resolveCoordinates(
       venueSlug: venue.slug || null,
       venueId: venue.id,
     };
+  }
+
+  // Priority 2b: City centroid fallback for venue rows missing coordinates
+  if (venue) {
+    const venueCityKey = cityStateKey(venue.city, venue.state);
+    if (venueCityKey && cityCentroidMap?.has(venueCityKey)) {
+      const centroid = cityCentroidMap.get(venueCityKey)!;
+      return {
+        latitude: centroid.latitude,
+        longitude: centroid.longitude,
+        venueName: venue.name,
+        venueSlug: venue.slug || null,
+        venueId: venue.id,
+      };
+    }
   }
 
   // Priority 3: Custom location coordinates
@@ -227,7 +272,7 @@ export function occurrencesToMapPins(
   entries: EventOccurrenceEntry<any>[],
   config: MapPinConfig
 ): MapPinResult {
-  const { maxPins, overrideVenueMap } = config;
+  const { maxPins, overrideVenueMap, cityCentroidMap } = config;
 
   let excludedMissingCoords = 0;
   let excludedOnlineOnly = 0;
@@ -244,7 +289,7 @@ export function occurrencesToMapPins(
     }
 
     // Resolve coordinates
-    const coords = resolveCoordinates(entry, overrideVenueMap);
+    const coords = resolveCoordinates(entry, overrideVenueMap, cityCentroidMap);
     if (!coords) {
       excludedMissingCoords++;
       if (excludedMissingCoords <= 10) {
@@ -326,13 +371,13 @@ export function occurrencesToMapPins(
  * Constants for map configuration.
  */
 export const MAP_DEFAULTS = {
-  /** Denver metro center */
+  /** Colorado statewide center */
   CENTER: {
-    lat: 39.7392,
-    lng: -104.9903,
+    lat: 39.113014,
+    lng: -105.358887,
   },
   /** Default zoom level */
-  ZOOM: 11,
+  ZOOM: 7,
   /** Zoom threshold for clustering (desktop) */
   CLUSTER_ZOOM_DESKTOP: 12,
   /** Zoom threshold for clustering (mobile) */

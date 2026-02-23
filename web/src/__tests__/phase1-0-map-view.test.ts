@@ -26,6 +26,8 @@ function createMockOccurrence(overrides: {
     id: string;
     name: string;
     slug?: string;
+    city?: string;
+    state?: string;
     latitude?: number | null;
     longitude?: number | null;
   } | null;
@@ -269,6 +271,36 @@ describe("occurrencesToMapPins", () => {
 
       expect(result.pins).toHaveLength(0);
       expect(result.excludedMissingCoords).toBe(1);
+    });
+
+    it("falls back to city centroid when venue coordinates are missing", () => {
+      const entries = [
+        createMockOccurrence({
+          eventId: "event-1",
+          title: "Colorado Springs Event",
+          venue: {
+            id: "venue-cs-1",
+            name: "Missing Coords Venue",
+            city: "Colorado Springs",
+            state: "CO",
+            latitude: null,
+            longitude: null,
+          },
+        }),
+      ];
+
+      const config: MapPinConfig = {
+        maxPins: 500,
+        cityCentroidMap: new Map([
+          ["colorado springs|co", { latitude: 38.8339, longitude: -104.8214 }],
+        ]),
+      };
+      const result = occurrencesToMapPins(entries, config);
+
+      expect(result.pins).toHaveLength(1);
+      expect(result.pins[0].latitude).toBe(38.8339);
+      expect(result.pins[0].longitude).toBe(-104.8214);
+      expect(result.excludedMissingCoords).toBe(0);
     });
   });
 
@@ -582,13 +614,13 @@ describe("occurrencesToMapPins", () => {
 });
 
 describe("MAP_DEFAULTS", () => {
-  it("has correct Denver center coordinates", () => {
-    expect(MAP_DEFAULTS.CENTER.lat).toBe(39.7392);
-    expect(MAP_DEFAULTS.CENTER.lng).toBe(-104.9903);
+  it("has Colorado statewide center coordinates", () => {
+    expect(MAP_DEFAULTS.CENTER.lat).toBe(39.113014);
+    expect(MAP_DEFAULTS.CENTER.lng).toBe(-105.358887);
   });
 
-  it("has default zoom level of 11", () => {
-    expect(MAP_DEFAULTS.ZOOM).toBe(11);
+  it("has default zoom level of 7", () => {
+    expect(MAP_DEFAULTS.ZOOM).toBe(7);
   });
 
   it("has max pins limit of 500", () => {
