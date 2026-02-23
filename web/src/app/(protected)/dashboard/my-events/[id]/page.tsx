@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import EventForm from "../_components/EventForm";
-import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { EVENT_TYPE_CONFIG, getPrimaryEventType, type EventType } from "@/types/events";
 import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
 import { readMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import CreatedSuccessBanner from "./_components/CreatedSuccessBanner";
@@ -119,7 +119,8 @@ export default async function EditEventPage({
     mediaEmbedUrls = embeds.map((e: { url: string }) => e.url);
   } catch { /* non-fatal */ }
 
-  const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+  const myEvtTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(myEvtTypes as EventType[])]
     || EVENT_TYPE_CONFIG.other;
 
   // Phase 4.42e: Event owner (host_id) is also a primary host

@@ -48,6 +48,11 @@ export const VALID_EVENT_TYPES = [
   "meetup",
   "kindred_group",
   "jam_session",
+  "poetry",
+  "irish",
+  "blues",
+  "bluegrass",
+  "comedy",
 ] as const;
 
 export const VALID_STATUSES = ["active", "draft", "cancelled"] as const;

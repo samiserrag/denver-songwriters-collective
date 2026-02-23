@@ -280,7 +280,7 @@ export function occurrencesToMapPins(
       eventId: entry.event.id,
       eventSlug: entry.event.slug || entry.event.id,
       title: entry.event.title || "Untitled Event",
-      eventType: entry.event.event_type || "other",
+      eventType: (Array.isArray(entry.event.event_type) ? entry.event.event_type[0] : entry.event.event_type) || "other",
       dateKey: entry.dateKey,
       displayDate: formatDisplayDate(entry.displayDate || entry.dateKey),
       startTime: formatTime(

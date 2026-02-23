@@ -28,7 +28,7 @@ export interface EventInsertPayload {
 
   // From CSV
   title: string;
-  event_type: string;
+  event_type: string[];
   event_date: string;
   start_time: string | null;
   end_time: string | null;
@@ -93,7 +93,7 @@ export function buildInsertPayloads(
 
       // From CSV
       title: row.title,
-      event_type: eventType,
+      event_type: [eventType],
       event_date: row.event_date,
       start_time: row.start_time,
       end_time: row.end_time,

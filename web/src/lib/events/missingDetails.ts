@@ -31,7 +31,7 @@ export interface MissingDetailsInput {
 
   // Event type
   is_dsc_event?: boolean | null;
-  event_type?: string | null;
+  event_type?: string | string[] | null;
 }
 
 export interface MissingDetailsResult {

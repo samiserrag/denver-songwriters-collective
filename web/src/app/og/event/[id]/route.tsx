@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { EVENT_TYPE_CONFIG, type EventType } from "@/types/events";
+import { EVENT_TYPE_CONFIG, getPrimaryEventType, type EventType } from "@/types/events";
 import { renderOgCard, type OgChip } from "../../_shared/ogCard";
 
 export const runtime = "edge";
@@ -64,7 +64,8 @@ export async function GET(
   }
 
   const title = event?.title ?? "Happening";
-  const eventType = event?.event_type as EventType | undefined;
+  const ogTypes = Array.isArray(event?.event_type) ? event.event_type : [event?.event_type].filter(Boolean);
+  const eventType = ogTypes.length > 0 ? getPrimaryEventType(ogTypes as EventType[]) : undefined;
   const typeConfig = eventType ? EVENT_TYPE_CONFIG[eventType] : null;
   const typeLabel = typeConfig?.label ?? "Event";
   const coverImage = event?.cover_image_url;

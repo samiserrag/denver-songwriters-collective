@@ -21,7 +21,7 @@ const baseEvent = {
   id: "evt-1",
   title: "Weekly Open Mic",
   description: "A weekly open mic night",
-  event_type: "open_mic",
+  event_type: ["open_mic"],
   start_time: "19:00:00",
   end_time: "22:00:00",
   venue_id: "venue-1",
@@ -136,14 +136,14 @@ describe("applyOccurrenceOverride", () => {
         date_key: "2026-01-20",
         status: "normal",
         override_patch: {
-          event_type: "showcase", // BLOCKED
+          event_type: ["showcase"], // BLOCKED
           recurrence_rule: "monthly", // BLOCKED
           day_of_week: "Friday", // BLOCKED
           title: "Allowed Field", // ALLOWED
         },
       };
       const result = applyOccurrenceOverride(baseEvent, override);
-      expect(result.event_type).toBe("open_mic"); // Unchanged
+      expect(result.event_type).toEqual(["open_mic"]); // Unchanged
       expect(result.recurrence_rule).toBe("weekly"); // Unchanged
       expect(result.day_of_week).toBe("Monday"); // Unchanged
       expect(result.title).toBe("Allowed Field"); // Applied
@@ -301,7 +301,7 @@ describe("applyOccurrenceOverride", () => {
       expect(result.is_free).toBe(false);
       expect(result.cost_label).toBe("$5 cover");
       // Unchanged fields
-      expect(result.event_type).toBe("open_mic");
+      expect(result.event_type).toEqual(["open_mic"]);
       expect(result.recurrence_rule).toBe("weekly");
       expect(result.day_of_week).toBe("Monday");
     });

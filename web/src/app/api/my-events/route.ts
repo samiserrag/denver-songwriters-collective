@@ -154,7 +154,10 @@ function buildEventInsert(params: EventInsertParams) {
     host_id: userId,
     title: body.title as string,
     description: (body.description as string) || null,
-    event_type: body.event_type as string,
+    event_type: (() => {
+      const types = Array.isArray(body.event_type) ? body.event_type : [body.event_type].filter(Boolean);
+      return types as string[];
+    })(),
     is_dsc_event: isCSCEvent,
     // Phase 4.43: capacity is independent of timeslots (RSVP always available)
     // capacity=null means unlimited RSVP, not "RSVP disabled"
@@ -278,9 +281,29 @@ export async function POST(request: Request) {
   // Validate required fields
   const required = ["title", "event_type", "start_time"];
   for (const field of required) {
-    if (!body[field]) {
+    if (field === "event_type") {
+      const et = Array.isArray(body[field]) ? body[field] : [body[field]].filter(Boolean);
+      if (et.length === 0) {
+        return NextResponse.json({ error: `${field} is required` }, { status: 400 });
+      }
+    } else if (!body[field]) {
       return NextResponse.json({ error: `${field} is required` }, { status: 400 });
     }
+  }
+
+  // Validate event_type values
+  const VALID_EVENT_TYPES = new Set([
+    "open_mic", "showcase", "song_circle", "workshop", "other",
+    "gig", "meetup", "kindred_group", "jam_session",
+    "poetry", "irish", "blues", "bluegrass", "comedy",
+  ]);
+  const eventTypes = Array.isArray(body.event_type) ? body.event_type : [body.event_type].filter(Boolean);
+  if (eventTypes.length === 0) {
+    return NextResponse.json({ error: "event_type is required" }, { status: 400 });
+  }
+  const invalidTypes = eventTypes.filter((t: string) => !VALID_EVENT_TYPES.has(t));
+  if (invalidTypes.length > 0) {
+    return NextResponse.json({ error: `Invalid event_type: ${invalidTypes.join(", ")}` }, { status: 400 });
   }
 
   // Validate online_url required for online/hybrid events

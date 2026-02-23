@@ -216,36 +216,12 @@ export default async function HappeningsPage({
     });
   }
 
-  // Type filter (event_type)
-  if (typeFilter === "open_mic") {
-    query = query.eq("event_type", "open_mic");
-  } else if (typeFilter === "shows") {
+  // Type filter (event_type) — text[] array column, use .overlaps / .contains
+  if (typeFilter === "shows") {
     // "Shows" covers showcases, gigs, and other performances (not open mics, workshops, or song circles)
-    query = query.in("event_type", ["showcase", "gig", "other"]);
-  } else if (typeFilter === "showcase") {
-    query = query.eq("event_type", "showcase");
-  } else if (typeFilter === "workshop") {
-    query = query.eq("event_type", "workshop");
-  } else if (typeFilter === "song_circle") {
-    query = query.eq("event_type", "song_circle");
-  } else if (typeFilter === "gig") {
-    query = query.eq("event_type", "gig");
-  } else if (typeFilter === "kindred_group") {
-    query = query.eq("event_type", "kindred_group");
-  } else if (typeFilter === "jam_session") {
-    query = query.eq("event_type", "jam_session");
-  } else if (typeFilter === "poetry") {
-    query = query.eq("event_type", "poetry");
-  } else if (typeFilter === "irish") {
-    query = query.eq("event_type", "irish");
-  } else if (typeFilter === "blues") {
-    query = query.eq("event_type", "blues");
-  } else if (typeFilter === "bluegrass") {
-    query = query.eq("event_type", "bluegrass");
-  } else if (typeFilter === "comedy") {
-    query = query.eq("event_type", "comedy");
-  } else if (typeFilter === "other") {
-    query = query.eq("event_type", "other");
+    query = query.overlaps("event_type", ["showcase", "gig", "other"]);
+  } else if (typeFilter) {
+    query = query.contains("event_type", [typeFilter]);
   }
 
   // CSC filter

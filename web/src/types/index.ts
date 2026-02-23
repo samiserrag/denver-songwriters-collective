@@ -36,8 +36,8 @@ export interface Event {
   start_time?: string | null;
   end_time?: string | null;
   // Support both snake_case and camelCase event type fields depending on source
-  event_type?: "open_mic" | "showcase" | "song_circle" | "workshop" | "other" | string;
-  eventType?: "open_mic" | "showcase" | "song_circle" | "workshop" | "other" | string;
+  event_type?: string[];
+  eventType?: string[];
   // Normalized UI fields
   date?: string | null;
   time?: string | null;

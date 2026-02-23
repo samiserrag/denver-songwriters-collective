@@ -12,7 +12,7 @@ describe("computeEventDiff", () => {
   const makeDbEvent = (overrides: Partial<DatabaseEvent> = {}): DatabaseEvent => ({
     id: "123e4567-e89b-12d3-a456-426614174000",
     title: "Test Event",
-    event_type: "open_mic",
+    event_type: ["open_mic"],
     status: "active",
     is_recurring: true,
     event_date: "2026-01-15",

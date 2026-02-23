@@ -49,7 +49,7 @@ function createMockOccurrence(overrides: {
       id: eventId,
       slug: overrides.slug || eventId,
       title: overrides.title || "Test Event",
-      event_type: "open_mic",
+      event_type: ["open_mic"],
       venue: overrides.venue || null,
       location_mode: overrides.locationMode || "in_person",
       start_time: overrides.startTime || "19:00:00",

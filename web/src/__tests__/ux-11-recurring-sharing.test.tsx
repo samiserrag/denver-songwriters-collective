@@ -34,7 +34,7 @@ describe("UX-11 recurring event sharing reliability", () => {
       id: "event-1",
       title: "Renegade Brewing Open Mic Night",
       description: "Weekly open mic in Denver",
-      event_type: "open_mic",
+      event_type: ["open_mic"],
       venue_name: null,
       venue_address: null,
       venue_id: null,
@@ -181,6 +181,7 @@ describe("UX-11 recurring event sharing reliability", () => {
         open_mic: { label: "Open Mic", icon: "mic", color: "amber" },
         other: { label: "Happening", icon: "music", color: "amber" },
       },
+      getPrimaryEventType: (types: string[]) => types[0] || "other",
     }));
 
     vi.doMock("@/components/events/RSVPSection", () => ({

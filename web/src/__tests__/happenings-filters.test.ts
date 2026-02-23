@@ -140,9 +140,10 @@ describe('Happenings Page Filter Logic', () => {
 
   describe('Filter Implementation', () => {
     it('should filter by event_type', () => {
-      expect(pageContent).toContain('.eq("event_type", "open_mic")');
-      expect(pageContent).toContain('.eq("event_type", "showcase")');
-      expect(pageContent).toContain('.eq("event_type", "workshop")');
+      // Single type filter uses .contains with array wrapping
+      expect(pageContent).toContain('.contains("event_type", [typeFilter])');
+      // "Shows" quick filter uses .overlaps for multiple types
+      expect(pageContent).toContain('.overlaps("event_type"');
     });
 
     it('should filter by CSC events', () => {

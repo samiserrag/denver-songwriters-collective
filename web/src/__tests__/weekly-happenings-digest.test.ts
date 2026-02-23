@@ -144,7 +144,7 @@ describe("Event Type Coverage", () => {
       id: "test-1",
       title: "Test Event",
       slug: null,
-      event_type: "open_mic",
+      event_type: ["open_mic"],
       start_time: null,
       event_date: null,
       day_of_week: null,
@@ -155,7 +155,7 @@ describe("Event Type Coverage", () => {
       cost_label: null,
       venue: null,
     };
-    expect(mockEvent.event_type).toBe("open_mic");
+    expect(mockEvent.event_type).toEqual(["open_mic"]);
   });
 });
 
@@ -168,7 +168,7 @@ describe("getWeeklyHappeningsDigestEmail", () => {
     id: "event-1",
     title: "Community Song Circle",
     slug: "community-song-circle",
-    event_type: "song_circle",
+    event_type: ["song_circle"],
     start_time: "19:00:00",
     signup_time: null,
     event_date: "2026-01-27",
@@ -400,13 +400,13 @@ describe("getWeeklyHappeningsDigestEmail", () => {
       ...mockEvent,
       id: "open-mic-1",
       title: "Open Mic Night",
-      event_type: "open_mic",
+      event_type: ["open_mic"],
     };
     const workshopEvent: HappeningEvent = {
       ...mockEvent,
       id: "workshop-1",
       title: "Songwriting Workshop",
-      event_type: "workshop",
+      event_type: ["workshop"],
     };
 
     const byDate = new Map([
@@ -430,7 +430,7 @@ describe("getWeeklyHappeningsDigestEmail", () => {
 
   it("groups events by date", () => {
     const occurrence2: HappeningOccurrence = {
-      event: { ...mockEvent, id: "event-2", title: "Tuesday Workshop", event_type: "workshop" },
+      event: { ...mockEvent, id: "event-2", title: "Tuesday Workshop", event_type: ["workshop"] },
       dateKey: "2026-01-28",
       displayDate: "TUESDAY, JANUARY 28",
     };
@@ -543,7 +543,7 @@ describe("Edge Cases (weeklyHappeningsDigest)", () => {
     id: "event-1",
     title: "Test Event",
     slug: "test-event",
-    event_type: "open_mic",
+    event_type: ["open_mic"],
     start_time: "19:00:00",
     event_date: "2026-01-27",
     day_of_week: "Monday",
@@ -669,7 +669,7 @@ describe("Edge Cases (weeklyHappeningsDigest)", () => {
         ...baseEvent,
         id: `event-${index}`,
         title: `${eventType} Event`,
-        event_type: eventType,
+        event_type: [eventType],
       },
       dateKey: "2026-01-27",
       displayDate: "MONDAY, JANUARY 27",
@@ -701,7 +701,7 @@ describe("Editorial featured ordering", () => {
     id: "event-1",
     title: "Test Event",
     slug: "test-event",
-    event_type: "open_mic",
+    event_type: ["open_mic"],
     start_time: "19:00:00",
     event_date: "2026-01-27",
     day_of_week: "Monday",
@@ -911,7 +911,7 @@ describe("HTML Structure", () => {
     id: "event-1",
     title: "Test Event",
     slug: "test-event",
-    event_type: "open_mic",
+    event_type: ["open_mic"],
     start_time: "19:00:00",
     event_date: "2026-01-27",
     day_of_week: "Monday",

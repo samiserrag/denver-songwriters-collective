@@ -3,14 +3,14 @@
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { EVENT_TYPE_CONFIG, getPrimaryEventType, type EventType } from "@/types/events";
 
 // Phase 5.14b: 3 tabs - Live, Drafts, Cancelled
 
 interface Event {
   id: string;
   title: string;
-  event_type: string;
+  event_type: string[];
   event_date: string | null;
   venue_name: string;
   day_of_week: string;
@@ -280,7 +280,8 @@ export default function MyEventsFilteredList({ events: initialEvents, isApproved
       ) : (
         <div className="space-y-4">
           {filteredEvents.map((event) => {
-            const config = EVENT_TYPE_CONFIG[event.event_type as keyof typeof EVENT_TYPE_CONFIG]
+            const evtTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
+            const config = EVENT_TYPE_CONFIG[getPrimaryEventType(evtTypes as EventType[])]
               || EVENT_TYPE_CONFIG.other;
             const isCancelled = event.status === "cancelled";
 

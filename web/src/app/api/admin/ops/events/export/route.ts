@@ -19,9 +19,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { serializeEventCsv } from "@/lib/ops/eventCsvParser";
 import { opsAudit } from "@/lib/audit/opsAudit";
-import { Database } from "@/lib/supabase/database.types";
-
-type EventType = Database["public"]["Enums"]["event_type"];
 
 export async function GET(request: NextRequest) {
   // Auth check
@@ -61,7 +58,7 @@ export async function GET(request: NextRequest) {
     query = query.eq("status", statusFilter);
   }
   if (eventTypeFilter) {
-    query = query.eq("event_type", eventTypeFilter as EventType);
+    query = query.contains("event_type", [eventTypeFilter]);
   }
   if (venueIdFilter) {
     query = query.eq("venue_id", venueIdFilter);

@@ -144,7 +144,7 @@ async function fetchOpenMicEvents(
       cost_label,
       venue:venues!left(id, name, city, state)
     `)
-    .eq("event_type", "open_mic")
+    .contains("event_type", ["open_mic"])
     .eq("is_published", true)
     .eq("status", "active");
 

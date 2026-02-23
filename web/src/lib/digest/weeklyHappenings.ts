@@ -28,7 +28,7 @@ export interface HappeningEvent {
   id: string;
   title: string;
   slug: string | null;
-  event_type: string;
+  event_type: string[];
   start_time: string | null;
   event_date: string | null;
   day_of_week: string | null;

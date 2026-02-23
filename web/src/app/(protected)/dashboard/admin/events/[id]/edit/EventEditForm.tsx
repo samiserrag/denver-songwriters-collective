@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import VenueSelector from "@/components/admin/VenueSelector";
+import { EVENT_TYPE_CONFIG } from "@/types/events";
 
 interface Venue {
   id: string;
@@ -79,9 +80,20 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
     category: event.category || "",
     categories: event.categories || [],
     status: normalizedInitialStatus,
-    event_type: event.event_type || "open_mic",
+    event_type: Array.isArray(event.event_type) ? event.event_type : [event.event_type || "open_mic"],
     external_url: event.external_url || "",
   });
+
+  const handleEventTypeToggle = (type: string) => {
+    setForm(prev => {
+      const current = prev.event_type;
+      if (current.includes(type)) {
+        if (current.length === 1) return prev; // min 1
+        return { ...prev, event_type: current.filter(t => t !== type) };
+      }
+      return { ...prev, event_type: [...current, type] };
+    });
+  };
 
   const handleCategoryToggle = (cat: string) => {
     setForm(prev => {
@@ -204,17 +216,24 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Happening Type</label>
-          <select
-            name="event_type"
-            value={form.event_type}
-            onChange={handleChange}
-            className="w-full px-3 py-2 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)]"
-          >
-            {EVENT_TYPES.map(t => (
-              <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Happening Type <span className="font-normal">(select all that apply)</span></label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleEventTypeToggle(type)}
+                className={`p-2 rounded-lg border text-left transition-colors ${
+                  form.event_type.includes(type)
+                    ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
+                    : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
+                }`}
+              >
+                <span className="text-lg mr-1">{config.icon}</span>
+                <span className="text-sm font-medium">{config.label}</span>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
       </div>
 

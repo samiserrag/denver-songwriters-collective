@@ -62,8 +62,12 @@ export interface WeeklyHappeningsDigestParams {
 // HTML Helpers
 // ============================================================
 
-function getEventTypeEmoji(eventType: string): string {
-  const config = EVENT_TYPE_CONFIG[eventType as keyof typeof EVENT_TYPE_CONFIG];
+function getEventTypeEmoji(eventTypes: string | string[]): string {
+  const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
+  // Genre-specific types take priority over generic types like jam_session
+  const GENRE_PRIORITY = ["blues", "bluegrass", "irish", "poetry", "comedy"];
+  const primary = types.find(t => GENRE_PRIORITY.includes(t)) ?? types[0] ?? "other";
+  const config = EVENT_TYPE_CONFIG[primary as keyof typeof EVENT_TYPE_CONFIG];
   return config?.icon || "🎵";
 }
 

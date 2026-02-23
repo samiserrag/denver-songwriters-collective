@@ -59,7 +59,7 @@ export default function SubmitOpenMicPage() {
       const { data } = await supabase
         .from("events")
         .select("id, title, venue_name, day_of_week, slug")
-        .eq("event_type", "open_mic")
+        .contains("event_type", ["open_mic"])
         .order("title");
       setExistingEvents(data ?? []);
     }

@@ -53,7 +53,7 @@ export default async function FavoritesPage() {
         day_of_week: ev.day_of_week ?? null,
         start_time: ev.start_time ?? null,
         end_time: ev.end_time ?? null,
-        event_type: (ev.event_type as any) ?? "open_mic",
+        event_type: (ev.event_type as any) ?? ["open_mic"],
         recurrence_rule: ev.recurrence_rule ?? null,
         status: ev.status ?? null,
         notes: ev.notes ?? null,

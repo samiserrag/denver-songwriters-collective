@@ -21,7 +21,8 @@ export function getDscEventUrl(slugOrId: string): string {
 export function getEventUrl(event: Event): string {
   // Prefer slug for SEO-friendly URLs, fallback to id
   const identifier = (event as any).slug || event.id;
-  if (event.event_type === "open_mic") {
+  const types: string[] = Array.isArray(event.event_type) ? event.event_type : event.event_type ? [event.event_type] : [];
+  if (types.includes("open_mic")) {
     return getOpenMicUrl(identifier);
   }
   return getDscEventUrl(identifier);

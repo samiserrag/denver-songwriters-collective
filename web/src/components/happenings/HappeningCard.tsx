@@ -32,6 +32,7 @@ import {
   type OccurrenceOverride,
 } from "@/lib/events/nextOccurrence";
 import { VenueLink } from "@/components/venue/VenueLink";
+import { getPrimaryEventType, type EventType } from "@/types/events";
 
 // ============================================================
 // Types
@@ -43,8 +44,8 @@ export interface HappeningEvent {
   title: string;
   description?: string | null;
 
-  // Event type
-  event_type?: "open_mic" | "showcase" | "song_circle" | "workshop" | "gig" | "kindred_group" | "jam_session" | "other" | string;
+  // Event type (text[] array from DB)
+  event_type?: string[];
   is_dsc_event?: boolean | null;
 
   // Timing
@@ -310,7 +311,8 @@ function getVenueCityState(event: HappeningEvent): string | null {
 function getDetailHref(event: HappeningEvent, dateKey?: string): string {
   // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
   const identifier = event.slug || event.id;
-  const basePath = event.event_type === "open_mic"
+  const types: string[] = Array.isArray(event.event_type) ? event.event_type : event.event_type ? [event.event_type] : [];
+  const basePath = types.includes("open_mic")
     ? `/open-mics/${identifier}`
     : `/events/${identifier}`;
 
@@ -500,7 +502,9 @@ export function HappeningCard({
     return null;
   };
 
-  const eventTypeLabel = EVENT_TYPE_LABELS[event.event_type || "other"] || "Event";
+  const eventTypes: string[] = Array.isArray(event.event_type) ? event.event_type : event.event_type ? [event.event_type] : [];
+  const primaryType = getPrimaryEventType(eventTypes as EventType[]);
+  const eventTypeLabel = EVENT_TYPE_LABELS[primaryType] || "Event";
   const hasMissing = hasMissingDetails(event);
 
   // Tier 2 recurrence summary
@@ -597,7 +601,7 @@ export function HappeningCard({
   // Phase 4.21: override flyer takes precedence if present
   const cardImageUrl = event.cover_image_card_url;
   const fullPosterUrl = effectiveCoverUrl || event.imageUrl;
-  const defaultImageUrl = getDefaultImageForType(event.event_type);
+  const defaultImageUrl = getDefaultImageForType(primaryType);
   const hasOverrideCover = !!(patch?.cover_image_url || override?.override_cover_image_url);
   const hasCardImage = !!cardImageUrl && !hasOverrideCover; // Skip card image if override has flyer
   const hasFullPoster = (!hasCardImage && !!fullPosterUrl) || hasOverrideCover;

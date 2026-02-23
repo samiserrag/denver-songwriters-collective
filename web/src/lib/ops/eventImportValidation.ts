@@ -50,6 +50,11 @@ export const VALID_EVENT_TYPES = new Set([
   "gig",
   "kindred_group",
   "jam_session",
+  "poetry",
+  "irish",
+  "blues",
+  "bluegrass",
+  "comedy",
   "other",
 ]);
 

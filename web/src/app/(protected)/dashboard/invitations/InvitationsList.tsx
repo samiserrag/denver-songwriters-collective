@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { EVENT_TYPE_CONFIG, getPrimaryEventType, type EventType } from "@/types/events";
 
 interface Invitation {
   id: string;
@@ -72,8 +72,9 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
         </div>
       )}
       {invitations.map((invitation) => {
-        const config = invitation.event?.event_type
-          ? EVENT_TYPE_CONFIG[invitation.event.event_type as keyof typeof EVENT_TYPE_CONFIG] || EVENT_TYPE_CONFIG.other
+        const invTypes = Array.isArray(invitation.event?.event_type) ? invitation.event.event_type : [invitation.event?.event_type].filter(Boolean);
+        const config = invTypes.length > 0
+          ? EVENT_TYPE_CONFIG[getPrimaryEventType(invTypes as EventType[])] || EVENT_TYPE_CONFIG.other
           : EVENT_TYPE_CONFIG.other;
         const eventTitle = invitation.event?.title || "Unknown Event";
 

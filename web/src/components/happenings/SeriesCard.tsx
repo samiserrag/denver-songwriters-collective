@@ -30,6 +30,7 @@ import {
   type EventForOccurrence,
 } from "@/lib/events/nextOccurrence";
 import { DatePillRow, type DatePillData } from "./DatePillRow";
+import { getPrimaryEventType, type EventType } from "@/types/events";
 
 // ============================================================
 // Types
@@ -40,7 +41,7 @@ export interface SeriesEvent extends EventForOccurrence {
   slug?: string | null;
   title: string;
   description?: string | null;
-  event_type?: string;
+  event_type?: string[];
   is_dsc_event?: boolean | null;
   venue_id?: string | null;
   venue_name?: string | null;
@@ -125,7 +126,8 @@ function getVenueIdentifierForLink(event: SeriesEvent): string | null {
 function getDetailHref(event: SeriesEvent): string {
   // Prefer slug for SEO-friendly URLs, fallback to id
   const identifier = event.slug || event.id;
-  if (event.event_type === "open_mic") {
+  const types: string[] = Array.isArray(event.event_type) ? event.event_type : event.event_type ? [event.event_type] : [];
+  if (types.includes("open_mic")) {
     return `/open-mics/${identifier}`;
   }
   return `/events/${identifier}`;
@@ -242,7 +244,8 @@ export function SeriesCard({ series, className }: SeriesCardProps) {
   // Image logic (same tiers as HappeningCard)
   const cardImageUrl = event.cover_image_card_url;
   const fullPosterUrl = event.cover_image_url;
-  const defaultImageUrl = getDefaultImageForType(event.event_type);
+  const seriesTypes: string[] = Array.isArray(event.event_type) ? event.event_type : event.event_type ? [event.event_type] : [];
+  const defaultImageUrl = getDefaultImageForType(getPrimaryEventType(seriesTypes as EventType[]));
   const imageUrl = cardImageUrl || fullPosterUrl || defaultImageUrl;
 
   // Format next occurrence date

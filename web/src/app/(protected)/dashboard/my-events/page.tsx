@@ -108,7 +108,7 @@ export default async function MyEventsPage() {
           </Link>
         </div>
 
-        <MyEventsFilteredList events={events} isApprovedHost={isApprovedHost} />
+        <MyEventsFilteredList events={events as any} isApprovedHost={isApprovedHost} />
       </div>
     </main>
   );

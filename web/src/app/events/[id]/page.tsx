@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
-import { EVENT_TYPE_CONFIG } from "@/types/events";
+import { EVENT_TYPE_CONFIG, getPrimaryEventType } from "@/types/events";
 import type { EventType } from "@/types/events";
 import { RSVPSection } from "@/components/events/RSVPSection";
 import { AddToCalendarButton } from "@/components/events/AddToCalendarButton";
@@ -106,7 +106,8 @@ export async function generateMetadata({
     };
   }
 
-  const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
+  const metaTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(metaTypes as EventType[])] || EVENT_TYPE_CONFIG.other;
   const title = `${event.title} | ${config.label}`;
   const description = event.description
     ? event.description.slice(0, 155) + (event.description.length > 155 ? "..." : "")
@@ -770,7 +771,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
   // Phase 4.32: Check if signup lane exists (only shown to managers)
   const signupLaneExists = hasSignupLane(event, timeslotCount);
 
-  const config = EVENT_TYPE_CONFIG[event.event_type as EventType] || EVENT_TYPE_CONFIG.other;
+  const pageTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
+  const config = EVENT_TYPE_CONFIG[getPrimaryEventType(pageTypes as EventType[])] || EVENT_TYPE_CONFIG.other;
 
   // Phase 5.06: Use getVenueDirectionsUrl for "Get Directions" button (returns /maps/dir/ format)
   // For custom locations, use lat/lng or name+address fallback

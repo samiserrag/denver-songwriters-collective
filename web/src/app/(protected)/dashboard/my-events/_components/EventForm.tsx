@@ -266,7 +266,9 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
-    event_type: (event?.event_type || "song_circle") as EventType,
+    event_type: Array.isArray(event?.event_type)
+      ? event.event_type as EventType[]
+      : event?.event_type ? [event.event_type as EventType] : ["song_circle"] as EventType[],
     capacity: event?.capacity?.toString() || "",
     venue_id: event?.venue_id || "",
     day_of_week: event?.day_of_week || "",
@@ -437,7 +439,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const effectiveAnchorDate = formData.start_date || formData.event_date || event?.event_date || "";
   const derivedAnchorDayOfWeek = weekdayNameFromDateMT(effectiveAnchorDate) || formData.day_of_week || "";
 
-  const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type];
+  const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type[0]];
 
   // Calculate event duration in minutes (if both start and end times are set)
   const calculateEventDurationMinutes = (): number | null => {
@@ -947,6 +949,18 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Handler for multi-select event type buttons
+  const handleEventTypeToggle = (type: EventType) => {
+    setFormData(prev => {
+      const current = prev.event_type;
+      if (current.includes(type)) {
+        if (current.length === 1) return prev; // min 1
+        return { ...prev, event_type: current.filter(t => t !== type) };
+      }
+      return { ...prev, event_type: [...current, type] };
+    });
+  };
+
   // Handler for multi-select category checkboxes
   const handleCategoryToggle = (cat: string) => {
     setFormData(prev => {
@@ -1019,13 +1033,13 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
               key={type}
               type="button"
               onClick={() => {
-                updateField("event_type", type);
+                handleEventTypeToggle(type as EventType);
                 if (config.defaultCapacity && !formData.capacity) {
                   updateField("capacity", config.defaultCapacity.toString());
                 }
               }}
               className={`p-3 rounded-lg border text-left transition-colors ${
-                formData.event_type === type
+                formData.event_type.includes(type as EventType)
                   ? "bg-[var(--color-accent-primary)]/10 border-[var(--color-border-accent)] text-[var(--color-text-primary)]"
                   : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)]"
               }`}

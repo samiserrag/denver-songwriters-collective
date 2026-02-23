@@ -77,7 +77,8 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    if (event.event_type !== "open_mic") {
+    const statusTypes = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
+    if (!statusTypes.includes("open_mic")) {
       return NextResponse.json(
         { error: "This endpoint only handles open_mic events" },
         { status: 400 }

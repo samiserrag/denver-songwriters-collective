@@ -406,7 +406,7 @@ async function resolveEditorialInternal(
       slug: string | null;
       event_date: string | null;
       start_time: string | null;
-      event_type: string;
+      event_type: string | string[];
       cover_image_url: string | null;
       venues: { id: string; name: string; slug: string | null; website_url: string | null } | {
         id: string;
@@ -461,6 +461,11 @@ async function resolveEditorialInternal(
     gig: "🎶",
     kindred_group: "💛",
     jam_session: "🎸",
+    poetry: "✒️",
+    irish: "☘️",
+    blues: "🎸",
+    bluegrass: "🪕",
+    comedy: "😂",
     other: "📅",
   };
 
@@ -468,7 +473,7 @@ async function resolveEditorialInternal(
     const { eventsById, eventsBySlug } = await fetchFeaturedEvents(featuredRefs);
     const orderedEvents: Array<{
       entry: { slug: string; url: string };
-      event: { id: string; title: string; slug: string | null; event_date: string | null; start_time: string | null; event_type: string; cover_image_url: string | null; venues: { id: string; name: string; slug: string | null; website_url: string | null } | { id: string; name: string; slug: string | null; website_url: string | null }[] | null };
+      event: { id: string; title: string; slug: string | null; event_date: string | null; start_time: string | null; event_type: string | string[]; cover_image_url: string | null; venues: { id: string; name: string; slug: string | null; website_url: string | null } | { id: string; name: string; slug: string | null; website_url: string | null }[] | null };
     }> = [];
 
     if (featuredEntries.length > 0) {
@@ -513,7 +518,12 @@ async function resolveEditorialInternal(
           venueUrl: venueUrl || undefined,
           date: event.event_date || undefined,
           time: event.start_time || undefined,
-          emoji: EVENT_TYPE_EMOJI[event.event_type] || "📅",
+          emoji: (() => {
+            const types = Array.isArray(event.event_type) ? event.event_type : [event.event_type].filter(Boolean);
+            const GENRE_PRIORITY = ["blues", "bluegrass", "irish", "poetry", "comedy"];
+            const primary = types.find(t => GENRE_PRIORITY.includes(t)) ?? types[0] ?? "other";
+            return EVENT_TYPE_EMOJI[primary] || "📅";
+          })(),
           coverUrl: event.cover_image_url || undefined,
         };
       });

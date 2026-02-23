@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { computeMissingDetails, type MissingDetailsInput } from "@/lib/events/missingDetails";
 
 interface MissingDetailsChipProps {
-  event: MissingDetailsInput & { id: string; slug?: string | null; event_type?: string | null };
+  event: MissingDetailsInput & { id: string; slug?: string | null; event_type?: string[] | null };
   /** Compact mode for list views */
   compact?: boolean;
   /** Additional CSS classes */
@@ -28,7 +28,8 @@ export function MissingDetailsChip({ event, compact = false, className }: Missin
   // Build detail page URL with anchor to suggestion form
   // Prefer slug for SEO-friendly URLs, fallback to id for backward compatibility
   const identifier = event.slug || event.id;
-  const detailHref = event.event_type === "open_mic"
+  const chipTypes: string[] = Array.isArray(event.event_type) ? event.event_type : event.event_type ? [event.event_type] : [];
+  const detailHref = chipTypes.includes("open_mic")
     ? `/open-mics/${identifier}#suggest-update`
     : `/events/${identifier}#suggest-update`;
 

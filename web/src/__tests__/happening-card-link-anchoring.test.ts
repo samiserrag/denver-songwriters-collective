@@ -21,11 +21,11 @@ import { describe, it, expect } from "vitest";
  * This mirrors the implementation in HappeningCard.tsx.
  */
 function getDetailHref(
-  event: { slug?: string | null; id: string; event_type?: string },
+  event: { slug?: string | null; id: string; event_type?: string[] },
   dateKey?: string
 ): string {
   const identifier = event.slug || event.id;
-  const basePath = event.event_type === "open_mic"
+  const basePath = event.event_type?.includes("open_mic")
     ? `/open-mics/${identifier}`
     : `/events/${identifier}`;
 
@@ -35,7 +35,7 @@ function getDetailHref(
 describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
   describe("getDetailHref helper function", () => {
     it("includes ?date= when dateKey is provided for regular events", () => {
-      const event = { id: "abc-123", slug: "weekly-open-mic", event_type: "showcase" };
+      const event = { id: "abc-123", slug: "weekly-open-mic", event_type: ["showcase"] };
       const dateKey = "2026-01-18";
 
       const href = getDetailHref(event, dateKey);
@@ -44,7 +44,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     });
 
     it("includes ?date= when dateKey is provided for open_mic events", () => {
-      const event = { id: "abc-123", slug: "words-open-mic", event_type: "open_mic" };
+      const event = { id: "abc-123", slug: "words-open-mic", event_type: ["open_mic"] };
       const dateKey = "2026-01-25";
 
       const href = getDetailHref(event, dateKey);
@@ -53,7 +53,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     });
 
     it("does NOT include ?date= when dateKey is undefined", () => {
-      const event = { id: "abc-123", slug: "some-event", event_type: "showcase" };
+      const event = { id: "abc-123", slug: "some-event", event_type: ["showcase"] };
 
       const href = getDetailHref(event, undefined);
 
@@ -62,7 +62,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     });
 
     it("falls back to event id when slug is null", () => {
-      const event = { id: "uuid-abc-123", slug: null, event_type: "workshop" };
+      const event = { id: "uuid-abc-123", slug: null, event_type: ["workshop"] };
       const dateKey = "2026-02-01";
 
       const href = getDetailHref(event, dateKey);
@@ -71,7 +71,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     });
 
     it("falls back to event id when slug is undefined", () => {
-      const event = { id: "uuid-def-456", event_type: "song_circle" };
+      const event = { id: "uuid-def-456", event_type: ["song_circle"] };
       const dateKey = "2026-02-14";
 
       const href = getDetailHref(event, dateKey);
@@ -80,7 +80,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     });
 
     it("correctly routes open_mic type to /open-mics/ path", () => {
-      const event = { id: "mic-123", slug: "friday-open-mic", event_type: "open_mic" };
+      const event = { id: "mic-123", slug: "friday-open-mic", event_type: ["open_mic"] };
 
       // With date
       expect(getDetailHref(event, "2026-01-20")).toBe("/open-mics/friday-open-mic?date=2026-01-20");
@@ -93,7 +93,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
       const types = ["showcase", "song_circle", "workshop", "gig", "kindred_group", "jam_session", "other"];
 
       for (const eventType of types) {
-        const event = { id: "test-123", slug: "test-event", event_type: eventType };
+        const event = { id: "test-123", slug: "test-event", event_type: [eventType] };
         const href = getDetailHref(event, "2026-03-01");
 
         expect(href).toBe("/events/test-event?date=2026-03-01");
@@ -106,7 +106,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
       // This test documents the contract: when isConfident=true,
       // the HappeningCard passes occurrence.date to getDetailHref
       const occurrence = { date: "2026-01-18", isConfident: true };
-      const event = { id: "abc", slug: "my-event", event_type: "showcase" };
+      const event = { id: "abc", slug: "my-event", event_type: ["showcase"] };
 
       const dateKey = occurrence.isConfident ? occurrence.date : undefined;
       const href = getDetailHref(event, dateKey);
@@ -117,7 +117,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     it("timeline card href does NOT include ?date= for non-confident occurrence", () => {
       // When isConfident=false (schedule unknown), no date param
       const occurrence = { date: "2026-01-18", isConfident: false };
-      const event = { id: "abc", slug: "my-event", event_type: "showcase" };
+      const event = { id: "abc", slug: "my-event", event_type: ["showcase"] };
 
       const dateKey = occurrence.isConfident ? occurrence.date : undefined;
       const href = getDetailHref(event, dateKey);
@@ -134,9 +134,9 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
      */
     it("getDetailHref MUST include ?date= when dateKey is truthy", () => {
       const testCases = [
-        { event: { id: "a", slug: "s", event_type: "open_mic" }, dateKey: "2026-01-01" },
-        { event: { id: "b", slug: "t", event_type: "showcase" }, dateKey: "2026-12-31" },
-        { event: { id: "c", slug: null, event_type: "workshop" }, dateKey: "2026-06-15" },
+        { event: { id: "a", slug: "s", event_type: ["open_mic"] }, dateKey: "2026-01-01" },
+        { event: { id: "b", slug: "t", event_type: ["showcase"] }, dateKey: "2026-12-31" },
+        { event: { id: "c", slug: null, event_type: ["workshop"] }, dateKey: "2026-06-15" },
       ];
 
       for (const { event, dateKey } of testCases) {
@@ -146,7 +146,7 @@ describe("HappeningCard Link Anchoring (Phase 4.87)", () => {
     });
 
     it("getDetailHref MUST NOT include ?date= when dateKey is falsy", () => {
-      const event = { id: "test", slug: "test-slug", event_type: "showcase" };
+      const event = { id: "test", slug: "test-slug", event_type: ["showcase"] };
 
       expect(getDetailHref(event, undefined)).not.toContain("?date=");
       expect(getDetailHref(event, "")).not.toContain("?date=");
@@ -168,7 +168,7 @@ describe("Cross-surface link consistency", () => {
     const seriesCardHref = `/events/${eventIdentifier}?date=${dateKey}`;
 
     // HappeningCard format (now fixed)
-    const event = { id: "uuid", slug: eventIdentifier, event_type: "jam_session" };
+    const event = { id: "uuid", slug: eventIdentifier, event_type: ["jam_session"] };
     const happeningCardHref = getDetailHref(event, dateKey);
 
     expect(happeningCardHref).toBe(seriesCardHref);
@@ -180,7 +180,7 @@ describe("Cross-surface link consistency", () => {
     const dateKey = "2026-01-30";
 
     const datePillHref = `/events/${slug}?date=${dateKey}`;
-    const event = { id: "xyz", slug, event_type: "showcase" };
+    const event = { id: "xyz", slug, event_type: ["showcase"] };
     const happeningCardHref = getDetailHref(event, dateKey);
 
     expect(happeningCardHref).toBe(datePillHref);

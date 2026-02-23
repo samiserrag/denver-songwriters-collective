@@ -13,7 +13,7 @@ interface SlotConfig {
 }
 
 interface SlotConfigSectionProps {
-  eventType: string;
+  eventType: string | string[];
   config: SlotConfig;
   onChange: (config: SlotConfig) => void;
   disabled?: boolean;

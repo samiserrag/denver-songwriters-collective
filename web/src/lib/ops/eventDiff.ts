@@ -14,8 +14,8 @@ import { DatabaseEvent } from "./eventCsvParser";
 
 export interface FieldChange {
   field: string;
-  oldValue: string | boolean | null;
-  newValue: string | boolean | null;
+  oldValue: string | string[] | boolean | null;
+  newValue: string | string[] | boolean | null;
 }
 
 export interface EventDiff {
@@ -32,7 +32,7 @@ export interface DiffResult {
 
 export interface UpdatePayload {
   id: string;
-  updates: Record<string, string | boolean | null>;
+  updates: Record<string, string | string[] | boolean | null>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,8 +63,9 @@ const COMPARABLE_FIELDS = [
  * - null, undefined, and empty string are treated as equivalent
  * - Trims whitespace from strings
  */
-function normalizeForComparison(value: string | boolean | null | undefined): string | boolean | null {
+function normalizeForComparison(value: string | string[] | boolean | null | undefined): string | string[] | boolean | null {
   if (value === null || value === undefined) return null;
+  if (Array.isArray(value)) return [...value].sort();
   if (typeof value === "boolean") return value;
   const trimmed = value.trim();
   return trimmed === "" ? null : trimmed;
@@ -74,11 +75,21 @@ function normalizeForComparison(value: string | boolean | null | undefined): str
  * Compares two values for equality after normalization.
  */
 function valuesEqual(
-  a: string | boolean | null | undefined,
-  b: string | boolean | null | undefined
+  a: string | string[] | boolean | null | undefined,
+  b: string | string[] | boolean | null | undefined
 ): boolean {
   const normA = normalizeForComparison(a);
   const normB = normalizeForComparison(b);
+  if (Array.isArray(normA) && Array.isArray(normB)) {
+    return JSON.stringify(normA) === JSON.stringify(normB);
+  }
+  // Handle array vs string comparison (e.g., DB event_type string[] vs CSV string)
+  if (Array.isArray(normA) && typeof normB === "string") {
+    return normA.length === 1 && normA[0] === normB;
+  }
+  if (typeof normA === "string" && Array.isArray(normB)) {
+    return normB.length === 1 && normB[0] === normA;
+  }
   return normA === normB;
 }
 
@@ -153,7 +164,7 @@ export function computeEventDiff(
 function getFieldValue(
   eventOrRow: DatabaseEvent | EventRow,
   field: (typeof COMPARABLE_FIELDS)[number]
-): string | boolean | null {
+): string | string[] | boolean | null {
   // Check if this is a DatabaseEvent (has host_notes) or EventRow (has notes)
   if ("host_notes" in eventOrRow) {
     const event = eventOrRow as DatabaseEvent;
@@ -223,12 +234,20 @@ function getFieldValue(
  */
 export function buildEventUpdatePayloads(diffs: EventDiff[]): UpdatePayload[] {
   return diffs.map((diff) => {
-    const updates: Record<string, string | boolean | null> = {};
+    const updates: Record<string, string | string[] | boolean | null> = {};
 
     for (const change of diff.changes) {
       // Map CSV field names to database field names
       const dbField = change.field === "notes" ? "host_notes" : change.field;
-      updates[dbField] = change.newValue;
+      if (dbField === "event_type") {
+        updates[dbField] = Array.isArray(change.newValue)
+          ? [...new Set(change.newValue)]
+          : change.newValue
+            ? [...new Set((change.newValue as string).split("|").map(t => t.trim()).filter(Boolean))]
+            : null;
+      } else {
+        updates[dbField] = change.newValue;
+      }
     }
 
     return {

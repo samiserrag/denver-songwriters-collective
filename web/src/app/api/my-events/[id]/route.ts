@@ -381,6 +381,22 @@ export async function PATCH(
       // Convert empty strings to null for time fields (PostgreSQL time type can't accept "")
       if (nullableTimeFields.includes(field) && body[field] === "") {
         updates[field] = null;
+      } else if (field === "event_type") {
+        // Normalize event_type to array and validate
+        const VALID_EVENT_TYPES_SET = new Set([
+          "open_mic", "showcase", "song_circle", "workshop", "other",
+          "gig", "meetup", "kindred_group", "jam_session",
+          "poetry", "irish", "blues", "bluegrass", "comedy",
+        ]);
+        const types = Array.isArray(body[field]) ? body[field] : [body[field]].filter(Boolean);
+        const invalidTypes = types.filter((t: string) => !VALID_EVENT_TYPES_SET.has(t));
+        if (invalidTypes.length > 0) {
+          return NextResponse.json({ error: `Invalid event_type: ${invalidTypes.join(", ")}` }, { status: 400 });
+        }
+        if (types.length === 0) {
+          return NextResponse.json({ error: "event_type is required" }, { status: 400 });
+        }
+        updates[field] = types;
       } else {
         updates[field] = body[field];
       }

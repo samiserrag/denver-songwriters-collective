@@ -70,7 +70,7 @@ describe("PR1: Search API Leak Fix", () => {
 
   it("open_mic query must still filter by status=active", () => {
     // Verify the existing open_mic filter hasn't been removed
-    expect(searchRouteSource).toContain('.eq("event_type", "open_mic")');
+    expect(searchRouteSource).toContain('.contains("event_type", ["open_mic"])');
     expect(searchRouteSource).toContain('.eq("status", "active")');
   });
 
@@ -93,7 +93,7 @@ describe("PR1: No additional leak surfaces in search", () => {
   it("venue search from matching venues must also filter by status=active", () => {
     // The venueOpenMics secondary query should filter by status=active
     // (it already did before — verify it hasn't been removed)
-    // This query is: .eq("event_type", "open_mic").eq("status", "active")
+    // This query is: .contains("event_type", ["open_mic"]).eq("status", "active")
     const activeFilterCount = (
       searchRouteSource.match(/\.eq\("status",\s*"active"\)/g) || []
     ).length;

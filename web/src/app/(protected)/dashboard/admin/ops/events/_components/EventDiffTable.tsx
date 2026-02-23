@@ -111,9 +111,10 @@ export default function EventDiffTable({ updates, notFound, unchanged }: Props) 
   );
 }
 
-function formatValue(value: string | boolean | null): string {
+function formatValue(value: string | string[] | boolean | null): string {
   if (value === null) return "(empty)";
   if (typeof value === "boolean") return value ? "true" : "false";
+  if (Array.isArray(value)) return value.join(", ") || "(empty)";
   if (value === "") return "(empty)";
   // Truncate long values
   if (value.length > 50) return value.slice(0, 47) + "...";

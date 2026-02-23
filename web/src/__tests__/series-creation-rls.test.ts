@@ -121,7 +121,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Single Event",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -144,7 +144,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Weekly Open Mic",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -170,7 +170,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Biweekly Song Circle",
-          event_type: "song_circle",
+          event_type: ["song_circle"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -197,7 +197,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Test Event",
-          event_type: "concert",
+          event_type: ["gig"],
           start_time: "20:00",
           start_date: "2026-02-01",
           venue_id: "venue-1",
@@ -223,7 +223,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "One-off Event",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -244,7 +244,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Weekly Jam",
-          event_type: "jam_session",
+          event_type: ["jam_session"],
           start_time: "18:00",
           start_date: "2026-01-15",
           day_of_week: "Wednesday",
@@ -271,7 +271,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Ongoing Event",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           day_of_week: "Wednesday",
@@ -297,7 +297,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Complete Event",
-          event_type: "workshop",
+          event_type: ["workshop"],
           start_time: "14:00",
           start_date: "2026-01-20",
           day_of_week: "Monday",
@@ -319,7 +319,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
       expect(payload.host_id).toBe("user-123-abc");
       // These fields should always be present
       expect(payload.title).toBe("Complete Event");
-      expect(payload.event_type).toBe("workshop");
+      expect(payload.event_type).toEqual(["workshop"]);
       expect(payload.start_time).toBe("14:00");
       expect(payload.source).toBe("community");
       expect(payload.recurrence_rule).toBe("weekly");
@@ -333,7 +333,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Minimal Event",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -358,7 +358,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Test Event",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -375,7 +375,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           // Missing title
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           venue_id: "venue-1",
@@ -392,7 +392,7 @@ describe("POST /api/my-events - Series Creation RLS Fix", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Long Running Series",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           day_of_week: "Wednesday",

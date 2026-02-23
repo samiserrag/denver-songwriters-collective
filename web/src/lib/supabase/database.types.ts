@@ -1185,7 +1185,7 @@ export type Database = {
           description: string | null
           end_time: string | null
           event_date: string | null
-          event_type: Database["public"]["Enums"]["event_type"]
+          event_type: string[]
           external_url: string | null
           has_timeslots: boolean | null
           host_id: string | null
@@ -1257,7 +1257,7 @@ export type Database = {
           description?: string | null
           end_time?: string | null
           event_date?: string | null
-          event_type?: Database["public"]["Enums"]["event_type"]
+          event_type?: string[]
           external_url?: string | null
           has_timeslots?: boolean | null
           host_id?: string | null
@@ -1329,7 +1329,7 @@ export type Database = {
           description?: string | null
           end_time?: string | null
           event_date?: string | null
-          event_type?: Database["public"]["Enums"]["event_type"]
+          event_type?: string[]
           external_url?: string | null
           has_timeslots?: boolean | null
           host_id?: string | null

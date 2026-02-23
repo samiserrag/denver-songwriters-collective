@@ -33,7 +33,7 @@ export default async function AdminOpenMicsPage() {
     .select(
       `id, title, slug, status, event_type, event_date, day_of_week, recurrence_rule, start_time, signup_time, last_verified_at, verified_by, notes, is_published, venues(name, city)`
     )
-    .eq("event_type", "open_mic")
+    .contains("event_type", ["open_mic"])
     .neq("status", "draft")
     .order("title", { ascending: true });
 
@@ -84,7 +84,7 @@ export default async function AdminOpenMicsPage() {
     title: e.title as string,
     slug: e.slug as string | null,
     status: e.status as string | null,
-    event_type: e.event_type as string | null,
+    event_type: e.event_type as string[] | null,
     event_date: e.event_date as string | null,
     day_of_week: e.day_of_week as string | null,
     recurrence_rule: e.recurrence_rule as string | null,

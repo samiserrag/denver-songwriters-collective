@@ -103,7 +103,7 @@ describe("Part 3: splitHostedHappenings", () => {
       id,
       slug: `event-${id}`,
       title: `Event ${id}`,
-      event_type: "open_mic",
+      event_type: ["open_mic"],
       event_date: "2026-01-15",
       day_of_week: "Wednesday",
       start_time: "19:00",

@@ -43,7 +43,7 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
   const mockOpenMicEvent: HappeningEvent = {
     id: 'test-open-mic-1',
     title: 'Monday Night Open Mic',
-    event_type: 'open_mic',
+    event_type: ['open_mic'],
     day_of_week: 'Monday',
     status: 'active',
     slug: 'monday-night-open-mic',
@@ -56,7 +56,7 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
   const mockDscEvent: HappeningEvent = {
     id: 'test-csc-1',
     title: 'Songwriter Showcase',
-    event_type: 'showcase',
+    event_type: ['showcase'],
     is_dsc_event: true,
     event_date: '2025-01-15',
     start_time: '19:00:00',
@@ -238,7 +238,7 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
         <HappeningCard event={{
           id: 'test-workshop',
           title: 'Songwriting Workshop',
-          event_type: 'workshop',
+          event_type: ['workshop'],
           cover_image_card_url: null,
           cover_image_url: null,
         }} />
@@ -253,7 +253,7 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
         <HappeningCard event={{
           id: 'test-unknown',
           title: 'Unknown Event Type',
-          event_type: 'some_new_type',
+          event_type: ['some_new_type'],
           cover_image_card_url: null,
           cover_image_url: null,
         }} />
@@ -263,8 +263,8 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
       expect(defaultImage.getAttribute('src')).toBe('/images/event-defaults/event.svg');
     });
 
-    it('should render placeholder (tier 4) when event_type is undefined and no images exist', () => {
-      const { container } = render(
+    it('should render default "other" type image when event_type is undefined and no images exist', () => {
+      render(
         <HappeningCard event={{
           id: 'test-no-type',
           title: 'No Type Event',
@@ -274,8 +274,10 @@ describe('HappeningCard Phase 4.6 Premium Card Polish', () => {
           imageUrl: null
         }} />
       );
-      expect(screen.getByTestId('placeholder-tile')).toBeInTheDocument();
-      expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
+      // With array normalization, undefined becomes [] → getPrimaryEventType returns "other" → default image
+      const defaultImage = screen.getByTestId('default-type-image');
+      expect(defaultImage).toBeInTheDocument();
+      expect(defaultImage.getAttribute('src')).toBe('/images/event-defaults/event.svg');
     });
 
     it('should have 3:2 aspect ratio container for denser cards', () => {

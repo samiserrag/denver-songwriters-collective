@@ -3,7 +3,7 @@ import { hasMissingDetails } from "@/lib/events/missingDetails";
 import { getPublicVerificationState } from "@/lib/events/verification";
 import { computeNextOccurrence, getTodayDenver } from "@/lib/events/nextOccurrence";
 import { interpretRecurrence, labelFromRecurrence } from "@/lib/events/recurrenceContract";
-import { EVENT_TYPE_CONFIG, type EventType } from "@/types/events";
+import { EVENT_TYPE_CONFIG, getPrimaryEventType, type EventType } from "@/types/events";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
 import { getSiteUrl } from "@/lib/siteUrl";
 
@@ -433,11 +433,12 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   });
   const scheduleLabel = labelFromRecurrence(recurrence);
 
-  const eventType = (embedEvent.event_type as EventType | null) ?? "other";
-  const eventTypeLabel = EVENT_TYPE_CONFIG[eventType as EventType]?.label ?? "Event";
+  const embedTypes = Array.isArray(embedEvent.event_type) ? embedEvent.event_type : [embedEvent.event_type].filter(Boolean);
+  const eventType = getPrimaryEventType(embedTypes as EventType[]);
+  const eventTypeLabel = EVENT_TYPE_CONFIG[eventType]?.label ?? "Event";
   const siteUrl = getSiteUrl();
   const imageUrl = embedEvent.cover_image_url || `${siteUrl}/images/hero-bg.jpg`;
-  const canonicalPath = embedEvent.event_type === "open_mic" ? `/open-mics/${embedEvent.slug || embedEvent.id}` : `/events/${embedEvent.slug || embedEvent.id}`;
+  const canonicalPath = embedTypes.includes("open_mic") ? `/open-mics/${embedEvent.slug || embedEvent.id}` : `/events/${embedEvent.slug || embedEvent.id}`;
   const canonicalUrl = `${siteUrl}${canonicalPath}`;
   const detailUrl = isDateKey(selectedDate) ? `${canonicalUrl}?date=${selectedDate}` : canonicalUrl;
 

@@ -22,7 +22,7 @@ interface QueueEvent {
   title: string;
   slug: string | null;
   status: string | null;
-  event_type: string | null;
+  event_type: string[] | null;
   event_date: string | null;
   day_of_week: string | null;
   recurrence_rule: string | null;

@@ -191,7 +191,7 @@ export default async function HomePage() {
         is_featured,
         venues(name, city)
       `)
-      .eq("event_type", "open_mic")
+      .contains("event_type", ["open_mic"])
       .eq("status", "active")
       .eq("visibility", "public")
       .eq("is_featured", true)
@@ -253,7 +253,7 @@ export default async function HomePage() {
         *,
         ${DISCOVERY_VENUE_SELECT}
       `)
-      .eq("event_type", "open_mic")
+      .contains("event_type", ["open_mic"])
       .eq("is_spotlight", true)
       .eq("is_published", true)
       .eq("visibility", "public")

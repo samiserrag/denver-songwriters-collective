@@ -31,7 +31,7 @@ describe("Cancelled Disclosure - Phase 4.23", () => {
   ) => ({
     id,
     title,
-    event_type: "open_mic",
+    event_type: ["open_mic"],
     day_of_week: options.day_of_week || null,
     event_date: options.event_date || null,
     start_time: options.start_time || "19:00",

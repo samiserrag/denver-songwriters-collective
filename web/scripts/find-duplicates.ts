@@ -34,7 +34,7 @@ async function findDuplicates() {
   const { data: events, error } = await supabase
     .from("events")
     .select("*")
-    .eq("event_type", "open_mic")
+    .contains("event_type", ["open_mic"])
     .order("venue_name", { ascending: true });
 
   if (error) {

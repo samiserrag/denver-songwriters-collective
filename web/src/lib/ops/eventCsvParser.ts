@@ -28,7 +28,7 @@ export interface EventRow {
 export interface DatabaseEvent {
   id: string;
   title: string;
-  event_type: string;
+  event_type: string[];
   status: string | null;
   is_recurring: boolean | null;
   event_date: string | null;
@@ -165,7 +165,7 @@ export function serializeEventCsv(events: DatabaseEvent[]): string {
     const values = [
       event.id,
       event.title,
-      event.event_type,
+      Array.isArray(event.event_type) ? event.event_type.join("|") : (event.event_type || ""),
       event.status ?? "",
       formatBoolean(event.is_recurring),
       event.event_date ?? "",

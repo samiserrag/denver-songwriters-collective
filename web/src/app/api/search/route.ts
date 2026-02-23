@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         day_of_week,
         venues(name, city)
       `)
-      .eq("event_type", "open_mic")
+      .contains("event_type", ["open_mic"])
       .eq("status", "active")
       .eq("visibility", "public")
       .or(`title.ilike.${like}`)
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         event_date,
         venue_name
       `)
-      .neq("event_type", "open_mic")
+      .not("event_type", "cs", '{"open_mic"}')
       .eq("is_published", true)
       .eq("visibility", "public")
       .eq("status", "active")
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         day_of_week,
         venues(name, city)
       `)
-      .eq("event_type", "open_mic")
+      .contains("event_type", ["open_mic"])
       .eq("status", "active")
       .eq("visibility", "public")
       .in("venue_id", venueIds)

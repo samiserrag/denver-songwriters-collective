@@ -30,7 +30,7 @@ export interface CSCEvent {
   id: string;
   title: string;
   description: string | null;
-  event_type: EventType;
+  event_type: EventType[];
   is_dsc_event: boolean;
   capacity: number | null;
   host_notes: string | null;
@@ -172,7 +172,7 @@ export interface ApprovedHost {
 export interface CreateEventForm {
   title: string;
   description: string;
-  event_type: EventType;
+  event_type: EventType[];
   capacity: number | null;
   venue_name: string;
   address: string;
@@ -277,6 +277,18 @@ export const EVENT_TYPE_CONFIG: Record<EventType, {
     defaultCapacity: null
   }
 };
+
+// Genre-specific types take emoji/icon priority over jam_session
+const GENRE_PRIORITY_TYPES: EventType[] = ["blues", "bluegrass", "irish", "poetry", "comedy"];
+
+/**
+ * Select the "primary" event type from an array for display purposes.
+ * Genre-specific types (blues, bluegrass, irish, poetry, comedy) take priority
+ * over generic types like jam_session — e.g., a blues jam shows the blues icon.
+ */
+export function getPrimaryEventType(types: EventType[]): EventType {
+  return types.find(t => GENRE_PRIORITY_TYPES.includes(t)) ?? types[0] ?? "other";
+}
 
 export const DAYS_OF_WEEK = [
   "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"

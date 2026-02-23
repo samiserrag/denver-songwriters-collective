@@ -142,7 +142,7 @@ describe("serializeEventCsv", () => {
       {
         id: "123",
         title: "Test Event",
-        event_type: "open_mic",
+        event_type: ["open_mic"],
         status: "active",
         is_recurring: true,
         event_date: "2026-01-15",
@@ -169,7 +169,7 @@ describe("serializeEventCsv", () => {
       {
         id: "123",
         title: "Minimal Event",
-        event_type: "open_mic",
+        event_type: ["open_mic"],
         status: null,
         is_recurring: null,
         event_date: null,
@@ -193,7 +193,7 @@ describe("serializeEventCsv", () => {
       {
         id: "123",
         title: "Event, Inc.",
-        event_type: "open_mic",
+        event_type: ["open_mic"],
         status: "active",
         is_recurring: null,
         event_date: null,
@@ -218,7 +218,7 @@ describe("serializeEventCsv", () => {
       {
         id: "123",
         title: 'The "Best" Event',
-        event_type: "open_mic",
+        event_type: ["open_mic"],
         status: "active",
         is_recurring: null,
         event_date: null,
@@ -244,9 +244,9 @@ describe("serializeEventCsv", () => {
 
   it("serializes multiple events", () => {
     const events = [
-      { id: "1", title: "Event 1", event_type: "open_mic", status: "active", is_recurring: null, event_date: null, day_of_week: null, start_time: null, end_time: null, venue_id: null, is_published: null, host_notes: null },
-      { id: "2", title: "Event 2", event_type: "showcase", status: "draft", is_recurring: null, event_date: null, day_of_week: null, start_time: null, end_time: null, venue_id: null, is_published: null, host_notes: null },
-      { id: "3", title: "Event 3", event_type: "workshop", status: "active", is_recurring: null, event_date: null, day_of_week: null, start_time: null, end_time: null, venue_id: null, is_published: null, host_notes: null },
+      { id: "1", title: "Event 1", event_type: ["open_mic"], status: "active", is_recurring: null, event_date: null, day_of_week: null, start_time: null, end_time: null, venue_id: null, is_published: null, host_notes: null },
+      { id: "2", title: "Event 2", event_type: ["showcase"], status: "draft", is_recurring: null, event_date: null, day_of_week: null, start_time: null, end_time: null, venue_id: null, is_published: null, host_notes: null },
+      { id: "3", title: "Event 3", event_type: ["workshop"], status: "active", is_recurring: null, event_date: null, day_of_week: null, start_time: null, end_time: null, venue_id: null, is_published: null, host_notes: null },
     ];
 
     const csv = serializeEventCsv(events);

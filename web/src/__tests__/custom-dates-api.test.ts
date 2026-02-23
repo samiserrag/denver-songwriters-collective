@@ -119,7 +119,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "One-time Event",
-          event_type: "gig",
+          event_type: ["gig"],
           start_time: "19:00",
           start_date: "2026-02-14",
           venue_id: "venue-1",
@@ -142,7 +142,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Event Without Mode",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-02-14",
           venue_id: "venue-1",
@@ -163,7 +163,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "One-time Event",
-          event_type: "gig",
+          event_type: ["gig"],
           start_time: "19:00",
           start_date: "2026-02-14",
           venue_id: "venue-1",
@@ -186,7 +186,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Weekly Open Mic",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           day_of_week: "Wednesday",
@@ -214,7 +214,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Limited Series",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           day_of_week: "Wednesday",
@@ -240,7 +240,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Biweekly Open Mic",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           day_of_week: "Thursday",
@@ -266,7 +266,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Limited Biweekly Series",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-01-15",
           day_of_week: "Thursday",
@@ -292,7 +292,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Custom Series",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: "2026-02-01",
           venue_id: "venue-1",
@@ -317,7 +317,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Unsorted Dates",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: "2026-03-15",
           venue_id: "venue-1",
@@ -344,7 +344,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Too Many Custom Dates",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: manyDates[0],
           venue_id: "venue-1",
@@ -366,7 +366,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Mixed Dates",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: "2026-02-01",
           venue_id: "venue-1",
@@ -394,7 +394,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "No Custom Dates",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: "2026-02-01",
           venue_id: "venue-1",
@@ -417,7 +417,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "All Invalid Dates",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: "2026-02-01",
           venue_id: "venue-1",
@@ -439,7 +439,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Single Custom Date",
-          event_type: "showcase",
+          event_type: ["showcase"],
           start_time: "20:00",
           start_date: "2026-02-14",
           venue_id: "venue-1",
@@ -463,7 +463,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "No Start Date",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           venue_id: "venue-1",
           // Missing start_date
@@ -485,7 +485,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Test Event",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-02-14",
           venue_id: "venue-1",
@@ -505,7 +505,7 @@ describe("POST /api/my-events - Series Mode Support", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: "Legacy Request",
-          event_type: "open_mic",
+          event_type: ["open_mic"],
           start_time: "19:00",
           start_date: "2026-02-14",
           venue_id: "venue-1",

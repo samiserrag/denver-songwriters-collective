@@ -94,7 +94,7 @@ async function getAllEvents(): Promise<Event[]> {
   const { data, error } = await supabase
     .from("events")
     .select("*")
-    .eq("event_type", "open_mic");
+    .contains("event_type", ["open_mic"]);
 
   if (error) {
     console.error("Error fetching events:", error.message);
