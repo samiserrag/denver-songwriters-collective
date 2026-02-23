@@ -6,6 +6,26 @@ import {
   validateSanitizedDraftPayload,
 } from "@/lib/events/interpretEventContract";
 
+function assertStrictObjectSchema(node: unknown, path: string) {
+  if (!node || typeof node !== "object" || Array.isArray(node)) return;
+  const schemaNode = node as Record<string, any>;
+
+  if (schemaNode.type === "object" && schemaNode.properties && typeof schemaNode.properties === "object") {
+    const keys = Object.keys(schemaNode.properties);
+    expect(schemaNode.additionalProperties, `${path}.additionalProperties`).toBe(false);
+    expect(Array.isArray(schemaNode.required), `${path}.required must exist`).toBe(true);
+    expect(new Set(schemaNode.required), `${path}.required must match keys`).toEqual(new Set(keys));
+
+    for (const key of keys) {
+      assertStrictObjectSchema(schemaNode.properties[key], `${path}.properties.${key}`);
+    }
+  }
+
+  if (schemaNode.type === "array" && schemaNode.items) {
+    assertStrictObjectSchema(schemaNode.items, `${path}.items`);
+  }
+}
+
 describe("interpretEventContract", () => {
   it("sanitizes create payload and derives start_date from event_date", () => {
     const sanitized = sanitizeInterpretDraftPayload("create", {
@@ -97,5 +117,10 @@ describe("interpretEventContract", () => {
     expect(Array.isArray(overridePatch.required)).toBe(true);
     expect(overridePatch.required).toContain("title");
     expect(overridePatch.required).toContain("start_time");
+  });
+
+  it("enforces strict object rules recursively for OpenAI structured outputs", () => {
+    const schema = buildInterpretResponseSchema();
+    assertStrictObjectSchema(schema, "$");
   });
 });

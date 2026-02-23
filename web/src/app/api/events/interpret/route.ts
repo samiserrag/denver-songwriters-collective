@@ -13,29 +13,97 @@ import {
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.2";
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
-// PREVIEW-ONLY RATE LIMITER:
-// This in-memory map does not survive cold starts or multi-instance serverless routing.
-// TODO(before main/GA): replace with persistent atomic storage (e.g., Redis/KV/Supabase RPC).
+// Persistent rate-limit policy:
+// 30 requests per 15 minutes per authenticated user.
+const RATE_LIMIT_WINDOW_SECONDS = 15 * 60;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 30;
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-function checkRateLimit(userId: string): boolean {
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetAt: string | null;
+  source: "rpc" | "memory_fallback";
+}
+
+function checkRateLimitFallback(userId: string): RateLimitResult {
   const now = Date.now();
   const entry = rateLimitMap.get(userId);
 
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
+    const resetAt = now + RATE_LIMIT_WINDOW_MS;
+    rateLimitMap.set(userId, { count: 1, resetAt });
+    return {
+      allowed: true,
+      remaining: RATE_LIMIT_MAX - 1,
+      resetAt: new Date(resetAt).toISOString(),
+      source: "memory_fallback",
+    };
   }
 
   if (entry.count >= RATE_LIMIT_MAX) {
-    return false;
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date(entry.resetAt).toISOString(),
+      source: "memory_fallback",
+    };
   }
 
   entry.count += 1;
-  return true;
+  return {
+    allowed: true,
+    remaining: Math.max(RATE_LIMIT_MAX - entry.count, 0),
+    resetAt: new Date(entry.resetAt).toISOString(),
+    source: "memory_fallback",
+  };
+}
+
+function parseRateLimitResult(value: unknown): { allowed: boolean; remaining: number; resetAt: string | null } | null {
+  const obj = parseJsonObject(value);
+  if (!obj) return null;
+  if (typeof obj.allowed !== "boolean") return null;
+  if (typeof obj.remaining !== "number") return null;
+  const resetAt = obj.reset_at;
+  if (resetAt !== null && typeof resetAt !== "string") return null;
+  return {
+    allowed: obj.allowed,
+    remaining: Math.max(0, Math.floor(obj.remaining)),
+    resetAt,
+  };
+}
+
+async function checkRateLimit(supabase: SupabaseServerClient, userId: string): Promise<RateLimitResult> {
+  const { data, error } = await supabase.rpc("consume_events_interpret_rate_limit", {
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+    p_max_requests: RATE_LIMIT_MAX,
+  });
+
+  if (error) {
+    console.error("[events/interpret] rate-limit rpc error; using memory fallback", {
+      userId,
+      message: error.message,
+      code: error.code ?? null,
+    });
+    return checkRateLimitFallback(userId);
+  }
+
+  const parsed = parseRateLimitResult(data);
+  if (!parsed) {
+    console.error("[events/interpret] rate-limit rpc returned malformed payload; using memory fallback", {
+      userId,
+      data,
+    });
+    return checkRateLimitFallback(userId);
+  }
+
+  return {
+    ...parsed,
+    source: "rpc",
+  };
 }
 
 function parseJsonObject(value: unknown): Record<string, unknown> | null {
@@ -199,8 +267,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!checkRateLimit(sessionUser.id)) {
-    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  const rateLimit = await checkRateLimit(supabase, sessionUser.id);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: "Too many requests. Please try again later.",
+        rate_limit: {
+          limit: RATE_LIMIT_MAX,
+          remaining: rateLimit.remaining,
+          reset_at: rateLimit.resetAt,
+          source: rateLimit.source,
+        },
+      },
+      { status: 429 }
+    );
   }
 
   let body: InterpretEventRequestBody;
@@ -233,6 +313,13 @@ export async function POST(request: Request) {
   let currentEvent: Record<string, unknown> | null = null;
   if (eventId) {
     const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
+    console.info("[events/interpret] authz", {
+      userId: sessionUser.id,
+      mode,
+      eventId,
+      allowed: canManage,
+    });
+
     if (!canManage) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

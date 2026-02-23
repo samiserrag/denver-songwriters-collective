@@ -31,10 +31,9 @@ Optional:
 
 - `OPENAI_EVENT_INTERPRETER_MODEL=gpt-5.2` (default: `gpt-5.2`)
 
-Preview note:
+Rate limiting:
 
-- Current route-level rate limiting is in-memory and suitable for preview testing only.
-- Replace with persistent atomic rate limiting (Redis/KV/Supabase RPC) before main/GA rollout.
+- The route enforces per-user limits with a persistent Postgres-backed RPC (`consume_events_interpret_rate_limit`).
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
