@@ -1,7 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { checkAdminRole } from "@/lib/auth/adminAuth";
+import { canManageEvent } from "@/lib/events/eventManageAuth";
 import { getTodayDenver } from "@/lib/events/nextOccurrence";
 
 /**
@@ -10,32 +9,6 @@ import { getTodayDenver } from "@/lib/events/nextOccurrence";
  * GET /api/my-events/[id]/claims - List all timeslot claims for an event
  * DELETE /api/my-events/[id]/claims - Remove a specific claim (via claim_id in body)
  */
-
-// Helper to check if user can manage event
-async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
-  const isAdmin = await checkAdminRole(supabase, userId);
-  if (isAdmin) return true;
-
-  // Check if user is event owner
-  const { data: event } = await supabase
-    .from("events")
-    .select("host_id")
-    .eq("id", eventId)
-    .single();
-
-  if (event?.host_id === userId) return true;
-
-  // Check if user is accepted host/cohost
-  const { data: hostEntry } = await supabase
-    .from("event_hosts")
-    .select("role")
-    .eq("event_id", eventId)
-    .eq("user_id", userId)
-    .eq("invitation_status", "accepted")
-    .maybeSingle();
-
-  return !!hostEntry;
-}
 
 // GET - List claims for event, grouped by date
 export async function GET(

@@ -1,21 +1,17 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { checkAdminRole, checkHostStatus } from "@/lib/auth/adminAuth";
+import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 import { sendEventCancelledNotifications } from "@/lib/notifications/eventCancelled";
 import { canonicalizeDayOfWeek, isOrdinalMonthlyRule } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
+import { canEditEventVisibility, canManageEvent } from "@/lib/events/eventManageAuth";
+import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
-const VALID_EVENT_TYPES_SET = new Set([
-  "open_mic", "showcase", "song_circle", "workshop", "other",
-  "gig", "meetup", "jam_session",
-  "poetry", "irish", "blues", "bluegrass", "comedy",
-]);
 const NOTIFICATION_IGNORED_FIELDS = new Set([
   "updated_at",
   "last_major_update_at",
@@ -89,14 +85,6 @@ function areValuesEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(normalizeValueForComparison(a)) === JSON.stringify(normalizeValueForComparison(b));
 }
 
-function normalizeIncomingEventTypes(input: unknown): string[] {
-  const raw = Array.isArray(input) ? input : [input].filter(Boolean);
-  const normalized = raw
-    .map((type) => type === "kindred_group" ? "other" : type)
-    .filter((type): type is string => typeof type === "string" && type.trim().length > 0);
-  return [...new Set(normalized)];
-}
-
 function formatNotificationDate(
   eventLike: { event_date?: string | null; day_of_week?: string | null } | null | undefined
 ): string {
@@ -130,59 +118,6 @@ function collectChangedFieldLabels(
   }
 
   return labels;
-}
-
-// Helper to check if user can manage event
-async function canManageEvent(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
-  // Check admin (using profiles.role, not app_metadata)
-  const isAdmin = await checkAdminRole(supabase, userId);
-  if (isAdmin) return true;
-
-  // Check event owner (events.host_id) — the original creator
-  const { data: event } = await supabase
-    .from("events")
-    .select("host_id")
-    .eq("id", eventId)
-    .single();
-
-  if (event?.host_id === userId) return true;
-
-  // Check co-host (event_hosts table)
-  const { data: hostEntry } = await supabase
-    .from("event_hosts")
-    .select("role")
-    .eq("event_id", eventId)
-    .eq("user_id", userId)
-    .eq("invitation_status", "accepted")
-    .maybeSingle();
-
-  return !!hostEntry;
-}
-
-// Visibility changes are restricted to owner/primary host/admin.
-async function canEditEventVisibility(supabase: SupabaseClient, userId: string, eventId: string): Promise<boolean> {
-  const isAdmin = await checkAdminRole(supabase, userId);
-  if (isAdmin) return true;
-
-  const { data: event } = await supabase
-    .from("events")
-    .select("host_id")
-    .eq("id", eventId)
-    .maybeSingle();
-
-  if (!event) return false;
-  if (event.host_id === userId) return true;
-
-  const { data: primaryHostEntry } = await supabase
-    .from("event_hosts")
-    .select("id")
-    .eq("event_id", eventId)
-    .eq("user_id", userId)
-    .eq("role", "host")
-    .eq("invitation_status", "accepted")
-    .maybeSingle();
-
-  return !!primaryHostEntry;
 }
 
 // GET - Get single event with full details (for editing)
@@ -397,7 +332,7 @@ export async function PATCH(
       } else if (field === "event_type") {
         // Normalize event_type to array and validate
         const types = normalizeIncomingEventTypes(body[field]);
-        const invalidTypes = types.filter((t: string) => !VALID_EVENT_TYPES_SET.has(t));
+        const invalidTypes = getInvalidEventTypes(types);
         if (invalidTypes.length > 0) {
           return NextResponse.json({ error: `Invalid event_type: ${invalidTypes.join(", ")}` }, { status: 400 });
         }

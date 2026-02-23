@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
 import { getTodayDenver } from "@/lib/events/nextOccurrence";
+import { sanitizeOverridePatch } from "@/lib/events/overridePatchContract";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
@@ -17,52 +18,6 @@ import { sendOccurrenceCancelledNotifications } from "@/lib/notifications/occurr
  * POST — Upsert override for a specific date_key (override_patch + legacy columns)
  * DELETE — Revert override (delete the row entirely)
  */
-
-// Allowlist of fields that can be overridden per-occurrence.
-// Series-level fields (event_type, recurrence_rule, etc.) are BLOCKED.
-const ALLOWED_OVERRIDE_FIELDS = new Set([
-  "title",
-  "description",
-  "event_date",
-  "start_time",
-  "end_time",
-  "venue_id",
-  "location_mode",
-  "custom_location_name",
-  "custom_address",
-  "custom_city",
-  "custom_state",
-  "online_url",
-  "location_notes",
-  "capacity",
-  "has_timeslots",
-  "total_slots",
-  "slot_duration_minutes",
-  "is_free",
-  "cost_label",
-  "signup_url",
-  "signup_deadline",
-  "signup_time", // Phase 5.10: Per-occurrence signup time override
-  "age_policy",
-  "external_url",
-  "categories",
-  "cover_image_url",
-  "host_notes",
-  "is_published",
-]);
-
-/**
- * Sanitize override_patch: only keep keys in the allowlist.
- */
-function sanitizeOverridePatch(patch: Record<string, unknown>): Record<string, unknown> {
-  const sanitized: Record<string, unknown> = {};
-  for (const key of Object.keys(patch)) {
-    if (ALLOWED_OVERRIDE_FIELDS.has(key)) {
-      sanitized[key] = patch[key];
-    }
-  }
-  return sanitized;
-}
 
 function formatTimeForEmail(timeValue: string | null | undefined): string {
   if (!timeValue) return "TBD";
