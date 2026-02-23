@@ -46,7 +46,6 @@ export const VALID_EVENT_TYPES = [
   "other",
   "gig",
   "meetup",
-  "kindred_group",
   "jam_session",
   "poetry",
   "irish",

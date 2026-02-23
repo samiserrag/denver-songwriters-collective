@@ -265,7 +265,6 @@ describe("eventImportValidation", () => {
         "showcase",
         "gig",
         "meetup",
-        "kindred_group",
         "jam_session",
         "other",
       ];

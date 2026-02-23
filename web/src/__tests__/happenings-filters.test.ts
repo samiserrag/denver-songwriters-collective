@@ -17,7 +17,6 @@ describe('HappeningsFilters Component', () => {
       // Quick filter buttons use emoji icons for visual consistency with digest emails
       expect(componentContent).toContain('emoji: "🎤"'); // Open Mics
       expect(componentContent).toContain('emoji: "🎭"'); // Shows
-      expect(componentContent).toContain('emoji: "🤝"'); // Kindred
       expect(componentContent).toContain('emoji: "🎸"'); // Jams / Blues
       expect(componentContent).toContain('emoji: "✒️"'); // Poetry
       expect(componentContent).toContain('emoji: "☘️"'); // Irish
@@ -35,7 +34,8 @@ describe('HappeningsFilters Component', () => {
     it('should use human-readable labels, not snake_case', () => {
       // Verify labels use human-readable text
       expect(componentContent).toContain('label: "Open Mics"');
-      expect(componentContent).toContain('label: "Shows"');
+      expect(componentContent).toContain('label: "Showcases"');
+      expect(componentContent).toContain('label: "Gigs / Performances"');
       expect(componentContent).toContain('label: "Workshops"');
       expect(componentContent).toContain('label: "In-person"');
       expect(componentContent).toContain('label: "Needs verify"');

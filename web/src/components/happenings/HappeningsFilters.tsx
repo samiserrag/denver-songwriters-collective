@@ -6,7 +6,7 @@
  * Phase 4.2: Provides search + filter controls with shareable URLs.
  * Phase 4.8: Added day-of-week filter for pattern discovery.
  * Phase 4.55: Redesigned with progressive disclosure:
- *             - Quick filter cards (Open Mics, CSC Happenings, Shows)
+ *             - Quick filter cards (Open Mics, CSC Happenings, showcase/gig/workshop genres)
  *             - Polished search bar
  *             - All other filters collapsed by default
  * Design: Poster-board aesthetic, engaging cards, no database GUI feel.
@@ -88,33 +88,6 @@ function StarIcon({ className }: { className?: string }) {
   );
 }
 
-// Music note / guitar icon for Shows
-function MusicIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-    </svg>
-  );
-}
-
-// Heart icon for Kindred Songwriter Groups
-function HeartIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-    </svg>
-  );
-}
-
-// Guitar icon for Jam Sessions
-function GuitarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
-    </svg>
-  );
-}
-
 // Filter icon for collapsed section
 function FilterIcon({ className }: { className?: string }) {
   return (
@@ -134,12 +107,10 @@ const TIME_OPTIONS = [
 const TYPE_OPTIONS = [
   { value: "", label: "All Types" },
   { value: "open_mic", label: "Open Mics" },
-  { value: "shows", label: "Shows" },
   { value: "showcase", label: "Showcases" },
+  { value: "gig", label: "Gigs / Performances" },
   { value: "workshop", label: "Workshops" },
   { value: "song_circle", label: "Song Circles" },
-  { value: "gig", label: "Gigs" },
-  { value: "kindred_group", label: "Kindred Songwriter Groups" },
   { value: "jam_session", label: "Jam Sessions" },
   { value: "poetry", label: "Poetry" },
   { value: "irish", label: "Irish" },
@@ -420,8 +391,9 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   // Check which quick filter is active
   const isOpenMicsActive = type === "open_mic";
   const isCscActive = csc;
-  const isShowsActive = type === "shows";
-  const isKindredActive = type === "kindred_group";
+  const isShowcaseActive = type === "showcase";
+  const isGigActive = type === "gig";
+  const isWorkshopActive = type === "workshop";
   const isJamSessionsActive = type === "jam_session";
   const isPoetryActive = type === "poetry";
   const isIrishActive = type === "irish";
@@ -450,7 +422,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const advancedFilterCount = [
     selectedDays.length > 0,
     time !== "upcoming" && time !== "",
-    type && !isOpenMicsActive && !isShowsActive && !isKindredActive && !isJamSessionsActive && !isPoetryActive && !isIrishActive && !isBluesActive && !isBluegrassActive && !isComedyActive,
+    type && !isOpenMicsActive && !isShowcaseActive && !isGigActive && !isWorkshopActive && !isJamSessionsActive && !isPoetryActive && !isIrishActive && !isBluesActive && !isBluegrassActive && !isComedyActive,
     location,
     cost,
     verify,
@@ -465,8 +437,9 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         {([
           { type: "open_mic", label: "Open Mics", emoji: "🎤", isActive: isOpenMicsActive },
           { type: "csc", label: "CSC", emoji: "⭐", isActive: isCscActive },
-          { type: "shows", label: "Shows", emoji: "🎭", isActive: isShowsActive },
-          { type: "kindred_group", label: "Kindred", emoji: "🤝", isActive: isKindredActive },
+          { type: "showcase", label: "Showcases", emoji: "🎭", isActive: isShowcaseActive },
+          { type: "gig", label: "Gigs", emoji: "🎵", isActive: isGigActive },
+          { type: "workshop", label: "Workshops", emoji: "📚", isActive: isWorkshopActive },
           { type: "jam_session", label: "Jams", emoji: "🎸", isActive: isJamSessionsActive },
           { type: "poetry", label: "Poetry", emoji: "✒️", isActive: isPoetryActive },
           { type: "irish", label: "Irish", emoji: "☘️", isActive: isIrishActive },

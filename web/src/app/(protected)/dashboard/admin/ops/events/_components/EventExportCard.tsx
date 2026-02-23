@@ -110,7 +110,6 @@ export default function EventExportCard() {
             <option value="workshop">Workshop</option>
             <option value="gig">Gig</option>
             <option value="meetup">Meetup</option>
-            <option value="kindred_group">Kindred Group</option>
             <option value="jam_session">Jam Session</option>
             <option value="other">Other</option>
           </select>

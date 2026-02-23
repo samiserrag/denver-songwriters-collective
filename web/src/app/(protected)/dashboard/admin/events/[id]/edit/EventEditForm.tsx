@@ -29,7 +29,7 @@ interface EventEditFormProps {
     category?: string;
     categories?: string[];
     status?: string;
-    event_type?: string;
+    event_type?: string | string[];
     external_url?: string;
     cover_image_url?: string;
     published_at?: string | null;
@@ -40,7 +40,10 @@ interface EventEditFormProps {
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
 const STATUSES = ["active", "inactive", "cancelled", "duplicate"];
-const EVENT_TYPES = ["open_mic", "showcase", "song_circle", "workshop", "jam_session", "kindred_group", "gig", "meetup", "other"];
+const HIDDEN_EVENT_TYPE_OPTIONS = new Set(["kindred_group", "song_circle", "meetup", "showcase"]);
+const FORM_EVENT_TYPE_OPTIONS = Object.entries(EVENT_TYPE_CONFIG).filter(
+  ([type]) => !HIDDEN_EVENT_TYPE_OPTIONS.has(type)
+);
 
 // Generate time options from 6:00 AM to 11:30 PM in 30-minute increments
 const TIME_OPTIONS: { value: string; label: string }[] = [];
@@ -66,6 +69,17 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
     event.status === "needs_verification" || event.status === "unverified"
       ? "active"
       : event.status || "active";
+  const normalizedInitialEventTypes = (() => {
+    const raw = Array.isArray(event.event_type)
+      ? event.event_type
+      : [event.event_type || "open_mic"];
+
+    const normalized = raw
+      .map((type) => type === "kindred_group" ? "other" : type)
+      .filter((type): type is string => typeof type === "string" && type in EVENT_TYPE_CONFIG && type !== "kindred_group");
+
+    return [...new Set(normalized)];
+  })();
 
   const [form, setForm] = useState({
     title: event.title || "",
@@ -80,7 +94,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
     category: event.category || "",
     categories: event.categories || [],
     status: normalizedInitialStatus,
-    event_type: Array.isArray(event.event_type) ? event.event_type : [event.event_type || "open_mic"],
+    event_type: normalizedInitialEventTypes.length > 0 ? normalizedInitialEventTypes : ["open_mic"],
     external_url: event.external_url || "",
   });
 
@@ -217,8 +231,11 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
 
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Happening Type <span className="font-normal">(select all that apply)</span></label>
+          <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+            Choose one or more event types. Multiple tags improve clarity and discovery.
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
+            {FORM_EVENT_TYPE_OPTIONS.map(([type, config]) => (
               <button
                 key={type}
                 type="button"
@@ -315,7 +332,7 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         </p>
       </div>
 
-      {/* Categories (multi-select checkboxes) */}
+      {/* Categories (multi-select toggles) */}
       <div>
         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
           Categories
@@ -323,22 +340,19 @@ export default function EventEditForm({ event, venues: initialVenues }: EventEdi
         </label>
         <div className="flex flex-wrap gap-3">
           {CATEGORIES.map(cat => (
-            <label
+            <button
               key={cat}
+              type="button"
+              onClick={() => handleCategoryToggle(cat)}
+              aria-pressed={form.categories.includes(cat)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                 form.categories.includes(cat)
                   ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
                   : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
               }`}
             >
-              <input
-                type="checkbox"
-                checked={form.categories.includes(cat)}
-                onChange={() => handleCategoryToggle(cat)}
-                className="w-4 h-4 accent-[var(--color-accent-primary)]"
-              />
               <span className="capitalize">{cat}</span>
-            </label>
+            </button>
           ))}
         </div>
       </div>

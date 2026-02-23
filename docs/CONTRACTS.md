@@ -461,12 +461,26 @@ Events can belong to **multiple types simultaneously** (e.g., a blues jam is bot
 
 ### Valid Event Types
 
+Database-level valid values (`events_event_type_valid` CHECK):
+
 ```
 open_mic, showcase, song_circle, workshop, other, gig, meetup,
 kindred_group, jam_session, poetry, irish, blues, bluegrass, comedy
 ```
 
 **Invariant:** At least one type is required. Empty arrays are rejected by the CHECK constraint.
+
+App write-path valid values (API/ops validation):
+
+```
+open_mic, showcase, song_circle, workshop, other, gig, meetup,
+jam_session, poetry, irish, blues, bluegrass, comedy
+```
+
+`kindred_group` is treated as a legacy value:
+- Hidden from event type pickers
+- Rejected for new writes
+- Normalized to `other` on host/admin update paths when encountered in legacy payloads
 
 ### TypeScript Contract
 
@@ -511,7 +525,10 @@ Routing uses `.includes("open_mic")` on the array, not scalar equality:
 
 - Event type selection uses **toggle buttons** (same pattern as `categories` multi-select)
 - Minimum 1 type selected (enforced client-side and server-side)
-- All 14 types available in admin create/edit forms
+- Host/admin event forms expose a curated picker (multi-select):
+  - `open_mic`, `workshop`, `gig`, `jam_session`, `poetry`, `irish`, `blues`, `bluegrass`, `comedy`, `other`
+- Hidden from picker UX:
+  - `kindred_group`, `song_circle`, `meetup`, `showcase`
 - API validates each array element against the valid types set
 
 ### CSV/Ops Pipeline Contract
@@ -541,6 +558,14 @@ Routing uses `.includes("open_mic")` on the array, not scalar equality:
 ---
 
 ## Contract: Filtering Behavior
+
+### Quick Type Filters (`/happenings`)
+
+- Quick-filter buttons use explicit type chips, not a broad aggregate "Shows" chip.
+- Current quick-filter types:
+  - `open_mic`, `showcase`, `gig`, `workshop`, `jam_session`, `poetry`, `irish`, `blues`, `bluegrass`, `comedy`
+- `CSC` remains a separate quick filter (`csc=1`), not an `event_type`.
+- Backward-compatibility note: `?type=shows` may still resolve for legacy links, but it is not a visible quick filter option.
 
 ### Day-of-Week Filter (Lens, not sort)
 

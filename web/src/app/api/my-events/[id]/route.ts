@@ -11,6 +11,11 @@ import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEm
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
+const VALID_EVENT_TYPES_SET = new Set([
+  "open_mic", "showcase", "song_circle", "workshop", "other",
+  "gig", "meetup", "jam_session",
+  "poetry", "irish", "blues", "bluegrass", "comedy",
+]);
 const NOTIFICATION_IGNORED_FIELDS = new Set([
   "updated_at",
   "last_major_update_at",
@@ -82,6 +87,14 @@ function normalizeValueForComparison(value: unknown): unknown {
 
 function areValuesEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(normalizeValueForComparison(a)) === JSON.stringify(normalizeValueForComparison(b));
+}
+
+function normalizeIncomingEventTypes(input: unknown): string[] {
+  const raw = Array.isArray(input) ? input : [input].filter(Boolean);
+  const normalized = raw
+    .map((type) => type === "kindred_group" ? "other" : type)
+    .filter((type): type is string => typeof type === "string" && type.trim().length > 0);
+  return [...new Set(normalized)];
 }
 
 function formatNotificationDate(
@@ -383,12 +396,7 @@ export async function PATCH(
         updates[field] = null;
       } else if (field === "event_type") {
         // Normalize event_type to array and validate
-        const VALID_EVENT_TYPES_SET = new Set([
-          "open_mic", "showcase", "song_circle", "workshop", "other",
-          "gig", "meetup", "kindred_group", "jam_session",
-          "poetry", "irish", "blues", "bluegrass", "comedy",
-        ]);
-        const types = Array.isArray(body[field]) ? body[field] : [body[field]].filter(Boolean);
+        const types = normalizeIncomingEventTypes(body[field]);
         const invalidTypes = types.filter((t: string) => !VALID_EVENT_TYPES_SET.has(t));
         if (invalidTypes.length > 0) {
           return NextResponse.json({ error: `Invalid event_type: ${invalidTypes.join(", ")}` }, { status: 400 });

@@ -68,7 +68,7 @@ describe("Phase 1.41: Location Filter Visibility", () => {
       const advancedFilterConditions = [
         "selectedDays.length > 0",
         "time !== 'upcoming' && time !== ''",
-        "type && !isOpenMicsActive && !isShowsActive && !isKindredActive && !isJamSessionsActive",
+        "type && !isOpenMicsActive && !isShowsActive && !isJamSessionsActive",
         "location",
         "cost",
         "verify",

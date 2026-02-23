@@ -48,7 +48,6 @@ export const VALID_EVENT_TYPES = new Set([
   "showcase",
   "open_mic",
   "gig",
-  "kindred_group",
   "jam_session",
   "poetry",
   "irish",

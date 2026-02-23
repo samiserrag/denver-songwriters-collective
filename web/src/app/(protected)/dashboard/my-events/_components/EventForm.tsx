@@ -15,6 +15,10 @@ import {
 
 // Categories for happenings (multi-select)
 const CATEGORIES = ["music", "comedy", "poetry", "variety", "other"];
+const HIDDEN_EVENT_TYPE_OPTIONS = new Set<EventType>(["kindred_group", "song_circle", "meetup", "showcase"]);
+const FORM_EVENT_TYPE_OPTIONS = Object.entries(EVENT_TYPE_CONFIG).filter(
+  ([type]) => !HIDDEN_EVENT_TYPE_OPTIONS.has(type as EventType)
+);
 import { HappeningCard, type HappeningEvent } from "@/components/happenings/HappeningCard";
 import { formatTimeToAMPM } from "@/lib/recurrenceHumanizer";
 import {
@@ -263,12 +267,26 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   // This is used to show a persistent warning when the user changes the anchor date
   const originalDayOfWeek = event?.day_of_week || null;
 
+  const normalizedInitialEventTypes = (() => {
+    const raw = Array.isArray(event?.event_type)
+      ? event.event_type
+      : event?.event_type
+        ? [event.event_type]
+        : [];
+
+    const normalized = raw
+      .map((type) => type === "kindred_group" ? "other" : type)
+      .filter((type): type is EventType => typeof type === "string" && type in EVENT_TYPE_CONFIG && type !== "kindred_group");
+
+    return [...new Set(normalized)];
+  })();
+
   const [formData, setFormData] = useState({
     title: event?.title || "",
     description: event?.description || "",
-    event_type: Array.isArray(event?.event_type)
-      ? event.event_type as EventType[]
-      : event?.event_type ? [event.event_type as EventType] : ["song_circle"] as EventType[],
+    event_type: normalizedInitialEventTypes.length > 0
+      ? normalizedInitialEventTypes
+      : ["open_mic"] as EventType[],
     capacity: event?.capacity?.toString() || "",
     venue_id: event?.venue_id || "",
     day_of_week: event?.day_of_week || "",
@@ -439,7 +457,7 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   const effectiveAnchorDate = formData.start_date || formData.event_date || event?.event_date || "";
   const derivedAnchorDayOfWeek = weekdayNameFromDateMT(effectiveAnchorDate) || formData.day_of_week || "";
 
-  const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type[0]];
+  const selectedTypeConfig = EVENT_TYPE_CONFIG[formData.event_type[0] || "open_mic"] || EVENT_TYPE_CONFIG.open_mic;
 
   // Calculate event duration in minutes (if both start and end times are set)
   const calculateEventDurationMinutes = (): number | null => {
@@ -1027,8 +1045,11 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
           <span className="text-red-500">Event Type</span>
           <span className="ml-1 text-red-400 text-xs font-normal">*Required</span>
         </label>
+        <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+          Choose one or more event types. Using multiple types helps people find your happening faster.
+        </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
+          {FORM_EVENT_TYPE_OPTIONS.map(([type, config]) => (
             <button
               key={type}
               type="button"
@@ -1061,22 +1082,19 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </label>
         <div className="flex flex-wrap gap-3">
           {CATEGORIES.map(cat => (
-            <label
+            <button
               key={cat}
+              type="button"
+              onClick={() => handleCategoryToggle(cat)}
+              aria-pressed={formData.categories.includes(cat)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                 formData.categories.includes(cat)
                   ? "bg-[var(--color-accent-primary)]/20 border-[var(--color-accent-primary)] text-[var(--color-text-primary)]"
                   : "bg-[var(--color-bg-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-primary)]/50"
               }`}
             >
-              <input
-                type="checkbox"
-                checked={formData.categories.includes(cat)}
-                onChange={() => handleCategoryToggle(cat)}
-                className="w-4 h-4 accent-[var(--color-accent-primary)]"
-              />
               <span className="capitalize">{cat}</span>
-            </label>
+            </button>
           ))}
         </div>
       </div>

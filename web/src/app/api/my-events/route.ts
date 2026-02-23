@@ -132,6 +132,14 @@ interface EventInsertParams {
   seriesIndex: number | null;
 }
 
+function normalizeIncomingEventTypes(input: unknown): string[] {
+  const raw = Array.isArray(input) ? input : [input].filter(Boolean);
+  const normalized = raw
+    .map((type) => type === "kindred_group" ? "other" : type)
+    .filter((type): type is string => typeof type === "string" && type.trim().length > 0);
+  return [...new Set(normalized)];
+}
+
 function buildEventInsert(params: EventInsertParams) {
   const {
     userId,
@@ -154,10 +162,7 @@ function buildEventInsert(params: EventInsertParams) {
     host_id: userId,
     title: body.title as string,
     description: (body.description as string) || null,
-    event_type: (() => {
-      const types = Array.isArray(body.event_type) ? body.event_type : [body.event_type].filter(Boolean);
-      return types as string[];
-    })(),
+    event_type: normalizeIncomingEventTypes(body.event_type),
     is_dsc_event: isCSCEvent,
     // Phase 4.43: capacity is independent of timeslots (RSVP always available)
     // capacity=null means unlimited RSVP, not "RSVP disabled"
@@ -248,6 +253,7 @@ export async function POST(request: Request) {
   const canCreateCSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
+  body.event_type = normalizeIncomingEventTypes(body.event_type);
 
   // Non-admins may send youtube_url/spotify_url as empty strings (form always includes them).
   // Only block when actually setting a non-empty value.
@@ -282,7 +288,7 @@ export async function POST(request: Request) {
   const required = ["title", "event_type", "start_time"];
   for (const field of required) {
     if (field === "event_type") {
-      const et = Array.isArray(body[field]) ? body[field] : [body[field]].filter(Boolean);
+      const et = normalizeIncomingEventTypes(body[field]);
       if (et.length === 0) {
         return NextResponse.json({ error: `${field} is required` }, { status: 400 });
       }
@@ -294,10 +300,10 @@ export async function POST(request: Request) {
   // Validate event_type values
   const VALID_EVENT_TYPES = new Set([
     "open_mic", "showcase", "song_circle", "workshop", "other",
-    "gig", "meetup", "kindred_group", "jam_session",
+    "gig", "meetup", "jam_session",
     "poetry", "irish", "blues", "bluegrass", "comedy",
   ]);
-  const eventTypes = Array.isArray(body.event_type) ? body.event_type : [body.event_type].filter(Boolean);
+  const eventTypes = normalizeIncomingEventTypes(body.event_type);
   if (eventTypes.length === 0) {
     return NextResponse.json({ error: "event_type is required" }, { status: 400 });
   }

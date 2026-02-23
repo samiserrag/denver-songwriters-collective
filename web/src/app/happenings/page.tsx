@@ -504,7 +504,6 @@ export default async function HappeningsPage({
     if (typeFilter === "workshop") return "Workshops";
     if (typeFilter === "song_circle") return "Song Circles";
     if (typeFilter === "gig") return "Gigs";
-    if (typeFilter === "kindred_group") return "Kindred Songwriter Groups";
     if (typeFilter === "jam_session") return "Jam Sessions";
     if (typeFilter === "poetry") return "Poetry";
     if (typeFilter === "irish") return "Irish Sessions";
@@ -529,7 +528,6 @@ export default async function HappeningsPage({
         workshop: "Workshops",
         song_circle: "Song Circles",
         gig: "Gigs",
-        kindred_group: "Kindred Songwriter Groups",
         jam_session: "Jam Sessions",
         poetry: "Poetry",
         irish: "Irish Sessions",

@@ -694,7 +694,7 @@ function ColumnReference() {
           <p className="font-medium">Required columns:</p>
           <ul className="list-disc ml-6 space-y-1">
             <li><code>title</code> - Event title</li>
-            <li><code>event_type</code> - open_mic, showcase, song_circle, workshop, gig, kindred_group, jam_session, meetup, other</li>
+            <li><code>event_type</code> - open_mic, showcase, song_circle, workshop, gig, jam_session, meetup, other</li>
             <li><code>event_date</code> - Anchor date (YYYY-MM-DD)</li>
           </ul>
           <p className="font-medium mt-3">Optional columns:</p>
@@ -721,4 +721,3 @@ function ColumnReference() {
     </div>
   );
 }
-
