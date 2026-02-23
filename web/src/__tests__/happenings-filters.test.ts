@@ -13,19 +13,23 @@ describe('HappeningsFilters Component', () => {
   const componentContent = fs.readFileSync(componentPath, 'utf-8');
 
   describe('Design Tone (Phase 4.2 correction)', () => {
-    it('should NOT contain emoji characters in UI labels', () => {
-      // Check for common emoji patterns in the component
-      // This regex matches common emoji ranges
-      const emojiPattern = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u;
-      expect(componentContent).not.toMatch(emojiPattern);
+    it('should use emoji icons on quick filter buttons', () => {
+      // Quick filter buttons use emoji icons for visual consistency with digest emails
+      expect(componentContent).toContain('emoji: "🎤"'); // Open Mics
+      expect(componentContent).toContain('emoji: "🎭"'); // Shows
+      expect(componentContent).toContain('emoji: "🤝"'); // Kindred
+      expect(componentContent).toContain('emoji: "🎸"'); // Jams / Blues
+      expect(componentContent).toContain('emoji: "✒️"'); // Poetry
+      expect(componentContent).toContain('emoji: "☘️"'); // Irish
+      expect(componentContent).toContain('emoji: "🪕"'); // Bluegrass
+      expect(componentContent).toContain('emoji: "😂"'); // Comedy
     });
 
-    it('should use SVG icons, not emoji', () => {
-      // Verify SVG icon functions exist
+    it('should use SVG icons for utility elements', () => {
+      // Utility icons (search, filters, etc.) still use SVGs
       expect(componentContent).toContain('function SearchIcon');
       expect(componentContent).toContain('function MapPinIcon');
       expect(componentContent).toContain('function TagIcon');
-      expect(componentContent).toContain('function MicIcon');
     });
 
     it('should use human-readable labels, not snake_case', () => {
