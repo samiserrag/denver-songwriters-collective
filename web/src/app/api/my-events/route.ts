@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
+import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 
@@ -130,14 +131,6 @@ interface EventInsertParams {
   eventDate: string;
   seriesId: string | null;
   seriesIndex: number | null;
-}
-
-function normalizeIncomingEventTypes(input: unknown): string[] {
-  const raw = Array.isArray(input) ? input : [input].filter(Boolean);
-  const normalized = raw
-    .map((type) => type === "kindred_group" ? "other" : type)
-    .filter((type): type is string => typeof type === "string" && type.trim().length > 0);
-  return [...new Set(normalized)];
 }
 
 function buildEventInsert(params: EventInsertParams) {
@@ -298,16 +291,11 @@ export async function POST(request: Request) {
   }
 
   // Validate event_type values
-  const VALID_EVENT_TYPES = new Set([
-    "open_mic", "showcase", "song_circle", "workshop", "other",
-    "gig", "meetup", "jam_session",
-    "poetry", "irish", "blues", "bluegrass", "comedy",
-  ]);
   const eventTypes = normalizeIncomingEventTypes(body.event_type);
   if (eventTypes.length === 0) {
     return NextResponse.json({ error: "event_type is required" }, { status: 400 });
   }
-  const invalidTypes = eventTypes.filter((t: string) => !VALID_EVENT_TYPES.has(t));
+  const invalidTypes = getInvalidEventTypes(eventTypes);
   if (invalidTypes.length > 0) {
     return NextResponse.json({ error: `Invalid event_type: ${invalidTypes.join(", ")}` }, { status: 400 });
   }

@@ -16,6 +16,26 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Conversational Event Interpreter (Preview)
+
+The draft-only interpreter route is available at:
+
+- `POST /api/events/interpret`
+
+Required environment variables:
+
+- `ENABLE_NL_EVENTS_INTERPRETER=true`
+- `OPENAI_API_KEY=...`
+
+Optional:
+
+- `OPENAI_EVENT_INTERPRETER_MODEL=gpt-5.2` (default: `gpt-5.2`)
+
+Preview note:
+
+- Current route-level rate limiting is in-memory and suitable for preview testing only.
+- Replace with persistent atomic rate limiting (Redis/KV/Supabase RPC) before main/GA rollout.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

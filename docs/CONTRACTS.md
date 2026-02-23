@@ -787,6 +787,67 @@ Open Mics link must use `/happenings?type=open_mic`, not `/open-mics`.
 
 ---
 
+## Contract: Conversational Event Draft/Confirm (EVENTS-NL-01)
+
+> **Track Status:** February 2026 — In implementation (preview only)
+
+### Core Principles
+
+- Conversational interpretation is **draft-only**. It must never write directly to DB.
+- Server-side validation remains authoritative; model output is untrusted input.
+- Clarifications are allowed only when blocking the next server action.
+
+### Interpreter State Machine Contract
+
+Interpreter responses must include `next_action` with one of:
+
+| Value | Meaning |
+|-------|---------|
+| `ask_clarification` | Missing blocking info for next action |
+| `show_preview` | Sufficient draft data for preview |
+| `await_confirmation` | Draft is ready to apply after approval |
+| `done` | No further action required |
+
+### Clarification Contract
+
+- Do not ask arbitrary follow-up questions.
+- Ask only for fields required to form a valid next action.
+- If no blocking fields exist, interpreter must not ask clarification.
+
+### Conversation Ending Contract
+
+- Assistant responses must end in deterministic action state, not open-ended assistant chatter.
+- Forbidden endings include phrases like:
+  - "Anything else?"
+  - "If you'd like, I can also..."
+  - "Let me know if you want more..."
+- Required confirmation pattern when applicable:
+  - `Do you approve this draft as shown?`
+
+### RSVP + Timeslot Contract (Conversational Flow)
+
+- RSVP remains default behavior for public events (unchanged).
+- Timeslots are optional and encouraged for relevant event types (`open_mic`, `jam_session`, `workshop`).
+- Hosts must be able to decline timeslots without blocking publish.
+- Interpreter/UX should provide value nudges for missing signup/timeslot data, but never hard-require them.
+
+### Write Compatibility Contract
+
+- Create drafts must be compatible with existing `POST /api/my-events` requirements, including:
+  - `title`
+  - `event_type` (array)
+  - `start_time`
+  - `start_date`
+  - `series_mode`
+- Edit drafts must map to existing PATCH/override write shapes and allowlists.
+
+### Security Contract
+
+- Interpreter context sent to model must exclude credentials, auth tokens, passwords, and email addresses.
+- Any logging of model input/output must redact email-like strings.
+
+---
+
 ## Contract: Cross-Surface Event Consistency (Phase 6)
 
 > **Track Status:** February 2026

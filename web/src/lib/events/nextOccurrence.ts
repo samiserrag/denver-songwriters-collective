@@ -29,6 +29,8 @@ import {
   assertRecurrenceInvariant,
   type RecurrenceInput,
 } from "@/lib/events/recurrenceContract";
+import { ALLOWED_OVERRIDE_FIELDS } from "@/lib/events/overridePatchContract";
+export { ALLOWED_OVERRIDE_FIELDS } from "@/lib/events/overridePatchContract";
 
 /**
  * Denver timezone formatter for producing YYYY-MM-DD date keys.
@@ -947,41 +949,6 @@ export interface OccurrenceOverride {
   /** JSONB patch of per-occurrence field overrides (Phase: Occurrence Mode Form) */
   override_patch?: Record<string, unknown> | null;
 }
-
-/**
- * Allowlist of fields that can be overridden per-occurrence.
- * Series-level fields (event_type, recurrence_rule, etc.) are BLOCKED.
- */
-export const ALLOWED_OVERRIDE_FIELDS = new Set([
-  "title",
-  "description",
-  "event_date",
-  "start_time",
-  "end_time",
-  "venue_id",
-  "location_mode",
-  "custom_location_name",
-  "custom_address",
-  "custom_city",
-  "custom_state",
-  "online_url",
-  "location_notes",
-  "capacity",
-  "has_timeslots",
-  "total_slots",
-  "slot_duration_minutes",
-  "is_free",
-  "cost_label",
-  "signup_url",
-  "signup_deadline",
-  "signup_time", // Phase 5.10: Per-occurrence signup time override (keep in sync with overrides/route.ts)
-  "age_policy",
-  "external_url",
-  "categories",
-  "cover_image_url",
-  "host_notes",
-  "is_published",
-]);
 
 /**
  * Apply occurrence override to a base event.
