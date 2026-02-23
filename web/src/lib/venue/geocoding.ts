@@ -66,10 +66,10 @@ const COLORADO_BOUNDS = {
 export async function geocodeVenueAddress(
   address: VenueAddressFields
 ): Promise<GeocodingResult | null> {
-  const apiKey = process.env.GOOGLE_GEOCODING_API_KEY;
+  const apiKey = process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
-    console.warn("[Geocoding] GOOGLE_GEOCODING_API_KEY not configured");
+    console.warn("[Geocoding] Missing Google API key (GOOGLE_GEOCODING_API_KEY / GOOGLE_MAPS_API_KEY)");
     return null;
   }
 

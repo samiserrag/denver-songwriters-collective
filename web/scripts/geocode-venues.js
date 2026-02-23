@@ -13,7 +13,7 @@
  *
  * Environment:
  *   DATABASE_URL - PostgreSQL connection string (from .env.local)
- *   GOOGLE_GEOCODING_API_KEY - Alternative to --key argument
+ *   GOOGLE_GEOCODING_API_KEY or GOOGLE_MAPS_API_KEY - Alternative to --key argument
  *
  * Output:
  *   - Console table of results
@@ -32,7 +32,10 @@ const keyArg = process.argv.find(arg => arg.startsWith("--key="));
 const apiKeyFromArg = keyArg ? keyArg.split("=")[1] : null;
 
 const DATABASE_URL = process.env.DATABASE_URL;
-const GEOCODING_API_KEY = apiKeyFromArg || process.env.GOOGLE_GEOCODING_API_KEY;
+const GEOCODING_API_KEY =
+  apiKeyFromArg ||
+  process.env.GOOGLE_GEOCODING_API_KEY ||
+  process.env.GOOGLE_MAPS_API_KEY;
 
 const RATE_LIMIT_MS = 150; // 150ms between API calls
 
@@ -49,7 +52,7 @@ async function main() {
   }
   if (!GEOCODING_API_KEY) {
     console.error("ERROR: Missing Google Geocoding API key");
-    console.error("Provide via: --key=YOUR_API_KEY or set GOOGLE_GEOCODING_API_KEY env var");
+    console.error("Provide via: --key=YOUR_API_KEY or set GOOGLE_GEOCODING_API_KEY / GOOGLE_MAPS_API_KEY env var");
     process.exit(1);
   }
 
