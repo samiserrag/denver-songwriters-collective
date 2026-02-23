@@ -142,6 +142,9 @@ const DRAFT_PAYLOAD_FIELD_KEYS = [
   ]),
 ].filter((key) => key !== "override_patch");
 
+const OVERRIDE_PATCH_FIELD_KEYS = [...ALLOWED_OVERRIDE_FIELDS];
+const DRAFT_PAYLOAD_REQUIRED_KEYS = [...DRAFT_PAYLOAD_FIELD_KEYS, "override_patch"];
+
 function buildDraftPayloadProperties() {
   const properties: Record<string, unknown> = {};
   for (const key of DRAFT_PAYLOAD_FIELD_KEYS) {
@@ -156,6 +159,7 @@ function buildDraftPayloadProperties() {
   properties.override_patch = {
     type: "object",
     additionalProperties: false,
+    required: OVERRIDE_PATCH_FIELD_KEYS,
     properties: overridePatchProperties,
   };
 
@@ -191,6 +195,7 @@ export function buildInterpretResponseSchema() {
       draft_payload: {
         type: "object",
         additionalProperties: false,
+        required: DRAFT_PAYLOAD_REQUIRED_KEYS,
         properties: buildDraftPayloadProperties(),
       },
     },

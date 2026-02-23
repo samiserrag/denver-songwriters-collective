@@ -85,11 +85,17 @@ describe("interpretEventContract", () => {
     expect(draftPayload.type).toBe("object");
     expect(draftPayload.additionalProperties).toBe(false);
     expect(draftPayload.properties.title).toBeDefined();
+    expect(Array.isArray(draftPayload.required)).toBe(true);
+    expect(draftPayload.required).toContain("title");
+    expect(draftPayload.required).toContain("override_patch");
 
     const overridePatch = draftPayload.properties.override_patch;
     expect(overridePatch).toBeDefined();
     expect(overridePatch.type).toBe("object");
     expect(overridePatch.additionalProperties).toBe(false);
     expect(overridePatch.properties.start_time).toBeDefined();
+    expect(Array.isArray(overridePatch.required)).toBe(true);
+    expect(overridePatch.required).toContain("title");
+    expect(overridePatch.required).toContain("start_time");
   });
 });
