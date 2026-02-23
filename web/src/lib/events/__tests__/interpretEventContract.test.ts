@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildInterpretResponseSchema,
   buildQualityHints,
   sanitizeInterpretDraftPayload,
   validateSanitizedDraftPayload,
@@ -75,5 +76,20 @@ describe("interpretEventContract", () => {
     expect(fields).toContain("signup_mode");
     expect(fields).toContain("has_timeslots");
     expect(fields).toContain("is_free");
+  });
+
+  it("builds strict schema for draft_payload and nested override_patch", () => {
+    const schema = buildInterpretResponseSchema();
+    const draftPayload = (schema.properties as Record<string, any>).draft_payload;
+    expect(draftPayload).toBeDefined();
+    expect(draftPayload.type).toBe("object");
+    expect(draftPayload.additionalProperties).toBe(false);
+    expect(draftPayload.properties.title).toBeDefined();
+
+    const overridePatch = draftPayload.properties.override_patch;
+    expect(overridePatch).toBeDefined();
+    expect(overridePatch.type).toBe("object");
+    expect(overridePatch.additionalProperties).toBe(false);
+    expect(overridePatch.properties.start_time).toBeDefined();
   });
 });

@@ -1,5 +1,5 @@
 import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
-import { sanitizeOverridePatch } from "@/lib/events/overridePatchContract";
+import { ALLOWED_OVERRIDE_FIELDS, sanitizeOverridePatch } from "@/lib/events/overridePatchContract";
 
 export const INTERPRET_MODES = ["create", "edit_series", "edit_occurrence"] as const;
 export type InterpretMode = (typeof INTERPRET_MODES)[number];
@@ -129,6 +129,39 @@ const OCCURRENCE_PAYLOAD_ALLOWLIST = new Set([
   "override_patch",
 ]);
 
+const FLEX_DRAFT_VALUE_SCHEMA = {
+  type: ["string", "number", "boolean", "null", "array"],
+  items: { type: ["string", "number", "boolean", "null"] },
+};
+
+const DRAFT_PAYLOAD_FIELD_KEYS = [
+  ...new Set([
+    ...CREATE_PAYLOAD_ALLOWLIST,
+    ...EDIT_SERIES_PAYLOAD_ALLOWLIST,
+    ...OCCURRENCE_PAYLOAD_ALLOWLIST,
+  ]),
+].filter((key) => key !== "override_patch");
+
+function buildDraftPayloadProperties() {
+  const properties: Record<string, unknown> = {};
+  for (const key of DRAFT_PAYLOAD_FIELD_KEYS) {
+    properties[key] = FLEX_DRAFT_VALUE_SCHEMA;
+  }
+
+  const overridePatchProperties: Record<string, unknown> = {};
+  for (const key of ALLOWED_OVERRIDE_FIELDS) {
+    overridePatchProperties[key] = FLEX_DRAFT_VALUE_SCHEMA;
+  }
+
+  properties.override_patch = {
+    type: "object",
+    additionalProperties: false,
+    properties: overridePatchProperties,
+  };
+
+  return properties;
+}
+
 export function buildInterpretResponseSchema() {
   return {
     type: "object",
@@ -155,7 +188,11 @@ export function buildInterpretResponseSchema() {
         items: { type: "string", minLength: 1, maxLength: 80 },
         maxItems: 20,
       },
-      draft_payload: { type: "object", additionalProperties: true },
+      draft_payload: {
+        type: "object",
+        additionalProperties: false,
+        properties: buildDraftPayloadProperties(),
+      },
     },
   };
 }
