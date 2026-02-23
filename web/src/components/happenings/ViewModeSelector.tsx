@@ -107,13 +107,13 @@ export function ViewModeSelector({ viewMode, className }: ViewModeSelectorProps)
           <div className="relative z-10 flex flex-col gap-3">
             <div
               className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
+                "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
                 viewMode === "timeline"
-                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                  : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
+                  ? "bg-[var(--color-accent-primary)]"
+                  : "bg-[var(--color-bg-tertiary)]"
               )}
             >
-              <CalendarIcon className="w-6 h-6" />
+              📅
             </div>
 
             <div>
@@ -154,13 +154,13 @@ export function ViewModeSelector({ viewMode, className }: ViewModeSelectorProps)
           <div className="relative z-10 flex flex-col gap-3">
             <div
               className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
+                "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
                 viewMode === "series"
-                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                  : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
+                  ? "bg-[var(--color-accent-primary)]"
+                  : "bg-[var(--color-bg-tertiary)]"
               )}
             >
-              <SeriesIcon className="w-6 h-6" />
+              🔄
             </div>
 
             <div>
@@ -201,13 +201,13 @@ export function ViewModeSelector({ viewMode, className }: ViewModeSelectorProps)
           <div className="relative z-10 flex flex-col gap-3">
             <div
               className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
+                "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
                 viewMode === "map"
-                  ? "bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                  : "bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]"
+                  ? "bg-[var(--color-accent-primary)]"
+                  : "bg-[var(--color-bg-tertiary)]"
               )}
             >
-              <MapIcon className="w-6 h-6" />
+              🗺️
             </div>
 
             <div>
