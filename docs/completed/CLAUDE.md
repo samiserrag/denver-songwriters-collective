@@ -6,6 +6,31 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Fix: RLS — Anonymous Users Get 0 Rows on Tables with is_admin() Policies (February 2026)
+
+**Summary:** Fixed a critical bug where anonymous (non-logged-in) users saw 0 results on any table that had a `FOR ALL` RLS policy calling `is_admin()`. The `anon` PostgreSQL role lacked EXECUTE permission on `is_admin()` (a SECURITY DEFINER function), causing PostgreSQL to fail the entire policy evaluation when processing SELECT queries — silently returning 0 rows instead of matching the public read policy.
+
+**User-visible impact:** RSVPs, "spots left" count, and "Who's Coming" attendee list were invisible to non-logged-in visitors (including mobile Chrome without a session). Event listings and other public queries on affected tables also returned empty for anonymous users.
+
+**Root cause:** Admin RLS policies like `"Admins can manage all RSVPs" FOR ALL USING (is_admin())` targeted PUBLIC (all roles). PostgreSQL evaluates ALL applicable permissive policies for SELECT, including `FOR ALL` policies. When the `anon` role hit `is_admin()`, it threw `permission denied for function is_admin`, causing the query to silently return nothing.
+
+**Fix:** Scoped all 13 admin `FOR ALL` policies (across 12 tables) to `TO authenticated` only. Since admins are always authenticated, this is semantically identical but prevents `anon` from ever triggering `is_admin()`.
+
+**Tables fixed:** `event_rsvps`, `approved_hosts`, `blog_comments`, `blog_gallery_images`, `event_hosts`, `event_slots`, `events` (2 policies), `host_requests`, `open_mic_claims`, `spotlights`, `studio_appointments`, `studio_services`
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/supabase/migrations/20260224000000_fix_admin_rls_anon_permission.sql` | NEW — migration dropping and recreating 13 admin policies with `TO authenticated` |
+
+**Validation:**
+- Production: `SET ROLE anon; SELECT count(*) FROM event_rsvps WHERE ... AND date_key = '2026-02-25'` → returns 4 (was 0 before fix)
+- Production: Zero `polcmd='*'` policies targeting `polroles={0}` remain with `is_admin()` expressions
+- Applied live to production DB before migration file created (migration is idempotent)
+
+---
+
 ### Fix: Admin Delete User — Orphaned Profile Persistence (February 2026)
 
 **Summary:** Fixed a bug where deleting a user from the admin dashboard (`/dashboard/admin/users`) would delete the `auth.users` record but leave an orphaned `profiles` row visible in the UI. The root cause was that `deleteUser()` checked `auth.admin.getUserById()` first and returned early with "User not found" if no auth user existed — skipping the profile deletion step entirely. This made it impossible to remove users whose auth record was already deleted or never existed.
