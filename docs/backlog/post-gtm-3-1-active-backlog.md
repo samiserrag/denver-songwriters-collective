@@ -22,7 +22,7 @@
 | 8 | `EMBED-02` | P2 | DONE — venues -> members -> blog -> gallery shipped with tests (`ed3ae28`) | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/embed-02-non-event-embeds-stopgate.md`](../investigation/embed-02-non-event-embeds-stopgate.md) |
 | 9 | `STRAT-01` | P0 (Strategic) | OPEN — docs-only, execution deferred | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/strat-01-multi-region-whitelabel-stopgate.md`](../investigation/strat-01-multi-region-whitelabel-stopgate.md), [`docs/NORTH_STAR.md`](../NORTH_STAR.md) |
 | 10 | `MEDIA-EMBED-01` | P1 | DONE — `MEDIA-EMBED-01A` shipped (`514c085`), `01B` superseded by `02` | [`docs/BACKLOG.md`](../BACKLOG.md) | [`docs/investigation/media-embed-01-structured-urls-stopgate.md`](../investigation/media-embed-01-structured-urls-stopgate.md) |
-| 11 | `MEDIA-EMBED-02` | P1 | DONE — Foundation (`b849513`), `02B` events/blog/gallery (`cec7d64`), `02C` Bandcamp fixes, `02D` venues + UX (`36c3720`) | [`docs/BACKLOG.md`](../BACKLOG.md) | — |
+| 11 | `MEDIA-EMBED-02` | P1 | DONE — Foundation (`b849513`), `02B` events/blog/gallery (`cec7d64`), `02C` Bandcamp fixes, `02D` venues + UX (`36c3720`), `02E` profile-card fallback + explicit import (`8304e10a`, `93139183`, `392bcb49`) | [`docs/BACKLOG.md`](../BACKLOG.md) | — |
 
 ---
 

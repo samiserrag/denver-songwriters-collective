@@ -6,6 +6,40 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### UX: Music Profile Cards + Explicit Embed Import (February 2026)
+
+**Summary:** Improved member/songwriter music sections so artist/channel/profile URLs render as clear profile cards, while real embedded players render without redundant section titling. Added an explicit one-click import path for embeddable links from profile fields into Embedded Players (secondary CTA, only shown when importable links exist). Surfaced non-fatal embed save warnings in onboarding/profile APIs instead of silently swallowing failures.
+
+**Commits:** `8304e10a`, `93139183`, `392bcb49`
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/lib/mediaEmbeds.ts` | Added canonicalization + profile URL classification helpers (`canonicalizeMediaReference`, `getMusicProfileLinkMeta`) |
+| `web/src/components/media/MusicProfileCard.tsx` | NEW — rich card component for YouTube/Spotify/Bandcamp profile links |
+| `web/src/components/media/MediaEmbedsSection.tsx` | Renders profile cards for non-embeddable music URLs; heading/description controls |
+| `web/src/components/media/OrderedMediaEmbeds.tsx` | Heading can be suppressed so inline players render without extra title |
+| `web/src/lib/profile/musicProfiles.ts` | NEW — pure helper for explicit embeddable import candidate detection + warnings |
+| `web/src/app/onboarding/profile/page.tsx` | Split music profiles vs embedded players UX; explicit import button; save warning toasts |
+| `web/src/app/(protected)/dashboard/profile/page.tsx` | Same split UX + explicit import + warning toasts |
+| `web/src/app/api/onboarding/route.ts` | Returns `embed_warnings` on partial media validation/upsert failures |
+| `web/src/app/api/profile/route.ts` | Returns `embed_warnings` on partial media validation/upsert failures |
+| `web/src/app/songwriters/[id]/page.tsx` | Dedupe profile cards against ordered embeds; players render without redundant title |
+| `web/src/app/members/[id]/page.tsx` | Dedupe profile cards against ordered embeds; players render without redundant title |
+| `web/src/__tests__/music-profile-imports.test.ts` | NEW — import helper tests |
+| `web/src/__tests__/media-embed-rendering.test.tsx` | Added card rendering assertions for non-embeddable profile URLs |
+| `web/src/__tests__/onboarding-media-embeds.test.ts` | Added assertions for `embed_warnings` surfacing |
+
+**Validation:**
+- `npm --prefix web run lint` -> pass (existing repo warnings only)
+- `npm --prefix web test -- --run` -> pass (`210` files, `4443` tests)
+- `npm --prefix web run build` -> attempted once; local environment hang at optimized build step (known local behavior)
+
+**Operational note:** No outbound member communications or broadcast emails were sent as part of this tract. Changes are render/UI/API behavior only.
+
+---
+
 ### FIX: Digest Idempotency Lock Key Collision + Cron Schedule Change (February 2026)
 
 **Problem:** The weekly happenings digest cron fired at 4:00 PM MST on Sunday Feb 22 but skipped sending because the idempotency guard found the lock for `2026-W08` already claimed. The lock had been incorrectly claimed by a manual "Send now" on Feb 15 — which used the editorial picker's "next week" default (`2026-W08`) as the lock key instead of the current week (`2026-W07`).

@@ -2,7 +2,7 @@
 
 > **This is the CANONICAL backlog.** All other TODO sources defer to this document.
 >
-> **Last Updated:** 2026-02-21
+> **Last Updated:** 2026-02-24
 > **Next Milestone:** Invite ~20 Test Users (READY — see `docs/runbooks/invite-20-admin-runbook.md`)
 
 ---
@@ -429,6 +429,7 @@ Polish member profiles before external test users see them. Three scope areas:
 | MEDIA-EMBED-02B | Multi-embed for events (host/cohost), blog, gallery + Bandcamp support | P1 | DONE | Commits `cec7d64`, `11c7a03`; events/blog/gallery wiring, Bandcamp iframe classification + rendering |
 | MEDIA-EMBED-02C | Bandcamp atomic upsert + iframe fixes | P1 | DONE | Commits `658d5ad`, `b743662`, `0783588`; paste resilience, atomic upsert fix, `allow-same-origin` sandbox |
 | MEDIA-EMBED-02D | Venue media embeds + editor UX upgrades | P1 | DONE | Commit `36c3720`; migration `20260214000000_media_embeds_venue.sql`; venue RLS, API, editor, public render; editor UX: header, empty state, provider badges, preview toggle |
+| MEDIA-EMBED-02E | Profile link fallback cards + explicit embed import UX | P1 | DONE | Commits `8304e10a`, `93139183`, `392bcb49`; non-embeddable music profile links render as cards, explicit import button for embeddable profile links, API `embed_warnings` surfaced, players render without redundant title |
 | MEDIA-EMBED-03 | Event override media embeds (per-occurrence overrides) | P2 | OPEN | `event_override` target type exists in CHECK constraint but no surfaces wired yet |
 | MEDIA-EMBED-04 | Non-admin blog author media embed writes | P2 | OPEN | Deferred from 02D; requires blog author RLS policy (blog posts currently admin-only write) |
 
