@@ -6,6 +6,7 @@ import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccu
 import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -238,7 +239,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name")
     .eq("id", sessionUser.id)
     .single();
 
@@ -431,7 +432,7 @@ export async function POST(request: Request) {
   console.log("[POST /api/my-events] Creating", eventDates.length, "event(s), series_id:", seriesId, "| mode:", seriesMode);
 
   // Create all events in the series
-  const createdEvents: { id: string; event_date: string | null }[] = [];
+  const createdEvents: { id: string; event_date: string | null; slug: string | null }[] = [];
 
   for (let i = 0; i < eventDates.length; i++) {
     const eventDate = eventDates[i];
@@ -487,7 +488,7 @@ export async function POST(request: Request) {
     }
 
     console.log("[POST /api/my-events] Event created:", event.id, "| date:", eventDate, "| series_index:", i);
-    createdEvents.push({ id: event.id, event_date: event.event_date });
+    createdEvents.push({ id: event.id, event_date: event.event_date, slug: event.slug || null });
 
     // Add creator as host
     const { error: hostError } = await supabase
@@ -573,6 +574,24 @@ export async function POST(request: Request) {
 
   // Return the first event with series info
   const firstEvent = createdEvents[0];
+
+  if (!isAdmin && firstEvent) {
+    sendAdminEventAlert({
+      type: "created",
+      actorUserId: sessionUser.id,
+      actorRole: profile?.role || "member",
+      actorName: profile?.full_name || null,
+      actorEmail: sessionUser.email || null,
+      eventId: firstEvent.id,
+      eventSlug: firstEvent.slug,
+      eventTitle: typeof body.title === "string" ? body.title : null,
+      eventDate: firstEvent.event_date,
+      seriesCount: createdEvents.length,
+    }).catch((emailError) => {
+      console.error("[POST /api/my-events] Failed to send non-admin create admin email:", emailError);
+    });
+  }
+
   return NextResponse.json({
     id: firstEvent.id,
     event_date: firstEvent.event_date,

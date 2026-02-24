@@ -10,6 +10,7 @@ import { canEditEventVisibility, canManageEvent } from "@/lib/events/eventManage
 import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
+import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
 const NOTIFICATION_IGNORED_FIELDS = new Set([
@@ -775,6 +776,24 @@ export async function PATCH(
       venueAddress: event.venue_address || undefined
     }).catch((err) => {
       console.error(`[PATCH /api/my-events/${eventId}] Failed to send update notifications:`, err);
+    });
+  }
+
+  const nonAdminChangedKeys = Object.keys(updates).filter((key) => key !== "updated_at");
+  if (!isAdmin && nonAdminChangedKeys.length > 0) {
+    sendAdminEventAlert({
+      type: "edited",
+      actorUserId: sessionUser.id,
+      actorRole: profile?.role || "member",
+      actorName: profile?.full_name || null,
+      actorEmail: sessionUser.email || null,
+      eventId,
+      eventSlug: event.slug || prevEvent?.slug || null,
+      eventTitle: event.title || prevEvent?.title || null,
+      eventDate: event.event_date || prevEvent?.event_date || null,
+      changedFields: changedFieldLabels,
+    }).catch((emailError) => {
+      console.error(`[PATCH /api/my-events/${eventId}] Failed to send non-admin edit admin email:`, emailError);
     });
   }
 
