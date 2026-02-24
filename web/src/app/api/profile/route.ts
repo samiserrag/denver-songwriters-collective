@@ -190,18 +190,29 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    const embedWarnings: string[] = [];
+
     // Upsert ordered media embeds if provided
     if (Array.isArray(body.media_embed_urls)) {
       try {
-        await upsertMediaEmbeds(
+        const embedResult = await upsertMediaEmbeds(
           supabase,
           { type: "profile", id: user.id },
           body.media_embed_urls,
           user.id
         );
+        if (embedResult.errors.length > 0) {
+          embedWarnings.push(
+            ...embedResult.errors.map((e) => `Link ${e.index + 1}: ${e.message}`)
+          );
+        }
       } catch (embedError) {
         console.error("Media embeds upsert error:", embedError);
-        // Non-fatal: profile was saved, embeds failed
+        embedWarnings.push(
+          embedError instanceof Error
+            ? `Could not save embedded players: ${embedError.message}`
+            : "Could not save embedded players."
+        );
       }
     }
 
@@ -232,7 +243,10 @@ export async function PUT(request: Request) {
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ...(embedWarnings.length > 0 ? { embed_warnings: embedWarnings } : {}),
+    });
   } catch (error) {
     console.error("Profile API error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

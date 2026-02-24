@@ -80,6 +80,7 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+    const embedWarnings: string[] = [];
 
     const { data: existingProfile } = await serviceClient
       .from('profiles')
@@ -140,15 +141,24 @@ export async function POST(request: Request) {
     // Upsert ordered media embeds if provided
     if (Array.isArray(body.media_embed_urls)) {
       try {
-        await upsertMediaEmbeds(
+        const embedResult = await upsertMediaEmbeds(
           serviceClient,
           { type: "profile", id: user.id },
           body.media_embed_urls,
           user.id
         );
+        if (embedResult.errors.length > 0) {
+          embedWarnings.push(
+            ...embedResult.errors.map((e) => `Link ${e.index + 1}: ${e.message}`)
+          );
+        }
       } catch (embedError) {
         console.error("Onboarding media embeds upsert error:", embedError);
-        // Non-fatal: profile was saved, embeds failed
+        embedWarnings.push(
+          embedError instanceof Error
+            ? `Could not save embedded players: ${embedError.message}`
+            : "Could not save embedded players."
+        );
       }
     }
 
@@ -175,7 +185,10 @@ export async function POST(request: Request) {
       console.error('Admin onboarding alert failed:', alertError);
     }
 
-    const response = NextResponse.json({ success: true });
+    const response = NextResponse.json({
+      success: true,
+      ...(embedWarnings.length > 0 ? { embed_warnings: embedWarnings } : {}),
+    });
     if (referralCookie) {
       response.cookies.set({
         name: REFERRAL_COOKIE_NAME,

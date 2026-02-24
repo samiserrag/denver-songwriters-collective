@@ -316,6 +316,148 @@ export interface ClassifiedUrl {
   embed_url: string | null; // null for external providers
 }
 
+export type MusicProfileProvider = "youtube" | "spotify" | "bandcamp";
+
+export interface MusicProfileLinkMeta {
+  provider: MusicProfileProvider;
+  href: string;
+  dedupe_key: string;
+  headline: string;
+  supportingText: string;
+  ctaLabel: string;
+}
+
+function canonicalizeHttpUrl(raw: string): string | null {
+  try {
+    const parsed = new URL(raw.trim());
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    const pathname = parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/+$/, "");
+
+    const params = new URLSearchParams(parsed.search);
+    for (const key of Array.from(params.keys())) {
+      if (key.toLowerCase().startsWith("utm_") || key.toLowerCase() === "si") {
+        params.delete(key);
+      }
+    }
+    const sorted = new URLSearchParams();
+    for (const key of Array.from(params.keys()).sort()) {
+      const values = params.getAll(key);
+      for (const value of values) sorted.append(key, value);
+    }
+    const query = sorted.toString();
+
+    return `https://${host}${pathname}${query ? `?${query}` : ""}`;
+  } catch {
+    return null;
+  }
+}
+
+export function canonicalizeMediaReference(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const normalized = normalizeMediaEmbedUrl(trimmed);
+    if (normalized) {
+      return canonicalizeHttpUrl(normalized.normalized_url);
+    }
+  } catch {
+    // Fall through to raw URL canonicalization.
+  }
+
+  return canonicalizeHttpUrl(trimmed);
+}
+
+export function getMusicProfileLinkMeta(raw: string | null | undefined): MusicProfileLinkMeta | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  const path = parsed.pathname.replace(/\/+$/, "");
+  const segments = path.split("/").filter(Boolean);
+  const canonicalHref = canonicalizeHttpUrl(trimmed);
+  if (!canonicalHref) return null;
+
+  if (YOUTUBE_HOSTS.has(host)) {
+    // Embeddable/media-specific URLs are handled separately via normalizeMediaEmbedUrl.
+    if (
+      host === "youtu.be" ||
+      host === "www.youtu.be" ||
+      path === "/watch" ||
+      path === "/playlist" ||
+      path.startsWith("/embed/") ||
+      path.startsWith("/shorts/")
+    ) {
+      return null;
+    }
+
+    let handleOrChannel = "";
+    if (segments[0]?.startsWith("@")) {
+      handleOrChannel = segments[0];
+    } else if (["channel", "c", "user"].includes(segments[0] ?? "") && segments[1]) {
+      handleOrChannel = segments[1];
+    } else {
+      return null;
+    }
+
+    return {
+      provider: "youtube",
+      href: canonicalHref,
+      dedupe_key: canonicalHref.toLowerCase(),
+      headline: handleOrChannel,
+      supportingText: "YouTube channel",
+      ctaLabel: "Open on YouTube",
+    };
+  }
+
+  if (SPOTIFY_HOSTS.has(host)) {
+    if (!segments[0] || !segments[1]) return null;
+    if (segments[0] !== "artist" && segments[0] !== "user") return null;
+
+    const isArtist = segments[0] === "artist";
+    return {
+      provider: "spotify",
+      href: canonicalHref,
+      dedupe_key: canonicalHref.toLowerCase(),
+      headline: segments[1],
+      supportingText: isArtist ? "Spotify artist profile" : "Spotify user profile",
+      ctaLabel: "Open on Spotify",
+    };
+  }
+
+  if (host === "bandcamp.com" || host.endsWith(".bandcamp.com")) {
+    if (path.startsWith("/EmbeddedPlayer")) return null;
+
+    const subdomain = host.replace(/\.bandcamp\.com$/, "");
+    const isRootDomain = host === "bandcamp.com";
+    const headline = isRootDomain
+      ? segments[0] || "Bandcamp"
+      : subdomain;
+
+    return {
+      provider: "bandcamp",
+      href: canonicalHref,
+      dedupe_key: canonicalHref.toLowerCase(),
+      headline,
+      supportingText: "Bandcamp profile",
+      ctaLabel: "Open on Bandcamp",
+    };
+  }
+
+  return null;
+}
+
 /**
  * Classify any URL into provider/kind. YouTube and Spotify get inline embeds;
  * everything else is classified as "external" with a safe outbound card.

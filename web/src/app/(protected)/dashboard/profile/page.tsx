@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PageContainer, HeroSection } from "@/components/layout";
@@ -8,6 +8,7 @@ import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, SPECIALTY_OPTIONS } from "@/lib/prof
 import { ProfileCompleteness, ProfilePhotosSection } from "@/components/profile";
 import { toast } from "sonner";
 import { MediaEmbedsEditor } from "@/components/media";
+import { getEmbeddableMediaImportsFromMusicProfiles } from "@/lib/profile/musicProfiles";
 
 type ProfileImage = {
   id: string;
@@ -114,6 +115,19 @@ export default function EditProfilePage() {
   } | null>(null);
   // Note: userRole is kept for admin check only. UX is driven by identity flags (formData.is_songwriter, etc.)
 
+  const musicProfileImportPreview = useMemo(
+    () =>
+      getEmbeddableMediaImportsFromMusicProfiles(
+        {
+          youtube_url: formData.youtube_url,
+          spotify_url: formData.spotify_url,
+          bandcamp_url: formData.bandcamp_url,
+        },
+        mediaEmbedUrls
+      ),
+    [formData.youtube_url, formData.spotify_url, formData.bandcamp_url, mediaEmbedUrls]
+  );
+
   useEffect(() => {
     async function loadProfile() {
       setLoading(true);
@@ -210,6 +224,25 @@ export default function EditProfilePage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handleImportMusicProfiles() {
+    const { importableUrls, warnings } = getEmbeddableMediaImportsFromMusicProfiles(
+      {
+        youtube_url: formData.youtube_url,
+        spotify_url: formData.spotify_url,
+        bandcamp_url: formData.bandcamp_url,
+      },
+      mediaEmbedUrls
+    );
+
+    if (importableUrls.length === 0) return;
+
+    setMediaEmbedUrls((prev) => [...prev, ...importableUrls]);
+    toast.success(`Imported ${importableUrls.length} embeddable link${importableUrls.length === 1 ? "" : "s"} into Embedded Players.`);
+    if (warnings.length > 0) {
+      toast.warning(`${warnings.length} profile link${warnings.length === 1 ? "" : "s"} could not be embedded and will display as profile cards.`);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -287,12 +320,21 @@ export default function EditProfilePage() {
         }),
       });
 
+      const payload = await response.json().catch(() => null) as
+        | { error?: string; embed_warnings?: string[] }
+        | null;
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error("Profile update error:", errorData);
+        console.error("Profile update error:", payload);
         toast.error("Failed to save your profile. Please try again.");
         setSaving(false);
         return;
+      }
+
+      if (Array.isArray(payload?.embed_warnings) && payload.embed_warnings.length > 0) {
+        toast.warning(
+          `Saved with ${payload.embed_warnings.length} media warning${payload.embed_warnings.length === 1 ? "" : "s"}.`
+        );
       }
 
       toast.success("Profile updated successfully!");
@@ -374,11 +416,23 @@ export default function EditProfilePage() {
               </section>
             )}
 
-            {/* Media Embeds - directly under photos */}
+            {/* Embedded Players - directly under photos */}
             <section id="media-embeds-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-2">
-                Media Links
+                Embedded Players
               </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                Add direct links to specific videos, tracks, playlists, or albums to show inline players.
+              </p>
+              {musicProfileImportPreview.importableUrls.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleImportMusicProfiles}
+                  className="mb-3 inline-flex items-center gap-2 rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition-colors"
+                >
+                  Import embeddable links from music profiles
+                </button>
+              )}
               <MediaEmbedsEditor
                 value={mediaEmbedUrls}
                 onChange={setMediaEmbedUrls}
@@ -963,13 +1017,67 @@ export default function EditProfilePage() {
               </section>
             )}
 
+            {/* Music Profiles */}
+            <section id="music-profiles-section">
+              <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
+                Your Music Profiles
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                Link your artist pages so fans can follow you. These render as profile cards on your public page.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="youtube_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    YouTube Profile
+                  </label>
+                  <input
+                    type="url"
+                    id="youtube_url"
+                    name="youtube_url"
+                    value={formData.youtube_url}
+                    onChange={handleChange}
+                    placeholder="https://youtube.com/@you"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="spotify_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Spotify Profile
+                  </label>
+                  <input
+                    type="url"
+                    id="spotify_url"
+                    name="spotify_url"
+                    value={formData.spotify_url}
+                    onChange={handleChange}
+                    placeholder="https://open.spotify.com/artist/..."
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bandcamp_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Bandcamp Profile
+                  </label>
+                  <input
+                    type="url"
+                    id="bandcamp_url"
+                    name="bandcamp_url"
+                    value={formData.bandcamp_url}
+                    onChange={handleChange}
+                    placeholder="https://yourname.bandcamp.com"
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  />
+                </div>
+              </div>
+            </section>
+
             {/* Social Links */}
             <section id="social-links-section">
               <h2 className="text-xl text-[var(--color-text-primary)] mb-4">
                 Social Links
               </h2>
               <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-                Share your social profiles so fans can follow you.
+                Share your non-music social profiles so fans can follow you.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1011,48 +1119,6 @@ export default function EditProfilePage() {
                     value={formData.tiktok_url}
                     onChange={handleChange}
                     placeholder="https://tiktok.com/@..."
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="youtube_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    YouTube
-                  </label>
-                  <input
-                    type="url"
-                    id="youtube_url"
-                    name="youtube_url"
-                    value={formData.youtube_url}
-                    onChange={handleChange}
-                    placeholder="https://youtube.com/..."
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="spotify_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Spotify
-                  </label>
-                  <input
-                    type="url"
-                    id="spotify_url"
-                    name="spotify_url"
-                    value={formData.spotify_url}
-                    onChange={handleChange}
-                    placeholder="https://open.spotify.com/artist/..."
-                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="bandcamp_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
-                    Bandcamp
-                  </label>
-                  <input
-                    type="url"
-                    id="bandcamp_url"
-                    name="bandcamp_url"
-                    value={formData.bandcamp_url}
-                    onChange={handleChange}
-                    placeholder="https://yourname.bandcamp.com"
                     className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>

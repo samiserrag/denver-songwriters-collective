@@ -6,11 +6,13 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS } from "@/lib/profile/options";
 import { consumePendingRedirect } from "@/lib/auth/pendingRedirect";
+import { getEmbeddableMediaImportsFromMusicProfiles } from "@/lib/profile/musicProfiles";
 import {
   getRelevantSections,
   type SectionKey,
 } from "./sectionVisibility";
 import { MediaEmbedsEditor } from "@/components/media";
+import { toast } from "sonner";
 
 // =============================================================================
 // Conditional Step Logic
@@ -81,6 +83,19 @@ export default function OnboardingProfile() {
       is_fan: isFan,
     });
   }, [isSongwriter, isHost, isStudio, isFan]);
+
+  const musicProfileImportPreview = useMemo(
+    () =>
+      getEmbeddableMediaImportsFromMusicProfiles(
+        {
+          youtube_url: youtubeUrl,
+          spotify_url: spotifyUrl,
+          bandcamp_url: bandcampUrl,
+        },
+        mediaEmbedUrls
+      ),
+    [youtubeUrl, spotifyUrl, bandcampUrl, mediaEmbedUrls]
+  );
 
   // Load existing profile data
   useEffect(() => {
@@ -153,6 +168,25 @@ export default function OnboardingProfile() {
     setOpenSections(newSections);
   };
 
+  const handleImportMusicProfiles = () => {
+    const { importableUrls, warnings } = getEmbeddableMediaImportsFromMusicProfiles(
+      {
+        youtube_url: youtubeUrl,
+        spotify_url: spotifyUrl,
+        bandcamp_url: bandcampUrl,
+      },
+      mediaEmbedUrls
+    );
+
+    if (importableUrls.length === 0) return;
+
+    setMediaEmbedUrls((prev) => [...prev, ...importableUrls]);
+    toast.success(`Imported ${importableUrls.length} embeddable link${importableUrls.length === 1 ? "" : "s"} into Embedded Players.`);
+    if (warnings.length > 0) {
+      toast.warning(`${warnings.length} profile link${warnings.length === 1 ? "" : "s"} could not be embedded and will display as profile cards.`);
+    }
+  };
+
   const handleSubmit = async () => {
     setSaving(true);
     setError(null);
@@ -187,9 +221,19 @@ export default function OnboardingProfile() {
         }),
       });
 
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to save profile');
+        throw new Error((data as { error?: string }).error || "Failed to save profile");
+      }
+
+      const embedWarnings = Array.isArray((data as { embed_warnings?: string[] }).embed_warnings)
+        ? (data as { embed_warnings: string[] }).embed_warnings
+        : [];
+      if (embedWarnings.length > 0) {
+        toast.warning(
+          `Profile saved with ${embedWarnings.length} media warning${embedWarnings.length === 1 ? "" : "s"}.`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1100));
       }
 
       console.log("[Onboarding] Profile updated successfully, checking for pending redirect");
@@ -243,9 +287,19 @@ export default function OnboardingProfile() {
         }),
       });
 
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to save profile');
+        throw new Error((data as { error?: string }).error || "Failed to save profile");
+      }
+
+      const embedWarnings = Array.isArray((data as { embed_warnings?: string[] }).embed_warnings)
+        ? (data as { embed_warnings: string[] }).embed_warnings
+        : [];
+      if (embedWarnings.length > 0) {
+        toast.warning(
+          `Profile saved with ${embedWarnings.length} media warning${embedWarnings.length === 1 ? "" : "s"}.`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1100));
       }
 
       console.log("[Onboarding] Profile updated, checking for pending redirect");
@@ -460,16 +514,80 @@ export default function OnboardingProfile() {
               )}
             </div>
 
-            {/* Media links - visible for all */}
+            {/* Music profiles */}
+            {isSectionVisible("social", relevantSections) && (
+            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleSection("musicProfiles")}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--color-bg-hover)] transition-colors"
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  Your music profiles
+                  <span className="text-[var(--color-text-tertiary)] font-normal ml-1">
+                    (artist/channel pages)
+                  </span>
+                </span>
+                <span className="text-[var(--color-text-tertiary)]">
+                  {openSections.has("musicProfiles") ? (
+                    <ChevronDown size={20} />
+                  ) : (
+                    <ChevronRight size={20} />
+                  )}
+                </span>
+              </button>
+              {openSections.has("musicProfiles") && (
+                <div className="px-4 pb-4 space-y-3">
+                  <p className="text-sm text-[var(--color-text-tertiary)]">
+                    Link your artist pages so fans can follow you. These display as profile cards.
+                  </p>
+                  {[
+                    {
+                      label: "Spotify",
+                      value: spotifyUrl,
+                      onChange: setSpotifyUrl,
+                      placeholder: "https://open.spotify.com/artist/...",
+                    },
+                    {
+                      label: "Bandcamp",
+                      value: bandcampUrl,
+                      onChange: setBandcampUrl,
+                      placeholder: "https://yourname.bandcamp.com",
+                    },
+                    {
+                      label: "YouTube",
+                      value: youtubeUrl,
+                      onChange: setYoutubeUrl,
+                      placeholder: "https://youtube.com/@you",
+                    },
+                  ].map((item) => (
+                    <div key={item.label}>
+                      <label className="block text-sm text-[var(--color-text-tertiary)] mb-1">
+                        {item.label}
+                      </label>
+                      <input
+                        type="url"
+                        value={item.value}
+                        onChange={(e) => item.onChange(e.target.value)}
+                        placeholder={item.placeholder}
+                        className="w-full px-3 py-2 bg-[var(--color-bg-input)] border border-[var(--color-border-input)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-placeholder)] focus:border-[var(--color-accent-primary)] focus:outline-none text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            )}
+
+            {/* Embedded players - visible for all */}
             <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("media")}
                 className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--color-bg-hover)] transition-colors"
               >
                 <span className="font-medium text-[var(--color-text-primary)]">
-                  Share your music or videos
+                  Embedded players
                   <span className="text-[var(--color-text-tertiary)] font-normal ml-1">
-                    (YouTube, Spotify, etc.)
+                    (specific videos, tracks, playlists)
                   </span>
                 </span>
                 <span className="text-[var(--color-text-tertiary)]">
@@ -481,7 +599,19 @@ export default function OnboardingProfile() {
                 </span>
               </button>
               {openSections.has("media") && (
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-4 space-y-3">
+                  <p className="text-sm text-[var(--color-text-tertiary)]">
+                    Paste direct media links to embed players on your profile.
+                  </p>
+                  {musicProfileImportPreview.importableUrls.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleImportMusicProfiles}
+                      className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border-default)] px-3 py-2 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-border-accent)] hover:text-[var(--color-text-primary)] transition-colors"
+                    >
+                      Import embeddable links from music profiles
+                    </button>
+                  )}
                   <MediaEmbedsEditor
                     value={mediaEmbedUrls}
                     onChange={setMediaEmbedUrls}
@@ -797,24 +927,6 @@ export default function OnboardingProfile() {
                       value: instagramUrl,
                       onChange: setInstagramUrl,
                       placeholder: "https://instagram.com/you",
-                    },
-                    {
-                      label: "Spotify",
-                      value: spotifyUrl,
-                      onChange: setSpotifyUrl,
-                      placeholder: "https://open.spotify.com/artist/...",
-                    },
-                    {
-                      label: "Bandcamp",
-                      value: bandcampUrl,
-                      onChange: setBandcampUrl,
-                      placeholder: "https://yourname.bandcamp.com",
-                    },
-                    {
-                      label: "YouTube",
-                      value: youtubeUrl,
-                      onChange: setYoutubeUrl,
-                      placeholder: "https://youtube.com/@you",
                     },
                     {
                       label: "TikTok",

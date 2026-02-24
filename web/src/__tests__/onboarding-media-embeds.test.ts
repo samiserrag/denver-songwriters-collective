@@ -25,6 +25,11 @@ const ONBOARDING_API = fs.readFileSync(
   "utf-8"
 );
 
+const PROFILE_API = fs.readFileSync(
+  path.join(ROOT, "app/api/profile/route.ts"),
+  "utf-8"
+);
+
 describe("onboarding media embeds wiring", () => {
   it("imports and renders MediaEmbedsEditor with mediaEmbedUrls state", () => {
     expect(ONBOARDING_PAGE).toContain("MediaEmbedsEditor");
@@ -67,7 +72,7 @@ describe("onboarding media embeds preload on revisit", () => {
 describe("onboarding section order: media after identity, before instruments", () => {
   it("places media section after identity and before instruments", () => {
     const identityIdx = ONBOARDING_PAGE.indexOf("/* How you identify */");
-    const mediaIdx = ONBOARDING_PAGE.indexOf("/* Media links");
+    const mediaIdx = ONBOARDING_PAGE.indexOf("/* Embedded players");
     const instrumentsIdx = ONBOARDING_PAGE.indexOf("/* Instruments & Genres");
 
     expect(identityIdx).toBeGreaterThan(-1);
@@ -81,8 +86,8 @@ describe("onboarding section order: media after identity, before instruments", (
   });
 
   it("does not have a second media section elsewhere in the page", () => {
-    const firstMediaIdx = ONBOARDING_PAGE.indexOf("/* Media links");
-    const secondMediaIdx = ONBOARDING_PAGE.indexOf("/* Media links", firstMediaIdx + 1);
+    const firstMediaIdx = ONBOARDING_PAGE.indexOf("/* Embedded players");
+    const secondMediaIdx = ONBOARDING_PAGE.indexOf("/* Embedded players", firstMediaIdx + 1);
     expect(secondMediaIdx).toBe(-1);
   });
 });
@@ -97,5 +102,19 @@ describe("onboarding API route media embeds handling", () => {
   it("calls upsert when media_embed_urls is present (even if empty array)", () => {
     // The guard should be Array.isArray — not a length check — so empty arrays trigger clear
     expect(ONBOARDING_API).toContain("Array.isArray(body.media_embed_urls)");
+  });
+
+  it("returns embed_warnings when media embed normalization fails", () => {
+    expect(ONBOARDING_API).toContain("embed_warnings");
+    expect(ONBOARDING_API).toContain("embedWarnings");
+    expect(ONBOARDING_API).toContain("Could not save embedded players");
+  });
+});
+
+describe("profile API route media embeds handling", () => {
+  it("returns embed_warnings when media embed normalization fails", () => {
+    expect(PROFILE_API).toContain("embed_warnings");
+    expect(PROFILE_API).toContain("embedWarnings");
+    expect(PROFILE_API).toContain("Could not save embedded players");
   });
 });

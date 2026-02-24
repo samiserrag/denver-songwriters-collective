@@ -19,8 +19,9 @@ import { splitHostedHappenings } from "@/lib/profile/splitHostedHappenings";
 import Link from "next/link";
 import Image from "next/image";
 import { QrShareBlock } from "@/components/shared/QrShareBlock";
-import { MediaEmbedsSection, OrderedMediaEmbeds } from "@/components/media";
+import { MediaEmbedsSection, MusicProfileCard, OrderedMediaEmbeds } from "@/components/media";
 import { isExternalEmbedsEnabled } from "@/lib/featureFlags";
+import { canonicalizeMediaReference, getMusicProfileLinkMeta } from "@/lib/mediaEmbeds";
 export const dynamic = "force-dynamic";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://denver-songwriters-collective.vercel.app";
@@ -655,6 +656,22 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
             );
             const hasSongLinks = songwriter.song_links && songwriter.song_links.length > 0;
             const hasMusicPlatforms = musicPlatformLinks.length > 0;
+            const embeddedUrlKeys = new Set(
+              mediaEmbeds
+                .map((embed) => canonicalizeMediaReference(embed.url))
+                .filter((value): value is string => Boolean(value))
+                .map((value) => value.toLowerCase())
+            );
+            const cardDedupe = new Set<string>();
+            const musicProfileCards = musicPlatformLinks
+              .map((link) => getMusicProfileLinkMeta(link.url))
+              .filter((meta): meta is NonNullable<typeof meta> => Boolean(meta))
+              .filter((meta) => {
+                const key = meta.dedupe_key.toLowerCase();
+                if (embeddedUrlKeys.has(key) || cardDedupe.has(key)) return false;
+                cardDedupe.add(key);
+                return true;
+              });
 
             if (!hasSongLinks && !hasMusicPlatforms) return null;
 
@@ -674,26 +691,20 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                     <MediaEmbedsSection
                       youtubeUrl={songwriter.youtube_url}
                       spotifyUrl={songwriter.spotify_url}
+                      bandcampUrl={songwriter.bandcamp_url}
                       heading="Embedded Players"
                     />
                   </div>
                 ) : null}
 
-                {/* Music platform social links (Spotify, Bandcamp, YouTube) */}
-                {musicPlatformLinks.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    {musicPlatformLinks.map((link) => (
-                      <Link
-                        key={link.type}
-                        href={link.url!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-accent-muted)] hover:bg-[var(--color-border-accent)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                        title={link.label}
-                      >
-                        <SocialIcon type={link.type} />
-                        <span className="text-sm font-medium">{link.label}</span>
-                      </Link>
+                {/* Music profile cards (shown alongside explicit embeds, de-duped by URL) */}
+                {((!embedsEnabled) || (embedsEnabled && mediaEmbeds.length > 0)) && musicProfileCards.length > 0 && (
+                  <div className="mb-6 space-y-3">
+                    <h3 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)]">
+                      Music Profiles
+                    </h3>
+                    {musicProfileCards.map((meta) => (
+                      <MusicProfileCard key={meta.dedupe_key} meta={meta} />
                     ))}
                   </div>
                 )}

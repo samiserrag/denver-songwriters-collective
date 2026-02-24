@@ -119,7 +119,7 @@ function SortableRow({
             value={row.url}
             onChange={(e) => onUrlChange(row.id, e.target.value)}
             onPaste={(e) => onPaste(row.id, e)}
-            placeholder="Paste a URL or embed code (YouTube, Spotify, Bandcamp…)"
+            placeholder="Paste a direct media URL (YouTube watch/playlist, Spotify track/playlist, Bandcamp EmbeddedPlayer)"
             className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50 text-sm"
           />
           {row.url.trim() && <ProviderBadge url={row.url} />}
@@ -339,7 +339,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
 
       {/* Prominent instruction */}
       <p className="text-sm text-[var(--color-text-secondary)]">
-        Paste the embed code from YouTube, Spotify, Bandcamp, or other sites. A direct URL often works too.
+        Paste links to specific videos, tracks, albums, or playlists. Artist/channel profile links belong in the Music Profiles section.
       </p>
 
       {/* Empty state */}
@@ -408,7 +408,7 @@ export function MediaEmbedsEditor({ value, onChange }: MediaEmbedsEditorProps) {
       )}
 
       <p className="text-xs text-[var(--color-text-tertiary)]">
-        YouTube, Spotify, and Bandcamp links show as embedded players. Other links appear as buttons. Drag rows to reorder.
+        YouTube, Spotify, and Bandcamp media links show as embedded players. Other links appear as buttons. Drag rows to reorder.
       </p>
     </div>
   );
