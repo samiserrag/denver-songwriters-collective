@@ -37,8 +37,8 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           # Intentionally allowed functions (auth triggers + user preferences)
           # Use semicolon (;) as delimiter since function signatures contain commas
-          TRIPWIRE_ALLOW_ANON_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean, p_email_enabled boolean);public.is_album_collaborator(album_uuid uuid)"
-          TRIPWIRE_ALLOW_PUBLIC_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean, p_email_enabled boolean);public.is_album_collaborator(album_uuid uuid)"
+          TRIPWIRE_ALLOW_ANON_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean, p_email_enabled boolean, p_email_host_activity boolean, p_email_attendee_activity boolean, p_email_digests boolean, p_email_invitations boolean);public.is_album_collaborator(album_uuid uuid)"
+          TRIPWIRE_ALLOW_PUBLIC_FUNCTIONS: "public.handle_new_user();public.upsert_notification_preferences(p_user_id uuid, p_email_claim_updates boolean, p_email_event_updates boolean, p_email_admin_notifications boolean, p_email_enabled boolean, p_email_host_activity boolean, p_email_attendee_activity boolean, p_email_digests boolean, p_email_invitations boolean);public.is_album_collaborator(album_uuid uuid)"
           # Intentionally allowed postgres-owned views (read-only public data)
           TRIPWIRE_ALLOW_POSTGRES_OWNED_VIEWS: "public.event_venue_match"
           # Fail CI if dangerous privileges are detected (migration 20260202000005 removed them)
