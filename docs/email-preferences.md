@@ -1,6 +1,6 @@
 # Email Preferences — Developer Contract
 
-> Last updated: 2026-02-23
+> Last updated: 2026-02-24
 
 ## How it works
 
@@ -17,8 +17,8 @@ or **Settings → Email Preferences**. Dashboard notifications always appear reg
 
 ### User-facing categories
 
-| Category key | UI label | What it covers |
-|---|---|---|
+| Category key | UI label | What it covers | Toggle visible to |
+|---|---|---|---|
 | `email_claim_updates` | Event claim updates | Claim submissions, approvals, rejections | Hosts/co-hosts only |
 | `email_host_activity` | Host activity | RSVPs, comments, co-host updates on events the user hosts | Hosts/co-hosts only |
 | `email_attendee_activity` | Attendee updates | Reminders, cancellations, RSVP confirmations, waitlist promotions | All users |
@@ -37,6 +37,7 @@ All preferences default to `true`. The "Stop all emails" toggle is styled in red
 - **Regular users** see: Attendee updates, Weekly digests, Invitations, Stop all emails
 - Host status is determined by having entries in `event_hosts` or `events.host_id`
 - A preference row exists for every user (seeded on signup via `handle_new_user()` trigger)
+- Existing users without a row were backfilled on 2026-02-24 (34 rows total)
 
 ### Essential emails (always delivered)
 
@@ -102,11 +103,14 @@ All decisions are audit-logged via `appLogger` with source `email_prefs_audit`.
 | `src/lib/email/sendWithPreferences.ts` | Decision engine with audit logging |
 | `src/lib/email/registry.ts` | Template registry (source of truth for keys) |
 | `src/__tests__/email-template-coverage.test.ts` | CI guard: every template must be categorized |
-| `src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` | Dashboard Email Preferences UI (collapsible panel) |
-| `src/app/(protected)/dashboard/settings/page.tsx` | Settings page Email Preferences UI |
+| `src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` | Dashboard Email Preferences UI (collapsible panel, role-aware toggles) |
+| `src/app/(protected)/dashboard/settings/page.tsx` | Settings page Email Preferences UI (role-aware toggles) |
 | `src/components/navigation/DashboardSidebar.tsx` | Sidebar with "Email Preferences" nav link |
 | `src/app/api/digest/unsubscribe/route.ts` | One-click digest unsubscribe (targets `email_digests`) |
 
-### Migration
+### Migrations
 
-- `supabase/migrations/20260224000000_split_event_updates_preferences.sql` — adds 4 new columns, migrates data, resets all users to `true`, rebuilds `upsert_notification_preferences()` RPC.
+| Migration | What it does |
+|-----------|-------------|
+| `20260224000000_split_event_updates_preferences.sql` | Adds 4 new columns (`email_host_activity`, `email_attendee_activity`, `email_digests`, `email_invitations`), migrates data, resets all users to `true`, rebuilds `upsert_notification_preferences()` RPC with 9 params |
+| `20260224010000_seed_prefs_on_signup.sql` | Updates `handle_new_user()` trigger to auto-create a `notification_preferences` row on signup |
