@@ -21,13 +21,17 @@ describe("Notification Preferences", () => {
       expect(DEFAULT_PREFERENCES.email_admin_notifications).toBe(true);
     });
 
-    it("has exactly 4 preference keys", () => {
+    it("has exactly 8 preference keys", () => {
       const keys = Object.keys(DEFAULT_PREFERENCES);
-      expect(keys).toHaveLength(4);
+      expect(keys).toHaveLength(8);
       expect(keys).toContain("email_enabled");
       expect(keys).toContain("email_claim_updates");
       expect(keys).toContain("email_event_updates");
       expect(keys).toContain("email_admin_notifications");
+      expect(keys).toContain("email_host_activity");
+      expect(keys).toContain("email_attendee_activity");
+      expect(keys).toContain("email_digests");
+      expect(keys).toContain("email_invitations");
     });
   });
 
@@ -38,14 +42,16 @@ describe("Notification Preferences", () => {
       expect(EMAIL_CATEGORY_MAP["eventClaimRejected"]).toBe("claim_updates");
     });
 
-    it("maps event templates to event_updates category", () => {
-      expect(EMAIL_CATEGORY_MAP["eventReminder"]).toBe("event_updates");
-      expect(EMAIL_CATEGORY_MAP["eventUpdated"]).toBe("event_updates");
-      expect(EMAIL_CATEGORY_MAP["eventCancelled"]).toBe("event_updates");
-      expect(EMAIL_CATEGORY_MAP["occurrenceCancelledHost"]).toBe("event_updates");
-      expect(EMAIL_CATEGORY_MAP["occurrenceModifiedHost"]).toBe("event_updates");
-      expect(EMAIL_CATEGORY_MAP["rsvpConfirmation"]).toBe("event_updates");
-      expect(EMAIL_CATEGORY_MAP["waitlistPromotion"]).toBe("event_updates");
+    it("maps event templates to granular categories", () => {
+      // Host activity
+      expect(EMAIL_CATEGORY_MAP["occurrenceCancelledHost"]).toBe("host_activity");
+      expect(EMAIL_CATEGORY_MAP["occurrenceModifiedHost"]).toBe("host_activity");
+      // Attendee activity
+      expect(EMAIL_CATEGORY_MAP["eventReminder"]).toBe("attendee_activity");
+      expect(EMAIL_CATEGORY_MAP["eventUpdated"]).toBe("attendee_activity");
+      expect(EMAIL_CATEGORY_MAP["eventCancelled"]).toBe("attendee_activity");
+      expect(EMAIL_CATEGORY_MAP["rsvpConfirmation"]).toBe("attendee_activity");
+      expect(EMAIL_CATEGORY_MAP["waitlistPromotion"]).toBe("attendee_activity");
     });
 
     it("maps admin templates to admin_notifications category", () => {
@@ -57,7 +63,7 @@ describe("Notification Preferences", () => {
   describe("getEmailCategory", () => {
     it("returns correct category for known templates", () => {
       expect(getEmailCategory("eventClaimSubmitted")).toBe("claim_updates");
-      expect(getEmailCategory("eventReminder")).toBe("event_updates");
+      expect(getEmailCategory("eventReminder")).toBe("attendee_activity");
       expect(getEmailCategory("adminEventClaimNotification")).toBe("admin_notifications");
     });
 
@@ -74,7 +80,7 @@ describe("Notification Preferences", () => {
     it("returns correct category for previously uncategorized templates", () => {
       // These were added to EMAIL_CATEGORY_MAP as part of the developer contract
       expect(getEmailCategory("claimConfirmed")).toBe("claim_updates");
-      expect(getEmailCategory("newsletterWelcome")).toBe("event_updates");
+      expect(getEmailCategory("newsletterWelcome")).toBe("digests");
     });
   });
 
@@ -92,7 +98,7 @@ describe("Notification Preferences", () => {
       it(`${template} has a category assignment`, () => {
         const category = getEmailCategory(template);
         expect(category).not.toBeNull();
-        expect(["claim_updates", "event_updates", "admin_notifications"]).toContain(category);
+        expect(["claim_updates", "event_updates", "admin_notifications", "host_activity", "attendee_activity", "digests", "invitations"]).toContain(category);
       });
     }
   });
@@ -133,7 +139,7 @@ describe("Category mapping completeness", () => {
   });
 
   it("all categories are valid", () => {
-    const validCategories = ["claim_updates", "event_updates", "admin_notifications"];
+    const validCategories = ["claim_updates", "event_updates", "admin_notifications", "host_activity", "attendee_activity", "digests", "invitations"];
 
     for (const template of categorizedTemplates) {
       const category = EMAIL_CATEGORY_MAP[template];

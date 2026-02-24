@@ -2244,27 +2244,39 @@ export type Database = {
         Row: {
           created_at: string
           email_admin_notifications: boolean
+          email_attendee_activity: boolean
           email_claim_updates: boolean
+          email_digests: boolean
           email_enabled: boolean
           email_event_updates: boolean
+          email_host_activity: boolean
+          email_invitations: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           email_admin_notifications?: boolean
+          email_attendee_activity?: boolean
           email_claim_updates?: boolean
+          email_digests?: boolean
           email_enabled?: boolean
           email_event_updates?: boolean
+          email_host_activity?: boolean
+          email_invitations?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           email_admin_notifications?: boolean
+          email_attendee_activity?: boolean
           email_claim_updates?: boolean
+          email_digests?: boolean
           email_enabled?: boolean
           email_event_updates?: boolean
+          email_host_activity?: boolean
+          email_invitations?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -3666,17 +3678,25 @@ export type Database = {
       upsert_notification_preferences: {
         Args: {
           p_email_admin_notifications?: boolean
+          p_email_attendee_activity?: boolean
           p_email_claim_updates?: boolean
+          p_email_digests?: boolean
           p_email_enabled?: boolean
           p_email_event_updates?: boolean
+          p_email_host_activity?: boolean
+          p_email_invitations?: boolean
           p_user_id: string
         }
         Returns: {
           created_at: string
           email_admin_notifications: boolean
+          email_attendee_activity: boolean
           email_claim_updates: boolean
+          email_digests: boolean
           email_enabled: boolean
           email_event_updates: boolean
+          email_host_activity: boolean
+          email_invitations: boolean
           updated_at: string
           user_id: string
         }

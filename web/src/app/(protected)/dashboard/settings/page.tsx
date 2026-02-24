@@ -198,34 +198,6 @@ export default function SettingsPage() {
             <div className="text-[var(--color-text-tertiary)]">Loading preferences...</div>
           ) : prefs ? (
             <div className="space-y-4">
-              {/* Master No-Emails Toggle */}
-              <label className="flex items-center justify-between gap-4 cursor-pointer">
-                <div>
-                  <span className="text-[var(--color-text-primary)] font-medium">Stop all emails</span>
-                  <p className="text-[var(--color-text-tertiary)] text-sm">
-                    Disable every email from this site
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={!prefs.email_enabled}
-                  onClick={() => handleToggle("email_enabled", !prefs.email_enabled)}
-                  disabled={prefsSaving}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    !prefs.email_enabled
-                      ? "bg-[var(--color-accent-primary)]"
-                      : "bg-[var(--color-bg-tertiary)]"
-                  } ${prefsSaving ? "opacity-50" : ""}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      !prefs.email_enabled ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </label>
-
               {/* Category toggles - disabled when master is off */}
               <div className={`space-y-4 ${!prefs.email_enabled ? "opacity-50" : ""}`}>
               {/* Claim Updates Toggle */}
@@ -256,29 +228,113 @@ export default function SettingsPage() {
                 </button>
               </label>
 
-              {/* Event Updates Toggle */}
+              {/* Host Activity Toggle */}
               <label className="flex items-center justify-between gap-4 cursor-pointer">
                 <div>
-                  <span className="text-[var(--color-text-primary)]">Event updates</span>
+                  <span className="text-[var(--color-text-primary)]">Host activity</span>
                   <p className="text-[var(--color-text-tertiary)] text-sm">
-                    Weekly digest, reminders, and changes for events you&apos;re attending or hosting
+                    RSVPs, comments, and co-host updates on events you host
                   </p>
                 </div>
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={prefs.email_event_updates}
-                  onClick={() => handleToggle("email_event_updates", !prefs.email_event_updates)}
+                  aria-checked={prefs.email_host_activity}
+                  onClick={() => handleToggle("email_host_activity", !prefs.email_host_activity)}
                   disabled={prefsSaving || !prefs.email_enabled}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    prefs.email_event_updates
+                    prefs.email_host_activity
                       ? "bg-[var(--color-accent-primary)]"
                       : "bg-[var(--color-bg-tertiary)]"
                   } ${prefsSaving ? "opacity-50" : ""}`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      prefs.email_event_updates ? "translate-x-6" : "translate-x-1"
+                      prefs.email_host_activity ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </label>
+
+              {/* Attendee Updates Toggle */}
+              <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div>
+                  <span className="text-[var(--color-text-primary)]">Attendee updates</span>
+                  <p className="text-[var(--color-text-tertiary)] text-sm">
+                    Reminders and changes for events you&apos;re attending
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={prefs.email_attendee_activity}
+                  onClick={() => handleToggle("email_attendee_activity", !prefs.email_attendee_activity)}
+                  disabled={prefsSaving || !prefs.email_enabled}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    prefs.email_attendee_activity
+                      ? "bg-[var(--color-accent-primary)]"
+                      : "bg-[var(--color-bg-tertiary)]"
+                  } ${prefsSaving ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      prefs.email_attendee_activity ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </label>
+
+              {/* Weekly Digests Toggle */}
+              <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div>
+                  <span className="text-[var(--color-text-primary)]">Weekly digests</span>
+                  <p className="text-[var(--color-text-tertiary)] text-sm">
+                    Open mic roundups and happenings digest
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={prefs.email_digests}
+                  onClick={() => handleToggle("email_digests", !prefs.email_digests)}
+                  disabled={prefsSaving || !prefs.email_enabled}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    prefs.email_digests
+                      ? "bg-[var(--color-accent-primary)]"
+                      : "bg-[var(--color-bg-tertiary)]"
+                  } ${prefsSaving ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      prefs.email_digests ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </label>
+
+              {/* Invitations Toggle */}
+              <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div>
+                  <span className="text-[var(--color-text-primary)]">Invitations</span>
+                  <p className="text-[var(--color-text-tertiary)] text-sm">
+                    Co-host invitations, event invitations, and collaboration requests
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={prefs.email_invitations}
+                  onClick={() => handleToggle("email_invitations", !prefs.email_invitations)}
+                  disabled={prefsSaving || !prefs.email_enabled}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    prefs.email_invitations
+                      ? "bg-[var(--color-accent-primary)]"
+                      : "bg-[var(--color-bg-tertiary)]"
+                  } ${prefsSaving ? "opacity-50" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      prefs.email_invitations ? "translate-x-6" : "translate-x-1"
                     }`}
                   />
                 </button>
@@ -325,6 +381,36 @@ export default function SettingsPage() {
                   Saved. You&apos;ll still see all notifications in your dashboard.
                 </p>
               )}
+
+              {/* Master kill-switch — red, at the bottom */}
+              <div className="mt-4 pt-4 border-t border-red-500/30">
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <span className="text-red-500 dark:text-red-400 font-medium">Stop all emails</span>
+                    <p className="text-red-400/70 dark:text-red-400/60 text-sm">
+                      Disable every email from this site
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={!prefs.email_enabled}
+                    onClick={() => handleToggle("email_enabled", !prefs.email_enabled)}
+                    disabled={prefsSaving}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      !prefs.email_enabled
+                        ? "bg-red-500"
+                        : "bg-[var(--color-bg-tertiary)]"
+                    } ${prefsSaving ? "opacity-50" : ""}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        !prefs.email_enabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </label>
+              </div>
             </div>
           ) : (
             <div className="text-[var(--color-text-tertiary)]">Unable to load preferences.</div>

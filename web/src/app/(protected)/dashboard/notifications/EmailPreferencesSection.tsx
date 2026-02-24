@@ -104,6 +104,10 @@ export default function EmailPreferencesSection() {
       | "email_claim_updates"
       | "email_event_updates"
       | "email_admin_notifications"
+      | "email_host_activity"
+      | "email_attendee_activity"
+      | "email_digests"
+      | "email_invitations"
     >,
     value: boolean
   ) => {
@@ -172,28 +176,9 @@ export default function EmailPreferencesSection() {
             </div>
           ) : prefs ? (
             <div className="space-y-3">
-              {/* Master toggle */}
-              <label className="flex items-center justify-between gap-4 cursor-pointer">
-                <div>
-                  <span className="text-[var(--color-text-primary)] font-medium">
-                    Stop all emails
-                  </span>
-                  <p className="text-[var(--color-text-tertiary)] text-xs">
-                    Disable every email from this site
-                  </p>
-                </div>
-                <Toggle
-                  checked={!prefs.email_enabled}
-                  saving={saving}
-                  onChange={() =>
-                    handleToggle("email_enabled", !prefs.email_enabled)
-                  }
-                />
-              </label>
-
               {/* Category toggles */}
               <div
-                className={`space-y-3 pl-2 border-l-2 border-[var(--color-border-default)] ${
+                className={`space-y-3 ${
                   masterOff ? "opacity-50" : ""
                 }`}
               >
@@ -222,21 +207,86 @@ export default function EmailPreferencesSection() {
                 <label className="flex items-center justify-between gap-4 cursor-pointer">
                   <div>
                     <span className="text-[var(--color-text-primary)] text-sm">
-                      Event updates
+                      Host activity
                     </span>
                     <p className="text-[var(--color-text-tertiary)] text-xs">
-                      Weekly digest, reminders, and changes for events
-                      you&apos;re attending or hosting
+                      RSVPs, comments, and co-host updates on events you host
                     </p>
                   </div>
                   <Toggle
-                    checked={prefs.email_event_updates}
+                    checked={prefs.email_host_activity}
                     disabled={masterOff}
                     saving={saving}
                     onChange={() =>
                       handleToggle(
-                        "email_event_updates",
-                        !prefs.email_event_updates
+                        "email_host_activity",
+                        !prefs.email_host_activity
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <span className="text-[var(--color-text-primary)] text-sm">
+                      Attendee updates
+                    </span>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">
+                      Reminders and changes for events you&apos;re attending
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={prefs.email_attendee_activity}
+                    disabled={masterOff}
+                    saving={saving}
+                    onChange={() =>
+                      handleToggle(
+                        "email_attendee_activity",
+                        !prefs.email_attendee_activity
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <span className="text-[var(--color-text-primary)] text-sm">
+                      Weekly digests
+                    </span>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">
+                      Open mic roundups and happenings digest
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={prefs.email_digests}
+                    disabled={masterOff}
+                    saving={saving}
+                    onChange={() =>
+                      handleToggle(
+                        "email_digests",
+                        !prefs.email_digests
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <span className="text-[var(--color-text-primary)] text-sm">
+                      Invitations
+                    </span>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">
+                      Co-host invitations, event invitations, and collaboration requests
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={prefs.email_invitations}
+                    disabled={masterOff}
+                    saving={saving}
+                    onChange={() =>
+                      handleToggle(
+                        "email_invitations",
+                        !prefs.email_invitations
                       )
                     }
                   />
@@ -275,6 +325,27 @@ export default function EmailPreferencesSection() {
               <p className="text-[var(--color-text-tertiary)] text-xs mt-2 italic">
                 Security and account recovery emails are always delivered.
               </p>
+
+              {/* Master kill-switch — red, at the bottom */}
+              <div className="mt-4 pt-4 border-t border-red-500/30">
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                  <div>
+                    <span className="text-red-500 dark:text-red-400 font-medium text-sm">
+                      Stop all emails
+                    </span>
+                    <p className="text-red-400/70 dark:text-red-400/60 text-xs">
+                      Disable every email from this site
+                    </p>
+                  </div>
+                  <Toggle
+                    checked={!prefs.email_enabled}
+                    saving={saving}
+                    onChange={() =>
+                      handleToggle("email_enabled", !prefs.email_enabled)
+                    }
+                  />
+                </label>
+              </div>
             </div>
           ) : (
             <div className="text-[var(--color-text-tertiary)] text-sm">

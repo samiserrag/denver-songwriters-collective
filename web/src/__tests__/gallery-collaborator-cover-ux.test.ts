@@ -705,13 +705,13 @@ describe("Collaborator Email — Registry and Category Registration", () => {
     expect(content).toContain("CollaboratorInvitedEmailParams");
   });
 
-  it("both templates should be mapped to event_updates category", () => {
+  it("both templates should be mapped to invitations category", () => {
     const prefsPath = path.join(
       __dirname,
       "../lib/notifications/preferences.ts"
     );
     const content = fs.readFileSync(prefsPath, "utf-8");
-    expect(content).toContain('collaboratorAdded: "event_updates"');
-    expect(content).toContain('collaboratorInvited: "event_updates"');
+    expect(content).toContain('collaboratorAdded: "invitations"');
+    expect(content).toContain('collaboratorInvited: "invitations"');
   });
 });

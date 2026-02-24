@@ -467,8 +467,8 @@ describe("Template Registry (weeklyHappeningsDigest)", () => {
     expect(TEMPLATE_REGISTRY.weeklyHappeningsDigest.description).toBe("Weekly email listing all upcoming happenings");
   });
 
-  it("maps to event_updates category", () => {
-    expect(EMAIL_CATEGORY_MAP.weeklyHappeningsDigest).toBe("event_updates");
+  it("maps to digests category", () => {
+    expect(EMAIL_CATEGORY_MAP.weeklyHappeningsDigest).toBe("digests");
   });
 
   it("has correct audience (member)", () => {

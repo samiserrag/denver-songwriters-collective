@@ -48,6 +48,10 @@ describe("Email template preference coverage", () => {
       "claim_updates",
       "event_updates",
       "admin_notifications",
+      "host_activity",
+      "attendee_activity",
+      "digests",
+      "invitations",
     ]);
     for (const [key, category] of Object.entries(EMAIL_CATEGORY_MAP)) {
       expect(validCategories.has(category)).toBe(true);

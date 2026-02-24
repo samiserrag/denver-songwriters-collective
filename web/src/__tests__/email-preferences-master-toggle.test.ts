@@ -46,6 +46,10 @@ describe("Master toggle decision path", () => {
       email_claim_updates: true,
       email_event_updates: false,
       email_admin_notifications: true,
+      email_host_activity: true,
+      email_attendee_activity: true,
+      email_digests: true,
+      email_invitations: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

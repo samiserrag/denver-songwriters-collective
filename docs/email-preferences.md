@@ -1,11 +1,11 @@
 # Email Preferences — Developer Contract
 
-> Last updated: 2026-02-22
+> Last updated: 2026-02-23
 
 ## How it works
 
-Users control which emails they receive via **Settings → Email Preferences**.
-Dashboard notifications always appear regardless of email settings.
+Users control which emails they receive via **Dashboard → Email Preferences** (sidebar link)
+or **Settings → Email Preferences**. Dashboard notifications always appear regardless of email settings.
 
 ### Three layers of protection
 
@@ -19,10 +19,16 @@ Dashboard notifications always appear regardless of email settings.
 
 | Category key | UI label | What it covers |
 |---|---|---|
-| `email_enabled` | Stop all emails | Master kill-switch (overrides all below) |
 | `email_claim_updates` | Event claim updates | Claim submissions, approvals, rejections |
-| `email_event_updates` | Event updates | Reminders, cancellations, RSVPs, digests, comments |
+| `email_host_activity` | Host activity | RSVPs, comments, co-host updates on events the user hosts |
+| `email_attendee_activity` | Attendee updates | Reminders, cancellations, RSVP confirmations, waitlist promotions |
+| `email_digests` | Weekly digests | Open mic roundups, happenings digest, newsletter welcome |
+| `email_invitations` | Invitations | Co-host, event, and gallery collaboration invitations |
 | `email_admin_notifications` | Admin alerts | Admin-only; claims, submissions, contact/feedback |
+| `email_event_updates` | *(legacy)* | Retained for backward compatibility; new templates should use granular categories above |
+| `email_enabled` | Stop all emails | Master kill-switch (red, at bottom of UI; overrides all above) |
+
+All preferences default to `true`. The "Stop all emails" toggle is styled in red and placed at the bottom of both the Email Preferences and Settings pages.
 
 ### Essential emails (always delivered)
 
@@ -54,7 +60,13 @@ Is it a security or account-recovery email?
             → Yes → "claim_updates"
             → No  → Is it admin-facing only?
                       → Yes → "admin_notifications"
-                      → No  → "event_updates"
+                      → No  → Does the host receive it about their event?
+                                → Yes → "host_activity"
+                                → No  → Is it a digest or newsletter?
+                                          → Yes → "digests"
+                                          → No  → Is it an invitation?
+                                                    → Yes → "invitations"
+                                                    → No  → "attendee_activity"
 ```
 
 ---
@@ -78,13 +90,15 @@ All decisions are audit-logged via `appLogger` with source `email_prefs_audit`.
 
 | File | Purpose |
 |------|---------|
-| `src/lib/notifications/preferences.ts` | Category map, essential set, preference queries |
+| `src/lib/notifications/preferences.ts` | Category map, essential set, preference queries, `EmailCategory` type |
 | `src/lib/email/sendWithPreferences.ts` | Decision engine with audit logging |
 | `src/lib/email/registry.ts` | Template registry (source of truth for keys) |
 | `src/__tests__/email-template-coverage.test.ts` | CI guard: every template must be categorized |
-| `src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` | Dashboard UI |
-| `src/app/(protected)/dashboard/settings/page.tsx` | Settings page UI |
+| `src/app/(protected)/dashboard/notifications/EmailPreferencesSection.tsx` | Dashboard Email Preferences UI (collapsible panel) |
+| `src/app/(protected)/dashboard/settings/page.tsx` | Settings page Email Preferences UI |
+| `src/components/navigation/DashboardSidebar.tsx` | Sidebar with "Email Preferences" nav link |
+| `src/app/api/digest/unsubscribe/route.ts` | One-click digest unsubscribe (targets `email_digests`) |
 
-### Recent template additions
+### Migration
 
-- `attendeeInvitation` is categorized as `event_updates`.
+- `supabase/migrations/20260224000000_split_event_updates_preferences.sql` — adds 4 new columns, migrates data, resets all users to `true`, rebuilds `upsert_notification_preferences()` RPC.

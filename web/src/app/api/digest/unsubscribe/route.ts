@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Set email_event_updates=false via service role (bypasses RLS)
+  // Set email_digests=false via service role (bypasses RLS)
   try {
     const supabase = createServiceRoleClient();
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       .upsert(
         {
           user_id: uid,
-          email_event_updates: false,
+          email_digests: false,
         },
         { onConflict: "user_id" }
       );

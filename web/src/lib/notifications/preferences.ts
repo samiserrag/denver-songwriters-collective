@@ -14,6 +14,10 @@ export interface NotificationPreferences {
   email_claim_updates: boolean;
   email_event_updates: boolean;
   email_admin_notifications: boolean;
+  email_host_activity: boolean;
+  email_attendee_activity: boolean;
+  email_digests: boolean;
+  email_invitations: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +30,10 @@ export const DEFAULT_PREFERENCES: Omit<NotificationPreferences, "user_id" | "cre
   email_claim_updates: true,
   email_event_updates: true,
   email_admin_notifications: true,
+  email_host_activity: true,
+  email_attendee_activity: true,
+  email_digests: true,
+  email_invitations: true,
 };
 
 /**
@@ -68,6 +76,10 @@ export async function upsertPreferences(
     p_email_claim_updates: patch.email_claim_updates,
     p_email_event_updates: patch.email_event_updates,
     p_email_admin_notifications: patch.email_admin_notifications,
+    p_email_host_activity: patch.email_host_activity,
+    p_email_attendee_activity: patch.email_attendee_activity,
+    p_email_digests: patch.email_digests,
+    p_email_invitations: patch.email_invitations,
   });
 
   if (error) {
@@ -81,10 +93,19 @@ export async function upsertPreferences(
 /**
  * Check if user wants to receive a specific category of email
  */
+export type EmailCategory =
+  | "claim_updates"
+  | "event_updates"
+  | "admin_notifications"
+  | "host_activity"
+  | "attendee_activity"
+  | "digests"
+  | "invitations";
+
 export async function shouldSendEmail(
   supabase: SupabaseClient<Database>,
   userId: string,
-  category: "claim_updates" | "event_updates" | "admin_notifications"
+  category: EmailCategory
 ): Promise<boolean> {
   const prefs = await getPreferences(supabase, userId);
 
@@ -95,9 +116,18 @@ export async function shouldSendEmail(
     case "claim_updates":
       return prefs.email_claim_updates;
     case "event_updates":
+      // Legacy fallback — new templates should use granular categories
       return prefs.email_event_updates;
     case "admin_notifications":
       return prefs.email_admin_notifications;
+    case "host_activity":
+      return prefs.email_host_activity;
+    case "attendee_activity":
+      return prefs.email_attendee_activity;
+    case "digests":
+      return prefs.email_digests;
+    case "invitations":
+      return prefs.email_invitations;
     default:
       return true; // Default to sending if unknown category
   }
@@ -120,7 +150,7 @@ export const ESSENTIAL_EMAILS: ReadonlySet<string> = new Set([
  *
  * See docs/email-preferences.md for the full checklist.
  */
-export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates" | "admin_notifications"> = {
+export const EMAIL_CATEGORY_MAP: Record<string, EmailCategory> = {
   // Claim-related templates (events)
   eventClaimSubmitted: "claim_updates",
   eventClaimApproved: "claim_updates",
@@ -132,28 +162,32 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
   venueClaimApproved: "claim_updates",
   venueClaimRejected: "claim_updates",
 
-  // Event-related templates
-  eventReminder: "event_updates",
-  eventUpdated: "event_updates",
-  eventCancelled: "event_updates",
-  eventRestored: "event_updates",
-  occurrenceCancelledHost: "event_updates",
-  occurrenceModifiedHost: "event_updates",
-  rsvpConfirmation: "event_updates",
-  waitlistOffer: "event_updates",
-  waitlistPromotion: "event_updates",
-  eventCommentNotification: "event_updates",
-  rsvpHostNotification: "event_updates",
-  weeklyOpenMicsDigest: "event_updates",
-  weeklyHappeningsDigest: "event_updates",
-  newsletterWelcome: "event_updates",
-  suggestionResponse: "event_updates",
-  cohostInvitation: "event_updates",
-  attendeeInvitation: "event_updates",
+  // Host activity — RSVPs, comments, co-host updates on events the user hosts
+  rsvpHostNotification: "host_activity",
+  eventCommentNotification: "host_activity",
+  occurrenceCancelledHost: "host_activity",
+  occurrenceModifiedHost: "host_activity",
+  suggestionResponse: "host_activity",
 
-  // Gallery-related templates
-  collaboratorAdded: "event_updates",
-  collaboratorInvited: "event_updates",
+  // Attendee activity — reminders and changes for events the user is attending
+  rsvpConfirmation: "attendee_activity",
+  waitlistOffer: "attendee_activity",
+  waitlistPromotion: "attendee_activity",
+  eventReminder: "attendee_activity",
+  eventUpdated: "attendee_activity",
+  eventCancelled: "attendee_activity",
+  eventRestored: "attendee_activity",
+
+  // Digests — weekly roundups and welcome emails
+  weeklyOpenMicsDigest: "digests",
+  weeklyHappeningsDigest: "digests",
+  newsletterWelcome: "digests",
+
+  // Invitations — co-host, event, and collaboration invitations
+  cohostInvitation: "invitations",
+  attendeeInvitation: "invitations",
+  collaboratorAdded: "invitations",
+  collaboratorInvited: "invitations",
 
   // Admin-related templates
   adminEventClaimNotification: "admin_notifications",
@@ -167,7 +201,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, "claim_updates" | "event_updates
  */
 export function getEmailCategory(
   templateKey: string
-): "claim_updates" | "event_updates" | "admin_notifications" | null {
+): EmailCategory | null {
   return EMAIL_CATEGORY_MAP[templateKey] ?? null;
 }
 

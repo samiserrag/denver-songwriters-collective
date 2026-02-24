@@ -331,8 +331,8 @@ describe("Template Registry", () => {
     expect(TEMPLATE_REGISTRY.weeklyOpenMicsDigest.name).toBe("Weekly Open Mics Digest");
   });
 
-  it("maps to event_updates category", () => {
-    expect(EMAIL_CATEGORY_MAP.weeklyOpenMicsDigest).toBe("event_updates");
+  it("maps to digests category", () => {
+    expect(EMAIL_CATEGORY_MAP.weeklyOpenMicsDigest).toBe("digests");
   });
 });
 

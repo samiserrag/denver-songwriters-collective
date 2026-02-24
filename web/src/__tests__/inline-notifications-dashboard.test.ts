@@ -84,15 +84,16 @@ describe("NotificationsList — No Compact Mode", () => {
   });
 });
 
-describe("Sidebar Nav — No Notifications Link", () => {
+describe("Sidebar Nav — Email Preferences Link", () => {
   const sidebarPath = path.join(
     __dirname,
     "../components/navigation/DashboardSidebar.tsx"
   );
   const sidebarContent = fs.readFileSync(sidebarPath, "utf-8");
 
-  it("should not have a notifications nav item", () => {
-    expect(sidebarContent).not.toContain("/dashboard/notifications");
+  it("should have an email preferences nav item", () => {
+    expect(sidebarContent).toContain("/dashboard/notifications");
+    expect(sidebarContent).toContain("Email Preferences");
   });
 
   it("should still have other main nav items", () => {
