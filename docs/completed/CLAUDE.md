@@ -6,6 +6,27 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Fix: Admin Delete User — Orphaned Profile Persistence (February 2026)
+
+**Summary:** Fixed a bug where deleting a user from the admin dashboard (`/dashboard/admin/users`) would delete the `auth.users` record but leave an orphaned `profiles` row visible in the UI. The root cause was that `deleteUser()` checked `auth.admin.getUserById()` first and returned early with "User not found" if no auth user existed — skipping the profile deletion step entirely. This made it impossible to remove users whose auth record was already deleted or never existed.
+
+**Fix:** The `deleteUser` server action now checks both `auth.users` and `profiles` before deciding to bail out, only returning "User not found" when neither record exists. The auth deletion step is skipped when the auth user is already gone, but profile cleanup, storage cleanup, and audit logging still proceed.
+
+**Data fix:** Manually deleted orphaned "Test Account" profile (`b241db97-84fb-402f-b26a-b2d6966abb0c`) from production after nulling 2 blocking `event_invites.accepted_by` FK references.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/admin/users/actions.ts` | `deleteUser()`: removed early return when auth user missing; added `authUserExists` flag; skip `auth.admin.deleteUser()` when already gone; still proceed with profile delete + audit log |
+
+**Validation:**
+- TypeScript: `npx tsc --noEmit` — no errors in changed file
+- Dev server: `npm run dev` — compiles without errors
+- Production DB: orphaned profile confirmed deleted
+
+---
+
 ### UX: Music Profile Cards + Explicit Embed Import (February 2026)
 
 **Summary:** Improved member/songwriter music sections so artist/channel/profile URLs render as clear profile cards, while real embedded players render without redundant section titling. Added an explicit one-click import path for embeddable links from profile fields into Embedded Players (secondary CTA, only shown when importable links exist). Surfaced non-fatal embed save warnings in onboarding/profile APIs instead of silently swallowing failures.

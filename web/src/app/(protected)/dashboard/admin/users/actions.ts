@@ -295,17 +295,9 @@ export async function deleteUser(
     return { success: false, error: "Not authorized - admin only" };
   }
 
-  // Get target user info from auth
+  // Get target user info from auth (may not exist for orphaned profiles)
   const { data: targetUser } = await serviceClient.auth.admin.getUserById(userId);
-
-  if (!targetUser?.user) {
-    return { success: false, error: "User not found" };
-  }
-
-  // SAFETY: Prevent deleting the super admin
-  if (targetUser.user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
-    return { success: false, error: "Cannot delete the super admin account" };
-  }
+  const authUserExists = !!targetUser?.user;
 
   // Get target profile for role check
   const { data: targetProfile } = await supabase
@@ -313,6 +305,16 @@ export async function deleteUser(
     .select("role, full_name, avatar_url")
     .eq("id", userId)
     .single();
+
+  // Must have at least a profile or auth user to proceed
+  if (!authUserExists && !targetProfile) {
+    return { success: false, error: "User not found" };
+  }
+
+  // SAFETY: Prevent deleting the super admin
+  if (targetUser?.user?.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+    return { success: false, error: "Cannot delete the super admin account" };
+  }
 
   const targetWasAdmin = targetProfile?.role === "admin";
 
@@ -350,13 +352,15 @@ export async function deleteUser(
 
   if (profileDeleteError) {
     console.error("Profile delete error:", profileDeleteError);
-    // Continue anyway - we still want to delete the auth user
+    // Continue anyway - we still want to delete the auth user if it exists
   }
 
   // ============================================
-  // STEP 3: Delete auth user
+  // STEP 3: Delete auth user (skip if already gone)
   // ============================================
-  const { error: authError } = await serviceClient.auth.admin.deleteUser(userId);
+  const { error: authError } = authUserExists
+    ? await serviceClient.auth.admin.deleteUser(userId)
+    : { error: null };
 
   // ============================================
   // STEP 4: Determine status and log
