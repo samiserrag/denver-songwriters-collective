@@ -19,16 +19,24 @@ or **Settings → Email Preferences**. Dashboard notifications always appear reg
 
 | Category key | UI label | What it covers |
 |---|---|---|
-| `email_claim_updates` | Event claim updates | Claim submissions, approvals, rejections |
-| `email_host_activity` | Host activity | RSVPs, comments, co-host updates on events the user hosts |
-| `email_attendee_activity` | Attendee updates | Reminders, cancellations, RSVP confirmations, waitlist promotions |
-| `email_digests` | Weekly digests | Open mic roundups, happenings digest, newsletter welcome |
-| `email_invitations` | Invitations | Co-host, event, and gallery collaboration invitations |
-| `email_admin_notifications` | Admin alerts | Admin-only; claims, submissions, contact/feedback |
-| `email_event_updates` | *(legacy)* | Retained for backward compatibility; new templates should use granular categories above |
-| `email_enabled` | Stop all emails | Master kill-switch (red, at bottom of UI; overrides all above) |
+| `email_claim_updates` | Event claim updates | Claim submissions, approvals, rejections | Hosts/co-hosts only |
+| `email_host_activity` | Host activity | RSVPs, comments, co-host updates on events the user hosts | Hosts/co-hosts only |
+| `email_attendee_activity` | Attendee updates | Reminders, cancellations, RSVP confirmations, waitlist promotions | All users |
+| `email_digests` | Weekly digests | Open mic roundups, happenings digest, newsletter welcome | All users |
+| `email_invitations` | Invitations | Co-host, event, and gallery collaboration invitations | All users |
+| `email_admin_notifications` | Admin alerts | Admin-only; claims, submissions, contact/feedback | Admins only |
+| `email_event_updates` | *(legacy)* | Retained for backward compatibility; new templates should use granular categories above | Hidden (no toggle) |
+| `email_enabled` | Stop all emails | Master kill-switch (red, at bottom of UI; overrides all above) | All users |
 
 All preferences default to `true`. The "Stop all emails" toggle is styled in red and placed at the bottom of both the Email Preferences and Settings pages.
+
+### Toggle visibility rules
+
+- **Hosts/co-hosts** see: Event claim updates, Host activity, Attendee updates, Weekly digests, Invitations, Stop all emails
+- **Admins** see all of the above plus Admin alerts (admins are always treated as hosts)
+- **Regular users** see: Attendee updates, Weekly digests, Invitations, Stop all emails
+- Host status is determined by having entries in `event_hosts` or `events.host_id`
+- A preference row exists for every user (seeded on signup via `handle_new_user()` trigger)
 
 ### Essential emails (always delivered)
 

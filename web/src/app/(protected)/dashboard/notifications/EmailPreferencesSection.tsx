@@ -49,6 +49,7 @@ export default function EmailPreferencesSection() {
   const [open, setOpen] = useState(forceOpen);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isHost, setIsHost] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,6 +90,23 @@ export default function EmailPreferencesSection() {
 
       setIsAdmin(profile?.role === "admin");
 
+      // Check if user is a host or co-host of any event
+      const { count: hostCount } = await supabase
+        .from("event_hosts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      const { count: ownerCount } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("host_id", user.id);
+
+      setIsHost(
+        (hostCount != null && hostCount > 0) ||
+          (ownerCount != null && ownerCount > 0) ||
+          profile?.role === "admin"
+      );
+
       const preferences = await getPreferences(supabase, user.id);
       setPrefs(preferences);
       setLoading(false);
@@ -102,7 +120,6 @@ export default function EmailPreferencesSection() {
       NotificationPreferences,
       | "email_enabled"
       | "email_claim_updates"
-      | "email_event_updates"
       | "email_admin_notifications"
       | "email_host_activity"
       | "email_attendee_activity"
@@ -182,49 +199,53 @@ export default function EmailPreferencesSection() {
                   masterOff ? "opacity-50" : ""
                 }`}
               >
-                <label className="flex items-center justify-between gap-4 cursor-pointer">
-                  <div>
-                    <span className="text-[var(--color-text-primary)] text-sm">
-                      Event claim updates
-                    </span>
-                    <p className="text-[var(--color-text-tertiary)] text-xs">
-                      When you submit, or we respond to, a host claim
-                    </p>
-                  </div>
-                  <Toggle
-                    checked={prefs.email_claim_updates}
-                    disabled={masterOff}
-                    saving={saving}
-                    onChange={() =>
-                      handleToggle(
-                        "email_claim_updates",
-                        !prefs.email_claim_updates
-                      )
-                    }
-                  />
-                </label>
+                {isHost && (
+                  <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <div>
+                      <span className="text-[var(--color-text-primary)] text-sm">
+                        Event claim updates
+                      </span>
+                      <p className="text-[var(--color-text-tertiary)] text-xs">
+                        When you submit, or we respond to, a host claim
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={prefs.email_claim_updates}
+                      disabled={masterOff}
+                      saving={saving}
+                      onChange={() =>
+                        handleToggle(
+                          "email_claim_updates",
+                          !prefs.email_claim_updates
+                        )
+                      }
+                    />
+                  </label>
+                )}
 
-                <label className="flex items-center justify-between gap-4 cursor-pointer">
-                  <div>
-                    <span className="text-[var(--color-text-primary)] text-sm">
-                      Host activity
-                    </span>
-                    <p className="text-[var(--color-text-tertiary)] text-xs">
-                      RSVPs, comments, and co-host updates on events you host
-                    </p>
-                  </div>
-                  <Toggle
-                    checked={prefs.email_host_activity}
-                    disabled={masterOff}
-                    saving={saving}
-                    onChange={() =>
-                      handleToggle(
-                        "email_host_activity",
-                        !prefs.email_host_activity
-                      )
-                    }
-                  />
-                </label>
+                {isHost && (
+                  <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <div>
+                      <span className="text-[var(--color-text-primary)] text-sm">
+                        Host activity
+                      </span>
+                      <p className="text-[var(--color-text-tertiary)] text-xs">
+                        RSVPs, comments, and co-host updates on events you host
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={prefs.email_host_activity}
+                      disabled={masterOff}
+                      saving={saving}
+                      onChange={() =>
+                        handleToggle(
+                          "email_host_activity",
+                          !prefs.email_host_activity
+                        )
+                      }
+                    />
+                  </label>
+                )}
 
                 <label className="flex items-center justify-between gap-4 cursor-pointer">
                   <div>

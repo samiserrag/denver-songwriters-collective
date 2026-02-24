@@ -23,6 +23,7 @@ export default function SettingsPage() {
   // Notification preferences state
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isHost, setIsHost] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsSaving, setPrefsSaving] = useState(false);
@@ -45,6 +46,23 @@ export default function SettingsPage() {
 
       setIsAdmin(profile?.role === "admin");
 
+      // Check if user is a host or co-host of any event
+      const { count: hostCount } = await supabase
+        .from("event_hosts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      const { count: ownerCount } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("host_id", user.id);
+
+      setIsHost(
+        (hostCount != null && hostCount > 0) ||
+          (ownerCount != null && ownerCount > 0) ||
+          profile?.role === "admin"
+      );
+
       // Load preferences
       const preferences = await getPreferences(supabase, user.id);
       setPrefs(preferences);
@@ -57,6 +75,8 @@ export default function SettingsPage() {
   // Handle preference toggle
   const handleToggle = async (key: keyof Omit<NotificationPreferences, "user_id" | "created_at" | "updated_at">, value: boolean) => {
     if (!userId || !prefs) return;
+    // Block category writes when master is off
+    if (key !== "email_enabled" && !prefs.email_enabled) return;
 
     setPrefsSaving(true);
     setPrefsSaved(false);
@@ -200,7 +220,8 @@ export default function SettingsPage() {
             <div className="space-y-4">
               {/* Category toggles - disabled when master is off */}
               <div className={`space-y-4 ${!prefs.email_enabled ? "opacity-50" : ""}`}>
-              {/* Claim Updates Toggle */}
+              {/* Claim Updates Toggle — host/co-host only */}
+              {isHost && (
               <label className="flex items-center justify-between gap-4 cursor-pointer">
                 <div>
                   <span className="text-[var(--color-text-primary)]">Event claim updates</span>
@@ -227,8 +248,10 @@ export default function SettingsPage() {
                   />
                 </button>
               </label>
+              )}
 
-              {/* Host Activity Toggle */}
+              {/* Host Activity Toggle — host/co-host only */}
+              {isHost && (
               <label className="flex items-center justify-between gap-4 cursor-pointer">
                 <div>
                   <span className="text-[var(--color-text-primary)]">Host activity</span>
@@ -255,6 +278,7 @@ export default function SettingsPage() {
                   />
                 </button>
               </label>
+              )}
 
               {/* Attendee Updates Toggle */}
               <label className="flex items-center justify-between gap-4 cursor-pointer">
