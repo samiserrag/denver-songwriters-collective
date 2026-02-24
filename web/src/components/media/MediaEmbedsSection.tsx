@@ -11,7 +11,9 @@ interface MediaEmbedsSectionProps {
   youtubeUrl?: string | null;
   spotifyUrl?: string | null;
   bandcampUrl?: string | null;
-  heading?: string;
+  heading?: string | null;
+  description?: string;
+  hideHeadingWhenOnlyEmbeds?: boolean;
   className?: string;
 }
 
@@ -32,6 +34,8 @@ export function MediaEmbedsSection({
   spotifyUrl,
   bandcampUrl,
   heading = "Media",
+  description,
+  hideHeadingWhenOnlyEmbeds = false,
   className,
 }: MediaEmbedsSectionProps) {
   const seen = new Set<string>();
@@ -128,11 +132,29 @@ export function MediaEmbedsSection({
 
   if (entries.length === 0) return null;
 
+  const hasProfileCards = entries.some((entry) => Boolean(entry.profileMeta));
+  const hasEmbeds = entries.some(
+    (entry) =>
+      Boolean(entry.meta) ||
+      Boolean(entry.key === "bandcamp" && entry.fallbackHref?.includes("bandcamp.com/EmbeddedPlayer"))
+  );
+  const showHeading = Boolean(
+    heading &&
+    heading.trim().length > 0 &&
+    !(hideHeadingWhenOnlyEmbeds && hasEmbeds && !hasProfileCards)
+  );
+  const showDescription = Boolean(description && hasProfileCards);
+
   return (
     <section className={className}>
-      <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
-        {heading}
-      </h2>
+      {showHeading ? (
+        <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-2">
+          {heading}
+        </h2>
+      ) : null}
+      {showDescription ? (
+        <p className="mb-3 text-sm text-[var(--color-text-tertiary)]">{description}</p>
+      ) : null}
       <div className="space-y-4">
         {entries.map((entry) => {
           if (entry.profileMeta) {

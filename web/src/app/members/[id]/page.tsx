@@ -611,7 +611,7 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                   <div className="mb-6">
                     <OrderedMediaEmbeds
                       embeds={mediaEmbeds}
-                      heading="Embedded Players"
+                      heading={null}
                     />
                   </div>
                 ) : embedsEnabled ? (
@@ -620,7 +620,9 @@ export default async function MemberDetailPage({ params }: MemberDetailPageProps
                       youtubeUrl={member.youtube_url}
                       spotifyUrl={member.spotify_url}
                       bandcampUrl={member.bandcamp_url}
-                      heading="Embedded Players"
+                      heading="Music Profiles"
+                      description="These are artist and channel pages."
+                      hideHeadingWhenOnlyEmbeds
                     />
                   </div>
                 ) : null}

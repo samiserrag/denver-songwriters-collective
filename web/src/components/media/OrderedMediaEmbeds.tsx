@@ -10,7 +10,7 @@ interface EmbedRecord {
 
 interface OrderedMediaEmbedsProps {
   embeds: EmbedRecord[];
-  heading?: string;
+  heading?: string | null;
   className?: string;
 }
 
@@ -41,9 +41,11 @@ export function OrderedMediaEmbeds({
 
   return (
     <section className={className}>
-      <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
-        {heading}
-      </h2>
+      {heading && heading.trim().length > 0 ? (
+        <h2 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)] mb-3">
+          {heading}
+        </h2>
+      ) : null}
       <div className="space-y-4">
         {embeds.map((embed) => {
           try {

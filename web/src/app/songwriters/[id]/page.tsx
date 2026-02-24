@@ -683,7 +683,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                   <div className="mb-6">
                     <OrderedMediaEmbeds
                       embeds={mediaEmbeds}
-                      heading="Embedded Players"
+                      heading={null}
                     />
                   </div>
                 ) : embedsEnabled ? (
@@ -692,7 +692,9 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                       youtubeUrl={songwriter.youtube_url}
                       spotifyUrl={songwriter.spotify_url}
                       bandcampUrl={songwriter.bandcamp_url}
-                      heading="Embedded Players"
+                      heading="Music Profiles"
+                      description="These are artist and channel pages."
+                      hideHeadingWhenOnlyEmbeds
                     />
                   </div>
                 ) : null}
