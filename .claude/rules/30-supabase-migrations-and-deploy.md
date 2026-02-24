@@ -62,6 +62,21 @@ git push origin main
 - Always record applied migrations in `supabase_migrations.schema_migrations`
 - Do NOT push to `main` until the migration is confirmed applied on remote
 
+#### Sandbox DNS/Network Limitation Fallback (Standard)
+
+When running `psql` from the agent sandbox, you may see transient network resolution failures such as:
+
+```text
+could not translate host name "db.<project-ref>.supabase.co" to address
+```
+
+If this occurs:
+1. Re-run the exact `psql` command with elevated execution permissions.
+2. Continue MODE B steps (`-f migration`, insert into `schema_migrations`, verification queries).
+3. Include one line in the execution report: "Direct DB commands required elevated execution due sandbox DNS/network limits."
+
+This is an execution-environment limitation, not a migration logic failure.
+
 #### Rollback File Placement (added 2026-02-18, per incident postmortem)
 
 - Rollback-only SQL files MUST NOT be placed in `supabase/migrations/`. They MUST be placed in `supabase/migrations/_archived/` with a clear header comment: `-- ROLLBACK ONLY — DO NOT APPLY AS FORWARD MIGRATION`.
@@ -117,4 +132,3 @@ Three automated guardrails run in CI (`ci.yml` and `test.yml`):
 **To acknowledge a policy change:** Add the line `-- REVIEWED: policy change acknowledged` anywhere in the migration file containing the policy SQL.
 
 ---
-

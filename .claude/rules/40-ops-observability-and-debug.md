@@ -236,6 +236,26 @@ Open the event detail page and check the console for any errors
 Filter for warnings containing "hydration" or "undefined"
 ```
 
+### Conversational Interpreter Smoke Standard (`/api/events/interpret`)
+
+After deploying changes that affect conversational interpretation, run this standard smoke sequence:
+
+1. Confirm active production deployment commit in Vercel.
+2. From authenticated browser session, run create-mode `fetch('/api/events/interpret', ...)`.
+3. Run one guardrail request (invalid mode) and one unauthenticated request.
+4. Confirm statuses:
+   - `200` for create
+   - `400` for invalid mode
+   - `401` for unauthenticated
+5. In Vercel/Axiom logs for the create request:
+   - `POST api.openai.com/v1/responses` must be `200`
+   - No `invalid_json_schema` errors
+   - No `[events/interpret] rate-limit rpc error; using memory fallback` line
+
+Important:
+- Current endpoint logs request/response records; it does not emit a dedicated success log line for rate-limit source on every request.
+- Absence of the fallback error line is acceptable evidence that the persistent RPC limiter is active.
+
 ### When to Use Chrome Integration
 
 | Scenario | Use Chrome? |

@@ -627,6 +627,74 @@ curl -s -X POST https://coloradosongwriterscollective.org/api/guest/rsvp/request
 
 ---
 
+### 22. Conversational Interpreter API (`/api/events/interpret`)
+
+**Precondition:** Logged in session on production domain
+
+**Endpoint:** `POST /api/events/interpret`
+
+**A) Create-mode happy path**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Open mic every Tuesday at 7:00 PM at Long Table Brewhouse. Free. Signup at venue."
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:**
+- HTTP `200`
+- Response includes:
+  - `next_action`
+  - `confidence`
+  - `human_summary`
+  - `clarification_question`
+  - `blocking_fields`
+  - `draft_payload`
+  - `quality_hints`
+
+**B) Guardrail check (invalid mode)**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({ mode: "edit", message: "test" }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** HTTP `400` with mode validation error.
+
+**C) Unauthenticated check**
+
+```javascript
+fetch("https://coloradosongwriterscollective.org/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "omit",
+  body: JSON.stringify({ mode: "create", message: "test" }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** HTTP `401` with `{"error":"Unauthorized"}`.
+
+**D) Log verification**
+
+For the create request in Vercel/Axiom logs:
+- Confirm `POST api.openai.com/v1/responses` returned `200`
+- Confirm no `invalid_json_schema` error exists
+- Confirm no `[events/interpret] rate-limit rpc error; using memory fallback` line exists
+
+**Pass Criteria:** A/B/C expected statuses observed and D log checks clean.
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._
