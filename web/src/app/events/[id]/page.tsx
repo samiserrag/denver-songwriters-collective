@@ -520,6 +520,13 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     effectiveSelectedDate = upcomingOccurrences[0].dateKey;
   }
 
+  // Option B narrow fix: For attendee list and server-side RSVP count only,
+  // fall back to event.event_date so one-time events scope by their date.
+  // Does NOT replace effectiveSelectedDate globally (RSVPSection, share URLs,
+  // timeslots, etc. are intentionally left unchanged in this pass).
+  const attendeeDateKey: string | undefined =
+    effectiveSelectedDate ?? event.event_date ?? undefined;
+
   // Fetch override for the effective selected date
   if (effectiveSelectedDate) {
     const { data: override } = await supabase
@@ -644,8 +651,8 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
     .eq("event_id", event.id)
     .eq("status", "confirmed");
 
-  if (effectiveSelectedDate) {
-    rsvpQuery = rsvpQuery.eq("date_key", effectiveSelectedDate);
+  if (attendeeDateKey) {
+    rsvpQuery = rsvpQuery.eq("date_key", attendeeDateKey);
   }
 
   const { count: rsvpCountResult } = await rsvpQuery;
@@ -1531,7 +1538,7 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
             eventId={event.id}
             hasTimeslots={(event as { has_timeslots?: boolean }).has_timeslots || false}
             performerCount={performerCount}
-            dateKey={effectiveSelectedDate ?? undefined}
+            dateKey={attendeeDateKey}
           />
 
           {/* Hosts are now shown inline in the venue block (Line 3: "Hosted by...") */}
