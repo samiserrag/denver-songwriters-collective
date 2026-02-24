@@ -698,7 +698,7 @@ export default async function SongwriterDetailPage({ params }: SongwriterDetailP
                 ) : null}
 
                 {/* Music profile cards (shown alongside explicit embeds, de-duped by URL) */}
-                {((!embedsEnabled) || (embedsEnabled && mediaEmbeds.length > 0)) && musicProfileCards.length > 0 && (
+                {(!embedsEnabled || mediaEmbeds.length > 0) && musicProfileCards.length > 0 && (
                   <div className="mb-6 space-y-3">
                     <h3 className="font-[var(--font-family-serif)] text-xl text-[var(--color-text-primary)]">
                       Music Profiles
