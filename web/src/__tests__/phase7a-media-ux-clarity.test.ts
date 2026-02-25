@@ -35,23 +35,31 @@ describe("Phase 7A: Event cover upload contract", () => {
 
   it("uploads event covers to event-scoped storage path", async () => {
     const fs = await import("fs");
-    const source = fs.readFileSync(
+    // Upload logic lives in shared helper (extracted from EventForm)
+    const helperSource = fs.readFileSync(
+      "src/lib/events/uploadCoverForEvent.ts",
+      "utf-8"
+    );
+    expect(helperSource).toContain('const storagePath = `${eventId}/${crypto.randomUUID()}.${fileExt}`;');
+    // EventForm imports the shared helper
+    const formSource = fs.readFileSync(
       "src/app/(protected)/dashboard/my-events/_components/EventForm.tsx",
       "utf-8"
     );
-    expect(source).toContain('const storagePath = `${eventId}/${crypto.randomUUID()}.${fileExt}`;');
+    expect(formSource).toContain('import { uploadCoverForEvent, softDeleteCoverImageRow } from "@/lib/events/uploadCoverForEvent"');
   });
 
   it("creates event_images records for EventForm cover uploads", async () => {
     const fs = await import("fs");
-    const source = fs.readFileSync(
-      "src/app/(protected)/dashboard/my-events/_components/EventForm.tsx",
+    // Insert logic lives in shared helper (extracted from EventForm)
+    const helperSource = fs.readFileSync(
+      "src/lib/events/uploadCoverForEvent.ts",
       "utf-8"
     );
-    expect(source).toContain('from("event_images")');
-    expect(source).toContain("event_id: eventId");
-    expect(source).toContain("storage_path: storagePath");
-    expect(source).toContain("uploaded_by: userId");
+    expect(helperSource).toContain('from("event_images")');
+    expect(helperSource).toContain("event_id: eventId");
+    expect(helperSource).toContain("storage_path: storagePath");
+    expect(helperSource).toContain("uploaded_by: userId");
   });
 
   it("defers cover_image_url in create-mode while file is pending", async () => {
@@ -78,14 +86,20 @@ describe("Phase 7A: Event cover upload contract", () => {
 
   it("soft-deletes previous cover event_images row when saved cover changes", async () => {
     const fs = await import("fs");
-    const source = fs.readFileSync(
+    // EventForm calls the shared softDeleteCoverImageRow helper
+    const formSource = fs.readFileSync(
       "src/app/(protected)/dashboard/my-events/_components/EventForm.tsx",
       "utf-8"
     );
-    expect(source).toContain("softDeleteCoverImageRow");
-    expect(source).toContain('.update({ deleted_at: new Date().toISOString() })');
-    expect(source).toContain('.eq("event_id", eventId)');
-    expect(source).toContain('.is("deleted_at", null)');
+    expect(formSource).toContain("softDeleteCoverImageRow");
+    // Implementation lives in shared helper
+    const helperSource = fs.readFileSync(
+      "src/lib/events/uploadCoverForEvent.ts",
+      "utf-8"
+    );
+    expect(helperSource).toContain('.update({ deleted_at: new Date().toISOString() })');
+    expect(helperSource).toContain('.eq("event_id", eventId)');
+    expect(helperSource).toContain('.is("deleted_at", null)');
   });
 });
 
