@@ -2,7 +2,7 @@
 
 **Stop-Gate Phase:** A/B (Investigate + Critique)
 **Date:** 2026-02-24
-**Status:** APPROVED — Phases 0-2 authorized (2026-02-24). Stop for review before Phase 3.
+**Status:** APPROVED — Phases 0-3 authorized. Phase 3 implemented (2026-02-24).
 **Parent feature:** Conversational Event Creation (`conversational-event-creation-stopgate.md`)
 **Scope expansion:** Section 4.7 of parent doc explicitly deferred image support to a future phase. This document covers that future phase.
 
@@ -304,24 +304,27 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - Add `conversationHistory` wiring
 - Lab remains hidden/unlinked
 
-### Phase 3: Vision extraction in interpreter route
-- Add image validation (count, size, mime)
-- Add 413 payload size guardrail
-- Add Phase A vision extraction call with own timeout
-- Feed extracted text into existing Phase B structured interpretation
-- Add `extraction_metadata` to response
-- Add structured logging (count, mime, confidence — no image data)
+### Phase 3: Vision extraction in interpreter route ✅ (2026-02-24)
+- ✅ `export const maxDuration = 60` for Vercel function timeout
+- ✅ Content-Length body size guard (4MB cap) before JSON parse
+- ✅ `validateImageInputs()` call with typed 400/413 error responses
+- ✅ Phase A vision extraction call (same configured interpreter model, default `gpt-5.2`; 15s timeout, graceful fallback)
+- ✅ Extracted text fed into Phase B `buildUserPrompt` as `extracted_image_text`
+- ✅ `extraction_metadata` returned in response (images_processed, confidence, extracted_fields, warnings)
+- ✅ `cover_image_url` added to event context query + `pickCurrentEventContext`
+- ✅ Structured logging (Phase A start/complete/fallback, extraction fields, confidence)
+- ✅ 8 unit tests for `validateImageInputs` + 10 route source-code assertion tests (24 total pass)
 
 ### Phase 4: Cover assignment behavior
 - Edit mode: "Use as cover?" confirmation → existing upload path
 - Create mode: `pendingCoverFile` → deferred upload after create (existing pattern)
 
 ### Phase 5: Tests + smoke
-- Unit tests: request validation, base64 decode size check, extraction fallback
-- API tests: interpret with images, interpret with oversized images (413), interpret with invalid mime
-- Smoke checklist entry in `docs/SMOKE-PROD.md`
+- ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)
+- ✅ Route integration tests: source-code assertions for all Phase 3 requirements (10 tests)
+- Smoke checklist entry in `docs/SMOKE-PROD.md` (deferred until Phase 4)
 
-**Checkpoint:** Phases 0-2 execute first. Stop for review before Phase 3 (backend changes).
+**Checkpoint:** Phases 0-3 complete. Stop for review before Phase 4 (cover assignment behavior).
 
 ---
 

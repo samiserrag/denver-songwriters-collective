@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildInterpretResponseSchema,
   buildQualityHints,
+  IMAGE_INPUT_LIMITS,
   sanitizeInterpretDraftPayload,
+  validateImageInputs,
   validateSanitizedDraftPayload,
 } from "@/lib/events/interpretEventContract";
 
@@ -122,5 +124,91 @@ describe("interpretEventContract", () => {
   it("enforces strict object rules recursively for OpenAI structured outputs", () => {
     const schema = buildInterpretResponseSchema();
     assertStrictObjectSchema(schema, "$");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateImageInputs
+// ---------------------------------------------------------------------------
+describe("validateImageInputs", () => {
+  it("returns empty array for undefined/null", () => {
+    expect(validateImageInputs(undefined)).toEqual({ ok: true, images: [] });
+    expect(validateImageInputs(null)).toEqual({ ok: true, images: [] });
+  });
+
+  it("rejects non-array input", () => {
+    const result = validateImageInputs("not an array");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+    }
+  });
+
+  it("rejects too many images", () => {
+    const images = Array.from({ length: IMAGE_INPUT_LIMITS.maxCount + 1 }, () => ({
+      data: "AAAA",
+      mime_type: "image/jpeg",
+    }));
+    const result = validateImageInputs(images);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+      expect(result.error).toContain("Too many images");
+    }
+  });
+
+  it("rejects invalid mime type", () => {
+    const result = validateImageInputs([{ data: "AAAA", mime_type: "image/bmp" }]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+      expect(result.error).toContain("mime_type");
+    }
+  });
+
+  it("rejects oversized image (decoded bytes)", () => {
+    // Create base64 string that decodes to > 1MB
+    // 1MB decoded = ~1,398,102 base64 chars (ceil(1048576 * 4 / 3))
+    const oversizedData = "A".repeat(1_400_000);
+    const result = validateImageInputs([{ data: oversizedData, mime_type: "image/jpeg" }]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(413);
+      expect(result.error).toContain("exceeds max decoded size");
+    }
+  });
+
+  it("rejects empty data string", () => {
+    const result = validateImageInputs([{ data: "", mime_type: "image/jpeg" }]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+      expect(result.error).toContain("non-empty string");
+    }
+  });
+
+  it("accepts valid image inputs", () => {
+    const result = validateImageInputs([
+      { data: "iVBORw0KGgoAAAANSUhEUg==", mime_type: "image/png" },
+      { data: "/9j/4AAQSkZJRg==", mime_type: "image/jpeg" },
+    ]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.images).toHaveLength(2);
+      expect(result.images[0].mime_type).toBe("image/png");
+      expect(result.images[1].mime_type).toBe("image/jpeg");
+    }
+  });
+
+  it("accepts exactly maxCount images", () => {
+    const images = Array.from({ length: IMAGE_INPUT_LIMITS.maxCount }, () => ({
+      data: "AAAA",
+      mime_type: "image/webp",
+    }));
+    const result = validateImageInputs(images);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.images).toHaveLength(IMAGE_INPUT_LIMITS.maxCount);
+    }
   });
 });

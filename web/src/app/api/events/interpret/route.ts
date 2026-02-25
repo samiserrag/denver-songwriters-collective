@@ -4,12 +4,19 @@ import { canManageEvent } from "@/lib/events/eventManageAuth";
 import {
   buildInterpretResponseSchema,
   buildQualityHints,
+  IMAGE_INPUT_LIMITS,
   sanitizeInterpretDraftPayload,
+  validateImageInputs,
   validateInterpretMode,
   validateNextAction,
   validateSanitizedDraftPayload,
+  type ExtractionMetadata,
+  type ImageInput,
   type InterpretEventRequestBody,
 } from "@/lib/events/interpretEventContract";
+
+/** Vercel serverless function timeout — two LLM calls need headroom. */
+export const maxDuration = 60;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.2";
@@ -164,6 +171,209 @@ function requestsVenueCatalog(mode: string, message: string): boolean {
   return /\b(venue|location|address|move|moved|switch|relocat|different venue)\b/i.test(message);
 }
 
+// ---------------------------------------------------------------------------
+// Phase A — Vision extraction
+// ---------------------------------------------------------------------------
+
+const VISION_TIMEOUT_MS = 15_000;
+
+const VISION_EXTRACTION_PROMPT = [
+  "Extract ALL event details visible in the image(s).",
+  "Return a structured plain-text summary with these fields when present:",
+  "- Event title / name",
+  "- Date(s) (use YYYY-MM-DD when possible)",
+  "- Time(s) (use 24h HH:MM when possible)",
+  "- Venue / location name",
+  "- Address (street, city, state)",
+  "- Cost / price / cover charge",
+  "- Event type (open mic, concert, jam session, workshop, etc.)",
+  "- Description / tagline",
+  "- Signup details (URL, method)",
+  "- Age policy (all ages, 21+, etc.)",
+  "- Any other relevant details",
+  "",
+  "Be thorough but concise. If a field is not visible, omit it.",
+  "If multiple images, combine all information into one summary.",
+].join("\n");
+
+interface VisionExtractionResult {
+  extractedText: string;
+  metadata: ExtractionMetadata;
+}
+
+async function extractTextFromImages(
+  openAiKey: string,
+  images: ImageInput[],
+  modelName: string
+): Promise<VisionExtractionResult> {
+  const contentBlocks: Array<Record<string, unknown>> = [
+    { type: "input_text", text: VISION_EXTRACTION_PROMPT },
+    ...images.map((img) => ({
+      type: "input_image",
+      image_url: `data:${img.mime_type};base64,${img.data}`,
+    })),
+  ];
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(OPENAI_RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openAiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: modelName,
+        input: [{ role: "user", content: contentBlocks }],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[events/interpret] vision extraction upstream error", {
+        status: response.status,
+        data,
+      });
+      return {
+        extractedText: "",
+        metadata: {
+          images_processed: images.length,
+          confidence: 0,
+          extracted_fields: [],
+          warnings: [`Vision API returned ${response.status}`],
+        },
+      };
+    }
+
+    const dataObj = parseJsonObject(data);
+    const outputText = dataObj ? extractResponseText(dataObj) : null;
+
+    if (!outputText) {
+      return {
+        extractedText: "",
+        metadata: {
+          images_processed: images.length,
+          confidence: 0,
+          extracted_fields: [],
+          warnings: ["Vision API returned empty output"],
+        },
+      };
+    }
+
+    // Infer which fields were extracted by checking for common keywords
+    const extractedFields: string[] = [];
+    const lower = outputText.toLowerCase();
+    if (/\btitle\b|\bname\b/.test(lower)) extractedFields.push("title");
+    if (/\bdate\b|\b\d{4}-\d{2}-\d{2}\b/.test(lower)) extractedFields.push("date");
+    if (/\btime\b|\b\d{1,2}:\d{2}\b/.test(lower)) extractedFields.push("time");
+    if (/\bvenue\b|\blocation\b|\baddress\b/.test(lower)) extractedFields.push("venue");
+    if (/\bcost\b|\bprice\b|\bfree\b|\bcover\b|\$/.test(lower)) extractedFields.push("cost");
+    if (/\btype\b|\bopen mic\b|\bconcert\b|\bjam\b|\bworkshop\b/.test(lower)) extractedFields.push("event_type");
+
+    return {
+      extractedText: outputText.trim(),
+      metadata: {
+        images_processed: images.length,
+        confidence: extractedFields.length >= 3 ? 0.8 : extractedFields.length >= 1 ? 0.5 : 0.2,
+        extracted_fields: extractedFields,
+        warnings: [],
+      },
+    };
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    console.error("[events/interpret] vision extraction failed", {
+      isTimeout,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      extractedText: "",
+      metadata: {
+        images_processed: images.length,
+        confidence: 0,
+        extracted_fields: [],
+        warnings: [isTimeout ? "Vision extraction timed out" : "Vision extraction failed"],
+      },
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Prompt builders
+// ---------------------------------------------------------------------------
+
+async function readJsonBodyWithSizeLimit<T>(
+  request: Request,
+  maxBytes: number
+): Promise<{ ok: true; body: T } | { ok: false; response: NextResponse }> {
+  // Fast-path reject when Content-Length is present and exceeds limit.
+  const contentLength = request.headers.get("content-length");
+  if (contentLength) {
+    const parsedLength = Number.parseInt(contentLength, 10);
+    if (!Number.isNaN(parsedLength) && parsedLength > maxBytes) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: `Request body exceeds ${maxBytes / 1024 / 1024}MB limit.` },
+          { status: 413 }
+        ),
+      };
+    }
+  }
+
+  // Robust path for missing/incorrect Content-Length: stream and enforce byte cap.
+  if (!request.body) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }),
+    };
+  }
+
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let totalBytes = 0;
+  let rawBody = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    totalBytes += value.byteLength;
+    if (totalBytes > maxBytes) {
+      try {
+        await reader.cancel();
+      } catch {
+        // no-op: best effort cancellation
+      }
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: `Request body exceeds ${maxBytes / 1024 / 1024}MB limit.` },
+          { status: 413 }
+        ),
+      };
+    }
+
+    rawBody += decoder.decode(value, { stream: true });
+  }
+  rawBody += decoder.decode();
+
+  try {
+    return { ok: true, body: JSON.parse(rawBody) as T };
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }),
+    };
+  }
+}
+
 function buildSystemPrompt() {
   return [
     "You are an event interpretation service for a host dashboard.",
@@ -189,6 +399,7 @@ function buildUserPrompt(input: {
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   venueCatalog: Array<{ id: string; name: string }>;
   currentEvent: Record<string, unknown> | null;
+  extractedImageText?: string;
 }) {
   return JSON.stringify(
     {
@@ -200,6 +411,13 @@ function buildUserPrompt(input: {
       current_event: input.currentEvent,
       venue_catalog: input.venueCatalog,
       conversation_history: input.conversationHistory,
+      ...(input.extractedImageText
+        ? {
+            extracted_image_text: input.extractedImageText,
+            image_extraction_note:
+              "The user attached image(s) of an event flyer. The extracted_image_text field contains OCR/vision output from those images. Use this data to populate the draft_payload fields. The user's message may provide additional context or corrections.",
+          }
+        : {}),
       required_output_shape: {
         next_action: "ask_clarification | show_preview | await_confirmation | done",
         confidence: "number 0..1",
@@ -237,6 +455,7 @@ function pickCurrentEventContext(event: Record<string, unknown>): Record<string,
     "slot_duration_minutes",
     "is_published",
     "status",
+    "cover_image_url",
   ];
 
   const safe: Record<string, unknown> = {};
@@ -283,12 +502,14 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: InterpretEventRequestBody;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  const parsedBody = await readJsonBodyWithSizeLimit<InterpretEventRequestBody>(
+    request,
+    IMAGE_INPUT_LIMITS.requestBodyMaxBytes
+  );
+  if (!parsedBody.ok) {
+    return parsedBody.response;
   }
+  const body = parsedBody.body;
 
   if (!validateInterpretMode(body?.mode)) {
     return NextResponse.json({ error: "mode must be create | edit_series | edit_occurrence." }, { status: 400 });
@@ -302,6 +523,13 @@ export async function POST(request: Request) {
   const dateKey = typeof body.dateKey === "string" ? body.dateKey : undefined;
   const eventId = typeof body.eventId === "string" ? body.eventId : undefined;
   const conversationHistory = normalizeHistory(body.conversationHistory);
+
+  // Validate image inputs (count, mime type, decoded size).
+  const imageValidation = validateImageInputs(body.image_inputs);
+  if (!imageValidation.ok) {
+    return NextResponse.json({ error: imageValidation.error }, { status: imageValidation.status });
+  }
+  const validatedImages = imageValidation.images;
 
   if ((mode === "edit_series" || mode === "edit_occurrence") && !eventId) {
     return NextResponse.json({ error: "eventId is required for edit modes." }, { status: 400 });
@@ -330,7 +558,7 @@ export async function POST(request: Request) {
         id, title, event_type, event_date, day_of_week, start_time, end_time, recurrence_rule,
         location_mode, venue_id, venue_name, is_free, cost_label,
         signup_mode, signup_url, signup_time, has_timeslots, total_slots, slot_duration_minutes,
-        is_published, status
+        is_published, status, cover_image_url
       `)
       .eq("id", eventId)
       .maybeSingle();
@@ -358,6 +586,40 @@ export async function POST(request: Request) {
     venueCatalog = [{ id: currentEvent.venue_id, name: currentEvent.venue_name }];
   }
 
+  // ---------------------------------------------------------------------------
+  // Phase A — Vision extraction (only when images are present)
+  // ---------------------------------------------------------------------------
+  let extractionMetadata: ExtractionMetadata | undefined;
+  let extractedImageText: string | undefined;
+
+  if (validatedImages.length > 0) {
+    console.info("[events/interpret] starting Phase A vision extraction", {
+      userId: sessionUser.id,
+      imageCount: validatedImages.length,
+    });
+
+    const extraction = await extractTextFromImages(openAiKey, validatedImages, model);
+    extractionMetadata = extraction.metadata;
+
+    if (extraction.extractedText) {
+      extractedImageText = extraction.extractedText;
+      console.info("[events/interpret] Phase A complete", {
+        userId: sessionUser.id,
+        extractedFields: extraction.metadata.extracted_fields,
+        confidence: extraction.metadata.confidence,
+        textLength: extraction.extractedText.length,
+      });
+    } else {
+      console.warn("[events/interpret] Phase A produced no text", {
+        userId: sessionUser.id,
+        warnings: extraction.metadata.warnings,
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase B — Structured interpretation
+  // ---------------------------------------------------------------------------
   const userPrompt = buildUserPrompt({
     mode,
     message: normalizedMessage,
@@ -366,6 +628,7 @@ export async function POST(request: Request) {
     conversationHistory,
     venueCatalog,
     currentEvent,
+    extractedImageText,
   });
 
   console.info("[events/interpret] request", {
@@ -374,6 +637,7 @@ export async function POST(request: Request) {
     eventId: eventId ?? null,
     dateKey: dateKey ?? null,
     model,
+    hasImages: validatedImages.length > 0,
     prompt: redactEmails(truncate(userPrompt, 1200)),
   });
 
@@ -491,6 +755,7 @@ export async function POST(request: Request) {
     blocking_fields: (responsePayload.blocking_fields as string[]).map((f) => f.trim()).filter(Boolean),
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,
+    ...(extractionMetadata ? { extraction_metadata: extractionMetadata } : {}),
   };
 
   console.info("[events/interpret] response", {
@@ -500,6 +765,15 @@ export async function POST(request: Request) {
     confidence: response.confidence,
     blockingFields: response.blocking_fields,
     draft: redactEmails(truncate(JSON.stringify(response.draft_payload), 1200)),
+    ...(extractionMetadata
+      ? {
+          extraction: {
+            imagesProcessed: extractionMetadata.images_processed,
+            extractedFields: extractionMetadata.extracted_fields,
+            confidence: extractionMetadata.confidence,
+          },
+        }
+      : {}),
   });
 
   return NextResponse.json(response);
