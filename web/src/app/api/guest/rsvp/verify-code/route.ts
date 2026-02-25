@@ -8,6 +8,7 @@ import {
 import {
   verifyCodeHash,
   createActionToken,
+  endOfEventDayDenver,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail } from "@/lib/email";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
@@ -307,13 +308,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create action token for cancel
-    const cancelToken = await createActionToken({
-      email: verification.email,
-      rsvp_id: rsvp.id,
-      action: "cancel_rsvp",
-      verification_id: verification.id,
-    });
+    // Create action token for cancel — valid until end of event day (Denver time)
+    const cancelExpiresAt = endOfEventDayDenver(effectiveDateKey);
+    const cancelToken = await createActionToken(
+      {
+        email: verification.email,
+        rsvp_id: rsvp.id,
+        action: "cancel_rsvp",
+        verification_id: verification.id,
+      },
+      { expiresAt: cancelExpiresAt }
+    );
 
     // Update verification as verified and store rsvp_id
     await supabase
@@ -323,9 +328,7 @@ export async function POST(request: NextRequest) {
         rsvp_id: rsvp.id,
         action_token: cancelToken,
         action_type: "cancel_rsvp",
-        token_expires_at: new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days for RSVP cancel
-        ).toISOString(),
+        token_expires_at: cancelExpiresAt.toISOString(),
       })
       .eq("id", verification.id);
 

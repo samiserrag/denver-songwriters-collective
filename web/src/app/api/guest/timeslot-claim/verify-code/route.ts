@@ -5,7 +5,7 @@ import {
   featureDisabledResponse,
   GUEST_VERIFICATION_CONFIG,
 } from "@/lib/guest-verification/config";
-import { verifyCodeHash, createActionToken } from "@/lib/guest-verification/crypto";
+import { verifyCodeHash, createActionToken, endOfEventDayDenver } from "@/lib/guest-verification/crypto";
 import { sendEmailWithPreferences } from "@/lib/email/sendWithPreferences";
 import { sendEmail } from "@/lib/email/mailer";
 import { getTimeslotClaimConfirmationEmail } from "@/lib/email/templates/timeslotClaimConfirmation";
@@ -264,13 +264,19 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email to guest
     if (guestEmail) {
-      // Create a proper action token for cancellation (same pattern as RSVP cancel)
-      const cancelToken = await createActionToken({
-        email: guestEmail,
-        claim_id: claim.id,
-        action: "cancel",
-        verification_id: verification.id,
-      });
+      // Create a proper action token for cancellation — valid until end of event day
+      const timeslotExpiresAt = effectiveDateKey
+        ? endOfEventDayDenver(effectiveDateKey)
+        : undefined;
+      const cancelToken = await createActionToken(
+        {
+          email: guestEmail,
+          claim_id: claim.id,
+          action: "cancel",
+          verification_id: verification.id,
+        },
+        timeslotExpiresAt ? { expiresAt: timeslotExpiresAt } : undefined
+      );
       const cancelUrl = `${SITE_URL}/guest/action?token=${cancelToken}&action=cancel`;
 
       const confirmationEmail = getTimeslotClaimConfirmationEmail({

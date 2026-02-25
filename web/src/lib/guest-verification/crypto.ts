@@ -75,18 +75,66 @@ export interface ActionTokenPayload {
 
 /**
  * Create a signed action token (JWT)
+ *
+ * Expiry options (in order of precedence):
+ * 1. `expiresAt` — absolute Date for the token to expire
+ * 2. `expiresInHours` — relative hours from now (default: ACTION_TOKEN_EXPIRES_HOURS)
  */
 export async function createActionToken(
   payload: ActionTokenPayload,
-  expiresInHours: number = GUEST_VERIFICATION_CONFIG.ACTION_TOKEN_EXPIRES_HOURS
+  options?: { expiresAt?: Date; expiresInHours?: number }
 ): Promise<string> {
   const secret = getTokenSecret();
-  const token = await new SignJWT(payload)
+
+  const expiresAt = options?.expiresAt;
+  const expiresInHours =
+    options?.expiresInHours ?? GUEST_VERIFICATION_CONFIG.ACTION_TOKEN_EXPIRES_HOURS;
+
+  const builder = new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${expiresInHours}h`)
-    .sign(secret);
-  return token;
+    .setIssuedAt();
+
+  if (expiresAt) {
+    builder.setExpirationTime(Math.floor(expiresAt.getTime() / 1000));
+  } else {
+    builder.setExpirationTime(`${expiresInHours}h`);
+  }
+
+  return builder.sign(secret);
+}
+
+/**
+ * Compute end-of-day in Denver timezone for a given date key (YYYY-MM-DD).
+ * Returns a Date representing 23:59:59 Denver time on that day.
+ */
+export function endOfEventDayDenver(dateKey: string): Date {
+  // Build a Denver-local "end of day" string and parse it
+  // Using Intl to resolve the correct UTC offset (handles DST)
+  const [year, month, day] = dateKey.split("-").map(Number);
+
+  // Create a date at noon UTC on that day (safe from DST edges)
+  const noon = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+
+  // Get the Denver UTC offset for this date by formatting
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Denver",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "shortOffset",
+  }).formatToParts(noon);
+
+  const tzOffset = parts.find((p) => p.type === "timeZoneName")?.value || "";
+  // tzOffset looks like "GMT-7" or "GMT-6"
+  const offsetMatch = tzOffset.match(/GMT([+-]\d+)/);
+  const offsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : -7; // fallback MST
+
+  // 23:59:59 Denver time = 23:59:59 - offset in UTC
+  return new Date(Date.UTC(year, month - 1, day, 23 - offsetHours, 59, 59));
 }
 
 /**

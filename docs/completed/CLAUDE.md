@@ -6,6 +6,30 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Fix: Guest Cancel Token Expiry — Extend to End of Event Day (February 2026)
+
+**Summary:** Guest RSVP and timeslot cancel tokens were expiring after a fixed 24 hours, causing cancel links to fail if the guest waited more than a day. Changed all guest action token expiry to last until 23:59:59 Denver time on the event day instead.
+
+**Trigger:** Robert Fulton's guest RSVP cancel link returned 400 ("Invalid or expired token") because his token expired 8 hours before he tried to use it (created 2/23 15:47, expired 2/24 15:47, attempted 2/24 23:47).
+
+**Data fix:** Manually cancelled Robert's orphaned guest RSVP (`9d67eb22`) which was duplicated alongside his member RSVP.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `web/src/lib/guest-verification/crypto.ts` | `createActionToken()`: changed from positional `expiresInHours` to options object `{ expiresAt?, expiresInHours? }`; added `endOfEventDayDenver()` helper |
+| `web/src/app/api/guest/rsvp/verify-code/route.ts` | RSVP cancel token now uses `endOfEventDayDenver(effectiveDateKey)` |
+| `web/src/app/api/guest/verify-code/route.ts` | Timeslot confirm/cancel tokens now use `endOfEventDayDenver(date_key)` |
+| `web/src/app/api/guest/action/route.ts` | Promoted guest tokens now use `endOfEventDayDenver(date_key)` |
+| `web/src/app/api/guest/timeslot-claim/verify-code/route.ts` | Timeslot claim cancel token now uses `endOfEventDayDenver(effectiveDateKey)` |
+
+**Validation:**
+- TypeScript: no errors in changed files
+- Backward compatible: existing callers pass no second arg, so default behavior unchanged
+
+---
+
 ### Fix: RLS — Anonymous Users Get 0 Rows on Tables with is_admin() Policies (February 2026)
 
 **Summary:** Fixed a critical bug where anonymous (non-logged-in) users saw 0 results on any table that had a `FOR ALL` RLS policy calling `is_admin()`. The `anon` PostgreSQL role lacked EXECUTE permission on `is_admin()` (a SECURITY DEFINER function), causing PostgreSQL to fail the entire policy evaluation when processing SELECT queries — silently returning 0 rows instead of matching the public read policy.

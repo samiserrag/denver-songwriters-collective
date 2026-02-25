@@ -4,7 +4,7 @@ import {
   isGuestVerificationDisabled,
   featureDisabledResponse,
 } from "@/lib/guest-verification/config";
-import { verifyActionToken, createActionToken } from "@/lib/guest-verification/crypto";
+import { verifyActionToken, createActionToken, endOfEventDayDenver } from "@/lib/guest-verification/crypto";
 import { sendEmail, getWaitlistOfferEmail } from "@/lib/email";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
@@ -328,20 +328,30 @@ async function handleCancel(
       // Build action URLs for the promoted guest
       const baseUrl = getSiteUrl();
 
-      // Create new action tokens for the promoted guest
-      const confirmToken = await createActionToken({
-        email: promotedClaim.guest_email,
-        claim_id: promotedClaim.id,
-        action: "confirm",
-        verification_id: promotedClaim.guest_verification_id,
-      });
+      // Create new action tokens for the promoted guest — valid until end of event day
+      const promotedExpiresAt = claim.event_timeslots.date_key
+        ? endOfEventDayDenver(claim.event_timeslots.date_key)
+        : undefined;
 
-      const cancelToken = await createActionToken({
-        email: promotedClaim.guest_email,
-        claim_id: promotedClaim.id,
-        action: "cancel",
-        verification_id: promotedClaim.guest_verification_id,
-      });
+      const confirmToken = await createActionToken(
+        {
+          email: promotedClaim.guest_email,
+          claim_id: promotedClaim.id,
+          action: "confirm",
+          verification_id: promotedClaim.guest_verification_id,
+        },
+        promotedExpiresAt ? { expiresAt: promotedExpiresAt } : undefined
+      );
+
+      const cancelToken = await createActionToken(
+        {
+          email: promotedClaim.guest_email,
+          claim_id: promotedClaim.id,
+          action: "cancel",
+          verification_id: promotedClaim.guest_verification_id,
+        },
+        promotedExpiresAt ? { expiresAt: promotedExpiresAt } : undefined
+      );
 
       const confirmUrl = `${baseUrl}/guest/action?token=${confirmToken}&action=confirm`;
       const cancelUrl = `${baseUrl}/guest/action?token=${cancelToken}&action=cancel`;

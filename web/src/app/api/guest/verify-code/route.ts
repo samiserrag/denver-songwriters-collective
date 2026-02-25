@@ -8,6 +8,7 @@ import {
 import {
   verifyCodeHash,
   createActionToken,
+  endOfEventDayDenver,
 } from "@/lib/guest-verification/crypto";
 import { sendEmail, getClaimConfirmedEmail } from "@/lib/email";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -253,20 +254,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create action tokens for confirm/cancel
-    const confirmToken = await createActionToken({
-      email: verification.email,
-      claim_id: claim.id,
-      action: "confirm",
-      verification_id: verification.id,
-    });
+    // Create action tokens for confirm/cancel — valid until end of event day
+    const claimExpiresAt = verification.date_key
+      ? endOfEventDayDenver(verification.date_key)
+      : undefined;
 
-    const cancelToken = await createActionToken({
-      email: verification.email,
-      claim_id: claim.id,
-      action: "cancel",
-      verification_id: verification.id,
-    });
+    const confirmToken = await createActionToken(
+      {
+        email: verification.email,
+        claim_id: claim.id,
+        action: "confirm",
+        verification_id: verification.id,
+      },
+      claimExpiresAt ? { expiresAt: claimExpiresAt } : undefined
+    );
+
+    const cancelToken = await createActionToken(
+      {
+        email: verification.email,
+        claim_id: claim.id,
+        action: "cancel",
+        verification_id: verification.id,
+      },
+      claimExpiresAt ? { expiresAt: claimExpiresAt } : undefined
+    );
 
     // Update verification as verified and store tokens
     await supabase
