@@ -47,7 +47,7 @@ export type VenueResolutionOutcome =
       venueId: string;
       venueName: string;
       confidence: number;
-      source: "llm_validated" | "server_exact" | "server_fuzzy";
+      source: "llm_validated" | "server_exact" | "server_alias" | "server_fuzzy";
     }
   | {
       status: "ambiguous";
@@ -73,6 +73,25 @@ export const TIE_GAP = 0.05;
 
 /** Maximum candidates returned for ambiguous results */
 export const MAX_AMBIGUOUS_CANDIDATES = 3;
+
+/** Curated alias overrides keyed by venue slug (or generated slug) */
+export const CURATED_ALIAS_OVERRIDES: Record<string, string[]> = {
+  "long-table-brewhouse": ["ltb"],
+  "sunshine-studios-live": ["ssl", "sslive"],
+};
+
+const ACRONYM_STOPWORDS = new Set([
+  "the",
+  "and",
+  "of",
+  "at",
+  "in",
+  "on",
+  "for",
+  "to",
+  "a",
+  "an",
+]);
 
 function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
@@ -123,6 +142,13 @@ export function normalizeForMatch(name: string): string {
 }
 
 /**
+ * Normalize short aliases: lowercase + alphanumeric only.
+ */
+export function normalizeAlias(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+}
+
+/**
  * Generate a slug from a name (same logic as eventImportDedupe.generateSlug).
  * Used for slug-based matching when catalog entries include slugs.
  */
@@ -146,6 +172,56 @@ export function tokenize(name: string): Set<string> {
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 0);
   return new Set(tokens);
+}
+
+/**
+ * Build a deterministic acronym alias from a venue name.
+ * Example: "Long Table Brewhouse" -> "ltb".
+ */
+export function generateAcronymAlias(name: string): string | null {
+  const tokens = [...tokenize(name)].filter((t) => !ACRONYM_STOPWORDS.has(t));
+  if (tokens.length < 2) return null;
+  const acronym = tokens.map((t) => t[0]).join("");
+  const normalized = normalizeAlias(acronym);
+  return normalized.length >= 2 ? normalized : null;
+}
+
+export type VenueAliasIndex = Map<string, VenueCatalogEntry[]>;
+
+function addAlias(index: VenueAliasIndex, alias: string, entry: VenueCatalogEntry): void {
+  const key = normalizeAlias(alias);
+  if (key.length < 2) return;
+  const existing = index.get(key);
+  if (!existing) {
+    index.set(key, [entry]);
+    return;
+  }
+  if (!existing.some((v) => v.id === entry.id)) {
+    existing.push(entry);
+  }
+}
+
+/**
+ * Build alias index from deterministic acronym aliases + curated overrides.
+ */
+export function buildVenueAliasIndex(catalog: VenueCatalogEntry[]): VenueAliasIndex {
+  const index: VenueAliasIndex = new Map();
+
+  for (const entry of catalog) {
+    const slug = entry.slug || generateMatchSlug(entry.name);
+
+    const acronym = generateAcronymAlias(entry.name);
+    if (acronym) {
+      addAlias(index, acronym, entry);
+    }
+
+    const curated = CURATED_ALIAS_OVERRIDES[slug] || [];
+    for (const alias of curated) {
+      addAlias(index, alias, entry);
+    }
+  }
+
+  return index;
 }
 
 /**
@@ -232,6 +308,28 @@ export function extractVenueNameFromMessage(
   return bestMatch;
 }
 
+/**
+ * Extract an alias token from user message if it exactly matches known aliases.
+ */
+export function extractVenueAliasFromMessage(
+  message: string,
+  aliasIndex: VenueAliasIndex
+): string | null {
+  if (!message.trim() || aliasIndex.size === 0) return null;
+  const tokens = message
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map((t) => normalizeAlias(t))
+    .filter((t) => t.length >= 2)
+    .filter((t) => !ACRONYM_STOPWORDS.has(t));
+
+  const unique = [...new Set(tokens)].sort((a, b) => b.length - a.length);
+  for (const token of unique) {
+    if (aliasIndex.has(token)) return token;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Main resolver
 // ---------------------------------------------------------------------------
@@ -255,6 +353,7 @@ export function resolveVenue(input: VenueResolverInput): VenueResolutionOutcome 
     draftOnlineUrl,
     isCustomLocation,
   } = input;
+  const aliasIndex = buildVenueAliasIndex(venueCatalog);
 
   // 1. Online short-circuit
   if (
@@ -284,7 +383,9 @@ export function resolveVenue(input: VenueResolverInput): VenueResolutionOutcome 
   const candidateName =
     (typeof draftVenueName === "string" && draftVenueName.trim().length > 0
       ? draftVenueName.trim()
-      : null) ?? extractVenueNameFromMessage(userMessage, venueCatalog);
+      : null) ??
+    extractVenueNameFromMessage(userMessage, venueCatalog) ??
+    extractVenueAliasFromMessage(userMessage, aliasIndex);
 
   // Nothing to match against
   if (!candidateName || venueCatalog.length === 0) {
@@ -295,7 +396,80 @@ export function resolveVenue(input: VenueResolverInput): VenueResolutionOutcome 
     return { status: "unresolved", inputName: candidateName };
   }
 
-  // 4. Score all catalog entries
+  // 4. Deterministic exact name/slug/alias checks before fuzzy scoring
+  const normalizedCandidate = normalizeForMatch(candidateName);
+  const candidateSlug = generateMatchSlug(candidateName);
+  const candidateAlias = normalizeAlias(candidateName);
+
+  const nameMatches = venueCatalog.filter(
+    (entry) => normalizeForMatch(entry.name) === normalizedCandidate
+  );
+  if (nameMatches.length === 1) {
+    const match = nameMatches[0];
+    return {
+      status: "resolved",
+      venueId: match.id,
+      venueName: match.name,
+      confidence: 1.0,
+      source: "server_exact",
+    };
+  }
+  if (nameMatches.length > 1) {
+    return {
+      status: "ambiguous",
+      candidates: nameMatches
+        .map((entry) => ({ id: entry.id, name: entry.name, score: 1.0 }))
+        .slice(0, MAX_AMBIGUOUS_CANDIDATES),
+      inputName: candidateName,
+    };
+  }
+
+  const slugMatches = venueCatalog.filter((entry) => {
+    const entrySlug = entry.slug || generateMatchSlug(entry.name);
+    return candidateSlug.length > 0 && entrySlug === candidateSlug;
+  });
+  if (slugMatches.length === 1) {
+    const match = slugMatches[0];
+    return {
+      status: "resolved",
+      venueId: match.id,
+      venueName: match.name,
+      confidence: 0.95,
+      source: "server_exact",
+    };
+  }
+  if (slugMatches.length > 1) {
+    return {
+      status: "ambiguous",
+      candidates: slugMatches
+        .map((entry) => ({ id: entry.id, name: entry.name, score: 0.95 }))
+        .slice(0, MAX_AMBIGUOUS_CANDIDATES),
+      inputName: candidateName,
+    };
+  }
+
+  const aliasMatches = aliasIndex.get(candidateAlias) || [];
+  if (aliasMatches.length === 1) {
+    const match = aliasMatches[0];
+    return {
+      status: "resolved",
+      venueId: match.id,
+      venueName: match.name,
+      confidence: 0.93,
+      source: "server_alias",
+    };
+  }
+  if (aliasMatches.length > 1) {
+    return {
+      status: "ambiguous",
+      candidates: aliasMatches
+        .map((entry) => ({ id: entry.id, name: entry.name, score: 0.93 }))
+        .slice(0, MAX_AMBIGUOUS_CANDIDATES),
+      inputName: candidateName,
+    };
+  }
+
+  // 5. Fuzzy score all catalog entries
   const scored = venueCatalog
     .map((entry) => ({
       id: entry.id,
@@ -307,7 +481,7 @@ export function resolveVenue(input: VenueResolverInput): VenueResolutionOutcome 
   const best = scored[0];
   const secondBest = scored.length > 1 ? scored[1] : null;
 
-  // 5. Threshold decisions
+  // 6. Threshold decisions
   if (best.score >= RESOLVE_THRESHOLD) {
     // Check for too-close tie
     if (secondBest && secondBest.score >= RESOLVE_THRESHOLD && best.score - secondBest.score < TIE_GAP) {

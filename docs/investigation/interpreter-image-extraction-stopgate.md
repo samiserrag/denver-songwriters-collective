@@ -380,7 +380,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - Venues not in DB require manual addition or custom_location fallback
 - Catalog size O(n) per request is negligible at ~200 entries
 
-**Next stop-gate:** `docs/investigation/interpreter-venue-abbreviation-phase6-stopgate.md` (AWAITING APPROVAL)
+**Next stop-gate:** `docs/investigation/interpreter-venue-abbreviation-phase6-stopgate.md` (IMPLEMENTED — awaiting production smoke sign-off)
 
 ### Phase 5 (prior): Tests + smoke
 - ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)
@@ -389,7 +389,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - ✅ Lab create-write tests: source-code assertions for Phase 4B (39 tests)
 - ✅ Smoke checklist entry in `docs/SMOKE-PROD.md`
 
-**Checkpoint:** Phases 0-5 complete. Stop for review before any further scope.
+**Checkpoint:** Phases 0-6 implemented in code. Await production smoke + monitoring sign-off before further scope.
 
 ---
 
@@ -404,4 +404,4 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 
 ---
 
-**STOP: Awaiting Sami approval before any implementation.**
+**STOP: Awaiting production smoke + monitoring sign-off for Phase 6 before new scope.**

@@ -8,12 +8,17 @@ import {
   resolveVenue,
   shouldResolveVenue,
   hasVenueSignalsInDraft,
+  buildVenueAliasIndex,
+  normalizeAlias,
+  generateAcronymAlias,
+  extractVenueAliasFromMessage,
   scoreVenueMatch,
   normalizeForMatch,
   generateMatchSlug,
   tokenize,
   tokenJaccardScore,
   extractVenueNameFromMessage,
+  CURATED_ALIAS_OVERRIDES,
   RESOLVE_THRESHOLD,
   AMBIGUOUS_THRESHOLD,
   type VenueCatalogEntry,
@@ -66,6 +71,26 @@ describe("normalizeForMatch", () => {
 
   it("collapses whitespace", () => {
     expect(normalizeForMatch("Long   Table   Brewhouse")).toBe("long table brewhouse");
+  });
+});
+
+describe("normalizeAlias", () => {
+  it("lowercases and strips non-alphanumeric characters", () => {
+    expect(normalizeAlias("L.T.B!")).toBe("ltb");
+  });
+});
+
+describe("generateAcronymAlias", () => {
+  it("builds acronym from non-stopword tokens", () => {
+    expect(generateAcronymAlias("Long Table Brewhouse")).toBe("ltb");
+  });
+
+  it("drops leading stopwords from acronym", () => {
+    expect(generateAcronymAlias("The Venue Lounge")).toBe("vl");
+  });
+
+  it("returns null for single-token names", () => {
+    expect(generateAcronymAlias("Dazzle")).toBeNull();
   });
 });
 
@@ -167,6 +192,43 @@ describe("extractVenueNameFromMessage", () => {
   it("matches case-insensitively", () => {
     const result = extractVenueNameFromMessage("show at mercury cafe", catalog);
     expect(result).toBe("Mercury Cafe");
+  });
+});
+
+describe("buildVenueAliasIndex / extractVenueAliasFromMessage", () => {
+  it("includes deterministic acronym aliases", () => {
+    const index = buildVenueAliasIndex(catalog);
+    expect(index.has("ltb")).toBe(true);
+    const matches = index.get("ltb") || [];
+    expect(matches.map((m) => m.id)).toContain("v3");
+  });
+
+  it("includes curated override aliases", () => {
+    const index = buildVenueAliasIndex(catalog);
+    const configuredAliases = CURATED_ALIAS_OVERRIDES["long-table-brewhouse"] || [];
+    for (const alias of configuredAliases) {
+      const matches = index.get(alias) || [];
+      expect(matches.map((m) => m.id)).toContain("v3");
+    }
+  });
+
+  it("extracts known alias token from user message", () => {
+    const index = buildVenueAliasIndex(catalog);
+    expect(extractVenueAliasFromMessage("Open mic at LTB this Friday", index)).toBe("ltb");
+  });
+
+  it("returns null when no alias token is present", () => {
+    const index = buildVenueAliasIndex(catalog);
+    expect(extractVenueAliasFromMessage("Open mic somewhere fun", index)).toBeNull();
+  });
+
+  it("ignores stopword tokens even if they appear as generated aliases", () => {
+    const collisionCatalog: VenueCatalogEntry[] = [
+      { id: "v1", name: "Art Theater", slug: "art-theater" }, // acronym -> "at"
+    ];
+    const index = buildVenueAliasIndex(collisionCatalog);
+    expect(index.has("at")).toBe(true);
+    expect(extractVenueAliasFromMessage("Open mic at 7pm", index)).toBeNull();
   });
 });
 
@@ -292,6 +354,47 @@ describe("resolveVenue — name matching", () => {
       status: "resolved",
       venueId: "v1",
     });
+  });
+
+  it("resolves alias from draftVenueName", () => {
+    const result = resolveVenue(makeInput({ draftVenueName: "LTB" }));
+    expect(result).toMatchObject({
+      status: "resolved",
+      venueId: "v3",
+      source: "server_alias",
+    });
+  });
+
+  it("resolves alias from user message when draftVenueName is null", () => {
+    const result = resolveVenue(makeInput({
+      userMessage: "Open mic at LTB this Friday at 7pm",
+    }));
+    expect(result).toMatchObject({
+      status: "resolved",
+      venueId: "v3",
+      source: "server_alias",
+    });
+  });
+
+  it("returns ambiguous when alias maps to multiple venues", () => {
+    const collisionCatalog: VenueCatalogEntry[] = [
+      { id: "a", name: "Long Table Brewing", slug: "long-table-brewing" },
+      { id: "b", name: "Lake Town Bistro", slug: "lake-town-bistro" },
+    ];
+
+    const result = resolveVenue({
+      draftVenueId: null,
+      draftVenueName: "LTB",
+      userMessage: "Open mic at LTB",
+      venueCatalog: collisionCatalog,
+      draftLocationMode: null,
+      draftOnlineUrl: null,
+    });
+
+    expect(result.status).toBe("ambiguous");
+    if (result.status === "ambiguous") {
+      expect(result.candidates.map((c) => c.id)).toEqual(expect.arrayContaining(["a", "b"]));
+    }
   });
 });
 

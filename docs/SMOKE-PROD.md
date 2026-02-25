@@ -760,7 +760,7 @@ For the create request in Vercel/Axiom logs:
 
 **Pass Criteria (F+G):** Create writes work via existing API; deferred cover upload succeeds; ask_clarification blocks create; edit-mode cover apply unchanged.
 
-**H) Venue Resolution (Phase 5)**
+**H) Venue Resolution (Phases 5-6)**
 
 1. Exact venue name → resolved
    - Mode: `create`, message: "Open mic at Dazzle Jazz this Friday at 7pm"
@@ -790,7 +790,16 @@ For the create request in Vercel/Axiom logs:
    - Mode: `edit_series`, message: "Make this event online starting next week"
    - Expect: `next_action: "ask_clarification"`, `blocking_fields` includes `online_url`
 
-**Pass Criteria (H):** Known venues resolve deterministically; unknown/ambiguous venues escalate to clarification; online and custom locations pass through unchanged.
+8. Deterministic abbreviation resolve (`LTB`) should auto-resolve venue
+   - Mode: `create`, message: "Open mic at LTB this Friday at 7pm"
+   - Expect: draft resolves to `Long Table Brewhouse` with `venue_id` set, no venue ambiguity clarification
+
+9. Abbreviation collision should clarify, never auto-pick
+   - Precondition: at least two catalog venues sharing the same alias/acronym
+   - Mode: `create`, message uses shared alias (example: `"LTB"`)
+   - Expect: `next_action: "ask_clarification"`, numbered candidate list, `blocking_fields` includes `venue_id`
+
+**Pass Criteria (H):** Known venues (including approved abbreviations) resolve deterministically; unknown/ambiguous venues escalate to clarification; online and custom locations pass through unchanged.
 
 ---
 
