@@ -722,6 +722,76 @@ For the create request in Vercel/Axiom logs:
 
 **Pass Criteria:** UI supports stage/paste/drop/remove, enforces max-3 images, sends `image_inputs` + `conversationHistory` as expected, and clears state correctly.
 
+**F) Create-Mode Write Path (Phase 4B)**
+
+**Precondition:** `NEXT_PUBLIC_ENABLE_INTERPRETER_LAB_WRITES=true` in deployment env.
+
+1. Text-only create (no cover):
+   - Mode: `create`, no images, enter event description
+   - Run Interpreter → expect 200 with `next_action` in `[show_preview, await_confirmation, done]`
+   - **Confirm & Create** button appears (blue)
+   - Click → expect success message with event ID
+   - Verify event exists: `select id, title from events where id = '<id>'`
+
+2. Create with deferred cover:
+   - Mode: `create`, paste flyer image, click thumbnail to select cover
+   - Run Interpreter → expect 200
+   - Click **Confirm & Create** → expect "Event created with cover"
+   - Verify `events.cover_image_url` set and `event_images` row exists
+
+3. Blocked by ask_clarification:
+   - Mode: `create`, vague message (e.g., "music thing")
+   - Run Interpreter → expect `next_action: "ask_clarification"`
+   - **Confirm & Create** button should NOT appear
+   - Send clarifying follow-up → button should now appear
+
+4. Mapper validation:
+   - If interpreter draft is missing required fields, **Confirm & Create** shows error: "Cannot create: Missing required field: ..."
+
+**G) Edit-Mode Cover Apply (Phase 4A)**
+
+1. Mode: `edit_series`, enter valid event ID, paste image, click thumbnail
+   - **Apply as Cover** button appears (emerald green)
+   - Click → expect "Cover image applied to event ..."
+   - Verify `events.cover_image_url` updated
+
+2. Mode: `edit_series`, paste image, do NOT select cover candidate
+   - **Apply as Cover** button does NOT appear
+
+**Pass Criteria (F+G):** Create writes work via existing API; deferred cover upload succeeds; ask_clarification blocks create; edit-mode cover apply unchanged.
+
+**H) Venue Resolution (Phase 5)**
+
+1. Exact venue name → resolved
+   - Mode: `create`, message: "Open mic at Dazzle Jazz this Friday at 7pm"
+   - Expect: draft includes `venue_id` matching Dazzle Jazz from DB, `location_mode: "venue"`
+
+2. Misspelled venue → clarification with candidates
+   - Mode: `create`, message: "Open mic at Dazle this Friday at 7pm"
+   - Expect: `next_action: "ask_clarification"`, clarification lists candidate venues
+
+3. Unknown venue → clarification asking for location
+   - Mode: `create`, message: "Open mic at The Invisible Venue this Friday at 7pm"
+   - Expect: `next_action: "ask_clarification"`, asks user to provide venue name or specify online
+
+4. Online event → online_explicit passthrough
+   - Mode: `create`, message: "Online songwriting workshop at zoom.us/j/123 next Tuesday at 6pm"
+   - Expect: draft has `location_mode: "online"`, `online_url` set, no venue clarification
+
+5. Custom location → custom_location passthrough
+   - Mode: `create`, message with `custom_location_name` that doesn't match any catalog entry
+   - Expect: draft preserves custom location intent, no forced clarification
+
+6. Edit-series non-location update should not trigger venue clarification
+   - Mode: `edit_series`, message: "Change the title to Friday Open Mic Showcase"
+   - Expect: no forced `venue_id` blocking field, no venue clarification question unless user asked for location change
+
+7. Edit-series online move without URL should request online URL (not venue)
+   - Mode: `edit_series`, message: "Make this event online starting next week"
+   - Expect: `next_action: "ask_clarification"`, `blocking_fields` includes `online_url`
+
+**Pass Criteria (H):** Known venues resolve deterministically; unknown/ambiguous venues escalate to clarification; online and custom locations pass through unchanged.
+
 ---
 
 ## Gallery Smoke Checks (To Be Added in Gallery Track)

@@ -2,7 +2,7 @@
 
 **Stop-Gate Phase:** A/B (Investigate + Critique)
 **Date:** 2026-02-24
-**Status:** APPROVED — Phases 0-3 authorized. Phase 3 implemented (2026-02-24).
+**Status:** APPROVED — Phases 0-4B complete, Phase 5 (venue resolution) implemented (2026-02-25).
 **Parent feature:** Conversational Event Creation (`conversational-event-creation-stopgate.md`)
 **Scope expansion:** Section 4.7 of parent doc explicitly deferred image support to a future phase. This document covers that future phase.
 
@@ -315,16 +315,79 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - ✅ Structured logging (Phase A start/complete/fallback, extraction fields, confidence)
 - ✅ 8 unit tests for `validateImageInputs` + 10 route source-code assertion tests (24 total pass)
 
-### Phase 4: Cover assignment behavior
-- Edit mode: "Use as cover?" confirmation → existing upload path
-- Create mode: `pendingCoverFile` → deferred upload after create (existing pattern)
+### Phase 4A: Edit-mode cover apply ✅ (2026-02-24)
+- ✅ `LAB_WRITES_ENABLED` client feature flag gating (`NEXT_PUBLIC_ENABLE_INTERPRETER_LAB_WRITES`)
+- ✅ Cover candidate click-to-select UX (ring + badge on thumbnails, single-select)
+- ✅ `canShowCoverControls` derived: flag + edit mode + valid eventId + staged images
+- ✅ `base64ToJpegFile()` helper: base64 → Uint8Array → File with .jpg extension
+- ✅ `applyCover()` handler: session check → fresh event fetch → base64→File → `uploadCoverForEvent` → update `cover_image_url` → `softDeleteCoverImageRow` old cover
+- ✅ "Apply as Cover" button (separate from Run Interpreter, emerald green, double-submit guard)
+- ✅ Cover status message feedback (success/error)
+- ✅ clearHistory resets cover state
+- ✅ 25 source-code assertion tests for Phase 4A (write gating, candidate UX, handler flow, helper, behavior preservation)
+- ✅ All 50 tests pass (25 Phase 4A + 11 Phase 3 route + 14 contract)
 
-### Phase 5: Tests + smoke
+### Phase 4B: Create-mode write + deferred cover ✅ (2026-02-24)
+- ✅ `mapDraftToCreatePayload()` mapper: draft_payload → POST /api/my-events body
+  - Validates required fields: `title`, `event_type` (non-empty array), `start_time`, `start_date`
+  - Location resolution: `venue_id` → venue path, `custom_location_name` → custom path, `online_url` → online path, else returns mapper error
+  - Passes through compatible optional fields; defaults `series_mode` to `"single"`
+- ✅ `CREATABLE_NEXT_ACTIONS` gate: only `show_preview`, `await_confirmation`, `done` — blocks `ask_clarification`
+- ✅ `canShowCreateAction` derived: `LAB_WRITES_ENABLED && mode === "create" && lastInterpretResponse && next_action in allowed set`
+- ✅ `lastInterpretResponse` state: tracks latest successful interpreter `next_action` + `draft_payload`
+- ✅ `createEvent()` handler: mapper → POST /api/my-events → capture eventId → deferred cover upload
+- ✅ Deferred cover: if `coverCandidateId` selected + eventId returned → `base64ToJpegFile` → `uploadCoverForEvent` → update `cover_image_url`
+- ✅ Partial-failure cleanup: if upload succeeds but `cover_image_url` update fails, soft-delete uploaded image row
+- ✅ Stale-draft protection: create draft state is cleared before each new create interpret request and when create inputs change
+- ✅ Non-blocking cover failure: event remains created; warning message shown
+- ✅ "Confirm & Create" button (blue, separate from Run Interpreter, double-submit guard)
+- ✅ Three-tier create message: success (emerald), warning (amber), error (red)
+- ✅ `canShowCoverControls` expanded: thumbnail click-to-select works in both edit and create modes
+- ✅ "Apply as Cover" button restricted to edit mode only (`isEditMode` guard)
+- ✅ clearHistory resets all 4A + 4B state
+- ✅ 39 source-code assertion tests for Phase 4B (gating, mapper, create flow, deferred cover, message UX, 4A regression)
+- ✅ All 89 tests pass (39 Phase 4B + 25 Phase 4A + 11 Phase 3 route + 14 contract)
+
+**Known limitations:**
+- No rollback of event creation if deferred cover upload fails (by design per prompt)
+
+### Phase 5: Server-side venue resolution ✅ (2026-02-25)
+- ✅ Pure resolver module: `venueResolver.ts` — deterministic post-LLM venue matching
+  - Scoring: exact match (1.0), slug match (0.95), token Jaccard with first-token boost
+  - Thresholds: RESOLVE (≥0.80), AMBIGUOUS (0.40–0.79), TIE_GAP (<0.05 between top 2 → ambiguous)
+  - Discriminated union outcomes: `resolved`, `ambiguous`, `unresolved`, `online_explicit`, `custom_location`
+- ✅ Resolver wired into interpret route post-LLM with explicit gating
+  - `create`: always runs venue resolution
+  - `edit_series`: runs only on location-intent messages or when draft contains concrete location signals
+  - `edit_occurrence`: does not run venue resolution
+  - Resolved → injects `venue_id` + `venue_name` into sanitizedDraft, sets `location_mode: "venue"`
+  - Ambiguous → escalates to `ask_clarification` with numbered candidate list (max 3)
+  - Unresolved → escalates to `ask_clarification` asking for venue name (or `online_url` when mode is online)
+  - Online/custom → no changes (preserves user intent)
+  - Only escalates, never downgrades existing LLM clarification
+- ✅ Venue catalog query expanded: `.select("id, name, slug")` — slug used server-side only, stripped from LLM prompt
+- ✅ System prompt updated: LLM instructed to output `venue_name` with best guess when `venue_id` uncertain
+- ✅ `venue_name` added to CREATE_PAYLOAD_ALLOWLIST and EDIT_SERIES_PAYLOAD_ALLOWLIST
+- ✅ `venue_name` added to lab page `CREATE_PASSTHROUGH_OPTIONALS`
+- ✅ Structured logging: `venueResolution { status, source, confidence, venueId, candidateCount, inputName }`
+- ✅ 50 unit tests for venueResolver (scoring, normalization, thresholds, gating, edge cases)
+- ✅ 30 route integration source-code assertion tests
+- ✅ Targeted interpreter suite passes: 169 tests (50 venue-resolver + 30 route-integration + 39 Phase 4B + 25 Phase 4A + 11 Phase 3 + 14 contract)
+- ✅ ESLint clean on all changed files
+
+**Known v1 limitations:**
+- Abbreviations (e.g., "LTB" for "Long Table Brewhouse") will not resolve — token overlap too low
+- Venues not in DB require manual addition or custom_location fallback
+- Catalog size O(n) per request is negligible at ~200 entries
+
+### Phase 5 (prior): Tests + smoke
 - ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)
-- ✅ Route integration tests: source-code assertions for all Phase 3 requirements (10 tests)
-- Smoke checklist entry in `docs/SMOKE-PROD.md` (deferred until Phase 4)
+- ✅ Route integration tests: source-code assertions for all Phase 3 requirements (11 tests)
+- ✅ Lab cover-apply tests: source-code assertions for Phase 4A (25 tests)
+- ✅ Lab create-write tests: source-code assertions for Phase 4B (39 tests)
+- ✅ Smoke checklist entry in `docs/SMOKE-PROD.md`
 
-**Checkpoint:** Phases 0-3 complete. Stop for review before Phase 4 (cover assignment behavior).
+**Checkpoint:** Phases 0-5 complete. Stop for review before any further scope.
 
 ---
 

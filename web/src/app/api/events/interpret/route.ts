@@ -14,6 +14,12 @@ import {
   type ImageInput,
   type InterpretEventRequestBody,
 } from "@/lib/events/interpretEventContract";
+import {
+  resolveVenue,
+  shouldResolveVenue,
+  type VenueCatalogEntry,
+  type VenueResolutionOutcome,
+} from "@/lib/events/venueResolver";
 
 /** Vercel serverless function timeout — two LLM calls need headroom. */
 export const maxDuration = 60;
@@ -168,7 +174,9 @@ function normalizeHistory(history: unknown): Array<{ role: "user" | "assistant";
 
 function requestsVenueCatalog(mode: string, message: string): boolean {
   if (mode === "create") return true;
-  return /\b(venue|location|address|move|moved|switch|relocat|different venue)\b/i.test(message);
+  return /\b(venue|location|address|move|moved|switch|relocat|different venue|online|virtual|zoom|livestream)\b/i.test(
+    message
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -386,7 +394,7 @@ function buildSystemPrompt() {
     "- Timeslots are optional. Encourage for open_mic, jam_session, workshop when relevant.",
     "- Prefer safe scope when ambiguous: occurrence edits over series-wide edits.",
     "- Use date format YYYY-MM-DD and 24h times HH:MM:SS when possible.",
-    "- If venue match is uncertain, leave venue_id null and include blocking field.",
+    "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
     "- Keep human_summary concise and deterministic.",
   ].join("\n");
 }
@@ -397,10 +405,12 @@ function buildUserPrompt(input: {
   dateKey?: string;
   eventId?: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
-  venueCatalog: Array<{ id: string; name: string }>;
+  venueCatalog: VenueCatalogEntry[];
   currentEvent: Record<string, unknown> | null;
   extractedImageText?: string;
 }) {
+  // Send only id+name to the LLM (slug is used server-side for resolution only)
+  const llmVenueCatalog = input.venueCatalog.map((v) => ({ id: v.id, name: v.name }));
   return JSON.stringify(
     {
       task: "interpret_event_message",
@@ -409,7 +419,7 @@ function buildUserPrompt(input: {
       date_key: input.dateKey ?? null,
       event_id: input.eventId ?? null,
       current_event: input.currentEvent,
-      venue_catalog: input.venueCatalog,
+      venue_catalog: llmVenueCatalog,
       conversation_history: input.conversationHistory,
       ...(input.extractedImageText
         ? {
@@ -571,16 +581,16 @@ export async function POST(request: Request) {
 
   const shouldSendVenueCatalog = requestsVenueCatalog(mode, normalizedMessage);
   const venueQueryLimit = mode === "create" ? 200 : 80;
-  let venueCatalog: Array<{ id: string; name: string }> = [];
+  let venueCatalog: VenueCatalogEntry[] = [];
 
   if (shouldSendVenueCatalog) {
     const { data: venueRows } = await supabase
       .from("venues")
-      .select("id, name")
+      .select("id, name, slug")
       .order("name", { ascending: true })
       .limit(venueQueryLimit);
 
-    venueCatalog = (venueRows || []).map((v) => ({ id: v.id, name: v.name }));
+    venueCatalog = (venueRows || []).map((v) => ({ id: v.id, name: v.name, slug: v.slug ?? null }));
   } else if (typeof currentEvent?.venue_id === "string" && typeof currentEvent?.venue_name === "string") {
     // Keep context lightweight for non-venue edits by only supplying the current venue.
     venueCatalog = [{ id: currentEvent.venue_id, name: currentEvent.venue_name }];
@@ -741,18 +751,98 @@ export async function POST(request: Request) {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Phase 5 — Deterministic venue resolution (post-LLM)
+  // ---------------------------------------------------------------------------
+  let venueResolution: VenueResolutionOutcome | null = null;
+  let resolvedNextAction = responsePayload.next_action as string;
+  const resolvedBlockingFields = (responsePayload.blocking_fields as string[]).map((f) => f.trim()).filter(Boolean);
+  let resolvedClarificationQuestion =
+    typeof responsePayload.clarification_question === "string"
+      ? responsePayload.clarification_question.trim()
+      : null;
+
+  if (
+    shouldResolveVenue({
+      mode,
+      hasLocationIntent: shouldSendVenueCatalog,
+      draftPayload: sanitizedDraft,
+    })
+  ) {
+    const isCustomLocation =
+      typeof sanitizedDraft.custom_location_name === "string" &&
+      (sanitizedDraft.custom_location_name as string).trim().length > 0 &&
+      !sanitizedDraft.venue_id;
+
+    venueResolution = resolveVenue({
+      draftVenueId: sanitizedDraft.venue_id as string | null | undefined,
+      draftVenueName: (sanitizedDraft.venue_name as string | null | undefined) ??
+        (sanitizedDraft.custom_location_name as string | null | undefined),
+      userMessage: normalizedMessage,
+      venueCatalog,
+      draftLocationMode: sanitizedDraft.location_mode as string | null | undefined,
+      draftOnlineUrl: sanitizedDraft.online_url as string | null | undefined,
+      isCustomLocation,
+    });
+
+    // Apply resolution outcome — only escalate, never downgrade
+    if (venueResolution.status === "resolved") {
+      sanitizedDraft.venue_id = venueResolution.venueId;
+      sanitizedDraft.venue_name = venueResolution.venueName;
+      if (!sanitizedDraft.location_mode || sanitizedDraft.location_mode === "online") {
+        sanitizedDraft.location_mode = "venue";
+      }
+    } else if (venueResolution.status === "ambiguous") {
+      // Only escalate — if LLM already asked for clarification, don't override
+      if (resolvedNextAction !== "ask_clarification") {
+        resolvedNextAction = "ask_clarification";
+        const candidateList = venueResolution.candidates
+          .map((c, i) => `${i + 1}. ${c.name}`)
+          .join(", ");
+        resolvedClarificationQuestion =
+          `I found multiple possible venues matching "${venueResolution.inputName}": ${candidateList}. Which one did you mean?`;
+      }
+      if (!resolvedBlockingFields.includes("venue_id")) {
+        resolvedBlockingFields.push("venue_id");
+      }
+    } else if (venueResolution.status === "unresolved") {
+      const needsOnlineUrl =
+        sanitizedDraft.location_mode === "online" &&
+        !(
+          typeof sanitizedDraft.online_url === "string" &&
+          sanitizedDraft.online_url.trim().length > 0
+        );
+
+      if (resolvedNextAction !== "ask_clarification") {
+        resolvedNextAction = "ask_clarification";
+        if (needsOnlineUrl) {
+          resolvedClarificationQuestion =
+            "Please provide the online event URL (Zoom, YouTube, etc.) for this online event.";
+        } else {
+          const inputHint = venueResolution.inputName
+            ? ` matching "${venueResolution.inputName}"`
+            : "";
+          resolvedClarificationQuestion =
+            `I couldn't find a known venue${inputHint}. Could you provide the venue name, or specify if this is an online event?`;
+        }
+      }
+      const blockingField = needsOnlineUrl ? "online_url" : "venue_id";
+      if (!resolvedBlockingFields.includes(blockingField)) {
+        resolvedBlockingFields.push(blockingField);
+      }
+    }
+    // online_explicit / custom_location → no changes needed
+  }
+
   const qualityHints = buildQualityHints(sanitizedDraft);
 
   const response = {
     mode,
-    next_action: responsePayload.next_action,
+    next_action: resolvedNextAction,
     confidence: responsePayload.confidence,
     human_summary: responsePayload.human_summary.trim(),
-    clarification_question:
-      typeof responsePayload.clarification_question === "string"
-        ? responsePayload.clarification_question.trim()
-        : null,
-    blocking_fields: (responsePayload.blocking_fields as string[]).map((f) => f.trim()).filter(Boolean),
+    clarification_question: resolvedClarificationQuestion,
+    blocking_fields: resolvedBlockingFields,
     draft_payload: sanitizedDraft,
     quality_hints: qualityHints,
     ...(extractionMetadata ? { extraction_metadata: extractionMetadata } : {}),
@@ -765,6 +855,29 @@ export async function POST(request: Request) {
     confidence: response.confidence,
     blockingFields: response.blocking_fields,
     draft: redactEmails(truncate(JSON.stringify(response.draft_payload), 1200)),
+    ...(venueResolution
+      ? {
+          venueResolution: {
+            status: venueResolution.status,
+            ...(venueResolution.status === "resolved"
+              ? {
+                  source: venueResolution.source,
+                  confidence: venueResolution.confidence,
+                  venueId: venueResolution.venueId,
+                }
+              : {}),
+            ...(venueResolution.status === "ambiguous"
+              ? {
+                  candidateCount: venueResolution.candidates.length,
+                  inputName: venueResolution.inputName,
+                }
+              : {}),
+            ...(venueResolution.status === "unresolved"
+              ? { inputName: venueResolution.inputName }
+              : {}),
+          },
+        }
+      : {}),
     ...(extractionMetadata
       ? {
           extraction: {
