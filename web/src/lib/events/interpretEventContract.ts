@@ -7,12 +7,35 @@ export type InterpretMode = (typeof INTERPRET_MODES)[number];
 export const NEXT_ACTIONS = ["ask_clarification", "show_preview", "await_confirmation", "done"] as const;
 export type NextAction = (typeof NEXT_ACTIONS)[number];
 
+export const IMAGE_INPUT_LIMITS = {
+  maxCount: 3,
+  maxDecodedBytes: 1 * 1024 * 1024, // 1MB after base64 decode
+  maxIntakeBytes: 5 * 1024 * 1024,  // 5MB client intake before resize
+  acceptedMimes: new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+  requestBodyMaxBytes: 4 * 1024 * 1024, // 4MB total request body cap
+} as const;
+
+export interface ImageInput {
+  /** base64-encoded image data (no data URL prefix) */
+  data: string;
+  /** MIME type: image/jpeg, image/png, image/webp, or image/gif */
+  mime_type: string;
+}
+
+export interface ExtractionMetadata {
+  images_processed: number;
+  confidence: number;
+  extracted_fields: string[];
+  warnings: string[];
+}
+
 export interface InterpretEventRequestBody {
   mode: InterpretMode;
   message: string;
   eventId?: string;
   dateKey?: string;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
+  image_inputs?: ImageInput[];
 }
 
 export interface QualityHint {
@@ -30,6 +53,7 @@ export interface InterpretEventDraftResponse {
   blocking_fields: string[];
   draft_payload: Record<string, unknown>;
   quality_hints: QualityHint[];
+  extraction_metadata?: ExtractionMetadata;
 }
 
 const CREATE_PAYLOAD_ALLOWLIST = new Set([
@@ -305,6 +329,59 @@ export function validateInterpretMode(value: unknown): value is InterpretMode {
 
 export function validateNextAction(value: unknown): value is NextAction {
   return typeof value === "string" && NEXT_ACTIONS.includes(value as NextAction);
+}
+
+export function validateImageInputs(
+  images: unknown
+): { ok: true; images: ImageInput[] } | { ok: false; error: string; status: 400 | 413 } {
+  if (images === undefined || images === null) {
+    return { ok: true, images: [] };
+  }
+
+  if (!Array.isArray(images)) {
+    return { ok: false, error: "image_inputs must be an array", status: 400 };
+  }
+
+  if (images.length > IMAGE_INPUT_LIMITS.maxCount) {
+    return { ok: false, error: `Too many images (max ${IMAGE_INPUT_LIMITS.maxCount})`, status: 400 };
+  }
+
+  const validated: ImageInput[] = [];
+
+  for (let i = 0; i < images.length; i++) {
+    const img = images[i];
+    if (typeof img !== "object" || img === null) {
+      return { ok: false, error: `image_inputs[${i}] must be an object`, status: 400 };
+    }
+
+    const { data, mime_type } = img as Record<string, unknown>;
+
+    if (typeof data !== "string" || data.length === 0) {
+      return { ok: false, error: `image_inputs[${i}].data must be a non-empty string`, status: 400 };
+    }
+
+    if (typeof mime_type !== "string" || !IMAGE_INPUT_LIMITS.acceptedMimes.has(mime_type)) {
+      return {
+        ok: false,
+        error: `image_inputs[${i}].mime_type must be one of: ${[...IMAGE_INPUT_LIMITS.acceptedMimes].join(", ")}`,
+        status: 400,
+      };
+    }
+
+    // Check decoded size: base64 is ~4/3 of original, so decoded ≈ data.length * 3/4
+    const estimatedDecodedBytes = Math.ceil(data.length * 3 / 4);
+    if (estimatedDecodedBytes > IMAGE_INPUT_LIMITS.maxDecodedBytes) {
+      return {
+        ok: false,
+        error: `image_inputs[${i}] exceeds max decoded size of ${IMAGE_INPUT_LIMITS.maxDecodedBytes / 1024 / 1024}MB`,
+        status: 413,
+      };
+    }
+
+    validated.push({ data, mime_type });
+  }
+
+  return { ok: true, images: validated };
 }
 
 export function buildQualityHints(

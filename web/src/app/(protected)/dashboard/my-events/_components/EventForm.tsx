@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { uploadCoverForEvent, softDeleteCoverImageRow } from "@/lib/events/uploadCoverForEvent";
 import VenueSelector from "@/components/ui/VenueSelector";
 import SlotConfigSection, {
   type SlotConfig,
@@ -342,67 +343,6 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
   }, [pendingCoverPreviewUrl]);
 
   const normalizeImageUrl = (url: string) => url.split("?")[0];
-
-  const uploadCoverForEvent = async ({
-    supabase,
-    eventId,
-    file,
-    userId,
-  }: {
-    supabase: ReturnType<typeof createSupabaseBrowserClient>;
-    eventId: string;
-    file: File;
-    userId: string;
-  }): Promise<string> => {
-    const fileExt = file.name.split(".").pop() || "jpg";
-    const storagePath = `${eventId}/${crypto.randomUUID()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("event-images")
-      .upload(storagePath, file, { upsert: false });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("event-images").getPublicUrl(storagePath);
-
-    const { error: insertError } = await supabase
-      .from("event_images")
-      .insert({
-        event_id: eventId,
-        image_url: publicUrl,
-        storage_path: storagePath,
-        uploaded_by: userId,
-      });
-
-    if (insertError) {
-      await supabase.storage.from("event-images").remove([storagePath]);
-      throw insertError;
-    }
-
-    return publicUrl;
-  };
-
-  const softDeleteCoverImageRow = async (
-    supabase: ReturnType<typeof createSupabaseBrowserClient>,
-    eventId: string,
-    imageUrl: string
-  ) => {
-    const normalizedUrl = normalizeImageUrl(imageUrl);
-    const { error } = await supabase
-      .from("event_images")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("event_id", eventId)
-      .eq("image_url", normalizedUrl)
-      .is("deleted_at", null);
-
-    if (error) {
-      console.error("Failed to soft-delete previous cover image row:", error);
-    }
-  };
 
   // Phase 4.0: Location selection mode - "venue" or "custom"
   // Determine initial mode based on existing event data

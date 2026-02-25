@@ -693,6 +693,35 @@ For the create request in Vercel/Axiom logs:
 
 **Pass Criteria:** A/B/C expected statuses observed and D log checks clean.
 
+**E) Hidden Interpreter Lab UI (Phase 0-2)**
+
+**Route:** `/dashboard/my-events/interpreter-lab` (intentionally unlinked)
+
+**Precondition:** Logged-in host/admin session on same domain.
+
+**Manual checks:**
+
+1. Image staging:
+   - Click `+ Add image` and select up to 3 valid images.
+   - Verify thumbnails render with file size labels and remove buttons.
+   - Attempt a 4th image; verify max-count error appears.
+2. Clipboard paste:
+   - Copy an image to clipboard and paste on the page.
+   - Verify image stages without opening a native file picker.
+3. Drag and drop:
+   - Drop an image file onto the page.
+   - Verify image stages and appears in thumbnail list.
+4. Conversation history wiring:
+   - Run interpreter once and confirm history shows user + assistant entries.
+   - Run a second request and confirm prior turns are included.
+   - Click `Clear History`; verify history and staged images are cleared.
+5. Request payload shape:
+   - In browser network tab, verify request body includes:
+     - `conversationHistory` when history exists
+     - `image_inputs[]` with `data` and `mime_type` when images are staged
+
+**Pass Criteria:** UI supports stage/paste/drop/remove, enforces max-3 images, sends `image_inputs` + `conversationHistory` as expected, and clears state correctly.
+
 ---
 
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
