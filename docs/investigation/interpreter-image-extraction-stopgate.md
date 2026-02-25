@@ -380,6 +380,8 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - Venues not in DB require manual addition or custom_location fallback
 - Catalog size O(n) per request is negligible at ~200 entries
 
+**Next stop-gate:** `docs/investigation/interpreter-venue-abbreviation-phase6-stopgate.md` (AWAITING APPROVAL)
+
 ### Phase 5 (prior): Tests + smoke
 - ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)
 - ✅ Route integration tests: source-code assertions for all Phase 3 requirements (11 tests)

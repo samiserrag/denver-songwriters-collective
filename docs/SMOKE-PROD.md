@@ -810,6 +810,40 @@ _Placeholder: Profile-specific smoke tests will be added when the Profiles track
 
 > Append dated results after each production verification run.
 
+### 2026-02-25 — Phase 5 Venue Resolution + Axiom 24h Monitoring
+
+**Executed by:** Claude in Chrome (browser smoke) + Codex (Axiom CLI verification)
+**Commit:** `9b2ef28d`
+**Window:** 24h lookback (post-deploy sample: 9 interpret responses)
+
+#### Targeted Smoke (H6/H7)
+
+| Test | Status | Result | Notes |
+|------|--------|--------|-------|
+| Preconditions | 400 (expected guardrail) | ✅ PASS | Authenticated session; endpoint reachable; no 401/503/404 |
+| H6: edit_series non-location update | 200 | ✅ PASS | `next_action=await_confirmation`, `blocking_fields=[]`, no forced venue clarification |
+| H7: edit_series online move without URL | 200 | ✅ PASS | `next_action=ask_clarification`, `blocking_fields` includes `online_url`, excludes `venue_id` |
+| Optional: create misspelled venue (`Dazle`) | 200 | ✅ PASS | venue clarification path preserved (`venue_id` blocking) |
+
+#### Axiom 24h Health Checks
+
+| Check | Result | Status |
+|------|--------|--------|
+| Interpreter error channel | 0 | ✅ PASS |
+| Rate-limit fallback occurrences | 0 | ✅ PASS |
+| H6 regression watch (`edit_series` + `venue_id` false-block) | 0 occurrences | ✅ PASS |
+| H7 watch (`edit_series` + `online_url` blocking) | 1 occurrence | ✅ PASS |
+| Response volume | 9 total (6 create, 3 edit_series) | ✅ PASS (low, expected sample) |
+
+#### Verdict
+
+**Phase 5 production status: HEALTHY**
+- No blockers detected.
+- Venue-resolution gate is behaving as designed in production.
+- Online clarification behavior is correct and stable.
+
+---
+
 ### 2026-01-17 — Post P0 UI Polish Deploy
 
 **Executed by:** Claude Agent
