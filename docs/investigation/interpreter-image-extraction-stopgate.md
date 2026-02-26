@@ -379,7 +379,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - Venues not in DB require manual addition or custom_location fallback
 - Catalog size O(n) per request is negligible at ~200 entries
 
-**Next stop-gate:** `docs/investigation/interpreter-venue-abbreviation-phase6-stopgate.md` (APPROVED — production-verified)
+**Related follow-on track:** `docs/investigation/interpreter-phase7-admin-activity-alerts-stopgate.md` (ALERTS-01, IMPLEMENTED 7A; awaiting production smoke)
 
 ### Phase 5 (prior): Tests + smoke
 - ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)
@@ -403,4 +403,4 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 
 ---
 
-**STOP: Current tract complete through Phase 6. Awaiting next approved stop-gate before new scope.**
+**STOP: Interpreter tract is complete through Phase 6. Follow-on alert hardening is tracked separately in ALERTS-01.**

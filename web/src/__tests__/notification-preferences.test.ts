@@ -56,6 +56,7 @@ describe("Notification Preferences", () => {
 
     it("maps admin templates to admin_notifications category", () => {
       expect(EMAIL_CATEGORY_MAP["adminEventClaimNotification"]).toBe("admin_notifications");
+      expect(EMAIL_CATEGORY_MAP["adminEventLifecycleAlert"]).toBe("admin_notifications");
       expect(EMAIL_CATEGORY_MAP["contactNotification"]).toBe("admin_notifications");
     });
   });
@@ -65,6 +66,7 @@ describe("Notification Preferences", () => {
       expect(getEmailCategory("eventClaimSubmitted")).toBe("claim_updates");
       expect(getEmailCategory("eventReminder")).toBe("attendee_activity");
       expect(getEmailCategory("adminEventClaimNotification")).toBe("admin_notifications");
+      expect(getEmailCategory("adminEventLifecycleAlert")).toBe("admin_notifications");
     });
 
     it("returns null for unknown templates", () => {

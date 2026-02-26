@@ -578,6 +578,7 @@ export async function POST(request: Request) {
   if (!isAdmin && firstEvent) {
     sendAdminEventAlert({
       type: "created",
+      actionContext: "create",
       actorUserId: sessionUser.id,
       actorRole: profile?.role || "member",
       actorName: profile?.full_name || null,

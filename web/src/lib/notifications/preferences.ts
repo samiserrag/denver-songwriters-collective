@@ -191,6 +191,7 @@ export const EMAIL_CATEGORY_MAP: Record<string, EmailCategory> = {
 
   // Admin-related templates
   adminEventClaimNotification: "admin_notifications",
+  adminEventLifecycleAlert: "admin_notifications",
   adminSuggestionNotification: "admin_notifications",
   contactNotification: "admin_notifications",
   feedbackNotification: "admin_notifications",

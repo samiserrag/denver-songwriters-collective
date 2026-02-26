@@ -7,6 +7,7 @@ import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { sendEventUpdatedNotifications } from "@/lib/notifications/eventUpdated";
 import { sendOccurrenceCancelledNotifications } from "@/lib/notifications/occurrenceCancelled";
+import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 
 /**
  * Occurrence Override API — Per-occurrence field overrides for recurring events.
@@ -39,6 +40,77 @@ function normalizeForCompare(value: unknown): string {
 
 function valuesChanged(before: unknown, after: unknown): boolean {
   return normalizeForCompare(before) !== normalizeForCompare(after);
+}
+
+const OVERRIDE_ALERT_FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  description: "Description",
+  event_date: "Date",
+  start_time: "Time",
+  end_time: "End time",
+  custom_location_name: "Venue",
+  custom_address: "Address",
+  location_notes: "Location notes",
+  host_notes: "Host notes",
+  capacity: "Capacity",
+  cost_label: "Cost",
+  is_free: "Cost",
+  signup_url: "Signup link",
+  signup_time: "Signup time",
+  age_policy: "Age policy",
+  external_url: "External link",
+  categories: "Categories",
+  cover_image_url: "Cover image",
+};
+
+function collectOverrideAlertChangedFields(
+  existingOverride: Record<string, unknown> | null,
+  currentOverride: Record<string, unknown> | null,
+  action: "reverted" | "upserted"
+): string[] {
+  const fields = new Set<string>();
+  if (action === "reverted") {
+    fields.add("Reverted override");
+  }
+
+  const beforePatch =
+    (existingOverride?.override_patch as Record<string, unknown> | null | undefined) || {};
+  const afterPatch =
+    (currentOverride?.override_patch as Record<string, unknown> | null | undefined) || {};
+
+  if (valuesChanged(existingOverride?.status ?? "normal", currentOverride?.status ?? "normal")) {
+    fields.add("Status");
+  }
+
+  if (
+    valuesChanged(existingOverride?.override_start_time, currentOverride?.override_start_time) ||
+    valuesChanged(beforePatch.start_time, afterPatch.start_time)
+  ) {
+    fields.add("Time");
+  }
+
+  if (
+    valuesChanged(existingOverride?.override_cover_image_url, currentOverride?.override_cover_image_url) ||
+    valuesChanged(beforePatch.cover_image_url, afterPatch.cover_image_url)
+  ) {
+    fields.add("Cover image");
+  }
+
+  if (
+    valuesChanged(existingOverride?.override_notes, currentOverride?.override_notes) ||
+    valuesChanged(beforePatch.host_notes, afterPatch.host_notes) ||
+    valuesChanged(beforePatch.location_notes, afterPatch.location_notes)
+  ) {
+    fields.add("Host notes");
+  }
+
+  const patchKeys = new Set<string>([...Object.keys(beforePatch), ...Object.keys(afterPatch)]);
+  for (const key of patchKeys) {
+    if (!valuesChanged(beforePatch[key], afterPatch[key])) continue;
+    fields.add(OVERRIDE_ALERT_FIELD_LABELS[key] || key);
+  }
+
+  return [...fields].slice(0, 20);
 }
 
 /**
@@ -135,7 +207,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { authorized } = await checkOverrideAuth(supabase, eventId, sessionUser.id);
+  const { authorized, isAdmin } = await checkOverrideAuth(supabase, eventId, sessionUser.id);
   if (!authorized) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -272,18 +344,24 @@ export async function POST(
     .eq("date_key", date_key)
     .maybeSingle();
 
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("full_name, role")
+    .eq("id", sessionUser.id)
+    .maybeSingle();
+
+  const overrideChangedFields = collectOverrideAlertChangedFields(
+    existingOverride as Record<string, unknown> | null,
+    currentOverride as Record<string, unknown> | null,
+    action
+  );
+
   // Notify signed-up attendees on occurrence-level host edits.
   // - cancelled transition => occurrence cancellation notification
   // - modified/reverted changes => standard event update notification (date_key scoped)
   if (baseEvent?.is_published) {
     const previousStatus = existingOverride?.status ?? "normal";
     const nextStatus = currentOverride?.status ?? "normal";
-
-    const { data: actorProfile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", sessionUser.id)
-      .maybeSingle();
 
     if (previousStatus !== "cancelled" && nextStatus === "cancelled") {
       sendOccurrenceCancelledNotifications(supabase, {
@@ -424,6 +502,25 @@ export async function POST(
         });
       }
     }
+  }
+
+  if (!isAdmin && baseEvent && overrideChangedFields.length > 0) {
+    sendAdminEventAlert({
+      type: "edited",
+      actionContext: "edit_occurrence",
+      actorUserId: sessionUser.id,
+      actorRole: actorProfile?.role || "member",
+      actorName: actorProfile?.full_name || null,
+      actorEmail: sessionUser.email || null,
+      eventId,
+      eventSlug: baseEvent.slug,
+      eventTitle: baseEvent.title,
+      eventDate: date_key,
+      occurrenceDateKey: date_key,
+      changedFields: overrideChangedFields,
+    }).catch((emailError) => {
+      console.error(`[Overrides POST] Failed to send non-admin occurrence edit admin email for ${date_key}:`, emailError);
+    });
   }
 
   return NextResponse.json({ success: true, action });

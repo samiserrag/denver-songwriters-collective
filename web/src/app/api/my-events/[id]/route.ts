@@ -783,6 +783,7 @@ export async function PATCH(
   if (!isAdmin && nonAdminChangedKeys.length > 0) {
     sendAdminEventAlert({
       type: "edited",
+      actionContext: "edit_series",
       actorUserId: sessionUser.id,
       actorRole: profile?.role || "member",
       actorName: profile?.full_name || null,

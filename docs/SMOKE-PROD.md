@@ -801,6 +801,42 @@ For the create request in Vercel/Axiom logs:
 
 **Pass Criteria (H):** Known venues (including approved abbreviations) resolve deterministically; unknown/ambiguous venues escalate to clarification; online and custom locations pass through unchanged.
 
+**I) Admin Lifecycle Alerts for Non-Admin Event Activity (ALERTS-01 / 7A)**
+
+1. Non-admin create -> admin lifecycle email
+   - As non-admin user, create event via `/dashboard/my-events/new` or interpreter lab create-write flow.
+   - Expect admin lifecycle email with:
+     - action `Create event`
+     - actor info
+     - event id/title/date.
+
+2. Non-admin series edit -> admin lifecycle email
+   - As non-admin user, edit an existing event via `/dashboard/my-events/[id]`.
+   - Change one meaningful field (time/venue/title).
+   - Expect admin lifecycle email with:
+     - action `Edit series`
+     - changed fields list.
+
+3. Non-admin occurrence edit -> admin lifecycle email
+   - As non-admin user, edit an occurrence via `/dashboard/my-events/[id]/overrides/[dateKey]`.
+   - Apply override change (time cancel/reschedule/notes).
+   - Expect admin lifecycle email with:
+     - action `Edit occurrence`
+     - `Occurrence: YYYY-MM-DD`
+     - changed fields list.
+
+4. Admin toggle gating
+   - As admin recipient, disable `email_admin_notifications` in settings.
+   - Repeat one non-admin write (create or edit).
+   - Expect lifecycle alert email is suppressed for that admin recipient.
+
+5. Axiom 24h checks
+   - No interpreter coupling regressions.
+   - No lifecycle alert send errors.
+   - No unusual alert spikes.
+
+**Pass Criteria (I):** All three non-admin write paths trigger expected lifecycle alerts, admin preference toggle suppresses alerts when disabled, and logs remain clean.
+
 ---
 
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
