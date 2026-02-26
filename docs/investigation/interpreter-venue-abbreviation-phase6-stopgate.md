@@ -1,7 +1,7 @@
 # Stop-Gate: Phase 6 Venue Abbreviation Resolution
 
 **Date:** 2026-02-25  
-**Status:** IMPLEMENTED — awaiting production smoke sign-off  
+**Status:** APPROVED — production smoke + 24h monitoring passed (2026-02-26)  
 **Parent tract:** `docs/investigation/interpreter-image-extraction-stopgate.md` (Phases 0-5 complete)
 
 ---
@@ -127,4 +127,18 @@ No migration rollback needed.
 2. Deterministic alias policy + collision clarify behavior: ✅ implemented  
 3. Success criteria: alias path covered in tests, no Phase 5 integration regression in local suite: ✅ implemented  
 
-**Remaining sign-off step:** production smoke + Axiom checks for abbreviation scenarios.
+## 7) Production Verification (2026-02-26)
+
+Production smoke and monitoring were executed on live deployment commit `57234ace`.
+
+| Check | Result |
+|---|---|
+| H8: abbreviation resolve (`LTB`) | PASS — resolved to `Long Table Brewhouse` (`venue_id=56faadb7...`) |
+| H9: collision safety (`SSL`) | PASS — `ask_clarification`, no silent auto-pick |
+| H6 regression watch | PASS — non-location `edit_series` did not force venue clarification |
+| H7 regression watch | PASS — online move blocked on `online_url`, not `venue_id` |
+| Axiom 24h interpreter errors | `0` |
+| Axiom 24h rate-limit fallbacks | `0` |
+| Axiom 24h false venue blocks (`edit_series`) | `0` |
+
+Note: one transient 504 occurred on first H8 attempt; retry succeeded with correct resolver outcome.

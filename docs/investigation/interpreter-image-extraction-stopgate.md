@@ -2,7 +2,7 @@
 
 **Stop-Gate Phase:** A/B (Investigate + Critique)
 **Date:** 2026-02-24
-**Status:** APPROVED — Phases 0-4B complete, Phase 5 (venue resolution) implemented (2026-02-25).
+**Status:** APPROVED — Phases 0-6 complete; Phase 6 production smoke + monitoring passed (2026-02-26).
 **Parent feature:** Conversational Event Creation (`conversational-event-creation-stopgate.md`)
 **Scope expansion:** Section 4.7 of parent doc explicitly deferred image support to a future phase. This document covers that future phase.
 
@@ -376,11 +376,10 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - ✅ ESLint clean on all changed files
 
 **Known v1 limitations:**
-- Abbreviations (e.g., "LTB" for "Long Table Brewhouse") will not resolve — token overlap too low
 - Venues not in DB require manual addition or custom_location fallback
 - Catalog size O(n) per request is negligible at ~200 entries
 
-**Next stop-gate:** `docs/investigation/interpreter-venue-abbreviation-phase6-stopgate.md` (IMPLEMENTED — awaiting production smoke sign-off)
+**Next stop-gate:** `docs/investigation/interpreter-venue-abbreviation-phase6-stopgate.md` (APPROVED — production-verified)
 
 ### Phase 5 (prior): Tests + smoke
 - ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)
@@ -389,7 +388,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - ✅ Lab create-write tests: source-code assertions for Phase 4B (39 tests)
 - ✅ Smoke checklist entry in `docs/SMOKE-PROD.md`
 
-**Checkpoint:** Phases 0-6 implemented in code. Await production smoke + monitoring sign-off before further scope.
+**Checkpoint:** Phases 0-6 implemented and production-verified. Open a new stop-gate for any further scope.
 
 ---
 
@@ -404,4 +403,4 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 
 ---
 
-**STOP: Awaiting production smoke + monitoring sign-off for Phase 6 before new scope.**
+**STOP: Current tract complete through Phase 6. Awaiting next approved stop-gate before new scope.**

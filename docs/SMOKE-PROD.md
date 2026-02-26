@@ -819,6 +819,37 @@ _Placeholder: Profile-specific smoke tests will be added when the Profiles track
 
 > Append dated results after each production verification run.
 
+### 2026-02-26 — Phase 6 Venue Abbreviation Resolution + Axiom 24h Monitoring
+
+**Executed by:** Claude in Chrome (browser smoke) + Codex (Axiom query review)  
+**Commit:** `57234ace`  
+**Window:** 24h lookback
+
+#### Targeted Smoke (H8/H9 + H6/H7 regressions)
+
+| Test | Status | Result | Notes |
+|------|--------|--------|-------|
+| H8: create with abbreviation (`LTB`) | 200 | ✅ PASS | Resolved `venue_id=56faadb7...`, `venue_name=Long Table Brewhouse`, no venue ambiguity |
+| H9: abbreviation collision safety (`SSL`) | 200 | ✅ PASS | `ask_clarification` with venue confirmation prompt; no auto-pick |
+| H6: `edit_series` non-location update | 200 | ✅ PASS | `show_preview`, no venue blocking/clarification |
+| H7: `edit_series` move online without URL | 200 | ✅ PASS | `ask_clarification`, `blocking_fields` includes `online_url`, excludes `venue_id` |
+
+#### Axiom 24h Health Checks
+
+| Check | Result | Status |
+|------|--------|--------|
+| Interpreter error channel | 0 | ✅ PASS |
+| Rate-limit fallback occurrences | 0 | ✅ PASS |
+| H6 regression watch (`edit_series` + `venue_id` false-block) | 0 occurrences | ✅ PASS |
+| Venue-resolution log entries (VR-tagged) | 3 | ✅ PASS (expected for smoke run volume) |
+
+#### Verdict
+
+**Phase 6 production status: HEALTHY**
+- Abbreviation resolution is working (`LTB` success).
+- Collision safety is preserved (`SSL` clarified, not auto-assigned).
+- No regression to H6/H7 behavior.
+
 ### 2026-02-25 — Phase 5 Venue Resolution + Axiom 24h Monitoring
 
 **Executed by:** Claude in Chrome (browser smoke) + Codex (Axiom CLI verification)
