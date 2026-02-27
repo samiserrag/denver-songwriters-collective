@@ -250,9 +250,7 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
 export default function InterpreterLabPage() {
   // ---- core state (unchanged from original) ----
   const [mode, setMode] = useState<InterpretMode>("create");
-  const [message, setMessage] = useState(
-    "Open mic every Tuesday at 7:00 PM at Long Table Brewhouse. Free. Signup at venue."
-  );
+  const [message, setMessage] = useState("");
   const [eventId, setEventId] = useState("");
   const [dateKey, setDateKey] = useState("");
   const [statusCode, setStatusCode] = useState<number | null>(null);

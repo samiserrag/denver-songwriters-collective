@@ -26,6 +26,7 @@ export const maxDuration = 60;
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_INTERPRETER_MODEL = "gpt-5.2";
+const GOOGLE_GEOCODING_API_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 // Persistent rate-limit policy:
@@ -177,6 +178,261 @@ function requestsVenueCatalog(mode: string, message: string): boolean {
   return /\b(venue|location|address|move|moved|switch|relocat|different venue|online|virtual|zoom|livestream)\b/i.test(
     message
   );
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic location hints (address parsing + Google Maps URL expansion)
+// ---------------------------------------------------------------------------
+
+const GOOGLE_MAPS_URL_REGEX =
+  /\bhttps?:\/\/(?:maps\.app\.goo\.gl\/[^\s]+|goo\.gl\/maps\/[^\s]+|(?:www\.)?google\.com\/maps\/[^\s]+|maps\.google\.com\/[^\s]+)\b/gi;
+const GOOGLE_MAPS_3D_4D_REGEX = /!3d(-?[0-9]+\.[0-9]+)!4d(-?[0-9]+\.[0-9]+)/;
+const GOOGLE_MAPS_AT_REGEX = /@(-?[0-9]+\.[0-9]+),(-?[0-9]+\.[0-9]+)/;
+
+interface ParsedAddressHint {
+  street: string;
+  city: string;
+  state: string;
+  zip: string | null;
+}
+
+interface GoogleMapsHint {
+  source_url: string;
+  final_url: string;
+  place_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: ParsedAddressHint | null;
+}
+
+function hasNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function normalizeStateCode(input: string): string {
+  const normalized = input.trim().toLowerCase();
+  if (normalized === "colorado") return "CO";
+  if (/^[a-z]{2}$/.test(normalized)) return normalized.toUpperCase();
+  return input.trim().toUpperCase();
+}
+
+function extractAddressFromText(input: string): ParsedAddressHint | null {
+  const withCommas =
+    /(\d{1,6}\s+[A-Za-z0-9.'#\-\s]+?),\s*([A-Za-z .'-]+?),\s*(?:United States,?\s*)?(Colorado|[A-Z]{2})\s*(\d{5})?/i;
+  const compact =
+    /(\d{1,6}\s+[A-Za-z0-9.'#\-\s]+?)\s+([A-Za-z .'-]+?),?\s+(Colorado|[A-Z]{2})\s*(\d{5})?/i;
+
+  const match = input.match(withCommas) || input.match(compact);
+  if (!match) return null;
+
+  const street = match[1]?.trim();
+  const city = match[2]?.trim();
+  const state = normalizeStateCode(match[3] ?? "");
+  const zip = match[4]?.trim() || null;
+
+  if (!street || !city || !state) return null;
+  return { street, city, state, zip };
+}
+
+function extractGoogleMapsUrls(...sources: string[]): string[] {
+  const all = sources.join("\n");
+  const matches = all.match(GOOGLE_MAPS_URL_REGEX) || [];
+  return [...new Set(matches.map((v) => v.trim()))].slice(0, 1);
+}
+
+function parseCoordsFromMapsString(input: string): { latitude: number; longitude: number } | null {
+  const from3d4d = input.match(GOOGLE_MAPS_3D_4D_REGEX);
+  if (from3d4d) {
+    return {
+      latitude: Number.parseFloat(from3d4d[1]),
+      longitude: Number.parseFloat(from3d4d[2]),
+    };
+  }
+
+  const fromAt = input.match(GOOGLE_MAPS_AT_REGEX);
+  if (fromAt) {
+    return {
+      latitude: Number.parseFloat(fromAt[1]),
+      longitude: Number.parseFloat(fromAt[2]),
+    };
+  }
+
+  return null;
+}
+
+function extractPlaceNameFromMapsUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const placeIndex = parts.findIndex((p) => p === "place");
+    if (placeIndex >= 0 && parts[placeIndex + 1]) {
+      const decoded = decodeURIComponent(parts[placeIndex + 1]).replace(/\+/g, " ").trim();
+      return decoded.length > 0 ? decoded : null;
+    }
+  } catch {
+    // no-op
+  }
+  return null;
+}
+
+async function reverseGeocodeCoords(
+  lat: number,
+  lng: number,
+  apiKey: string
+): Promise<ParsedAddressHint | null> {
+  try {
+    const url = new URL(GOOGLE_GEOCODING_API_URL);
+    url.searchParams.append("latlng", `${lat},${lng}`);
+    url.searchParams.append("key", apiKey);
+    const response = await fetch(url.toString());
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      status?: string;
+      results?: Array<{
+        address_components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
+      }>;
+    };
+
+    if (data.status !== "OK" || !Array.isArray(data.results) || data.results.length === 0) {
+      return null;
+    }
+
+    const components = data.results[0].address_components || [];
+    const byType = (type: string) =>
+      components.find((c) => Array.isArray(c.types) && c.types.includes(type));
+
+    const streetNumber = byType("street_number")?.long_name || "";
+    const route = byType("route")?.long_name || "";
+    const city =
+      byType("locality")?.long_name ||
+      byType("postal_town")?.long_name ||
+      byType("administrative_area_level_2")?.long_name ||
+      "";
+    const state = byType("administrative_area_level_1")?.short_name || "";
+    const zip = byType("postal_code")?.long_name || null;
+
+    const street = [streetNumber, route].filter(Boolean).join(" ").trim();
+    if (!street || !city || !state) return null;
+    return { street, city, state, zip };
+  } catch {
+    return null;
+  }
+}
+
+async function resolveGoogleMapsHint(input: {
+  sources: string[];
+  geocodingApiKey: string | null;
+}): Promise<GoogleMapsHint | null> {
+  const candidates = extractGoogleMapsUrls(...input.sources);
+  if (candidates.length === 0) return null;
+
+  const sourceUrl = candidates[0];
+  let finalUrl = sourceUrl;
+
+  try {
+    const head = await fetch(sourceUrl, { method: "HEAD", redirect: "follow" });
+    if (head.url) finalUrl = head.url;
+  } catch {
+    try {
+      const get = await fetch(sourceUrl, { method: "GET", redirect: "follow" });
+      if (get.url) finalUrl = get.url;
+    } catch {
+      // no-op
+    }
+  }
+
+  const placeName = extractPlaceNameFromMapsUrl(finalUrl) || extractPlaceNameFromMapsUrl(sourceUrl);
+  const coords = parseCoordsFromMapsString(finalUrl) || parseCoordsFromMapsString(sourceUrl);
+  const addressFromText = extractAddressFromText(input.sources.join("\n"));
+  const addressFromCoords =
+    coords && input.geocodingApiKey
+      ? await reverseGeocodeCoords(coords.latitude, coords.longitude, input.geocodingApiKey)
+      : null;
+
+  return {
+    source_url: sourceUrl,
+    final_url: finalUrl,
+    place_name: placeName,
+    latitude: coords?.latitude ?? null,
+    longitude: coords?.longitude ?? null,
+    address: addressFromText || addressFromCoords,
+  };
+}
+
+function applyLocationHintsToDraft(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+  googleMapsHint: GoogleMapsHint | null;
+}): { applied: boolean } {
+  const { draft, message, conversationHistory, extractedImageText, googleMapsHint } = input;
+  const alreadyResolvedVenue = hasNonEmptyString(draft.venue_id);
+  const isOnline = draft.location_mode === "online";
+  if (alreadyResolvedVenue || isOnline) {
+    return { applied: false };
+  }
+
+  let applied = false;
+  const addressHint =
+    googleMapsHint?.address ||
+    extractAddressFromText(
+      [message, ...conversationHistory.map((h) => h.content), extractedImageText || ""].join("\n")
+    );
+
+  if (addressHint) {
+    if (!hasNonEmptyString(draft.custom_address)) {
+      draft.custom_address = addressHint.street;
+      applied = true;
+    }
+    if (!hasNonEmptyString(draft.custom_city)) {
+      draft.custom_city = addressHint.city;
+      applied = true;
+    }
+    if (!hasNonEmptyString(draft.custom_state)) {
+      draft.custom_state = addressHint.state;
+      applied = true;
+    }
+
+    if (!hasNonEmptyString(draft.custom_location_name)) {
+      const preferredName =
+        (hasNonEmptyString(draft.venue_name) ? draft.venue_name.trim() : null) ||
+        (googleMapsHint?.place_name && googleMapsHint.place_name.trim().length > 0
+          ? googleMapsHint.place_name.trim()
+          : null);
+      draft.custom_location_name =
+        preferredName || `${addressHint.street}, ${addressHint.city}, ${addressHint.state}`;
+      applied = true;
+    }
+  }
+
+  if (!hasNonEmptyString(draft.custom_location_name) && googleMapsHint?.place_name) {
+    draft.custom_location_name = googleMapsHint.place_name;
+    applied = true;
+  }
+
+  if (
+    (draft.custom_latitude === null || draft.custom_latitude === undefined) &&
+    typeof googleMapsHint?.latitude === "number"
+  ) {
+    draft.custom_latitude = googleMapsHint.latitude;
+    applied = true;
+  }
+  if (
+    (draft.custom_longitude === null || draft.custom_longitude === undefined) &&
+    typeof googleMapsHint?.longitude === "number"
+  ) {
+    draft.custom_longitude = googleMapsHint.longitude;
+    applied = true;
+  }
+
+  if (hasNonEmptyString(draft.custom_location_name) && !hasNonEmptyString(draft.location_mode)) {
+    draft.location_mode = "venue";
+    applied = true;
+  }
+
+  return { applied };
 }
 
 // ---------------------------------------------------------------------------
@@ -408,6 +664,7 @@ function buildUserPrompt(input: {
   venueCatalog: VenueCatalogEntry[];
   currentEvent: Record<string, unknown> | null;
   extractedImageText?: string;
+  googleMapsHint?: GoogleMapsHint | null;
 }) {
   // Send only id+name to the LLM (slug is used server-side for resolution only)
   const llmVenueCatalog = input.venueCatalog.map((v) => ({ id: v.id, name: v.name }));
@@ -426,6 +683,13 @@ function buildUserPrompt(input: {
             extracted_image_text: input.extractedImageText,
             image_extraction_note:
               "The user attached image(s) of an event flyer. The extracted_image_text field contains OCR/vision output from those images. Use this data to populate the draft_payload fields. The user's message may provide additional context or corrections.",
+          }
+        : {}),
+      ...(input.googleMapsHint
+        ? {
+            google_maps_hint: input.googleMapsHint,
+            google_maps_note:
+              "A Google Maps link was detected and server-expanded. Prefer this hint for location/address fields when present. Do not ask for address again if full address is already available in this hint.",
           }
         : {}),
       required_output_shape: {
@@ -627,6 +891,13 @@ export async function POST(request: Request) {
     }
   }
 
+  const geocodingApiKey =
+    process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY || null;
+  const googleMapsHint = await resolveGoogleMapsHint({
+    sources: [normalizedMessage, ...conversationHistory.map((h) => h.content), extractedImageText || ""],
+    geocodingApiKey,
+  });
+
   // ---------------------------------------------------------------------------
   // Phase B — Structured interpretation
   // ---------------------------------------------------------------------------
@@ -639,6 +910,7 @@ export async function POST(request: Request) {
     venueCatalog,
     currentEvent,
     extractedImageText,
+    googleMapsHint,
   });
 
   console.info("[events/interpret] request", {
@@ -737,26 +1009,20 @@ export async function POST(request: Request) {
   }
 
   const sanitizedDraft = sanitizeInterpretDraftPayload(mode, responsePayload.draft_payload, dateKey);
-  if (responsePayload.next_action !== "ask_clarification") {
-    const draftValidation = validateSanitizedDraftPayload(mode, sanitizedDraft);
-    if (!draftValidation.ok) {
-      return NextResponse.json(
-        {
-          error: "Interpreter output failed server-side validation.",
-          details: draftValidation.error,
-          blocking_field: draftValidation.blockingField ?? null,
-        },
-        { status: 422 }
-      );
-    }
-  }
+  const locationHintResult = applyLocationHintsToDraft({
+    draft: sanitizedDraft,
+    message: normalizedMessage,
+    conversationHistory,
+    extractedImageText,
+    googleMapsHint,
+  });
 
   // ---------------------------------------------------------------------------
   // Phase 5 — Deterministic venue resolution (post-LLM)
   // ---------------------------------------------------------------------------
   let venueResolution: VenueResolutionOutcome | null = null;
   let resolvedNextAction = responsePayload.next_action as string;
-  const resolvedBlockingFields = (responsePayload.blocking_fields as string[]).map((f) => f.trim()).filter(Boolean);
+  let resolvedBlockingFields = (responsePayload.blocking_fields as string[]).map((f) => f.trim()).filter(Boolean);
   let resolvedClarificationQuestion =
     typeof responsePayload.clarification_question === "string"
       ? responsePayload.clarification_question.trim()
@@ -834,6 +1100,40 @@ export async function POST(request: Request) {
     // online_explicit / custom_location → no changes needed
   }
 
+  // If custom location details are now present, remove redundant location blockers.
+  if (hasNonEmptyString(sanitizedDraft.custom_location_name)) {
+    const redundant = new Set([
+      "venue_id",
+      "venue_name",
+      "venue_name_confirmation",
+      "venue_id/venue_name_confirmation",
+      "custom_address",
+      "custom_city",
+      "custom_state",
+    ]);
+    const filtered = resolvedBlockingFields.filter((f) => !redundant.has(f));
+    resolvedBlockingFields = [...new Set(filtered)];
+  }
+
+  // Final guardrail: never 422 for missing required create fields.
+  // Convert to ask_clarification so the conversation can continue.
+  if (resolvedNextAction !== "ask_clarification") {
+    const draftValidation = validateSanitizedDraftPayload(mode, sanitizedDraft);
+    if (!draftValidation.ok) {
+      resolvedNextAction = "ask_clarification";
+      if (draftValidation.blockingField && !resolvedBlockingFields.includes(draftValidation.blockingField)) {
+        resolvedBlockingFields.push(draftValidation.blockingField);
+      }
+      const missingField = draftValidation.blockingField || "required field";
+      resolvedClarificationQuestion = `Please provide ${missingField} to continue.`;
+    }
+  }
+
+  if (resolvedNextAction === "ask_clarification" && resolvedBlockingFields.length === 0) {
+    resolvedClarificationQuestion = null;
+    resolvedNextAction = "show_preview";
+  }
+
   const qualityHints = buildQualityHints(sanitizedDraft);
 
   const response = {
@@ -855,6 +1155,20 @@ export async function POST(request: Request) {
     confidence: response.confidence,
     blockingFields: response.blocking_fields,
     draft: redactEmails(truncate(JSON.stringify(response.draft_payload), 1200)),
+    ...(googleMapsHint
+      ? {
+          googleMapsHint: {
+            sourceUrl: googleMapsHint.source_url,
+            finalUrl: googleMapsHint.final_url,
+            placeName: googleMapsHint.place_name,
+            hasAddress: !!googleMapsHint.address,
+            hasCoords:
+              typeof googleMapsHint.latitude === "number" &&
+              typeof googleMapsHint.longitude === "number",
+          },
+        }
+      : {}),
+    ...(locationHintResult.applied ? { locationHintApplied: true } : {}),
     ...(venueResolution
       ? {
           venueResolution: {
