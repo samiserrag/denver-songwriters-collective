@@ -39,6 +39,12 @@ describe("Interpreter location hints", () => {
     expect(routeSource).toContain("draft.custom_state");
   });
 
+  it("parses address line-by-line with street suffix guard", () => {
+    expect(routeSource).toContain("streetSuffix");
+    expect(routeSource).toContain(".split(/\\r?\\n/)");
+    expect(routeSource).toContain("line.match(withCommas) || line.match(compact)");
+  });
+
   it("removes redundant location blockers once custom location exists", () => {
     expect(routeSource).toContain("venue_id/venue_name_confirmation");
     expect(routeSource).toContain("custom_address");

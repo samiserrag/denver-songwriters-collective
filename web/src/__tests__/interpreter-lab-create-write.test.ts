@@ -128,6 +128,18 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
     expect(labSource).toContain('mode === "custom"');
     expect(labSource).toContain('return "venue"');
   });
+
+  it("normalizes BYSETPOS monthly recurrence rules for create", () => {
+    expect(labSource).toContain("normalizeRecurrenceRuleForCreate");
+    expect(labSource).toContain("BYSETPOS");
+    expect(labSource).toContain("FREQ=MONTHLY;BYDAY=");
+  });
+
+  it("disables has_timeslots when total_slots is missing/invalid", () => {
+    expect(labSource).toContain("if (body.has_timeslots === true)");
+    expect(labSource).toContain("body.has_timeslots = false");
+    expect(labSource).toContain("body.total_slots = null");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -205,11 +217,11 @@ describe("Phase 4B — deferred cover in create mode", () => {
   });
 
   it("shows success with cover when both succeed", () => {
-    expect(labSource).toContain("Event created with cover");
+    expect(labSource).toContain("Event created as draft with cover");
   });
 
   it("shows success without cover when no candidate selected", () => {
-    expect(labSource).toContain("Event created (");
+    expect(labSource).toContain("Event created as draft (");
   });
 });
 

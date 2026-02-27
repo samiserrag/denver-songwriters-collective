@@ -203,6 +203,33 @@ function normalizeLocationMode(
 }
 
 /**
+ * Normalize monthly RRULE variants into forms already supported by recurrence parsing.
+ * Converts:
+ * - FREQ=MONTHLY;BYDAY=TU;BYSETPOS=4  -> FREQ=MONTHLY;BYDAY=4TU
+ * - FREQ=MONTHLY;BYSETPOS=4;BYDAY=TU  -> FREQ=MONTHLY;BYDAY=4TU
+ */
+function normalizeRecurrenceRuleForCreate(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  const raw = value.trim();
+
+  const bydayThenSetpos = raw.match(
+    /^FREQ=MONTHLY;BYDAY=([A-Z]{2});BYSETPOS=(-?\d+)$/i
+  );
+  if (bydayThenSetpos) {
+    return `FREQ=MONTHLY;BYDAY=${bydayThenSetpos[2]}${bydayThenSetpos[1].toUpperCase()}`;
+  }
+
+  const setposThenByday = raw.match(
+    /^FREQ=MONTHLY;BYSETPOS=(-?\d+);BYDAY=([A-Z]{2})$/i
+  );
+  if (setposThenByday) {
+    return `FREQ=MONTHLY;BYDAY=${setposThenByday[1]}${setposThenByday[2].toUpperCase()}`;
+  }
+
+  return raw;
+}
+
+/**
  * Map an interpreter sanitized draft_payload into a body suitable for
  * POST /api/my-events. Returns an error if required fields are missing.
  *
@@ -273,6 +300,23 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
     const val = draft[field];
     if (val !== undefined && val !== null) {
       body[field] = val;
+    }
+  }
+
+  // 4b. Canonicalize recurrence rule for downstream recurrence parsing.
+  const normalizedRecurrence = normalizeRecurrenceRuleForCreate(body.recurrence_rule);
+  if (normalizedRecurrence) {
+    body.recurrence_rule = normalizedRecurrence;
+  }
+
+  // 4c. Guard against half-configured timeslots.
+  if (body.has_timeslots === true) {
+    const slots = typeof body.total_slots === "number" ? body.total_slots : Number.NaN;
+    if (!Number.isFinite(slots) || slots <= 0) {
+      body.has_timeslots = false;
+      body.total_slots = null;
+      body.slot_duration_minutes = null;
+      body.allow_guests = false;
     }
   }
 
@@ -785,7 +829,7 @@ export default function InterpreterLabPage() {
 
               setCreateMessage({
                 type: "success",
-                text: `Event created with cover (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""})`,
+                text: `Event created as draft with cover (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}). Publish it from My Happenings when ready.`,
               });
               return;
             } else {
@@ -810,7 +854,7 @@ export default function InterpreterLabPage() {
       // Success without cover
       setCreateMessage({
         type: "success",
-        text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""})`,
+        text: `Event created as draft (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}). Publish it from My Happenings when ready.`,
       });
     } catch (error) {
       setCreateMessage({

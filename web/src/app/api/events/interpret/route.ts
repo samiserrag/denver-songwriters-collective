@@ -217,12 +217,31 @@ function normalizeStateCode(input: string): string {
 }
 
 function extractAddressFromText(input: string): ParsedAddressHint | null {
-  const withCommas =
-    /(\d{1,6}\s+[A-Za-z0-9.'#\-\s]+?),\s*([A-Za-z .'-]+?),\s*(?:United States,?\s*)?(Colorado|[A-Z]{2})\s*(\d{5})?/i;
-  const compact =
-    /(\d{1,6}\s+[A-Za-z0-9.'#\-\s]+?)\s+([A-Za-z .'-]+?),?\s+(Colorado|[A-Z]{2})\s*(\d{5})?/i;
+  const streetSuffix =
+    "(?:street|st|avenue|ave|road|rd|way|drive|dr|lane|ln|court|ct|place|pl|boulevard|blvd|parkway|pkwy)";
+  const withCommas = new RegExp(
+    `\\b(\\d{1,6}\\s+[A-Za-z0-9.'#-]+(?:\\s+[A-Za-z0-9.'#-]+){0,6}\\s+${streetSuffix})\\b\\s*,\\s*([A-Za-z .'-]+?)\\s*,\\s*(?:United States,?\\s*)?(Colorado|[A-Z]{2})\\s*(\\d{5})?`,
+    "i"
+  );
+  const compact = new RegExp(
+    `\\b(\\d{1,6}\\s+[A-Za-z0-9.'#-]+(?:\\s+[A-Za-z0-9.'#-]+){0,6}\\s+${streetSuffix})\\b\\s+([A-Za-z .'-]+?)\\s+(Colorado|[A-Z]{2})\\s*(\\d{5})?`,
+    "i"
+  );
 
-  const match = input.match(withCommas) || input.match(compact);
+  // Try line-by-line first to avoid spanning noisy flyer/body text.
+  const lines = input
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  let match: RegExpMatchArray | null = null;
+  for (const line of lines) {
+    match = line.match(withCommas) || line.match(compact);
+    if (match) break;
+  }
+  if (!match) {
+    match = input.match(withCommas) || input.match(compact);
+  }
   if (!match) return null;
 
   const street = match[1]?.trim();
