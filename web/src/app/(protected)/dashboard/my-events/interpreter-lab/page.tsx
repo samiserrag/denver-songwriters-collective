@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   type InterpretMode,
   type ImageInput,
@@ -161,6 +162,76 @@ type MapResult =
   | { ok: true; body: Record<string, unknown> }
   | { ok: false; error: string };
 
+const GOOGLE_MAPS_LINK_REGEX =
+  /\bhttps?:\/\/(?:maps\.app\.goo\.gl\/[^\s]+|goo\.gl\/maps\/[^\s]+|(?:www\.)?google\.com\/maps\/[^\s]+|maps\.google\.com\/[^\s]+)\b/i;
+
+function isGoogleMapsUrl(value: unknown): value is string {
+  return typeof value === "string" && GOOGLE_MAPS_LINK_REGEX.test(value.trim());
+}
+
+function normalizeStartDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const raw = value.trim();
+  if (!raw) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const mdY = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (mdY) {
+    const month = Number.parseInt(mdY[1], 10);
+    const day = Number.parseInt(mdY[2], 10);
+    const yearInput = Number.parseInt(mdY[3], 10);
+    const year = mdY[3].length === 2 ? 2000 + yearInput : yearInput;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day
+        .toString()
+        .padStart(2, "0")}`;
+    }
+  }
+
+  const fallback = new Date(raw);
+  if (!Number.isNaN(fallback.getTime())) {
+    return fallback.toISOString().slice(0, 10);
+  }
+
+  return null;
+}
+
+function collectUserIntentText(
+  history: ConversationEntry[],
+  currentMessage: string
+): string {
+  const userTurns = history
+    .filter((entry) => entry.role === "user")
+    .map((entry) => entry.content);
+  return [...userTurns, currentMessage].join("\n").toLowerCase();
+}
+
+function explicitlyRequestsTimeslots(intentText: string): boolean {
+  if (!intentText.trim()) return false;
+  const explicitSignals = [
+    /\btimeslots?\b/i,
+    /\btime\s*slots?\b/i,
+    /\bslot\s*duration\b/i,
+    /\blineup\b/i,
+    /\b\d+\s+(?:performer\s+)?slots?\b/i,
+    /\benable\s+(?:performer\s+)?slots?\b/i,
+  ];
+  return explicitSignals.some((pattern) => pattern.test(intentText));
+}
+
+function explicitlyRequestsVenueDirectoryCreate(intentText: string): boolean {
+  if (!intentText.trim()) return false;
+  return /\b(new venue|create venue|add venue|add to venues|add this venue)\b/i.test(intentText);
+}
+
+function extractGoogleMapsUrl(intentText: string): string | null {
+  const match = intentText.match(GOOGLE_MAPS_LINK_REGEX);
+  return match ? match[0].trim() : null;
+}
+
 type CanonicalLocationMode = "venue" | "online" | "hybrid";
 
 /**
@@ -239,7 +310,10 @@ function normalizeRecurrenceRuleForCreate(value: unknown): string | null {
  * - Else if draft has `online_url`, use online location path.
  * - Else return a mapper error (no silent fallback).
  */
-function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
+function mapDraftToCreatePayload(
+  draft: Record<string, unknown>,
+  intentText: string
+): MapResult {
   // 1. Check required fields
   for (const field of CREATE_REQUIRED_FIELDS) {
     const val = draft[field];
@@ -255,11 +329,16 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
   }
 
   // 2. Build base payload with required fields
+  const normalizedStartDate = normalizeStartDate(draft.start_date);
+  if (!normalizedStartDate) {
+    return { ok: false, error: "start_date must be a valid date (YYYY-MM-DD)." };
+  }
+
   const body: Record<string, unknown> = {
     title: draft.title,
     event_type: eventType,
     start_time: draft.start_time,
-    start_date: draft.start_date,
+    start_date: normalizedStartDate,
   };
 
   // 3. Venue / location resolution
@@ -311,6 +390,14 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
 
   // 4c. Guard against half-configured timeslots.
   if (body.has_timeslots === true) {
+    const hasExplicitTimeslotIntent = explicitlyRequestsTimeslots(intentText);
+    if (!hasExplicitTimeslotIntent) {
+      body.has_timeslots = false;
+      body.total_slots = null;
+      body.slot_duration_minutes = null;
+      body.allow_guests = false;
+    }
+
     const slots = typeof body.total_slots === "number" ? body.total_slots : Number.NaN;
     if (!Number.isFinite(slots) || slots <= 0) {
       body.has_timeslots = false;
@@ -318,6 +405,11 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
       body.slot_duration_minutes = null;
       body.allow_guests = false;
     }
+  }
+
+  // 4d. Google Maps links are location hints, not event external websites.
+  if (isGoogleMapsUrl(body.external_url)) {
+    body.external_url = null;
   }
 
   // 5. series_mode default
@@ -371,6 +463,7 @@ export default function InterpreterLabPage() {
     draft_payload: Record<string, unknown>;
   } | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const [createMessage, setCreateMessage] = useState<{
     type: "success" | "error" | "warning";
     text: string;
@@ -430,6 +523,7 @@ export default function InterpreterLabPage() {
   useEffect(() => {
     setLastInterpretResponse(null);
     setCreateMessage(null);
+    setCreatedEventId(null);
   }, [mode]);
 
   // If create inputs change, require a fresh interpret run before create write.
@@ -437,8 +531,17 @@ export default function InterpreterLabPage() {
     if (mode === "create") {
       setLastInterpretResponse(null);
       setCreateMessage(null);
+      setCreatedEventId(null);
     }
   }, [mode, message, stagedImages.length]);
+
+  // In create mode, default the first staged image as the cover candidate.
+  useEffect(() => {
+    if (mode !== "create") return;
+    if (stagedImages.length === 0) return;
+    if (coverCandidateId) return;
+    setCoverCandidateId(stagedImages[0].id);
+  }, [mode, stagedImages, coverCandidateId]);
 
   // Cleanup all tracked object URLs on unmount
   useEffect(() => {
@@ -761,8 +864,10 @@ export default function InterpreterLabPage() {
   async function createEvent() {
     if (!canShowCreateAction || !lastInterpretResponse) return;
 
+    const intentText = collectUserIntentText(conversationHistory, message);
+
     // Map draft_payload to POST /api/my-events body
-    const mapResult = mapDraftToCreatePayload(lastInterpretResponse.draft_payload);
+    const mapResult = mapDraftToCreatePayload(lastInterpretResponse.draft_payload, intentText);
     if (!mapResult.ok) {
       setCreateMessage({ type: "error", text: `Cannot create: ${mapResult.error}` });
       return;
@@ -772,12 +877,70 @@ export default function InterpreterLabPage() {
     setCreateMessage(null);
 
     try {
+      const createBody: Record<string, unknown> = { ...mapResult.body };
+      let venueCreateNote: string | null = null;
+
+      // Optional: when user explicitly requests "new venue", try adding it to venue directory first.
+      if (
+        explicitlyRequestsVenueDirectoryCreate(intentText) &&
+        typeof createBody.venue_id !== "string" &&
+        typeof createBody.custom_location_name === "string" &&
+        createBody.custom_location_name.trim().length > 0
+      ) {
+        const mapsUrl = extractGoogleMapsUrl(intentText);
+        const externalUrlValue =
+          typeof createBody.external_url === "string" ? createBody.external_url.trim() : "";
+        const websiteUrl =
+          externalUrlValue.length > 0 && !isGoogleMapsUrl(externalUrlValue)
+            ? externalUrlValue
+            : null;
+
+        const venuePayload = {
+          name: createBody.custom_location_name,
+          address: (createBody.custom_address as string) || "",
+          city: (createBody.custom_city as string) || "",
+          state: (createBody.custom_state as string) || "",
+          website_url: websiteUrl,
+          google_maps_url: mapsUrl,
+        };
+
+        try {
+          const venueRes = await fetch("/api/admin/venues", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(venuePayload),
+          });
+
+          if (venueRes.ok) {
+            const venueData = await venueRes.json();
+            if (typeof venueData?.id === "string" && venueData.id.length > 0) {
+              createBody.venue_id = venueData.id;
+              createBody.location_mode = "venue";
+              createBody.venue_name =
+                typeof venueData.name === "string" ? venueData.name : createBody.custom_location_name;
+              delete createBody.custom_location_name;
+              delete createBody.custom_address;
+              delete createBody.custom_city;
+              delete createBody.custom_state;
+              delete createBody.custom_latitude;
+              delete createBody.custom_longitude;
+              venueCreateNote = ` Venue added to directory: ${createBody.venue_name}.`;
+            }
+          } else {
+            venueCreateNote = " Venue directory add skipped (insufficient permission or validation issue).";
+          }
+        } catch {
+          venueCreateNote = " Venue directory add failed; using custom location instead.";
+        }
+      }
+
       // 1. POST to create API
       const res = await fetch("/api/my-events", {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(mapResult.body),
+        body: JSON.stringify(createBody),
       });
 
       const result = await res.json().catch(() => ({ error: "Non-JSON response" }));
@@ -792,10 +955,12 @@ export default function InterpreterLabPage() {
 
       const newEventId = result.id as string;
       const slug = result.slug as string | undefined;
+      setCreatedEventId(newEventId);
 
       // 2. Deferred cover assignment (optional)
-      if (coverCandidateId && newEventId) {
-        const candidate = stagedImages.find((img) => img.id === coverCandidateId);
+      const effectiveCoverCandidateId = coverCandidateId ?? stagedImages[0]?.id ?? null;
+      if (effectiveCoverCandidateId && newEventId) {
+        const candidate = stagedImages.find((img) => img.id === effectiveCoverCandidateId);
         if (candidate) {
           try {
             const supabase = createSupabaseBrowserClient();
@@ -822,21 +987,21 @@ export default function InterpreterLabPage() {
                 });
                 setCreateMessage({
                   type: "warning",
-                  text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}), but cover update failed: ${updateError.message}`,
+                  text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}), but cover update failed: ${updateError.message}.${venueCreateNote ?? ""}`,
                 });
                 return;
               }
 
               setCreateMessage({
                 type: "success",
-                text: `Event created as draft with cover (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}). Publish it from My Happenings when ready.`,
+                text: `Event created as draft with cover (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}). Publish it from My Happenings when ready.${venueCreateNote ?? ""}`,
               });
               return;
             } else {
               // No session for cover upload — event still created
               setCreateMessage({
                 type: "warning",
-                text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}), but cover upload skipped: not authenticated.`,
+                text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}), but cover upload skipped: not authenticated.${venueCreateNote ?? ""}`,
               });
               return;
             }
@@ -844,7 +1009,7 @@ export default function InterpreterLabPage() {
             // Cover upload failed — event still created
             setCreateMessage({
               type: "warning",
-              text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}), cover upload failed: ${coverError instanceof Error ? coverError.message : "unknown error"}`,
+              text: `Event created (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}), cover upload failed: ${coverError instanceof Error ? coverError.message : "unknown error"}.${venueCreateNote ?? ""}`,
             });
             return;
           }
@@ -854,7 +1019,7 @@ export default function InterpreterLabPage() {
       // Success without cover
       setCreateMessage({
         type: "success",
-        text: `Event created as draft (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}). Publish it from My Happenings when ready.`,
+        text: `Event created as draft (${newEventId.slice(0, 8)}…${slug ? `, slug: ${slug}` : ""}). Publish it from My Happenings when ready.${venueCreateNote ?? ""}`,
       });
     } catch (error) {
       setCreateMessage({
@@ -883,6 +1048,7 @@ export default function InterpreterLabPage() {
     setCoverMessage(null);
     setLastInterpretResponse(null);
     setCreateMessage(null);
+    setCreatedEventId(null);
   }
 
   return (
@@ -1038,6 +1204,11 @@ export default function InterpreterLabPage() {
                 Click a thumbnail to select it as the event cover image.
               </p>
             )}
+            {mode === "create" && stagedImages.length > 0 && coverCandidateId && (
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                Selected cover will be attached after event creation.
+              </p>
+            )}
 
             {imageError && (
               <p className="text-xs text-[var(--color-text-error)]">{imageError}</p>
@@ -1115,6 +1286,22 @@ export default function InterpreterLabPage() {
             >
               {createMessage.text}
             </p>
+          )}
+          {createdEventId && (
+            <div className="text-xs text-[var(--color-text-tertiary)] flex gap-3 flex-wrap">
+              <Link
+                href={`/dashboard/my-events/${createdEventId}`}
+                className="underline hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                Open Draft
+              </Link>
+              <Link
+                href="/dashboard/my-events"
+                className="underline hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                Go to My Happenings (Drafts tab)
+              </Link>
+            </div>
           )}
         </div>
 

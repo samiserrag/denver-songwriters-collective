@@ -216,6 +216,13 @@ function normalizeStateCode(input: string): string {
   return input.trim().toUpperCase();
 }
 
+function looksLikeNoisyStreetCandidate(street: string): boolean {
+  const collapsed = street.replace(/\s+/g, " ").trim();
+  if (!collapsed) return true;
+  if (collapsed.length > 80) return true;
+  return /\b(event by|public|facebook|rsvp|see less|hosted by|anyone on or off)\b/i.test(collapsed);
+}
+
 function extractAddressFromText(input: string): ParsedAddressHint | null {
   const streetSuffix =
     "(?:street|st|avenue|ave|road|rd|way|drive|dr|lane|ln|court|ct|place|pl|boulevard|blvd|parkway|pkwy)";
@@ -236,6 +243,8 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
 
   let match: RegExpMatchArray | null = null;
   for (const line of lines) {
+    // Skip long descriptive lines; address lines are usually compact.
+    if (line.split(/\s+/).length > 14) continue;
     match = line.match(withCommas) || line.match(compact);
     if (match) break;
   }
@@ -249,6 +258,7 @@ function extractAddressFromText(input: string): ParsedAddressHint | null {
   const state = normalizeStateCode(match[3] ?? "");
   const zip = match[4]?.trim() || null;
 
+  if (street && looksLikeNoisyStreetCandidate(street)) return null;
   if (!street || !city || !state) return null;
   return { street, city, state, zip };
 }
@@ -375,7 +385,8 @@ async function resolveGoogleMapsHint(input: {
     place_name: placeName,
     latitude: coords?.latitude ?? null,
     longitude: coords?.longitude ?? null,
-    address: addressFromText || addressFromCoords,
+    // Prefer deterministic geocoding from map coordinates over noisy free text.
+    address: addressFromCoords || addressFromText,
   };
 }
 

@@ -45,6 +45,16 @@ describe("Interpreter location hints", () => {
     expect(routeSource).toContain("line.match(withCommas) || line.match(compact)");
   });
 
+  it("filters noisy street candidates from pasted social text", () => {
+    expect(routeSource).toContain("looksLikeNoisyStreetCandidate");
+    expect(routeSource).toContain("event by|public|facebook|rsvp");
+    expect(routeSource).toContain("looksLikeNoisyStreetCandidate(street)");
+  });
+
+  it("prefers geocoded map-coordinate address over free-text address", () => {
+    expect(routeSource).toContain("address: addressFromCoords || addressFromText");
+  });
+
   it("removes redundant location blockers once custom location exists", () => {
     expect(routeSource).toContain("venue_id/venue_name_confirmation");
     expect(routeSource).toContain("custom_address");

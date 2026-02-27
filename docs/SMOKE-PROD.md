@@ -801,6 +801,47 @@ For the create request in Vercel/Axiom logs:
 
 **Pass Criteria (H):** Known venues (including approved abbreviations) resolve deterministically; unknown/ambiguous venues escalate to clarification; online and custom locations pass through unchanged.
 
+**H2) Interpreter Lab Hardening Regression Suite (2026-02-27)**
+
+**Precondition:** `NEXT_PUBLIC_ENABLE_INTERPRETER_LAB_WRITES=true` and logged-in host/admin session.
+
+1. New venue intent should promote to venue directory + canonical event venue link
+   - Route: `/dashboard/my-events/interpreter-lab`, Mode: `create`
+   - Prompt includes: event description + maps link + explicit phrase like `"new venue"` / `"create venue"`.
+   - Run Interpreter to `next_action` in `[show_preview, await_confirmation, done]`, then click **Confirm & Create**.
+   - Verify:
+     - Create succeeds (no `events_location_mode_check` error).
+     - Event row has `location_mode='venue'` and non-null `venue_id`.
+     - Venue row exists with expected name/address/city/state/zip and coordinates.
+
+2. Monthly recurrence ordinal should survive round-trip edit UI
+   - Open created event edit page.
+   - Verify recurrence shows monthly mode with week ordinal `4th` and `Tuesday`.
+   - Verify anchor date aligns with intended first date.
+   - Verify no fallback to `1st Tuesday` unless prompt explicitly asked for first week.
+
+3. Maps link should be treated as venue hint, not event external website
+   - In create run where user only provided maps short link as location evidence:
+   - Verify event `external_url` is empty/null.
+   - Verify venue `google_maps_url` stores the maps link.
+
+4. Timeslots should not be auto-enabled without explicit slot intent
+   - Create prompt without phrases like `"timeslot"`, `"performer slots"`, `"slot duration"`, `"X slots"`.
+   - Verify created event has `has_timeslots=false`, and slot fields remain null/default.
+
+5. Deferred cover upload defaulting
+   - Stage one image in lab create flow and do not manually select cover.
+   - Confirm create.
+   - Verify event eventually has non-null `cover_image_url` and corresponding `event_images` row.
+
+6. Draft visibility sanity
+   - After create, use provided post-create links:
+     - `Open Draft` should load edit screen for created event ID.
+     - `Go to My Happenings (Drafts tab)` should show the created draft.
+   - Verify draft appears in dashboard drafts list even when not visible in public `/happenings`.
+
+**Pass Criteria (H2):** New-venue flow creates canonical venue link, recurrence remains correct, maps URL does not pollute external website, timeslots stay off unless explicitly requested, deferred cover attaches, and draft navigation is consistent.
+
 **I) Admin Lifecycle Alerts for Non-Admin Event Activity (ALERTS-01 / 7A)**
 
 1. Non-admin create -> admin lifecycle email
@@ -877,6 +918,23 @@ Cleanup:
 - Smoke-created overrides removed
 
 **ALERTS-01 production status: HEALTHY**
+
+### 2026-02-27 — Interpreter Lab Hardening Patch (Production Verification)
+
+**Executed by:** Codex + Claude in Chrome
+**Commit:** `391555b`
+**Scope:** Hardened create flow for venue/link/recurrence/timeslot/cover edge cases
+
+| Check | Status | Notes |
+|------|--------|-------|
+| Create with "new venue" intent no longer fails `events_location_mode_check` | ✅ PASS | Create path normalizes to supported location mode and DB constraints pass |
+| New venue promotion path creates/links canonical venue | ✅ PASS | Event uses `venue_id`, location_mode `venue` |
+| Maps short link not persisted as event external website | ✅ PASS | Used as venue hint, not event `external_url` |
+| Monthly 4th Tuesday recurrence retained through edit UI | ✅ PASS | Ordinal parser accepts `BYDAY=4TU` and equivalent forms |
+| Timeslots not auto-enabled without explicit user intent | ✅ PASS | Slot defaults preserved unless prompt explicitly requests slots |
+| Deferred cover attach path on create | ✅ PASS | Staged image attached after event creation |
+
+**Interpreter hardening status: HEALTHY**
 
 ### 2026-02-26 — Phase 6 Venue Abbreviation Resolution + Axiom 24h Monitoring
 

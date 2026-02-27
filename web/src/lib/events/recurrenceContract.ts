@@ -679,7 +679,45 @@ export function buildRecurrenceRuleFromOrdinals(ordinals: number[]): string {
 export function parseOrdinalsFromRecurrenceRule(rule: string | null | undefined): number[] {
   if (!rule) return [];
 
-  const r = rule.toLowerCase().trim();
+  const rawRule = rule.trim();
+  const r = rawRule.toLowerCase();
+
+  const sortOrdinals = (values: number[]): number[] =>
+    [...new Set(values)].sort((a, b) => {
+      if (a === -1) return 1;
+      if (b === -1) return -1;
+      return a - b;
+    });
+
+  // RRULE monthly support:
+  // - FREQ=MONTHLY;BYDAY=4TU
+  // - FREQ=MONTHLY;BYDAY=TU;BYSETPOS=4
+  // - FREQ=MONTHLY;BYSETPOS=-1;BYDAY=TU
+  const parsedRRule = parseRRule(rawRule);
+  if (parsedRRule?.freq === "MONTHLY") {
+    const bydayOrdinals = parsedRRule.byday
+      .filter((d) => d.ordinal !== null)
+      .map((d) => d.ordinal as number);
+
+    if (bydayOrdinals.length > 0) {
+      return sortOrdinals(bydayOrdinals);
+    }
+
+    const cleanedRule = rawRule.replace(/^RRULE:/i, "");
+    const bysetposRaw = cleanedRule.match(/(?:^|;)BYSETPOS=([^;]+)/i)?.[1] ?? null;
+    if (bysetposRaw) {
+      const bysetposOrdinals = bysetposRaw
+        .split(",")
+        .map((part) => Number.parseInt(part.trim(), 10))
+        .filter((value) => Number.isFinite(value) && value !== 0 && value >= -5 && value <= 5);
+
+      if (bysetposOrdinals.length > 0) {
+        return sortOrdinals(bysetposOrdinals);
+      }
+    }
+
+    return [];
+  }
 
   // Skip non-ordinal patterns
   if (r === "weekly" || r === "biweekly" || r === "custom" || r === "monthly" || r === "none" || r === "") {
@@ -697,7 +735,7 @@ export function parseOrdinalsFromRecurrenceRule(rule: string | null | undefined)
     }
   }
 
-  return ordinals;
+  return sortOrdinals(ordinals);
 }
 
 /**

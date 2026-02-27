@@ -73,8 +73,9 @@ describe("Phase 4B — create action gating", () => {
 describe("Phase 4B — mapDraftToCreatePayload", () => {
   it("defines the mapper function", () => {
     expect(labSource).toContain(
-      "function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult"
+      "function mapDraftToCreatePayload("
     );
+    expect(labSource).toContain("intentText: string");
   });
 
   it("checks all four required fields", () => {
@@ -84,6 +85,7 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
     expect(labSource).toContain('"start_time"');
     expect(labSource).toContain('"start_date"');
     expect(labSource).toContain("Missing required field:");
+    expect(labSource).toContain("normalizeStartDate");
   });
 
   it("validates event_type is a non-empty array", () => {
@@ -140,6 +142,16 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
     expect(labSource).toContain("body.has_timeslots = false");
     expect(labSource).toContain("body.total_slots = null");
   });
+
+  it("disables timeslots unless user explicitly requested slot configuration", () => {
+    expect(labSource).toContain("explicitlyRequestsTimeslots");
+    expect(labSource).toContain("hasExplicitTimeslotIntent");
+  });
+
+  it("strips Google Maps links from external_url", () => {
+    expect(labSource).toContain("isGoogleMapsUrl(body.external_url)");
+    expect(labSource).toContain("body.external_url = null");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -155,9 +167,8 @@ describe("Phase 4B — createEvent handler", () => {
   });
 
   it("calls mapDraftToCreatePayload before create", () => {
-    expect(labSource).toContain(
-      "mapDraftToCreatePayload(lastInterpretResponse.draft_payload)"
-    );
+    expect(labSource).toContain("collectUserIntentText");
+    expect(labSource).toContain("mapDraftToCreatePayload(lastInterpretResponse.draft_payload, intentText)");
   });
 
   it("shows error when mapper fails", () => {
@@ -166,11 +177,12 @@ describe("Phase 4B — createEvent handler", () => {
 
   it("POSTs to /api/my-events", () => {
     expect(labSource).toContain('"/api/my-events"');
-    expect(labSource).toContain("JSON.stringify(mapResult.body)");
+    expect(labSource).toContain("JSON.stringify(createBody)");
   });
 
   it("captures newEventId from response", () => {
     expect(labSource).toContain("result.id as string");
+    expect(labSource).toContain("setCreatedEventId(newEventId)");
   });
 
   it("sets isCreating during operation (double-submit guard)", () => {
@@ -182,6 +194,13 @@ describe("Phase 4B — createEvent handler", () => {
     expect(labSource).toContain("if (mode === \"create\")");
     expect(labSource).toContain("setLastInterpretResponse(null)");
     expect(labSource).toContain("setCreateMessage(null)");
+    expect(labSource).toContain("setCreatedEventId(null)");
+  });
+
+  it("attempts venue directory creation when user explicitly requests new venue", () => {
+    expect(labSource).toContain("explicitlyRequestsVenueDirectoryCreate(intentText)");
+    expect(labSource).toContain('fetch("/api/admin/venues"');
+    expect(labSource).toContain("createBody.venue_id = venueData.id");
   });
 });
 
@@ -190,7 +209,8 @@ describe("Phase 4B — createEvent handler", () => {
 // ---------------------------------------------------------------------------
 describe("Phase 4B — deferred cover in create mode", () => {
   it("checks coverCandidateId + newEventId before cover upload", () => {
-    expect(labSource).toContain("coverCandidateId && newEventId");
+    expect(labSource).toContain("effectiveCoverCandidateId");
+    expect(labSource).toContain("coverCandidateId ?? stagedImages[0]?.id ?? null");
   });
 
   it("converts base64 to File via base64ToJpegFile", () => {
@@ -223,6 +243,11 @@ describe("Phase 4B — deferred cover in create mode", () => {
   it("shows success without cover when no candidate selected", () => {
     expect(labSource).toContain("Event created as draft (");
   });
+
+  it("auto-selects first staged image as default cover in create mode", () => {
+    expect(labSource).toContain("if (mode !== \"create\") return;");
+    expect(labSource).toContain("setCoverCandidateId(stagedImages[0].id)");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -232,6 +257,11 @@ describe("Phase 4B — create message display", () => {
   it("tracks createMessage with success/error/warning types", () => {
     expect(labSource).toContain("createMessage");
     expect(labSource).toContain("setCreateMessage");
+  });
+
+  it("renders quick navigation links after create", () => {
+    expect(labSource).toContain("Open Draft");
+    expect(labSource).toContain("Go to My Happenings (Drafts tab)");
   });
 
   it("renders amber for warning messages", () => {

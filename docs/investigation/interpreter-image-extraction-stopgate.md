@@ -2,7 +2,7 @@
 
 **Stop-Gate Phase:** A/B (Investigate + Critique)
 **Date:** 2026-02-24
-**Status:** APPROVED — Phases 0-6 complete; Phase 6 production smoke + monitoring passed (2026-02-26).
+**Status:** APPROVED — Phases 0-6 complete; post-launch hardening patch applied (2026-02-27).
 **Parent feature:** Conversational Event Creation (`conversational-event-creation-stopgate.md`)
 **Scope expansion:** Section 4.7 of parent doc explicitly deferred image support to a future phase. This document covers that future phase.
 
@@ -389,6 +389,31 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - ✅ Smoke checklist entry in `docs/SMOKE-PROD.md`
 
 **Checkpoint:** Phases 0-6 implemented and production-verified. Open a new stop-gate for any further scope.
+
+### Post-Launch Hardening Patch ✅ (2026-02-27)
+- ✅ Create mapper hardening in interpreter lab:
+  - Normalizes user-entered `start_date` (supports `MM/DD/YY` -> `YYYY-MM-DD`)
+  - Drops Google Maps short links from `external_url` (maps links treated as location hints, not event websites)
+  - Requires explicit user intent before preserving `has_timeslots=true` (prevents accidental performer slots)
+  - Auto-selects first staged image as cover candidate in create mode when user has staged images
+  - Adds post-create navigation links: "Open Draft" and "Go to My Happenings (Drafts tab)"
+- ✅ Optional venue directory promotion:
+  - When user explicitly asks for "new venue/create venue/add venue", lab attempts `POST /api/admin/venues`
+  - On success, create payload is rewritten from custom-location fields to canonical `venue_id` path
+  - On failure, flow falls back to custom location and surfaces a warning (non-blocking)
+- ✅ Interpreter location hint hardening:
+  - Address extraction now ignores noisy flyer/social text lines (e.g., "Event by", "Public", "RSVP")
+  - Geocoded address from Maps coordinates is preferred over free-text extraction when both are available
+- ✅ Recurrence hardening:
+  - `parseOrdinalsFromRecurrenceRule()` now supports RRULE monthly ordinal variants:
+    - `FREQ=MONTHLY;BYDAY=4TU`
+    - `FREQ=MONTHLY;BYDAY=TU;BYSETPOS=4`
+    - `FREQ=MONTHLY;BYSETPOS=-1;BYDAY=TU`
+  - Prevents monthly series UI fallback to "1st week" on edit
+- ✅ Test coverage additions:
+  - New recurrence ordinal parser tests
+  - Updated lab create-write assertions for hardening behavior
+  - Updated interpreter location-hints assertions for noisy-address filtering and geocode precedence
 
 ---
 
