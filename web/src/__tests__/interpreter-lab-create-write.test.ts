@@ -103,7 +103,7 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
 
   it("defaults to online location_mode when no venue resolved", () => {
     expect(labSource).toContain("hasOnlineUrl");
-    expect(labSource).toContain('body.location_mode = "online"');
+    expect(labSource).toContain('body.location_mode = normalizeLocationMode(draft.location_mode, "online")');
   });
 
   it("returns mapper error when no venue/custom/online location is available", () => {
@@ -120,6 +120,13 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
 
   it("defaults series_mode to single", () => {
     expect(labSource).toContain('body.series_mode = "single"');
+  });
+
+  it("normalizes non-canonical location_mode values before create", () => {
+    expect(labSource).toContain("function normalizeLocationMode");
+    expect(labSource).toContain('mode === "in_person"');
+    expect(labSource).toContain('mode === "custom"');
+    expect(labSource).toContain('return "venue"');
   });
 });
 

@@ -161,6 +161,47 @@ type MapResult =
   | { ok: true; body: Record<string, unknown> }
   | { ok: false; error: string };
 
+type CanonicalLocationMode = "venue" | "online" | "hybrid";
+
+/**
+ * Normalize interpreter location modes to DB-supported enum values.
+ * DB constraint supports: venue | online | hybrid.
+ */
+function normalizeLocationMode(
+  value: unknown,
+  fallback: CanonicalLocationMode
+): CanonicalLocationMode {
+  if (typeof value !== "string") return fallback;
+  const mode = value.trim().toLowerCase();
+
+  if (
+    mode === "venue" ||
+    mode === "in_person" ||
+    mode === "in-person" ||
+    mode === "physical" ||
+    mode === "onsite" ||
+    mode === "on_site" ||
+    mode === "custom" ||
+    mode === "custom_location"
+  ) {
+    return "venue";
+  }
+
+  if (
+    mode === "online" ||
+    mode === "virtual" ||
+    mode === "zoom" ||
+    mode === "livestream" ||
+    mode === "live_stream" ||
+    mode === "remote"
+  ) {
+    return "online";
+  }
+
+  if (mode === "hybrid") return "hybrid";
+  return fallback;
+}
+
 /**
  * Map an interpreter sanitized draft_payload into a body suitable for
  * POST /api/my-events. Returns an error if required fields are missing.
@@ -205,10 +246,10 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
 
   if (hasVenueId) {
     body.venue_id = (draft.venue_id as string).trim();
-    body.location_mode = (draft.location_mode as string) || "venue";
+    body.location_mode = normalizeLocationMode(draft.location_mode, "venue");
   } else if (hasCustomLocationName) {
     body.custom_location_name = (draft.custom_location_name as string).trim();
-    body.location_mode = (draft.location_mode as string) || "venue";
+    body.location_mode = normalizeLocationMode(draft.location_mode, "venue");
     // Pass through optional custom location fields
     for (const f of ["custom_address", "custom_city", "custom_state", "custom_latitude", "custom_longitude", "location_notes"] as const) {
       if (draft[f] !== undefined && draft[f] !== null) {
@@ -216,7 +257,7 @@ function mapDraftToCreatePayload(draft: Record<string, unknown>): MapResult {
       }
     }
   } else if (hasOnlineUrl) {
-    body.location_mode = "online";
+    body.location_mode = normalizeLocationMode(draft.location_mode, "online");
     body.online_url = (draft.online_url as string).trim();
   } else {
     // No valid location resolved for create payload
