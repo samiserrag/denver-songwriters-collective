@@ -18,6 +18,7 @@ import {
   type EventOccurrenceEntry,
 } from "@/lib/events/nextOccurrence";
 import { getOccurrenceWindowNotice } from "@/lib/events/occurrenceWindow";
+import { shouldSuppressUnconfirmedDscTestEvent } from "@/lib/events/verification";
 import { occurrencesToMapPins, type MapPinConfig } from "@/lib/map";
 import { MapView } from "@/components/happenings/MapView";
 import { getLocationFilteredVenues, type LocationFilterResult, DISCOVERY_STATUS_FILTER, DISCOVERY_VENUE_SELECT_WITH_COORDS } from "@/lib/happenings";
@@ -280,6 +281,9 @@ export default async function HappeningsPage({
   // Cast to any[] because Supabase query result type doesn't include the joined 'venue' relation.
   // Removing this would require cascading type definitions for the joined result shape.
   let list = (events || []) as any[];
+
+  // Hide internal DSC TEST events from public discovery when unconfirmed.
+  list = list.filter((event: any) => !shouldSuppressUnconfirmedDscTestEvent(event));
 
   // Client-side search filtering (case-insensitive across multiple fields)
   if (searchQuery) {

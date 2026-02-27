@@ -133,7 +133,7 @@ Before sending any invites, verify:
 - [ ] All P0 items in BACKLOG.md are DONE
 - [ ] Quality gates passing (lint, tests, build)
 - [ ] Production smoke tests pass (SMOKE-PROD.md tests 16-21)
-- [ ] DSC TEST events visible in `/happenings?type=dsc`
+- [ ] Unverified DSC TEST events are hidden on homepage + `/happenings`
 - [ ] Getting Started prompts appear for Host identity users
 - [ ] Venue invite flow works end-to-end (Test 20)
 
@@ -356,7 +356,7 @@ Run through before Day 0:
 
 ### Content
 
-- [ ] DSC TEST events visible in happenings
+- [ ] Unverified DSC TEST events hidden from public discovery
 - [ ] At least 5 upcoming happenings in next 7 days
 - [ ] Homepage hero readable (contrast fix deployed)
 - [ ] All invite templates reviewed and personalized

@@ -120,14 +120,23 @@ export interface UnconfirmedBadgeInput {
   last_verified_at?: string | null;
 }
 
-export function shouldShowUnconfirmedBadge(event: UnconfirmedBadgeInput): boolean {
-  // First check if actually unconfirmed
+/**
+ * Suppress internal DSC TEST events from public discovery when unconfirmed.
+ *
+ * Rule: is_dsc_event=true AND title starts with "TEST" AND event is unconfirmed.
+ */
+export function shouldSuppressUnconfirmedDscTestEvent(event: UnconfirmedBadgeInput): boolean {
   const state = getPublicVerificationState(event);
   if (state.state !== "unconfirmed") return false;
 
-  // Suppress for CSC TEST events (case-sensitive "TEST" prefix)
   const title = event.title ?? "";
-  const isDscTest = event.is_dsc_event === true && title.startsWith("TEST");
+  return event.is_dsc_event === true && title.startsWith("TEST");
+}
 
-  return !isDscTest;
+export function shouldShowUnconfirmedBadge(event: UnconfirmedBadgeInput): boolean {
+  const state = getPublicVerificationState(event);
+  if (state.state !== "unconfirmed") return false;
+
+  // Badge suppression mirrors discovery suppression rule.
+  return !shouldSuppressUnconfirmedDscTestEvent(event);
 }

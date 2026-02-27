@@ -892,6 +892,24 @@ Discovery surfaces MUST use `DISCOVERY_STATUS_FILTER` for their default query. I
 
 **Allowed divergence:** The weekly digest intentionally uses `"active"` only. This is documented and permitted.
 
+### DSC TEST Suppression Rule
+
+Public discovery surfaces MUST suppress internal DSC test series when they are still unconfirmed.
+
+Suppression criteria:
+- `is_dsc_event = true`
+- `title` starts with `"TEST"` (case-sensitive prefix)
+- verification state is `unconfirmed` (no `last_verified_at`, and not cancelled)
+
+Applies to:
+- Homepage discovery rails (`Tonight`, `Spotlight`, `Open Mic Spotlight`, `Featured Open Mics`)
+- `/happenings` timeline/series/map
+
+Does NOT apply to:
+- Admin dashboards
+- Verified DSC TEST events
+- Cancelled state handling (already excluded by status/occurrence rules)
+
 ### Override Pipeline Rule
 
 Any surface that displays "Tonight" or "Today" events from recurring series MUST:

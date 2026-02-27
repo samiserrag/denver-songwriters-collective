@@ -183,6 +183,20 @@ describe("Phase 6: Homepage uses shared contract constants", () => {
     );
     expect(source).toContain("${DISCOVERY_VENUE_SELECT}");
   });
+
+  it("homepage suppresses unconfirmed DSC TEST events across discovery rails", async () => {
+    const fs = await import("fs");
+    const source = fs.readFileSync(
+      "src/app/page.tsx",
+      "utf-8"
+    );
+    expect(source).toContain("shouldSuppressUnconfirmedDscTestEvent");
+    expect(source).toContain("allEventsForTonight");
+    expect(source).toContain("spotlightHappenings");
+    expect(source).toContain("spotlightOpenMicEvents");
+    expect(source).toContain("spotlightOpenMics");
+    expect(source).toContain("!shouldSuppressUnconfirmedDscTestEvent(event)");
+  });
 });
 
 // ============================================================================

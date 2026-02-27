@@ -10,6 +10,7 @@
 import { describe, it, expect } from "vitest";
 import {
   shouldShowUnconfirmedBadge,
+  shouldSuppressUnconfirmedDscTestEvent,
   getPublicVerificationState,
 } from "@/lib/events/verification";
 
@@ -227,6 +228,38 @@ describe("shouldShowUnconfirmedBadge", () => {
       // Empty title should show badge (doesn't start with TEST)
       expect(shouldShowUnconfirmedBadge(event)).toBe(true);
     });
+  });
+});
+
+describe("shouldSuppressUnconfirmedDscTestEvent", () => {
+  it("suppresses unconfirmed DSC TEST events from discovery", () => {
+    const event = {
+      title: "TEST Open Mic Thursdays Series",
+      is_dsc_event: true,
+      status: "active",
+      last_verified_at: null,
+    };
+    expect(shouldSuppressUnconfirmedDscTestEvent(event)).toBe(true);
+  });
+
+  it("does not suppress confirmed DSC TEST events from discovery", () => {
+    const event = {
+      title: "TEST Open Mic Thursdays Series",
+      is_dsc_event: true,
+      status: "active",
+      last_verified_at: "2026-01-15T12:00:00Z",
+    };
+    expect(shouldSuppressUnconfirmedDscTestEvent(event)).toBe(false);
+  });
+
+  it("does not suppress unconfirmed non-DSC TEST events", () => {
+    const event = {
+      title: "Community Open Mic",
+      is_dsc_event: false,
+      status: "active",
+      last_verified_at: null,
+    };
+    expect(shouldSuppressUnconfirmedDscTestEvent(event)).toBe(false);
   });
 });
 

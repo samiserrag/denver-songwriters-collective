@@ -28,6 +28,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Event, Member, MemberRole } from "@/types";
 import { mapDBEventToEvent } from "@/lib/homepage/mapDBEventToEvent";
+import { shouldSuppressUnconfirmedDscTestEvent } from "@/lib/events/verification";
 
 export const dynamic = "force-dynamic";
 
@@ -189,6 +190,9 @@ export default async function HomePage() {
         signup_time,
         venue_name,
         is_featured,
+        status,
+        is_dsc_event,
+        last_verified_at,
         venues(name, city)
       `)
       .contains("event_type", ["open_mic"])
@@ -302,18 +306,20 @@ export default async function HomePage() {
   const hostSpotlightMembers: Member[] = (hostSpotlightMembersRes.data ?? []).map(mapDBProfileToMember);
 
   // Map spotlight open mics
-  const spotlightOpenMics: SpotlightOpenMic[] = (spotlightOpenMicsRes.data ?? []).map((om: any) => ({
-    id: om.id,
-    slug: om.slug,
-    title: om.title,
-    description: om.description,
-    day_of_week: om.day_of_week,
-    start_time: om.start_time,
-    signup_time: om.signup_time,
-    venue_name: om.venues?.name ?? om.venue_name,
-    venue_city: om.venues?.city,
-    is_featured: om.is_featured,
-  }));
+  const spotlightOpenMics: SpotlightOpenMic[] = (spotlightOpenMicsRes.data ?? [])
+    .filter((event: any) => !shouldSuppressUnconfirmedDscTestEvent(event))
+    .map((om: any) => ({
+      id: om.id,
+      slug: om.slug,
+      title: om.title,
+      description: om.description,
+      day_of_week: om.day_of_week,
+      start_time: om.start_time,
+      signup_time: om.signup_time,
+      venue_name: om.venues?.name ?? om.venue_name,
+      venue_city: om.venues?.city,
+      is_featured: om.is_featured,
+    }));
 
   // Phase 6: Fetch occurrence overrides with a forward window (cross-surface consistency)
   // Range-based query matches /happenings parity: catches overrides for occurrences
@@ -370,7 +376,9 @@ export default async function HomePage() {
   // Get tonight's happenings using occurrence expansion with forward window
   // Phase 6: Expand full window so applyReschedulesToTimeline can relocate
   // occurrences from future dates that are rescheduled to today.
-  const allEventsForTonight = (tonightsHappeningsRes.data ?? []) as any[];
+  const allEventsForTonight = ((tonightsHappeningsRes.data ?? []) as any[]).filter(
+    (event: any) => !shouldSuppressUnconfirmedDscTestEvent(event)
+  );
   const { groupedEvents, metrics } = expandAndGroupEvents(allEventsForTonight, {
     startKey: today,
     endKey: tonightWindowEnd,
@@ -426,10 +434,14 @@ export default async function HomePage() {
   const highlights: Highlight[] = highlightsRes.data ?? [];
 
   // Spotlight happenings (admin-selected)
-  const spotlightHappenings = (spotlightHappeningsRes.data ?? []) as any[];
+  const spotlightHappenings = ((spotlightHappeningsRes.data ?? []) as any[]).filter(
+    (event: any) => !shouldSuppressUnconfirmedDscTestEvent(event)
+  );
 
   // Spotlight open mic events (admin-selected open mics using is_spotlight)
-  const spotlightOpenMicEvents = (spotlightOpenMicEventsRes.data ?? []) as any[];
+  const spotlightOpenMicEvents = ((spotlightOpenMicEventsRes.data ?? []) as any[]).filter(
+    (event: any) => !shouldSuppressUnconfirmedDscTestEvent(event)
+  );
 
   const hasUpcomingEvents = upcomingEvents.length > 0;
   const hasTonightsHappenings = tonightsHappenings.length > 0;

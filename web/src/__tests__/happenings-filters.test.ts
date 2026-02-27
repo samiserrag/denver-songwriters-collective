@@ -139,6 +139,11 @@ describe('Happenings Page Filter Logic', () => {
   const pageContent = fs.readFileSync(pagePath, 'utf-8');
 
   describe('Filter Implementation', () => {
+    it('should suppress unconfirmed DSC TEST events from public discovery', () => {
+      expect(pageContent).toContain('shouldSuppressUnconfirmedDscTestEvent');
+      expect(pageContent).toContain('!shouldSuppressUnconfirmedDscTestEvent(event)');
+    });
+
     it('should filter by event_type', () => {
       // Single type filter uses .contains with array wrapping
       expect(pageContent).toContain('.contains("event_type", [typeFilter])');
