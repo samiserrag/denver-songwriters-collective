@@ -6,9 +6,11 @@
  */
 
 import { describe, it, expect } from "vitest";
+import fs from "fs";
+import path from "path";
 
 // Render utilities
-import { getGreeting, wrapEmailHtml, wrapEmailText } from "./render";
+import { getGreeting, wrapEmailHtml, wrapEmailText, DEFAULT_EMAIL_HEADER_IMAGE } from "./render";
 
 // Registry
 import {
@@ -280,6 +282,12 @@ describe("Email Rendering", () => {
       expect(html).toContain("The Colorado Songwriters Collective");
     });
 
+    it("uses a stable absolute header image URL", () => {
+      const html = wrapEmailHtml("<p>Test content</p>");
+      expect(DEFAULT_EMAIL_HEADER_IMAGE).toMatch(/^https:\/\/.+\/images\/CSCEmailHeader1\.png$/);
+      expect(html).toContain(`src="${DEFAULT_EMAIL_HEADER_IMAGE}"`);
+    });
+
     it("includes content in body", () => {
       const content = "<p>This is my test content</p>";
       const html = wrapEmailHtml(content);
@@ -310,6 +318,20 @@ describe("Email Rendering", () => {
       expect(text).toContain("The Colorado Songwriters Collective");
       expect(text).toContain("You can reply directly to this email");
     });
+  });
+});
+
+describe("Email Header Contract", () => {
+  it("all production email templates use wrapEmailHtml()", () => {
+    const templatesDir = path.join(__dirname, "templates");
+    const templateFiles = fs
+      .readdirSync(templatesDir)
+      .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+
+    for (const file of templateFiles) {
+      const source = fs.readFileSync(path.join(templatesDir, file), "utf-8");
+      expect(source).toContain("wrapEmailHtml(");
+    }
   });
 });
 

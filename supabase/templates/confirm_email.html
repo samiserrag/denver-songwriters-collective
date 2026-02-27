@@ -1,4 +1,38 @@
-<h2>Welcome to The Colorado Songwriters Collective!</h2>
-<p>Click below to confirm your email and activate your account.</p>
-<p><a href="{{ .ConfirmationURL }}">Confirm your email</a></p>
-<p>Thanks,<br/>The Colorado Songwriters Collective Team</p>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Colorado Songwriters Collective</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f8f8f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f8f8;padding:40px 20px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="padding:0;background:#1e3a5f;text-align:center;">
+                <img src="https://coloradosongwriterscollective.org/images/CSCEmailHeader1.png" alt="The Colorado Songwriters Collective" style="display:block;width:100%;max-width:560px;height:auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 28px;">
+                <p style="margin:0 0 16px 0;color:#1a1a1a;font-size:15px;line-height:1.6;">Hi,</p>
+                <p style="margin:0 0 16px 0;color:#1a1a1a;font-size:15px;line-height:1.6;">Welcome to The Colorado Songwriters Collective.</p>
+                <p style="margin:0 0 24px 0;color:#525252;font-size:15px;line-height:1.6;">Click below to confirm your email and activate your account.</p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                  <tr>
+                    <td style="background:#2563eb;border-radius:8px;">
+                      <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;">Confirm your email</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0;color:#737373;font-size:14px;line-height:1.6;">This link expires in 24 hours.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

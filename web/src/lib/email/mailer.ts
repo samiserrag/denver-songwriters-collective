@@ -8,6 +8,7 @@
 import nodemailer from "nodemailer";
 import { DEFAULT_EMAIL_HEADER_IMAGE } from "./render";
 import { getServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 // Rate limiting cache: email+template -> last sent timestamp
 const rateLimitCache = new Map<string, number>();
@@ -17,6 +18,34 @@ const RATE_LIMIT_MS = 60 * 1000; // 1 minute per email per template
 let _cachedHeaderImageUrl: string | null = null;
 let _cachedHeaderImageAt = 0;
 const HEADER_IMAGE_CACHE_MS = 5 * 60 * 1000;
+
+function normalizeHeaderImageUrl(url: string | null): string | null {
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("/")) {
+    return `${getSiteUrl()}${trimmed}`;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+
+  // Signed storage URLs are long and brittle in some email clients.
+  // Fall back to canonical site-hosted header for reliability.
+  if (parsed.pathname.includes("/storage/v1/object/sign/") && parsed.searchParams.has("token")) {
+    return DEFAULT_EMAIL_HEADER_IMAGE;
+  }
+
+  return parsed.toString();
+}
 
 async function getEmailHeaderImageUrl(): Promise<string | null> {
   if (_cachedHeaderImageUrl !== null && Date.now() - _cachedHeaderImageAt < HEADER_IMAGE_CACHE_MS) {
@@ -29,7 +58,7 @@ async function getEmailHeaderImageUrl(): Promise<string | null> {
       .select("email_header_image_url")
       .eq("id", "global")
       .single();
-    const url = data?.email_header_image_url || null;
+    const url = normalizeHeaderImageUrl(data?.email_header_image_url || null);
     _cachedHeaderImageUrl = url;
     _cachedHeaderImageAt = Date.now();
     return url;
@@ -101,9 +130,10 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
 
   // Replace default header image with admin-configured URL from site settings
   const siteHeaderUrl = await getEmailHeaderImageUrl();
+  const headerImageUrl = siteHeaderUrl || DEFAULT_EMAIL_HEADER_IMAGE;
   let finalHtml = html;
-  if (siteHeaderUrl && siteHeaderUrl !== DEFAULT_EMAIL_HEADER_IMAGE) {
-    finalHtml = html.replace(DEFAULT_EMAIL_HEADER_IMAGE, siteHeaderUrl);
+  if (headerImageUrl !== DEFAULT_EMAIL_HEADER_IMAGE) {
+    finalHtml = html.replace(DEFAULT_EMAIL_HEADER_IMAGE, headerImageUrl);
   }
 
   const transporter = getTransporter();

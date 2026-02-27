@@ -296,6 +296,16 @@ The `newsletterWelcome.ts` template exists but is not used by the route.
 
 ---
 
+## Supabase Auth Template (Outside Registry)
+
+Signup/confirm emails sent by Supabase Auth are not generated from `web/src/lib/email/*`.
+
+- HTML source of record: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/supabase/templates/confirm_email.html`
+- Text source of record: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/supabase/templates/confirm_email.txt`
+- Header image contract: must use absolute URL `https://coloradosongwriterscollective.org/images/CSCEmailHeader1.png`
+
+---
+
 ## Additional Templates (Added Post-Audit)
 
 ### Weekly Digests (GTM-2)
