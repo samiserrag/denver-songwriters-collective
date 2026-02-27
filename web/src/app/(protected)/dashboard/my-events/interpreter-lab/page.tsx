@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   type InterpretMode,
   type ImageInput,
@@ -29,6 +29,13 @@ interface StagedImage {
 interface ConversationEntry {
   role: "user" | "assistant";
   content: string;
+}
+
+interface ResponseGuidance {
+  next_action: string;
+  human_summary: string | null;
+  clarification_question: string | null;
+  blocking_fields: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -286,6 +293,22 @@ export default function InterpreterLabPage() {
     text: string;
   } | null>(null);
 
+  const responseGuidance = useMemo<ResponseGuidance | null>(() => {
+    if (!responseBody || typeof responseBody !== "object") return null;
+    const maybe = responseBody as Record<string, unknown>;
+    if (typeof maybe.next_action !== "string") return null;
+    const blocking = Array.isArray(maybe.blocking_fields)
+      ? maybe.blocking_fields.filter((v): v is string => typeof v === "string")
+      : [];
+    return {
+      next_action: maybe.next_action,
+      human_summary: typeof maybe.human_summary === "string" ? maybe.human_summary : null,
+      clarification_question:
+        typeof maybe.clarification_question === "string" ? maybe.clarification_question : null,
+      blocking_fields: blocking,
+    };
+  }, [responseBody]);
+
   // Derived: is current mode an edit mode with a valid eventId?
   const isEditMode = mode === "edit_series" || mode === "edit_occurrence";
   const hasValidEventId = eventId.trim().length > 0;
@@ -518,14 +541,31 @@ export default function InterpreterLabPage() {
 
       // Append to conversation history for multi-turn
       if (res.ok && body) {
+        const assistantParts: string[] = [];
+        if (typeof body.human_summary === "string" && body.human_summary.trim().length > 0) {
+          assistantParts.push(body.human_summary.trim());
+        }
+        if (
+          body.next_action === "ask_clarification" &&
+          typeof body.clarification_question === "string" &&
+          body.clarification_question.trim().length > 0
+        ) {
+          assistantParts.push(`Question: ${body.clarification_question.trim()}`);
+        }
+
         setConversationHistory((prev) => [
           ...prev,
           { role: "user", content: message },
           {
             role: "assistant",
-            content: body.human_summary || body.clarification_question || JSON.stringify(body),
+            content: assistantParts.join("\n\n") || JSON.stringify(body),
           },
         ]);
+
+        if (body.next_action === "ask_clarification") {
+          // Keep follow-up turns lightweight by clearing the original long prompt.
+          setMessage("");
+        }
 
         // Phase 4B: Track last successful interpreter response for create action
         if (body.next_action && body.draft_payload) {
@@ -994,6 +1034,50 @@ export default function InterpreterLabPage() {
             </p>
           )}
         </div>
+
+        {/* ---- Human-readable next-step guidance ---- */}
+        {statusCode === 200 && responseGuidance && (
+          <div className="card-base p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              What Happens Next
+            </h2>
+
+            {responseGuidance.human_summary && (
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {responseGuidance.human_summary}
+              </p>
+            )}
+
+            {responseGuidance.next_action === "ask_clarification" && (
+              <div className="space-y-2">
+                <p className="text-sm text-[var(--color-text-primary)]">
+                  <span className="font-semibold">Question:</span>{" "}
+                  {responseGuidance.clarification_question ||
+                    "Please answer the missing required fields."}
+                </p>
+                {responseGuidance.blocking_fields.length > 0 && (
+                  <p className="text-xs text-[var(--color-text-tertiary)]">
+                    Missing required fields:{" "}
+                    <span className="font-mono">
+                      {responseGuidance.blocking_fields.join(", ")}
+                    </span>
+                  </p>
+                )}
+                <p className="text-xs text-[var(--color-text-tertiary)]">
+                  In the message box above, reply with only the missing details, then click
+                  &nbsp;<span className="font-semibold">Run Interpreter</span>.
+                </p>
+              </div>
+            )}
+
+            {responseGuidance.next_action !== "ask_clarification" && (
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                The draft is ready for the next step.
+                {canShowCreateAction ? " Click Confirm & Create to publish." : ""}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ---- Conversation history display ---- */}
         {conversationHistory.length > 0 && (
