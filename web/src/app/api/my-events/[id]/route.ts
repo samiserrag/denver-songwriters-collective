@@ -8,11 +8,23 @@ import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccu
 import { formatDateKeyForEmail } from "@/lib/events/dateKeyContract";
 import { canEditEventVisibility, canManageEvent } from "@/lib/events/eventManageAuth";
 import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
+import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
 
 const LEGACY_VERIFICATION_STATUSES = new Set(["needs_verification", "unverified"]);
+
+function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
+  if (typeof value !== "string") return "venue";
+  const mode = value.trim().toLowerCase();
+  if (mode === "venue" || mode === "in_person" || mode === "in-person" || mode === "custom") {
+    return "venue";
+  }
+  if (mode === "online" || mode === "virtual") return "online";
+  if (mode === "hybrid") return "hybrid";
+  return "venue";
+}
 const NOTIFICATION_IGNORED_FIELDS = new Set([
   "updated_at",
   "last_major_update_at",
@@ -223,6 +235,12 @@ export async function PATCH(
   const canCreateCSC = isApprovedHost || isAdmin;
 
   const body = await request.json();
+  if (body.location_mode !== undefined) {
+    body.location_mode = normalizeLocationMode(body.location_mode);
+  }
+  if (body.signup_mode !== undefined) {
+    body.signup_mode = normalizeSignupMode(body.signup_mode);
+  }
 
   if (body.visibility !== undefined) {
     if (body.visibility !== "public" && body.visibility !== "invite_only") {

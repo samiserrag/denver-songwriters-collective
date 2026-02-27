@@ -55,6 +55,20 @@ describe("Interpreter location hints", () => {
     expect(routeSource).toContain("address: addressFromCoords || addressFromText");
   });
 
+  it("strips maps URLs from draft external_url during hardening", () => {
+    expect(routeSource).toContain("if (isGoogleMapsUrl(draft.external_url))");
+    expect(routeSource).toContain("draft.external_url = null");
+  });
+
+  it("normalizes draft signup_mode during hardening", () => {
+    expect(routeSource).toContain("draft.signup_mode = normalizeSignupMode(draft.signup_mode)");
+  });
+
+  it("turns off timeslots when user did not explicitly ask for slots", () => {
+    expect(routeSource).toContain("collectsTimeslotIntent");
+    expect(routeSource).toContain("draft.has_timeslots = false");
+  });
+
   it("removes redundant location blockers once custom location exists", () => {
     expect(routeSource).toContain("venue_id/venue_name_confirmation");
     expect(routeSource).toContain("custom_address");

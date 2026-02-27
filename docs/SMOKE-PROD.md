@@ -811,6 +811,7 @@ For the create request in Vercel/Axiom logs:
    - Run Interpreter to `next_action` in `[show_preview, await_confirmation, done]`, then click **Confirm & Create**.
    - Verify:
      - Create succeeds (no `events_location_mode_check` error).
+     - Create succeeds with no `events_signup_mode_check` error (no invalid `signup_mode` values like `platform`/`rsvp`).
      - Event row has `location_mode='venue'` and non-null `venue_id`.
      - Venue row exists with expected name/address/city/state/zip and coordinates.
 

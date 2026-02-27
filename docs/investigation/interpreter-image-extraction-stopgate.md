@@ -396,6 +396,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
   - Drops Google Maps short links from `external_url` (maps links treated as location hints, not event websites)
   - Requires explicit user intent before preserving `has_timeslots=true` (prevents accidental performer slots)
   - Auto-selects first staged image as cover candidate in create mode when user has staged images
+  - Normalizes `signup_mode` into DB-safe enum values (`walk_in|in_person|online|both|null`) to prevent create/update constraint failures
   - Adds post-create navigation links: "Open Draft" and "Go to My Happenings (Drafts tab)"
 - ✅ Optional venue directory promotion:
   - When user explicitly asks for "new venue/create venue/add venue", lab attempts `POST /api/admin/venues`
@@ -412,6 +413,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
   - Prevents monthly series UI fallback to "1st week" on edit
 - ✅ Test coverage additions:
   - New recurrence ordinal parser tests
+  - New signup mode contract tests and API route guard assertions
   - Updated lab create-write assertions for hardening behavior
   - Updated interpreter location-hints assertions for noisy-address filtering and geocode precedence
 

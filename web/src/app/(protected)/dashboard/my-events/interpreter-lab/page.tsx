@@ -13,6 +13,7 @@ import {
   softDeleteCoverImageRow,
 } from "@/lib/events/uploadCoverForEvent";
 import type { NextAction } from "@/lib/events/interpretEventContract";
+import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -411,6 +412,9 @@ function mapDraftToCreatePayload(
   if (isGoogleMapsUrl(body.external_url)) {
     body.external_url = null;
   }
+
+  // 4e. Enforce DB-safe signup_mode enum values.
+  body.signup_mode = normalizeSignupMode(body.signup_mode);
 
   // 5. series_mode default
   if (!body.series_mode) {

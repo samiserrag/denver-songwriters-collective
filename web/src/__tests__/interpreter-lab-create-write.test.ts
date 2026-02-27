@@ -152,6 +152,10 @@ describe("Phase 4B — mapDraftToCreatePayload", () => {
     expect(labSource).toContain("isGoogleMapsUrl(body.external_url)");
     expect(labSource).toContain("body.external_url = null");
   });
+
+  it("normalizes signup_mode to DB-safe enum values", () => {
+    expect(labSource).toContain("normalizeSignupMode(body.signup_mode)");
+  });
 });
 
 // ---------------------------------------------------------------------------

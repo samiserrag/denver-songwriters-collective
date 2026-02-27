@@ -4,9 +4,21 @@ import { checkHostStatus } from "@/lib/auth/adminAuth";
 import { canonicalizeDayOfWeek } from "@/lib/events/recurrenceCanonicalization";
 import { getTodayDenver, expandOccurrencesForEvent } from "@/lib/events/nextOccurrence";
 import { getInvalidEventTypes, normalizeIncomingEventTypes } from "@/lib/events/eventTypeContract";
+import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 import { MediaEmbedValidationError, normalizeMediaEmbedUrl } from "@/lib/mediaEmbeds";
 import { upsertMediaEmbeds } from "@/lib/mediaEmbedsServer";
 import { sendAdminEventAlert } from "@/lib/email/adminEventAlerts";
+
+function normalizeLocationMode(value: unknown): "venue" | "online" | "hybrid" {
+  if (typeof value !== "string") return "venue";
+  const mode = value.trim().toLowerCase();
+  if (mode === "venue" || mode === "in_person" || mode === "in-person" || mode === "custom") {
+    return "venue";
+  }
+  if (mode === "online" || mode === "virtual") return "online";
+  if (mode === "hybrid") return "hybrid";
+  return "venue";
+}
 
 // GET - Get events where user is host/cohost
 export async function GET() {
@@ -248,6 +260,8 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   body.event_type = normalizeIncomingEventTypes(body.event_type);
+  body.location_mode = normalizeLocationMode(body.location_mode);
+  body.signup_mode = normalizeSignupMode(body.signup_mode);
 
   // Non-admins may send youtube_url/spotify_url as empty strings (form always includes them).
   // Only block when actually setting a non-empty value.

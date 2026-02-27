@@ -20,6 +20,7 @@ import {
   type VenueCatalogEntry,
   type VenueResolutionOutcome,
 } from "@/lib/events/venueResolver";
+import { normalizeSignupMode } from "@/lib/events/signupModeContract";
 
 /** Vercel serverless function timeout — two LLM calls need headroom. */
 export const maxDuration = 60;
@@ -186,6 +187,8 @@ function requestsVenueCatalog(mode: string, message: string): boolean {
 
 const GOOGLE_MAPS_URL_REGEX =
   /\bhttps?:\/\/(?:maps\.app\.goo\.gl\/[^\s]+|goo\.gl\/maps\/[^\s]+|(?:www\.)?google\.com\/maps\/[^\s]+|maps\.google\.com\/[^\s]+)\b/gi;
+const GOOGLE_MAPS_URL_SINGLE_REGEX =
+  /\bhttps?:\/\/(?:maps\.app\.goo\.gl\/[^\s]+|goo\.gl\/maps\/[^\s]+|(?:www\.)?google\.com\/maps\/[^\s]+|maps\.google\.com\/[^\s]+)\b/i;
 const GOOGLE_MAPS_3D_4D_REGEX = /!3d(-?[0-9]+\.[0-9]+)!4d(-?[0-9]+\.[0-9]+)/;
 const GOOGLE_MAPS_AT_REGEX = /@(-?[0-9]+\.[0-9]+),(-?[0-9]+\.[0-9]+)/;
 
@@ -207,6 +210,30 @@ interface GoogleMapsHint {
 
 function hasNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function collectsTimeslotIntent(
+  message: string,
+  history: Array<{ role: "user" | "assistant"; content: string }>
+): boolean {
+  const intentText = [message, ...history.filter((h) => h.role === "user").map((h) => h.content)]
+    .join("\n")
+    .toLowerCase();
+  if (!intentText.trim()) return false;
+
+  const explicitSignals = [
+    /\btimeslots?\b/i,
+    /\btime\s*slots?\b/i,
+    /\bslot\s*duration\b/i,
+    /\blineup\b/i,
+    /\b\d+\s+(?:performer\s+)?slots?\b/i,
+    /\benable\s+(?:performer\s+)?slots?\b/i,
+  ];
+  return explicitSignals.some((pattern) => pattern.test(intentText));
+}
+
+function isGoogleMapsUrl(value: unknown): value is string {
+  return typeof value === "string" && GOOGLE_MAPS_URL_SINGLE_REGEX.test(value.trim());
 }
 
 function normalizeStateCode(input: string): string {
@@ -463,6 +490,40 @@ function applyLocationHintsToDraft(input: {
   }
 
   return { applied };
+}
+
+function hardenDraftForCreateEdit(input: {
+  mode: "create" | "edit_series" | "edit_occurrence";
+  draft: Record<string, unknown>;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+}) {
+  const { mode, draft, message, conversationHistory } = input;
+
+  if (mode === "create" || mode === "edit_series") {
+    draft.signup_mode = normalizeSignupMode(draft.signup_mode);
+  }
+
+  // Maps links are location hints; do not keep them in external_url.
+  if (isGoogleMapsUrl(draft.external_url)) {
+    draft.external_url = null;
+  }
+
+  // If a canonical venue is resolved, enforce venue mode.
+  if (hasNonEmptyString(draft.venue_id)) {
+    draft.location_mode = "venue";
+  }
+
+  // Prevent accidental slot-enable unless user explicitly asked for slots.
+  if (mode === "create" && draft.has_timeslots === true) {
+    const hasExplicitTimeslotIntent = collectsTimeslotIntent(message, conversationHistory);
+    if (!hasExplicitTimeslotIntent) {
+      draft.has_timeslots = false;
+      draft.total_slots = null;
+      draft.slot_duration_minutes = null;
+      draft.allow_guests = false;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1144,6 +1205,13 @@ export async function POST(request: Request) {
     const filtered = resolvedBlockingFields.filter((f) => !redundant.has(f));
     resolvedBlockingFields = [...new Set(filtered)];
   }
+
+  hardenDraftForCreateEdit({
+    mode,
+    draft: sanitizedDraft,
+    message: normalizedMessage,
+    conversationHistory,
+  });
 
   // Final guardrail: never 422 for missing required create fields.
   // Convert to ask_clarification so the conversation can continue.
