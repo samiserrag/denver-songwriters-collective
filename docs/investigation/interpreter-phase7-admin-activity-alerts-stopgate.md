@@ -1,7 +1,7 @@
 # Stop-Gate Track: Admin Activity Alerts Hardening (ALERTS-01)
 
 **Date:** 2026-02-26  
-**Status:** IMPLEMENTED (7A) — awaiting production smoke sign-off  
+**Status:** APPROVED — production-verified (2026-02-27)  
 **Parent tract:** `docs/investigation/interpreter-image-extraction-stopgate.md` (Phases 0-6 complete)
 
 ---
@@ -81,7 +81,6 @@ This phase is hardening, not product redesign.
 2. Add enum values for lifecycle activity in `notification_type`:
    - e.g. `event_created_non_admin`, `event_edited_non_admin`, `event_occurrence_edited_non_admin`.
 
-If 7B is deferred, email-only can still ship for Phase 7.
 If 7B is deferred, email-only can still ship for this alert track.
 
 ### Approved decisions (2026-02-26)
@@ -206,11 +205,21 @@ Result: clean for changed files (non-blocking baseline-browser-mapping freshness
 
 ---
 
-## 10) Remaining Sign-off Gates
+## 10) Production Verification (2026-02-27)
 
-1. Production smoke on all three write paths (create / edit_series / edit_occurrence).
-2. Preference toggle verification (`email_admin_notifications=false` suppresses lifecycle emails).
-3. Axiom 24h checks for:
-   - lifecycle alert errors,
-   - fallback frequency,
-   - unexpected alert volume spikes.
+Production smoke completed on live deployment commit `068c4558`.
+
+| Check | Result |
+|---|---|
+| Non-admin create -> lifecycle alert | PASS (email received) |
+| Non-admin edit_series -> lifecycle alert | PASS (email received) |
+| Non-admin edit_occurrence -> lifecycle alert | PASS (email received) |
+| Preference gating (`email_admin_notifications=false`) | PASS (emails suppressed for both admins) |
+| Axiom 24h lifecycle alert errors | 0 |
+| Axiom 24h email errors | 0 |
+| Axiom 24h rate-limit fallbacks | 0 |
+
+Cleanup confirmed:
+- Admin preferences restored to `true`.
+- Smoke test event `c754143c-62da-4fea-b8da-33fef166b371` removed.
+- Smoke-created occurrence overrides removed.

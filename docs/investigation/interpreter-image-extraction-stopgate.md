@@ -379,7 +379,7 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - Venues not in DB require manual addition or custom_location fallback
 - Catalog size O(n) per request is negligible at ~200 entries
 
-**Related follow-on track:** `docs/investigation/interpreter-phase7-admin-activity-alerts-stopgate.md` (ALERTS-01, IMPLEMENTED 7A; awaiting production smoke)
+**Related follow-on track:** `docs/investigation/interpreter-phase7-admin-activity-alerts-stopgate.md` (ALERTS-01, APPROVED — production-verified)
 
 ### Phase 5 (prior): Tests + smoke
 - ✅ Unit tests: `validateImageInputs` (8 tests covering all error paths)

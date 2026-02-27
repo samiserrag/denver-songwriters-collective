@@ -855,6 +855,29 @@ _Placeholder: Profile-specific smoke tests will be added when the Profiles track
 
 > Append dated results after each production verification run.
 
+### 2026-02-27 — ALERTS-01 Admin Lifecycle Alerts (Production Verification)
+
+**Executed by:** Claude in Chrome (manual browser smoke + inbox checks) + Codex (Axiom review)  
+**Commit:** `068c4558`  
+**Scope:** Non-admin event lifecycle alert coverage + admin preference gating
+
+| Test | Status | Notes |
+|------|--------|-------|
+| Non-admin create alert | ✅ PASS | Admin lifecycle email received |
+| Non-admin edit series alert | ✅ PASS | Admin lifecycle email received |
+| Non-admin edit occurrence alert | ✅ PASS | Admin lifecycle email received |
+| Preference gating (`email_admin_notifications=false`) | ✅ PASS | Suppressed for both admin recipients |
+| Axiom 24h lifecycle alert errors | ✅ PASS | 0 |
+| Axiom 24h email errors | ✅ PASS | 0 |
+| Axiom 24h rate-limit fallbacks | ✅ PASS | 0 |
+
+Cleanup:
+- Admin preference restored to `email_admin_notifications=true`
+- Smoke test event `c754143c-62da-4fea-b8da-33fef166b371` removed
+- Smoke-created overrides removed
+
+**ALERTS-01 production status: HEALTHY**
+
 ### 2026-02-26 — Phase 6 Venue Abbreviation Resolution + Axiom 24h Monitoring
 
 **Executed by:** Claude in Chrome (browser smoke) + Codex (Axiom query review)  
