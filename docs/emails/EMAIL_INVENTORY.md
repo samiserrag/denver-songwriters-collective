@@ -302,7 +302,10 @@ Signup/confirm emails sent by Supabase Auth are not generated from `web/src/lib/
 
 - HTML source of record: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/supabase/templates/confirm_email.html`
 - Text source of record: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/supabase/templates/confirm_email.txt`
+- Recovery HTML source of record: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/supabase/templates/recovery.html`
+- Recovery text source of record: `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/supabase/templates/recovery.txt`
 - Header image contract: must use absolute URL `https://coloradosongwriterscollective.org/images/CSCEmailHeader1.png`
+- Placeholder contract: use `{{ .Email }}` (not `{{ .email }}`) and `{{ .ConfirmationURL }}`
 
 ---
 

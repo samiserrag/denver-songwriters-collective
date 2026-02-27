@@ -75,6 +75,8 @@ No additional DNS changes needed.
 
 After configuring:
 
+0. **Confirm-signup prerequisite:** in Supabase Auth settings, `mailer_autoconfirm` must be `false` to send confirmation emails on signup. If `true`, users are auto-confirmed and no confirm-signup email is dispatched.
+
 1. **Sign up a new test user** at `/signup`
 2. **Check inbox** - verification email should arrive within 30 seconds
 3. **Check spam folder** if not in inbox
