@@ -69,6 +69,12 @@ describe("Interpreter location hints", () => {
     expect(routeSource).toContain("draft.has_timeslots = false");
   });
 
+  it("adds deterministic create-title fallback before required-field clarification", () => {
+    expect(routeSource).toContain("applyCreateTitleFallback");
+    expect(routeSource).toContain("deriveTitleFromText");
+    expect(routeSource).toContain("deriveTitleFromDraftContext");
+  });
+
   it("removes redundant location blockers once custom location exists", () => {
     expect(routeSource).toContain("venue_id/venue_name_confirmation");
     expect(routeSource).toContain("custom_address");

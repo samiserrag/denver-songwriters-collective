@@ -497,6 +497,7 @@ function hardenDraftForCreateEdit(input: {
   draft: Record<string, unknown>;
   message: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
 }) {
   const { mode, draft, message, conversationHistory } = input;
 
@@ -523,6 +524,101 @@ function hardenDraftForCreateEdit(input: {
       draft.slot_duration_minutes = null;
       draft.allow_guests = false;
     }
+  }
+}
+
+function sanitizeDerivedTitle(value: string): string | null {
+  const collapsed = value.replace(/\s+/g, " ").trim().replace(/^["'`]+|["'`]+$/g, "");
+  if (!collapsed) return null;
+  if (collapsed.length < 4 || collapsed.length > 90) return null;
+  if (/\b(event by|public|anyone on or off|see less|hosted by)\b/i.test(collapsed)) return null;
+  return collapsed;
+}
+
+function deriveTitleFromText(input: string): string | null {
+  const text = input.replace(/\r/g, "\n");
+  const patterns: RegExp[] = [
+    /\b(?:rsvp\s+for|join us for|for)\s+([A-Z][A-Za-z0-9 '&:/-]{3,90}?(?:open mic(?: night)?|song circle|showcase|workshop|jam(?: session)?|gig|meetup))/i,
+    /\b([A-Z][A-Za-z0-9 '&:/-]{3,90}?(?:open mic(?: night)?|song circle|showcase|workshop|jam(?: session)?|gig|meetup))\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      const candidate = sanitizeDerivedTitle(match[1]);
+      if (candidate) return candidate;
+    }
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => line.split(/\s+/).length <= 10);
+
+  for (const line of lines) {
+    if (/\b(open mic|song circle|showcase|workshop|jam|gig|meetup)\b/i.test(line)) {
+      const candidate = sanitizeDerivedTitle(line);
+      if (candidate) return candidate;
+    }
+  }
+
+  return null;
+}
+
+function deriveTitleFromDraftContext(draft: Record<string, unknown>): string | null {
+  const eventTypes = Array.isArray(draft.event_type)
+    ? draft.event_type.filter((v): v is string => typeof v === "string")
+    : [];
+  const primaryType = eventTypes[0] ?? null;
+
+  const typeLabelByKey: Record<string, string> = {
+    open_mic: "Open Mic Night",
+    showcase: "Showcase",
+    song_circle: "Song Circle",
+    workshop: "Workshop",
+    jam_session: "Jam Session",
+    gig: "Live Music Event",
+    meetup: "Meetup",
+    other: "Community Event",
+  };
+
+  const baseTitle = primaryType ? typeLabelByKey[primaryType] ?? null : null;
+  const venueName = typeof draft.venue_name === "string" ? draft.venue_name.trim() : "";
+
+  if (baseTitle && venueName) {
+    return sanitizeDerivedTitle(`${baseTitle} at ${venueName}`);
+  }
+  if (baseTitle) {
+    return sanitizeDerivedTitle(baseTitle);
+  }
+  return null;
+}
+
+function applyCreateTitleFallback(input: {
+  draft: Record<string, unknown>;
+  message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  extractedImageText?: string;
+}) {
+  const { draft, message, conversationHistory, extractedImageText } = input;
+  if (hasNonEmptyString(draft.title)) return;
+
+  const userHistory = conversationHistory
+    .filter((entry) => entry.role === "user")
+    .map((entry) => entry.content)
+    .join("\n");
+  const composite = [message, userHistory, extractedImageText || ""].join("\n");
+
+  const fromText = deriveTitleFromText(composite);
+  if (fromText) {
+    draft.title = fromText;
+    return;
+  }
+
+  const fromContext = deriveTitleFromDraftContext(draft);
+  if (fromContext) {
+    draft.title = fromContext;
   }
 }
 
@@ -1211,7 +1307,17 @@ export async function POST(request: Request) {
     draft: sanitizedDraft,
     message: normalizedMessage,
     conversationHistory,
+    extractedImageText,
   });
+
+  if (mode === "create") {
+    applyCreateTitleFallback({
+      draft: sanitizedDraft,
+      message: normalizedMessage,
+      conversationHistory,
+      extractedImageText,
+    });
+  }
 
   // Final guardrail: never 422 for missing required create fields.
   // Convert to ask_clarification so the conversation can continue.
