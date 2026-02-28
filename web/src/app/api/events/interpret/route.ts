@@ -21,6 +21,12 @@ import {
   type VenueResolutionOutcome,
 } from "@/lib/events/venueResolver";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
+import {
+  detectsRecurrenceIntent,
+  applyTimeSemantics,
+  reduceClarificationToSingle,
+  enforceVenueCustomExclusivity,
+} from "@/lib/events/interpreterPostprocess";
 
 /** Vercel serverless function timeout — two LLM calls need headroom. */
 export const maxDuration = 60;
@@ -525,6 +531,32 @@ function hardenDraftForCreateEdit(input: {
       draft.allow_guests = false;
     }
   }
+
+  // Phase 7B: Prevent accidental recurring series unless user explicitly
+  // used recurrence language (every, weekly, biweekly, monthly, etc.).
+  if (
+    mode === "create" &&
+    typeof draft.series_mode === "string" &&
+    draft.series_mode !== "single"
+  ) {
+    if (!detectsRecurrenceIntent(message, conversationHistory)) {
+      draft.series_mode = "single";
+      draft.recurrence_rule = null;
+      draft.day_of_week = null;
+      draft.occurrence_count = null;
+      draft.max_occurrences = null;
+      draft.custom_dates = null;
+    }
+  }
+
+  // Phase 7D: Time semantics — treat "doors at X" + "show starts at Y"
+  // as start_time = Y (performance start), not doors time.
+  if (mode === "create" || mode === "edit_series") {
+    applyTimeSemantics(draft, message);
+  }
+
+  // Phase 7D: Enforce venue/custom location mutual exclusivity.
+  enforceVenueCustomExclusivity(draft);
 }
 
 function sanitizeDerivedTitle(value: string): string | null {
@@ -1331,6 +1363,13 @@ export async function POST(request: Request) {
       const missingField = draftValidation.blockingField || "required field";
       resolvedClarificationQuestion = `Please provide ${missingField} to continue.`;
     }
+  }
+
+  // Phase 7C: Reduce multiple blocking fields to a single primary question.
+  if (resolvedNextAction === "ask_clarification") {
+    const reduced = reduceClarificationToSingle(resolvedBlockingFields, resolvedClarificationQuestion);
+    resolvedBlockingFields = reduced.blockingFields;
+    resolvedClarificationQuestion = reduced.clarificationQuestion;
   }
 
   if (resolvedNextAction === "ask_clarification" && resolvedBlockingFields.length === 0) {

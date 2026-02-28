@@ -440,4 +440,44 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 
 ---
 
-**STOP: Interpreter tract is complete through Phase 6. Follow-on alert hardening is tracked separately in ALERTS-01.**
+### Phase 7: Interpreter Hardening — UX Reliability ✅ (2026-02-28)
+
+**Scope:** Deterministic post-processing guards for create/edit reliability.
+
+**A) Fixture regression suite (P0)**
+- ✅ 20 fixture cases in `web/src/__fixtures__/interpreter/phase7-cases.json`
+- ✅ Test runner at `web/src/__tests__/interpreter-fixture-regression.test.ts`
+- ✅ 6 safety-critical fixtures tagged: F03, F04, F07, F08, F12, F16
+- ✅ Safety rules covered: no_accidental_recurring_series, no_accidental_timeslots, no_maps_url_in_external_url, no_invalid_signup_mode
+- ✅ All 20/20 fixtures pass; 6/6 safety-critical pass
+
+**B) Recurrence intent guard (P1)**
+- ✅ `detectsRecurrenceIntent()` — 10 regex patterns for explicit recurrence language
+- ✅ Patterns: every, weekly, biweekly, bi-weekly, monthly, recurring, series, repeating, ordinal+day, every other
+- ✅ If LLM returns non-single series_mode without user recurrence intent → downgrade to single, null out recurrence_rule/day_of_week/occurrence_count/max_occurrences/custom_dates
+- ✅ Tested by fixtures F03, F11, F12, F16, F20
+
+**C) Clarification reducer (P2)**
+- ✅ `reduceClarificationToSingle()` — picks single highest-priority blocking field
+- ✅ Priority order: event_type > title > start_date > start_time > venue_id > online_url > date_key > series_mode > signup_mode
+- ✅ Generates focused question per field type
+- ✅ Tested by fixture F19
+
+**D) Targeted tuning (P3-P5)**
+- ✅ Time semantics: `applyTimeSemantics()` — "doors at X, show at Y" → start_time = Y
+- ✅ Venue/custom mutual exclusivity: `enforceVenueCustomExclusivity()` — resolved venue clears custom_location_name, custom_address, custom_city, custom_state, custom_latitude, custom_longitude
+- ✅ Title reliability: existing `deriveTitleFromText()` + `deriveTitleFromDraftContext()` confirmed working via F10
+- ✅ Tested by fixtures F17, F18
+
+**Code organization:**
+- ✅ Phase 7 deterministic helpers extracted into shared module `web/src/lib/events/interpreterPostprocess.ts`
+- ✅ Both route.ts and fixture tests import from shared module (no logic duplication)
+
+**Test results:**
+- 22 fixture tests (20 cases + safety summary + pass rate report): all pass
+- 14 contract tests: all pass
+- 5 signup mode tests: all pass
+- ESLint: clean on route.ts, interpreterPostprocess.ts, and fixture test file
+- Total: 41/41 pass
+
+**STOP: Interpreter tract is complete through Phase 7. Follow-on alert hardening is tracked separately in ALERTS-01.**

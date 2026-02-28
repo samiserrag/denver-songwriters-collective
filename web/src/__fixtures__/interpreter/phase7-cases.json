@@ -1,0 +1,687 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Phase 7 interpreter hardening regression fixtures. Each case simulates an LLM response and validates the deterministic post-processing pipeline (sanitization, venue resolution, hardening, title fallback, clarification reduction, recurrence guard).",
+    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16"]
+  },
+  "cases": [
+    {
+      "id": "F01",
+      "name": "Simple open mic at known venue — happy path",
+      "mode": "create",
+      "message": "Open mic every Tuesday at 7pm at Long Table Brewhouse. Free. Signup at venue.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" },
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.95,
+        "human_summary": "Weekly Tuesday open mic at Long Table Brewhouse, 7 PM, free, signup at venue.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Tuesday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-03",
+          "series_mode": "weekly",
+          "day_of_week": 2,
+          "is_free": true,
+          "signup_mode": "in_person",
+          "venue_name": "Long Table Brewhouse",
+          "recurrence_rule": "FREQ=WEEKLY;BYDAY=TU",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "title": "Tuesday Open Mic",
+        "series_mode": "weekly",
+        "venue_id": "venue-ltb",
+        "location_mode": "venue",
+        "signup_mode": "in_person",
+        "has_timeslots": false,
+        "is_free": true,
+        "start_date": "2026-03-03",
+        "external_url_must_be_null": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F02",
+      "name": "Venue abbreviation LTB resolves deterministically",
+      "mode": "create",
+      "message": "Open mic at LTB this Friday at 8pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" },
+        { "id": "venue-ssl", "name": "Sunshine Studios Live", "slug": "sunshine-studios-live" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.85,
+        "human_summary": "Open mic at LTB this Friday at 8 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "20:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "LTB",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "venue_id": "venue-ltb",
+        "venue_name": "Long Table Brewhouse",
+        "location_mode": "venue",
+        "series_mode": "single",
+        "start_date": "2026-03-06"
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F03",
+      "name": "SAFETY: LLM returns weekly recurrence but user said 'this Tuesday' — must downgrade to single",
+      "mode": "create",
+      "message": "Song circle this Tuesday at 6pm at Dazzle Jazz",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.80,
+        "human_summary": "Weekly song circle at Dazzle Jazz, Tuesdays at 6 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Tuesday Song Circle",
+          "event_type": ["song_circle"],
+          "start_time": "18:00:00",
+          "event_date": "2026-03-03",
+          "series_mode": "weekly",
+          "recurrence_rule": "FREQ=WEEKLY;BYDAY=TU",
+          "day_of_week": 2,
+          "venue_name": "Dazzle Jazz",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "series_mode": "single",
+        "recurrence_rule_must_be_null": true,
+        "venue_id": "venue-dazzle",
+        "has_timeslots": false
+      },
+      "safety_critical": true,
+      "safety_rule": "no_accidental_recurring_series"
+    },
+    {
+      "id": "F04",
+      "name": "SAFETY: LLM enables timeslots without explicit user intent — must disable",
+      "mode": "create",
+      "message": "Open mic at Long Table Brewhouse next Friday at 7pm. Free entry.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.90,
+        "human_summary": "Open mic at Long Table Brewhouse, Friday 7 PM, free.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Long Table Brewhouse",
+          "has_timeslots": true,
+          "total_slots": 10,
+          "slot_duration_minutes": 15,
+          "is_free": true
+        }
+      },
+      "expected": {
+        "has_timeslots": false,
+        "total_slots_must_be_null": true,
+        "slot_duration_minutes_must_be_null": true,
+        "venue_id": "venue-ltb"
+      },
+      "safety_critical": true,
+      "safety_rule": "no_accidental_timeslots"
+    },
+    {
+      "id": "F05",
+      "name": "Explicit timeslot intent preserves slots",
+      "mode": "create",
+      "message": "Open mic with 10 performer slots, 15 minutes each, at Long Table Brewhouse Friday at 7pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.95,
+        "human_summary": "Open mic with 10 performer slots at LTB, Friday 7 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Long Table Brewhouse",
+          "has_timeslots": true,
+          "total_slots": 10,
+          "slot_duration_minutes": 15,
+          "is_free": true
+        }
+      },
+      "expected": {
+        "has_timeslots": true,
+        "total_slots": 10,
+        "slot_duration_minutes": 15,
+        "venue_id": "venue-ltb"
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F06",
+      "name": "Misspelled venue triggers clarification with candidates",
+      "mode": "create",
+      "message": "Open mic at Dazle this Friday at 7pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" },
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.70,
+        "human_summary": "Open mic at Dazle, Friday 7 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Dazle",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "next_action": "ask_clarification",
+        "blocking_fields_includes": ["venue_id"],
+        "clarification_question_not_null": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F07",
+      "name": "SAFETY: Google Maps link must not leak into external_url",
+      "mode": "create",
+      "message": "Workshop at 123 Main St Denver CO 80202. Here's the map: https://maps.app.goo.gl/abc123",
+      "conversationHistory": [],
+      "venueCatalog": [],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.85,
+        "human_summary": "Workshop at 123 Main St, Denver.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Songwriting Workshop",
+          "event_type": ["workshop"],
+          "start_time": "18:00:00",
+          "event_date": "2026-03-10",
+          "series_mode": "single",
+          "external_url": "https://maps.app.goo.gl/abc123",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "external_url_must_be_null": true
+      },
+      "safety_critical": true,
+      "safety_rule": "no_maps_url_in_external_url"
+    },
+    {
+      "id": "F08",
+      "name": "SAFETY: Invalid signup_mode from LLM normalized to null",
+      "mode": "create",
+      "message": "Open mic at Dazzle Jazz next Friday at 7pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.90,
+        "human_summary": "Open mic at Dazzle Jazz, Friday 7 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Dazzle Jazz",
+          "signup_mode": "platform_rsvp",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "signup_mode_must_be_null": true,
+        "venue_id": "venue-dazzle"
+      },
+      "safety_critical": true,
+      "safety_rule": "no_invalid_signup_mode"
+    },
+    {
+      "id": "F09",
+      "name": "Online event passes through without venue clarification",
+      "mode": "create",
+      "message": "Online songwriting workshop on Zoom next Tuesday at 6pm. Link: https://zoom.us/j/123456",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.95,
+        "human_summary": "Online songwriting workshop on Zoom, Tuesday 6 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Online Songwriting Workshop",
+          "event_type": ["workshop"],
+          "start_time": "18:00:00",
+          "event_date": "2026-03-03",
+          "series_mode": "single",
+          "location_mode": "online",
+          "online_url": "https://zoom.us/j/123456",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "location_mode": "online",
+        "online_url": "https://zoom.us/j/123456",
+        "venue_id_must_be_absent": true,
+        "blocking_fields_empty": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F10",
+      "name": "Missing title triggers deterministic fallback from event type + venue",
+      "mode": "create",
+      "message": "Open mic at Dazzle Jazz this Friday at 8pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.85,
+        "human_summary": "Open mic at Dazzle Jazz, Friday 8 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "",
+          "event_type": ["open_mic"],
+          "start_time": "20:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Dazzle Jazz",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "title_not_empty": true,
+        "venue_id": "venue-dazzle"
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F11",
+      "name": "Explicit 'every Tuesday' preserves weekly recurrence",
+      "mode": "create",
+      "message": "Song circle every Tuesday at 6pm at Dazzle Jazz. Free.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.95,
+        "human_summary": "Weekly song circle at Dazzle Jazz, Tuesdays at 6 PM, free.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Tuesday Song Circle",
+          "event_type": ["song_circle"],
+          "start_time": "18:00:00",
+          "event_date": "2026-03-03",
+          "series_mode": "weekly",
+          "recurrence_rule": "FREQ=WEEKLY;BYDAY=TU",
+          "day_of_week": 2,
+          "venue_name": "Dazzle Jazz",
+          "is_free": true,
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "series_mode": "weekly",
+        "venue_id": "venue-dazzle",
+        "is_free": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F12",
+      "name": "SAFETY: LLM returns biweekly without explicit recurrence language — downgrade",
+      "mode": "create",
+      "message": "Jam session at Long Table Brewhouse on March 5th at 7pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.75,
+        "human_summary": "Biweekly jam session at Long Table Brewhouse.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Thursday Jam Session",
+          "event_type": ["jam_session"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-05",
+          "series_mode": "biweekly",
+          "recurrence_rule": "FREQ=WEEKLY;INTERVAL=2;BYDAY=TH",
+          "day_of_week": 4,
+          "venue_name": "Long Table Brewhouse",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "series_mode": "single",
+        "recurrence_rule_must_be_null": true,
+        "venue_id": "venue-ltb"
+      },
+      "safety_critical": true,
+      "safety_rule": "no_accidental_recurring_series"
+    },
+    {
+      "id": "F13",
+      "name": "Signup at venue normalizes to in_person",
+      "mode": "create",
+      "message": "Open mic at Dazzle Jazz Friday 7pm. Signup at venue.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.90,
+        "human_summary": "Open mic at Dazzle Jazz, Friday 7 PM, signup at venue.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Dazzle Jazz",
+          "signup_mode": "at venue",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "signup_mode": "in_person",
+        "venue_id": "venue-dazzle"
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F14",
+      "name": "Custom location preserves intent when no catalog match",
+      "mode": "create",
+      "message": "Songwriting meetup at my house, 456 Oak Lane, Boulder CO",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.85,
+        "human_summary": "Songwriting meetup at 456 Oak Lane, Boulder.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Songwriting Meetup",
+          "event_type": ["meetup"],
+          "start_time": "18:00:00",
+          "event_date": "2026-03-10",
+          "series_mode": "single",
+          "custom_location_name": "My house",
+          "custom_address": "456 Oak Lane",
+          "custom_city": "Boulder",
+          "custom_state": "CO",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "venue_id_must_be_absent": true,
+        "custom_location_name": "My house"
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F15",
+      "name": "Edit series non-location change — no venue clarification triggered",
+      "mode": "edit_series",
+      "message": "Change the title to Friday Night Showcase",
+      "eventId": "event-123",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.95,
+        "human_summary": "Updating title to Friday Night Showcase.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Night Showcase",
+          "event_type": ["showcase"]
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "title": "Friday Night Showcase",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F16",
+      "name": "SAFETY: Monthly recurrence without explicit recurrence language — downgrade",
+      "mode": "create",
+      "message": "Showcase at Dazzle Jazz on March 15th at 8pm. $10 cover.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.80,
+        "human_summary": "Monthly showcase at Dazzle Jazz, 3rd Sunday at 8 PM, $10.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Monthly Showcase",
+          "event_type": ["showcase"],
+          "start_time": "20:00:00",
+          "event_date": "2026-03-15",
+          "series_mode": "monthly",
+          "recurrence_rule": "FREQ=MONTHLY;BYDAY=3SU",
+          "venue_name": "Dazzle Jazz",
+          "is_free": false,
+          "cost_label": "$10",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "series_mode": "single",
+        "recurrence_rule_must_be_null": true,
+        "venue_id": "venue-dazzle"
+      },
+      "safety_critical": true,
+      "safety_rule": "no_accidental_recurring_series"
+    },
+    {
+      "id": "F17",
+      "name": "Doors time goes to notes, performance time to start_time",
+      "mode": "create",
+      "message": "Showcase at Dazzle Jazz. Doors at 6pm, first performance starts at 7pm. $5 cover.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.90,
+        "human_summary": "Showcase at Dazzle Jazz, doors 6 PM, show 7 PM, $5.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Dazzle Jazz Showcase",
+          "event_type": ["showcase"],
+          "start_time": "18:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Dazzle Jazz",
+          "is_free": false,
+          "cost_label": "$5",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "start_time": "19:00:00",
+        "venue_id": "venue-dazzle"
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F18",
+      "name": "Venue resolved clears conflicting custom location fields",
+      "mode": "create",
+      "message": "Open mic at Dazzle Jazz this Friday at 7pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.90,
+        "human_summary": "Open mic at Dazzle Jazz, Friday 7 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "event_date": "2026-03-06",
+          "series_mode": "single",
+          "venue_name": "Dazzle Jazz",
+          "custom_location_name": "Dazzle Jazz",
+          "custom_address": "930 Lincoln St",
+          "custom_city": "Denver",
+          "custom_state": "CO",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "venue_id": "venue-dazzle",
+        "location_mode": "venue",
+        "custom_location_name_must_be_null": true,
+        "custom_address_must_be_null": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F19",
+      "name": "Multiple blocking fields reduced to single primary question",
+      "mode": "create",
+      "message": "Music thing sometime",
+      "conversationHistory": [],
+      "venueCatalog": [],
+      "simulatedLlmResponse": {
+        "next_action": "ask_clarification",
+        "confidence": 0.20,
+        "human_summary": "Unclear event details.",
+        "clarification_question": "Please provide more details about your event.",
+        "blocking_fields": ["title", "event_type", "start_time", "start_date", "venue_id"],
+        "draft_payload": {
+          "event_type": ["other"],
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "next_action": "ask_clarification",
+        "blocking_fields_max_count": 1,
+        "clarification_question_not_null": true
+      },
+      "safety_critical": false
+    },
+    {
+      "id": "F20",
+      "name": "Explicit 'recurring' keyword preserves monthly series",
+      "mode": "create",
+      "message": "Recurring monthly showcase on the 3rd Friday at Dazzle Jazz at 8pm",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-dazzle", "name": "Dazzle Jazz", "slug": "dazzle-jazz" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.95,
+        "human_summary": "Monthly recurring showcase at Dazzle Jazz, 3rd Friday at 8 PM.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Monthly Showcase at Dazzle Jazz",
+          "event_type": ["showcase"],
+          "start_time": "20:00:00",
+          "event_date": "2026-03-20",
+          "series_mode": "monthly",
+          "recurrence_rule": "FREQ=MONTHLY;BYDAY=3FR",
+          "venue_name": "Dazzle Jazz",
+          "has_timeslots": false
+        }
+      },
+      "expected": {
+        "series_mode": "monthly",
+        "venue_id": "venue-dazzle"
+      },
+      "safety_critical": false
+    }
+  ]
+}

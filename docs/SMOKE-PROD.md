@@ -881,6 +881,66 @@ For the create request in Vercel/Axiom logs:
 
 ---
 
+### 23. Phase 7 Interpreter Hardening Checks
+
+**Precondition:** Logged-in host/admin session on production domain.
+
+**A) Recurrence intent guard — single date must not create series**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Song circle this Tuesday at 6pm at Dazzle Jazz"
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** `draft_payload.series_mode` is `"single"`, not `"weekly"` or `"monthly"`.
+
+**B) Recurrence intent guard — explicit recurrence preserved**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Song circle every Tuesday at 6pm at Dazzle Jazz"
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** `draft_payload.series_mode` is `"weekly"` (or non-single). The word "every" triggers the intent guard.
+
+**C) Clarification reducer — single blocking question**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Music thing sometime"
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** `blocking_fields` has at most 1 entry. `clarification_question` is focused on a single topic.
+
+**D) Venue/custom mutual exclusivity**
+
+When a venue resolves to a known catalog entry, `custom_location_name`, `custom_address`, `custom_city`, `custom_state` must all be null in the draft.
+
+**Pass Criteria (23):** Recurrence guard prevents accidental series; clarification reducer limits to 1 blocking question; venue resolution clears custom fields.
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._
