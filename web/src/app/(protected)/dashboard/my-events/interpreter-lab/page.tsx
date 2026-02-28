@@ -250,6 +250,8 @@ function normalizeLocationMode(
     mode === "venue" ||
     mode === "in_person" ||
     mode === "in-person" ||
+    mode === "in_person_custom" ||
+    mode === "in_person_venue" ||
     mode === "physical" ||
     mode === "onsite" ||
     mode === "on_site" ||
@@ -706,6 +708,12 @@ export default function InterpreterLabPage() {
       // Attach conversation history for multi-turn
       if (conversationHistory.length > 0) {
         payload.conversationHistory = conversationHistory;
+      }
+
+      // Preserve previously confirmed create-draft fields across short
+      // clarification turns so the interpreter patches instead of restarting.
+      if (mode === "create" && lastInterpretResponse?.draft_payload) {
+        payload.locked_draft = lastInterpretResponse.draft_payload;
       }
 
       // Attach image inputs

@@ -35,6 +35,7 @@ export interface InterpretEventRequestBody {
   eventId?: string;
   dateKey?: string;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
+  locked_draft?: Record<string, unknown>;
   image_inputs?: ImageInput[];
 }
 

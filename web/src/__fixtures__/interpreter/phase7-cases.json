@@ -682,6 +682,111 @@
         "venue_id": "venue-dazzle"
       },
       "safety_critical": false
+    },
+    {
+      "id": "F21",
+      "name": "Locked draft preserves recurrence across short clarification turn",
+      "mode": "create",
+      "message": "Rock for the People",
+      "conversationHistory": [
+        {
+          "role": "user",
+          "content": "Event by Rock for the People. Acoustic Open Mic Night monthly on the 4th Tuesday. Doors 6:30 PM and first performance 6:40 PM."
+        },
+        {
+          "role": "assistant",
+          "content": "Please provide custom location name."
+        }
+      ],
+      "locked_draft": {
+        "title": "Acoustic Open Mic Night",
+        "event_type": ["open_mic"],
+        "start_time": "18:40:00",
+        "start_date": "2026-03-24",
+        "series_mode": "recurring",
+        "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=4",
+        "day_of_week": "tuesday",
+        "venue_name": "The End Lafayette",
+        "custom_location_name": "The End Lafayette",
+        "custom_address": "525 Courtney Way",
+        "custom_city": "Lafayette",
+        "custom_state": "CO"
+      },
+      "venueCatalog": [],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.6,
+        "human_summary": "Set custom location name.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Rock for the People",
+          "event_type": ["open_mic"],
+          "start_time": "18:40:00",
+          "start_date": "2026-03-24",
+          "series_mode": "single",
+          "recurrence_rule": null,
+          "venue_name": "The End Lafayette",
+          "custom_location_name": "Rock for the People",
+          "location_mode": "in_person_custom"
+        }
+      },
+      "expected": {
+        "title": "Acoustic Open Mic Night",
+        "series_mode": "recurring",
+        "location_mode": "venue"
+      },
+      "safety_critical": true,
+      "safety_rule": "confirmed recurring context must not be silently reset during clarify turn"
+    },
+    {
+      "id": "F22",
+      "name": "end_time is optional and should not block create clarification",
+      "mode": "create",
+      "message": "No end time specified",
+      "conversationHistory": [
+        {
+          "role": "user",
+          "content": "Open mic on Tuesday at 7pm at Long Table Brewhouse"
+        }
+      ],
+      "locked_draft": {
+        "title": "Open Mic Night",
+        "event_type": ["open_mic"],
+        "start_time": "19:00:00",
+        "start_date": "2026-03-10",
+        "series_mode": "single",
+        "venue_id": "venue-long-table",
+        "venue_name": "Long Table Brewhouse",
+        "location_mode": "venue"
+      },
+      "venueCatalog": [
+        { "id": "venue-long-table", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "ask_clarification",
+        "confidence": 0.7,
+        "human_summary": "Need end time.",
+        "clarification_question": "What is the end time?",
+        "blocking_fields": ["end_time"],
+        "draft_payload": {
+          "title": "Open Mic Night",
+          "event_type": ["open_mic"],
+          "start_time": "19:00:00",
+          "start_date": "2026-03-10",
+          "series_mode": "single",
+          "venue_id": "venue-long-table",
+          "venue_name": "Long Table Brewhouse",
+          "location_mode": "venue",
+          "end_time": null
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": true,
+      "safety_rule": "optional fields must not block creation flow"
     }
   ]
 }

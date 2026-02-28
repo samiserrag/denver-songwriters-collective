@@ -53,6 +53,10 @@ describe("Phase 4B — create action gating", () => {
     expect(labSource).toContain("setLastInterpretResponse({");
   });
 
+  it("sends locked_draft on create follow-up turns", () => {
+    expect(labSource).toContain('payload.locked_draft = lastInterpretResponse.draft_payload');
+  });
+
   it("clears create state when mode changes", () => {
     expect(labSource).toContain("setLastInterpretResponse(null)");
     expect(labSource).toContain("setCreateMessage(null)");

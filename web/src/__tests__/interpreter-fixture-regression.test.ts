@@ -31,6 +31,9 @@ import {
   applyTimeSemantics,
   reduceClarificationToSingle,
   enforceVenueCustomExclusivity,
+  mergeLockedCreateDraft,
+  normalizeInterpreterLocationMode,
+  pruneOptionalBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
 import fixtureData from "@/__fixtures__/interpreter/phase7-cases.json";
 
@@ -46,6 +49,7 @@ interface FixtureCase {
   eventId?: string;
   dateKey?: string;
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  locked_draft?: Record<string, unknown>;
   venueCatalog: Array<{ id: string; name: string; slug?: string }>;
   simulatedLlmResponse: {
     next_action: string;
@@ -104,6 +108,10 @@ function collectsTimeslotIntent(
 function runDeterministicPipeline(fixture: FixtureCase) {
   const mode = fixture.mode as InterpretMode;
   const llm = fixture.simulatedLlmResponse;
+  const lockedDraft =
+    mode === "create"
+      ? sanitizeInterpretDraftPayload("create", fixture.locked_draft ?? null)
+      : null;
   const venueCatalog: VenueCatalogEntry[] = fixture.venueCatalog.map((v) => ({
     id: v.id,
     name: v.name,
@@ -200,6 +208,11 @@ function runDeterministicPipeline(fixture: FixtureCase) {
 
   // 3. Hardening (mirrors hardenDraftForCreateEdit)
   if (mode === "create" || mode === "edit_series") {
+    const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);
+    sanitizedDraft.location_mode = normalizeInterpreterLocationMode(
+      sanitizedDraft.location_mode,
+      hasOnlineUrl ? "online" : "venue"
+    );
     sanitizedDraft.signup_mode = normalizeSignupMode(sanitizedDraft.signup_mode);
   }
   if (isGoogleMapsUrl(sanitizedDraft.external_url)) {
@@ -240,6 +253,21 @@ function runDeterministicPipeline(fixture: FixtureCase) {
 
   // 6. Phase 7D: Venue/custom mutual exclusivity cleanup — SHARED MODULE
   enforceVenueCustomExclusivity(sanitizedDraft);
+
+  // 6b. Multi-turn create draft lock (restores confirmed fields that the
+  // current turn omitted/reset during short clarification replies).
+  if (mode === "create") {
+    mergeLockedCreateDraft({
+      draft: sanitizedDraft,
+      lockedDraft,
+      message: fixture.message,
+    });
+    const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);
+    sanitizedDraft.location_mode = normalizeInterpreterLocationMode(
+      sanitizedDraft.location_mode,
+      hasOnlineUrl ? "online" : "venue"
+    );
+  }
 
   // 7. Title fallback (simplified — no extractedImageText in fixtures)
   if (mode === "create" && !hasNonEmptyString(sanitizedDraft.title)) {
@@ -298,6 +326,15 @@ function runDeterministicPipeline(fixture: FixtureCase) {
       resolvedClarificationQuestion = `Please provide ${draftValidation.blockingField || "required field"} to continue.`;
     }
   }
+
+  // 8b. Optional blockers should not block create/edit-series progression.
+  const optionalPrune = pruneOptionalBlockingFields(
+    mode,
+    resolvedBlockingFields,
+    resolvedClarificationQuestion
+  );
+  resolvedBlockingFields = optionalPrune.blockingFields;
+  resolvedClarificationQuestion = optionalPrune.clarificationQuestion;
 
   // 9. Phase 7C: Clarification reducer — SHARED MODULE
   if (resolvedNextAction === "ask_clarification") {

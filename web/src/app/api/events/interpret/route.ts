@@ -26,6 +26,9 @@ import {
   applyTimeSemantics,
   reduceClarificationToSingle,
   enforceVenueCustomExclusivity,
+  mergeLockedCreateDraft,
+  normalizeInterpreterLocationMode,
+  pruneOptionalBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
 
 /** Vercel serverless function timeout — two LLM calls need headroom. */
@@ -508,6 +511,11 @@ function hardenDraftForCreateEdit(input: {
   const { mode, draft, message, conversationHistory } = input;
 
   if (mode === "create" || mode === "edit_series") {
+    const hasOnlineUrl = hasNonEmptyString(draft.online_url);
+    draft.location_mode = normalizeInterpreterLocationMode(
+      draft.location_mode,
+      hasOnlineUrl ? "online" : "venue"
+    );
     draft.signup_mode = normalizeSignupMode(draft.signup_mode);
   }
 
@@ -870,6 +878,7 @@ function buildSystemPrompt() {
     "- Prefer safe scope when ambiguous: occurrence edits over series-wide edits.",
     "- Use date format YYYY-MM-DD and 24h times HH:MM:SS when possible.",
     "- If venue match is uncertain, leave venue_id null and set venue_name to your best guess of the venue the user intended. The server will attempt deterministic resolution.",
+    "- If locked_draft is provided, preserve its confirmed fields unless the user explicitly changes them.",
     "- Keep human_summary concise and deterministic.",
   ].join("\n");
 }
@@ -882,6 +891,7 @@ function buildUserPrompt(input: {
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   venueCatalog: VenueCatalogEntry[];
   currentEvent: Record<string, unknown> | null;
+  lockedDraft?: Record<string, unknown> | null;
   extractedImageText?: string;
   googleMapsHint?: GoogleMapsHint | null;
 }) {
@@ -895,6 +905,7 @@ function buildUserPrompt(input: {
       date_key: input.dateKey ?? null,
       event_id: input.eventId ?? null,
       current_event: input.currentEvent,
+      locked_draft: input.lockedDraft ?? null,
       venue_catalog: llmVenueCatalog,
       conversation_history: input.conversationHistory,
       ...(input.extractedImageText
@@ -1016,6 +1027,10 @@ export async function POST(request: Request) {
   const dateKey = typeof body.dateKey === "string" ? body.dateKey : undefined;
   const eventId = typeof body.eventId === "string" ? body.eventId : undefined;
   const conversationHistory = normalizeHistory(body.conversationHistory);
+  const lockedDraft =
+    mode === "create"
+      ? sanitizeInterpretDraftPayload("create", (body as { locked_draft?: unknown }).locked_draft)
+      : null;
 
   // Validate image inputs (count, mime type, decoded size).
   const imageValidation = validateImageInputs(body.image_inputs);
@@ -1128,6 +1143,7 @@ export async function POST(request: Request) {
     conversationHistory,
     venueCatalog,
     currentEvent,
+    lockedDraft,
     extractedImageText,
     googleMapsHint,
   });
@@ -1139,6 +1155,7 @@ export async function POST(request: Request) {
     dateKey: dateKey ?? null,
     model,
     hasImages: validatedImages.length > 0,
+    hasLockedDraft: !!lockedDraft && Object.keys(lockedDraft).length > 0,
     prompt: redactEmails(truncate(userPrompt, 1200)),
   });
 
@@ -1343,6 +1360,19 @@ export async function POST(request: Request) {
   });
 
   if (mode === "create") {
+    mergeLockedCreateDraft({
+      draft: sanitizedDraft,
+      lockedDraft,
+      message: normalizedMessage,
+    });
+
+    const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);
+    const locationFallback = hasOnlineUrl ? "online" : "venue";
+    sanitizedDraft.location_mode = normalizeInterpreterLocationMode(
+      sanitizedDraft.location_mode,
+      locationFallback
+    );
+
     applyCreateTitleFallback({
       draft: sanitizedDraft,
       message: normalizedMessage,
@@ -1350,6 +1380,14 @@ export async function POST(request: Request) {
       extractedImageText,
     });
   }
+
+  const optionalPrune = pruneOptionalBlockingFields(
+    mode,
+    resolvedBlockingFields,
+    resolvedClarificationQuestion
+  );
+  resolvedBlockingFields = optionalPrune.blockingFields;
+  resolvedClarificationQuestion = optionalPrune.clarificationQuestion;
 
   // Final guardrail: never 422 for missing required create fields.
   // Convert to ask_clarification so the conversation can continue.

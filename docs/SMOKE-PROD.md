@@ -937,7 +937,41 @@ fetch("/api/events/interpret", {
 
 When a venue resolves to a known catalog entry, `custom_location_name`, `custom_address`, `custom_city`, `custom_state` must all be null in the draft.
 
-**Pass Criteria (23):** Recurrence guard prevents accidental series; clarification reducer limits to 1 blocking question; venue resolution clears custom fields.
+**E) Multi-turn locked draft preserves recurrence/title context**
+
+1. Run a first create turn with explicit recurrence:
+   - `message`: "Acoustic Open Mic Night monthly on the 4th Tuesday at The End Lafayette, starts 6:40 PM."
+2. Confirm response is `ask_clarification`.
+3. Reply with a short clarification string only (e.g., `"Rock for the People"`).
+4. Run interpreter again with `locked_draft` from prior response.
+
+**Expected:**
+- `draft_payload.series_mode` remains recurring/non-single.
+- `draft_payload.recurrence_rule` remains set (not nulled).
+- Previously confirmed title remains stable (not replaced by short clarification text).
+
+**F) Optional end_time must not block create**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Open mic Tuesday 7pm at Long Table Brewhouse. No end time specified."
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** If `next_action` is `ask_clarification`, `blocking_fields` must not contain `end_time`. With only end_time missing, flow should proceed to preview (`show_preview`).
+
+**G) location_mode canonicalization**
+
+If model outputs non-canonical values (`in_person`, `custom`, `in_person_custom`), final `draft_payload.location_mode` must be canonical:
+- `venue`, `online`, or `hybrid` only.
+
+**Pass Criteria (23):** Recurrence guard prevents accidental series; clarification reducer limits to 1 blocking question; venue resolution clears custom fields; locked multi-turn context prevents recurrence/title reset; optional end_time does not block; location_mode stays canonical.
 
 ---
 

@@ -120,6 +120,49 @@ export function reduceClarificationToSingle(
 }
 
 // ---------------------------------------------------------------------------
+// Location mode normalization (DB-safe canonical values)
+// ---------------------------------------------------------------------------
+
+type CanonicalLocationMode = "venue" | "online" | "hybrid";
+
+export function normalizeInterpreterLocationMode(
+  value: unknown,
+  fallback: CanonicalLocationMode = "venue"
+): CanonicalLocationMode {
+  if (typeof value !== "string") return fallback;
+  const mode = value.trim().toLowerCase();
+
+  if (
+    mode === "venue" ||
+    mode === "in_person" ||
+    mode === "in-person" ||
+    mode === "in_person_custom" ||
+    mode === "in_person_venue" ||
+    mode === "physical" ||
+    mode === "onsite" ||
+    mode === "on_site" ||
+    mode === "custom" ||
+    mode === "custom_location"
+  ) {
+    return "venue";
+  }
+
+  if (
+    mode === "online" ||
+    mode === "virtual" ||
+    mode === "zoom" ||
+    mode === "livestream" ||
+    mode === "live_stream" ||
+    mode === "remote"
+  ) {
+    return "online";
+  }
+
+  if (mode === "hybrid") return "hybrid";
+  return fallback;
+}
+
+// ---------------------------------------------------------------------------
 // Venue/custom location mutual exclusivity (Phase 7D)
 // ---------------------------------------------------------------------------
 
@@ -132,4 +175,143 @@ export function enforceVenueCustomExclusivity(draft: Record<string, unknown>): v
     draft.custom_latitude = null;
     draft.custom_longitude = null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Multi-turn create context lock (preserve previously confirmed fields)
+// ---------------------------------------------------------------------------
+
+const TITLE_INTENT_PATTERN =
+  /\b(title|name\s+it|call\s+it|rename|change\s+title)\b/i;
+const RECURRENCE_OVERRIDE_PATTERN =
+  /\b(one[-\s]?time|single\s+event|not\s+recurring|stop\s+recurring|weekly|bi[-\s]?weekly|monthly|recurring|series|every)\b/i;
+const END_TIME_CLEAR_PATTERN =
+  /\b(no\s+end\s+time|no\s+hard\s+end|end\s+time\s+(unknown|tbd|none|n\/a))\b/i;
+
+const CONTEXT_PRESERVE_FIELDS = [
+  "event_type",
+  "start_time",
+  "start_date",
+  "event_date",
+  "timezone",
+  "venue_id",
+  "venue_name",
+  "custom_location_name",
+  "custom_address",
+  "custom_city",
+  "custom_state",
+  "custom_latitude",
+  "custom_longitude",
+  "location_mode",
+  "series_mode",
+  "recurrence_rule",
+  "day_of_week",
+  "max_occurrences",
+  "occurrence_count",
+  "custom_dates",
+] as const;
+
+function hasNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isMissingValue(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === "string") return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
+
+export function isShortClarificationReply(message: string): boolean {
+  const trimmed = message.trim();
+  if (!trimmed) return true;
+  if (trimmed.length > 140) return false;
+  return trimmed.split(/\s+/).length <= 10;
+}
+
+export function mergeLockedCreateDraft(input: {
+  draft: Record<string, unknown>;
+  lockedDraft: Record<string, unknown> | null;
+  message: string;
+}): void {
+  const { draft, lockedDraft, message } = input;
+  if (!lockedDraft) return;
+  const currentMessage = message.trim();
+
+  for (const field of CONTEXT_PRESERVE_FIELDS) {
+    if (isMissingValue(draft[field]) && !isMissingValue(lockedDraft[field])) {
+      draft[field] = lockedDraft[field] as unknown;
+    }
+  }
+
+  // Preserve recurrence when a short clarification answer accidentally resets
+  // the draft to a one-time event without explicit recurrence change intent.
+  if (
+    hasNonEmptyString(lockedDraft.recurrence_rule) &&
+    !RECURRENCE_OVERRIDE_PATTERN.test(currentMessage) &&
+    (!hasNonEmptyString(draft.recurrence_rule) || draft.series_mode === "single")
+  ) {
+    draft.recurrence_rule = lockedDraft.recurrence_rule;
+    if (!hasNonEmptyString(draft.series_mode)) {
+      draft.series_mode = lockedDraft.series_mode ?? "recurring";
+    } else if (draft.series_mode === "single") {
+      draft.series_mode = "recurring";
+    }
+
+    if (isMissingValue(draft.day_of_week) && !isMissingValue(lockedDraft.day_of_week)) {
+      draft.day_of_week = lockedDraft.day_of_week as unknown;
+    }
+    if (isMissingValue(draft.max_occurrences) && !isMissingValue(lockedDraft.max_occurrences)) {
+      draft.max_occurrences = lockedDraft.max_occurrences as unknown;
+    }
+    if (isMissingValue(draft.occurrence_count) && !isMissingValue(lockedDraft.occurrence_count)) {
+      draft.occurrence_count = lockedDraft.occurrence_count as unknown;
+    }
+  }
+
+  // Preserve prior title for short clarification replies unless user explicitly
+  // indicates they are changing the title.
+  if (
+    hasNonEmptyString(lockedDraft.title) &&
+    isShortClarificationReply(message) &&
+    !TITLE_INTENT_PATTERN.test(currentMessage)
+  ) {
+    draft.title = lockedDraft.title;
+  }
+
+  // Allow explicit "no end time" user intent to keep end_time empty.
+  if (END_TIME_CLEAR_PATTERN.test(currentMessage)) {
+    draft.end_time = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Optional blocking field pruning (UX hardening)
+// ---------------------------------------------------------------------------
+
+export function pruneOptionalBlockingFields(
+  mode: "create" | "edit_series" | "edit_occurrence",
+  blockingFields: string[],
+  clarificationQuestion: string | null
+): { blockingFields: string[]; clarificationQuestion: string | null } {
+  if (mode === "edit_occurrence") {
+    return { blockingFields, clarificationQuestion };
+  }
+
+  const optionalBlocking = new Set(["end_time"]);
+  const filtered = blockingFields.filter((field) => !optionalBlocking.has(field));
+
+  if (filtered.length === blockingFields.length) {
+    return { blockingFields, clarificationQuestion };
+  }
+
+  const questionIsEndTimeOnly =
+    clarificationQuestion !== null &&
+    /\bend\s*time\b/i.test(clarificationQuestion) &&
+    filtered.length === 0;
+
+  return {
+    blockingFields: filtered,
+    clarificationQuestion: questionIsEndTimeOnly ? null : clarificationQuestion,
+  };
 }
