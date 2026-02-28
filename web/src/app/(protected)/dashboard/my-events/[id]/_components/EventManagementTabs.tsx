@@ -1,6 +1,6 @@
 "use client";
 
-export type TabId = "details" | "attendees" | "lineup" | "privacy" | "settings";
+export type TabId = "details" | "photos" | "attendees" | "lineup" | "privacy" | "settings";
 
 interface Tab {
   id: TabId;
@@ -10,6 +10,7 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: "details", label: "Details", icon: "📝" },
+  { id: "photos", label: "Photos", icon: "📷" },
   { id: "attendees", label: "Attendees", icon: "👥" },
   { id: "lineup", label: "Lineup", icon: "🎤" },
   { id: "privacy", label: "Private & Invites", icon: "🔒" },

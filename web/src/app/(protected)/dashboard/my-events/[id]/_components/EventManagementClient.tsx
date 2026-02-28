@@ -43,6 +43,7 @@ interface EventManagementClientProps {
 
   // Child components passed from server
   DetailsContent: React.ReactNode;
+  PhotosContent: React.ReactNode;
   EventInviteSection: React.ReactNode;
   LineupControlSection: React.ReactNode;
   SeriesEditingNotice: React.ReactNode;
@@ -73,6 +74,7 @@ export default function EventManagementClient({
   isAdmin,
   isEventOwner,
   DetailsContent,
+  PhotosContent,
   EventInviteSection,
   LineupControlSection,
   SeriesEditingNotice,
@@ -112,6 +114,8 @@ export default function EventManagementClient({
             {(hasTimeslots || hasActiveClaims) && LineupControlSection}
           </div>
         )}
+
+        {activeTab === "photos" && PhotosContent}
 
         {activeTab === "attendees" && (
           <AttendeesTab

@@ -13,6 +13,7 @@ import LineupControlSection from "./_components/LineupControlSection";
 import PublishButton from "./_components/PublishButton";
 import EventManagementClient from "./_components/EventManagementClient";
 import CancelEventButton from "./_components/CancelEventButton";
+import { EventPhotosSection } from "@/components/events";
 
 export const dynamic = "force-dynamic";
 
@@ -193,6 +194,13 @@ export default async function EditEventPage({
   const hasActiveRsvps = (activeRsvpCount ?? 0) > 0;
   const hasSignupActivity = hasActiveClaims || hasActiveRsvps;
 
+  // Fetch event photos for the Photos tab
+  const { data: eventImages } = await supabase
+    .from("event_images")
+    .select("id, event_id, image_url, storage_path, uploaded_by, created_at, deleted_at")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+
   // Determine user's role for the client component
   const currentUserRole: "host" | "cohost" = userHost?.role === "host" ? "host" : "cohost";
 
@@ -313,6 +321,15 @@ export default async function EditEventPage({
           isPrimaryHost={isPrimaryHost}
           isAdmin={isAdmin}
           isEventOwner={isEventOwner}
+          PhotosContent={
+            <EventPhotosSection
+              eventId={eventId}
+              eventTitle={event.title}
+              currentCoverUrl={event.cover_image_url ?? null}
+              initialImages={eventImages ?? []}
+              userId={sessionUser.id}
+            />
+          }
           DetailsContent={
             <EventForm
               mode="edit"
