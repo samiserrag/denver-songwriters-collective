@@ -691,13 +691,42 @@ export default async function EventDetailPage({ params, searchParams }: EventPag
 
   // Fetch approved gallery photos linked to this event
   // Phase 4.39: Use event.id (UUID) not route param which could be a slug
-  const { data: eventPhotos } = await supabase
+  const { data: galleryPhotos } = await supabase
     .from("gallery_images")
     .select("id, image_url, caption")
     .eq("event_id", event.id)
     .eq("is_approved", true)
     .order("created_at", { ascending: false })
     .limit(12);
+
+  // Fetch host-uploaded event photos from event_images table
+  const { data: hostPhotos } = await supabase
+    .from("event_images")
+    .select("id, image_url")
+    .eq("event_id", event.id)
+    .filter("deleted_at", "is", "null")
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  // Merge host photos + gallery photos, deduplicating by image_url
+  // Also exclude the cover image to avoid showing it twice
+  const seenUrls = new Set<string>();
+  if (event.cover_image_url) seenUrls.add(event.cover_image_url);
+  const eventPhotos: Array<{ id: string; image_url: string; caption?: string | null }> = [];
+  // Host photos first (they're the official event photos)
+  for (const p of hostPhotos ?? []) {
+    if (!seenUrls.has(p.image_url)) {
+      seenUrls.add(p.image_url);
+      eventPhotos.push({ id: p.id, image_url: p.image_url, caption: null });
+    }
+  }
+  // Then community gallery photos
+  for (const p of galleryPhotos ?? []) {
+    if (!seenUrls.has(p.image_url)) {
+      seenUrls.add(p.image_url);
+      eventPhotos.push(p);
+    }
+  }
 
   // Fetch gallery albums linked to this event via gallery_album_links
   const { data: eventAlbumLinks } = await supabase

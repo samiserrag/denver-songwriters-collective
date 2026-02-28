@@ -956,8 +956,8 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         </div>
       )}
 
-      {/* ============ SAVE BUTTON (top of form) ============ */}
-      <div className="flex items-center gap-4">
+      {/* ============ SAVE BUTTON (sticky top bar) ============ */}
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-3 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-default)] flex items-center gap-4">
         <button
           type="submit"
           disabled={loading}
@@ -2172,6 +2172,15 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
           Recommended: 1200×800px (3:2). Max 10 MB.
         </p>
+        {mode === "edit" && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("switchTab", { detail: "photos" }))}
+            className="mt-3 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-accent)] hover:underline font-medium"
+          >
+            📷 Add more photos in the Photos tab
+          </button>
+        )}
       </div>
 
       {/* ============ MEDIA EMBEDS ============ */}
@@ -2470,11 +2479,25 @@ export default function EventForm({ mode, venues: initialVenues, event, canCreat
             </div>
           </div>
 
-          {/* Bottom message directing to save/publish at top */}
-          <div className="text-center pt-2">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Scroll up to save{mode === "edit" ? " and publish" : ""} your happening.
-            </p>
+          {/* ============ SAVE BUTTON (bottom of form) ============ */}
+          <div className="flex items-center gap-4 pt-4 border-t border-[var(--color-border-default)]">
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-[var(--color-text-on-accent)] font-semibold rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loading ? "Saving..." : occurrenceMode ? "Save Occurrence" : mode === "create" ? "Create Happening" : "Save Changes"}
+            </button>
+            {mode === "edit" && (
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard/my-events")}
+                className="px-6 py-3 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)] rounded-lg transition-colors"
+                aria-label="Back without saving (does not cancel event)"
+              >
+                Back without saving
+              </button>
+            )}
           </div>
         </>
       )}

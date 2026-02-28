@@ -97,6 +97,7 @@ describe("UX-11 recurring event sharing reliability", () => {
           return query;
         },
         in: () => query,
+        filter: () => query,
         order: () => query,
         limit: async () => resultFor(table, filters, options),
         single: async () => resultFor(table, filters, options, "single"),
@@ -137,6 +138,10 @@ describe("UX-11 recurring event sharing reliability", () => {
       }
 
       if (table === "gallery_images") {
+        return { data: [], error: null };
+      }
+
+      if (table === "event_images") {
         return { data: [], error: null };
       }
 

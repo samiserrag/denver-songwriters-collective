@@ -86,6 +86,18 @@ export default function EventManagementClient({
     setCurrentEventVisibility(eventVisibility);
   }, [eventVisibility]);
 
+  // Listen for cross-component tab switch events (e.g. from EventForm "Photos tab" link)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent).detail as TabId;
+      setActiveTab(tab);
+      // Scroll to top so the tab bar is visible
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("switchTab", handler);
+    return () => window.removeEventListener("switchTab", handler);
+  }, []);
+
   // For badge counts - these will be fetched/passed as needed
   // For now, we use 0 as placeholder since actual counts come from the tab components
   const attendeeCount = 0;
