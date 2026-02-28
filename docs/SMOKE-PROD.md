@@ -937,6 +937,33 @@ Cleanup:
 
 **Interpreter hardening status: HEALTHY**
 
+### 2026-02-27 — Interpreter Lab Hardening Re-Test (Production Verification)
+
+**Executed by:** Claude in Chrome
+**Commit:** `dd7992ed`
+**Scope:** Re-test for signup/location/maps/timeslot hardening fixes on create flow
+
+| Check | Status | Notes |
+|------|--------|-------|
+| Create A (no explicit slot intent) | ✅ PASS | Event `8024e8d1-c2ea-4000-9774-fb18b9b057c3` created cleanly |
+| Create B (explicit slot intent) | ✅ PASS | Event `04d88426-2a73-4271-920c-246b267f3caf` created cleanly |
+| `events_signup_mode_check` regression | ✅ PASS | No 500s; normalized `signup_mode` (null/valid enum only) |
+| `location_mode` + `venue_id` consistency | ✅ PASS | Resolved venue sets canonical venue mode and ID |
+| Maps URL leakage into `external_url` | ✅ PASS | Maps links treated as location hints; `external_url` remains null |
+| Timeslot gating | ✅ PASS | A: slots off without explicit intent; B: slots on with explicit intent |
+| Deferred cover attach | ✅ PASS | Test A staged cover attached post-create |
+| Draft visibility & edit rendering | ✅ PASS | Both new drafts visible; recurrence/location render correctly |
+
+Known non-blocking UX issue:
+- Title extraction still sometimes requires extra clarification turn in create conversations.
+
+Created draft event IDs from re-test:
+- `8024e8d1-c2ea-4000-9774-fb18b9b057c3`
+- `04d88426-2a73-4271-920c-246b267f3caf`
+- Existing prior smoke draft: `e475cbe9-cc22-4c75-8786-31c1e6025d96`
+
+**Interpreter hardening re-test status: HEALTHY**
+
 ### 2026-02-26 — Phase 6 Venue Abbreviation Resolution + Axiom 24h Monitoring
 
 **Executed by:** Claude in Chrome (browser smoke) + Codex (Axiom query review)  

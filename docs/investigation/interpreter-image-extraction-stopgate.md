@@ -417,6 +417,16 @@ Fully additive. No schema changes, no migration, no storage policy changes.
   - Updated lab create-write assertions for hardening behavior
   - Updated interpreter location-hints assertions for noisy-address filtering and geocode precedence
 
+### Post-Launch Hardening Re-Test ✅ (2026-02-27)
+- ✅ Production re-test on commit `dd7992ed` passed:
+  - No `events_signup_mode_check` failures in create flow
+  - `location_mode` normalized consistently with resolved `venue_id`
+  - Maps links no longer persisted to `external_url`
+  - Timeslots disabled unless explicit slot intent is present
+  - Deferred cover attach verified in create mode
+- ⚠️ Remaining non-blocking UX gap:
+  - Title extraction can still require an extra clarification turn in some create conversations
+
 ---
 
 ## 8. Approval Gates
