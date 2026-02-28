@@ -84,6 +84,12 @@ Email systems in DSC prioritize community value over marketing optimization. The
 ---
 
 
+## Infrastructure Config Invariants
+
+- **Supabase `site_url` must always be `https://coloradosongwriterscollective.org`** — never localhost. See `30-supabase-migrations-and-deploy.md` for full rules.
+- **Supabase `uri_allow_list` must always include the production domain** — localhost may be added alongside, never as a replacement.
+- Any Supabase Management API call that modifies auth config must be followed by a verification check confirming production URLs are intact.
+
 ## Agent Behavior Rules
 
 1. **Follow prompts exactly** — no improvisation unless asked

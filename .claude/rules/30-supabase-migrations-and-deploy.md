@@ -10,6 +10,39 @@ paths:
 
 This file contains deployment and migration execution rules.
 
+## Supabase Auth Config: Production URL Invariant (Non-Negotiable)
+
+**The Supabase project auth config MUST always have production URLs set. Never change these to localhost.**
+
+| Setting | Required Value |
+|---------|---------------|
+| `site_url` | `https://coloradosongwriterscollective.org` |
+| `uri_allow_list` | Must INCLUDE `https://coloradosongwriterscollective.org/**` (localhost entries are OK as additions) |
+
+**Why this matters:** `site_url` is the default redirect after OAuth (Google sign-in, magic links, etc.). If set to `localhost`, all OAuth flows silently break in production — users complete Google sign-in but get redirected to `http://127.0.0.1:3000` instead of the live site.
+
+**Rules:**
+- **NEVER** set `site_url` to `localhost` or `127.0.0.1` via the Supabase Management API or dashboard
+- **NEVER** remove the production URL from `uri_allow_list`
+- If you need localhost for development, ADD it to `uri_allow_list` alongside the production URL — never replace
+- After ANY change to Supabase auth config, verify with:
+  ```bash
+  TOKEN=$(security find-generic-password -s "Supabase CLI" -a "supabase" -w | sed 's/^go-keyring-base64://' | base64 -d)
+  curl -s "https://api.supabase.com/v1/projects/oipozdbfxyskoscsgbfq/config/auth" \
+    -H "Authorization: Bearer $TOKEN" | python3 -c "
+  import sys,json; d=json.load(sys.stdin)
+  site=d.get('site_url','')
+  allow=d.get('uri_allow_list','')
+  ok = 'coloradosongwriterscollective.org' in site and 'coloradosongwriterscollective.org' in allow
+  print(f'site_url: {site}')
+  print(f'uri_allow_list: {allow}')
+  print('STATUS:', 'OK' if ok else 'BROKEN — FIX IMMEDIATELY')
+  "
+  ```
+
+**Incident reference (2026-02-28):** `site_url` was accidentally set to `http://127.0.0.1:3000`, breaking Google OAuth for all production users. The fix was a one-line API call to restore the production URL.
+
+
 ## Deploy Rules
 
 ### Supabase Migrations BEFORE Push
