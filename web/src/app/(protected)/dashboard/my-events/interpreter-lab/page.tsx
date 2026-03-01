@@ -532,14 +532,16 @@ export default function InterpreterLabPage() {
     setCreatedEventId(null);
   }, [mode]);
 
-  // If create inputs change, require a fresh interpret run before create write.
+  // If create inputs materially change (mode/image set), require a fresh
+  // interpret run before create write. Do NOT clear on message edits, or
+  // multi-turn clarification loses locked_draft context.
   useEffect(() => {
     if (mode === "create") {
       setLastInterpretResponse(null);
       setCreateMessage(null);
       setCreatedEventId(null);
     }
-  }, [mode, message, stagedImages.length]);
+  }, [mode, stagedImages.length]);
 
   // In create mode, default the first staged image as the cover candidate.
   useEffect(() => {

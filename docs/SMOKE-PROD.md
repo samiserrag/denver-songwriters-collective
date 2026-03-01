@@ -971,7 +971,22 @@ fetch("/api/events/interpret", {
 If model outputs non-canonical values (`in_person`, `custom`, `in_person_custom`), final `draft_payload.location_mode` must be canonical:
 - `venue`, `online`, or `hybrid` only.
 
-**Pass Criteria (23):** Recurrence guard prevents accidental series; clarification reducer limits to 1 blocking question; venue resolution clears custom fields; locked multi-turn context prevents recurrence/title reset; optional end_time does not block; location_mode stays canonical.
+**H) Multi-turn lab state retention (`locked_draft` not dropped on typing)**
+
+1. In `/dashboard/my-events/interpreter-lab`, run a create turn that returns `ask_clarification`.
+2. Type a short follow-up answer in the message box (do not clear history).
+3. Run interpreter again.
+
+**Expected:** Follow-up turn retains prior confirmed fields (title, recurrence, venue) and does not reset to one-time/single due to message edit.
+
+**I) Stale blocking field pruning (no repeat asks for already-set fields)**
+
+1. Trigger an `ask_clarification` response for a field that was already provided earlier (e.g., `start_time`).
+2. Re-run with a short clarification reply and preserved history.
+
+**Expected:** If `draft_payload.start_time` (or equivalent field) is already populated after merge/hardening, that field is removed from `blocking_fields`; flow advances to preview instead of repeating the same clarification.
+
+**Pass Criteria (23):** Recurrence guard prevents accidental series; clarification reducer limits to 1 blocking question; venue resolution clears custom fields; locked multi-turn context prevents recurrence/title reset; optional end_time does not block; location_mode stays canonical; lab follow-up turns preserve locked context; stale blocking fields are pruned.
 
 ---
 

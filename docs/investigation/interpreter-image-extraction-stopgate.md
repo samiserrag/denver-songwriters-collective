@@ -445,11 +445,11 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 **Scope:** Deterministic post-processing guards for create/edit reliability.
 
 **A) Fixture regression suite (P0)**
-- ✅ 22 fixture cases in `web/src/__fixtures__/interpreter/phase7-cases.json`
+- ✅ 23 fixture cases in `web/src/__fixtures__/interpreter/phase7-cases.json`
 - ✅ Test runner at `web/src/__tests__/interpreter-fixture-regression.test.ts`
-- ✅ 8 safety-critical fixtures tagged: F03, F04, F07, F08, F12, F16, F21, F22
+- ✅ 9 safety-critical fixtures tagged: F03, F04, F07, F08, F12, F16, F21, F22, F23
 - ✅ Safety rules covered: no_accidental_recurring_series, no_accidental_timeslots, no_maps_url_in_external_url, no_invalid_signup_mode, no_recurrence_context_reset, no_optional_end_time_blocker
-- ✅ All 22/22 fixtures pass; 8/8 safety-critical pass
+- ✅ All 23/23 fixtures pass; 9/9 safety-critical pass
 
 **B) Recurrence intent guard (P1)**
 - ✅ `detectsRecurrenceIntent()` — 10 regex patterns for explicit recurrence language
@@ -476,18 +476,21 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - ✅ Title continuity guard prevents short venue-like replies from clobbering previously confirmed titles
 - ✅ `pruneOptionalBlockingFields()` removes optional `end_time` from blocking clarifications (create/edit_series)
 - ✅ `normalizeInterpreterLocationMode()` canonicalizes non-DB values (e.g., `in_person_custom`) to `venue|online|hybrid`
-- ✅ Tested by fixtures F21 (context lock recurrence/title) and F22 (optional end_time no longer blocks)
+- ✅ `pruneSatisfiedBlockingFields()` removes stale blocking fields that are already satisfied after merge/hardening
+- ✅ Location continuity guard prevents short non-location clarification replies from replacing a locked canonical venue/custom location
+- ✅ Interpreter lab no longer clears `lastInterpretResponse` on message edits, so `locked_draft` is preserved across follow-up turns
+- ✅ Tested by fixtures F21 (context lock recurrence/title), F22 (optional end_time no longer blocks), F23 (locked venue continuity)
 
 **Code organization:**
 - ✅ Phase 7 deterministic helpers extracted into shared module `web/src/lib/events/interpreterPostprocess.ts`
 - ✅ Both route.ts and fixture tests import from shared module (no logic duplication)
 
 **Test results:**
-- 24 fixture tests (22 cases + safety summary + pass rate report): all pass
-- 14 contract tests: all pass
-- 5 signup mode tests: all pass
-- 49 interpreter-lab create-write source assertions: all pass
+- 25 fixture tests (23 cases + safety summary + pass rate report): all pass
+- 50 interpreter-lab create-write source assertions: all pass
+- 11 interpreter-image-extraction route assertions: all pass
+- 14 interpretEventContract tests: all pass
 - ESLint: clean on route.ts, interpreterPostprocess.ts, interpreter-lab page, and fixture/create-write tests
-- Total (targeted suites): 112/112 pass
+- Total (targeted suites in this patch): 100/100 pass
 
 **STOP: Interpreter tract is complete through Phase 7. Follow-on alert hardening is tracked separately in ALERTS-01.**

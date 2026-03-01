@@ -57,6 +57,10 @@ describe("Phase 4B — create action gating", () => {
     expect(labSource).toContain('payload.locked_draft = lastInterpretResponse.draft_payload');
   });
 
+  it("does not clear locked draft state on every message keystroke", () => {
+    expect(labSource).not.toContain("}, [mode, message, stagedImages.length]);");
+  });
+
   it("clears create state when mode changes", () => {
     expect(labSource).toContain("setLastInterpretResponse(null)");
     expect(labSource).toContain("setCreateMessage(null)");

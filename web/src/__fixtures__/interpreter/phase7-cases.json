@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "description": "Phase 7 interpreter hardening regression fixtures. Each case simulates an LLM response and validates the deterministic post-processing pipeline (sanitization, venue resolution, hardening, title fallback, clarification reduction, recurrence guard).",
-    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16"]
+    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16", "F21", "F22", "F23"]
   },
   "cases": [
     {
@@ -734,7 +734,8 @@
       "expected": {
         "title": "Acoustic Open Mic Night",
         "series_mode": "recurring",
-        "location_mode": "venue"
+        "location_mode": "venue",
+        "custom_location_name": "The End Lafayette"
       },
       "safety_critical": true,
       "safety_rule": "confirmed recurring context must not be silently reset during clarify turn"
@@ -787,6 +788,64 @@
       },
       "safety_critical": true,
       "safety_rule": "optional fields must not block creation flow"
+    },
+    {
+      "id": "F23",
+      "name": "SAFETY: locked venue must not be replaced on non-location clarification turns",
+      "mode": "create",
+      "message": "open mic",
+      "conversationHistory": [
+        {
+          "role": "user",
+          "content": "Acoustic Open Mic Night at The End Lafayette monthly on the 4th Tuesday at 6:40 PM."
+        },
+        {
+          "role": "assistant",
+          "content": "What event type should I use?"
+        }
+      ],
+      "locked_draft": {
+        "title": "Acoustic Open Mic Night",
+        "event_type": ["open_mic"],
+        "start_time": "18:40:00",
+        "start_date": "2026-03-24",
+        "series_mode": "recurring",
+        "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=4",
+        "venue_id": "venue-end",
+        "venue_name": "The End Lafayette",
+        "location_mode": "venue"
+      },
+      "venueCatalog": [
+        { "id": "venue-end", "name": "The End Lafayette", "slug": "the-end-lafayette" },
+        { "id": "venue-mutiny", "name": "Mutiny Information Cafe", "slug": "mutiny-information-cafe" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.63,
+        "human_summary": "Open mic at Mutiny Information Cafe.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": null,
+          "start_date": null,
+          "series_mode": "single",
+          "recurrence_rule": null,
+          "venue_id": "venue-mutiny",
+          "venue_name": "Mutiny Information Cafe",
+          "location_mode": "in_person_custom"
+        }
+      },
+      "expected": {
+        "title": "Acoustic Open Mic Night",
+        "series_mode": "recurring",
+        "venue_id": "venue-end",
+        "venue_name": "The End Lafayette",
+        "location_mode": "venue"
+      },
+      "safety_critical": true,
+      "safety_rule": "locked venue context must remain stable unless user explicitly changes location"
     }
   ]
 }

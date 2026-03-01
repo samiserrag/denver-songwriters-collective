@@ -34,6 +34,7 @@ import {
   mergeLockedCreateDraft,
   normalizeInterpreterLocationMode,
   pruneOptionalBlockingFields,
+  pruneSatisfiedBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
 import fixtureData from "@/__fixtures__/interpreter/phase7-cases.json";
 
@@ -261,6 +262,7 @@ function runDeterministicPipeline(fixture: FixtureCase) {
       draft: sanitizedDraft,
       lockedDraft,
       message: fixture.message,
+      conversationHistory: fixture.conversationHistory,
     });
     const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);
     sanitizedDraft.location_mode = normalizeInterpreterLocationMode(
@@ -326,6 +328,9 @@ function runDeterministicPipeline(fixture: FixtureCase) {
       resolvedClarificationQuestion = `Please provide ${draftValidation.blockingField || "required field"} to continue.`;
     }
   }
+
+  // 8a. Prune blocking fields already satisfied by merged/hardened draft.
+  resolvedBlockingFields = pruneSatisfiedBlockingFields(sanitizedDraft, resolvedBlockingFields);
 
   // 8b. Optional blockers should not block create/edit-series progression.
   const optionalPrune = pruneOptionalBlockingFields(

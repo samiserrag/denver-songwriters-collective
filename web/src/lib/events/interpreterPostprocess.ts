@@ -187,6 +187,14 @@ const RECURRENCE_OVERRIDE_PATTERN =
   /\b(one[-\s]?time|single\s+event|not\s+recurring|stop\s+recurring|weekly|bi[-\s]?weekly|monthly|recurring|series|every)\b/i;
 const END_TIME_CLEAR_PATTERN =
   /\b(no\s+end\s+time|no\s+hard\s+end|end\s+time\s+(unknown|tbd|none|n\/a))\b/i;
+const GOOGLE_MAPS_LINK_PATTERN =
+  /\bhttps?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.com\/maps|maps\.google\.com)\b/i;
+const LOCATION_OVERRIDE_INTENT_PATTERN =
+  /\b(change|move|switch|relocat|different)\b.*\b(venue|location|address)\b/i;
+const LOCATION_KEYWORD_PATTERN =
+  /\b(venue|location|address)\b/i;
+const ADDRESS_SIGNAL_PATTERN =
+  /\b(\d{1,6}\s+[A-Za-z0-9.'-]+(?:\s+[A-Za-z0-9.'-]+){0,5}\s+(?:st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|parkway)\b|\d{5}(?:-\d{4})?|,\s*[A-Z]{2}\b)\b/i;
 
 const CONTEXT_PRESERVE_FIELDS = [
   "event_type",
@@ -233,14 +241,59 @@ export function mergeLockedCreateDraft(input: {
   draft: Record<string, unknown>;
   lockedDraft: Record<string, unknown> | null;
   message: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
 }): void {
-  const { draft, lockedDraft, message } = input;
+  const { draft, lockedDraft, message, conversationHistory } = input;
   if (!lockedDraft) return;
   const currentMessage = message.trim();
+  const lastAssistantMessage =
+    [...conversationHistory]
+      .reverse()
+      .find((entry) => entry.role === "assistant")?.content ?? "";
+
+  const hasLocationOverrideIntent =
+    LOCATION_OVERRIDE_INTENT_PATTERN.test(currentMessage) ||
+    LOCATION_KEYWORD_PATTERN.test(currentMessage) ||
+    GOOGLE_MAPS_LINK_PATTERN.test(currentMessage);
+  const assistantAskedLocation =
+    /\b(venue|location|address|where)\b/i.test(lastAssistantMessage);
+  const hasStructuredLocationSignal =
+    GOOGLE_MAPS_LINK_PATTERN.test(currentMessage) || ADDRESS_SIGNAL_PATTERN.test(currentMessage);
 
   for (const field of CONTEXT_PRESERVE_FIELDS) {
     if (isMissingValue(draft[field]) && !isMissingValue(lockedDraft[field])) {
       draft[field] = lockedDraft[field] as unknown;
+    }
+  }
+
+  // Keep resolved venue/location stable across short clarification turns unless
+  // user explicitly changes location details.
+  const shouldPreserveLockedLocation =
+    !hasLocationOverrideIntent && (!assistantAskedLocation || !hasStructuredLocationSignal);
+  if (shouldPreserveLockedLocation) {
+    if (hasNonEmptyString(lockedDraft.venue_id)) {
+      draft.venue_id = lockedDraft.venue_id;
+      if (hasNonEmptyString(lockedDraft.venue_name)) {
+        draft.venue_name = lockedDraft.venue_name;
+      }
+      draft.location_mode = "venue";
+      draft.custom_location_name = null;
+      draft.custom_address = null;
+      draft.custom_city = null;
+      draft.custom_state = null;
+      draft.custom_latitude = null;
+      draft.custom_longitude = null;
+    } else if (
+      hasNonEmptyString(lockedDraft.custom_location_name) &&
+      !hasNonEmptyString(draft.venue_id)
+    ) {
+      draft.custom_location_name = lockedDraft.custom_location_name;
+      draft.custom_address = lockedDraft.custom_address ?? null;
+      draft.custom_city = lockedDraft.custom_city ?? null;
+      draft.custom_state = lockedDraft.custom_state ?? null;
+      draft.custom_latitude = lockedDraft.custom_latitude ?? null;
+      draft.custom_longitude = lockedDraft.custom_longitude ?? null;
+      draft.location_mode = "venue";
     }
   }
 
@@ -283,6 +336,61 @@ export function mergeLockedCreateDraft(input: {
   if (END_TIME_CLEAR_PATTERN.test(currentMessage)) {
     draft.end_time = null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Blocking field pruning for already-satisfied draft fields
+// ---------------------------------------------------------------------------
+
+function hasArrayValues(value: unknown): boolean {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function isBlockingFieldSatisfied(draft: Record<string, unknown>, field: string): boolean {
+  switch (field) {
+    case "title":
+      return hasNonEmptyString(draft.title);
+    case "event_type":
+      return hasArrayValues(draft.event_type);
+    case "start_date":
+      return hasNonEmptyString(draft.start_date) || hasNonEmptyString(draft.event_date);
+    case "event_date":
+      return hasNonEmptyString(draft.event_date) || hasNonEmptyString(draft.start_date);
+    case "start_time":
+      return hasNonEmptyString(draft.start_time);
+    case "end_time":
+      return hasNonEmptyString(draft.end_time);
+    case "timezone":
+      return hasNonEmptyString(draft.timezone);
+    case "series_mode":
+      return hasNonEmptyString(draft.series_mode);
+    case "online_url":
+      return hasNonEmptyString(draft.online_url);
+    case "venue_id":
+      return hasNonEmptyString(draft.venue_id) || hasNonEmptyString(draft.custom_location_name);
+    case "custom_location_name":
+      return hasNonEmptyString(draft.custom_location_name);
+    case "custom_address":
+      return hasNonEmptyString(draft.custom_address);
+    case "custom_city":
+      return hasNonEmptyString(draft.custom_city);
+    case "custom_state":
+      return hasNonEmptyString(draft.custom_state);
+    default:
+      return false;
+  }
+}
+
+export function pruneSatisfiedBlockingFields(
+  draft: Record<string, unknown>,
+  blockingFields: string[]
+): string[] {
+  return blockingFields.filter((field) => {
+    if (field === "venue_name_confirmation" || field === "venue_id/venue_name_confirmation") {
+      return true;
+    }
+    return !isBlockingFieldSatisfied(draft, field);
+  });
 }
 
 // ---------------------------------------------------------------------------

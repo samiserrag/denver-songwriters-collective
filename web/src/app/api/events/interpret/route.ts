@@ -29,6 +29,7 @@ import {
   mergeLockedCreateDraft,
   normalizeInterpreterLocationMode,
   pruneOptionalBlockingFields,
+  pruneSatisfiedBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
 
 /** Vercel serverless function timeout — two LLM calls need headroom. */
@@ -1364,6 +1365,7 @@ export async function POST(request: Request) {
       draft: sanitizedDraft,
       lockedDraft,
       message: normalizedMessage,
+      conversationHistory,
     });
 
     const hasOnlineUrl = hasNonEmptyString(sanitizedDraft.online_url);
@@ -1380,6 +1382,9 @@ export async function POST(request: Request) {
       extractedImageText,
     });
   }
+
+  // Drop stale blocking fields that are already satisfied in the current draft.
+  resolvedBlockingFields = pruneSatisfiedBlockingFields(sanitizedDraft, resolvedBlockingFields);
 
   const optionalPrune = pruneOptionalBlockingFields(
     mode,
