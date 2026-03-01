@@ -646,6 +646,13 @@ export function ConversationalCreateUI({
     };
   }, [responseBody]);
 
+  const runActionLabel =
+    responseGuidance?.next_action === "ask_clarification"
+      ? "Send Answer"
+      : conversationHistory.length > 0
+        ? "Update Draft"
+        : "Generate Draft";
+
   // Phase 8E: host variant forces create mode at logic level
   const effectiveMode: InterpretMode = isHostVariant ? "create" : mode;
 
@@ -1262,10 +1269,10 @@ export function ConversationalCreateUI({
         ) : (
           <div>
             <h1 className="font-[var(--font-family-serif)] text-3xl text-[var(--color-text-primary)] mb-2">
-              Interpreter Lab
+              Conversational Event Creator (Lab)
             </h1>
             <p className="text-[var(--color-text-secondary)]">
-              Hidden test surface for <code>/api/events/interpret</code>. This page is intentionally not linked in navigation.
+              Testing surface for <code>/api/events/interpret</code>. Replies appear below, and each follow-up should be entered in the same message box.
             </p>
           </div>
         )}
@@ -1432,7 +1439,7 @@ export function ConversationalCreateUI({
               disabled={isSubmitting}
               className="px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-background)] font-semibold disabled:opacity-60"
             >
-              {isSubmitting ? "Running..." : "Run Interpreter"}
+              {isSubmitting ? "Sending..." : runActionLabel}
             </button>
 
             {/* Phase 4A: Apply as Cover — edit mode only */}
@@ -1469,6 +1476,25 @@ export function ConversationalCreateUI({
               </button>
             )}
           </div>
+
+          {statusCode === 200 && responseGuidance && (
+            <div className="rounded-lg border border-[var(--color-border-input)] bg-[var(--color-bg-secondary)]/50 p-3 space-y-2">
+              <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                Latest Reply
+              </p>
+              <p className="text-sm text-[var(--color-text-primary)]">
+                {responseGuidance.clarification_question ??
+                  responseGuidance.human_summary ??
+                  "Draft updated. See details below."}
+              </p>
+              {responseGuidance.next_action === "ask_clarification" && (
+                <p className="text-xs text-[var(--color-text-tertiary)]">
+                  Continue by answering above, then click{" "}
+                  <span className="font-semibold text-[var(--color-text-secondary)]">Send Answer</span>.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Phase 4A: Cover apply status message */}
           {coverMessage && (
@@ -1683,7 +1709,7 @@ export function ConversationalCreateUI({
                   <span className="text-xs text-amber-600">→</span>
                   <p className="text-xs text-[var(--color-text-tertiary)]">
                     Type your answer above, then click{" "}
-                    <span className="font-semibold text-[var(--color-text-secondary)]">Run Interpreter</span>
+                    <span className="font-semibold text-[var(--color-text-secondary)]">Send Answer</span>
                   </p>
                 </div>
               </div>

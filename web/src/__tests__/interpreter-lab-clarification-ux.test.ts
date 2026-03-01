@@ -128,9 +128,9 @@ describe("Phase 8C — follow-up instruction callout", () => {
     expect(labSource).toContain("text-amber-600");
   });
 
-  it("instructs user to type answer and click Run Interpreter", () => {
+  it("instructs user to type answer and click Send Answer", () => {
     expect(labSource).toContain("Type your answer above");
-    expect(labSource).toContain("Run Interpreter");
+    expect(labSource).toContain("Send Answer");
   });
 
   it("separates next step from question with a border", () => {

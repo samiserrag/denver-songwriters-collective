@@ -36,6 +36,11 @@ describe("Phase 8B — human-readable guidance is primary", () => {
     expect(labSource).toContain("responseGuidance.human_summary");
   });
 
+  it("shows an inline latest reply panel near the input controls", () => {
+    expect(labSource).toContain("Latest Reply");
+    expect(labSource).toContain("responseGuidance.clarification_question ??");
+  });
+
   it("shows clarification prompt in a styled container, not raw JSON", () => {
     // Clarification prompt wrapped in a visually distinct box
     expect(labSource).toContain("ask_clarification");
@@ -162,6 +167,12 @@ describe("Phase 8B — existing functionality preserved", () => {
   it("preserves create action button", () => {
     expect(labSource).toContain("Confirm & Create");
     expect(labSource).toContain("canShowCreateAction");
+  });
+
+  it("uses clearer run button labels for turn-based flow", () => {
+    expect(labSource).toContain("Generate Draft");
+    expect(labSource).toContain("Update Draft");
+    expect(labSource).toContain("Send Answer");
   });
 
   it("preserves cover apply button", () => {
