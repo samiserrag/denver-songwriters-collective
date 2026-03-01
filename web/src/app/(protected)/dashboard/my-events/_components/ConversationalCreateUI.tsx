@@ -62,6 +62,24 @@ interface CreatedEventSummary {
   coverNote: string | null;
 }
 
+function normalizeSnakeCaseDisplay(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed.replace(/_/g, " ") : null;
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+      .filter((entry) => entry.length > 0)
+      .map((entry) => entry.replace(/_/g, " "));
+
+    return parts.length > 0 ? parts.join(", ") : null;
+  }
+
+  return null;
+}
+
 function buildCreatedEventSummary(
   eventId: string,
   slug: string | null,
@@ -73,7 +91,7 @@ function buildCreatedEventSummary(
     eventId,
     slug,
     title: (draft.title as string) ?? null,
-    eventType: (draft.event_type as string) ?? null,
+    eventType: normalizeSnakeCaseDisplay(draft.event_type),
     startDate: (draft.start_date as string) ?? null,
     startTime: (draft.start_time as string) ?? null,
     endTime: (draft.end_time as string) ?? null,
@@ -82,7 +100,7 @@ function buildCreatedEventSummary(
     dayOfWeek: (draft.day_of_week as string) ?? null,
     locationMode: (draft.location_mode as string) ?? null,
     venueName: (draft.venue_name as string) ?? (draft.custom_location_name as string) ?? null,
-    signupMode: (draft.signup_mode as string) ?? null,
+    signupMode: normalizeSnakeCaseDisplay(draft.signup_mode),
     costLabel: (draft.cost_label as string) ?? null,
     hasCover,
     coverNote,
@@ -1501,7 +1519,7 @@ export function ConversationalCreateUI({
                   {createdSummary.eventType && (
                     <Fragment>
                       <span className="text-[var(--color-text-tertiary)]">Type</span>
-                      <span className="text-[var(--color-text-primary)]">{createdSummary.eventType.replace(/_/g, " ")}</span>
+                      <span className="text-[var(--color-text-primary)]">{createdSummary.eventType}</span>
                     </Fragment>
                   )}
                   {createdSummary.startDate && (
@@ -1533,7 +1551,7 @@ export function ConversationalCreateUI({
                   {createdSummary.signupMode && (
                     <Fragment>
                       <span className="text-[var(--color-text-tertiary)]">Signup</span>
-                      <span className="text-[var(--color-text-primary)]">{createdSummary.signupMode.replace(/_/g, " ")}</span>
+                      <span className="text-[var(--color-text-primary)]">{createdSummary.signupMode}</span>
                     </Fragment>
                   )}
                   {createdSummary.costLabel && (

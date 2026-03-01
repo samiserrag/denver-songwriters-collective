@@ -54,6 +54,13 @@ describe("Phase 8D — CreatedEventSummary type and builder", () => {
     expect(labSource).toContain("): CreatedEventSummary");
   });
 
+  it("normalizes snake_case display values for non-string-safe fields", () => {
+    expect(labSource).toContain("function normalizeSnakeCaseDisplay(");
+    expect(labSource).toContain("eventType: normalizeSnakeCaseDisplay(draft.event_type)");
+    expect(labSource).toContain("signupMode: normalizeSnakeCaseDisplay(draft.signup_mode)");
+    expect(labSource).not.toContain("createdSummary.eventType.replace(/_/g, \" \")");
+  });
+
   it("has createdSummary state", () => {
     expect(labSource).toContain("useState<CreatedEventSummary | null>(null)");
     expect(labSource).toContain("setCreatedSummary");
