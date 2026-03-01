@@ -484,6 +484,15 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 **Code organization:**
 - ✅ Phase 7 deterministic helpers extracted into shared module `web/src/lib/events/interpreterPostprocess.ts`
 - ✅ Both route.ts and fixture tests import from shared module (no logic duplication)
+- ✅ Production helper surface now includes:
+  - `mergeLockedCreateDraft()`
+  - `normalizeInterpreterLocationMode()`
+  - `pruneOptionalBlockingFields()`
+  - `pruneSatisfiedBlockingFields()`
+  - `detectsRecurrenceIntent()`
+  - `applyTimeSemantics()`
+  - `reduceClarificationToSingle()`
+  - `enforceVenueCustomExclusivity()`
 
 **Test results:**
 - 25 fixture tests (23 cases + safety summary + pass rate report): all pass

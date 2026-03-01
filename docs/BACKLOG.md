@@ -386,7 +386,8 @@ Polish member profiles before external test users see them. Three scope areas:
 
 | ID | Item | Priority | Status | Notes |
 |----|------|----------|--------|-------|
-| INTERPRETER-08 | Multi-turn `series_mode` consistency when `recurrence_rule` is already set | P1 | OPEN | In early clarification turns, payload can transiently report `series_mode='single'` while retaining a recurring `recurrence_rule`; auto-corrects later but should be normalized deterministically in the same turn to avoid UX confusion. Add fixture and route-level normalization guard. |
+| INTERPRETER-08 | Multi-turn `series_mode` consistency when `recurrence_rule` is already set | P0 | OPEN | In early clarification turns, payload can transiently report `series_mode='single'` while retaining a recurring `recurrence_rule`; auto-corrects later but should be normalized deterministically in the same turn to avoid UX confusion. Add fixture and route-level normalization guard. |
+| INTERPRETER-09 | Interpreter UX productization + launch gating (8A->8E) | P0 | OPEN — stop-gate drafted | Ordered scope: 8A correctness (`INTERPRETER-08`) -> 8B conversation UX -> 8C clarification UX -> 8D post-create confidence UX -> 8E host-facing launch surface behind feature flag + fallback form. Stop-gate: `docs/investigation/interpreter-phase8-ux-launch-stopgate.md`. |
 
 ### Homepage / Navigation / UX
 
