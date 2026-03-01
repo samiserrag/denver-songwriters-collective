@@ -279,6 +279,141 @@ This prevents re-enabling recurrence that was intentionally downgraded by the re
 - Draft Summary shows raw field names (e.g. `series_mode`, `recurrence_rule`). Phase 8C will improve label friendliness with input hint chips.
 - No mobile-specific testing done yet — deferred to Phase 8E manual smoke.
 
+### Phase 8C (Clarification UX) — IMPLEMENTED 2026-02-28
+
+**Summary:** Single-question-first presentation with field-specific input hint chips and clear follow-up instruction callout.
+
+**Changed files:**
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/interpreter-lab/page.tsx` | **Clarification UX enhanced**: (1) Added `FIELD_INPUT_HINTS` static mapping — 15 field types with human labels + format examples (time, date, venue, URL, title, event_type, capacity, cost, etc.). (2) Added `getFieldHint(field)` helper returning label + examples or null. (3) Replaced clarification prompt section: removed "Question:" label prefix, renders `clarification_question` directly with `leading-relaxed`, maps `blocking_fields` to styled amber hint chips with example values (`e.g. 7:00 PM, 18:30`), unknown fields fall back to humanized field name. (4) Added "→" next-step callout with border separator instructing "Type your answer above, then click Run Interpreter". |
+| `web/src/__tests__/interpreter-lab-clarification-ux.test.ts` | **New test file**: 25 source-code assertions across 5 groups — (A) field-specific input hint chips (8 tests), (B) hint chip rendering per blocking field (5 tests), (C) single-question-first presentation (3 tests), (D) follow-up instruction callout (3 tests), (E) existing 8A/8B functionality preserved (6 tests). |
+| `web/src/__tests__/interpreter-lab-conversation-ux.test.ts` | **Updated**: Changed assertion from `"Reply in the message box above"` to `"Type your answer above"` to match 8C instruction text change. |
+
+**UX behavior changes:**
+| Aspect | Before (Phase 8B) | After (Phase 8C) |
+|--------|-------------------|-------------------|
+| Clarification question | Prefixed with "Question:" label in styled container | Direct question text, no label prefix, `leading-relaxed` spacing |
+| Missing field hints | No format hints shown | Amber chips per blocking field with label + examples (e.g. "Date: e.g. 2026-03-15, March 15, next Tuesday") |
+| Unknown fields | Not shown | Humanized field name shown (underscores → spaces) |
+| Follow-up instruction | "Reply in the message box above" generic text | "→ Type your answer above, then click Run Interpreter" with border separator |
+| Fallback text | None | "Please provide the missing details." when clarification_question is null |
+
+**What was NOT changed (Phase 8C boundary):**
+- No server-side changes (route.ts, interpreterPostprocess.ts untouched)
+- No feature flag changes
+- No create/edit flow logic changes
+- No image staging changes
+- All Phase 8A/8B functionality preserved (badge, confidence, summary, debug panel, draft summary)
+
+**Test results (2026-02-28):**
+- Phase 8C tests: 25/25 pass
+- Phase 8B tests: 26/26 pass (1 assertion updated for 8C text change)
+- Phase 4B create-write tests: 50/50 pass
+- Phase 4A cover-apply tests: 25/25 pass
+- Fixture regression: 27/27 pass (10/10 safety-critical)
+- ESLint: clean
+
+**Residual risks:**
+- Hint examples are hardcoded; if new field types are added to the interpreter schema, `FIELD_INPUT_HINTS` needs manual update. Fallback to humanized field name mitigates unknown fields.
+- No mobile-specific testing done yet — deferred to Phase 8E manual smoke.
+
+### Phase 8D (Post-Create Confidence UX) — IMPLEMENTED 2026-02-28
+
+**Summary:** Rich post-create "What Was Written" summary block, strong next-action CTAs, duplicate-submit prevention.
+
+**Changed files:**
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/interpreter-lab/page.tsx` | **Post-create UX overhaul**: (1) Added `CreatedEventSummary` interface with 15 fields (eventId, slug, title, eventType, startDate, startTime, endTime, seriesMode, recurrenceRule, locationMode, venueName, signupMode, costLabel, hasCover, coverNote). (2) Added `buildCreatedEventSummary()` helper that snapshots draft_payload at create time. (3) Added `createdSummary` state, populated at every create exit path (success, warning, cover partial). (4) Replaced minimal text + small links with full emerald confidence block: checkmark header "Event Created as Draft", "What Was Written" grid (title, type, date, time, recurrence, location, signup, cost, cover status), three CTAs (Open Draft →, Go to My Happenings, Edit & Publish). (5) Duplicate-submit prevention: "Confirm & Create" button hidden when `createdEventId` is set. (6) Simplified `createMessage.text` to short status line — details moved to structured summary. (7) `createdSummary` cleared on mode change, staged image change, and clear history. (8) Legacy fallback links preserved for edge case where `createdEventId` exists without summary. |
+| `web/src/__tests__/interpreter-lab-post-create-ux.test.ts` | **New test file**: 35 source-code assertions across 5 groups — (A) CreatedEventSummary type + builder (4 tests), (B) What Was Written summary block (12 tests), (C) next-action CTAs (6 tests), (D) duplicate submit prevention (4 tests), (E) existing 8A/8B/8C preserved (9 tests). |
+| `web/src/__tests__/interpreter-lab-create-write.test.ts` | **Updated**: 2 assertions updated to match 8D simplified message text (cover upload warning + success without cover). |
+
+**UX behavior changes:**
+| Aspect | Before (Phase 4B) | After (Phase 8D) |
+|--------|-------------------|-------------------|
+| Success display | Single text line: "Event created as draft (abc123…, slug: xyz). Publish it from My Happenings when ready." | Emerald confidence block with "✓ Event Created as Draft" header |
+| What was written | Not shown — only raw event ID in message | Full grid: title, type, date, time, recurrence, location, signup, cost, cover status |
+| Next actions | Two small underlined links (Open Draft, Drafts tab) | Three styled CTAs: "Open Draft →" (primary emerald), "Go to My Happenings", "Edit & Publish" |
+| Duplicate prevention | Button stays visible after create (only `disabled` during `isCreating`) | Button hidden entirely after `createdEventId` is set |
+| Warning details | Inline in message text (e.g. "cover upload failed: [error]") | Short status line + structured `coverNote` in summary |
+| Cover status | Not shown explicitly | "✓ Attached" or "None" with optional note |
+
+**What was NOT changed (Phase 8D boundary):**
+- No server-side changes (route.ts, interpreterPostprocess.ts untouched)
+- No feature flag changes
+- No launch-surface promotion (8E deferred)
+- All Phase 8A/8B/8C UI elements preserved
+- Create API call logic unchanged
+- Cover upload/assignment logic unchanged
+
+**Test results (2026-02-28):**
+- Phase 8D tests: 35/35 pass
+- Phase 8C tests: 25/25 pass
+- Phase 8B tests: 26/26 pass
+- Phase 4B create-write tests: 50/50 pass (2 assertions updated for 8D message text)
+- Phase 4A cover-apply tests: 25/25 pass
+- Fixture regression: 27/27 pass (10/10 safety-critical)
+- ESLint: clean
+
+**Residual risks:**
+- Post-create summary shows `recurrenceRule` as raw RRULE string (e.g. `FREQ=WEEKLY;BYDAY=TU`). A human-friendly translation could improve readability but is not in scope for 8D.
+- No mobile-specific testing done yet — deferred to Phase 8E manual smoke.
+- "Edit & Publish" CTA links to the same event detail page as "Open Draft" — publish is a manual action from there. This is intentional (no separate publish endpoint exists).
+
+### Phase 8E (Public Launch Surface) — IMPLEMENTED 2026-02-28
+
+**Summary:** Promoted conversational create to host-facing entrypoint behind `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY` flag. Extracted shared `ConversationalCreateUI` component with `variant: "lab" | "host"` prop. Host variant forces create mode, decouples writes from lab flag, removes debug UI. Added server-guarded route with redirect fallback and flag-gated chooser on launcher.
+
+**Changed files:**
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx` | **New**: Extracted client component (~1750 lines) from interpreter lab page. Added `ConversationalCreateVariant` type, `variant` prop (default `"lab"`). Host variant: `isHostVariant` computed, `writesEnabled = isHostVariant \|\| LAB_WRITES_ENABLED`, `effectiveMode: InterpretMode = isHostVariant ? "create" : mode`. Host UI: "Create Happening" title, no debug panel, no mode selector, no eventId/dateKey inputs, "← Use classic form instead" link, host-friendly placeholder. Both named and default exports. |
+| `web/src/app/(protected)/dashboard/my-events/interpreter-lab/page.tsx` | **Simplified**: Thin wrapper — imports `ConversationalCreateUI` and renders with `variant="lab"`. Under 10 lines. |
+| `web/src/app/(protected)/dashboard/my-events/new/conversational/page.tsx` | **New**: Server component. Reads `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY`, redirects to `/dashboard/my-events/new?classic=true` when flag off. Renders `ConversationalCreateUI variant="host"` when flag on. |
+| `web/src/app/(protected)/dashboard/my-events/new/page.tsx` | **Modified**: Added `CONVERSATIONAL_CREATE_ENABLED` flag check, `searchParams.classic` handling, `showChooser` computed. Flag ON + no `?classic`: shows "✨ Create with AI" and "Use classic form" chooser cards above `EventForm`. Flag OFF or `?classic=true`: classic form only. |
+| `web/src/__tests__/conversational-create-launch-surface.test.ts` | **New**: 30 source-code assertions across 7 groups — (A) variant prop + exports, (B) host copy removal, (C) write decoupling, (D) effectiveMode enforcement, (E) conversational route flag guard, (F) launcher chooser, (G) lab page thin wrapper. |
+| `web/src/__tests__/interpreter-lab-cover-apply.test.ts` | **Updated**: `isEditMode` assertion updated to use `effectiveMode` instead of `mode`. |
+| `web/src/__tests__/interpreter-lab-conversation-ux.test.ts` | **Updated**: Path repointed to `ConversationalCreateUI.tsx`. |
+| `web/src/__tests__/interpreter-lab-clarification-ux.test.ts` | **Updated**: Path repointed to `ConversationalCreateUI.tsx`. |
+| `web/src/__tests__/interpreter-lab-post-create-ux.test.ts` | **Updated**: Path repointed to `ConversationalCreateUI.tsx`. |
+| `web/src/__tests__/interpreter-lab-create-write.test.ts` | **Updated**: Path repointed to `ConversationalCreateUI.tsx`. |
+| `web/src/__tests__/interpret-venue-resolution.test.ts` | **Updated**: Path repointed to `ConversationalCreateUI.tsx`. |
+| `docs/SMOKE-PROD.md` | Added §27 — Phase 8E smoke checks (7 scenarios: flag ON/OFF, chooser, redirect, forced classic, mobile, rollback). |
+
+**Key architectural decisions:**
+1. **effectiveMode pattern**: Host variant forces `effectiveMode = "create"` at logic level, not just UI. All submit payload construction, eventId gating, dateKey gating, and locked_draft logic use `effectiveMode`.
+2. **writesEnabled decoupling**: `writesEnabled = isHostVariant || LAB_WRITES_ENABLED` — host variant creates without lab write flag.
+3. **Route-level flag guard**: Server component redirects when flag off — no client-side flash.
+4. **URL-driven fallback**: `?classic=true` query param suppresses chooser (no local state toggles).
+5. **Mechanical extraction first**: Component extracted and all tests verified passing before any behavioral changes.
+
+**Rollout:**
+1. Set `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY=true` in Vercel env.
+2. Redeploy.
+3. Verify launcher shows chooser, conversational page renders host variant.
+
+**Rollback:**
+1. Remove or set `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY=false`.
+2. Redeploy.
+3. Launcher reverts to classic-only. Conversational route redirects to classic.
+
+**Test results (2026-02-28):**
+- Phase 8E launch surface tests: 30/30 pass
+- Phase 8D post-create tests: 35/35 pass
+- Phase 8C clarification tests: 25/25 pass
+- Phase 8B conversation tests: 26/26 pass
+- Phase 4B create-write tests: 50/50 pass
+- Phase 4A cover-apply tests: 25/25 pass
+- Venue resolution tests: 30/30 pass
+- Fixture regression: 27/27 pass (10/10 safety-critical)
+- Full suite: 200/200 files, 4468/4468 tests pass
+- ESLint: clean
+
+**Residual risks:**
+- Mobile UX not yet smoke-tested in production — deferred to manual Chrome MCP smoke below.
+- Conversational create page is a client component; initial load may be heavier than classic form for users on slow connections.
+
 ---
 
 ## 10) Approval Gates

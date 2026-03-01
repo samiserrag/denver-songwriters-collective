@@ -13,7 +13,7 @@ import * as path from "node:path";
 
 const LAB_PATH = path.resolve(
   __dirname,
-  "../app/(protected)/dashboard/my-events/interpreter-lab/page.tsx"
+  "../app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx"
 );
 const labSource = fs.readFileSync(LAB_PATH, "utf-8");
 
@@ -40,7 +40,8 @@ describe("Phase 8B — human-readable guidance is primary", () => {
     // Clarification prompt wrapped in a visually distinct box
     expect(labSource).toContain("ask_clarification");
     expect(labSource).toContain("responseGuidance.clarification_question");
-    expect(labSource).toContain("Reply in the message box above");
+    // Phase 8C updated instruction text
+    expect(labSource).toContain("Type your answer above");
   });
 
   it("shows ready state when draft is complete", () => {

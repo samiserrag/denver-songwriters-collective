@@ -1036,6 +1036,153 @@ fetch("/api/events/interpret", {
 
 **Pass Criteria (24):** `series_mode` is deterministically consistent with `recurrence_rule` — never `"single"` when a valid recurring RRULE is present; always `"single"` when no RRULE is set.
 
+### 25. Phase 8C — Clarification UX (Field Hint Chips + Single-Question-First)
+
+**Scenario 25a:** Vague prompt triggers clarification with hint chips.
+
+1. Navigate to `/dashboard/my-events/interpreter-lab`.
+2. Enter a vague prompt like "Music thing sometime".
+3. Click **Run Interpreter**.
+
+**Expected:**
+- `ask_clarification` badge (amber) appears.
+- A single readable question is shown (no "Question:" label prefix).
+- Amber hint chips appear for each `blocking_field` with human label and format examples (e.g. "Date: e.g. 2026-03-15, March 15, next Tuesday").
+- "→ Type your answer above, then click Run Interpreter" callout appears below the chips.
+
+**Scenario 25b:** Follow-up answer resolves blocking field.
+
+1. Continuing from 25a, type an answer addressing the blocking field (e.g. "next Tuesday at 7pm at Dazzle Jazz").
+2. Click **Run Interpreter**.
+
+**Expected:**
+- Resolved fields no longer appear in blocking_fields hint chips.
+- Either new blocking fields appear with appropriate hints, or state transitions to `show_preview`/`ready_to_create`.
+
+**Scenario 25c:** Unknown blocking field falls back to humanized name.
+
+**Expected:** If a blocking field not in `FIELD_INPUT_HINTS` appears (e.g. `custom_field`), it displays as "custom field" (underscores replaced with spaces) without example values.
+
+**Pass Criteria (25):** Clarification state shows one clear question, field-specific hint chips with format examples, and an obvious next-step instruction. No "Question:" label prefix. Fallback to humanized field name for unknown fields.
+
+### 26. Phase 8D — Post-Create Confidence UX
+
+**Scenario 26a:** Successful create shows "What Was Written" summary.
+
+1. Navigate to `/dashboard/my-events/interpreter-lab`.
+2. Complete a multi-turn create flow until `ready_to_create`.
+3. Click **Confirm & Create**.
+
+**Expected:**
+- Emerald success block appears with "✓ Event Created as Draft" header.
+- "What Was Written" grid shows: title, event type, date, time, recurrence (if applicable), location, signup mode, cost, cover status.
+- Three CTA buttons visible: "Open Draft →" (emerald primary), "Go to My Happenings", "Edit & Publish".
+- "Confirm & Create" button is hidden (not just disabled) after success.
+
+**Scenario 26b:** Create with cover shows cover status.
+
+1. Complete a create flow with a staged cover image.
+2. Click **Confirm & Create**.
+
+**Expected:**
+- Cover row in summary shows "✓ Attached".
+- If cover upload had a partial failure, cover row shows "None" with amber warning note.
+
+**Scenario 26c:** Duplicate submit prevention.
+
+1. After a successful create (26a), check the action buttons area.
+
+**Expected:**
+- "Confirm & Create" button is no longer visible.
+- Clicking "Clear History" resets the UI and re-enables future create flows.
+
+**Pass Criteria (26):** Post-create block shows structured "What Was Written" summary with all key fields, three clear CTAs, and the create button is hidden after success. No duplicate submit possible without clearing and re-running.
+
+### 27. Phase 8E — Public Launch Surface (Conversational Create Entrypoint)
+
+**Feature flag:** `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY`
+
+**Scenario 27a: Flag ON — Launcher shows chooser**
+
+**URL:** `/dashboard/my-events/new` (with flag ON)
+
+**Steps:**
+1. Navigate to `/dashboard/my-events/new`.
+2. Verify chooser UI appears above the classic form with two cards:
+   - "✨ Create with AI" → links to `/dashboard/my-events/new/conversational`
+   - "Use classic form" → links to `/dashboard/my-events/new?classic=true`
+3. Classic `EventForm` still renders below the chooser.
+
+**Pass Criteria:** Chooser visible, both links correct, classic form still present.
+
+**Scenario 27b: Flag ON — Conversational page renders host variant**
+
+**URL:** `/dashboard/my-events/new/conversational` (with flag ON)
+
+**Steps:**
+1. Navigate to conversational page.
+2. Verify title is "Create Happening" (NOT "Interpreter Lab").
+3. Verify subtitle does NOT contain "Hidden test surface".
+4. Verify mode selector, eventId/dateKey inputs, and debug panel are NOT visible.
+5. Verify "← Use classic form instead" fallback link is present → `/dashboard/my-events/new?classic=true`.
+6. Run a test prompt → verify create flow works end-to-end.
+
+**Pass Criteria:** Host-friendly UI without lab/debug elements. Create flow functional.
+
+**Scenario 27c: Flag OFF — Launcher shows classic form only**
+
+**URL:** `/dashboard/my-events/new` (with flag OFF or unset)
+
+**Steps:**
+1. Navigate to `/dashboard/my-events/new`.
+2. Verify NO chooser UI appears.
+3. Classic `EventForm` renders directly.
+
+**Pass Criteria:** Classic form only, no conversational chooser.
+
+**Scenario 27d: Flag OFF — Conversational route redirects**
+
+**URL:** `/dashboard/my-events/new/conversational` (with flag OFF)
+
+**Steps:**
+1. Navigate directly to conversational page.
+2. Verify redirect to `/dashboard/my-events/new?classic=true`.
+
+**Pass Criteria:** Automatic redirect, user sees classic form.
+
+**Scenario 27e: Forced classic via URL**
+
+**URL:** `/dashboard/my-events/new?classic=true` (with flag ON)
+
+**Steps:**
+1. Navigate to classic URL.
+2. Verify chooser is NOT shown even though flag is ON.
+3. Classic form renders normally.
+
+**Pass Criteria:** URL param overrides flag for chooser visibility.
+
+**Scenario 27f: Mobile responsiveness**
+
+**Viewport:** 375×812 (iPhone 12) and 360×800 (narrow Android)
+
+**Steps:**
+1. Navigate to `/dashboard/my-events/new` (flag ON) on mobile viewport.
+2. Verify chooser cards stack vertically (single column).
+3. Navigate to conversational page.
+4. Verify text is readable, inputs usable, and create CTA reachable without horizontal scrolling.
+
+**Pass Criteria:** Mobile-friendly layout, all interactive elements tappable.
+
+**Scenario 27g: Rollback verification**
+
+**Steps:**
+1. Set `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY` to `false` (or remove).
+2. Redeploy.
+3. Verify `/dashboard/my-events/new` shows classic form only.
+4. Verify `/dashboard/my-events/new/conversational` redirects to classic.
+
+**Pass Criteria:** Full rollback to pre-8E behavior with no residual UI.
+
 ---
 
 ## Gallery Smoke Checks (To Be Added in Gallery Track)

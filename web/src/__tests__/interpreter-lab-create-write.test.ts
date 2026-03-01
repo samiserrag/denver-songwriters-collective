@@ -11,7 +11,7 @@ import * as path from "node:path";
 
 const LAB_PATH = path.resolve(
   __dirname,
-  "../app/(protected)/dashboard/my-events/interpreter-lab/page.tsx"
+  "../app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx"
 );
 const labSource = fs.readFileSync(LAB_PATH, "utf-8");
 
@@ -241,7 +241,8 @@ describe("Phase 4B — deferred cover in create mode", () => {
 
   it("shows warning when cover upload fails but event was created", () => {
     expect(labSource).toContain('type: "warning"');
-    expect(labSource).toContain("cover upload failed:");
+    // Phase 8D simplified message — details moved to createdSummary.coverNote
+    expect(labSource).toContain("Event created but cover upload failed.");
   });
 
   it("best-effort cleans up uploaded row when cover update fails", () => {
@@ -253,7 +254,8 @@ describe("Phase 4B — deferred cover in create mode", () => {
   });
 
   it("shows success without cover when no candidate selected", () => {
-    expect(labSource).toContain("Event created as draft (");
+    // Phase 8D simplified message — details in createdSummary block
+    expect(labSource).toContain("Event created as draft.");
   });
 
   it("auto-selects first staged image as default cover in create mode", () => {

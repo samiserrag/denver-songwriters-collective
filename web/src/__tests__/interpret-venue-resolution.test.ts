@@ -23,7 +23,7 @@ const contractSource = fs.readFileSync(CONTRACT_PATH, "utf-8");
 
 const LAB_PATH = path.resolve(
   __dirname,
-  "../app/(protected)/dashboard/my-events/interpreter-lab/page.tsx"
+  "../app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx"
 );
 const labSource = fs.readFileSync(LAB_PATH, "utf-8");
 

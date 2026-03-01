@@ -11,7 +11,7 @@ import * as path from "node:path";
 
 const LAB_PATH = path.resolve(
   __dirname,
-  "../app/(protected)/dashboard/my-events/interpreter-lab/page.tsx"
+  "../app/(protected)/dashboard/my-events/_components/ConversationalCreateUI.tsx"
 );
 const labSource = fs.readFileSync(LAB_PATH, "utf-8");
 
@@ -53,7 +53,7 @@ describe("Phase 4A — cover candidate UX", () => {
 
   it("defines isEditMode from edit_series and edit_occurrence modes", () => {
     expect(labSource).toContain(
-      'mode === "edit_series" || mode === "edit_occurrence"'
+      'effectiveMode === "edit_series" || effectiveMode === "edit_occurrence"'
     );
   });
 
