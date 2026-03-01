@@ -203,7 +203,7 @@ describe("getWeeklyHappeningsDigestEmail", () => {
       venueCount: 1,
     });
 
-    expect(email.subject).toBe("Happenings This Week in Denver");
+    expect(email.subject).toBe("Songwriter Happenings This Week in Colorado");
   });
 
   it("keeps salutation and does not inject hardcoded intro sentence", () => {

@@ -241,27 +241,30 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     let isMounted = true;
 
     async function loadSavedFilters() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!isMounted) return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
 
-      if (!user) {
-        setSavedLoading(false);
-        return;
-      }
-
-      setUserId(user.id);
-      const row = await getUserSavedHappeningsFilters(supabase, user.id);
-      if (!isMounted) return;
-
-      if (row) {
-        setSavedFilters(row.filters);
-        setSavedAutoApply(row.autoApply);
-        if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
-          setSavedPanelOpen(true);
+        if (!session?.user) {
+          return;
         }
-      }
 
-      setSavedLoading(false);
+        setUserId(session.user.id);
+        const row = await getUserSavedHappeningsFilters(supabase, session.user.id);
+        if (!isMounted) return;
+
+        if (row) {
+          setSavedFilters(row.filters);
+          setSavedAutoApply(row.autoApply);
+          if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
+            setSavedPanelOpen(true);
+          }
+        }
+      } catch {
+        // Auth or fetch failed — degrade gracefully, section still renders
+      } finally {
+        if (isMounted) setSavedLoading(false);
+      }
     }
 
     loadSavedFilters();
@@ -608,13 +611,22 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   ].filter(Boolean).length;
 
   const hasSavedFilters = Boolean(savedFilters && hasSavedHappeningsFilters(savedFilters));
-  const savedStatusLabel = !userId
-    ? "Sign in to use"
-    : hasSavedFilters
-      ? savedAutoApply
-        ? "Auto-open on"
-        : "One-click mode"
-      : "Nothing saved";
+  const savedStatusLabel = savedLoading
+    ? "Loading…"
+    : !userId
+      ? "Sign in to use"
+      : hasSavedFilters
+        ? savedAutoApply
+          ? "Auto-open on"
+          : "One-click mode"
+        : "No filters saved yet";
+  const savedStatusColor = savedLoading
+    ? "border-[var(--color-border-default)] text-[var(--color-text-tertiary)]"
+    : !userId
+      ? "border-[var(--color-border-default)] text-[var(--color-text-tertiary)]"
+      : hasSavedFilters
+        ? "border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]"
+        : "border-[var(--color-border-default)] text-[var(--color-text-tertiary)]";
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -736,138 +748,137 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         )}
       </div>
 
-      {!savedLoading && (
-        <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
-          <div className="p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
+        <div className="p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={() => setSavedPanelOpen((v) => !v)}
+            className="w-full sm:w-auto text-left flex items-center justify-between gap-3"
+            aria-expanded={savedPanelOpen}
+            disabled={savedLoading}
+          >
+            <span className="flex items-center gap-2">
+              <FilterIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                Saved Filters
+              </span>
+              <span className={cn(
+                "text-xs px-2 py-0.5 rounded-full border",
+                savedStatusColor
+              )}>
+                {savedStatusLabel}
+              </span>
+            </span>
+            <ChevronDownIcon
+              className={cn(
+                "w-4 h-4 text-[var(--color-text-secondary)] transition-transform",
+                savedPanelOpen && "rotate-180"
+              )}
+            />
+          </button>
+          {!savedLoading && userId && hasSavedFilters && (
             <button
               type="button"
-              onClick={() => setSavedPanelOpen((v) => !v)}
-              className="w-full sm:w-auto text-left flex items-center justify-between gap-3"
-              aria-expanded={savedPanelOpen}
+              onClick={applySavedFilters}
+              disabled={savedSaving}
+              className="w-full sm:w-auto px-3 py-1.5 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
             >
-              <span className="flex items-center gap-2">
-                <FilterIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                  Saved Filters
-                </span>
-                <span className={cn(
-                  "text-xs px-2 py-0.5 rounded-full border",
-                  hasSavedFilters
-                    ? "border-[var(--color-border-accent)] text-[var(--color-text-secondary)]"
-                    : "border-[var(--color-border-default)] text-[var(--color-text-tertiary)]"
-                )}>
-                  {savedStatusLabel}
-                </span>
-              </span>
-              <ChevronDownIcon
-                className={cn(
-                  "w-4 h-4 text-[var(--color-text-secondary)] transition-transform",
-                  savedPanelOpen && "rotate-180"
-                )}
-              />
+              Apply Saved
             </button>
-            {userId && hasSavedFilters && (
-              <button
-                type="button"
-                onClick={applySavedFilters}
-                disabled={savedSaving}
-                className="w-full sm:w-auto px-3 py-1.5 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
-              >
-                Apply Saved
-              </button>
-            )}
-          </div>
-          {savedPanelOpen && (
-            <div className="border-t border-[var(--color-border-default)] p-3 space-y-3">
-              {userId ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={saveCurrentFilters}
-                      disabled={savedSaving}
-                      className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
-                    >
-                      Save Current Filters
-                    </button>
-                    <button
-                      type="button"
-                      onClick={applySavedFilters}
-                      disabled={savedSaving || !hasSavedFilters}
-                      className="px-3 py-2 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
-                    >
-                      Apply Saved Filters
-                    </button>
-                    <button
-                      type="button"
-                      onClick={clearSavedFilters}
-                      disabled={savedSaving}
-                      className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
-                    >
-                      Reset Saved
-                    </button>
-                  </div>
-
-                  <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-3 space-y-2">
-                    <p className="text-xs font-medium text-[var(--color-text-primary)]">Recall mode</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSavedRecallMode(false)}
-                        disabled={savedSaving}
-                        className={cn(
-                          "px-3 py-2 text-xs rounded-lg border transition-colors",
-                          !savedAutoApply
-                            ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                            : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                        )}
-                      >
-                        One-click Apply
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSavedRecallMode(true)}
-                        disabled={savedSaving}
-                        className={cn(
-                          "px-3 py-2 text-xs rounded-lg border transition-colors",
-                          savedAutoApply
-                            ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
-                            : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                        )}
-                      >
-                        Auto-open
-                      </button>
-                    </div>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">
-                      One-click lets you choose when to apply. Auto-open applies saved filters automatically when this page loads without URL filters.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
-                    <span>Need full setup controls?</span>
-                    <a
-                      href="/dashboard/settings"
-                      className="text-[var(--color-accent-primary)] hover:underline"
-                    >
-                      Open Dashboard Settings
-                    </a>
-                  </div>
-                </>
-              ) : (
-                <p className="text-xs text-[var(--color-text-tertiary)]">
-                  Sign in to save filters once, then apply with one tap or auto-open each visit.
-                </p>
-              )}
-              <p className="text-xs text-[var(--color-text-tertiary)]">
-                Weekly digest personalization uses your saved type, day, cost, and location filters.
-              </p>
-              {savedMessage && (
-                <p className="text-xs text-[var(--color-text-secondary)]">{savedMessage}</p>
-              )}
-            </div>
           )}
         </div>
-      )}
+        {savedPanelOpen && !savedLoading && (
+          <div className="border-t border-[var(--color-border-default)] p-3 space-y-3">
+            {userId ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={saveCurrentFilters}
+                    disabled={savedSaving}
+                    className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
+                  >
+                    Save Current Filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applySavedFilters}
+                    disabled={savedSaving || !hasSavedFilters}
+                    className="px-3 py-2 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    Apply Saved Filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearSavedFilters}
+                    disabled={savedSaving}
+                    className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
+                  >
+                    Reset Saved
+                  </button>
+                </div>
+
+                <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-3 space-y-2">
+                  <p className="text-xs font-medium text-[var(--color-text-primary)]">Recall mode</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSavedRecallMode(false)}
+                      disabled={savedSaving}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-lg border transition-colors",
+                        !savedAutoApply
+                          ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                          : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      )}
+                    >
+                      <span aria-hidden="true">👆</span>
+                      One-click Apply
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSavedRecallMode(true)}
+                      disabled={savedSaving}
+                      className={cn(
+                        "flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-lg border transition-colors",
+                        savedAutoApply
+                          ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                          : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      )}
+                    >
+                      <span aria-hidden="true">⚡</span>
+                      Auto-open
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">
+                    One-click lets you choose when to apply. Auto-open applies saved filters automatically when this page loads without URL filters.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
+                  <span>Need full setup controls?</span>
+                  <a
+                    href="/dashboard/settings"
+                    className="text-[var(--color-accent-primary)] hover:underline"
+                  >
+                    Open Dashboard Settings
+                  </a>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                Sign in to save filters once, then apply with one tap or auto-open each visit.
+              </p>
+            )}
+            <p className="text-xs text-[var(--color-text-tertiary)]">
+              Weekly digest personalization uses your saved type, day, cost, and location filters.
+            </p>
+            {savedMessage && (
+              <p className="text-xs text-[var(--color-text-secondary)]">{savedMessage}</p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Collapsed Filters - Progressive Disclosure */}
       <details className="group rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">

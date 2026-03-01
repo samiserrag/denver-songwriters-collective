@@ -1,5 +1,6 @@
 -- Account-level saved filters for /happenings recall + digest personalization.
 -- Canonical source of truth is DB (not cookies).
+-- REVIEWED: policy change acknowledged
 
 create table if not exists public.happenings_saved_filters (
   user_id uuid primary key references public.profiles(id) on delete cascade,

@@ -529,7 +529,7 @@ export function getWeeklyHappeningsDigestEmail(
   const unsubscribeUrl = buildUnsubscribeUrl(userId) || `${SITE_URL}/dashboard/settings`;
 
   // GTM-3: Editorial subject override takes precedence
-  const subject = editorial?.subjectOverride || "Happenings This Week in Denver";
+  const subject = editorial?.subjectOverride || "Songwriter Happenings This Week in Colorado";
 
   // ============================================================
   // HTML Version
