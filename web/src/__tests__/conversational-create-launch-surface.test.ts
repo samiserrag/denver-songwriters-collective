@@ -67,15 +67,15 @@ describe("Phase 8E — ConversationalCreateUI variant prop", () => {
 // B) Host variant does NOT show lab/debug copy
 // ---------------------------------------------------------------------------
 describe("Phase 8E — host variant removes lab copy", () => {
-  it("conditionally hides Interpreter Lab title behind !isHostVariant", () => {
+  it("conditionally hides lab-only title behind !isHostVariant", () => {
     // Lab title only appears inside the non-host branch
-    expect(componentSource).toContain("Interpreter Lab");
+    expect(componentSource).toContain("Conversational Event Creator (Lab)");
     // But the host branch has "Create Happening"
     expect(componentSource).toContain("Create Happening");
   });
 
-  it("conditionally hides Hidden test surface text behind !isHostVariant", () => {
-    expect(componentSource).toContain("Hidden test surface");
+  it("conditionally hides lab-only helper text behind !isHostVariant", () => {
+    expect(componentSource).toContain("Testing surface for");
     // The isHostVariant ternary controls which header renders
     expect(componentSource).toContain("isHostVariant ?");
   });
