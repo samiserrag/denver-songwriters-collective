@@ -18,12 +18,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
-import { getUpcomingHappenings, getDigestRecipients } from "@/lib/digest/weeklyHappenings";
+import {
+  getUpcomingHappenings,
+  getDigestRecipients,
+  personalizeDigestRecipients,
+} from "@/lib/digest/weeklyHappenings";
 import { getUpcomingOpenMics, getDigestRecipients as getOpenMicRecipients } from "@/lib/digest/weeklyOpenMics";
 import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHappeningsDigest";
 import { getWeeklyOpenMicsDigestEmail } from "@/lib/email/templates/weeklyOpenMicsDigest";
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
 import { computeWeekKey, type DigestType } from "@/lib/digest/digestSendLog";
+import { isDigestPersonalizationEnabled } from "@/lib/featureFlags";
 import {
   getEditorial,
   resolveEditorialWithDiagnostics,
@@ -62,10 +67,26 @@ export async function GET(request: NextRequest) {
     if (digestType === "weekly_happenings") {
       const digestData = await getUpcomingHappenings(serviceClient);
       const recipients = await getDigestRecipients(serviceClient);
+      const personalizationEnabled = isDigestPersonalizationEnabled();
+      const personalized = await personalizeDigestRecipients(
+        serviceClient,
+        recipients,
+        digestData,
+        {
+          enabled: personalizationEnabled,
+          logPrefix: "[AdminPreview]",
+        }
+      );
+      const recipientsToPreview = personalized.recipients;
 
-      if (recipients.length === 0) {
+      if (recipientsToPreview.length === 0) {
         return NextResponse.json(
-          { error: "No eligible recipients found" },
+          {
+            error: personalizationEnabled
+              ? "No recipients after personalization filters"
+              : "No eligible recipients found",
+            skippedByFilters: personalized.skippedCount,
+          },
           { status: 404 }
         );
       }
@@ -96,16 +117,20 @@ export async function GET(request: NextRequest) {
 
       const result = await sendDigestEmails({
         mode: "dryRun",
-        recipients,
-        buildEmail: (recipient) =>
-          getWeeklyHappeningsDigestEmail({
+        recipients: recipientsToPreview,
+        buildEmail: (recipient) => {
+          const recipientDigestData =
+            personalized.digestByUserId.get(recipient.userId) || digestData;
+
+          return getWeeklyHappeningsDigestEmail({
             firstName: recipient.firstName,
             userId: recipient.userId,
-            byDate: digestData.byDate,
-            totalCount: digestData.totalCount,
-            venueCount: digestData.venueCount,
+            byDate: recipientDigestData.byDate,
+            totalCount: recipientDigestData.totalCount,
+            venueCount: recipientDigestData.venueCount,
             editorial: resolvedEditorial,
-          }),
+          });
+        },
         templateName: "weeklyHappeningsDigest",
         logPrefix: "[AdminPreview]",
       });
@@ -119,6 +144,9 @@ export async function GET(request: NextRequest) {
         hasEditorial: !!resolvedEditorial,
         weekKey,
         unresolved,
+        personalizationEnabled,
+        personalizedRecipients: personalized.personalizedCount,
+        skippedByFilters: personalized.skippedCount,
       });
     } else {
       const digestData = await getUpcomingOpenMics(serviceClient);

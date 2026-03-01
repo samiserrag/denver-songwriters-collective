@@ -19,6 +19,20 @@ import {
   addDaysDenver,
   expandOccurrencesForEvent,
 } from "@/lib/events/nextOccurrence";
+import {
+  getSavedHappeningsFiltersForUsers,
+  hasDigestApplicableFilters,
+  toDigestApplicableFilters,
+  type DigestApplicableSavedFilters,
+  type SavedDayFilter,
+} from "@/lib/happenings/savedFilters";
+import {
+  computeBoundingBox,
+  haversineDistanceMiles,
+  normalizeCity,
+  normalizeRadiusMiles,
+  normalizeZip,
+} from "@/lib/happenings/locationFilter";
 
 // ============================================================
 // Types
@@ -45,6 +59,8 @@ export interface HappeningEvent {
     city: string | null;
     state: string | null;
     zip?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
 }
 
@@ -72,6 +88,13 @@ export interface DigestRecipient {
   userId: string;
   email: string;
   firstName: string | null;
+}
+
+export interface PersonalizedDigestRecipientsResult {
+  recipients: DigestRecipient[];
+  digestByUserId: Map<string, HappeningsDigestData>;
+  personalizedCount: number;
+  skippedCount: number;
 }
 
 // ============================================================
@@ -149,7 +172,7 @@ async function fetchHappeningEvents(
       max_occurrences,
       is_free,
       cost_label,
-      venue:venues!left(id, name, slug, city, state, zip)
+      venue:venues!left(id, name, slug, city, state, zip, latitude, longitude)
     `)
     .eq("is_published", true)
     .eq("visibility", "public")
@@ -297,7 +320,7 @@ export async function getUpcomingHappenings(
  * Get all users who should receive the weekly digest.
  * Filters by:
  * - Has email address
- * - Has email_event_updates preference enabled (or no preference row = default true)
+ * - Has email_enabled + email_digests preferences enabled (or no preference row = default true)
  */
 export async function getDigestRecipients(
   supabase: SupabaseClient<Database>
@@ -316,7 +339,7 @@ export async function getDigestRecipients(
   // Get all notification preferences
   const { data: preferences, error: prefsError } = await supabase
     .from("notification_preferences")
-    .select("user_id, email_event_updates");
+    .select("user_id, email_enabled, email_digests");
 
   if (prefsError) {
     console.error("[WeeklyHappenings] Failed to fetch preferences:", prefsError);
@@ -324,9 +347,12 @@ export async function getDigestRecipients(
   }
 
   // Build preference map (default true if no row)
-  const prefMap = new Map<string, boolean>();
+  const prefMap = new Map<string, { emailEnabled: boolean; emailDigests: boolean }>();
   for (const pref of preferences || []) {
-    prefMap.set(pref.user_id, pref.email_event_updates);
+    prefMap.set(pref.user_id, {
+      emailEnabled: pref.email_enabled,
+      emailDigests: pref.email_digests,
+    });
   }
 
   // Filter and map recipients
@@ -335,7 +361,8 @@ export async function getDigestRecipients(
     if (!profile.email) continue;
 
     // Check preference (default to true if no row exists)
-    const wantsEmail = prefMap.get(profile.id) ?? true;
+    const pref = prefMap.get(profile.id);
+    const wantsEmail = pref ? pref.emailEnabled && pref.emailDigests : true;
     if (!wantsEmail) continue;
 
     // Extract first name from full_name
@@ -349,4 +376,249 @@ export async function getDigestRecipients(
   }
 
   return recipients;
+}
+
+function buildFilteredDigestData(
+  data: HappeningsDigestData,
+  filters: DigestApplicableSavedFilters
+): HappeningsDigestData {
+  const typeFilter = filters.type;
+  const costFilter = filters.cost;
+  const dayFilterSet =
+    filters.days && filters.days.length > 0
+      ? new Set(filters.days)
+      : null;
+
+  const byDate = new Map<string, HappeningOccurrence[]>();
+
+  for (const [dateKey, occurrences] of data.byDate.entries()) {
+    const filtered = occurrences.filter((occurrence) => {
+      const event = occurrence.event;
+
+      if (typeFilter) {
+        if (typeFilter === "shows") {
+          const isShowType = event.event_type.some((t) =>
+            ["showcase", "gig", "other"].includes(t)
+          );
+          if (!isShowType) return false;
+        } else if (!event.event_type.includes(typeFilter)) {
+          return false;
+        }
+      }
+
+      if (costFilter === "free" && event.is_free !== true) return false;
+      if (costFilter === "paid" && event.is_free !== false) return false;
+      if (costFilter === "unknown" && event.is_free !== null) return false;
+
+      if (dayFilterSet) {
+        const dayIndex = new Date(`${occurrence.dateKey}T12:00:00Z`).getUTCDay();
+        const dayAbbrev = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][dayIndex];
+        if (!dayFilterSet.has(dayAbbrev as SavedDayFilter)) return false;
+      }
+
+      return true;
+    });
+
+    if (filtered.length > 0) {
+      byDate.set(dateKey, filtered);
+    }
+  }
+
+  let locationFiltered = byDate;
+  const normalizedZip = normalizeZip(filters.zip);
+  const normalizedCity = normalizeCity(filters.city)?.toLowerCase();
+
+  if (normalizedZip || normalizedCity) {
+    const radiusMiles = normalizeRadiusMiles(filters.radius);
+    const venueMap = new Map<
+      string,
+      { city: string | null; zip: string | null; latitude: number | null; longitude: number | null }
+    >();
+
+    for (const occurrences of byDate.values()) {
+      for (const occurrence of occurrences) {
+        const venue = occurrence.event.venue;
+        if (!venue?.id) continue;
+        venueMap.set(venue.id, {
+          city: venue.city,
+          zip: venue.zip || null,
+          latitude: venue.latitude ?? null,
+          longitude: venue.longitude ?? null,
+        });
+      }
+    }
+
+    const exactVenueIds = new Set<string>();
+    for (const [venueId, venue] of venueMap.entries()) {
+      if (normalizedZip) {
+        if (normalizeZip(venue.zip || undefined) === normalizedZip) {
+          exactVenueIds.add(venueId);
+        }
+      } else if (normalizedCity) {
+        const venueCity = normalizeCity(venue.city || undefined)?.toLowerCase();
+        if (venueCity === normalizedCity) {
+          exactVenueIds.add(venueId);
+        }
+      }
+    }
+
+    if (exactVenueIds.size === 0) {
+      locationFiltered = new Map();
+    } else {
+      const exactWithCoords = [...exactVenueIds]
+        .map((venueId) => venueMap.get(venueId))
+        .filter(
+          (
+            venue
+          ): venue is {
+            city: string | null;
+            zip: string | null;
+            latitude: number;
+            longitude: number;
+          } =>
+            Boolean(
+              venue &&
+                venue.latitude !== null &&
+                venue.latitude !== undefined &&
+                venue.longitude !== null &&
+                venue.longitude !== undefined
+            )
+        );
+
+      const includedVenueIds = new Set(exactVenueIds);
+
+      if (exactWithCoords.length > 0) {
+        const centroid = exactWithCoords.reduce(
+          (acc, venue) => ({
+            latitude: acc.latitude + venue.latitude,
+            longitude: acc.longitude + venue.longitude,
+          }),
+          { latitude: 0, longitude: 0 }
+        );
+
+        const centroidLat = centroid.latitude / exactWithCoords.length;
+        const centroidLng = centroid.longitude / exactWithCoords.length;
+
+        const bbox = computeBoundingBox(centroidLat, centroidLng, radiusMiles);
+
+        for (const [venueId, venue] of venueMap.entries()) {
+          if (includedVenueIds.has(venueId)) continue;
+          if (venue.latitude == null || venue.longitude == null) continue;
+
+          if (
+            venue.latitude < bbox.latMin ||
+            venue.latitude > bbox.latMax ||
+            venue.longitude < bbox.lngMin ||
+            venue.longitude > bbox.lngMax
+          ) {
+            continue;
+          }
+
+          const distance = haversineDistanceMiles(
+            centroidLat,
+            centroidLng,
+            venue.latitude,
+            venue.longitude
+          );
+
+          if (distance <= radiusMiles) {
+            includedVenueIds.add(venueId);
+          }
+        }
+      }
+
+      const nextByDate = new Map<string, HappeningOccurrence[]>();
+      for (const [dateKey, occurrences] of byDate.entries()) {
+        const kept = occurrences.filter((occurrence) => {
+          const venueId = occurrence.event.venue?.id;
+          return venueId ? includedVenueIds.has(venueId) : false;
+        });
+        if (kept.length > 0) {
+          nextByDate.set(dateKey, kept);
+        }
+      }
+      locationFiltered = nextByDate;
+    }
+  }
+
+  const uniqueVenues = new Set<string>();
+  let totalCount = 0;
+  for (const occurrences of locationFiltered.values()) {
+    totalCount += occurrences.length;
+    for (const occurrence of occurrences) {
+      if (occurrence.event.venue?.id) {
+        uniqueVenues.add(occurrence.event.venue.id);
+      }
+    }
+  }
+
+  return {
+    byDate: locationFiltered,
+    totalCount,
+    venueCount: uniqueVenues.size,
+    dateRange: data.dateRange,
+  };
+}
+
+export async function personalizeDigestRecipients(
+  supabase: SupabaseClient<Database>,
+  recipients: DigestRecipient[],
+  digestData: HappeningsDigestData,
+  options: {
+    enabled: boolean;
+    logPrefix?: string;
+  }
+): Promise<PersonalizedDigestRecipientsResult> {
+  if (!options.enabled || recipients.length === 0) {
+    return {
+      recipients,
+      digestByUserId: new Map(),
+      personalizedCount: 0,
+      skippedCount: 0,
+    };
+  }
+
+  const savedByUserId = await getSavedHappeningsFiltersForUsers(
+    supabase,
+    recipients.map((r) => r.userId)
+  );
+
+  const recipientsToSend: DigestRecipient[] = [];
+  const digestByUserId = new Map<string, HappeningsDigestData>();
+  let personalizedCount = 0;
+  let skippedCount = 0;
+
+  for (const recipient of recipients) {
+    const saved = savedByUserId.get(recipient.userId);
+    if (!saved) {
+      recipientsToSend.push(recipient);
+      continue;
+    }
+
+    const applicable = toDigestApplicableFilters(saved.filters);
+    if (!hasDigestApplicableFilters(applicable)) {
+      recipientsToSend.push(recipient);
+      continue;
+    }
+
+    const personalized = buildFilteredDigestData(digestData, applicable);
+    if (personalized.totalCount === 0) {
+      skippedCount++;
+      console.log(
+        `${options.logPrefix || "[WeeklyHappenings]"} Skipping ${recipient.email} - filters produced 0 results`
+      );
+      continue;
+    }
+
+    personalizedCount++;
+    recipientsToSend.push(recipient);
+    digestByUserId.set(recipient.userId, personalized);
+  }
+
+  return {
+    recipients: recipientsToSend,
+    digestByUserId,
+    personalizedCount,
+    skippedCount,
+  };
 }

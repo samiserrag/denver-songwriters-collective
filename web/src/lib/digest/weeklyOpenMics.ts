@@ -290,7 +290,7 @@ export async function getUpcomingOpenMics(
  * Get all users who should receive the weekly digest.
  * Filters by:
  * - Has email address
- * - Has email_event_updates preference enabled (or no preference row = default true)
+ * - Has email_enabled + email_digests preferences enabled (or no preference row = default true)
  */
 export async function getDigestRecipients(
   supabase: SupabaseClient<Database>
@@ -309,7 +309,7 @@ export async function getDigestRecipients(
   // Get all notification preferences
   const { data: preferences, error: prefsError } = await supabase
     .from("notification_preferences")
-    .select("user_id, email_event_updates");
+    .select("user_id, email_enabled, email_digests");
 
   if (prefsError) {
     console.error("[WeeklyDigest] Failed to fetch preferences:", prefsError);
@@ -317,9 +317,12 @@ export async function getDigestRecipients(
   }
 
   // Build preference map (default true if no row)
-  const prefMap = new Map<string, boolean>();
+  const prefMap = new Map<string, { emailEnabled: boolean; emailDigests: boolean }>();
   for (const pref of preferences || []) {
-    prefMap.set(pref.user_id, pref.email_event_updates);
+    prefMap.set(pref.user_id, {
+      emailEnabled: pref.email_enabled,
+      emailDigests: pref.email_digests,
+    });
   }
 
   // Filter and map recipients
@@ -328,7 +331,8 @@ export async function getDigestRecipients(
     if (!profile.email) continue;
 
     // Check preference (default to true if no row exists)
-    const wantsEmail = prefMap.get(profile.id) ?? true;
+    const pref = prefMap.get(profile.id);
+    const wantsEmail = pref ? pref.emailEnabled && pref.emailDigests : true;
     if (!wantsEmail) continue;
 
     // Extract first name from full_name

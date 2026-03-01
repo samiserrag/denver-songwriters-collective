@@ -21,10 +21,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
-import { isWeeklyHappeningsDigestEnabled } from "@/lib/featureFlags";
+import {
+  isDigestPersonalizationEnabled,
+  isWeeklyHappeningsDigestEnabled,
+} from "@/lib/featureFlags";
 import {
   getUpcomingHappenings,
   getDigestRecipients,
+  personalizeDigestRecipients,
 } from "@/lib/digest/weeklyHappenings";
 import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHappeningsDigest";
 import { claimDigestSendLock, computeWeekKey } from "@/lib/digest/digestSendLog";
@@ -120,11 +124,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const personalizationEnabled = isDigestPersonalizationEnabled();
+    const personalized = await personalizeDigestRecipients(
+      supabase,
+      recipients,
+      digestData,
+      {
+        enabled: personalizationEnabled,
+        logPrefix: "[WeeklyHappenings]",
+      }
+    );
+    const recipientsToSend = personalized.recipients;
+
+    if (personalizationEnabled) {
+      console.log(
+        `[WeeklyHappenings] Personalization enabled: ${personalized.personalizedCount} personalized, ${personalized.skippedCount} skipped`
+      );
+    }
+
+    if (recipientsToSend.length === 0) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: "No recipients after personalization filters",
+          sent: 0,
+          skippedByFilters: personalized.skippedCount,
+        },
+        { status: 200 }
+      );
+    }
+
     // Attempt to claim idempotency lock before sending
     const lock = await claimDigestSendLock(
       supabase,
       "weekly_happenings",
-      recipients.length,
+      recipientsToSend.length,
       weekKey
     );
 
@@ -167,16 +201,20 @@ export async function GET(request: NextRequest) {
     // Send emails to all recipients using shared send function
     const result = await sendDigestEmails({
       mode: "full",
-      recipients,
-      buildEmail: (recipient) =>
-        getWeeklyHappeningsDigestEmail({
+      recipients: recipientsToSend,
+      buildEmail: (recipient) => {
+        const recipientDigestData =
+          personalized.digestByUserId.get(recipient.userId) || digestData;
+
+        return getWeeklyHappeningsDigestEmail({
           firstName: recipient.firstName,
           userId: recipient.userId,
-          byDate: digestData.byDate,
-          totalCount: digestData.totalCount,
-          venueCount: digestData.venueCount,
+          byDate: recipientDigestData.byDate,
+          totalCount: recipientDigestData.totalCount,
+          venueCount: recipientDigestData.venueCount,
           editorial: resolvedEditorial,
-        }),
+        });
+      },
       templateName: "weeklyHappeningsDigest",
       logPrefix: "[WeeklyHappenings]",
     });
@@ -189,6 +227,9 @@ export async function GET(request: NextRequest) {
         failed: result.failed,
         totalHappenings: digestData.totalCount,
         totalVenues: digestData.venueCount,
+        personalizationEnabled,
+        personalizedRecipients: personalized.personalizedCount,
+        skippedByFilters: personalized.skippedCount,
       },
       { status: 200 }
     );

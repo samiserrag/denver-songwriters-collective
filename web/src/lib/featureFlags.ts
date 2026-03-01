@@ -39,6 +39,16 @@ export function isWeeklyHappeningsDigestEnabled(): boolean {
 }
 
 /**
+ * Check if weekly happenings digest personalization is enabled (server-side).
+ * Set DIGEST_PERSONALIZATION_ENABLED=true in environment to enable.
+ *
+ * Default is false for safe rollout.
+ */
+export function isDigestPersonalizationEnabled(): boolean {
+  return process.env.DIGEST_PERSONALIZATION_ENABLED === "true";
+}
+
+/**
  * Check if external embeds are enabled (server-side).
  *
  * Kill switch behavior:

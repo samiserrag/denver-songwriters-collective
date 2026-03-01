@@ -28,6 +28,15 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import {
+  getUserSavedHappeningsFilters,
+  hasSavedHappeningsFilters,
+  sanitizeSavedHappeningsFilters,
+  savedFiltersToUrlUpdates,
+  upsertUserSavedHappeningsFilters,
+  type SavedHappeningsFilters,
+} from "@/lib/happenings/savedFilters";
 
 // SVG Icons (sparse use only)
 function SearchIcon({ className }: { className?: string }) {
@@ -75,15 +84,6 @@ function XIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
-}
-
-// Star icon for CSC Events
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
     </svg>
   );
 }
@@ -166,6 +166,7 @@ interface HappeningsFiltersProps {
 export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = React.useMemo(() => createClient(), []);
 
   // Read current values from URL
   const q = searchParams.get("q") || "";
@@ -177,7 +178,10 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const cost = searchParams.get("cost") || "";
   // Phase 4.8: Day-of-week filter (comma-separated: "mon,tue,wed")
   const daysParam = searchParams.get("days") || "";
-  const selectedDays = daysParam ? daysParam.split(",").filter(Boolean) : [];
+  const selectedDays = React.useMemo(
+    () => (daysParam ? daysParam.split(",").filter(Boolean) : []),
+    [daysParam]
+  );
 
   // Phase 1.4: Location filter params
   const city = searchParams.get("city") || "";
@@ -197,6 +201,14 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const zipTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const isLocalCityUpdate = React.useRef(false);
   const isLocalZipUpdate = React.useRef(false);
+  const [userId, setUserId] = React.useState<string | null>(null);
+  const [savedFilters, setSavedFilters] = React.useState<SavedHappeningsFilters | null>(null);
+  const [savedAutoApply, setSavedAutoApply] = React.useState(false);
+  const [savedLoading, setSavedLoading] = React.useState(true);
+  const [savedSaving, setSavedSaving] = React.useState(false);
+  const [savedMessage, setSavedMessage] = React.useState<string | null>(null);
+  const [savedPanelOpen, setSavedPanelOpen] = React.useState(false);
+  const hasAttemptedAutoApply = React.useRef(false);
 
   // Sync search input when URL changes externally (e.g., browser back/forward)
   // Skip sync if we initiated the change to avoid erasing user's typing
@@ -224,6 +236,40 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     }
     setZipInput(zip);
   }, [zip]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function loadSavedFilters() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!isMounted) return;
+
+      if (!user) {
+        setSavedLoading(false);
+        return;
+      }
+
+      setUserId(user.id);
+      const row = await getUserSavedHappeningsFilters(supabase, user.id);
+      if (!isMounted) return;
+
+      if (row) {
+        setSavedFilters(row.filters);
+        setSavedAutoApply(row.autoApply);
+        if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
+          setSavedPanelOpen(true);
+        }
+      }
+
+      setSavedLoading(false);
+    }
+
+    loadSavedFilters();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
 
   // Build URL with updated params
   const buildUrl = React.useCallback((updates: Record<string, string | null>) => {
@@ -325,6 +371,106 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     updateFilter("radius", value === "10" ? null : value);
   };
 
+  const saveCurrentFilters = React.useCallback(async () => {
+    if (!userId) {
+      setSavedMessage("Sign in to save filters.");
+      return;
+    }
+
+    setSavedSaving(true);
+    setSavedMessage(null);
+
+    const currentFilters: SavedHappeningsFilters = sanitizeSavedHappeningsFilters({
+      type,
+      csc,
+      days: selectedDays,
+      cost,
+      city,
+      zip,
+      radius,
+    });
+
+    const updated = await upsertUserSavedHappeningsFilters(supabase, userId, {
+      autoApply: savedAutoApply,
+      filters: currentFilters,
+    });
+
+    if (updated) {
+      setSavedFilters(updated.filters);
+      setSavedAutoApply(updated.autoApply);
+      setSavedMessage(
+        hasSavedHappeningsFilters(updated.filters)
+          ? "Saved filters updated."
+          : "Saved filters cleared."
+      );
+    } else {
+      setSavedMessage("Could not save filters.");
+    }
+
+    setSavedSaving(false);
+  }, [city, cost, csc, radius, savedAutoApply, selectedDays, supabase, type, userId, zip]);
+
+  const applySavedFilters = React.useCallback(() => {
+    if (!savedFilters || !hasSavedHappeningsFilters(savedFilters)) return;
+    router.push(buildUrl(savedFiltersToUrlUpdates(savedFilters)));
+  }, [buildUrl, router, savedFilters]);
+
+  const clearSavedFilters = React.useCallback(async () => {
+    if (!userId) return;
+
+    setSavedSaving(true);
+    setSavedMessage(null);
+
+    const updated = await upsertUserSavedHappeningsFilters(supabase, userId, {
+      autoApply: false,
+      filters: {},
+    });
+
+    if (updated) {
+      setSavedFilters(updated.filters);
+      setSavedAutoApply(updated.autoApply);
+      setSavedMessage("Saved filters reset.");
+    } else {
+      setSavedMessage("Could not reset saved filters.");
+    }
+
+    setSavedSaving(false);
+  }, [supabase, userId]);
+
+  const setSavedRecallMode = React.useCallback(async (nextAutoApply: boolean) => {
+    if (!userId) return;
+    if (savedAutoApply === nextAutoApply) return;
+
+    setSavedSaving(true);
+    setSavedMessage(null);
+
+    const updated = await upsertUserSavedHappeningsFilters(supabase, userId, {
+      autoApply: nextAutoApply,
+      filters: savedFilters || {},
+    });
+
+    if (updated) {
+      setSavedFilters(updated.filters);
+      setSavedAutoApply(updated.autoApply);
+      setSavedMessage(updated.autoApply ? "Auto-open mode enabled." : "One-click mode enabled.");
+    } else {
+      setSavedMessage("Could not update recall mode.");
+    }
+
+    setSavedSaving(false);
+  }, [savedAutoApply, savedFilters, supabase, userId]);
+
+  React.useEffect(() => {
+    if (!savedMessage) return;
+    const timeout = setTimeout(() => setSavedMessage(null), 2500);
+    return () => clearTimeout(timeout);
+  }, [savedMessage]);
+
+  React.useEffect(() => {
+    if (!savedMessage) return;
+    setSavedPanelOpen(true);
+  }, [savedMessage]);
+
   // Collect active filter pills for display
   const activeFilters: { key: string; label: string; icon?: React.ReactNode }[] = [];
 
@@ -418,6 +564,38 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     activeFilterSummary.push(`Near ${city}`);
   }
 
+  const hasExplicitFilterParams = Boolean(
+    q ||
+      type ||
+      csc ||
+      verify ||
+      location ||
+      cost ||
+      daysParam ||
+      city ||
+      zip ||
+      (radius && radius !== "10") ||
+      (time && time !== "upcoming")
+  );
+
+  React.useEffect(() => {
+    if (hasAttemptedAutoApply.current) return;
+    if (savedLoading || !userId || !savedAutoApply) return;
+    if (hasExplicitFilterParams) return;
+    if (!savedFilters || !hasSavedHappeningsFilters(savedFilters)) return;
+
+    hasAttemptedAutoApply.current = true;
+    router.replace(buildUrl(savedFiltersToUrlUpdates(savedFilters)));
+  }, [
+    buildUrl,
+    hasExplicitFilterParams,
+    router,
+    savedAutoApply,
+    savedFilters,
+    savedLoading,
+    userId,
+  ]);
+
   // Count active filters (excluding quick filters and search)
   const advancedFilterCount = [
     selectedDays.length > 0,
@@ -428,6 +606,15 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     verify,
     zip || city, // Phase 1.4: Location filter counts as one
   ].filter(Boolean).length;
+
+  const hasSavedFilters = Boolean(savedFilters && hasSavedHappeningsFilters(savedFilters));
+  const savedStatusLabel = !userId
+    ? "Sign in to use"
+    : hasSavedFilters
+      ? savedAutoApply
+        ? "Auto-open on"
+        : "One-click mode"
+      : "Nothing saved";
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -548,6 +735,139 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
           </p>
         )}
       </div>
+
+      {!savedLoading && (
+        <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">
+          <div className="p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => setSavedPanelOpen((v) => !v)}
+              className="w-full sm:w-auto text-left flex items-center justify-between gap-3"
+              aria-expanded={savedPanelOpen}
+            >
+              <span className="flex items-center gap-2">
+                <FilterIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                  Saved Filters
+                </span>
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full border",
+                  hasSavedFilters
+                    ? "border-[var(--color-border-accent)] text-[var(--color-text-secondary)]"
+                    : "border-[var(--color-border-default)] text-[var(--color-text-tertiary)]"
+                )}>
+                  {savedStatusLabel}
+                </span>
+              </span>
+              <ChevronDownIcon
+                className={cn(
+                  "w-4 h-4 text-[var(--color-text-secondary)] transition-transform",
+                  savedPanelOpen && "rotate-180"
+                )}
+              />
+            </button>
+            {userId && hasSavedFilters && (
+              <button
+                type="button"
+                onClick={applySavedFilters}
+                disabled={savedSaving}
+                className="w-full sm:w-auto px-3 py-1.5 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
+              >
+                Apply Saved
+              </button>
+            )}
+          </div>
+          {savedPanelOpen && (
+            <div className="border-t border-[var(--color-border-default)] p-3 space-y-3">
+              {userId ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={saveCurrentFilters}
+                      disabled={savedSaving}
+                      className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
+                    >
+                      Save Current Filters
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applySavedFilters}
+                      disabled={savedSaving || !hasSavedFilters}
+                      className="px-3 py-2 text-xs rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
+                    >
+                      Apply Saved Filters
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearSavedFilters}
+                      disabled={savedSaving}
+                      className="px-3 py-2 text-xs rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-accent)] transition-colors disabled:opacity-50"
+                    >
+                      Reset Saved
+                    </button>
+                  </div>
+
+                  <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-3 space-y-2">
+                    <p className="text-xs font-medium text-[var(--color-text-primary)]">Recall mode</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSavedRecallMode(false)}
+                        disabled={savedSaving}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-lg border transition-colors",
+                          !savedAutoApply
+                            ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                            : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        )}
+                      >
+                        One-click Apply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSavedRecallMode(true)}
+                        disabled={savedSaving}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-lg border transition-colors",
+                          savedAutoApply
+                            ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                            : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        )}
+                      >
+                        Auto-open
+                      </button>
+                    </div>
+                    <p className="text-xs text-[var(--color-text-tertiary)]">
+                      One-click lets you choose when to apply. Auto-open applies saved filters automatically when this page loads without URL filters.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
+                    <span>Need full setup controls?</span>
+                    <a
+                      href="/dashboard/settings"
+                      className="text-[var(--color-accent-primary)] hover:underline"
+                    >
+                      Open Dashboard Settings
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-[var(--color-text-tertiary)]">
+                  Sign in to save filters once, then apply with one tap or auto-open each visit.
+                </p>
+              )}
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                Weekly digest personalization uses your saved type, day, cost, and location filters.
+              </p>
+              {savedMessage && (
+                <p className="text-xs text-[var(--color-text-secondary)]">{savedMessage}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Collapsed Filters - Progressive Disclosure */}
       <details className="group rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]">

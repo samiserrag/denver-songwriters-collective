@@ -21,13 +21,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/serviceRoleClient";
 import { checkAdminRole } from "@/lib/auth/adminAuth";
-import { getUpcomingHappenings, getDigestRecipients } from "@/lib/digest/weeklyHappenings";
+import {
+  getUpcomingHappenings,
+  getDigestRecipients,
+  personalizeDigestRecipients,
+} from "@/lib/digest/weeklyHappenings";
 import { getUpcomingOpenMics, getDigestRecipients as getOpenMicRecipients } from "@/lib/digest/weeklyOpenMics";
 import { getWeeklyHappeningsDigestEmail } from "@/lib/email/templates/weeklyHappeningsDigest";
 import { getWeeklyOpenMicsDigestEmail } from "@/lib/email/templates/weeklyOpenMicsDigest";
 import { sendDigestEmails } from "@/lib/digest/sendDigest";
 import { claimDigestSendLock, computeWeekKey } from "@/lib/digest/digestSendLog";
 import type { DigestType } from "@/lib/digest/digestSendLog";
+import { isDigestPersonalizationEnabled } from "@/lib/featureFlags";
 import {
   getEditorial,
   resolveEditorial,
@@ -112,6 +117,30 @@ export async function POST(request: NextRequest) {
 
       if (digestType === "weekly_happenings") {
         const digestData = await getUpcomingHappenings(serviceClient);
+        const personalizationEnabled = isDigestPersonalizationEnabled();
+        const personalized = await personalizeDigestRecipients(
+          serviceClient,
+          [adminRecipient],
+          digestData,
+          {
+            enabled: personalizationEnabled,
+            logPrefix: "[AdminTestSend]",
+          }
+        );
+        const recipientsToSend = personalized.recipients;
+
+        if (recipientsToSend.length === 0) {
+          return NextResponse.json({
+            success: true,
+            mode: "test",
+            sent: 0,
+            failed: 0,
+            sentTo: adminProfile.email,
+            weekKey: editorialWeekKey,
+            hasEditorial: false,
+            message: "No digest events for the recipient after personalization filters.",
+          });
+        }
 
         // GTM-3: Resolve editorial for test send (uses editorial picker week key)
         console.log(`[AdminTestSend] Using editorialWeekKey ${editorialWeekKey}`);
@@ -137,16 +166,20 @@ export async function POST(request: NextRequest) {
 
         const result = await sendDigestEmails({
           mode: "test",
-          recipients: [adminRecipient],
-          buildEmail: (recipient) =>
-            getWeeklyHappeningsDigestEmail({
+          recipients: recipientsToSend,
+          buildEmail: (recipient) => {
+            const recipientDigestData =
+              personalized.digestByUserId.get(recipient.userId) || digestData;
+
+            return getWeeklyHappeningsDigestEmail({
               firstName: recipient.firstName,
               userId: recipient.userId,
-              byDate: digestData.byDate,
-              totalCount: digestData.totalCount,
-              venueCount: digestData.venueCount,
+              byDate: recipientDigestData.byDate,
+              totalCount: recipientDigestData.totalCount,
+              venueCount: recipientDigestData.venueCount,
               editorial: resolvedEditorial,
-            }),
+            });
+          },
           templateName: "weeklyHappeningsDigest",
           logPrefix: "[AdminTestSend]",
         });
@@ -159,6 +192,9 @@ export async function POST(request: NextRequest) {
           sentTo: adminProfile.email,
           weekKey: editorialWeekKey,
           hasEditorial: !!resolvedEditorial,
+          personalizationEnabled,
+          personalizedRecipients: personalized.personalizedCount,
+          skippedByFilters: personalized.skippedCount,
           previewHtml: result.previewHtml,
           previewSubject: result.previewSubject,
         });
@@ -200,12 +236,26 @@ export async function POST(request: NextRequest) {
     if (digestType === "weekly_happenings") {
       const digestData = await getUpcomingHappenings(serviceClient);
       const recipients = await getDigestRecipients(serviceClient);
+      const personalizationEnabled = isDigestPersonalizationEnabled();
+      const personalized = await personalizeDigestRecipients(
+        serviceClient,
+        recipients,
+        digestData,
+        {
+          enabled: personalizationEnabled,
+          logPrefix: "[AdminFullSend]",
+        }
+      );
+      const recipientsToSend = personalized.recipients;
 
-      if (recipients.length === 0) {
+      if (recipientsToSend.length === 0) {
         return NextResponse.json({
           success: true,
-          message: "No eligible recipients",
+          message: personalizationEnabled
+            ? "No recipients after personalization filters"
+            : "No eligible recipients",
           sent: 0,
+          skippedByFilters: personalized.skippedCount,
         });
       }
 
@@ -213,7 +263,7 @@ export async function POST(request: NextRequest) {
       const lock = await claimDigestSendLock(
         serviceClient,
         "weekly_happenings",
-        recipients.length,
+        recipientsToSend.length,
         lockWeekKey
       );
 
@@ -246,16 +296,20 @@ export async function POST(request: NextRequest) {
 
       const result = await sendDigestEmails({
         mode: "full",
-        recipients,
-        buildEmail: (recipient) =>
-          getWeeklyHappeningsDigestEmail({
+        recipients: recipientsToSend,
+        buildEmail: (recipient) => {
+          const recipientDigestData =
+            personalized.digestByUserId.get(recipient.userId) || digestData;
+
+          return getWeeklyHappeningsDigestEmail({
             firstName: recipient.firstName,
             userId: recipient.userId,
-            byDate: digestData.byDate,
-            totalCount: digestData.totalCount,
-            venueCount: digestData.venueCount,
+            byDate: recipientDigestData.byDate,
+            totalCount: recipientDigestData.totalCount,
+            venueCount: recipientDigestData.venueCount,
             editorial: resolvedEditorial,
-          }),
+          });
+        },
         templateName: "weeklyHappeningsDigest",
         logPrefix: "[AdminFullSend]",
       });
@@ -268,6 +322,9 @@ export async function POST(request: NextRequest) {
         total: result.total,
         weekKey: lockWeekKey,
         hasEditorial: !!resolvedEditorial,
+        personalizationEnabled,
+        personalizedRecipients: personalized.personalizedCount,
+        skippedByFilters: personalized.skippedCount,
       });
     } else {
       const digestData = await getUpcomingOpenMics(serviceClient);

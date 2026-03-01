@@ -42,11 +42,20 @@ vi.mock("@/lib/supabase/serviceRoleClient", () => ({
 
 vi.mock("@/lib/digest/weeklyHappenings", () => ({
   getUpcomingHappenings: async () => ({
-    byDate: {},
+    byDate: new Map(),
     totalCount: 0,
     venueCount: 0,
   }),
   getDigestRecipients: async () => [],
+  personalizeDigestRecipients: async (
+    _client: unknown,
+    recipients: Array<{ userId: string; email: string; firstName: string | null }>
+  ) => ({
+    recipients,
+    digestByUserId: new Map(),
+    personalizedCount: 0,
+    skippedCount: 0,
+  }),
 }));
 
 vi.mock("@/lib/digest/digestEditorial", () => ({

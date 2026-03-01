@@ -6,9 +6,50 @@ import Link from "next/link";
 import {
   getPreferences,
   upsertPreferences,
-  DEFAULT_PREFERENCES,
   type NotificationPreferences,
 } from "@/lib/notifications/preferences";
+import {
+  hasSavedHappeningsFilters,
+  sanitizeSavedHappeningsFilters,
+  upsertUserSavedHappeningsFilters,
+  getUserSavedHappeningsFilters,
+  type SavedDayFilter,
+  type SavedHappeningsFilters,
+} from "@/lib/happenings/savedFilters";
+
+const SAVED_FILTER_TYPE_OPTIONS = [
+  { value: "", label: "All Types" },
+  { value: "open_mic", label: "Open Mics" },
+  { value: "shows", label: "Shows" },
+  { value: "showcase", label: "Showcases" },
+  { value: "gig", label: "Gigs" },
+  { value: "workshop", label: "Workshops" },
+  { value: "song_circle", label: "Song Circles" },
+  { value: "jam_session", label: "Jam Sessions" },
+  { value: "poetry", label: "Poetry" },
+  { value: "irish", label: "Irish" },
+  { value: "blues", label: "Blues" },
+  { value: "bluegrass", label: "Bluegrass" },
+  { value: "comedy", label: "Comedy" },
+  { value: "other", label: "Other" },
+] as const;
+
+const SAVED_FILTER_DAY_OPTIONS = [
+  { value: "mon", label: "Mon" },
+  { value: "tue", label: "Tue" },
+  { value: "wed", label: "Wed" },
+  { value: "thu", label: "Thu" },
+  { value: "fri", label: "Fri" },
+  { value: "sat", label: "Sat" },
+  { value: "sun", label: "Sun" },
+] as const;
+
+const SAVED_FILTER_COST_OPTIONS = [
+  { value: "", label: "Any cost" },
+  { value: "free", label: "Free" },
+  { value: "paid", label: "Paid" },
+  { value: "unknown", label: "Unknown" },
+] as const;
 
 export default function SettingsPage() {
   const supabase = createClient();
@@ -28,6 +69,11 @@ export default function SettingsPage() {
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsSaved, setPrefsSaved] = useState(false);
+  const [savedFilters, setSavedFilters] = useState<SavedHappeningsFilters>({});
+  const [savedFiltersAutoApply, setSavedFiltersAutoApply] = useState(false);
+  const [savedFiltersLoading, setSavedFiltersLoading] = useState(true);
+  const [savedFiltersSaving, setSavedFiltersSaving] = useState(false);
+  const [savedFiltersSaved, setSavedFiltersSaved] = useState<string | null>(null);
 
   // Load user and preferences
   useEffect(() => {
@@ -67,6 +113,13 @@ export default function SettingsPage() {
       const preferences = await getPreferences(supabase, user.id);
       setPrefs(preferences);
       setPrefsLoading(false);
+
+      const saved = await getUserSavedHappeningsFilters(supabase, user.id);
+      if (saved) {
+        setSavedFilters(saved.filters);
+        setSavedFiltersAutoApply(saved.autoApply);
+      }
+      setSavedFiltersLoading(false);
     }
 
     loadData();
@@ -90,6 +143,63 @@ export default function SettingsPage() {
     }
 
     setPrefsSaving(false);
+  };
+
+  const updateSavedFilters = (patch: Partial<SavedHappeningsFilters>) => {
+    setSavedFilters((prev) => sanitizeSavedHappeningsFilters({ ...prev, ...patch }));
+  };
+
+  const toggleSavedDay = (day: string) => {
+    const current = savedFilters.days || [];
+    const normalizedDay = day as SavedDayFilter;
+    const next = current.includes(normalizedDay)
+      ? current.filter((d) => d !== normalizedDay)
+      : [...current, normalizedDay];
+    updateSavedFilters({ days: next });
+  };
+
+  const handleSaveSavedFilters = async () => {
+    if (!userId) return;
+
+    setSavedFiltersSaving(true);
+    setSavedFiltersSaved(null);
+
+    const updated = await upsertUserSavedHappeningsFilters(supabase, userId, {
+      autoApply: savedFiltersAutoApply,
+      filters: savedFilters,
+    });
+
+    if (updated) {
+      setSavedFilters(updated.filters);
+      setSavedFiltersAutoApply(updated.autoApply);
+      setSavedFiltersSaved("Saved.");
+    } else {
+      setSavedFiltersSaved("Could not save. Try again.");
+    }
+
+    setSavedFiltersSaving(false);
+  };
+
+  const handleResetSavedFilters = async () => {
+    if (!userId) return;
+
+    setSavedFiltersSaving(true);
+    setSavedFiltersSaved(null);
+
+    const updated = await upsertUserSavedHappeningsFilters(supabase, userId, {
+      autoApply: false,
+      filters: {},
+    });
+
+    if (updated) {
+      setSavedFilters(updated.filters);
+      setSavedFiltersAutoApply(updated.autoApply);
+      setSavedFiltersSaved("Saved filters reset.");
+    } else {
+      setSavedFiltersSaved("Could not reset. Try again.");
+    }
+
+    setSavedFiltersSaving(false);
   };
 
   const handleDeleteAccount = async () => {
@@ -438,6 +548,219 @@ export default function SettingsPage() {
             </div>
           ) : (
             <div className="text-[var(--color-text-tertiary)]">Unable to load preferences.</div>
+          )}
+        </section>
+
+        {/* Saved Happenings Filters */}
+        <section className="mb-12 p-6 bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] rounded-lg">
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">Saved Happenings Filters</h2>
+          <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+            Save your filter preferences once. Use one-click apply on Happenings, or turn on auto-apply for every visit.
+          </p>
+
+          {savedFiltersLoading ? (
+            <div className="text-[var(--color-text-tertiary)]">Loading saved filters...</div>
+          ) : (
+            <div className="space-y-5">
+              <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">1. Choose what to save</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="space-y-1">
+                    <span className="text-sm text-[var(--color-text-secondary)]">Type</span>
+                    <select
+                      value={savedFilters.type || ""}
+                      onChange={(e) => updateSavedFilters({ type: e.target.value || undefined })}
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+                    >
+                      {SAVED_FILTER_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1">
+                    <span className="text-sm text-[var(--color-text-secondary)]">Cost</span>
+                    <select
+                      value={savedFilters.cost || ""}
+                      onChange={(e) =>
+                        updateSavedFilters({
+                          cost: (e.target.value || undefined) as SavedHappeningsFilters["cost"],
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+                    >
+                      {SAVED_FILTER_COST_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <label className="inline-flex items-start gap-2 cursor-pointer text-sm text-[var(--color-text-primary)]">
+                  <input
+                    type="checkbox"
+                    checked={savedFilters.csc === true}
+                    onChange={(e) => updateSavedFilters({ csc: e.target.checked ? true : undefined })}
+                    className="mt-0.5 rounded border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]"
+                  />
+                  <span>Prioritize CSC-only happenings on the Happenings page</span>
+                </label>
+
+                <div className="space-y-2">
+                  <span className="text-sm text-[var(--color-text-secondary)]">Days</span>
+                  <div className="flex flex-wrap gap-2">
+                    {SAVED_FILTER_DAY_OPTIONS.map((day) => {
+                      const active = (savedFilters.days || []).includes(day.value as SavedDayFilter);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleSavedDay(day.value)}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                            active
+                              ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                              : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                          }`}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">2. Set location</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label className="space-y-1">
+                    <span className="text-sm text-[var(--color-text-secondary)]">City</span>
+                    <input
+                      type="text"
+                      value={savedFilters.city || ""}
+                      disabled={Boolean(savedFilters.zip)}
+                      onChange={(e) =>
+                        updateSavedFilters({
+                          city: e.target.value || undefined,
+                          zip: undefined,
+                        })
+                      }
+                      placeholder="Denver"
+                      className={`w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)] ${
+                        savedFilters.zip ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    />
+                  </label>
+
+                  <label className="space-y-1">
+                    <span className="text-sm text-[var(--color-text-secondary)]">ZIP</span>
+                    <input
+                      type="text"
+                      value={savedFilters.zip || ""}
+                      onChange={(e) =>
+                        updateSavedFilters({
+                          zip: e.target.value || undefined,
+                          city: undefined,
+                        })
+                      }
+                      placeholder="80202"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-accent-primary)]"
+                    />
+                  </label>
+
+                  <label className="space-y-1">
+                    <span className="text-sm text-[var(--color-text-secondary)]">Radius</span>
+                    <select
+                      value={savedFilters.radius || "10"}
+                      disabled={!savedFilters.city && !savedFilters.zip}
+                      onChange={(e) => updateSavedFilters({ radius: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent-primary)] ${
+                        !savedFilters.city && !savedFilters.zip ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <option value="5">5 miles</option>
+                      <option value="10">10 miles</option>
+                      <option value="25">25 miles</option>
+                      <option value="50">50 miles</option>
+                    </select>
+                  </label>
+                </div>
+                <p className="text-[var(--color-text-tertiary)] text-xs">
+                  Tip: enter either City or ZIP. If both are entered, ZIP will be used.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">3. Choose recall method</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSavedFiltersAutoApply(false)}
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                      !savedFiltersAutoApply
+                        ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                        : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    One-click Apply
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSavedFiltersAutoApply(true)}
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                      savedFiltersAutoApply
+                        ? "bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)] text-[var(--color-text-on-accent)]"
+                        : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    Auto-open
+                  </button>
+                </div>
+                <p className="text-[var(--color-text-tertiary)] text-xs">
+                  One-click lets you apply saved filters when you want. Auto-open applies them automatically when Happenings opens with no URL filters.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-tertiary)] p-4 space-y-3">
+                <p className="text-[var(--color-text-tertiary)] text-xs">
+                  Weekly digest personalization uses your saved type, day, cost, and location filters. CSC-only is excluded from digest personalization.
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSaveSavedFilters}
+                    disabled={savedFiltersSaving}
+                    className="px-4 py-2 rounded-lg bg-[var(--color-accent-primary)] text-[var(--color-text-on-accent)] hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {savedFiltersSaving ? "Saving..." : "Save Filters"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetSavedFilters}
+                    disabled={savedFiltersSaving}
+                    className="px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-50"
+                  >
+                    Reset
+                  </button>
+                  {savedFiltersSaved && (
+                    <span className="text-sm text-[var(--color-text-secondary)] self-center">
+                      {savedFiltersSaved}
+                    </span>
+                  )}
+                </div>
+
+                {!hasSavedHappeningsFilters(savedFilters) && (
+                  <p className="text-[var(--color-text-tertiary)] text-xs">
+                    No saved filters yet. Save at least one filter to personalize your weekly digest.
+                  </p>
+                )}
+              </div>
+            </div>
           )}
         </section>
 
