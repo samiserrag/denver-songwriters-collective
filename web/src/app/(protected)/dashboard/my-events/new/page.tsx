@@ -8,10 +8,13 @@ import { checkHostStatus } from "@/lib/auth/adminAuth";
 // Phase 8E: Feature flag for conversational create entrypoint chooser.
 // When ON, the launcher shows a choice between conversational and classic.
 // When OFF, only the classic form is shown (current behavior).
+// Uses server-only env var (no NEXT_PUBLIC_ prefix) so it's evaluated at
+// runtime, not inlined at build time.
 // ---------------------------------------------------------------------------
 
 const CONVERSATIONAL_CREATE_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true";
+  process.env.NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true" ||
+  process.env.ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true";
 
 export const metadata = {
   title: "Create Happening | CSC"

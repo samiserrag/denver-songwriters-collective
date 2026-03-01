@@ -8,7 +8,8 @@ import ConversationalCreateUI from "../../_components/ConversationalCreateUI";
 // ---------------------------------------------------------------------------
 
 const CONVERSATIONAL_CREATE_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true";
+  process.env.NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true" ||
+  process.env.ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true";
 
 export const metadata = {
   title: "Create Happening | CSC",
