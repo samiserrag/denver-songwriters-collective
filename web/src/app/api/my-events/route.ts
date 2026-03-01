@@ -263,6 +263,12 @@ export async function POST(request: Request) {
   body.location_mode = normalizeLocationMode(body.location_mode);
   body.signup_mode = normalizeSignupMode(body.signup_mode);
 
+  // Phase 9A: trace_id correlation for conversational create funnel metrics.
+  const traceId =
+    typeof body.trace_id === "string" && /^[a-f0-9-]{1,64}$/i.test(body.trace_id)
+      ? body.trace_id
+      : null;
+
   // Non-admins may send youtube_url/spotify_url as empty strings (form always includes them).
   // Only block when actually setting a non-empty value.
   const hasNonEmptyMediaEmbed = !!(body.youtube_url?.trim?.() || body.spotify_url?.trim?.());
@@ -489,7 +495,7 @@ export async function POST(request: Request) {
       .single();
 
     if (eventError) {
-      console.error("[POST /api/my-events] Event creation error:", eventError.message, "| Code:", eventError.code);
+      console.error("[POST /api/my-events] Event creation error:", eventError.message, "| Code:", eventError.code, "| traceId:", traceId);
       // If this is not the first event, we've already created some - return partial success
       if (createdEvents.length > 0) {
         return NextResponse.json({
@@ -501,7 +507,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: eventError.message }, { status: 500 });
     }
 
-    console.log("[POST /api/my-events] Event created:", event.id, "| date:", eventDate, "| series_index:", i);
+    console.log("[POST /api/my-events] Event created:", event.id, "| date:", eventDate, "| series_index:", i, "| traceId:", traceId);
     createdEvents.push({ id: event.id, event_date: event.event_date, slug: event.slug || null });
 
     // Add creator as host

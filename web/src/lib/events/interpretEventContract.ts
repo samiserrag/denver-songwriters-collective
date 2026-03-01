@@ -37,6 +37,7 @@ export interface InterpretEventRequestBody {
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
   locked_draft?: Record<string, unknown>;
   image_inputs?: ImageInput[];
+  trace_id?: string;
 }
 
 export interface QualityHint {

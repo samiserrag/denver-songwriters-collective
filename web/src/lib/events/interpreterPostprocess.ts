@@ -37,9 +37,9 @@ export function detectsRecurrenceIntent(
 // Time semantics: doors vs performance start (Phase 7D)
 // ---------------------------------------------------------------------------
 
-export const DOORS_PATTERN = /\bdoors?\s+(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
+export const DOORS_PATTERN = /\bdoors?\s+(?:open\s+)?(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
 export const PERFORMANCE_START_PATTERN =
-  /\b(?:first\s+performance|show|music)\s+(?:starts?\s+)?(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
+  /\b(?:first\s+performance|show|music|set|acts?)\s+(?:starts?\s+)?(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
 
 export function parseTimeString(raw: string): string | null {
   const cleaned = raw.trim().toLowerCase();
@@ -409,6 +409,23 @@ function isBlockingFieldSatisfied(draft: Record<string, unknown>, field: string)
       return hasNonEmptyString(draft.custom_city);
     case "custom_state":
       return hasNonEmptyString(draft.custom_state);
+    // Phase 9C: additional explicit cases to reduce unnecessary clarification turns.
+    case "description":
+      return hasNonEmptyString(draft.description);
+    case "signup_mode":
+      return hasNonEmptyString(draft.signup_mode);
+    case "cost_label":
+      return hasNonEmptyString(draft.cost_label);
+    case "is_free":
+      return draft.is_free === true || draft.is_free === false;
+    case "day_of_week":
+      return hasNonEmptyString(draft.day_of_week);
+    case "recurrence_rule":
+      return hasNonEmptyString(draft.recurrence_rule);
+    case "location_mode":
+      return hasNonEmptyString(draft.location_mode);
+    case "capacity":
+      return typeof draft.capacity === "number" || hasNonEmptyString(draft.capacity);
     default:
       return false;
   }

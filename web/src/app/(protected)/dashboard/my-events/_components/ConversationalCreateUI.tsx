@@ -14,6 +14,7 @@ import {
 } from "@/lib/events/uploadCoverForEvent";
 import type { NextAction } from "@/lib/events/interpretEventContract";
 import { normalizeSignupMode } from "@/lib/events/signupModeContract";
+import { humanizeRecurrence } from "@/lib/recurrenceHumanizer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,6 +53,7 @@ interface CreatedEventSummary {
   endTime: string | null;
   seriesMode: string | null;
   recurrenceRule: string | null;
+  dayOfWeek: string | null;
   locationMode: string | null;
   venueName: string | null;
   signupMode: string | null;
@@ -77,6 +79,7 @@ function buildCreatedEventSummary(
     endTime: (draft.end_time as string) ?? null,
     seriesMode: (draft.series_mode as string) ?? null,
     recurrenceRule: (draft.recurrence_rule as string) ?? null,
+    dayOfWeek: (draft.day_of_week as string) ?? null,
     locationMode: (draft.location_mode as string) ?? null,
     venueName: (draft.venue_name as string) ?? (draft.custom_location_name as string) ?? null,
     signupMode: (draft.signup_mode as string) ?? null,
@@ -544,6 +547,36 @@ export function ConversationalCreateUI({
   // P2 fix: track all created object URLs for reliable cleanup on unmount
   const objectUrlsRef = useRef<Set<string>>(new Set());
 
+  // ---- Phase 9A: telemetry ----
+  const [traceId] = useState(() => crypto.randomUUID());
+  const impressionSent = useRef(false);
+
+  const sendTelemetry = useCallback(
+    (eventName: string) => {
+      fetch("/api/events/telemetry", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          trace_id: traceId,
+          event_name: eventName,
+          surface: isHostVariant ? "host" : "lab",
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {
+        // Fire-and-forget — telemetry failures must not affect UX.
+      });
+    },
+    [traceId, isHostVariant]
+  );
+
+  useEffect(() => {
+    if (!impressionSent.current) {
+      impressionSent.current = true;
+      sendTelemetry("interpreter_impression");
+    }
+  }, [sendTelemetry]);
+
   // ---- conversation history ----
   const [conversationHistory, setConversationHistory] = useState<ConversationEntry[]>([]);
 
@@ -808,6 +841,7 @@ export function ConversationalCreateUI({
       const payload: Record<string, unknown> = {
         mode: effectiveMode,
         message,
+        trace_id: traceId,
       };
 
       if (effectiveMode !== "create" && eventId.trim()) {
@@ -1001,7 +1035,7 @@ export function ConversationalCreateUI({
     setCreateMessage(null);
 
     try {
-      const createBody: Record<string, unknown> = { ...mapResult.body };
+      const createBody: Record<string, unknown> = { ...mapResult.body, trace_id: traceId };
       let venueCreateNote: string | null = null;
 
       // Optional: when user explicitly requests "new venue", try adding it to venue directory first.
@@ -1202,6 +1236,7 @@ export function ConversationalCreateUI({
             <Link
               href="/dashboard/my-events/new?classic=true"
               className="inline-block mt-2 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+              onClick={() => sendTelemetry("fallback_click")}
             >
               ← Use classic form instead
             </Link>
@@ -1486,7 +1521,7 @@ export function ConversationalCreateUI({
                   {createdSummary.recurrenceRule && (
                     <Fragment>
                       <span className="text-[var(--color-text-tertiary)]">Recurrence</span>
-                      <span className="text-[var(--color-text-primary)]">{createdSummary.recurrenceRule}</span>
+                      <span className="text-[var(--color-text-primary)]">{humanizeRecurrence(createdSummary.recurrenceRule, createdSummary.dayOfWeek)}</span>
                     </Fragment>
                   )}
                   {createdSummary.venueName && (
@@ -1680,7 +1715,7 @@ export function ConversationalCreateUI({
                 if (d.start_time) rows.push(["Start", String(d.start_time)]);
                 if (d.end_time) rows.push(["End", String(d.end_time)]);
                 if (d.series_mode) rows.push(["Series", String(d.series_mode)]);
-                if (d.recurrence_rule) rows.push(["Recurrence", String(d.recurrence_rule)]);
+                if (d.recurrence_rule) rows.push(["Recurrence", humanizeRecurrence(typeof d.recurrence_rule === "string" ? d.recurrence_rule : null, typeof d.day_of_week === "string" ? d.day_of_week : null)]);
                 if (d.venue_name) rows.push(["Venue", String(d.venue_name)]);
                 if (d.venue_id) rows.push(["Venue ID", String(d.venue_id)]);
                 if (d.custom_location_name) rows.push(["Location", String(d.custom_location_name)]);

@@ -605,6 +605,21 @@ function deriveTitleFromText(input: string): string | null {
     }
   }
 
+  // Phase 9B: creative title fallback — first short capitalized line
+  // that doesn't look like a URL, time, or date.
+  for (const line of lines) {
+    const words = line.split(/\s+/);
+    if (
+      words.length >= 2 &&
+      words.length <= 8 &&
+      /^[A-Z]/.test(line) &&
+      !/(https?:\/\/|\d{1,2}:\d{2}|\d{4}-\d{2}-\d{2})/.test(line)
+    ) {
+      const candidate = sanitizeDerivedTitle(line);
+      if (candidate) return candidate;
+    }
+  }
+
   return null;
 }
 
@@ -1033,6 +1048,10 @@ export async function POST(request: Request) {
     mode === "create"
       ? sanitizeInterpretDraftPayload("create", (body as { locked_draft?: unknown }).locked_draft)
       : null;
+  const traceId =
+    typeof body.trace_id === "string" && body.trace_id.length <= 64
+      ? body.trace_id
+      : null;
 
   // Validate image inputs (count, mime type, decoded size).
   const imageValidation = validateImageInputs(body.image_inputs);
@@ -1053,6 +1072,7 @@ export async function POST(request: Request) {
     const canManage = await canManageEvent(supabase, sessionUser.id, eventId);
     console.info("[events/interpret] authz", {
       userId: sessionUser.id,
+      traceId,
       mode,
       eventId,
       allowed: canManage,
@@ -1105,6 +1125,7 @@ export async function POST(request: Request) {
   if (validatedImages.length > 0) {
     console.info("[events/interpret] starting Phase A vision extraction", {
       userId: sessionUser.id,
+      traceId,
       imageCount: validatedImages.length,
     });
 
@@ -1115,6 +1136,7 @@ export async function POST(request: Request) {
       extractedImageText = extraction.extractedText;
       console.info("[events/interpret] Phase A complete", {
         userId: sessionUser.id,
+        traceId,
         extractedFields: extraction.metadata.extracted_fields,
         confidence: extraction.metadata.confidence,
         textLength: extraction.extractedText.length,
@@ -1152,6 +1174,7 @@ export async function POST(request: Request) {
 
   console.info("[events/interpret] request", {
     userId: sessionUser.id,
+    traceId,
     mode,
     eventId: eventId ?? null,
     dateKey: dateKey ?? null,
@@ -1338,6 +1361,24 @@ export async function POST(request: Request) {
     // online_explicit / custom_location → no changes needed
   }
 
+  // Phase 9B: Reverse venue/custom exclusivity.
+  // If venue resolution did NOT resolve to a known venue (custom_location, unresolved,
+  // online_explicit, or skipped) AND draft has both venue_id (stale from locked_draft)
+  // and custom_location_name (fresh from current LLM output), clear stale venue_id
+  // so hardenDraftForCreateEdit doesn't wrongly force venue mode.
+  // Note: by this point, the if/else chain above has already handled resolved/ambiguous/
+  // unresolved, so remaining venueResolution statuses are online_explicit / custom_location.
+  // The !venueResolution case covers when resolver was not called at all.
+  const venueWasResolved = venueResolution?.status === "resolved";
+  if (
+    !venueWasResolved &&
+    hasNonEmptyString(sanitizedDraft.custom_location_name) &&
+    hasNonEmptyString(sanitizedDraft.venue_id)
+  ) {
+    sanitizedDraft.venue_id = null;
+    sanitizedDraft.venue_name = null;
+  }
+
   // If custom location details are now present, remove redundant location blockers.
   if (hasNonEmptyString(sanitizedDraft.custom_location_name)) {
     const redundant = new Set([
@@ -1442,6 +1483,7 @@ export async function POST(request: Request) {
 
   console.info("[events/interpret] response", {
     userId: sessionUser.id,
+    traceId,
     mode,
     nextAction: response.next_action,
     confidence: response.confidence,

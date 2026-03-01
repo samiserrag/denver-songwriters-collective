@@ -1185,6 +1185,63 @@ fetch("/api/events/interpret", {
 
 ---
 
+### 28. Phase 9 — Interpreter UX Optimization + Trust Metrics (INTERPRETER-10)
+
+**A) Telemetry Endpoint (9A)**
+
+1. POST `/api/events/telemetry` with valid auth and `{ trace_id, event_name: "interpreter_impression", timestamp }` → expect 200 `{ ok: true }`.
+2. POST with unknown `event_name` → expect 400.
+3. POST without auth → expect 401.
+4. Check Axiom: `['vercel-runtime'] | where message contains "[events/telemetry]"` shows `interpreter_impression` with `traceId`.
+
+**B) trace_id Correlation (9A)**
+
+1. Open conversational create → submit interpret request.
+2. Check Axiom: `['vercel-runtime'] | where message contains "[events/interpret] request"` shows `traceId` field.
+3. Create event via conversational flow.
+4. Check Axiom: `['vercel-runtime'] | where message contains "[POST /api/my-events] Event created"` shows `traceId`.
+
+**C) Creative Title Extraction (9B)**
+
+1. Submit interpret with creative title text (no keywords like "open mic" or "jam") → expect `title` extracted from first short capitalized line.
+
+**D) Time Semantics (9B)**
+
+1. Submit interpret with "doors open at 6, first act at 7pm" → expect `start_time` = 19:00 (performance start, not doors).
+2. Submit with "set at 8pm" → expect `start_time` = 20:00.
+
+**E) Reverse Venue/Custom Exclusivity (9B)**
+
+1. Multi-turn: first turn resolves a venue, second turn switches to custom location name → expect `venue_id` cleared, `custom_location_name` present.
+
+**F) Clarification Pruning (9C)**
+
+1. Submit interpret with description already in draft + blocking field for description → expect description not re-asked.
+
+**G) Recurrence Humanization (9D)**
+
+1. Create event with `recurrence_rule` → post-create summary shows human-readable text (e.g., "Every Tuesday") not raw RRULE.
+2. Draft summary table shows human-readable recurrence during conversation.
+
+**H) Mobile Rendering**
+
+1. Verify at 375px (iPhone 12) and 360px (narrow Android) → layout intact, no overflow.
+
+**I) Fallback Link**
+
+1. Fallback link to classic form still visible and functional.
+2. Click fallback → check Axiom for `fallback_click` telemetry event.
+
+**J) Rollback**
+
+1. Set `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY=false`.
+2. Redeploy.
+3. Verify classic-only confirmed.
+
+**Pass Criteria:** All telemetry flowing, recurrence humanized, mobile intact, rollback verified.
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._
