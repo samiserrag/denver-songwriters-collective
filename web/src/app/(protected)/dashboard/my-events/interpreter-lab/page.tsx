@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { Fragment, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   type InterpretMode,
@@ -33,11 +33,19 @@ interface ConversationEntry {
   content: string;
 }
 
+interface QualityHint {
+  field: string;
+  hint: string;
+}
+
 interface ResponseGuidance {
   next_action: string;
   human_summary: string | null;
   clarification_question: string | null;
   blocking_fields: string[];
+  confidence: number | null;
+  draft_payload: Record<string, unknown> | null;
+  quality_hints: QualityHint[];
 }
 
 // ---------------------------------------------------------------------------
@@ -482,12 +490,23 @@ export default function InterpreterLabPage() {
     const blocking = Array.isArray(maybe.blocking_fields)
       ? maybe.blocking_fields.filter((v): v is string => typeof v === "string")
       : [];
+    const hints = Array.isArray(maybe.quality_hints)
+      ? (maybe.quality_hints as QualityHint[]).filter(
+          (h) => typeof h === "object" && h !== null && typeof h.field === "string" && typeof h.hint === "string"
+        )
+      : [];
     return {
       next_action: maybe.next_action,
       human_summary: typeof maybe.human_summary === "string" ? maybe.human_summary : null,
       clarification_question:
         typeof maybe.clarification_question === "string" ? maybe.clarification_question : null,
       blocking_fields: blocking,
+      confidence: typeof maybe.confidence === "number" ? maybe.confidence : null,
+      draft_payload:
+        maybe.draft_payload && typeof maybe.draft_payload === "object"
+          ? (maybe.draft_payload as Record<string, unknown>)
+          : null,
+      quality_hints: hints,
     };
   }, [responseBody]);
 
@@ -1319,21 +1338,42 @@ export default function InterpreterLabPage() {
           )}
         </div>
 
-        {/* ---- Human-readable next-step guidance ---- */}
+        {/* ---- Phase 8B: Human-readable guidance (primary) ---- */}
         {statusCode === 200 && responseGuidance && (
-          <div className="card-base p-6 space-y-3">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-              What Happens Next
-            </h2>
+          <div className="card-base p-6 space-y-4">
+            {/* Status header with next_action badge + confidence */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                What Happens Next
+              </h2>
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  responseGuidance.next_action === "ask_clarification"
+                    ? "bg-amber-500/15 text-amber-600"
+                    : responseGuidance.next_action === "done"
+                      ? "bg-emerald-500/15 text-emerald-600"
+                      : "bg-blue-500/15 text-blue-600"
+                }`}
+              >
+                {responseGuidance.next_action.replace(/_/g, " ")}
+              </span>
+              {responseGuidance.confidence !== null && (
+                <span className="text-xs text-[var(--color-text-tertiary)]">
+                  Confidence: {Math.round(responseGuidance.confidence * 100)}%
+                </span>
+              )}
+            </div>
 
+            {/* Human summary */}
             {responseGuidance.human_summary && (
               <p className="text-sm text-[var(--color-text-secondary)]">
                 {responseGuidance.human_summary}
               </p>
             )}
 
+            {/* Clarification prompt */}
             {responseGuidance.next_action === "ask_clarification" && (
-              <div className="space-y-2">
+              <div className="space-y-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-4">
                 <p className="text-sm text-[var(--color-text-primary)]">
                   <span className="font-semibold">Question:</span>{" "}
                   {responseGuidance.clarification_question ||
@@ -1341,25 +1381,84 @@ export default function InterpreterLabPage() {
                 </p>
                 {responseGuidance.blocking_fields.length > 0 && (
                   <p className="text-xs text-[var(--color-text-tertiary)]">
-                    Missing required fields:{" "}
+                    Missing:{" "}
                     <span className="font-mono">
                       {responseGuidance.blocking_fields.join(", ")}
                     </span>
                   </p>
                 )}
                 <p className="text-xs text-[var(--color-text-tertiary)]">
-                  In the message box above, reply with only the missing details, then click
-                  &nbsp;<span className="font-semibold">Run Interpreter</span>.
+                  Reply in the message box above, then click{" "}
+                  <span className="font-semibold">Run Interpreter</span>.
                 </p>
               </div>
             )}
 
+            {/* Ready state */}
             {responseGuidance.next_action !== "ask_clarification" && (
-              <p className="text-xs text-[var(--color-text-tertiary)]">
-                The draft is ready for the next step.
-                {canShowCreateAction ? " Click Confirm & Create to publish." : ""}
-              </p>
+              <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-4">
+                <p className="text-sm text-[var(--color-text-primary)]">
+                  The draft is ready.
+                  {canShowCreateAction
+                    ? " Click Confirm & Create below to save."
+                    : ""}
+                </p>
+              </div>
             )}
+
+            {/* Quality hints */}
+            {responseGuidance.quality_hints.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                  Suggestions
+                </p>
+                {responseGuidance.quality_hints.map((hint, i) => (
+                  <p key={i} className="text-xs text-[var(--color-text-tertiary)]">
+                    <span className="font-mono">{hint.field}</span>: {hint.hint}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---- Phase 8B: Draft state summary ---- */}
+        {statusCode === 200 && responseGuidance?.draft_payload && (
+          <div className="card-base p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              Draft Summary
+            </h2>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+              {(() => {
+                const d = responseGuidance.draft_payload;
+                const rows: [string, string][] = [];
+                if (d.title) rows.push(["Title", String(d.title)]);
+                if (d.event_type) rows.push(["Type", String(d.event_type)]);
+                if (d.start_date) rows.push(["Date", String(d.start_date)]);
+                if (d.start_time) rows.push(["Start", String(d.start_time)]);
+                if (d.end_time) rows.push(["End", String(d.end_time)]);
+                if (d.series_mode) rows.push(["Series", String(d.series_mode)]);
+                if (d.recurrence_rule) rows.push(["Recurrence", String(d.recurrence_rule)]);
+                if (d.venue_name) rows.push(["Venue", String(d.venue_name)]);
+                if (d.venue_id) rows.push(["Venue ID", String(d.venue_id)]);
+                if (d.custom_location_name) rows.push(["Location", String(d.custom_location_name)]);
+                if (d.location_mode) rows.push(["Location Mode", String(d.location_mode)]);
+                if (d.online_url) rows.push(["Online URL", String(d.online_url)]);
+                if (d.signup_mode) rows.push(["Signup", String(d.signup_mode)]);
+                if (d.is_free !== undefined && d.is_free !== null) rows.push(["Free", d.is_free ? "Yes" : "No"]);
+                if (d.cost_label) rows.push(["Cost", String(d.cost_label)]);
+                if (d.capacity) rows.push(["Capacity", String(d.capacity)]);
+                if (d.has_timeslots) rows.push(["Timeslots", "Enabled"]);
+                if (d.description) rows.push(["Description", String(d.description).slice(0, 120) + (String(d.description).length > 120 ? "…" : "")]);
+                if (rows.length === 0) rows.push(["—", "No fields extracted yet"]);
+                return rows.map(([label, value], i) => (
+                  <Fragment key={i}>
+                    <span className="text-[var(--color-text-tertiary)] font-medium text-right whitespace-nowrap">{label}</span>
+                    <span className="text-[var(--color-text-primary)] break-words">{value}</span>
+                  </Fragment>
+                ));
+              })()}
+            </div>
           </div>
         )}
 
@@ -1387,16 +1486,22 @@ export default function InterpreterLabPage() {
           </div>
         )}
 
-        {/* ---- Response display ---- */}
-        <div className="card-base p-6 space-y-3">
-          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Response</h2>
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            HTTP Status: <span className="font-mono">{statusCode ?? "—"}</span>
-          </p>
-          <pre className="overflow-auto rounded-lg bg-[var(--color-bg-secondary)] p-4 text-xs text-[var(--color-text-primary)]">
-            {responseBody ? JSON.stringify(responseBody, null, 2) : "No response yet."}
-          </pre>
-        </div>
+        {/* ---- Phase 8B: Raw JSON in collapsible debug panel ---- */}
+        <details className="card-base">
+          <summary className="cursor-pointer px-6 py-4 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors select-none">
+            Debug: Raw API Response
+            {statusCode !== null && (
+              <span className="ml-2 font-mono text-xs">
+                (HTTP {statusCode})
+              </span>
+            )}
+          </summary>
+          <div className="px-6 pb-6 space-y-2">
+            <pre className="overflow-auto rounded-lg bg-[var(--color-bg-secondary)] p-4 text-xs text-[var(--color-text-primary)] max-h-96">
+              {responseBody ? JSON.stringify(responseBody, null, 2) : "No response yet."}
+            </pre>
+          </div>
+        </details>
       </div>
     </main>
   );

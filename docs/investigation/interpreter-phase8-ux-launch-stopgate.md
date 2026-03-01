@@ -236,6 +236,49 @@ This prevents re-enabling recurrence that was intentionally downgraded by the re
 
 **Residual risks:** None identified. The normalization is additive and cannot regress single-event behavior (F25 proves the null-rule case is a no-op).
 
+### Phase 8B (Conversation UX) — IMPLEMENTED 2026-02-28
+
+**Summary:** Made human-readable guidance primary; raw JSON demoted to collapsible debug panel; added draft state summary block.
+
+**Changed files:**
+| File | Change |
+|------|--------|
+| `web/src/app/(protected)/dashboard/my-events/interpreter-lab/page.tsx` | **UI restructured**: (1) "What Happens Next" section enhanced with `next_action` status badge (color-coded: amber=clarification, blue=preview, green=done), confidence %, quality hints display. (2) Clarification prompt in styled container with instructions. (3) New "Draft Summary" section with grid layout showing extracted fields (title, type, date, time, venue, recurrence, signup, cost, etc.) — truncates description at 120 chars. (4) Raw JSON wrapped in `<details>` collapsible labeled "Debug: Raw API Response". (5) `ResponseGuidance` type expanded to include `confidence`, `draft_payload`, `quality_hints`. (6) Added `Fragment` import + `QualityHint` interface. |
+| `web/src/__tests__/interpreter-lab-conversation-ux.test.ts` | **New test file**: 26 source-code assertions across 5 groups — (A) human-readable guidance is primary, (B) raw JSON is collapsible, (C) draft summary block, (D) ResponseGuidance type expansion, (E) existing functionality preserved. |
+
+**UX behavior changes:**
+| Aspect | Before (Phase 7) | After (Phase 8B) |
+|--------|-------------------|-------------------|
+| Primary display | Raw JSON (`Response` section always visible) | Human-readable guidance ("What Happens Next" + "Draft Summary") |
+| next_action | Shown in guidance text only | Color-coded badge + text explanation |
+| Confidence | Not shown | Percentage displayed next to badge |
+| Draft fields | Only visible in raw JSON | Grid summary with labeled rows |
+| Quality hints | Hidden in JSON | Dedicated "Suggestions" section |
+| Clarification prompt | Plain text | Styled amber container with instructions |
+| Ready state | Minimal text | Green container with clear CTA reference |
+| Raw JSON | Always visible, full card | Collapsed `<details>` labeled "Debug: Raw API Response" |
+| Conversation history | Unchanged | Unchanged |
+| Create/Cover actions | Unchanged | Unchanged |
+
+**What was NOT changed (Phase 8B boundary):**
+- No server-side changes (route.ts, interpreterPostprocess.ts untouched)
+- No feature flag changes
+- No create/edit flow logic changes
+- No image staging changes
+- All Phase 4A/4B/7/8A functionality preserved
+
+**Test results (2026-02-28):**
+- Phase 8B tests: 26/26 pass
+- Phase 4B create-write tests: 50/50 pass
+- Phase 4A cover-apply tests: 25/25 pass
+- Fixture regression: 27/27 pass (10/10 safety-critical)
+- Contract tests: 14/14 pass
+- ESLint: clean
+
+**Residual risks:**
+- Draft Summary shows raw field names (e.g. `series_mode`, `recurrence_rule`). Phase 8C will improve label friendliness with input hint chips.
+- No mobile-specific testing done yet — deferred to Phase 8E manual smoke.
+
 ---
 
 ## 10) Approval Gates
