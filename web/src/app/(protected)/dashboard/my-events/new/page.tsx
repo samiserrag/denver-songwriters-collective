@@ -21,9 +21,11 @@ export default async function NewEventPage({
   // Evaluated inside the function body so it reads runtime env vars on each
   // request (module-level NEXT_PUBLIC_* gets inlined at build time).
   // -------------------------------------------------------------------------
-  const CONVERSATIONAL_CREATE_ENABLED =
-    process.env.NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true" ||
-    process.env.ENABLE_CONVERSATIONAL_CREATE_ENTRY === "true";
+  const npVal = process.env.NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY;
+  const srvVal = process.env.ENABLE_CONVERSATIONAL_CREATE_ENTRY;
+  console.log("[Phase8E-debug] NEXT_PUBLIC val:", JSON.stringify(npVal), "| server val:", JSON.stringify(srvVal));
+  const CONVERSATIONAL_CREATE_ENABLED = npVal === "true" || srvVal === "true";
+  console.log("[Phase8E-debug] CONVERSATIONAL_CREATE_ENABLED:", CONVERSATIONAL_CREATE_ENABLED);
 
   const supabase = await createSupabaseServerClient();
   const { data: { user: sessionUser }, error: sessionUserError } = await supabase.auth.getUser();
