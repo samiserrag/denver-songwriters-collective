@@ -129,6 +129,51 @@ and production databases (where it does exist and needs privileges revoked).
 
 ---
 
+## Secret Hygiene + Rotate/Revoke Runbook
+
+### Local Guardrail: Pre-Commit Secret Scan
+
+This repo includes a lightweight staged-diff scanner:
+- Script: `web/scripts/security/precommit-secret-scan.sh`
+- Hook: `.githooks/pre-commit`
+
+One-time setup per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook blocks commits that appear to include:
+- `OPENAI_API_KEY=...`
+- `SUPABASE_SERVICE_ROLE_KEY=...`
+- `SMTP_PASSWORD=...`
+- `DATABASE_URL=postgres...`
+- `sk-proj-...` / `sk-...` style API tokens
+- Private key headers (`BEGIN ... PRIVATE KEY`)
+
+### Immediate Response if a Secret is Exposed
+
+1. **Revoke/rotate first, then clean up code**
+   - OpenAI: rotate API key
+   - Supabase: rotate service role / DB credentials
+   - SMTP/email provider: rotate app password
+   - Any webhook/provider key: rotate immediately
+2. **Update environment variables**
+   - Vercel / Supabase / local `.env*` values
+   - Redeploy after rotation so old credentials are dead
+3. **Remove leaked material from repository state**
+   - Delete leaked files (example: local check files with real keys)
+   - Ensure ignore rules cover local secret files
+4. **Audit logs and cost dashboards**
+   - Check unusual API usage, login attempts, and email spikes
+
+### Repository Rule
+
+Never commit real secrets.  
+Only commit placeholders (examples with `...`, `<placeholder>`, or docs-only values).
+
+---
+
 ## Summary
 
 This project treats database security as **code**, not configuration.
