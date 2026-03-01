@@ -382,6 +382,12 @@ Polish member profiles before external test users see them. Three scope areas:
 | HARDEN-04 | Moderation foundation contract | P2 | OPEN | Define minimal future-proof moderation hooks and admin-only control boundaries without changing current behavior |
 | EVENTS-PRIVATE-01 | Private invite-only events (members + non-members) | P0 | DONE — PR1–PR6 shipped (commit `ecc43353`) | Schema + RLS foundation, host/admin invite management, read-surface hardening, member+token accept flow, CI guardrails, and negative privilege contract tests all shipped. Contract: `docs/CONTRACTS.md` §Invite-Only Event Visibility & Access. |
 
+### Conversational Interpreter Follow-Ups
+
+| ID | Item | Priority | Status | Notes |
+|----|------|----------|--------|-------|
+| INTERPRETER-08 | Multi-turn `series_mode` consistency when `recurrence_rule` is already set | P1 | OPEN | In early clarification turns, payload can transiently report `series_mode='single'` while retaining a recurring `recurrence_rule`; auto-corrects later but should be normalized deterministically in the same turn to avoid UX confusion. Add fixture and route-level normalization guard. |
+
 ### Homepage / Navigation / UX
 
 | ID | Item | Priority | Status |

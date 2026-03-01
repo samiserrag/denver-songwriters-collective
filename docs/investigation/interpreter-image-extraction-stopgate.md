@@ -2,7 +2,7 @@
 
 **Stop-Gate Phase:** A/B (Investigate + Critique)
 **Date:** 2026-02-24
-**Status:** APPROVED — Phases 0-6 complete; post-launch hardening patch applied (2026-02-27).
+**Status:** PRODUCTION-VERIFIED — Phases 0-7 complete; multi-turn hardening verified in production smoke (2026-02-28).
 **Parent feature:** Conversational Event Creation (`conversational-event-creation-stopgate.md`)
 **Scope expansion:** Section 4.7 of parent doc explicitly deferred image support to a future phase. This document covers that future phase.
 
@@ -492,5 +492,11 @@ Fully additive. No schema changes, no migration, no storage policy changes.
 - 14 interpretEventContract tests: all pass
 - ESLint: clean on route.ts, interpreterPostprocess.ts, interpreter-lab page, and fixture/create-write tests
 - Total (targeted suites in this patch): 100/100 pass
+
+### Phase 7 Production Verification ✅ (2026-02-28)
+- ✅ Build `11d11852` production smoke passed for previously blocked multi-turn flows:
+  - Case A: recurrence/title/location remained stable across short clarification turns
+  - Case D: canonical venue (`The End Lafayette`) remained stable; no cross-venue substitution
+- ✅ Create flow succeeded without constraint failures; cleanup complete for smoke-created drafts
 
 **STOP: Interpreter tract is complete through Phase 7. Follow-on alert hardening is tracked separately in ALERTS-01.**
