@@ -178,6 +178,39 @@ export function enforceVenueCustomExclusivity(draft: Record<string, unknown>): v
 }
 
 // ---------------------------------------------------------------------------
+// INTERPRETER-08: series_mode ↔ recurrence_rule consistency (Phase 8A)
+//
+// Must run AFTER the recurrence intent guard (which may clear both fields)
+// and AFTER mergeLockedCreateDraft (which may restore them from context).
+// ---------------------------------------------------------------------------
+
+const RECURRING_RRULE_PATTERN =
+  /\bFREQ=(?:DAILY|WEEKLY|MONTHLY|YEARLY)\b/i;
+
+/**
+ * Normalize `series_mode` to match `recurrence_rule` in the same response turn.
+ *
+ * If `recurrence_rule` is structurally recurring (contains FREQ=...) but
+ * `series_mode` is "single" or missing, promote `series_mode` to "recurring".
+ *
+ * If `recurrence_rule` is null/empty, leave `series_mode` unchanged — the
+ * recurrence intent guard already handled intentional downgrades by clearing
+ * both fields together.
+ */
+export function normalizeSeriesModeConsistency(
+  draft: Record<string, unknown>
+): void {
+  const rule = draft.recurrence_rule;
+  if (typeof rule !== "string" || !rule.trim()) return;
+
+  if (RECURRING_RRULE_PATTERN.test(rule)) {
+    if (!draft.series_mode || draft.series_mode === "single") {
+      draft.series_mode = "recurring";
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Multi-turn create context lock (preserve previously confirmed fields)
 // ---------------------------------------------------------------------------
 

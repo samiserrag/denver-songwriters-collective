@@ -990,6 +990,54 @@ If model outputs non-canonical values (`in_person`, `custom`, `in_person_custom`
 
 ---
 
+### 24. Phase 8A — series_mode / recurrence_rule Consistency (INTERPRETER-08)
+
+**Precondition:** Logged-in host/admin session on production domain.
+
+**A) Recurring RRULE must normalize series_mode away from "single"**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Acoustic Open Mic Night monthly on the 4th Tuesday at The End Lafayette, starts 6:40 PM."
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** If `draft_payload.recurrence_rule` contains a valid RRULE (e.g. `FREQ=MONTHLY;...`), then `draft_payload.series_mode` must NOT be `"single"`. It should be `"recurring"` or another non-single value.
+
+**B) Single-event prompt with no RRULE stays single**
+
+```javascript
+fetch("/api/events/interpret", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    mode: "create",
+    message: "Song circle this Tuesday at 6pm at Dazzle Jazz"
+  }),
+}).then(async (r) => ({ status: r.status, body: await r.json() })).then(console.log);
+```
+
+**Expected:** `draft_payload.series_mode` is `"single"` and `draft_payload.recurrence_rule` is null or absent. No false promotion to recurring.
+
+**C) Multi-turn: locked_draft with RRULE normalizes on follow-up**
+
+1. Run a recurring create turn (e.g., "Monthly open mic every 4th Tuesday…").
+2. Get `ask_clarification` response.
+3. Reply with short clarification and include `locked_draft` from prior response.
+
+**Expected:** After normalization, `series_mode` is non-single and `recurrence_rule` is preserved from locked context.
+
+**Pass Criteria (24):** `series_mode` is deterministically consistent with `recurrence_rule` — never `"single"` when a valid recurring RRULE is present; always `"single"` when no RRULE is set.
+
+---
+
 ## Gallery Smoke Checks (To Be Added in Gallery Track)
 
 _Placeholder: Gallery-specific smoke tests will be added when the Gallery track ships._

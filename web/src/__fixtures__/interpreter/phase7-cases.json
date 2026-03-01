@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "description": "Phase 7 interpreter hardening regression fixtures. Each case simulates an LLM response and validates the deterministic post-processing pipeline (sanitization, venue resolution, hardening, title fallback, clarification reduction, recurrence guard).",
-    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16", "F21", "F22", "F23"]
+    "safety_critical_ids": ["F03", "F04", "F07", "F08", "F12", "F16", "F21", "F22", "F23", "F24"]
   },
   "cases": [
     {
@@ -846,6 +846,84 @@
       },
       "safety_critical": true,
       "safety_rule": "locked venue context must remain stable unless user explicitly changes location"
+    },
+    {
+      "id": "F24",
+      "name": "INTERPRETER-08: series_mode normalized to recurring when recurrence_rule present",
+      "mode": "create",
+      "message": "Acoustic Open Mic Night at The End Lafayette monthly on the 4th Tuesday at 6:40 PM.",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-end", "name": "The End Lafayette", "slug": "the-end-lafayette" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.85,
+        "human_summary": "Monthly open mic at The End Lafayette on the 4th Tuesday.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Acoustic Open Mic Night",
+          "event_type": ["open_mic"],
+          "start_time": "18:40:00",
+          "start_date": "2026-03-24",
+          "series_mode": "single",
+          "recurrence_rule": "FREQ=MONTHLY;BYDAY=TU;BYSETPOS=4",
+          "day_of_week": "tuesday",
+          "venue_name": "The End Lafayette",
+          "location_mode": "venue",
+          "is_free": true,
+          "signup_mode": "in_person"
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "title": "Acoustic Open Mic Night",
+        "series_mode": "recurring",
+        "recurrence_rule_must_not_be_null": true,
+        "venue_id": "venue-end",
+        "location_mode": "venue",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": true,
+      "safety_rule": "series_mode must be consistent with recurrence_rule in same turn"
+    },
+    {
+      "id": "F25",
+      "name": "INTERPRETER-08: series_mode stays single when recurrence_rule is null (no false promotion)",
+      "mode": "create",
+      "message": "Open mic this Friday at 8pm at Long Table Brewhouse",
+      "conversationHistory": [],
+      "venueCatalog": [
+        { "id": "venue-ltb", "name": "Long Table Brewhouse", "slug": "long-table-brewhouse" }
+      ],
+      "simulatedLlmResponse": {
+        "next_action": "show_preview",
+        "confidence": 0.92,
+        "human_summary": "One-time open mic at Long Table Brewhouse this Friday.",
+        "clarification_question": null,
+        "blocking_fields": [],
+        "draft_payload": {
+          "title": "Friday Open Mic",
+          "event_type": ["open_mic"],
+          "start_time": "20:00:00",
+          "start_date": "2026-03-06",
+          "series_mode": "single",
+          "recurrence_rule": null,
+          "venue_name": "Long Table Brewhouse",
+          "location_mode": "venue",
+          "is_free": true,
+          "signup_mode": "in_person"
+        }
+      },
+      "expected": {
+        "next_action": "show_preview",
+        "series_mode": "single",
+        "recurrence_rule_must_be_null": true,
+        "venue_id": "venue-ltb",
+        "blocking_fields_empty": true
+      },
+      "safety_critical": false
     }
   ]
 }

@@ -28,6 +28,7 @@ import {
   enforceVenueCustomExclusivity,
   mergeLockedCreateDraft,
   normalizeInterpreterLocationMode,
+  normalizeSeriesModeConsistency,
   pruneOptionalBlockingFields,
   pruneSatisfiedBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
@@ -1382,6 +1383,11 @@ export async function POST(request: Request) {
       extractedImageText,
     });
   }
+
+  // INTERPRETER-08: Normalize series_mode when recurrence_rule is present.
+  // Must run after recurrence intent guard + mergeLockedCreateDraft to avoid
+  // re-enabling recurrence that was intentionally downgraded.
+  normalizeSeriesModeConsistency(sanitizedDraft);
 
   // Drop stale blocking fields that are already satisfied in the current draft.
   resolvedBlockingFields = pruneSatisfiedBlockingFields(sanitizedDraft, resolvedBlockingFields);

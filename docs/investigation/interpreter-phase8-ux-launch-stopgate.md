@@ -207,7 +207,38 @@ Deliverables:
 
 ---
 
-## 9) Approval Gates
+## 9) Implementation Evidence
+
+### Phase 8A (INTERPRETER-08) — IMPLEMENTED 2026-02-28
+
+**Summary:** Deterministic `series_mode ↔ recurrence_rule` normalization added.
+
+**Changed files:**
+| File | Change |
+|------|--------|
+| `web/src/lib/events/interpreterPostprocess.ts` | Added `normalizeSeriesModeConsistency()` — if `recurrence_rule` matches `FREQ=DAILY/WEEKLY/MONTHLY/YEARLY` and `series_mode` is missing or `"single"`, promotes to `"recurring"`. |
+| `web/src/app/api/events/interpret/route.ts` | Imported + called `normalizeSeriesModeConsistency(sanitizedDraft)` after `mergeLockedCreateDraft` + location normalization, before `pruneSatisfiedBlockingFields`. Runs for all modes (create + edit_series). |
+| `web/src/__tests__/interpreter-fixture-regression.test.ts` | Imported + called in fixture pipeline at step 6c. Added `recurrence_rule_must_not_be_null` assertion. |
+| `web/src/__fixtures__/interpreter/phase7-cases.json` | Added F24 (safety-critical: recurring RRULE + single → normalized to recurring) and F25 (single + null rule → stays single). `safety_critical_ids` updated. |
+| `docs/SMOKE-PROD.md` | Added §24 — Phase 8A smoke checks (3 scenarios). |
+
+**Ordering constraint (critical):** Normalization runs AFTER:
+1. `hardenDraftForCreateEdit` (recurrence intent guard — may intentionally clear both fields),
+2. `mergeLockedCreateDraft` (may restore recurrence from prior-turn context).
+
+This prevents re-enabling recurrence that was intentionally downgraded by the recurrence intent guard.
+
+**Test results (2026-02-28):**
+- Fixture regression: 27/27 pass (25 fixtures + 2 summary tests)
+- Safety-critical: 10/10 pass (F03, F04, F07, F08, F12, F16, F21, F22, F23, F24)
+- Contract tests: 25/25 pass
+- ESLint: clean
+
+**Residual risks:** None identified. The normalization is additive and cannot regress single-event behavior (F25 proves the null-rule case is a no-op).
+
+---
+
+## 10) Approval Gates
 
 1. Approve 8A first patch before any UX launch-facing changes.
 2. Approve 8B–8D patch bundle after smoke.

@@ -33,6 +33,7 @@ import {
   enforceVenueCustomExclusivity,
   mergeLockedCreateDraft,
   normalizeInterpreterLocationMode,
+  normalizeSeriesModeConsistency,
   pruneOptionalBlockingFields,
   pruneSatisfiedBlockingFields,
 } from "@/lib/events/interpreterPostprocess";
@@ -271,6 +272,9 @@ function runDeterministicPipeline(fixture: FixtureCase) {
     );
   }
 
+  // 6c. INTERPRETER-08: series_mode ↔ recurrence_rule consistency — SHARED MODULE
+  normalizeSeriesModeConsistency(sanitizedDraft);
+
   // 7. Title fallback (simplified — no extractedImageText in fixtures)
   if (mode === "create" && !hasNonEmptyString(sanitizedDraft.title)) {
     // Try text-based extraction
@@ -411,6 +415,12 @@ describe("Phase 7 Interpreter Fixture Regression Suite", () => {
       if (expected.recurrence_rule_must_be_null === true) {
         if (draft.recurrence_rule !== null && draft.recurrence_rule !== undefined) {
           errors.push(`recurrence_rule_must_be_null: got ${draft.recurrence_rule}`);
+        }
+      }
+
+      if (expected.recurrence_rule_must_not_be_null === true) {
+        if (draft.recurrence_rule === null || draft.recurrence_rule === undefined) {
+          errors.push(`recurrence_rule_must_not_be_null: recurrence_rule is null/undefined`);
         }
       }
 
