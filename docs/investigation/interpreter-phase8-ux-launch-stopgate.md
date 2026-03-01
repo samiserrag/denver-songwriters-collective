@@ -410,8 +410,15 @@ This prevents re-enabling recurrence that was intentionally downgraded by the re
 - Full suite: 200/200 files, 4468/4468 tests pass
 - ESLint: clean
 
+**Production smoke results (2026-02-28):**
+- Smoke 27a: Flag ON → chooser visible with "✨ Create with AI" + "Use classic form" cards ✅
+- Smoke 27b: Conversational page → "Create Happening" title, host subtitle, fallback link, interpreter input, Run button ✅
+- Smoke 27e: `?classic=true` with flag ON → classic form only, no chooser ✅
+- Smoke 27f: Mobile CSS verified — `grid-cols-1 sm:grid-cols-2` stacks chooser cards below 640px ✅
+- Smoke 27g: Rollback — flags set to false → launcher classic-only, `/new/conversational` redirects to `?classic=true` ✅
+- Fallback link: "← Use classic form instead" navigates to `?classic=true` ✅
+
 **Residual risks:**
-- Mobile UX not yet smoke-tested in production — deferred to manual Chrome MCP smoke below.
 - Conversational create page is a client component; initial load may be heavier than classic form for users on slow connections.
 
 ---
