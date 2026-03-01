@@ -386,8 +386,9 @@ Polish member profiles before external test users see them. Three scope areas:
 
 | ID | Item | Priority | Status | Notes |
 |----|------|----------|--------|-------|
-| INTERPRETER-08 | Multi-turn `series_mode` consistency when `recurrence_rule` is already set | P0 | OPEN | In early clarification turns, payload can transiently report `series_mode='single'` while retaining a recurring `recurrence_rule`; auto-corrects later but should be normalized deterministically in the same turn to avoid UX confusion. Add fixture and route-level normalization guard. |
-| INTERPRETER-09 | Interpreter UX productization + launch gating (8A->8E) | P0 | OPEN — stop-gate drafted | Ordered scope: 8A correctness (`INTERPRETER-08`) -> 8B conversation UX -> 8C clarification UX -> 8D post-create confidence UX -> 8E host-facing launch surface behind feature flag + fallback form. Stop-gate: `docs/investigation/interpreter-phase8-ux-launch-stopgate.md`. |
+| INTERPRETER-08 | Multi-turn `series_mode` consistency when `recurrence_rule` is already set | P0 | DONE | Deterministic normalization shipped and validated via fixture coverage and production smoke. |
+| INTERPRETER-09 | Interpreter UX productization + launch gating (8A->8E) | P0 | DONE — production verified | 8A–8E shipped: host-facing conversational create entrypoint behind feature flag, classic fallback preserved, mobile + rollback smoke verified. Stop-gate: `docs/investigation/interpreter-phase8-ux-launch-stopgate.md`. |
+| INTERPRETER-10 | Interpreter UX optimization + trust metrics (Phase 9A->9E) | P1 | IN MONITORING (Day 0/7) | Implemented 2026-03-01. 9A-9E deployed + production smoke passed. Awaiting 7-day metrics window before rollout decision. Stop-gate: `docs/investigation/interpreter-phase9-ux-optimization-stopgate.md`. |
 
 ### Homepage / Navigation / UX
 

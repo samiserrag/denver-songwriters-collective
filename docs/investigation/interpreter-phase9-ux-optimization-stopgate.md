@@ -1,7 +1,7 @@
 # Stop-Gate Track: Interpreter UX Optimization + Trust Metrics (INTERPRETER-10)
 
 **Date:** 2026-03-01  
-**Status:** IMPLEMENTED — PENDING PRODUCTION SMOKE
+**Status:** IMPLEMENTED — AWAITING 7-DAY ROLLOUT DECISION
 **Parent tract:** `/Users/samiserrag/Documents/GitHub/denver-songwriters-collective/docs/investigation/interpreter-phase8-ux-launch-stopgate.md` (Phase 8 production-verified)
 
 ---
@@ -284,4 +284,29 @@ Before execution prompt issuance:
 1. **Reverse venue/custom exclusivity** — new logic path. Mitigated by: narrow conditions (venueResolution must indicate no match + custom fields populated + stale venue_id present), all existing fixture tests must pass.
 2. **Blocking field pruning expansion** — 8 new cases. Mitigated by: explicit named cases only (no generic fallback), same validity standard as existing cases.
 3. **Telemetry endpoint** — new API surface. Mitigated by: auth-gated, rate-limited, console.info only (no DB writes), event name allowlist.
+
+### Monitoring Checkpoints
+
+| Checkpoint | Date | Status |
+|------------|------|--------|
+| T+1h | 2026-03-01 ~19:00 MT | PENDING |
+| T+24h | 2026-03-02 | PENDING |
+| T+7d | 2026-03-08 | PENDING |
+
+### Day-7 Rollout Decision Template
+
+**Date:** ____
+**Decision:** GO / HOLD / ROLLBACK
+
+| Metric | Target | Hard Rollback | Observed | Pass? |
+|--------|--------|---------------|----------|-------|
+| Median clarification turns | <= 2 | > 4 | ___ | |
+| P90 clarification turns | <= 4 | > 6 | ___ | |
+| Create completion rate | >= 90% | < 70% | ___ | |
+| 5xx error rate | < 1% | > 5% | ___ | |
+| Fallback click rate | Tracked | > 30% | ___ | |
+
+**If GO:** Update status to `PRODUCTION-VERIFIED`. Close tract.
+**If HOLD:** Keep current exposure. Extend monitoring 7 more days. Document reason.
+**If ROLLBACK:** Set `NEXT_PUBLIC_ENABLE_CONVERSATIONAL_CREATE_ENTRY=false`, redeploy, verify classic-only. Document root cause.
 
