@@ -547,7 +547,7 @@ describe("Part B: Editorial Layer", () => {
 
     it("subject should use editorial subjectOverride when present", () => {
       expect(templateSource).toContain(
-        'editorial?.subjectOverride || "Happenings This Week in Denver"'
+        'editorial?.subjectOverride || "Songwriter Happenings This Week in Colorado"'
       );
     });
 
