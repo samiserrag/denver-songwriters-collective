@@ -204,7 +204,9 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [savedFilters, setSavedFilters] = React.useState<SavedHappeningsFilters | null>(null);
   const [savedAutoApply, setSavedAutoApply] = React.useState(false);
-  const [savedLoading, setSavedLoading] = React.useState(true);
+  // Start false — avoids SSR→client hydration mismatch that can freeze the DOM.
+  // The effect below sets it true briefly while fetching, then back to false.
+  const [savedLoading, setSavedLoading] = React.useState(false);
   const [savedSaving, setSavedSaving] = React.useState(false);
   const [savedMessage, setSavedMessage] = React.useState<string | null>(null);
   const [savedPanelOpen, setSavedPanelOpen] = React.useState(false);
@@ -239,6 +241,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
   React.useEffect(() => {
     let cancelled = false;
+    setSavedLoading(true);
 
     async function loadSavedFilters() {
       try {
