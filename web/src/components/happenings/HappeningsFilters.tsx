@@ -204,11 +204,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [savedFilters, setSavedFilters] = React.useState<SavedHappeningsFilters | null>(null);
   const [savedAutoApply, setSavedAutoApply] = React.useState(false);
-  // Force-update counter — React #418 hydration errors on this page can prevent
-  // effect-initiated state updates from painting. Incrementing this counter after
-  // auth resolves forces React to flush the pending state changes to the DOM.
-  const [, forceUpdate] = React.useReducer((c: number) => c + 1, 0);
-  const savedLoading = false;
+  const [savedLoading, setSavedLoading] = React.useState(true);
   const [savedSaving, setSavedSaving] = React.useState(false);
   const [savedMessage, setSavedMessage] = React.useState<string | null>(null);
   const [savedPanelOpen, setSavedPanelOpen] = React.useState(false);
@@ -263,16 +259,10 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
             setSavedPanelOpen(true);
           }
         }
-
-        // React #418 hydration errors on this page can cause effect-
-        // initiated state updates to be deprioritized indefinitely.
-        // Force React to flush pending updates to the DOM by scheduling
-        // a re-render via requestAnimationFrame after the current frame.
-        requestAnimationFrame(() => {
-          if (!cancelled) forceUpdate();
-        });
       } catch {
         // Auth or fetch failed — degrade gracefully, section still renders
+      } finally {
+        if (!cancelled) setSavedLoading(false);
       }
     }
 

@@ -13,11 +13,25 @@
 
 import * as React from "react";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { HappeningsFilters } from "./HappeningsFilters";
 import { DateJumpControl } from "./DateJumpControl";
 import { ViewModeSelector, type HappeningsViewMode } from "./ViewModeSelector";
+
+// Dynamic import with ssr:false — HappeningsFilters relies on client-only
+// auth state (getSession) that cannot match the server render. Disabling SSR
+// eliminates React #418 hydration errors that freeze the Saved Filters status
+// chip, preventing effect-initiated state updates from painting to the DOM.
+const HappeningsFilters = dynamic(
+  () => import("./HappeningsFilters").then((m) => ({ default: m.HappeningsFilters })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-20 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />
+    ),
+  }
+);
 
 export type { HappeningsViewMode };
 
@@ -60,10 +74,8 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
         <ViewModeSelector viewMode={viewMode} />
       </Suspense>
 
-      {/* Filter bar */}
-      <Suspense fallback={<div className="h-20 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />}>
-        <HappeningsFilters />
-      </Suspense>
+      {/* Filter bar — dynamic import (ssr:false) handles its own loading state */}
+      <HappeningsFilters />
 
       {/* Date Jump Control + Cancelled Toggle Row */}
       <div className="flex flex-wrap items-center gap-3">
