@@ -145,8 +145,8 @@ The fix is low-risk, localized to one file, and does not change any data flows o
 After applying Option B:
 - [x] `npm run build` passes — clean build, no type errors
 - [x] Navigate to `/happenings` with fetch interceptor — confirm 0 `/auth/v1/user` calls
-- [ ] Favorite toggle still works (click heart, verify DB write) — requires production deploy
-- [ ] Logged-out user sees unfavorited state (no errors) — requires production deploy
+- [x] Favorite toggle still works (click heart, verify DB write) — verified on production (d14792fd deploy)
+- [x] Logged-out user sees unfavorited state (no errors) — all 521 cards show "Add favorite", 0 console errors
 - [x] No regressions on `/about`, `/events/[id]`, dashboard pages — build + 4889 tests pass
 
 ---
@@ -172,3 +172,52 @@ After applying Option B:
 - Line 553: `supabase.auth.getUser()` → `supabase.auth.getSession()` + extract `session?.user` (toggleFavorite click handler)
 
 Both call sites only needed `user.id` for the favorites query. `getSession()` reads from cookie storage with zero network cost.
+
+---
+
+## Option A Applied: Server-Side Favorites Lift
+
+**Date:** 2026-03-01
+
+### Problem (post-Option B)
+
+Option B eliminated 692 `/auth/v1/user` network calls, but each HappeningCard still makes its own `SELECT id FROM favorites WHERE user_id = $1 AND event_id = $2` query on mount — 521+ individual DB round-trips per page load for authenticated users.
+
+### Solution
+
+Lift the favorites lookup to a single server-side batch query in `happenings/page.tsx`. Pass pre-computed `isFavorited` boolean to each card via props.
+
+### Tri-state contract
+
+| `isFavorited` value | Meaning | Card behavior |
+|---------------------|---------|---------------|
+| `true` / `false` | Server-provided known status | Use directly, skip client query |
+| `null` | Anonymous user (no session) | Render unfavorited, skip client query |
+| `undefined` (omitted) | Server fetch failed / not provided | Run existing client-side fallback |
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| `web/src/app/happenings/page.tsx` | Added `getSession()` + batch `SELECT event_id FROM favorites WHERE user_id = $1`, intersect in memory via `Set.has()`. Scoped to `viewMode === "timeline"`. Applied `isFavorited` prop to all 4 `<HappeningsCard>` render sites. |
+| `web/src/components/happenings/HappeningsCard.tsx` | Accept + pass through `isFavorited` prop |
+| `web/src/components/happenings/HappeningCard.tsx` | Accept `isFavorited` prop, `useState(isFavorited === true)`, useEffect guard skips client query when prop is provided |
+| `web/src/__tests__/happening-card-favorites-lift.test.tsx` | 5 behavioral tests: validates all tri-state paths, asserts `.from("favorites")` call counts |
+
+### Before / After Metrics (Option A Applied)
+
+| Metric | After Option B only | After Option A + B |
+|--------|--------------------|--------------------|
+| `auth.getUser()` calls per load | 0 | 0 |
+| `auth.getSession()` calls per load (client) | 692 (prod) | 0 (server-side session read) |
+| Per-card `SELECT FROM favorites` DB queries | **521+** (1 per card, authenticated) | **0** |
+| Server-side favorites queries | 0 | **1** (batch) |
+| `/auth/v1/user` HTTP requests | 0 | 0 |
+| Test suite | 4889 pass | 4894 pass |
+| Build | clean | clean |
+
+### Design notes
+
+- Fetches ALL user favorites with `.eq("user_id", userId)` then intersects with visible event IDs in memory via `Set.has()`. Avoids PostgREST `.in()` URL-length limits from 500+ UUIDs.
+- Server-side uses `getSession()` (cookie-based, no network call) — safe for high-traffic public route.
+- Only runs batch fetch when `viewMode === "timeline"` (map/series views don't render HappeningsCard).

@@ -74,6 +74,11 @@ export default async function HappeningsPage({
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
 
+  // Optional session read — no auth service call, reads from cookies only.
+  // Page stays public for anonymous users.
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id ?? null;
+
   // Extract all filter params
   const searchQuery = params.q || "";
   const timeFilter = params.time || "upcoming";
@@ -464,6 +469,26 @@ export default async function HappeningsPage({
   const otherCancelledOccurrences = cancelledOccurrences.filter(
     (entry) => entry.dateKey !== today && entry.dateKey !== tomorrow
   );
+
+  // Phase Option A: Batch-fetch ALL user favorites in a single query.
+  // Tri-state: null = anonymous (skip client query), undefined = fetch failed (client fallback),
+  // Set<string> = known favorites (cards use prop directly, no per-card query).
+  // Only fetch for timeline view where HappeningsCard is rendered.
+  let favoriteEventIds: Set<string> | null | undefined = userId ? undefined : null;
+  if (userId && viewMode === "timeline") {
+    try {
+      const { data: favs, error } = await supabase
+        .from("favorites")
+        .select("event_id")
+        .eq("user_id", userId);
+      if (!error && favs) {
+        favoriteEventIds = new Set(favs.map((f: { event_id: string }) => f.event_id));
+      }
+      // On error: favoriteEventIds stays undefined → cards fall back to client query
+    } catch {
+      // stays undefined → client fallback
+    }
+  }
 
   // Count total occurrences for display
   let totalOccurrences = 0;
@@ -943,6 +968,7 @@ export default async function HappeningsPage({
                                 override={entry.override}
                                 isCancelled={true}
                                 overrideVenueData={getOverrideVenueForEntry(entry)}
+                                isFavorited={favoriteEventIds === null ? null : favoriteEventIds === undefined ? undefined : favoriteEventIds.has(entry.event.id)}
                               />
                             );
                           })
@@ -968,6 +994,7 @@ export default async function HappeningsPage({
                           override={entry.override}
                           isCancelled={entry.isCancelled}
                           overrideVenueData={getOverrideVenueForEntry(entry)}
+                          isFavorited={favoriteEventIds === null ? null : favoriteEventIds === undefined ? undefined : favoriteEventIds.has(entry.event.id)}
                         />
                       );
                     })}
@@ -997,6 +1024,7 @@ export default async function HappeningsPage({
                         isConfident: false,
                       }}
                       todayKey={today}
+                      isFavorited={favoriteEventIds === null ? null : favoriteEventIds === undefined ? undefined : favoriteEventIds.has(event.id)}
                     />
                   ))}
                 </DateSection>
@@ -1030,6 +1058,7 @@ export default async function HappeningsPage({
                         override={entry.override}
                         isCancelled={true}
                         overrideVenueData={getOverrideVenueForEntry(entry)}
+                        isFavorited={favoriteEventIds === null ? null : favoriteEventIds === undefined ? undefined : favoriteEventIds.has(entry.event.id)}
                       />
                     );
                   })}

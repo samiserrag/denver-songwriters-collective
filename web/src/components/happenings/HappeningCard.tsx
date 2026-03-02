@@ -159,6 +159,13 @@ export interface HappeningCardProps {
     google_maps_url?: string | null;
     website_url?: string | null;
   } | null;
+  /**
+   * Option A: Server-precomputed favorite status.
+   *  undefined = not provided / fetch failed (client fallback)
+   *  null = anonymous user (skip client query)
+   *  boolean = known favorite status
+   */
+  isFavorited?: boolean | null;
 }
 
 // ============================================================
@@ -383,6 +390,7 @@ export function HappeningCard({
   override,
   isCancelled = false,
   overrideVenueData,
+  isFavorited,
 }: HappeningCardProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
@@ -515,10 +523,22 @@ export function HappeningCard({
   );
 
   // Favorites state
-  const [favorited, setFavorited] = useState(false);
+  // When isFavorited is server-provided (boolean), use it directly — no flash.
+  // When undefined (fetch failed / not provided), client fallback will run.
+  // When null (anonymous user), skip client query entirely.
+  const [favorited, setFavorited] = useState(isFavorited === true);
   const [loadingFav, setLoadingFav] = useState(false);
 
   useEffect(() => {
+    // Tri-state guard:
+    // - boolean (true/false): server-provided, no client query needed
+    // - null: anonymous user, stay unfavorited, no client query needed
+    // - undefined: not provided / server fetch failed → run client fallback
+    if (isFavorited !== undefined) {
+      setFavorited(isFavorited === true);
+      return;
+    }
+
     let mounted = true;
     async function checkFavorite() {
       try {
@@ -547,7 +567,7 @@ export function HappeningCard({
     }
     checkFavorite();
     return () => { mounted = false; };
-  }, [event.id, supabase]);
+  }, [event.id, supabase, isFavorited]);
 
   async function toggleFavorite(e: React.MouseEvent) {
     e.preventDefault();

@@ -35,6 +35,11 @@ type Props = {
     city?: string | null;
     state?: string | null;
   } | null;
+  /** Option A: Server-precomputed favorite status.
+   *  undefined = not provided / fetch failed (client fallback)
+   *  null = anonymous user (skip client query)
+   *  boolean = known favorite status */
+  isFavorited?: boolean | null;
 };
 
 export function HappeningsCard({
@@ -46,6 +51,7 @@ export function HappeningsCard({
   override,
   isCancelled,
   overrideVenueData,
+  isFavorited,
 }: Props) {
   return (
     <HappeningCard
@@ -58,6 +64,7 @@ export function HappeningsCard({
       override={override}
       isCancelled={isCancelled}
       overrideVenueData={overrideVenueData}
+      isFavorited={isFavorited}
     />
   );
 }
