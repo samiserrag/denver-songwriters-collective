@@ -26,6 +26,7 @@
  */
 
 import * as React from "react";
+import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -204,9 +205,10 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [savedFilters, setSavedFilters] = React.useState<SavedHappeningsFilters | null>(null);
   const [savedAutoApply, setSavedAutoApply] = React.useState(false);
-  // Start false — avoids SSR→client hydration mismatch that can freeze the DOM.
-  // The effect below sets it true briefly while fetching, then back to false.
-  const [savedLoading, setSavedLoading] = React.useState(false);
+  // Always false — loading spinner removed because React #418 hydration errors
+  // on this page cause effect-initiated state updates to freeze the DOM.
+  // Auth resolves in ~66ms so users never notice the transition.
+  const savedLoading = false;
   const [savedSaving, setSavedSaving] = React.useState(false);
   const [savedMessage, setSavedMessage] = React.useState<string | null>(null);
   const [savedPanelOpen, setSavedPanelOpen] = React.useState(false);
@@ -250,25 +252,26 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
           return;
         }
 
-        setUserId(session.user.id);
         const row = await getUserSavedHappeningsFilters(supabase, session.user.id);
         if (cancelled) return;
 
-        if (row) {
-          setSavedFilters(row.filters);
-          setSavedAutoApply(row.autoApply);
-          if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
-            setSavedPanelOpen(true);
+        // flushSync forces React to paint these updates immediately.
+        // Without it, React #418 hydration errors on this page cause
+        // effect-initiated state updates to be deprioritized indefinitely,
+        // leaving the status chip frozen on the SSR-rendered text until
+        // the user clicks something.
+        flushSync(() => {
+          setUserId(session.user.id);
+          if (row) {
+            setSavedFilters(row.filters);
+            setSavedAutoApply(row.autoApply);
+            if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
+              setSavedPanelOpen(true);
+            }
           }
-        }
+        });
       } catch {
         // Auth or fetch failed — degrade gracefully, section still renders
-      } finally {
-        // Always resolve loading — React 18+ safely ignores setState on unmounted components.
-        // The previous `if (isMounted)` guard caused a permanent "Loading…" state when
-        // Suspense boundaries unmounted the component mid-flight (cleanup set isMounted=false
-        // before finally executed, so setSavedLoading was skipped).
-        setSavedLoading(false);
       }
     }
 
@@ -588,7 +591,7 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
   React.useEffect(() => {
     if (hasAttemptedAutoApply.current) return;
-    if (savedLoading || !userId || !savedAutoApply) return;
+    if (!userId || !savedAutoApply) return;
     if (hasExplicitFilterParams) return;
     if (!savedFilters || !hasSavedHappeningsFilters(savedFilters)) return;
 
@@ -600,7 +603,6 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
     router,
     savedAutoApply,
     savedFilters,
-    savedLoading,
     userId,
   ]);
 
