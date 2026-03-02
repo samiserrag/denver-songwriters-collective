@@ -248,7 +248,16 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
           return;
         }
 
-        const row = await getUserSavedHappeningsFilters(supabase, session.user.id);
+        // Race against a timeout — during page load, ~500 concurrent
+        // /auth/v1/user calls can saturate the browser's 6-connection-per-
+        // domain limit, causing this PostgREST query to hang indefinitely
+        // in the browser's network queue. A 5 s timeout lets us degrade
+        // gracefully (show "No filters saved yet") instead of spinning
+        // "Loading…" forever.
+        const row = await Promise.race([
+          getUserSavedHappeningsFilters(supabase, session.user.id),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+        ]);
         if (cancelled) return;
 
         setUserId(session.user.id);
