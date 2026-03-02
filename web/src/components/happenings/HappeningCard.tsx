@@ -522,7 +522,11 @@ export function HappeningCard({
     let mounted = true;
     async function checkFavorite() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // Use getSession() instead of getUser() to avoid a network call per card.
+        // getSession() reads from cookie storage (no HTTP request).
+        // We only need user.id here, so session.user is sufficient.
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
         if (!user) {
           if (mounted) setFavorited(false);
           return;
@@ -550,7 +554,10 @@ export function HappeningCard({
     e.stopPropagation();
     setLoadingFav(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Use getSession() instead of getUser() to avoid a network call on each toggle.
+      // getSession() reads from cookie storage; we only need user.id for the favorites query.
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
       if (!user) {
         router.push("/login");
         return;
