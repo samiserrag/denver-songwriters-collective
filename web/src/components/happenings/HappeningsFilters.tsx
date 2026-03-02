@@ -26,7 +26,6 @@
  */
 
 import * as React from "react";
-import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -205,9 +204,10 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   const [userId, setUserId] = React.useState<string | null>(null);
   const [savedFilters, setSavedFilters] = React.useState<SavedHappeningsFilters | null>(null);
   const [savedAutoApply, setSavedAutoApply] = React.useState(false);
-  // Always false — loading spinner removed because React #418 hydration errors
-  // on this page cause effect-initiated state updates to freeze the DOM.
-  // Auth resolves in ~66ms so users never notice the transition.
+  // Force-update counter — React #418 hydration errors on this page can prevent
+  // effect-initiated state updates from painting. Incrementing this counter after
+  // auth resolves forces React to flush the pending state changes to the DOM.
+  const [, forceUpdate] = React.useReducer((c: number) => c + 1, 0);
   const savedLoading = false;
   const [savedSaving, setSavedSaving] = React.useState(false);
   const [savedMessage, setSavedMessage] = React.useState<string | null>(null);
@@ -255,20 +255,21 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
         const row = await getUserSavedHappeningsFilters(supabase, session.user.id);
         if (cancelled) return;
 
-        // flushSync forces React to paint these updates immediately.
-        // Without it, React #418 hydration errors on this page cause
-        // effect-initiated state updates to be deprioritized indefinitely,
-        // leaving the status chip frozen on the SSR-rendered text until
-        // the user clicks something.
-        flushSync(() => {
-          setUserId(session.user.id);
-          if (row) {
-            setSavedFilters(row.filters);
-            setSavedAutoApply(row.autoApply);
-            if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
-              setSavedPanelOpen(true);
-            }
+        setUserId(session.user.id);
+        if (row) {
+          setSavedFilters(row.filters);
+          setSavedAutoApply(row.autoApply);
+          if (row.autoApply || hasSavedHappeningsFilters(row.filters)) {
+            setSavedPanelOpen(true);
           }
+        }
+
+        // React #418 hydration errors on this page can cause effect-
+        // initiated state updates to be deprioritized indefinitely.
+        // Force React to flush pending updates to the DOM by scheduling
+        // a re-render via requestAnimationFrame after the current frame.
+        requestAnimationFrame(() => {
+          if (!cancelled) forceUpdate();
         });
       } catch {
         // Auth or fetch failed — degrade gracefully, section still renders
