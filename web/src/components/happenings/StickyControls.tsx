@@ -13,25 +13,26 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { DateJumpControl } from "./DateJumpControl";
 import { ViewModeSelector, type HappeningsViewMode } from "./ViewModeSelector";
+import { HappeningsFilters } from "./HappeningsFilters";
 
-// Dynamic import with ssr:false — HappeningsFilters relies on client-only
-// auth state (getSession) that cannot match the server render. Disabling SSR
-// eliminates React #418 hydration errors that freeze the Saved Filters status
-// chip, preventing effect-initiated state updates from painting to the DOM.
-const HappeningsFilters = dynamic(
-  () => import("./HappeningsFilters").then((m) => ({ default: m.HappeningsFilters })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-20 bg-[var(--color-bg-secondary)] rounded-lg animate-pulse" />
-    ),
-  }
-);
+/**
+ * Hydration-safe placeholder rendered during SSR and the initial client frame.
+ * We avoid rendering HappeningsFilters until mounted to prevent hydration
+ * mismatch regressions, while using static imports to remove lazy-chunk flash.
+ */
+function HappeningsFiltersShell() {
+  return (
+    <div className="space-y-4" aria-hidden="true">
+      <div className="h-14 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]" />
+      <div className="h-12 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]" />
+      <div className="h-12 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)]" />
+    </div>
+  );
+}
 
 export type { HappeningsViewMode };
 
@@ -49,6 +50,11 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
   const router = useRouter();
   const searchParams = useSearchParams();
   const showCancelled = searchParams.get("showCancelled") === "1";
+  const [showFilters, setShowFilters] = React.useState(false);
+
+  React.useEffect(() => {
+    setShowFilters(true);
+  }, []);
 
   // Toggle showCancelled URL param
   const toggleShowCancelled = () => {
@@ -74,8 +80,8 @@ export function StickyControls({ todayKey, windowStartKey, windowEndKey, timeFil
         <ViewModeSelector viewMode={viewMode} />
       </Suspense>
 
-      {/* Filter bar — dynamic import (ssr:false) handles its own loading state */}
-      <HappeningsFilters />
+      {/* Filter bar: defer until mounted to preserve hydration safety */}
+      {showFilters ? <HappeningsFilters /> : <HappeningsFiltersShell />}
 
       {/* Date Jump Control + Cancelled Toggle Row */}
       <div className="flex flex-wrap items-center gap-3">
