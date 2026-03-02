@@ -241,7 +241,6 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
 
   React.useEffect(() => {
     let cancelled = false;
-    setSavedLoading(true);
 
     async function loadSavedFilters() {
       try {
