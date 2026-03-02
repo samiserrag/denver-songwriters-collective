@@ -2632,6 +2632,7 @@ export type Database = {
           avatar_url: string | null
           bandcamp_url: string | null
           bio: string | null
+          buymeacoffee_url: string | null
           cashapp_handle: string | null
           city: string | null
           created_at: string | null
@@ -2657,6 +2658,7 @@ export type Database = {
           no_show_count: number | null
           onboarding_complete: boolean | null
           open_to_collabs: boolean | null
+          patreon_url: string | null
           paypal_url: string | null
           referral_captured_at: string | null
           referral_source: string | null
@@ -2682,6 +2684,7 @@ export type Database = {
           avatar_url?: string | null
           bandcamp_url?: string | null
           bio?: string | null
+          buymeacoffee_url?: string | null
           cashapp_handle?: string | null
           city?: string | null
           created_at?: string | null
@@ -2707,6 +2710,7 @@ export type Database = {
           no_show_count?: number | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
+          patreon_url?: string | null
           paypal_url?: string | null
           referral_captured_at?: string | null
           referral_source?: string | null
@@ -2732,6 +2736,7 @@ export type Database = {
           avatar_url?: string | null
           bandcamp_url?: string | null
           bio?: string | null
+          buymeacoffee_url?: string | null
           cashapp_handle?: string | null
           city?: string | null
           created_at?: string | null
@@ -2757,6 +2762,7 @@ export type Database = {
           no_show_count?: number | null
           onboarding_complete?: boolean | null
           open_to_collabs?: boolean | null
+          patreon_url?: string | null
           paypal_url?: string | null
           referral_captured_at?: string | null
           referral_source?: string | null

@@ -657,6 +657,11 @@ export function getWeeklyHappeningsDigestEmail(
 
     <hr style="border: none; border-top: 1px solid ${EMAIL_COLORS.border}; margin: 24px 0;" />
 
+    <p style="margin: 0 0 12px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
+      Enjoying the digest? Support the Collective —
+      <a href="https://buymeacoffee.com/sami_serrag_music" style="color: ${EMAIL_COLORS.accent}; text-decoration: none;">buy us a coffee</a> ☕
+    </p>
+
     <p style="margin: 0 0 8px 0; color: ${EMAIL_COLORS.textMuted}; font-size: 13px;">
       You're receiving this weekly digest because you're part of The Colorado Songwriters Collective community.
       If you'd rather not receive these, you can
@@ -750,6 +755,8 @@ export function getWeeklyHappeningsDigestEmail(
     `Browse All Happenings: ${SITE_URL}/happenings`,
     "",
     "---",
+    "Enjoying the digest? Support the Collective — buy us a coffee: https://buymeacoffee.com/sami_serrag_music",
+    "",
     "You're receiving this weekly digest because you're part of The Colorado Songwriters Collective community.",
     `If you'd rather not receive these, unsubscribe here: ${unsubscribeUrl}`,
     `You can always re-subscribe from your settings: ${SITE_URL}/dashboard/settings`,

@@ -85,6 +85,8 @@ const TRACKED_PROFILE_FIELDS = [
   "venmo_handle",
   "cashapp_handle",
   "paypal_url",
+  "buymeacoffee_url",
+  "patreon_url",
   "open_to_collabs",
   "specialties",
   "favorite_open_mic",
@@ -139,6 +141,12 @@ export async function PUT(request: Request) {
     const twitterValue = sanitizeSocialUrl(body.twitter_url);
     const websiteValue = sanitizeSocialUrl(body.website_url);
     const paypalValue = sanitizeSocialUrl(body.paypal_url);
+    const buymeacoffeeValue = sanitizeSocialUrl(body.buymeacoffee_url, ["buymeacoffee.com"]);
+    const bmcErr = validateSocialField(buymeacoffeeValue, body.buymeacoffee_url, "buymeacoffee_url", "Buy Me a Coffee");
+    if (bmcErr) return bmcErr;
+    const patreonValue = sanitizeSocialUrl(body.patreon_url, ["patreon.com"]);
+    const patErr = validateSocialField(patreonValue, body.patreon_url, "patreon_url", "Patreon");
+    if (patErr) return patErr;
 
     const updatePayload = {
       full_name: body.full_name || null,
@@ -161,6 +169,8 @@ export async function PUT(request: Request) {
       venmo_handle: sanitizeSocialUrl(body.venmo_handle),
       cashapp_handle: sanitizeSocialUrl(body.cashapp_handle),
       paypal_url: paypalValue,
+      buymeacoffee_url: buymeacoffeeValue,
+      patreon_url: patreonValue,
       open_to_collabs: Boolean(body.open_to_collabs),
       specialties: Array.isArray(body.specialties) && body.specialties.length > 0 ? body.specialties : null,
       favorite_open_mic: body.favorite_open_mic || null,
@@ -174,7 +184,7 @@ export async function PUT(request: Request) {
 
     const { data: existingProfile } = await supabase
       .from("profiles")
-      .select("slug, full_name, is_songwriter, is_host, is_studio, is_fan, bio, city, state, is_public, instagram_url, facebook_url, twitter_url, tiktok_url, youtube_url, spotify_url, bandcamp_url, website_url, venmo_handle, cashapp_handle, paypal_url, open_to_collabs, specialties, favorite_open_mic, available_for_hire, interested_in_cowriting, genres, instruments, song_links, featured_song_url")
+      .select("slug, full_name, is_songwriter, is_host, is_studio, is_fan, bio, city, state, is_public, instagram_url, facebook_url, twitter_url, tiktok_url, youtube_url, spotify_url, bandcamp_url, website_url, venmo_handle, cashapp_handle, paypal_url, buymeacoffee_url, patreon_url, open_to_collabs, specialties, favorite_open_mic, available_for_hire, interested_in_cowriting, genres, instruments, song_links, featured_song_url")
       .eq("id", user.id)
       .single();
 

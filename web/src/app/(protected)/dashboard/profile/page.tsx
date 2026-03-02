@@ -44,6 +44,8 @@ type FormData = {
   venmo_handle: string;
   cashapp_handle: string;
   paypal_url: string;
+  buymeacoffee_url: string;
+  patreon_url: string;
   open_to_collabs: boolean;
   specialties: string[];
   favorite_open_mic: string;
@@ -81,6 +83,8 @@ const initialFormData: FormData = {
   venmo_handle: "",
   cashapp_handle: "",
   paypal_url: "",
+  buymeacoffee_url: "",
+  patreon_url: "",
   open_to_collabs: false,
   specialties: [],
   favorite_open_mic: "",
@@ -202,6 +206,8 @@ export default function EditProfilePage() {
           venmo_handle: (profile as any).venmo_handle || "",
           cashapp_handle: (profile as any).cashapp_handle || "",
           paypal_url: (profile as any).paypal_url || "",
+          buymeacoffee_url: (profile as any).buymeacoffee_url || "",
+          patreon_url: (profile as any).patreon_url || "",
           open_to_collabs: (profile as any).open_to_collabs || false,
           specialties: (profile as any).specialties || [],
           favorite_open_mic: (profile as any).favorite_open_mic || "",
@@ -307,6 +313,8 @@ export default function EditProfilePage() {
           venmo_handle: formData.venmo_handle,
           cashapp_handle: formData.cashapp_handle,
           paypal_url: formData.paypal_url,
+          buymeacoffee_url: formData.buymeacoffee_url,
+          patreon_url: formData.patreon_url,
           open_to_collabs: formData.open_to_collabs,
           specialties: formData.specialties,
           favorite_open_mic: formData.favorite_open_mic,
@@ -1147,7 +1155,7 @@ export default function EditProfilePage() {
               <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                 Let fans support you directly. These will appear on your profile and when you perform.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="venmo_handle" className="block text-sm text-[var(--color-text-secondary)] mb-1">
                     Venmo Handle
@@ -1187,6 +1195,34 @@ export default function EditProfilePage() {
                     value={formData.paypal_url}
                     onChange={handleChange}
                     placeholder="https://paypal.me/..."
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="buymeacoffee_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Buy Me a Coffee
+                  </label>
+                  <input
+                    type="url"
+                    id="buymeacoffee_url"
+                    name="buymeacoffee_url"
+                    value={formData.buymeacoffee_url}
+                    onChange={handleChange}
+                    placeholder="https://buymeacoffee.com/..."
+                    className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="patreon_url" className="block text-sm text-[var(--color-text-secondary)] mb-1">
+                    Patreon
+                  </label>
+                  <input
+                    type="url"
+                    id="patreon_url"
+                    name="patreon_url"
+                    value={formData.patreon_url}
+                    onChange={handleChange}
+                    placeholder="https://patreon.com/..."
                     className="w-full px-4 py-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-border-accent)]/50"
                   />
                 </div>

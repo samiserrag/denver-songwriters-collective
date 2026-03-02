@@ -44,7 +44,7 @@ export default function TipJarPage() {
               Ways to Contribute
             </h2>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {/* Venmo */}
               <a
                 href="https://venmo.com/u/Sami-Serrag-Music"
@@ -88,6 +88,30 @@ export default function TipJarPage() {
                 </p>
                 <span className="inline-block text-sm text-[var(--color-text-accent)] group-hover:underline">
                   Send a tip →
+                </span>
+              </a>
+
+              {/* Buy Me a Coffee */}
+              <a
+                href="https://buymeacoffee.com/sami_serrag_music"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-8 space-y-4 text-center hover:border-[var(--color-border-accent)]/50 transition-colors"
+              >
+                <div className="w-16 h-16 mx-auto rounded-full bg-[#FFDD00] flex items-center justify-center">
+                  <svg className="w-8 h-8 text-[#000000]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.216 6.415l-.132-.666c-.119-.598-.388-1.163-1.001-1.379-.197-.069-.42-.098-.57-.241-.152-.143-.196-.366-.231-.572-.065-.378-.125-.756-.192-1.133-.057-.325-.102-.69-.25-.987-.195-.4-.597-.634-.996-.788a5.723 5.723 0 00-.626-.194c-1-.263-2.05-.36-3.077-.416a25.834 25.834 0 00-3.7.062c-.915.083-1.88.184-2.75.5-.318.116-.646.256-.888.501-.297.302-.393.77-.177 1.146.154.267.415.456.692.58.36.162.737.284 1.123.366 1.075.238 2.189.331 3.287.37 1.218.05 2.437.01 3.65-.118.299-.033.598-.073.896-.119.352-.054.578-.513.474-.834-.124-.383-.457-.531-.834-.473-.466.074-.96.108-1.382.146-1.177.08-2.358.082-3.536.006a22.228 22.228 0 01-1.157-.107c-.086-.01-.18-.025-.258-.036-.243-.036-.484-.08-.724-.13-.111-.027-.111-.185 0-.212h.005c.277-.06.557-.108.838-.147h.002c.131-.009.263-.032.394-.048a25.076 25.076 0 013.426-.12c.674.019 1.347.062 2.014.13l.04.005c.11.01.218.026.326.04.218.032.437.065.654.107.158.03.507.127.507.127"/>
+                    <path d="M11.325 9.81c-.04 0-.076.017-.104.044l-.025.029v7.877c0 .058.043.115.043.115.023.04.072.063.072.063l3.26-.005c.054 0 .098-.038.098-.038.03-.026.047-.065.047-.065.01-.03.01-.064.01-.064V9.89c0-.065-.038-.108-.038-.108L14.66 9.72l-3.228.01c-.032 0-.06.003-.06.003s-.032.003-.047.077z"/>
+                  </svg>
+                </div>
+                <h3 className="text-[length:var(--font-size-heading-sm)] font-[var(--font-family-serif)] text-[var(--color-text-accent)] group-hover:text-[var(--color-link-hover)] transition-colors">
+                  Buy Me a Coffee
+                </h3>
+                <p className="text-[length:var(--font-size-body-sm)] text-[var(--color-text-secondary)]">
+                  @sami_serrag_music
+                </p>
+                <span className="inline-block text-sm text-[var(--color-text-accent)] group-hover:underline">
+                  Buy a coffee →
                 </span>
               </a>
             </div>

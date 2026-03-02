@@ -171,6 +171,9 @@ export default async function AboutPage() {
               <Button asChild variant="secondary" size="lg">
                 <Link href="/tip-jar">Tip Jar</Link>
               </Button>
+              <Button asChild variant="secondary" size="lg">
+                <a href="https://buymeacoffee.com/sami_serrag_music" target="_blank" rel="noopener noreferrer">Buy Us a Coffee ☕</a>
+              </Button>
             </div>
           </section>
 

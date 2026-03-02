@@ -57,6 +57,8 @@ export default function OnboardingProfile() {
   const [venmoHandle, setVenmoHandle] = useState("");
   const [cashappHandle, setCashappHandle] = useState("");
   const [paypalUrl, setPaypalUrl] = useState("");
+  const [buymeacoffeeUrl, setBuymeacoffeeUrl] = useState("");
+  const [patreonUrl, setPatreonUrl] = useState("");
 
   // Collaboration
   const [openToCollabs, setOpenToCollabs] = useState(false);
@@ -131,6 +133,8 @@ export default function OnboardingProfile() {
           setVenmoHandle(profile.venmo_handle || "");
           setCashappHandle(profile.cashapp_handle || "");
           setPaypalUrl(profile.paypal_url || "");
+          setBuymeacoffeeUrl((profile as any).buymeacoffee_url || "");
+          setPatreonUrl((profile as any).patreon_url || "");
           setOpenToCollabs(profile.open_to_collabs || false);
           setInterestedInCowriting(profile.interested_in_cowriting || false);
           setInstruments(profile.instruments || []);
@@ -213,6 +217,8 @@ export default function OnboardingProfile() {
           venmo_handle: venmoHandle || null,
           cashapp_handle: cashappHandle || null,
           paypal_url: paypalUrl || null,
+          buymeacoffee_url: buymeacoffeeUrl || null,
+          patreon_url: patreonUrl || null,
           open_to_collabs: openToCollabs,
           interested_in_cowriting: interestedInCowriting,
           instruments: instruments.length > 0 ? instruments : null,
@@ -279,6 +285,8 @@ export default function OnboardingProfile() {
           venmo_handle: venmoHandle || null,
           cashapp_handle: cashappHandle || null,
           paypal_url: paypalUrl || null,
+          buymeacoffee_url: buymeacoffeeUrl || null,
+          patreon_url: patreonUrl || null,
           open_to_collabs: openToCollabs,
           interested_in_cowriting: interestedInCowriting,
           instruments: instruments.length > 0 ? instruments : null,
@@ -1000,6 +1008,18 @@ export default function OnboardingProfile() {
                       value: paypalUrl,
                       onChange: setPaypalUrl,
                       placeholder: "https://paypal.me/you",
+                    },
+                    {
+                      label: "Buy Me a Coffee",
+                      value: buymeacoffeeUrl,
+                      onChange: setBuymeacoffeeUrl,
+                      placeholder: "https://buymeacoffee.com/you",
+                    },
+                    {
+                      label: "Patreon",
+                      value: patreonUrl,
+                      onChange: setPatreonUrl,
+                      placeholder: "https://patreon.com/you",
                     },
                   ].map((item) => (
                     <div key={item.label}>

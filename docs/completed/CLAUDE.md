@@ -6,6 +6,56 @@ This file holds the historical implementation log that was previously under the 
 
 ---
 
+### Feature: Buy Me a Coffee + Patreon Support (March 2026)
+
+**Summary:** Added Buy Me a Coffee link to site-level surfaces (About page, Tip Jar page, weekly digest email footer) and added Buy Me a Coffee + Patreon URL fields to member profiles alongside existing Venmo/Cash App/PayPal.
+
+**Site-level surfaces:**
+- About page: "Buy Us a Coffee" button in Get Involved section
+- Tip Jar page: Buy Me a Coffee card added (3-column grid)
+- Weekly digest email: "Support the Collective" line with BMC link in footer (HTML + plain text)
+
+**Member profile fields:**
+- New DB columns: `buymeacoffee_url`, `patreon_url` on `profiles`
+- Full lifecycle: migration → types → API sanitization (domain-validated) → dashboard form → onboarding form → ProfileIcons (`buildTipLinks`) → public profile display (auto-renders)
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260301200000_add_buymeacoffee_patreon_columns.sql` | New migration adding two text columns |
+| `lib/supabase/database.types.ts` | Added `buymeacoffee_url`, `patreon_url` to Row/Insert/Update |
+| `app/api/profile/route.ts` | Added to tracked fields, sanitization (domain-restricted), update payload |
+| `components/profile/ProfileIcons.tsx` | Added BMC + Patreon SVG icons to `TipIcon`, entries to `buildTipLinks()` |
+| `app/(protected)/dashboard/profile/page.tsx` | Added BMC + Patreon inputs to tipping section |
+| `app/onboarding/profile/page.tsx` | Added BMC + Patreon state, hydration, save payloads, UI fields |
+| `app/tip-jar/page.tsx` | Added Buy Me a Coffee card, expanded grid to 3-col |
+| `app/about/page.tsx` | Added "Buy Us a Coffee" button in Get Involved section |
+| `lib/email/templates/weeklyHappeningsDigest.ts` | Added BMC support line in HTML + plain-text footer |
+
+---
+
+### Fix: Saved Happenings Filters — Hydration Freeze + Query Timeout (March 2026)
+
+**Summary:** Fixed two P1 bugs discovered during UX QA of the Saved Happenings Filters feature. The Saved Filters status chip was permanently frozen on its SSR-rendered value, and the database query to load saved filters hung indefinitely during page load.
+
+**Bug 1 — Frozen DOM (hydration):** React #418 hydration errors on `/happenings` prevented effect-initiated `setState` calls from flushing to the DOM. Fixed by dynamically importing `HappeningsFilters` with `ssr: false`, eliminating the SSR→client mismatch entirely.
+
+**Bug 2 — Query hang:** ~500 concurrent `/auth/v1/user` calls during page load saturate the browser's 6-connection-per-domain limit, causing the PostgREST query to `happenings_saved_filters` to hang indefinitely. Fixed by wrapping the query in `Promise.race()` with a 5-second timeout.
+
+**Files changed:**
+
+| File | Change |
+|------|--------|
+| `components/happenings/StickyControls.tsx` | Replaced static import of `HappeningsFilters` with `next/dynamic` (`ssr: false`); removed `<Suspense>` wrapper |
+| `components/happenings/HappeningsFilters.tsx` | Added `Promise.race()` with 5s timeout around `getUserSavedHappeningsFilters()`; restored `useState(true)` + `finally` pattern for `savedLoading`; removed `useReducer` forceUpdate and `requestAnimationFrame` workarounds |
+
+**Known deferred:** ~500 concurrent `/auth/v1/user` calls on `/happenings` page load (pre-existing Supabase auth client issue, not caused by this feature).
+
+**UX QA verdict:** GO (4.7/5). All save/apply/reset flows functional. Auth state transitions correct across logged-out, logged-in (no filters), and logged-in (with filters) states.
+
+---
+
 ### Fix: Guest Cancel Token Expiry — Extend to End of Event Day (February 2026)
 
 **Summary:** Guest RSVP and timeslot cancel tokens were expiring after a fixed 24 hours, causing cancel links to fail if the guest waited more than a day. Changed all guest action token expiry to last until 23:59:59 Denver time on the event day instead.
