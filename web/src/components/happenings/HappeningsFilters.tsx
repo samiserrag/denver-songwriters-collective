@@ -238,20 +238,19 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
   }, [zip]);
 
   React.useEffect(() => {
-    let isMounted = true;
+    let cancelled = false;
 
     async function loadSavedFilters() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
 
-        if (!session?.user) {
+        if (!session?.user || cancelled) {
           return;
         }
 
         setUserId(session.user.id);
         const row = await getUserSavedHappeningsFilters(supabase, session.user.id);
-        if (!isMounted) return;
+        if (cancelled) return;
 
         if (row) {
           setSavedFilters(row.filters);
@@ -263,14 +262,18 @@ export function HappeningsFilters({ className }: HappeningsFiltersProps) {
       } catch {
         // Auth or fetch failed — degrade gracefully, section still renders
       } finally {
-        if (isMounted) setSavedLoading(false);
+        // Always resolve loading — React 18+ safely ignores setState on unmounted components.
+        // The previous `if (isMounted)` guard caused a permanent "Loading…" state when
+        // Suspense boundaries unmounted the component mid-flight (cleanup set isMounted=false
+        // before finally executed, so setSavedLoading was skipped).
+        setSavedLoading(false);
       }
     }
 
     loadSavedFilters();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
   }, [supabase]);
 
